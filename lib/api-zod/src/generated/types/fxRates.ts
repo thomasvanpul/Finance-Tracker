@@ -5,7 +5,10 @@
  * Personal Finance Tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { FxRatesRates } from './fxRatesRates';
 
-export interface HealthStatus {
-  status: string;
+export interface FxRates {
+  base: string;
+  rates: FxRatesRates;
+  updatedAt: string;
 }

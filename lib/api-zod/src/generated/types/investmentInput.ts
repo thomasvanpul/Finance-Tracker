@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface InvestmentInput {
+  ticker: string;
+  name: string;
+  buyDate: string;
+  shares: number;
+  costPricePerShare: number;
 }
