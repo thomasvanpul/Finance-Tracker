@@ -1,22 +1,27 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Personal Finance Tracker API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: accounts
+  - name: transactions
+  - name: upcoming
+  - name: investments
+  - name: dashboard
+  - name: market
+  - name: plaid
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +29,933 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── DASHBOARD ──────────────────────────────────────────────────────────────
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get full dashboard summary
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  # ── ACCOUNTS ───────────────────────────────────────────────────────────────
+  /accounts:
+    get:
+      operationId: listAccounts
+      tags: [accounts]
+      summary: List all accounts
+      responses:
+        "200":
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+    post:
+      operationId: createAccount
+      tags: [accounts]
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+
+  /accounts/{id}:
+    patch:
+      operationId: updateAccount
+      tags: [accounts]
+      summary: Update an account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+    delete:
+      operationId: deleteAccount
+      tags: [accounts]
+      summary: Delete an account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── TRANSACTIONS ───────────────────────────────────────────────────────────
+  /transactions:
+    get:
+      operationId: listTransactions
+      tags: [transactions]
+      summary: List transactions with optional filters
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: type
+          in: query
+          schema:
+            type: ["string", "null"]
+            enum: [income, expense, transfer, null]
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: dateFrom
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: dateTo
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+    post:
+      operationId: createTransaction
+      tags: [transactions]
+      summary: Create a transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  /transactions/summary:
+    get:
+      operationId: getTransactionSummary
+      tags: [transactions]
+      summary: Monthly transaction summary
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: ["string", "null"]
+          description: YYYY-MM, defaults to current month
+      responses:
+        "200":
+          description: Monthly summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionSummary"
+
+  /transactions/{id}:
+    patch:
+      operationId: updateTransaction
+      tags: [transactions]
+      summary: Update a transaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+    delete:
+      operationId: deleteTransaction
+      tags: [transactions]
+      summary: Delete a transaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── UPCOMING ───────────────────────────────────────────────────────────────
+  /upcoming:
+    get:
+      operationId: listUpcoming
+      tags: [upcoming]
+      summary: List upcoming scheduled items
+      responses:
+        "200":
+          description: List of upcoming items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UpcomingItem"
+    post:
+      operationId: createUpcomingItem
+      tags: [upcoming]
+      summary: Create an upcoming item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpcomingItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpcomingItem"
+
+  /upcoming/summary:
+    get:
+      operationId: getUpcomingSummary
+      tags: [upcoming]
+      summary: 30-day committed outgoings and expected income
+      responses:
+        "200":
+          description: Upcoming summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpcomingSummary"
+
+  /upcoming/installments:
+    post:
+      operationId: generateInstallments
+      tags: [upcoming]
+      summary: Generate monthly installment rows
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InstallmentInput"
+      responses:
+        "201":
+          description: Created installments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UpcomingItem"
+
+  /upcoming/{id}:
+    patch:
+      operationId: updateUpcomingItem
+      tags: [upcoming]
+      summary: Update an upcoming item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpcomingItemUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpcomingItem"
+    delete:
+      operationId: deleteUpcomingItem
+      tags: [upcoming]
+      summary: Delete an upcoming item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /upcoming/{id}/pay:
+    post:
+      operationId: payUpcomingItem
+      tags: [upcoming]
+      summary: Mark item as paid and auto-log to transactions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Paid and transaction created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpcomingItem"
+
+  # ── INVESTMENTS ────────────────────────────────────────────────────────────
+  /investments:
+    get:
+      operationId: listInvestments
+      tags: [investments]
+      summary: List investment positions with live prices
+      responses:
+        "200":
+          description: Investment positions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Investment"
+    post:
+      operationId: createInvestment
+      tags: [investments]
+      summary: Add an investment position
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investment"
+
+  /investments/summary:
+    get:
+      operationId: getInvestmentSummary
+      tags: [investments]
+      summary: Portfolio totals
+      responses:
+        "200":
+          description: Investment summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentSummary"
+
+  /investments/{id}:
+    patch:
+      operationId: updateInvestment
+      tags: [investments]
+      summary: Update an investment position
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investment"
+    delete:
+      operationId: deleteInvestment
+      tags: [investments]
+      summary: Delete an investment position
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── MARKET DATA ────────────────────────────────────────────────────────────
+  /market/fx-rates:
+    get:
+      operationId: getFxRates
+      tags: [market]
+      summary: Get live FX rates (GBP base)
+      responses:
+        "200":
+          description: FX rates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FxRates"
+
+  /market/prices:
+    get:
+      operationId: getMarketPrices
+      tags: [market]
+      summary: Get live stock prices for given tickers
+      parameters:
+        - name: tickers
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Comma-separated ticker symbols
+      responses:
+        "200":
+          description: Stock prices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockPrice"
+
+  # ── PLAID ──────────────────────────────────────────────────────────────────
+  /plaid/link-token:
+    post:
+      operationId: createPlaidLinkToken
+      tags: [plaid]
+      summary: Create a Plaid Link token
+      responses:
+        "200":
+          description: Link token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaidLinkToken"
+
+  /plaid/exchange-token:
+    post:
+      operationId: exchangePlaidToken
+      tags: [plaid]
+      summary: Exchange Plaid public token for access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaidExchangeInput"
+      responses:
+        "200":
+          description: Accounts linked
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+
+  /plaid/sync:
+    post:
+      operationId: syncPlaidTransactions
+      tags: [plaid]
+      summary: Sync transactions from Plaid for all linked accounts
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaidSyncResult"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # ── ACCOUNT ──────────────────────────────────────────────────────────────
+    Account:
+      type: object
+      required: [id, name, currency, balance, gbpEquivalent, isPlaidLinked, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        balance:
+          type: number
+        gbpEquivalent:
+          type: number
+        isPlaidLinked:
+          type: boolean
+        plaidAccountId:
+          type: ["string", "null"]
+        plaidItemId:
+          type: ["string", "null"]
+        lastSyncedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    AccountInput:
+      type: object
+      required: [name, currency, balance]
+      properties:
+        name:
+          type: string
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        balance:
+          type: number
+
+    AccountUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        balance:
+          type: number
+
+    # ── TRANSACTION ──────────────────────────────────────────────────────────
+    Transaction:
+      type: object
+      required: [id, date, description, type, category, accountId, accountName, nativeAmount, currency, gbpValue, source, createdAt]
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [income, expense, transfer]
+        category:
+          type: string
+        accountId:
+          type: integer
+        accountName:
+          type: string
+        nativeAmount:
+          type: number
+        currency:
+          type: string
+        gbpValue:
+          type: number
+        source:
+          type: string
+          enum: [manual, plaid]
+        plaidTransactionId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    TransactionInput:
+      type: object
+      required: [date, description, type, category, accountId, nativeAmount, currency]
+      properties:
+        date:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [income, expense, transfer]
+        category:
+          type: string
+        accountId:
+          type: integer
+        nativeAmount:
+          type: number
+        currency:
+          type: string
+
+    TransactionUpdate:
+      type: object
+      properties:
+        date:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [income, expense, transfer]
+        category:
+          type: string
+        accountId:
+          type: integer
+        nativeAmount:
+          type: number
+        currency:
+          type: string
+
+    TransactionSummary:
+      type: object
+      required: [month, totalIncome, totalExpenses, netSavings, savingsRate]
+      properties:
+        month:
+          type: string
+        totalIncome:
+          type: number
+        totalExpenses:
+          type: number
+        netSavings:
+          type: number
+        savingsRate:
+          type: number
+
+    # ── UPCOMING ─────────────────────────────────────────────────────────────
+    UpcomingItem:
+      type: object
+      required: [id, dueDate, description, category, type, frequency, status, nativeAmount, currency, gbpEquivalent, createdAt]
+      properties:
+        id:
+          type: integer
+        dueDate:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        type:
+          type: string
+          enum: [income, expense]
+        frequency:
+          type: string
+          enum: [one-time, weekly, monthly, quarterly, yearly]
+        status:
+          type: string
+          enum: [pending, paid, skipped]
+        nativeAmount:
+          type: number
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        gbpEquivalent:
+          type: number
+        accountId:
+          type: ["integer", "null"]
+        accountName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    UpcomingItemInput:
+      type: object
+      required: [dueDate, description, category, type, frequency, nativeAmount, currency]
+      properties:
+        dueDate:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        type:
+          type: string
+          enum: [income, expense]
+        frequency:
+          type: string
+          enum: [one-time, weekly, monthly, quarterly, yearly]
+        nativeAmount:
+          type: number
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        accountId:
+          type: ["integer", "null"]
+
+    UpcomingItemUpdate:
+      type: object
+      properties:
+        dueDate:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        type:
+          type: string
+          enum: [income, expense]
+        frequency:
+          type: string
+          enum: [one-time, weekly, monthly, quarterly, yearly]
+        status:
+          type: string
+          enum: [pending, paid, skipped]
+        nativeAmount:
+          type: number
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        accountId:
+          type: ["integer", "null"]
+
+    UpcomingSummary:
+      type: object
+      required: [committedOutgoings30d, expectedIncome30d]
+      properties:
+        committedOutgoings30d:
+          type: number
+        expectedIncome30d:
+          type: number
+
+    InstallmentInput:
+      type: object
+      required: [description, category, totalAmount, currency, numberOfMonths, startDate]
+      properties:
+        description:
+          type: string
+        category:
+          type: string
+        totalAmount:
+          type: number
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        numberOfMonths:
+          type: integer
+        startDate:
+          type: string
+        accountId:
+          type: ["integer", "null"]
+
+    # ── INVESTMENTS ──────────────────────────────────────────────────────────
+    Investment:
+      type: object
+      required: [id, ticker, name, buyDate, shares, costPricePerShare, currency, livePrice, currentValue, plGbp, plPercent, gbpValue, createdAt]
+      properties:
+        id:
+          type: integer
+        ticker:
+          type: string
+        name:
+          type: string
+        buyDate:
+          type: string
+        shares:
+          type: number
+        costPricePerShare:
+          type: number
+        currency:
+          type: string
+        livePrice:
+          type: number
+        currentValue:
+          type: number
+        plGbp:
+          type: number
+        plPercent:
+          type: number
+        gbpValue:
+          type: number
+        createdAt:
+          type: string
+
+    InvestmentInput:
+      type: object
+      required: [ticker, name, buyDate, shares, costPricePerShare]
+      properties:
+        ticker:
+          type: string
+        name:
+          type: string
+        buyDate:
+          type: string
+        shares:
+          type: number
+        costPricePerShare:
+          type: number
+
+    InvestmentUpdate:
+      type: object
+      properties:
+        ticker:
+          type: string
+        name:
+          type: string
+        buyDate:
+          type: string
+        shares:
+          type: number
+        costPricePerShare:
+          type: number
+
+    InvestmentSummary:
+      type: object
+      required: [totalValueGbp, totalPlGbp, totalPlPercent, positions]
+      properties:
+        totalValueGbp:
+          type: number
+        totalPlGbp:
+          type: number
+        totalPlPercent:
+          type: number
+        positions:
+          type: integer
+
+    # ── MARKET DATA ──────────────────────────────────────────────────────────
+    FxRates:
+      type: object
+      required: [base, rates, updatedAt]
+      properties:
+        base:
+          type: string
+        rates:
+          type: object
+          additionalProperties:
+            type: number
+        updatedAt:
+          type: string
+
+    StockPrice:
+      type: object
+      required: [ticker, price, currency, updatedAt]
+      properties:
+        ticker:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        updatedAt:
+          type: string
+
+    # ── DASHBOARD ─────────────────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [netLiquidity, netWorth, totalCash, accountBreakdown, portfolio, thisMonth]
+      properties:
+        netLiquidity:
+          type: number
+        netWorth:
+          type: number
+        totalCash:
+          type: number
+        accountBreakdown:
+          type: array
+          items:
+            type: object
+            required: [id, name, currency, balance, gbpEquivalent]
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              currency:
+                type: string
+              balance:
+                type: number
+              gbpEquivalent:
+                type: number
+        portfolio:
+          type: object
+          required: [totalValueGbp, totalPlGbp, totalPlPercent]
+          properties:
+            totalValueGbp:
+              type: number
+            totalPlGbp:
+              type: number
+            totalPlPercent:
+              type: number
+        thisMonth:
+          type: object
+          required: [income, expenses, netSavings, savingsRate]
+          properties:
+            income:
+              type: number
+            expenses:
+              type: number
+            netSavings:
+              type: number
+            savingsRate:
+              type: number
+
+    # ── PLAID ─────────────────────────────────────────────────────────────────
+    PlaidLinkToken:
+      type: object
+      required: [linkToken]
+      properties:
+        linkToken:
+          type: string
+
+    PlaidExchangeInput:
+      type: object
+      required: [publicToken, institutionName]
+      properties:
+        publicToken:
+          type: string
+        institutionName:
+          type: string
+
+    PlaidSyncResult:
+      type: object
+      required: [synced, added, updated]
+      properties:
+        synced:
+          type: integer
+        added:
+          type: integer
+        updated:
+          type: integer

@@ -1,0 +1,54 @@
+Build a personal finance tracker web app with the following specs:
+Stack: React frontend, Node/Express backend, PostgreSQL database. Clean, professional design inspired by financial dashboards — dark navy and white colour scheme, no bright colours, Inter font.
+Bank sync via Plaid: Integrate the full Plaid Link token exchange workflow so I can connect real or sandbox financial accounts. Auto-import transactions and account balances from connected accounts. Transactions pulled from Plaid should populate the Transactions sheet with correct sign (income positive, expense negative) and auto-assign category from Plaid's category data. Manual transaction entry should still work alongside Plaid-synced ones.
+Live market data: Use the yahoo-finance2 npm package for live stock prices and exchange rates. Poll every 5 minutes. Supported currencies: GBP (base), USD, MYR, CNY.
+Five sections accessible via sidebar nav:
+1. Dashboard
+
+Net Liquidity card (total cash minus committed outgoings next 30 days plus expected income next 30 days)
+Net Worth card (cash + portfolio GBP value)
+Total Cash card with per-account breakdown
+Portfolio summary: total value, total P&L, P&L%
+This month: income, expenses, net savings, savings rate
+All values auto-convert to GBP using live FX rates
+
+2. Accounts
+
+Table: account name, currency (GBP/USD/MYR/CNY), balance, GBP equivalent
+Add/edit/delete accounts inline
+Plaid-connected accounts show a sync badge and last-synced timestamp
+GBP equivalent updates live with FX rates
+
+3. Transactions
+
+Fields: date, description, type (income/expense/transfer), category, account, native amount, currency, GBP value
+GBP value: positive for income, negative for expense, auto-converts using live FX
+Filter by account, type, category, date range
+Plaid-synced transactions labelled with source
+Monthly summary: total income, total expenses, net savings
+
+4. Upcoming
+
+Schedule future income (salary, allowance) and expenses (rent, subscriptions)
+Fields: due date, description, category, type (income/expense), recurring frequency (one-time/weekly/monthly/quarterly/yearly), status (pending/paid/skipped), native amount, currency, GBP equivalent, account
+Status is a single-click dropdown
+Installment splitter: input a total amount, currency, number of months, start date — auto-generates the monthly payment rows
+30-day committed outgoings and expected income shown prominently at top
+Marking an item as paid auto-logs it to Transactions
+
+5. Investments
+
+Fields: ticker, name, buy date, number of shares, cost price per share
+Live price auto-fetched via Yahoo Finance from the ticker
+Auto-calculates: current value (shares × live price), P&L in USD, P&L%, GBP value
+Add/edit/delete positions
+Totals row: portfolio value, total P&L, overall P&L%, total GBP value
+Supports any Yahoo Finance ticker including international (e.g. 0700.HK)
+
+General:
+
+All data persisted in PostgreSQL
+All monetary values stored in native currency, converted to GBP on display
+Mobile responsive
+No user authentication needed (single user)
+Seed with example data on first run: 3 accounts (GBP/MYR/USD), 4 sample transactions, 5 upcoming charges, 5 investment positions (VOO, ACHR, SOFI, PATH, CDE)
