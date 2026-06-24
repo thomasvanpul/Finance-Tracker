@@ -10,6 +10,23 @@ import {
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,20 +39,112 @@ import { Plus, RefreshCw, Trash2, Edit2, Landmark } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
+type Currency = "GBP" | "USD" | "MYR" | "CNY";
+
+interface AccountForm {
+  name: string;
+  currency: Currency;
+  balance: string;
+}
+
+const EMPTY_FORM: AccountForm = { name: "", currency: "GBP", balance: "" };
+
 export default function Accounts() {
   const { data: accounts, isLoading } = useListAccounts();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const createAccount = useCreateAccount();
+  const updateAccount = useUpdateAccount();
+  const deleteAccount = useDeleteAccount();
   const syncPlaid = useSyncPlaidTransactions();
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [form, setForm] = useState<AccountForm>(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: getListAccountsQueryKey() });
+
+  const openAdd = () => {
+    setForm(EMPTY_FORM);
+    setAddOpen(true);
+  };
+
+  const openEdit = (id: number) => {
+    const acct = accounts?.find((a) => a.id === id);
+    if (!acct) return;
+    setForm({
+      name: acct.name,
+      currency: acct.currency as Currency,
+      balance: String(acct.balance),
+    });
+    setEditId(id);
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await createAccount.mutateAsync({
+        data: {
+          name: form.name,
+          currency: form.currency,
+          balance: parseFloat(form.balance),
+        },
+      });
+      await invalidate();
+      setAddOpen(false);
+      toast({ title: "Account added" });
+    } catch {
+      toast({ title: "Failed to add account", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editId === null) return;
+    setSubmitting(true);
+    try {
+      await updateAccount.mutateAsync({
+        id: editId,
+        data: {
+          name: form.name,
+          currency: form.currency,
+          balance: parseFloat(form.balance),
+        },
+      });
+      await invalidate();
+      setEditId(null);
+      toast({ title: "Account updated" });
+    } catch {
+      toast({ title: "Failed to update account", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this account?")) return;
+    try {
+      await deleteAccount.mutateAsync({ id });
+      await invalidate();
+      toast({ title: "Account deleted" });
+    } catch {
+      toast({ title: "Failed to delete", variant: "destructive" });
+    }
+  };
 
   const handleSync = async () => {
     try {
       await syncPlaid.mutateAsync();
-      queryClient.invalidateQueries({ queryKey: getListAccountsQueryKey() });
-      toast({ title: "Accounts synced successfully" });
-    } catch (error) {
-      toast({ title: "Failed to sync accounts", variant: "destructive" });
+      await invalidate();
+      toast({ title: "Accounts synced" });
+    } catch {
+      toast({ title: "Sync failed", variant: "destructive" });
     }
   };
 
@@ -47,6 +156,50 @@ export default function Accounts() {
       </div>
     );
   }
+
+  const AccountFormFields = (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="acc-name">Account Name</Label>
+        <Input
+          id="acc-name"
+          placeholder="e.g. HSBC Current Account"
+          value={form.name}
+          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          required
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label>Currency</Label>
+        <Select
+          value={form.currency}
+          onValueChange={(v) => setForm((f) => ({ ...f, currency: v as Currency }))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="GBP">GBP — British Pound</SelectItem>
+            <SelectItem value="USD">USD — US Dollar</SelectItem>
+            <SelectItem value="MYR">MYR — Malaysian Ringgit</SelectItem>
+            <SelectItem value="CNY">CNY — Chinese Yuan</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="acc-balance">Balance</Label>
+        <Input
+          id="acc-balance"
+          type="number"
+          step="0.01"
+          placeholder="0.00"
+          value={form.balance}
+          onChange={(e) => setForm((f) => ({ ...f, balance: e.target.value }))}
+          required
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -60,12 +213,52 @@ export default function Accounts() {
             <RefreshCw className={`w-4 h-4 mr-2 ${syncPlaid.isPending ? "animate-spin" : ""}`} />
             Sync Bank
           </Button>
-          <Button>
+          <Button onClick={openAdd}>
             <Plus className="w-4 h-4 mr-2" />
             Add Account
           </Button>
         </div>
       </div>
+
+      {/* Add Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Account</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdd}>
+            {AccountFormFields}
+            <DialogFooter className="mt-6">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Adding…" : "Add Account"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editId !== null} onOpenChange={(o) => !o && setEditId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Account</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit}>
+            {AccountFormFields}
+            <DialogFooter className="mt-6">
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Saving…" : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="rounded-md border border-border bg-card">
         <Table>
@@ -100,10 +293,20 @@ export default function Accounts() {
                   {formatGbp(account.gbpEquivalent)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => openEdit(account.id)}
+                  >
                     <Edit2 className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => handleDelete(account.id)}
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </TableCell>
