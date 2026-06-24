@@ -18,9 +18,11 @@ router.post("/plaid/link-token", async (req, res): Promise<void> => {
   try {
     const linkToken = await createLinkToken();
     res.json(CreatePlaidLinkTokenResponse.parse({ linkToken }));
-  } catch (err) {
-    req.log.error({ err }, "Failed to create Plaid link token");
-    res.status(500).json({ error: "Failed to create link token" });
+  } catch (err: any) {
+    const plaidError = err?.response?.data;
+    const message = plaidError?.error_message ?? plaidError?.error_code ?? "Failed to create link token";
+    req.log.error({ err, plaidError }, "Failed to create Plaid link token");
+    res.status(500).json({ error: message, details: plaidError ?? null });
   }
 });
 
@@ -34,7 +36,6 @@ router.post("/plaid/exchange-token", async (req, res): Promise<void> => {
   try {
     const accessToken = await exchangePublicToken(parsed.data.publicToken);
 
-    // Fetch accounts from Plaid
     const accountsResp = await plaidClient.accountsGet({ access_token: accessToken });
     const plaidAccounts = accountsResp.data.accounts;
     const itemId = accountsResp.data.item.item_id;
@@ -81,19 +82,51 @@ router.post("/plaid/exchange-token", async (req, res): Promise<void> => {
     }
 
     res.json(ExchangePlaidTokenResponse.parse(created));
+  } catch (err: any) {
+    const plaidError = err?.response?.data;
+    req.log.error({ err, plaidError }, "Failed to exchange Plaid token");
+    res.status(500).json({ error: "Failed to link bank account", details: plaidError ?? null });
+  }
+});
+
+// List all Plaid-linked accounts (for display / debugging)
+router.get("/plaid/accounts", async (req, res): Promise<void> => {
+  try {
+    const linked = await db
+      .select({
+        id: accountsTable.id,
+        name: accountsTable.name,
+        currency: accountsTable.currency,
+        balance: accountsTable.balance,
+        plaidAccountId: accountsTable.plaidAccountId,
+        plaidItemId: accountsTable.plaidItemId,
+        lastSyncedAt: accountsTable.lastSyncedAt,
+      })
+      .from(accountsTable)
+      .where(eq(accountsTable.isPlaidLinked, true));
+
+    res.json(linked.map((a) => ({
+      ...a,
+      balance: parseFloat(String(a.balance)),
+      lastSyncedAt: a.lastSyncedAt ? a.lastSyncedAt.toISOString() : null,
+    })));
   } catch (err) {
-    req.log.error({ err }, "Failed to exchange Plaid token");
-    res.status(500).json({ error: "Failed to link bank account" });
+    req.log.error({ err }, "Failed to list Plaid accounts");
+    res.status(500).json({ error: "Failed to list Plaid accounts" });
   }
 });
 
 router.post("/plaid/sync", async (req, res): Promise<void> => {
   try {
-    // Find all Plaid-linked accounts
     const plaidAccounts = await db
       .select()
       .from(accountsTable)
       .where(eq(accountsTable.isPlaidLinked, true));
+
+    if (plaidAccounts.length === 0) {
+      res.json(SyncPlaidTransactionsResponse.parse({ synced: 0, added: 0, updated: 0 }));
+      return;
+    }
 
     const accessTokens = new Map<string, typeof accountsTable.$inferSelect[]>();
     for (const acc of plaidAccounts) {
@@ -108,7 +141,6 @@ router.post("/plaid/sync", async (req, res): Promise<void> => {
     let totalUpdated = 0;
 
     for (const [accessToken, accounts] of accessTokens) {
-      // Use transactions/sync for incremental updates
       let cursor: string | undefined;
       let added: Transaction[] = [];
       let removed: RemovedTransaction[] = [];
@@ -125,7 +157,6 @@ router.post("/plaid/sync", async (req, res): Promise<void> => {
         cursor = resp.data.next_cursor;
       }
 
-      // Map Plaid account_id → our account
       const plaidAccountMap = new Map(accounts.map((a) => [a.plaidAccountId, a]));
 
       for (const tx of added) {
@@ -133,12 +164,10 @@ router.post("/plaid/sync", async (req, res): Promise<void> => {
         if (!account) continue;
 
         const currency = (tx.iso_currency_code ?? account.currency).toUpperCase();
-        // Plaid: positive = expense (money out), negative = income (money in)
         const nativeAmount = tx.amount;
         const type = nativeAmount > 0 ? "expense" : "income";
         const category = tx.personal_finance_category?.primary ?? tx.category?.[0] ?? "Other";
 
-        // Upsert by plaid_transaction_id
         const existing = await db
           .select()
           .from(transactionsTable)
@@ -167,7 +196,7 @@ router.post("/plaid/sync", async (req, res): Promise<void> => {
         totalSynced++;
       }
 
-      // Update account balances
+      // Update balances
       const balancesResp = await plaidClient.accountsGet({ access_token: accessToken });
       for (const pa of balancesResp.data.accounts) {
         const account = plaidAccountMap.get(pa.account_id);
@@ -179,16 +208,12 @@ router.post("/plaid/sync", async (req, res): Promise<void> => {
       }
     }
 
-    res.json(
-      SyncPlaidTransactionsResponse.parse({
-        synced: totalSynced,
-        added: totalAdded,
-        updated: totalUpdated,
-      })
-    );
-  } catch (err) {
-    req.log.error({ err }, "Plaid sync failed");
-    res.status(500).json({ error: "Sync failed" });
+    logger.info({ totalSynced, totalAdded, totalUpdated }, "Plaid sync complete");
+    res.json(SyncPlaidTransactionsResponse.parse({ synced: totalSynced, added: totalAdded, updated: totalUpdated }));
+  } catch (err: any) {
+    const plaidError = err?.response?.data;
+    req.log.error({ err, plaidError }, "Plaid sync failed");
+    res.status(500).json({ error: "Sync failed", details: plaidError ?? null });
   }
 });
 

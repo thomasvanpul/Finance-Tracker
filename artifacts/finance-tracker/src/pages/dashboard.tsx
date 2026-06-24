@@ -2,7 +2,8 @@ import { useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp, formatPercent } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowDownRight, ArrowUpRight, Landmark, LineChart, Wallet } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ArrowDownRight, ArrowUpRight, Landmark, LineChart, Wallet, AlertCircle } from "lucide-react";
 
 function MetricCard({
   title,
@@ -44,9 +45,9 @@ function MetricCard({
 }
 
 export default function Dashboard() {
-  const { data: dashboard, isLoading } = useGetDashboard();
+  const { data: dashboard, isLoading, isError, error } = useGetDashboard();
 
-  if (isLoading || !dashboard) {
+  if (isLoading || (!dashboard && !isError)) {
     return (
       <div className="space-y-6">
         <div>

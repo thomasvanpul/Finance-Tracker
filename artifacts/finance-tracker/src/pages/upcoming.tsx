@@ -13,6 +13,8 @@ import { formatGbp, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -67,8 +69,8 @@ const EMPTY_FORM: UpForm = {
 };
 
 export default function Upcoming() {
-  const { data: upcoming, isLoading } = useListUpcoming();
-  const { data: summary, isLoading: isSummaryLoading } = useGetUpcomingSummary();
+  const { data: upcoming, isLoading, isError, error } = useListUpcoming();
+  const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useGetUpcomingSummary();
   const createItem = useCreateUpcomingItem();
   const deleteItem = useDeleteUpcomingItem();
   const updateItem = useUpdateUpcomingItem();

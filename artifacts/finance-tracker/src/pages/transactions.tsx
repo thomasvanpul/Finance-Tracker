@@ -13,6 +13,8 @@ import { formatGbp, formatNative, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -65,8 +67,8 @@ const EMPTY_FORM: TxForm = {
 };
 
 export default function Transactions() {
-  const { data: transactions, isLoading } = useListTransactions();
-  const { data: summary, isLoading: isSummaryLoading } = useGetTransactionSummary();
+  const { data: transactions, isLoading, isError, error } = useListTransactions();
+  const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useGetTransactionSummary();
   const { data: accounts } = useListAccounts();
   const createTx = useCreateTransaction();
   const deleteTx = useDeleteTransaction();

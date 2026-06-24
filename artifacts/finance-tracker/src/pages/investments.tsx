@@ -13,6 +13,8 @@ import { formatGbp, formatPercent } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -51,8 +53,8 @@ const EMPTY_FORM: InvForm = {
 };
 
 export default function Investments() {
-  const { data: investments, isLoading } = useListInvestments();
-  const { data: summary, isLoading: isSummaryLoading } = useGetInvestmentSummary();
+  const { data: investments, isLoading, isError, error } = useListInvestments();
+  const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useGetInvestmentSummary();
   const createInv = useCreateInvestment();
   const updateInv = useUpdateInvestment();
   const deleteInv = useDeleteInvestment();
