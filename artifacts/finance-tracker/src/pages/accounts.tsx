@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListAccounts,
@@ -61,13 +61,13 @@ function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
 
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [fetchingToken, setFetchingToken] = useState(false);
-  const [institutionName, setInstitutionName] = useState("My Bank");
+  // pendingOpen: true when we have a token and are waiting for Plaid to be ready
+  const [pendingOpen, setPendingOpen] = useState(false);
 
   const { open, ready } = usePlaidLink({
     token: linkToken ?? "",
     onSuccess: async (publicToken, metadata) => {
       const institution = metadata.institution?.name ?? "My Bank";
-      setInstitutionName(institution);
       try {
         await exchangeToken.mutateAsync({
           data: { publicToken, institutionName: institution },
@@ -75,15 +75,20 @@ function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
         toast({ title: `${institution} connected successfully` });
         onSuccess();
       } catch (err: any) {
-        const detail = err?.response?.data?.details?.error_message ?? err?.message ?? "Unknown error";
+        const detail =
+          err?.response?.data?.details?.error_message ?? err?.message ?? "Unknown error";
         toast({
           title: "Failed to link bank account",
           description: detail,
           variant: "destructive",
         });
       }
+      setLinkToken(null);
+      setPendingOpen(false);
     },
     onExit: (err) => {
+      setLinkToken(null);
+      setPendingOpen(false);
       if (err) {
         toast({
           title: "Plaid Link exited with error",
@@ -94,16 +99,22 @@ function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
     },
   });
 
+  // Open Plaid Link as soon as it signals ready (after the token was set)
+  useEffect(() => {
+    if (pendingOpen && ready) {
+      open();
+    }
+  }, [pendingOpen, ready, open]);
+
   const handleClick = async () => {
     setFetchingToken(true);
     try {
       const result = await createToken.mutateAsync();
       setLinkToken(result.linkToken);
-      // usePlaidLink opens automatically once token is set and ready
-      // We call open() after a tick to let the token propagate
-      setTimeout(() => open(), 100);
+      setPendingOpen(true); // will open via useEffect once ready fires
     } catch (err: any) {
-      const detail = err?.response?.data?.error ?? err?.message ?? "Unable to create link token";
+      const detail =
+        err?.response?.data?.error ?? err?.message ?? "Unable to create link token";
       toast({
         title: "Could not start bank connection",
         description: detail,
@@ -114,10 +125,12 @@ function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
     }
   };
 
+  const busy = fetchingToken || exchangeToken.isPending || pendingOpen;
+
   return (
-    <Button variant="outline" onClick={handleClick} disabled={fetchingToken || exchangeToken.isPending}>
-      <Link2 className={`w-4 h-4 mr-2 ${fetchingToken ? "animate-spin" : ""}`} />
-      {fetchingToken ? "Connecting…" : "Link Bank (Plaid)"}
+    <Button variant="outline" onClick={handleClick} disabled={busy}>
+      <Link2 className={`w-4 h-4 mr-2 ${fetchingToken || pendingOpen ? "animate-spin" : ""}`} />
+      {fetchingToken ? "Fetching token…" : pendingOpen ? "Opening…" : "Link Bank (Plaid)"}
     </Button>
   );
 }
