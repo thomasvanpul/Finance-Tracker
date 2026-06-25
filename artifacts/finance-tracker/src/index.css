@@ -33,51 +33,51 @@
   --color-success: hsl(var(--success));
   --color-success-foreground: hsl(var(--success-foreground));
 
-  --font-sans: "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", monospace;
 }
 
 :root {
-  /* Dark Navy Theme */
-  --background: 224 71% 4%;
-  --foreground: 210 40% 98%;
+  /* Excel Pro — GitHub Dark Palette */
+  --background: 216 28% 7%;       /* #0D1117 */
+  --foreground: 213 17% 83%;      /* #C9D1D9 */
 
-  --card: 222 47% 8%;
-  --card-foreground: 210 40% 98%;
-  --card-border: 217 33% 17%;
+  --card: 214 27% 11%;            /* #161B22 */
+  --card-foreground: 210 18% 87%; /* #E6EDF3 */
+  --card-border: 216 20% 16%;     /* #21262D */
 
-  --popover: 222 47% 8%;
-  --popover-foreground: 210 40% 98%;
-  --popover-border: 217 33% 17%;
+  --popover: 214 27% 11%;
+  --popover-foreground: 210 18% 87%;
+  --popover-border: 216 20% 16%;
 
-  --primary: 217 91% 60%;
-  --primary-foreground: 222 47% 11%;
+  --primary: 217 91% 58%;         /* #1F6FEB (blue) */
+  --primary-foreground: 216 28% 7%;
 
-  --secondary: 217 33% 17%;
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 216 20% 16%;       /* #21262D */
+  --secondary-foreground: 213 17% 83%;
 
-  --muted: 217 33% 17%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted: 216 20% 16%;
+  --muted-foreground: 218 11% 56%; /* #8B949E */
 
-  --accent: 217 33% 17%;
-  --accent-foreground: 210 40% 98%;
+  --accent: 216 20% 16%;
+  --accent-foreground: 210 18% 87%;
 
-  --destructive: 350 89% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 4 90% 63%;       /* #F85149 (red) */
+  --destructive-foreground: 210 18% 87%;
 
-  --success: 142 71% 45%;
-  --success-foreground: 210 40% 98%;
+  --success: 130 74% 54%;         /* #3FB950 (green) */
+  --success-foreground: 216 28% 7%;
 
-  --border: 217 33% 17%;
-  --input: 217 33% 17%;
-  --ring: 224 76% 48%;
+  --border: 216 20% 16%;          /* #21262D */
+  --input: 216 20% 16%;
+  --ring: 217 91% 58%;
 
-  --radius: 0.25rem;
+  --radius: 0.125rem;             /* near-sharp corners */
 }
 
 .dark {
-  --background: 224 71% 4%;
-  --foreground: 210 40% 98%;
+  --background: 216 28% 7%;
+  --foreground: 213 17% 83%;
 }
 
 @layer base {
@@ -87,4 +87,42 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  /* Tabular numbers everywhere for financial data */
+  td, th, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Spreadsheet-style scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0D1117;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #30363D;
+    border-radius: 0;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #484F58;
+  }
+}
+
+/* Excel-style row hover */
+.xls-row:hover td {
+  background-color: rgba(31, 111, 235, 0.06) !important;
+}
+
+/* Column header style */
+.xls-col-header {
+  background: #161B22;
+  border-bottom: 2px solid #30363D;
+  font-size: 10px;
+  font-weight: 600;
+  color: #8B949E;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding: 6px 12px;
 }

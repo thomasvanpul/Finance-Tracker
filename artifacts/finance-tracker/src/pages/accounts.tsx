@@ -31,14 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Plus, RefreshCw, Trash2, Edit2, Landmark, Link2, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -53,7 +45,20 @@ interface AccountForm {
 
 const EMPTY_FORM: AccountForm = { name: "", currency: "GBP", balance: "" };
 
-// Plaid Link button — fetches a link token and opens Plaid Link UI
+const TH: React.CSSProperties = {
+  padding: "6px 12px",
+  fontSize: 10,
+  fontWeight: 600,
+  color: "#6E7681",
+  background: "#161B22",
+  borderBottom: "2px solid #30363D",
+  borderRight: "1px solid #21262D",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.4px",
+  whiteSpace: "nowrap" as const,
+};
+
+// Plaid Link button — unchanged logic, updated style
 function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
   const { toast } = useToast();
   const createToken = useCreatePlaidLinkToken();
@@ -61,7 +66,6 @@ function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
 
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [fetchingToken, setFetchingToken] = useState(false);
-  // pendingOpen: true when we have a token and are waiting for Plaid to be ready
   const [pendingOpen, setPendingOpen] = useState(false);
 
   const { open, ready } = usePlaidLink({
@@ -69,19 +73,12 @@ function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
     onSuccess: async (publicToken, metadata) => {
       const institution = metadata.institution?.name ?? "My Bank";
       try {
-        await exchangeToken.mutateAsync({
-          data: { publicToken, institutionName: institution },
-        });
+        await exchangeToken.mutateAsync({ data: { publicToken, institutionName: institution } });
         toast({ title: `${institution} connected successfully` });
         onSuccess();
       } catch (err: any) {
-        const detail =
-          err?.response?.data?.details?.error_message ?? err?.message ?? "Unknown error";
-        toast({
-          title: "Failed to link bank account",
-          description: detail,
-          variant: "destructive",
-        });
+        const detail = err?.response?.data?.details?.error_message ?? err?.message ?? "Unknown error";
+        toast({ title: "Failed to link bank account", description: detail, variant: "destructive" });
       }
       setLinkToken(null);
       setPendingOpen(false);
@@ -90,20 +87,13 @@ function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
       setLinkToken(null);
       setPendingOpen(false);
       if (err) {
-        toast({
-          title: "Plaid Link exited with error",
-          description: err.display_message ?? err.error_message ?? "Unknown error",
-          variant: "destructive",
-        });
+        toast({ title: "Plaid Link exited with error", description: err.display_message ?? err.error_message ?? "Unknown error", variant: "destructive" });
       }
     },
   });
 
-  // Open Plaid Link as soon as it signals ready (after the token was set)
   useEffect(() => {
-    if (pendingOpen && ready) {
-      open();
-    }
+    if (pendingOpen && ready) open();
   }, [pendingOpen, ready, open]);
 
   const handleClick = async () => {
@@ -111,15 +101,10 @@ function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
     try {
       const result = await createToken.mutateAsync();
       setLinkToken(result.linkToken);
-      setPendingOpen(true); // will open via useEffect once ready fires
+      setPendingOpen(true);
     } catch (err: any) {
-      const detail =
-        err?.response?.data?.error ?? err?.message ?? "Unable to create link token";
-      toast({
-        title: "Could not start bank connection",
-        description: detail,
-        variant: "destructive",
-      });
+      const detail = err?.response?.data?.error ?? err?.message ?? "Unable to create link token";
+      toast({ title: "Could not start bank connection", description: detail, variant: "destructive" });
     } finally {
       setFetchingToken(false);
     }
@@ -128,8 +113,13 @@ function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
   const busy = fetchingToken || exchangeToken.isPending || pendingOpen;
 
   return (
-    <Button variant="outline" onClick={handleClick} disabled={busy}>
-      <Link2 className={`w-4 h-4 mr-2 ${fetchingToken || pendingOpen ? "animate-spin" : ""}`} />
+    <Button
+      size="sm"
+      onClick={handleClick}
+      disabled={busy}
+      style={{ background: "#21262D", color: "#C9D1D9", border: "1px solid #30363D", borderRadius: 2, fontSize: 12 }}
+    >
+      <Link2 className={`w-3.5 h-3.5 mr-1.5 ${(fetchingToken || pendingOpen) ? "animate-spin" : ""}`} />
       {fetchingToken ? "Fetching token…" : pendingOpen ? "Opening…" : "Link Bank (Plaid)"}
     </Button>
   );
@@ -156,7 +146,6 @@ export default function Accounts() {
   );
 
   const openAdd = () => { setForm(EMPTY_FORM); setAddOpen(true); };
-
   const openEdit = (id: number) => {
     const acct = accounts?.find((a) => a.id === id);
     if (!acct) return;
@@ -165,50 +154,29 @@ export default function Accounts() {
   };
 
   const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
+    e.preventDefault(); setSubmitting(true);
     try {
-      await createAccount.mutateAsync({
-        data: { name: form.name, currency: form.currency, balance: parseFloat(form.balance) },
-      });
-      await invalidate();
-      setAddOpen(false);
-      toast({ title: "Account added" });
+      await createAccount.mutateAsync({ data: { name: form.name, currency: form.currency, balance: parseFloat(form.balance) } });
+      await invalidate(); setAddOpen(false); toast({ title: "Account added" });
     } catch (err: any) {
       toast({ title: "Failed to add account", description: err?.message, variant: "destructive" });
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editId === null) return;
-    setSubmitting(true);
+    e.preventDefault(); if (editId === null) return; setSubmitting(true);
     try {
-      await updateAccount.mutateAsync({
-        id: editId,
-        data: { name: form.name, currency: form.currency, balance: parseFloat(form.balance) },
-      });
-      await invalidate();
-      setEditId(null);
-      toast({ title: "Account updated" });
+      await updateAccount.mutateAsync({ id: editId, data: { name: form.name, currency: form.currency, balance: parseFloat(form.balance) } });
+      await invalidate(); setEditId(null); toast({ title: "Account updated" });
     } catch (err: any) {
       toast({ title: "Failed to update account", description: err?.message, variant: "destructive" });
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm("Delete this account?")) return;
-    try {
-      await deleteAccount.mutateAsync({ id });
-      await invalidate();
-      toast({ title: "Account deleted" });
-    } catch (err: any) {
-      toast({ title: "Failed to delete", description: err?.message, variant: "destructive" });
-    }
+    try { await deleteAccount.mutateAsync({ id }); await invalidate(); toast({ title: "Account deleted" }); }
+    catch (err: any) { toast({ title: "Failed to delete", description: err?.message, variant: "destructive" }); }
   };
 
   const handleSync = async () => {
@@ -222,20 +190,14 @@ export default function Accounts() {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48 mb-2" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
+    return <div className="space-y-4"><Skeleton className="h-6 w-48" /><Skeleton className="h-64 w-full" /></div>;
   }
 
   const AccountFormFields = (
     <div className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="acc-name">Account Name</Label>
-        <Input id="acc-name" placeholder="e.g. HSBC Current Account"
-          value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+        <Input id="acc-name" placeholder="e.g. HSBC Current Account" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
       </div>
       <div className="space-y-1.5">
         <Label>Currency</Label>
@@ -251,27 +213,36 @@ export default function Accounts() {
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="acc-balance">Balance</Label>
-        <Input id="acc-balance" type="number" step="0.01" placeholder="0.00"
-          value={form.balance} onChange={(e) => setForm((f) => ({ ...f, balance: e.target.value }))} required />
+        <Input id="acc-balance" type="number" step="0.01" placeholder="0.00" value={form.balance} onChange={(e) => setForm((f) => ({ ...f, balance: e.target.value }))} required />
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+    <div className="space-y-5 animate-in fade-in duration-300">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Accounts</h1>
-          <p className="text-muted-foreground">Manage your cash and linked bank accounts.</p>
+          <h1 className="text-lg font-bold tracking-tight" style={{ color: "#E6EDF3" }}>Accounts</h1>
+          <p className="text-xs mt-0.5" style={{ color: "#484F58" }}>Manage your cash and linked bank accounts</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <PlaidLinkButton onSuccess={invalidate} />
-          <Button variant="outline" onClick={handleSync} disabled={syncPlaid.isPending}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${syncPlaid.isPending ? "animate-spin" : ""}`} />
-            Sync Transactions
+          <Button
+            size="sm"
+            onClick={handleSync}
+            disabled={syncPlaid.isPending}
+            style={{ background: "#21262D", color: "#C9D1D9", border: "1px solid #30363D", borderRadius: 2, fontSize: 12 }}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${syncPlaid.isPending ? "animate-spin" : ""}`} />
+            Sync Plaid
           </Button>
-          <Button onClick={openAdd}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button
+            size="sm"
+            onClick={openAdd}
+            style={{ background: "#1F6FEB", color: "white", border: "none", borderRadius: 2, fontSize: 12 }}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
             Add Account
           </Button>
         </div>
@@ -289,8 +260,7 @@ export default function Accounts() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Add Account</DialogTitle></DialogHeader>
-          <form onSubmit={handleAdd}>
-            {AccountFormFields}
+          <form onSubmit={handleAdd}>{AccountFormFields}
             <DialogFooter className="mt-6">
               <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
               <Button type="submit" disabled={submitting}>{submitting ? "Adding…" : "Add Account"}</Button>
@@ -303,8 +273,7 @@ export default function Accounts() {
       <Dialog open={editId !== null} onOpenChange={(o) => !o && setEditId(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit Account</DialogTitle></DialogHeader>
-          <form onSubmit={handleEdit}>
-            {AccountFormFields}
+          <form onSubmit={handleEdit}>{AccountFormFields}
             <DialogFooter className="mt-6">
               <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
               <Button type="submit" disabled={submitting}>{submitting ? "Saving…" : "Save Changes"}</Button>
@@ -313,56 +282,99 @@ export default function Accounts() {
         </DialogContent>
       </Dialog>
 
-      <div className="rounded-md border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>Account</TableHead>
-              <TableHead>Balance (Native)</TableHead>
-              <TableHead className="text-right">Balance (GBP)</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {accounts?.map((account) => (
-              <TableRow key={account.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center">
-                      <Landmark className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{account.name}</p>
-                      {account.isPlaidLinked && (
-                        <p className="text-xs text-primary flex items-center gap-1">
-                          <Link2 className="w-3 h-3" />
-                          Plaid synced {account.lastSyncedAt ? formatDate(account.lastSyncedAt) : ""}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>{formatNative(account.balance, account.currency)}</TableCell>
-                <TableCell className="text-right font-medium">{formatGbp(account.gbpEquivalent)}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(account.id)}>
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(account.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {accounts?.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                  No accounts found. Add one manually or link via Plaid.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      {/* Accounts spreadsheet table */}
+      <div className="border" style={{ borderColor: "#21262D" }}>
+        <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "#3FB95022", borderColor: "#3FB95044", color: "#3FB950" }}>
+          ▼ CASH ACCOUNTS — Multi-Currency (GBP Base)
+        </div>
+
+        {/* Column headers */}
+        <div className="flex" style={{ marginLeft: 36 }}>
+          {[["ACCOUNT NAME", "1"], ["TYPE", "100px"], ["CURRENCY", "90px"], ["BALANCE (NATIVE)", "160px"], ["BALANCE (GBP)", "130px"], ["LAST SYNC", "120px"], ["ACTIONS", "90px"]].map(([h, w]) => (
+            <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["BALANCE (NATIVE)", "BALANCE (GBP)", "ACTIONS"].includes(h as string) ? "right" : "left" }}>
+              {h}
+            </div>
+          ))}
+        </div>
+
+        {/* Account rows */}
+        {accounts?.map((account, i) => (
+          <div
+            key={account.id}
+            className="flex items-center border-b xls-row"
+            style={{ borderColor: "rgba(33,38,45,0.5)", background: i % 2 === 0 ? "#0D1117" : "#0D1117" }}
+          >
+            <div className="flex-shrink-0 flex items-center justify-center text-xs border-r" style={{ width: 36, color: "#484F58", borderColor: "#21262D", alignSelf: "stretch" }}>
+              {i + 2}
+            </div>
+            {/* Name */}
+            <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid #21262D" }}>
+              <div className="flex items-center gap-2">
+                <Landmark className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#484F58" }} />
+                <span style={{ color: "#E6EDF3", fontSize: 12 }}>{account.name}</span>
+                {account.isPlaidLinked && (
+                  <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: "#1F6FEB22", color: "#58A6FF" }}>
+                    <Link2 className="w-2.5 h-2.5 inline mr-0.5" />PLAID
+                  </span>
+                )}
+              </div>
+            </div>
+            {/* Type */}
+            <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#8B949E", fontSize: 11 }}>
+              {account.isPlaidLinked ? "Plaid-linked" : "Manual"}
+            </div>
+            {/* Currency */}
+            <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#58A6FF", fontSize: 12, fontWeight: 700 }}>
+              {account.currency}
+            </div>
+            {/* Native balance */}
+            <div style={{ width: 160, minWidth: 160, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#C9D1D9", fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+              {formatNative(account.balance, account.currency)}
+            </div>
+            {/* GBP balance */}
+            <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#3FB950", fontSize: 12, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+              {formatGbp(account.gbpEquivalent)}
+            </div>
+            {/* Last sync */}
+            <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#484F58", fontSize: 11 }}>
+              {account.lastSyncedAt ? formatDate(account.lastSyncedAt) : "—"}
+            </div>
+            {/* Actions */}
+            <div style={{ width: 90, minWidth: 90, padding: "4px 6px", display: "flex", justifyContent: "flex-end", gap: 2 }}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(account.id)}>
+                <Edit2 className="w-3.5 h-3.5" style={{ color: "#8B949E" }} />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(account.id)}>
+                <Trash2 className="w-3.5 h-3.5" style={{ color: "#F85149" }} />
+              </Button>
+            </div>
+          </div>
+        ))}
+
+        {accounts?.length === 0 && (
+          <div className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
+            <div style={{ width: 36, borderRight: "1px solid #21262D", alignSelf: "stretch" }} />
+            <div className="flex-1 text-center py-8 text-xs" style={{ color: "#484F58" }}>
+              No accounts yet — add one manually or link via Plaid.
+            </div>
+          </div>
+        )}
+
+        {/* Total row */}
+        {(accounts?.length ?? 0) > 0 && (
+          <div className="flex items-center border-t" style={{ background: "rgba(63,185,80,0.04)", borderColor: "#30363D" }}>
+            <div style={{ width: 36, borderRight: "1px solid #21262D", alignSelf: "stretch" }} />
+            <div style={{ flex: 1, padding: "6px 12px", borderRight: "1px solid #21262D", color: "#6E7681", fontSize: 10, fontWeight: 700 }}>TOTAL CASH</div>
+            <div style={{ width: 100, minWidth: 100, borderRight: "1px solid #21262D" }} />
+            <div style={{ width: 90, minWidth: 90, borderRight: "1px solid #21262D", padding: "6px 12px", color: "#484F58", fontSize: 10 }}>GBP</div>
+            <div style={{ width: 160, minWidth: 160, borderRight: "1px solid #21262D" }} />
+            <div style={{ width: 130, minWidth: 130, padding: "6px 12px", color: "#3FB950", fontSize: 12, fontWeight: 700, textAlign: "right", fontVariantNumeric: "tabular-nums", borderRight: "1px solid #21262D" }}>
+              {formatGbp(accounts?.reduce((sum, a) => sum + a.gbpEquivalent, 0) ?? 0)}
+            </div>
+            <div style={{ width: 120, minWidth: 120, borderRight: "1px solid #21262D" }} />
+            <div style={{ width: 90, minWidth: 90 }} />
+          </div>
+        )}
       </div>
     </div>
   );
