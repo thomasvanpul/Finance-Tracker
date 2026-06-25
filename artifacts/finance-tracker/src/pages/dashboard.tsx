@@ -14,21 +14,23 @@ function MetricCard({
 }: {
   title: string;
   value: string;
-  subtitle?: React.ReactNode;
-  icon?: any;
-  trend?: "up" | "down" | "neutral";
+  subtitle?: string;
+  icon: React.ElementType;
+  trend?: "up" | "down";
 }) {
   return (
-    <Card className="bg-card/50 border-card-border/50 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        {Icon && <Icon className="w-4 h-4 text-muted-foreground" />}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold tracking-tight text-foreground">{value}</div>
+    <Card className="bg-card/50 border-card-border/50">
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center">
+            <Icon className="w-4 h-4 text-muted-foreground" />
+          </div>
+        </div>
+        <p className="text-2xl font-bold text-foreground">{value}</p>
         {subtitle && (
           <p
-            className={`text-xs mt-1 font-medium ${
+            className={`text-xs mt-1 ${
               trend === "up"
                 ? "text-success"
                 : trend === "down"
@@ -47,22 +49,21 @@ function MetricCard({
 export default function Dashboard() {
   const { data: dashboard, isLoading, isError, error } = useGetDashboard();
 
-  if (isLoading || (!dashboard && !isError)) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div>
           <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-4 w-72" />
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <Skeleton className="h-4 w-24 mb-4" />
-                <Skeleton className="h-8 w-32" />
-              </CardContent>
-            </Card>
+            <Skeleton key={i} className="h-32 w-full" />
           ))}
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
         </div>
       </div>
     );
@@ -75,123 +76,137 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Your financial overview at a glance.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          title="Net Liquidity"
-          value={formatGbp(dashboard.netLiquidity)}
-          icon={Wallet}
-        />
-        <MetricCard
-          title="Net Worth"
-          value={formatGbp(dashboard.netWorth)}
-          icon={Landmark}
-        />
-        <MetricCard
-          title="Total Cash"
-          value={formatGbp(dashboard.totalCash)}
-          subtitle={`${dashboard.accountBreakdown.length} Accounts connected`}
-          icon={Wallet}
-        />
-        <MetricCard
-          title="Portfolio Value"
-          value={formatGbp(dashboard.portfolio.totalValueGbp)}
-          subtitle={`${formatGbp(dashboard.portfolio.totalPlGbp)} (${formatPercent(
-            dashboard.portfolio.totalPlPercent
-          )})`}
-          trend={dashboard.portfolio.totalPlGbp >= 0 ? "up" : "down"}
-          icon={LineChart}
-        />
-      </div>
+      {isError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Failed to load dashboard</AlertTitle>
+          <AlertDescription>
+            {(error as any)?.message ?? "Could not reach the server. Check your connection."}
+          </AlertDescription>
+        </Alert>
+      )}
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="bg-card/50 border-card-border/50">
-          <CardHeader>
-            <CardTitle>Cash Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {dashboard.accountBreakdown.map((account) => (
-                <div key={account.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center">
-                      <Landmark className="w-4 h-4 text-muted-foreground" />
+      {dashboard && (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Net Liquidity"
+              value={formatGbp(dashboard.netLiquidity)}
+              icon={Wallet}
+            />
+            <MetricCard
+              title="Net Worth"
+              value={formatGbp(dashboard.netWorth)}
+              icon={Landmark}
+            />
+            <MetricCard
+              title="Total Cash"
+              value={formatGbp(dashboard.totalCash)}
+              subtitle={`${dashboard.accountBreakdown.length} Accounts connected`}
+              icon={Wallet}
+            />
+            <MetricCard
+              title="Portfolio Value"
+              value={formatGbp(dashboard.portfolio.totalValueGbp)}
+              subtitle={`${formatGbp(dashboard.portfolio.totalPlGbp)} (${formatPercent(
+                dashboard.portfolio.totalPlPercent
+              )})`}
+              trend={dashboard.portfolio.totalPlGbp >= 0 ? "up" : "down"}
+              icon={LineChart}
+            />
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="bg-card/50 border-card-border/50">
+              <CardHeader>
+                <CardTitle>Cash Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {dashboard.accountBreakdown.map((account) => (
+                    <div key={account.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center">
+                          <Landmark className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium leading-none">{account.name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Intl.NumberFormat("en-GB", {
+                              style: "currency",
+                              currency: account.currency,
+                            }).format(account.balance)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-sm font-medium">{formatGbp(account.gbpEquivalent)}</div>
                     </div>
+                  ))}
+                  {dashboard.accountBreakdown.length === 0 && (
+                    <div className="text-sm text-muted-foreground text-center py-4">
+                      No accounts added yet.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card/50 border-card-border/50">
+              <CardHeader>
+                <CardTitle>This Month</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
+                        <ArrowDownRight className="w-5 h-5 text-success" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium leading-none">Income</p>
+                      </div>
+                    </div>
+                    <div className="text-lg font-bold text-success">
+                      +{formatGbp(dashboard.thisMonth.income)}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                        <ArrowUpRight className="w-5 h-5 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium leading-none">Expenses</p>
+                      </div>
+                    </div>
+                    <div className="text-lg font-bold text-destructive">
+                      -{formatGbp(dashboard.thisMonth.expenses)}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-border flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium leading-none">{account.name}</p>
+                      <p className="text-sm font-medium leading-none">Net Savings</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {new Intl.NumberFormat("en-GB", {
-                          style: "currency",
-                          currency: account.currency,
-                        }).format(account.balance)}
+                        {formatPercent(dashboard.thisMonth.savingsRate)} savings rate
                       </p>
                     </div>
-                  </div>
-                  <div className="text-sm font-medium">{formatGbp(account.gbpEquivalent)}</div>
-                </div>
-              ))}
-              {dashboard.accountBreakdown.length === 0 && (
-                <div className="text-sm text-muted-foreground text-center py-4">
-                  No accounts added yet.
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card/50 border-card-border/50">
-          <CardHeader>
-            <CardTitle>This Month</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
-                    <ArrowDownRight className="w-5 h-5 text-success" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium leading-none">Income</p>
+                    <div
+                      className={`text-xl font-bold ${
+                        dashboard.thisMonth.netSavings >= 0 ? "text-success" : "text-destructive"
+                      }`}
+                    >
+                      {dashboard.thisMonth.netSavings > 0 ? "+" : ""}
+                      {formatGbp(dashboard.thisMonth.netSavings)}
+                    </div>
                   </div>
                 </div>
-                <div className="text-lg font-bold text-success">
-                  +{formatGbp(dashboard.thisMonth.income)}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
-                    <ArrowUpRight className="w-5 h-5 text-destructive" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium leading-none">Expenses</p>
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-destructive">
-                  -{formatGbp(dashboard.thisMonth.expenses)}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium leading-none">Net Savings</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formatPercent(dashboard.thisMonth.savingsRate)} savings rate
-                  </p>
-                </div>
-                <div
-                  className={`text-xl font-bold ${
-                    dashboard.thisMonth.netSavings >= 0 ? "text-success" : "text-destructive"
-                  }`}
-                >
-                  {dashboard.thisMonth.netSavings > 0 ? "+" : ""}
-                  {formatGbp(dashboard.thisMonth.netSavings)}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -303,6 +303,14 @@ export default function Upcoming() {
         </Button>
       </div>
 
+      {(isError || isSummaryError) && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Failed to load upcoming items</AlertTitle>
+          <AlertDescription>{(error as any)?.message ?? "Could not reach the server. Check your connection."}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Add Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
