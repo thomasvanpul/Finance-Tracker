@@ -16,4 +16,5 @@ export interface DebtInput {
   currency: DebtInputCurrency;
   direction: DebtInputDirection;
   notes?: string;
+  accountId?: number;
 }

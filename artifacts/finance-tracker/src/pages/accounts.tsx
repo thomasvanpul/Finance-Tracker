@@ -35,7 +35,7 @@ import { Plus, RefreshCw, Trash2, Edit2, Landmark, Link2, AlertCircle } from "lu
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
-type Currency = "GBP" | "USD" | "MYR" | "CNY";
+type Currency = "GBP" | "USD" | "EUR" | "MYR" | "CNY" | "JPY" | "AUD" | "CAD" | "SGD" | "HKD" | "THB" | "INR";
 
 interface AccountForm {
   name: string;
@@ -206,8 +206,16 @@ export default function Accounts() {
           <SelectContent>
             <SelectItem value="GBP">GBP — British Pound</SelectItem>
             <SelectItem value="USD">USD — US Dollar</SelectItem>
+            <SelectItem value="EUR">EUR — Euro</SelectItem>
             <SelectItem value="MYR">MYR — Malaysian Ringgit</SelectItem>
             <SelectItem value="CNY">CNY — Chinese Yuan</SelectItem>
+            <SelectItem value="JPY">JPY — Japanese Yen</SelectItem>
+            <SelectItem value="AUD">AUD — Australian Dollar</SelectItem>
+            <SelectItem value="CAD">CAD — Canadian Dollar</SelectItem>
+            <SelectItem value="SGD">SGD — Singapore Dollar</SelectItem>
+            <SelectItem value="HKD">HKD — Hong Kong Dollar</SelectItem>
+            <SelectItem value="THB">THB — Thai Baht</SelectItem>
+            <SelectItem value="INR">INR — Indian Rupee</SelectItem>
           </SelectContent>
         </Select>
       </div>

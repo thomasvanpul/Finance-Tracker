@@ -14,6 +14,7 @@ import {
   GenerateInstallmentsBody,
 } from "@workspace/api-zod";
 import { toGbp } from "../lib/market";
+import { adjustAccountBalance } from "../lib/balance";
 
 const router: IRouter = Router();
 
@@ -135,16 +136,20 @@ router.post("/upcoming/:id/pay", async (req, res): Promise<void> => {
     .returning();
 
   // Auto-log to transactions
+  const targetAccountId = item.accountId ?? 1;
   await db.insert(transactionsTable).values({
     date: item.dueDate,
     description: item.description,
     type: item.type,
     category: item.category,
-    accountId: item.accountId ?? 1,
+    accountId: targetAccountId,
     nativeAmount: item.nativeAmount,
     currency: item.currency,
     source: "manual",
   });
+
+  // Adjust account balance
+  await adjustAccountBalance(targetAccountId, parseFloat(item.nativeAmount), item.currency, item.type);
 
   const accounts = await db.select({ id: accountsTable.id, name: accountsTable.name }).from(accountsTable);
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));

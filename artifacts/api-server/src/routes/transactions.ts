@@ -13,6 +13,7 @@ import {
   GetTransactionSummaryResponse,
 } from "@workspace/api-zod";
 import { toGbp } from "../lib/market";
+import { adjustAccountBalance } from "../lib/balance";
 
 const router: IRouter = Router();
 
@@ -75,6 +76,8 @@ router.post("/transactions", async (req, res): Promise<void> => {
     .insert(transactionsTable)
     .values({ ...parsed.data, nativeAmount: String(parsed.data.nativeAmount) })
     .returning();
+
+  await adjustAccountBalance(parsed.data.accountId, parsed.data.nativeAmount, parsed.data.currency, parsed.data.type);
 
   const accounts = await db.select({ id: accountsTable.id, name: accountsTable.name }).from(accountsTable);
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
@@ -164,6 +167,8 @@ router.delete("/transactions/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Transaction not found" });
     return;
   }
+  // Reverse the balance adjustment
+  await adjustAccountBalance(tx.accountId, parseFloat(tx.nativeAmount), tx.currency, tx.type, true);
   res.sendStatus(204);
 });
 

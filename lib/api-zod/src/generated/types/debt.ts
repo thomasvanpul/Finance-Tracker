@@ -20,6 +20,8 @@ export interface Debt {
   status: DebtStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  accountId?: number | null;
   gbpEquivalent: number;
   createdAt: string;
 }

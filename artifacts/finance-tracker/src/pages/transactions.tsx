@@ -8,6 +8,8 @@ import {
   useListAccounts,
   getListTransactionsQueryKey,
   getGetTransactionSummaryQueryKey,
+  getListAccountsQueryKey,
+  getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,7 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
 type TxType = "income" | "expense" | "transfer";
-type Currency = "GBP" | "USD" | "MYR" | "CNY";
+type Currency = "GBP" | "USD" | "EUR" | "MYR" | "CNY" | "JPY" | "AUD" | "CAD" | "SGD" | "HKD" | "THB" | "INR";
 
 interface TxForm {
   date: string;
@@ -84,6 +86,8 @@ export default function Transactions() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getListTransactionsQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetTransactionSummaryQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListAccountsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
   };
 
   const openAdd = () => {
@@ -190,8 +194,16 @@ export default function Transactions() {
                     <SelectContent>
                       <SelectItem value="GBP">GBP</SelectItem>
                       <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
                       <SelectItem value="MYR">MYR</SelectItem>
                       <SelectItem value="CNY">CNY</SelectItem>
+                      <SelectItem value="JPY">JPY</SelectItem>
+                      <SelectItem value="AUD">AUD</SelectItem>
+                      <SelectItem value="CAD">CAD</SelectItem>
+                      <SelectItem value="SGD">SGD</SelectItem>
+                      <SelectItem value="HKD">HKD</SelectItem>
+                      <SelectItem value="THB">THB</SelectItem>
+                      <SelectItem value="INR">INR</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

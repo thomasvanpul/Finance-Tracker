@@ -12,6 +12,14 @@ export type DebtCurrency = typeof DebtCurrency[keyof typeof DebtCurrency];
 export const DebtCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;

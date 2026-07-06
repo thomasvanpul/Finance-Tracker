@@ -643,7 +643,7 @@ components:
           type: string
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         balance:
           type: number
         gbpEquivalent:
@@ -667,7 +667,7 @@ components:
           type: string
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         balance:
           type: number
 
@@ -678,7 +678,7 @@ components:
           type: string
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         balance:
           type: number
 
@@ -796,7 +796,7 @@ components:
           type: number
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         gbpEquivalent:
           type: number
         accountId:
@@ -826,7 +826,7 @@ components:
           type: number
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         accountId:
           type: ["integer", "null"]
 
@@ -852,7 +852,7 @@ components:
           type: number
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         accountId:
           type: ["integer", "null"]
 
@@ -877,7 +877,7 @@ components:
           type: number
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         numberOfMonths:
           type: integer
         startDate:
@@ -976,7 +976,7 @@ components:
           type: number
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         direction:
           type: string
           enum: [i_owe_them, they_owe_me]
@@ -985,6 +985,8 @@ components:
           enum: [pending, settled]
         notes:
           type: ["string", "null"]
+        accountId:
+          type: ["integer", "null"]
         gbpEquivalent:
           type: number
         createdAt:
@@ -1004,12 +1006,14 @@ components:
           type: number
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         direction:
           type: string
           enum: [i_owe_them, they_owe_me]
         notes:
           type: string
+        accountId:
+          type: integer
 
     DebtUpdate:
       type: object
@@ -1024,7 +1028,7 @@ components:
           type: number
         currency:
           type: string
-          enum: [GBP, USD, MYR, CNY]
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         direction:
           type: string
           enum: [i_owe_them, they_owe_me]
@@ -1033,6 +1037,8 @@ components:
           enum: [pending, settled]
         notes:
           type: string
+        accountId:
+          type: integer
 
     DebtSummary:
       type: object

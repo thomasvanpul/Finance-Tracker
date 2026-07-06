@@ -56,7 +56,7 @@ export const GetDashboardResponse = zod.object({
 export const ListAccountsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
   "gbpEquivalent": zod.number(),
   "isPlaidLinked": zod.boolean(),
@@ -73,7 +73,7 @@ export const ListAccountsResponse = zod.array(ListAccountsResponseItem)
  */
 export const CreateAccountBody = zod.object({
   "name": zod.string(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number()
 })
 
@@ -87,14 +87,14 @@ export const UpdateAccountParams = zod.object({
 
 export const UpdateAccountBody = zod.object({
   "name": zod.string().optional(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']).optional(),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']).optional(),
   "balance": zod.number().optional()
 })
 
 export const UpdateAccountResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
   "gbpEquivalent": zod.number(),
   "isPlaidLinked": zod.boolean(),
@@ -226,7 +226,7 @@ export const ListUpcomingResponseItem = zod.object({
   "frequency": zod.enum(['one-time', 'weekly', 'monthly', 'quarterly', 'yearly']),
   "status": zod.enum(['pending', 'paid', 'skipped']),
   "nativeAmount": zod.number(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "gbpEquivalent": zod.number(),
   "accountId": zod.number().nullish(),
   "accountName": zod.string().nullish(),
@@ -245,7 +245,7 @@ export const CreateUpcomingItemBody = zod.object({
   "type": zod.enum(['income', 'expense']),
   "frequency": zod.enum(['one-time', 'weekly', 'monthly', 'quarterly', 'yearly']),
   "nativeAmount": zod.number(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "accountId": zod.number().nullish()
 })
 
@@ -266,7 +266,7 @@ export const GenerateInstallmentsBody = zod.object({
   "description": zod.string(),
   "category": zod.string(),
   "totalAmount": zod.number(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "numberOfMonths": zod.number(),
   "startDate": zod.string(),
   "accountId": zod.number().nullish()
@@ -288,7 +288,7 @@ export const UpdateUpcomingItemBody = zod.object({
   "frequency": zod.enum(['one-time', 'weekly', 'monthly', 'quarterly', 'yearly']).optional(),
   "status": zod.enum(['pending', 'paid', 'skipped']).optional(),
   "nativeAmount": zod.number().optional(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']).optional(),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']).optional(),
   "accountId": zod.number().nullish()
 })
 
@@ -301,7 +301,7 @@ export const UpdateUpcomingItemResponse = zod.object({
   "frequency": zod.enum(['one-time', 'weekly', 'monthly', 'quarterly', 'yearly']),
   "status": zod.enum(['pending', 'paid', 'skipped']),
   "nativeAmount": zod.number(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "gbpEquivalent": zod.number(),
   "accountId": zod.number().nullish(),
   "accountName": zod.string().nullish(),
@@ -333,7 +333,7 @@ export const PayUpcomingItemResponse = zod.object({
   "frequency": zod.enum(['one-time', 'weekly', 'monthly', 'quarterly', 'yearly']),
   "status": zod.enum(['pending', 'paid', 'skipped']),
   "nativeAmount": zod.number(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "gbpEquivalent": zod.number(),
   "accountId": zod.number().nullish(),
   "accountName": zod.string().nullish(),
@@ -434,10 +434,11 @@ export const ListDebtsResponseItem = zod.object({
   "description": zod.string(),
   "date": zod.string(),
   "nativeAmount": zod.number(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "direction": zod.enum(['i_owe_them', 'they_owe_me']),
   "status": zod.enum(['pending', 'settled']),
   "notes": zod.string().nullish(),
+  "accountId": zod.number().nullish(),
   "gbpEquivalent": zod.number(),
   "createdAt": zod.string()
 })
@@ -452,9 +453,10 @@ export const CreateDebtBody = zod.object({
   "description": zod.string(),
   "date": zod.string(),
   "nativeAmount": zod.number(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "direction": zod.enum(['i_owe_them', 'they_owe_me']),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "accountId": zod.number().optional()
 })
 
 
@@ -481,10 +483,11 @@ export const UpdateDebtBody = zod.object({
   "description": zod.string().optional(),
   "date": zod.string().optional(),
   "nativeAmount": zod.number().optional(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']).optional(),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']).optional(),
   "direction": zod.enum(['i_owe_them', 'they_owe_me']).optional(),
   "status": zod.enum(['pending', 'settled']).optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "accountId": zod.number().optional()
 })
 
 export const UpdateDebtResponse = zod.object({
@@ -493,10 +496,11 @@ export const UpdateDebtResponse = zod.object({
   "description": zod.string(),
   "date": zod.string(),
   "nativeAmount": zod.number(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "direction": zod.enum(['i_owe_them', 'they_owe_me']),
   "status": zod.enum(['pending', 'settled']),
   "notes": zod.string().nullish(),
+  "accountId": zod.number().nullish(),
   "gbpEquivalent": zod.number(),
   "createdAt": zod.string()
 })
@@ -523,10 +527,11 @@ export const SettleDebtResponse = zod.object({
   "description": zod.string(),
   "date": zod.string(),
   "nativeAmount": zod.number(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "direction": zod.enum(['i_owe_them', 'they_owe_me']),
   "status": zod.enum(['pending', 'settled']),
   "notes": zod.string().nullish(),
+  "accountId": zod.number().nullish(),
   "gbpEquivalent": zod.number(),
   "createdAt": zod.string()
 })
@@ -577,7 +582,7 @@ export const ExchangePlaidTokenBody = zod.object({
 export const ExchangePlaidTokenResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
   "gbpEquivalent": zod.number(),
   "isPlaidLinked": zod.boolean(),

@@ -6,8 +6,11 @@ import {
   useCreateUpcomingItem,
   useDeleteUpcomingItem,
   useUpdateUpcomingItem,
+  useListAccounts,
   getListUpcomingQueryKey,
   getGetUpcomingSummaryQueryKey,
+  getListAccountsQueryKey,
+  getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { formatGbp, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,7 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type UpType = "income" | "expense";
 type Freq = "one-time" | "weekly" | "monthly" | "quarterly" | "yearly";
-type Currency = "GBP" | "USD" | "MYR" | "CNY";
+type Currency = "GBP" | "USD" | "EUR" | "MYR" | "CNY" | "JPY" | "AUD" | "CAD" | "SGD" | "HKD" | "THB" | "INR";
 type Status = "pending" | "paid" | "skipped";
 
 interface UpForm {
@@ -46,10 +49,11 @@ interface UpForm {
   frequency: Freq;
   nativeAmount: string;
   currency: Currency;
+  accountId: string;
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const EMPTY_FORM: UpForm = { dueDate: today, description: "", category: "", type: "expense", frequency: "monthly", nativeAmount: "", currency: "GBP" };
+const EMPTY_FORM: UpForm = { dueDate: today, description: "", category: "", type: "expense", frequency: "monthly", nativeAmount: "", currency: "GBP", accountId: "" };
 
 const TH: React.CSSProperties = {
   padding: "6px 12px",
@@ -84,23 +88,27 @@ export default function Upcoming() {
   const [form, setForm] = useState<UpForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
+  const { data: accounts } = useListAccounts();
+
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getListUpcomingQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetUpcomingSummaryQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListAccountsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
   };
 
   const openAdd = () => { setForm(EMPTY_FORM); setAddOpen(true); };
   const openEdit = (id: number) => {
     const item = upcoming?.find((i) => i.id === id);
     if (!item) return;
-    setForm({ dueDate: item.dueDate, description: item.description, category: item.category, type: item.type as UpType, frequency: item.frequency as Freq, nativeAmount: String(item.nativeAmount), currency: item.currency as Currency });
+    setForm({ dueDate: item.dueDate, description: item.description, category: item.category, type: item.type as UpType, frequency: item.frequency as Freq, nativeAmount: String(item.nativeAmount), currency: item.currency as Currency, accountId: item.accountId ? String(item.accountId) : "" });
     setEditId(id);
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
-      await createItem.mutateAsync({ data: { dueDate: form.dueDate, description: form.description, category: form.category, type: form.type, frequency: form.frequency, nativeAmount: parseFloat(form.nativeAmount), currency: form.currency } });
+      await createItem.mutateAsync({ data: { dueDate: form.dueDate, description: form.description, category: form.category, type: form.type, frequency: form.frequency, nativeAmount: parseFloat(form.nativeAmount), currency: form.currency, accountId: form.accountId ? parseInt(form.accountId) : undefined } });
       invalidate(); setAddOpen(false); toast({ title: "Item added" });
     } catch { toast({ title: "Failed to add item", variant: "destructive" }); }
     finally { setSubmitting(false); }
@@ -109,7 +117,7 @@ export default function Upcoming() {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault(); if (editId === null) return; setSubmitting(true);
     try {
-      await updateItem.mutateAsync({ id: editId, data: { dueDate: form.dueDate, description: form.description, category: form.category, type: form.type, frequency: form.frequency, nativeAmount: parseFloat(form.nativeAmount), currency: form.currency } });
+      await updateItem.mutateAsync({ id: editId, data: { dueDate: form.dueDate, description: form.description, category: form.category, type: form.type, frequency: form.frequency, nativeAmount: parseFloat(form.nativeAmount), currency: form.currency, accountId: form.accountId ? parseInt(form.accountId) : undefined } });
       invalidate(); setEditId(null); toast({ title: "Item updated" });
     } catch { toast({ title: "Failed to update item", variant: "destructive" }); }
     finally { setSubmitting(false); }
@@ -171,6 +179,22 @@ export default function Upcoming() {
           </SelectContent>
         </Select>
       </div>
+      <div className="space-y-1.5">
+        <Label>Account <span className="text-xs" style={{ color: "#6E7681" }}>(optional)</span></Label>
+        <Select
+          value={form.accountId || "__none__"}
+          onValueChange={(v) => {
+            const acct = accounts?.find((a) => String(a.id) === v);
+            setForm((f) => ({ ...f, accountId: v === "__none__" ? "" : v, currency: acct ? (acct.currency as Currency) : f.currency }));
+          }}
+        >
+          <SelectTrigger><SelectValue placeholder="No account" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">No account linked</SelectItem>
+            {accounts?.map((a) => <SelectItem key={a.id} value={String(a.id)}>{a.name} ({a.currency})</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="up-amount">Amount</Label>
@@ -183,8 +207,16 @@ export default function Upcoming() {
             <SelectContent>
               <SelectItem value="GBP">GBP</SelectItem>
               <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="EUR">EUR</SelectItem>
               <SelectItem value="MYR">MYR</SelectItem>
               <SelectItem value="CNY">CNY</SelectItem>
+              <SelectItem value="JPY">JPY</SelectItem>
+              <SelectItem value="AUD">AUD</SelectItem>
+              <SelectItem value="CAD">CAD</SelectItem>
+              <SelectItem value="SGD">SGD</SelectItem>
+              <SelectItem value="HKD">HKD</SelectItem>
+              <SelectItem value="THB">THB</SelectItem>
+              <SelectItem value="INR">INR</SelectItem>
             </SelectContent>
           </Select>
         </div>

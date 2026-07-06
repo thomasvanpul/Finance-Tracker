@@ -12,6 +12,14 @@ export type AccountUpdateCurrency = typeof AccountUpdateCurrency[keyof typeof Ac
 export const AccountUpdateCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;

@@ -11,6 +11,7 @@ import {
   GetDebtSummaryResponse,
 } from "@workspace/api-zod";
 import { toGbp } from "../lib/market";
+import { adjustAccountBalance } from "../lib/balance";
 
 const router: IRouter = Router();
 
@@ -27,6 +28,7 @@ async function enrichDebt(item: typeof debtsTable.$inferSelect) {
     direction: item.direction,
     status: item.status,
     notes: item.notes ?? null,
+    accountId: item.accountId ?? null,
     gbpEquivalent: Math.round(gbpEquivalent * 100) / 100,
     createdAt: item.createdAt.toISOString(),
   };
@@ -84,6 +86,12 @@ router.post("/debts/:id/settle", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  // Fetch the debt before updating so we know accountId and direction
+  const [existing] = await db.select().from(debtsTable).where(eq(debtsTable.id, params.data.id));
+  if (!existing) {
+    res.status(404).json({ error: "Debt not found" });
+    return;
+  }
   const [item] = await db
     .update(debtsTable)
     .set({ status: "settled" })
@@ -92,6 +100,14 @@ router.post("/debts/:id/settle", async (req, res): Promise<void> => {
   if (!item) {
     res.status(404).json({ error: "Debt not found" });
     return;
+  }
+  // If the debt has a linked account, adjust its balance
+  if (existing.accountId) {
+    const nativeAmount = parseFloat(existing.nativeAmount);
+    // i_owe_them: I paid → expense (balance goes down)
+    // they_owe_me: I received → income (balance goes up)
+    const txType = existing.direction === "i_owe_them" ? "expense" : "income";
+    await adjustAccountBalance(existing.accountId, nativeAmount, existing.currency, txType);
   }
   const enriched = await enrichDebt(item);
   res.json(enriched);

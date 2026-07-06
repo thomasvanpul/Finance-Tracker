@@ -15,8 +15,16 @@ export type AccountCurrency = typeof AccountCurrency[keyof typeof AccountCurrenc
 export const AccountCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export interface Account {
@@ -41,8 +49,16 @@ export type AccountInputCurrency = typeof AccountInputCurrency[keyof typeof Acco
 export const AccountInputCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export interface AccountInput {
@@ -57,8 +73,16 @@ export type AccountUpdateCurrency = typeof AccountUpdateCurrency[keyof typeof Ac
 export const AccountUpdateCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export interface AccountUpdate {
@@ -181,8 +205,16 @@ export type UpcomingItemCurrency = typeof UpcomingItemCurrency[keyof typeof Upco
 export const UpcomingItemCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export interface UpcomingItem {
@@ -228,8 +260,16 @@ export type UpcomingItemInputCurrency = typeof UpcomingItemInputCurrency[keyof t
 export const UpcomingItemInputCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export interface UpcomingItemInput {
@@ -278,8 +318,16 @@ export type UpcomingItemUpdateCurrency = typeof UpcomingItemUpdateCurrency[keyof
 export const UpcomingItemUpdateCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export interface UpcomingItemUpdate {
@@ -306,8 +354,16 @@ export type InstallmentInputCurrency = typeof InstallmentInputCurrency[keyof typ
 export const InstallmentInputCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export interface InstallmentInput {
@@ -366,8 +422,16 @@ export type DebtCurrency = typeof DebtCurrency[keyof typeof DebtCurrency];
 export const DebtCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export type DebtDirection = typeof DebtDirection[keyof typeof DebtDirection];
@@ -397,6 +461,8 @@ export interface Debt {
   status: DebtStatus;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  accountId?: number | null;
   gbpEquivalent: number;
   createdAt: string;
 }
@@ -407,8 +473,16 @@ export type DebtInputCurrency = typeof DebtInputCurrency[keyof typeof DebtInputC
 export const DebtInputCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export type DebtInputDirection = typeof DebtInputDirection[keyof typeof DebtInputDirection];
@@ -427,6 +501,7 @@ export interface DebtInput {
   currency: DebtInputCurrency;
   direction: DebtInputDirection;
   notes?: string;
+  accountId?: number;
 }
 
 export type DebtUpdateCurrency = typeof DebtUpdateCurrency[keyof typeof DebtUpdateCurrency];
@@ -435,8 +510,16 @@ export type DebtUpdateCurrency = typeof DebtUpdateCurrency[keyof typeof DebtUpda
 export const DebtUpdateCurrency = {
   GBP: 'GBP',
   USD: 'USD',
+  EUR: 'EUR',
   MYR: 'MYR',
   CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
 } as const;
 
 export type DebtUpdateDirection = typeof DebtUpdateDirection[keyof typeof DebtUpdateDirection];
@@ -464,6 +547,7 @@ export interface DebtUpdate {
   direction?: DebtUpdateDirection;
   status?: DebtUpdateStatus;
   notes?: string;
+  accountId?: number;
 }
 
 export interface DebtSummary {

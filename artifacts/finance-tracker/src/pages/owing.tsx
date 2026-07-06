@@ -6,8 +6,11 @@ import {
   useCreateDebt,
   useSettleDebt,
   useDeleteDebt,
+  useListAccounts,
   getListDebtsQueryKey,
   getGetDebtSummaryQueryKey,
+  getListAccountsQueryKey,
+  getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,7 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
 type Direction = "i_owe_them" | "they_owe_me";
-type Currency = "GBP" | "USD" | "MYR" | "CNY";
+type Currency = "GBP" | "USD" | "EUR" | "MYR" | "CNY" | "JPY" | "AUD" | "CAD" | "SGD" | "HKD" | "THB" | "INR";
 
 interface DebtForm {
   personName: string;
@@ -44,6 +47,7 @@ interface DebtForm {
   currency: Currency;
   direction: Direction;
   notes: string;
+  accountId: string;
 }
 
 const today = new Date().toISOString().slice(0, 10);
@@ -55,6 +59,7 @@ const EMPTY_FORM: DebtForm = {
   currency: "GBP",
   direction: "i_owe_them",
   notes: "",
+  accountId: "",
 };
 
 const TH: React.CSSProperties = {
@@ -81,12 +86,14 @@ const TD: React.CSSProperties = {
 const PRESETS = [
   { icon: "🍜", label: "Restaurant" },
   { icon: "☕", label: "Cafe" },
-  { icon: "🎳", label: "Bowling" },
+  { icon: "🎉", label: "Entertainment" },
   { icon: "🍺", label: "Drinks" },
   { icon: "🛒", label: "Groceries" },
-  { icon: "🎬", label: "Cinema" },
+  { icon: "🚗", label: "Transport" },
   { icon: "✈️", label: "Travel" },
-  { icon: "🏠", label: "Rent" },
+  { icon: "🏨", label: "Accommodation" },
+  { icon: "🛍️", label: "Shopping" },
+  { icon: "🏥", label: "Medical" },
 ];
 
 export default function Owing() {
@@ -99,6 +106,7 @@ export default function Owing() {
   const settleDebt = useSettleDebt();
   const deleteDebt = useDeleteDebt();
 
+  const { data: accounts } = useListAccounts();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<DebtForm>(EMPTY_FORM);
   const [filter, setFilter] = useState<"all" | "pending" | "settled">("pending");
@@ -106,6 +114,8 @@ export default function Owing() {
   function invalidate() {
     qc.invalidateQueries({ queryKey: getListDebtsQueryKey() });
     qc.invalidateQueries({ queryKey: getGetDebtSummaryQueryKey() });
+    qc.invalidateQueries({ queryKey: getListAccountsQueryKey() });
+    qc.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
   }
 
   async function handleAdd() {
@@ -124,6 +134,7 @@ export default function Owing() {
           currency: form.currency,
           direction: form.direction,
           notes: form.notes.trim() || undefined,
+          accountId: form.accountId ? parseInt(form.accountId) : undefined,
         },
       });
       invalidate();
@@ -544,7 +555,7 @@ export default function Owing() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent style={{ background: "#161B22", border: "1px solid #30363D" }}>
-                    {(["GBP", "USD", "MYR", "CNY"] as Currency[]).map((c) => (
+                    {(["GBP", "USD", "EUR", "MYR", "CNY", "JPY", "AUD", "CAD", "SGD", "HKD", "THB", "INR"] as Currency[]).map((c) => (
                       <SelectItem key={c} value={c} style={{ color: "#C9D1D9", fontSize: 12 }}>{c}</SelectItem>
                     ))}
                   </SelectContent>
@@ -572,6 +583,29 @@ export default function Owing() {
                   style={{ background: "#0D1117", border: "1px solid #30363D", color: "#E6EDF3", height: 32, fontSize: 12 }}
                 />
               </div>
+            </div>
+
+            {/* Account — optional, auto-adjusts balance on settle */}
+            <div className="space-y-1.5">
+              <Label style={{ color: "#8B949E", fontSize: 11 }}>
+                Account <span style={{ color: "#484F58" }}>(optional — adjusts balance when settled)</span>
+              </Label>
+              <Select
+                value={form.accountId || "__none__"}
+                onValueChange={(v) => setForm((f) => ({ ...f, accountId: v === "__none__" ? "" : v }))}
+              >
+                <SelectTrigger style={{ background: "#0D1117", border: "1px solid #30363D", color: "#E6EDF3", height: 32, fontSize: 12 }}>
+                  <SelectValue placeholder="No account linked" />
+                </SelectTrigger>
+                <SelectContent style={{ background: "#161B22", border: "1px solid #30363D" }}>
+                  <SelectItem value="__none__" style={{ color: "#6E7681", fontSize: 12 }}>No account</SelectItem>
+                  {accounts?.map((a) => (
+                    <SelectItem key={a.id} value={String(a.id)} style={{ color: "#C9D1D9", fontSize: 12 }}>
+                      {a.name} ({a.currency})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

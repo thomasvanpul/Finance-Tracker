@@ -18,4 +18,5 @@ export interface DebtUpdate {
   direction?: DebtUpdateDirection;
   status?: DebtUpdateStatus;
   notes?: string;
+  accountId?: number;
 }

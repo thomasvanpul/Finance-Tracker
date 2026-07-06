@@ -8,6 +8,7 @@ import {
   HandCoins,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { KpiBar } from "./kpi-bar";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -118,6 +119,9 @@ export function Layout({ children }: LayoutProps) {
           =FINTRACK.{active.label.toUpperCase()}()
         </span>
       </div>
+
+      {/* ── KPI strip — persistent on all pages ── */}
+      <KpiBar />
 
       {/* ── Content area ── */}
       <div className="flex flex-1 overflow-hidden">

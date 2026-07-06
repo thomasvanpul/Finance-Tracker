@@ -27,8 +27,16 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 // GBP-based FX pairs on Yahoo Finance
 const FX_PAIRS: Record<string, string> = {
   USD: "GBPUSD=X",
+  EUR: "GBPEUR=X",
   MYR: "GBPMYR=X",
   CNY: "GBPCNY=X",
+  JPY: "GBPJPY=X",
+  AUD: "GBPAUD=X",
+  CAD: "GBPCAD=X",
+  SGD: "GBPSGD=X",
+  HKD: "GBPHKD=X",
+  THB: "GBPTHB=X",
+  INR: "GBPINR=X",
 };
 
 export async function getFxRates(): Promise<FxRatesData> {
@@ -52,8 +60,16 @@ export async function getFxRates(): Promise<FxRatesData> {
 
   // Fallbacks if fetch fails
   if (!rates.USD) rates.USD = 1.27;
+  if (!rates.EUR) rates.EUR = 1.17;
   if (!rates.MYR) rates.MYR = 5.95;
-  if (!rates.CNY) rates.CNY = 9.2;
+  if (!rates.CNY) rates.CNY = 9.20;
+  if (!rates.JPY) rates.JPY = 193;
+  if (!rates.AUD) rates.AUD = 1.95;
+  if (!rates.CAD) rates.CAD = 1.73;
+  if (!rates.SGD) rates.SGD = 1.70;
+  if (!rates.HKD) rates.HKD = 9.92;
+  if (!rates.THB) rates.THB = 43.5;
+  if (!rates.INR) rates.INR = 106;
 
   const data: FxRatesData = { base: "GBP", rates, updatedAt: new Date().toISOString() };
   fxCache = { data, ts: now };
@@ -66,6 +82,15 @@ export async function toGbp(amount: number, currency: string): Promise<number> {
   const rate = fx.rates[currency];
   if (!rate) return amount;
   return amount / rate;
+}
+
+/** Convert a GBP amount to the target currency using live FX rates. */
+export async function gbpTo(gbpAmount: number, targetCurrency: string): Promise<number> {
+  if (targetCurrency === "GBP") return gbpAmount;
+  const fx = await getFxRates();
+  const rate = fx.rates[targetCurrency];
+  if (!rate) return gbpAmount;
+  return gbpAmount * rate;
 }
 
 export async function getStockPrices(tickers: string[]): Promise<StockPriceData[]> {
