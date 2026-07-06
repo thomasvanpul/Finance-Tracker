@@ -1077,7 +1077,7 @@ components:
     # ── DASHBOARD ─────────────────────────────────────────────────────────────
     DashboardSummary:
       type: object
-      required: [netLiquidity, netWorth, totalCash, accountBreakdown, portfolio, thisMonth]
+      required: [netLiquidity, netWorth, totalCash, accountBreakdown, portfolio, thisMonth, owing]
       properties:
         netLiquidity:
           type: number
@@ -1123,6 +1123,18 @@ components:
               type: number
             savingsRate:
               type: number
+        owing:
+          type: object
+          required: [totalOwedToMe, totalIOwe, netGbp, pendingCount]
+          properties:
+            totalOwedToMe:
+              type: number
+            totalIOwe:
+              type: number
+            netGbp:
+              type: number
+            pendingCount:
+              type: integer
 
     # ── PLAID ─────────────────────────────────────────────────────────────────
     PlaidLinkToken:

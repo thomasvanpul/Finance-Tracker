@@ -196,22 +196,22 @@ export default function Investments() {
 
       {/* Summary row */}
       {summary && (
-        <div className="flex border" style={{ borderColor: "#21262D", background: "#161B22" }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 border" style={{ borderColor: "#21262D", background: "#161B22" }}>
           {[
             { label: "Total Value", value: formatGbp(summary.totalValueGbp), color: "#58A6FF" },
             { label: "Total P&L", value: `${summary.totalPlGbp >= 0 ? "+" : ""}${formatGbp(summary.totalPlGbp)}`, color: summary.totalPlGbp >= 0 ? "#3FB950" : "#F85149" },
             { label: "Return %", value: `${summary.totalPlPercent >= 0 ? "+" : ""}${formatPercent(summary.totalPlPercent)}`, color: summary.totalPlPercent >= 0 ? "#3FB950" : "#F85149" },
-          ].map((s, i) => (
+          ].map((s) => (
             <div
               key={s.label}
-              className="flex-1 px-4 py-3 border-r"
+              className="px-3 sm:px-4 py-3 border-r border-b sm:border-b-0"
               style={{ borderColor: "#21262D" }}
             >
               <div className="text-xs mb-1" style={{ color: "#6E7681" }}>{s.label}</div>
               <div className="text-base font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
             </div>
           ))}
-          <div className="flex-1 px-4 py-3 flex items-center gap-2">
+          <div className="px-3 sm:px-4 py-3 flex items-center gap-2">
             <TrendingUp className="w-4 h-4" style={{ color: "#484F58" }} />
             <span className="text-xs" style={{ color: "#484F58" }}>
               {investments?.length ?? 0} position{investments?.length !== 1 ? "s" : ""}
@@ -227,6 +227,7 @@ export default function Investments() {
           ▼ PORTFOLIO POSITIONS — Live Market Data (GBP)
         </div>
 
+        <div className="overflow-x-auto">
         {/* Column headers */}
         <div className="flex" style={{ marginLeft: 36 }}>
           {[["TICKER", "80px"], ["SECURITY NAME", "1"], ["SHARES", "80px"], ["COST/SHARE", "100px"], ["LIVE PRICE", "100px"], ["VALUE (GBP)", "110px"], ["GAIN / LOSS", "120px"], ["RETURN %", "100px"], ["ACTIONS", "80px"]].map(([h, w]) => (
@@ -342,6 +343,7 @@ export default function Investments() {
             <div style={{ width: 80, minWidth: 80 }} />
           </div>
         )}
+        </div>
       </div>
     </div>
   );

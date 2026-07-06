@@ -207,15 +207,15 @@ export default function Transactions() {
 
       {/* Summary bar */}
       {summary && (
-        <div className="flex border" style={{ borderColor: "#21262D", background: "#161B22" }}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 border" style={{ borderColor: "#21262D", background: "#161B22" }}>
           {[
             { label: `Income (${summary.month})`, value: `+${formatGbp(summary.totalIncome)}`, color: "#3FB950" },
             { label: "Expenses", value: `-${formatGbp(summary.totalExpenses)}`, color: "#F85149" },
             { label: "Net", value: `${summary.netSavings > 0 ? "+" : ""}${formatGbp(summary.netSavings)}`, color: summary.netSavings >= 0 ? "#3FB950" : "#F85149" },
             { label: "Savings Rate", value: `${summary.savingsRate.toFixed(1)}%`, color: "#58A6FF" },
           ].map((s) => (
-            <div key={s.label} className="flex-1 px-4 py-3 border-r" style={{ borderColor: "#21262D" }}>
-              <div className="text-xs mb-1" style={{ color: "#6E7681" }}>{s.label}</div>
+            <div key={s.label} className="px-3 sm:px-4 py-3 border-r border-b sm:border-b-0" style={{ borderColor: "#21262D" }}>
+              <div className="text-xs mb-1 truncate" style={{ color: "#6E7681" }}>{s.label}</div>
               <div className="text-sm font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
             </div>
           ))}
@@ -228,6 +228,7 @@ export default function Transactions() {
           ▼ TRANSACTION LEDGER — All Entries
         </div>
 
+        <div className="overflow-x-auto">
         {/* Column headers */}
         <div className="flex" style={{ marginLeft: 36 }}>
           {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["", "52px"]].map(([h, w]) => (
@@ -290,6 +291,7 @@ export default function Transactions() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

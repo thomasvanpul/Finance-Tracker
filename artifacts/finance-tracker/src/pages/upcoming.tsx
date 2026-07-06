@@ -242,13 +242,13 @@ export default function Upcoming() {
 
       {/* Summary bar */}
       {summary && (
-        <div className="flex border" style={{ borderColor: "#21262D", background: "#161B22" }}>
-          <div className="flex-1 px-4 py-3 border-r" style={{ borderColor: "#21262D" }}>
-            <div className="text-xs mb-1" style={{ color: "#6E7681" }}>30-Day Committed Outgoings</div>
+        <div className="grid grid-cols-2 border" style={{ borderColor: "#21262D", background: "#161B22" }}>
+          <div className="px-3 sm:px-4 py-3 border-r" style={{ borderColor: "#21262D" }}>
+            <div className="text-xs mb-1" style={{ color: "#6E7681" }}>30-Day Outgoings</div>
             <div className="text-sm font-bold font-mono" style={{ color: "#F85149" }}>-{formatGbp(summary.committedOutgoings30d)}</div>
           </div>
-          <div className="flex-1 px-4 py-3">
-            <div className="text-xs mb-1" style={{ color: "#6E7681" }}>30-Day Expected Income</div>
+          <div className="px-3 sm:px-4 py-3">
+            <div className="text-xs mb-1" style={{ color: "#6E7681" }}>30-Day Income</div>
             <div className="text-sm font-bold font-mono" style={{ color: "#3FB950" }}>+{formatGbp(summary.expectedIncome30d)}</div>
           </div>
         </div>
@@ -260,6 +260,7 @@ export default function Upcoming() {
           ▼ UPCOMING SCHEDULE — Committed & Expected Flows
         </div>
 
+        <div className="overflow-x-auto">
         {/* Column headers */}
         <div className="flex" style={{ marginLeft: 36 }}>
           {[["DUE DATE", "100px"], ["DESCRIPTION", "1"], ["CATEGORY", "110px"], ["FREQUENCY", "100px"], ["TYPE", "90px"], ["AMOUNT (GBP)", "120px"], ["STATUS", "120px"], ["ACTIONS", "80px"]].map(([h, w]) => (
@@ -333,6 +334,7 @@ export default function Upcoming() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

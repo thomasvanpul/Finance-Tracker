@@ -299,7 +299,7 @@ export default function Owing() {
 
       {/* ── Table ── */}
       <div className="rounded-sm border overflow-hidden" style={{ borderColor: "#21262D" }}>
-        {/* Filter tabs */}
+        {/* Filter tabs - scrollable on mobile */}
         <div
           className="flex items-center border-b"
           style={{ background: "#161B22", borderColor: "#21262D" }}
@@ -324,8 +324,8 @@ export default function Owing() {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 640 }}>
             <thead>
               <tr>
                 <th style={{ ...TH, width: 28, textAlign: "center" }}>#</th>

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { and, gte, lte } from "drizzle-orm";
-import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable } from "@workspace/db";
+import { and, eq, gte, lte } from "drizzle-orm";
+import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable } from "@workspace/db";
 import { GetDashboardResponse } from "@workspace/api-zod";
 import { toGbp, getStockPrices } from "../lib/market";
 
@@ -88,6 +88,16 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const netLiquidity = totalCash - committedOut + expectedIn;
   const netWorth = totalCash + portfolioValueGbp;
 
+  // Owing — pending debts only
+  const pendingDebts = await db.select().from(debtsTable).where(eq(debtsTable.status, "pending"));
+  let totalOwedToMe = 0;
+  let totalIOwe = 0;
+  for (const d of pendingDebts) {
+    const gbp = await toGbp(parseFloat(d.nativeAmount), d.currency);
+    if (d.direction === "they_owe_me") totalOwedToMe += gbp;
+    else totalIOwe += gbp;
+  }
+
   res.json(
     GetDashboardResponse.parse({
       netLiquidity: Math.round(netLiquidity * 100) / 100,
@@ -104,6 +114,12 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         expenses: Math.round(monthExpenses * 100) / 100,
         netSavings: Math.round(monthNet * 100) / 100,
         savingsRate: Math.round(savingsRate * 100) / 100,
+      },
+      owing: {
+        totalOwedToMe: Math.round(totalOwedToMe * 100) / 100,
+        totalIOwe: Math.round(totalIOwe * 100) / 100,
+        netGbp: Math.round((totalOwedToMe - totalIOwe) * 100) / 100,
+        pendingCount: pendingDebts.length,
       },
     })
   );

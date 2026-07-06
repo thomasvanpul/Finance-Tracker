@@ -509,6 +509,13 @@ export type DashboardSummaryThisMonth = {
   savingsRate: number;
 };
 
+export type DashboardSummaryOwing = {
+  totalOwedToMe: number;
+  totalIOwe: number;
+  netGbp: number;
+  pendingCount: number;
+};
+
 export interface DashboardSummary {
   netLiquidity: number;
   netWorth: number;
@@ -516,6 +523,7 @@ export interface DashboardSummary {
   accountBreakdown: DashboardSummaryAccountBreakdownItem[];
   portfolio: DashboardSummaryPortfolio;
   thisMonth: DashboardSummaryThisMonth;
+  owing: DashboardSummaryOwing;
 }
 
 export interface PlaidLinkToken {

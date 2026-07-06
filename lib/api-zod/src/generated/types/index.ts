@@ -14,6 +14,7 @@ export * from './accountUpdate';
 export * from './accountUpdateCurrency';
 export * from './dashboardSummary';
 export * from './dashboardSummaryAccountBreakdownItem';
+export * from './dashboardSummaryOwing';
 export * from './dashboardSummaryPortfolio';
 export * from './dashboardSummaryThisMonth';
 export * from './debt';

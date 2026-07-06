@@ -288,6 +288,7 @@ export default function Accounts() {
           ▼ CASH ACCOUNTS — Multi-Currency (GBP Base)
         </div>
 
+        <div className="overflow-x-auto">
         {/* Column headers */}
         <div className="flex" style={{ marginLeft: 36 }}>
           {[["ACCOUNT NAME", "1"], ["TYPE", "100px"], ["CURRENCY", "90px"], ["BALANCE (NATIVE)", "160px"], ["BALANCE (GBP)", "130px"], ["LAST SYNC", "120px"], ["ACTIONS", "90px"]].map(([h, w]) => (
@@ -375,6 +376,7 @@ export default function Accounts() {
             <div style={{ width: 90, minWidth: 90 }} />
           </div>
         )}
+        </div>
       </div>
     </div>
   );

@@ -40,6 +40,12 @@ export const GetDashboardResponse = zod.object({
   "expenses": zod.number(),
   "netSavings": zod.number(),
   "savingsRate": zod.number()
+}),
+  "owing": zod.object({
+  "totalOwedToMe": zod.number(),
+  "totalIOwe": zod.number(),
+  "netGbp": zod.number(),
+  "pendingCount": zod.number()
 })
 })
 
