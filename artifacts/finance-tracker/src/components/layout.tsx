@@ -5,6 +5,7 @@ import {
   ArrowLeftRight,
   CalendarClock,
   TrendingUp,
+  HandCoins,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/transactions", label: "Transactions", short: "TXN", icon: ArrowLeftRight },
   { href: "/upcoming", label: "Upcoming", short: "UPC", icon: CalendarClock },
   { href: "/investments", label: "Investments", short: "INV", icon: TrendingUp },
+  { href: "/owing", label: "Owing", short: "OWE", icon: HandCoins },
 ];
 
 const now = new Date();

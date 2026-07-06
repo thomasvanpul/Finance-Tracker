@@ -10,6 +10,7 @@ import Accounts from "@/pages/accounts";
 import Transactions from "@/pages/transactions";
 import Upcoming from "@/pages/upcoming";
 import Investments from "@/pages/investments";
+import Owing from "@/pages/owing";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ function Router() {
         <Route path="/transactions" component={Transactions} />
         <Route path="/upcoming" component={Upcoming} />
         <Route path="/investments" component={Investments} />
+        <Route path="/owing" component={Owing} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

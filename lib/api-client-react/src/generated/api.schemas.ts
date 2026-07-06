@@ -360,6 +360,119 @@ export interface InvestmentSummary {
   positions: number;
 }
 
+export type DebtCurrency = typeof DebtCurrency[keyof typeof DebtCurrency];
+
+
+export const DebtCurrency = {
+  GBP: 'GBP',
+  USD: 'USD',
+  MYR: 'MYR',
+  CNY: 'CNY',
+} as const;
+
+export type DebtDirection = typeof DebtDirection[keyof typeof DebtDirection];
+
+
+export const DebtDirection = {
+  i_owe_them: 'i_owe_them',
+  they_owe_me: 'they_owe_me',
+} as const;
+
+export type DebtStatus = typeof DebtStatus[keyof typeof DebtStatus];
+
+
+export const DebtStatus = {
+  pending: 'pending',
+  settled: 'settled',
+} as const;
+
+export interface Debt {
+  id: number;
+  personName: string;
+  description: string;
+  date: string;
+  nativeAmount: number;
+  currency: DebtCurrency;
+  direction: DebtDirection;
+  status: DebtStatus;
+  /** @nullable */
+  notes?: string | null;
+  gbpEquivalent: number;
+  createdAt: string;
+}
+
+export type DebtInputCurrency = typeof DebtInputCurrency[keyof typeof DebtInputCurrency];
+
+
+export const DebtInputCurrency = {
+  GBP: 'GBP',
+  USD: 'USD',
+  MYR: 'MYR',
+  CNY: 'CNY',
+} as const;
+
+export type DebtInputDirection = typeof DebtInputDirection[keyof typeof DebtInputDirection];
+
+
+export const DebtInputDirection = {
+  i_owe_them: 'i_owe_them',
+  they_owe_me: 'they_owe_me',
+} as const;
+
+export interface DebtInput {
+  personName: string;
+  description: string;
+  date: string;
+  nativeAmount: number;
+  currency: DebtInputCurrency;
+  direction: DebtInputDirection;
+  notes?: string;
+}
+
+export type DebtUpdateCurrency = typeof DebtUpdateCurrency[keyof typeof DebtUpdateCurrency];
+
+
+export const DebtUpdateCurrency = {
+  GBP: 'GBP',
+  USD: 'USD',
+  MYR: 'MYR',
+  CNY: 'CNY',
+} as const;
+
+export type DebtUpdateDirection = typeof DebtUpdateDirection[keyof typeof DebtUpdateDirection];
+
+
+export const DebtUpdateDirection = {
+  i_owe_them: 'i_owe_them',
+  they_owe_me: 'they_owe_me',
+} as const;
+
+export type DebtUpdateStatus = typeof DebtUpdateStatus[keyof typeof DebtUpdateStatus];
+
+
+export const DebtUpdateStatus = {
+  pending: 'pending',
+  settled: 'settled',
+} as const;
+
+export interface DebtUpdate {
+  personName?: string;
+  description?: string;
+  date?: string;
+  nativeAmount?: number;
+  currency?: DebtUpdateCurrency;
+  direction?: DebtUpdateDirection;
+  status?: DebtUpdateStatus;
+  notes?: string;
+}
+
+export interface DebtSummary {
+  totalOwedToMe: number;
+  totalIOwe: number;
+  netGbp: number;
+  pendingCount: number;
+}
+
 export type FxRatesRates = {[key: string]: number};
 
 export interface FxRates {

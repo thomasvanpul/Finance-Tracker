@@ -420,6 +420,113 @@ export const DeleteInvestmentParams = zod.object({
 
 
 /**
+ * @summary List all debt entries
+ */
+export const ListDebtsResponseItem = zod.object({
+  "id": zod.number(),
+  "personName": zod.string(),
+  "description": zod.string(),
+  "date": zod.string(),
+  "nativeAmount": zod.number(),
+  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "direction": zod.enum(['i_owe_them', 'they_owe_me']),
+  "status": zod.enum(['pending', 'settled']),
+  "notes": zod.string().nullish(),
+  "gbpEquivalent": zod.number(),
+  "createdAt": zod.string()
+})
+export const ListDebtsResponse = zod.array(ListDebtsResponseItem)
+
+
+/**
+ * @summary Create a debt entry
+ */
+export const CreateDebtBody = zod.object({
+  "personName": zod.string(),
+  "description": zod.string(),
+  "date": zod.string(),
+  "nativeAmount": zod.number(),
+  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "direction": zod.enum(['i_owe_them', 'they_owe_me']),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Get debt totals summary
+ */
+export const GetDebtSummaryResponse = zod.object({
+  "totalOwedToMe": zod.number(),
+  "totalIOwe": zod.number(),
+  "netGbp": zod.number(),
+  "pendingCount": zod.number()
+})
+
+
+/**
+ * @summary Update a debt entry
+ */
+export const UpdateDebtParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateDebtBody = zod.object({
+  "personName": zod.string().optional(),
+  "description": zod.string().optional(),
+  "date": zod.string().optional(),
+  "nativeAmount": zod.number().optional(),
+  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']).optional(),
+  "direction": zod.enum(['i_owe_them', 'they_owe_me']).optional(),
+  "status": zod.enum(['pending', 'settled']).optional(),
+  "notes": zod.string().optional()
+})
+
+export const UpdateDebtResponse = zod.object({
+  "id": zod.number(),
+  "personName": zod.string(),
+  "description": zod.string(),
+  "date": zod.string(),
+  "nativeAmount": zod.number(),
+  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "direction": zod.enum(['i_owe_them', 'they_owe_me']),
+  "status": zod.enum(['pending', 'settled']),
+  "notes": zod.string().nullish(),
+  "gbpEquivalent": zod.number(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a debt entry
+ */
+export const DeleteDebtParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Mark a debt as settled
+ */
+export const SettleDebtParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SettleDebtResponse = zod.object({
+  "id": zod.number(),
+  "personName": zod.string(),
+  "description": zod.string(),
+  "date": zod.string(),
+  "nativeAmount": zod.number(),
+  "currency": zod.enum(['GBP', 'USD', 'MYR', 'CNY']),
+  "direction": zod.enum(['i_owe_them', 'they_owe_me']),
+  "status": zod.enum(['pending', 'settled']),
+  "notes": zod.string().nullish(),
+  "gbpEquivalent": zod.number(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Get live FX rates (GBP base)
  */
 export const GetFxRatesResponse = zod.object({

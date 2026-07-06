@@ -15,6 +15,7 @@ tags:
   - name: dashboard
   - name: market
   - name: plaid
+  - name: debts
 
 paths:
   /healthz:
@@ -435,6 +436,109 @@ paths:
         "204":
           description: Deleted
 
+  # ── DEBTS / OWING ──────────────────────────────────────────────────────────
+  /debts:
+    get:
+      operationId: listDebts
+      tags: [debts]
+      summary: List all debt entries
+      responses:
+        "200":
+          description: List of debts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Debt"
+    post:
+      operationId: createDebt
+      tags: [debts]
+      summary: Create a debt entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebtInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Debt"
+
+  /debts/summary:
+    get:
+      operationId: getDebtSummary
+      tags: [debts]
+      summary: Get debt totals summary
+      responses:
+        "200":
+          description: Debt summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebtSummary"
+
+  /debts/{id}:
+    patch:
+      operationId: updateDebt
+      tags: [debts]
+      summary: Update a debt entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebtUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Debt"
+    delete:
+      operationId: deleteDebt
+      tags: [debts]
+      summary: Delete a debt entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /debts/{id}/settle:
+    post:
+      operationId: settleDebt
+      tags: [debts]
+      summary: Mark a debt as settled
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Settled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Debt"
+
   # ── MARKET DATA ────────────────────────────────────────────────────────────
   /market/fx-rates:
     get:
@@ -853,6 +957,94 @@ components:
         totalPlPercent:
           type: number
         positions:
+          type: integer
+
+    # ── DEBTS ─────────────────────────────────────────────────────────────────
+    Debt:
+      type: object
+      required: [id, personName, description, date, nativeAmount, currency, direction, status, gbpEquivalent, createdAt]
+      properties:
+        id:
+          type: integer
+        personName:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+        nativeAmount:
+          type: number
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        direction:
+          type: string
+          enum: [i_owe_them, they_owe_me]
+        status:
+          type: string
+          enum: [pending, settled]
+        notes:
+          type: ["string", "null"]
+        gbpEquivalent:
+          type: number
+        createdAt:
+          type: string
+
+    DebtInput:
+      type: object
+      required: [personName, description, date, nativeAmount, currency, direction]
+      properties:
+        personName:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+        nativeAmount:
+          type: number
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        direction:
+          type: string
+          enum: [i_owe_them, they_owe_me]
+        notes:
+          type: string
+
+    DebtUpdate:
+      type: object
+      properties:
+        personName:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+        nativeAmount:
+          type: number
+        currency:
+          type: string
+          enum: [GBP, USD, MYR, CNY]
+        direction:
+          type: string
+          enum: [i_owe_them, they_owe_me]
+        status:
+          type: string
+          enum: [pending, settled]
+        notes:
+          type: string
+
+    DebtSummary:
+      type: object
+      required: [totalOwedToMe, totalIOwe, netGbp, pendingCount]
+      properties:
+        totalOwedToMe:
+          type: number
+        totalIOwe:
+          type: number
+        netGbp:
+          type: number
+        pendingCount:
           type: integer
 
     # ── MARKET DATA ──────────────────────────────────────────────────────────

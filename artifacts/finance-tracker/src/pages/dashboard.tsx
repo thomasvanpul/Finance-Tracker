@@ -254,7 +254,7 @@ export default function Dashboard() {
                   <div style={{ width: 36 }} />
                   <Cell flex={3} color="#484F58" bold>TOTAL CASH</Cell>
                   <Cell flex={1} color="#484F58">GBP</Cell>
-                  <Cell flex={2} />
+                  <Cell flex={2}>{""}</Cell>
                   <Cell flex={2} color="#3FB950" bold mono>{formatGbp(dashboard.totalCash)}</Cell>
                 </div>
               )}
