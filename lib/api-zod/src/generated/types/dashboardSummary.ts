@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { DashboardSummaryAccountBreakdownItem } from './dashboardSummaryAccountBreakdownItem';
+import type { DashboardSummaryMonthlyHistoryItem } from './dashboardSummaryMonthlyHistoryItem';
 import type { DashboardSummaryOwing } from './dashboardSummaryOwing';
 import type { DashboardSummaryPortfolio } from './dashboardSummaryPortfolio';
 import type { DashboardSummaryThisMonth } from './dashboardSummaryThisMonth';
@@ -18,4 +19,5 @@ export interface DashboardSummary {
   portfolio: DashboardSummaryPortfolio;
   thisMonth: DashboardSummaryThisMonth;
   owing: DashboardSummaryOwing;
+  monthlyHistory?: DashboardSummaryMonthlyHistoryItem[];
 }

@@ -30,6 +30,7 @@ import type {
   DebtUpdate,
   FxRates,
   GetMarketPricesParams,
+  GetMarketQuotesParams,
   GetTransactionSummaryParams,
   HealthStatus,
   InstallmentInput,
@@ -42,6 +43,7 @@ import type {
   PlaidLinkToken,
   PlaidSyncResult,
   StockPrice,
+  StockQuote,
   Transaction,
   TransactionInput,
   TransactionSummary,
@@ -2350,6 +2352,90 @@ export function useGetMarketPrices<TData = Awaited<ReturnType<typeof getMarketPr
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMarketPricesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMarketQuotesUrl = (params: GetMarketQuotesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/market/quotes?${stringifiedParams}` : `/api/market/quotes`
+}
+
+/**
+ * @summary Get rich fundamental data for given tickers
+ */
+export const getMarketQuotes = async (params: GetMarketQuotesParams, options?: RequestInit): Promise<StockQuote[]> => {
+
+  return customFetch<StockQuote[]>(getGetMarketQuotesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMarketQuotesQueryKey = (params?: GetMarketQuotesParams,) => {
+    return [
+    `/api/market/quotes`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMarketQuotesQueryOptions = <TData = Awaited<ReturnType<typeof getMarketQuotes>>, TError = ErrorType<unknown>>(params: GetMarketQuotesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketQuotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMarketQuotesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketQuotes>>> = ({ signal }) => getMarketQuotes(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMarketQuotes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMarketQuotesQueryResult = NonNullable<Awaited<ReturnType<typeof getMarketQuotes>>>
+export type GetMarketQuotesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get rich fundamental data for given tickers
+ */
+
+export function useGetMarketQuotes<TData = Awaited<ReturnType<typeof getMarketQuotes>>, TError = ErrorType<unknown>>(
+ params: GetMarketQuotesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketQuotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMarketQuotesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

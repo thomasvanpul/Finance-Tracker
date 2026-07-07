@@ -46,7 +46,13 @@ export const GetDashboardResponse = zod.object({
   "totalIOwe": zod.number(),
   "netGbp": zod.number(),
   "pendingCount": zod.number()
-})
+}),
+  "monthlyHistory": zod.array(zod.object({
+  "month": zod.string(),
+  "income": zod.number(),
+  "expenses": zod.number(),
+  "netSavings": zod.number()
+})).optional()
 })
 
 
@@ -561,6 +567,32 @@ export const GetMarketPricesResponseItem = zod.object({
   "updatedAt": zod.string()
 })
 export const GetMarketPricesResponse = zod.array(GetMarketPricesResponseItem)
+
+
+/**
+ * @summary Get rich fundamental data for given tickers
+ */
+export const GetMarketQuotesQueryParams = zod.object({
+  "tickers": zod.coerce.string().describe('Comma-separated ticker symbols')
+})
+
+export const GetMarketQuotesResponseItem = zod.object({
+  "ticker": zod.string(),
+  "price": zod.number(),
+  "currency": zod.string(),
+  "updatedAt": zod.string(),
+  "pe": zod.number().nullish(),
+  "forwardPe": zod.number().nullish(),
+  "eps": zod.number().nullish(),
+  "high52w": zod.number().nullish(),
+  "low52w": zod.number().nullish(),
+  "marketCap": zod.number().nullish(),
+  "beta": zod.number().nullish(),
+  "dividendYield": zod.number().nullish(),
+  "analystTargetPrice": zod.number().nullish(),
+  "displayName": zod.string().nullish()
+})
+export const GetMarketQuotesResponse = zod.array(GetMarketQuotesResponseItem)
 
 
 /**

@@ -572,6 +572,33 @@ export interface StockPrice {
   updatedAt: string;
 }
 
+export interface StockQuote {
+  ticker: string;
+  price: number;
+  currency: string;
+  updatedAt: string;
+  /** @nullable */
+  pe?: number | null;
+  /** @nullable */
+  forwardPe?: number | null;
+  /** @nullable */
+  eps?: number | null;
+  /** @nullable */
+  high52w?: number | null;
+  /** @nullable */
+  low52w?: number | null;
+  /** @nullable */
+  marketCap?: number | null;
+  /** @nullable */
+  beta?: number | null;
+  /** @nullable */
+  dividendYield?: number | null;
+  /** @nullable */
+  analystTargetPrice?: number | null;
+  /** @nullable */
+  displayName?: string | null;
+}
+
 export type DashboardSummaryAccountBreakdownItem = {
   id: number;
   name: string;
@@ -600,6 +627,13 @@ export type DashboardSummaryOwing = {
   pendingCount: number;
 };
 
+export type DashboardSummaryMonthlyHistoryItem = {
+  month: string;
+  income: number;
+  expenses: number;
+  netSavings: number;
+};
+
 export interface DashboardSummary {
   netLiquidity: number;
   netWorth: number;
@@ -608,6 +642,7 @@ export interface DashboardSummary {
   portfolio: DashboardSummaryPortfolio;
   thisMonth: DashboardSummaryThisMonth;
   owing: DashboardSummaryOwing;
+  monthlyHistory?: DashboardSummaryMonthlyHistoryItem[];
 }
 
 export interface PlaidLinkToken {
@@ -666,6 +701,13 @@ month?: string | null;
 };
 
 export type GetMarketPricesParams = {
+/**
+ * Comma-separated ticker symbols
+ */
+tickers: string;
+};
+
+export type GetMarketQuotesParams = {
 /**
  * Comma-separated ticker symbols
  */

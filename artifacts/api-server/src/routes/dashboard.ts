@@ -88,6 +88,26 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const netLiquidity = totalCash - committedOut + expectedIn;
   const netWorth = totalCash + portfolioValueGbp;
 
+  // Monthly history — last 6 months
+  const monthlyHistory: { month: string; income: number; expenses: number; netSavings: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const m = d.toISOString().slice(0, 7);
+    const mFrom = `${m}-01`;
+    const mLastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const mTo = `${m}-${String(mLastDay).padStart(2, "0")}`;
+    const mTxs = await db.select().from(transactionsTable)
+      .where(and(gte(transactionsTable.date, mFrom), lte(transactionsTable.date, mTo)));
+    let mInc = 0, mExp = 0;
+    for (const tx of mTxs) {
+      const native = Math.abs(parseFloat(tx.nativeAmount));
+      const gbp = await toGbp(native, tx.currency);
+      if (tx.type === "income") mInc += gbp;
+      else if (tx.type === "expense") mExp += gbp;
+    }
+    monthlyHistory.push({ month: m, income: Math.round(mInc * 100) / 100, expenses: Math.round(mExp * 100) / 100, netSavings: Math.round((mInc - mExp) * 100) / 100 });
+  }
+
   // Owing — pending debts only
   const pendingDebts = await db.select().from(debtsTable).where(eq(debtsTable.status, "pending"));
   let totalOwedToMe = 0;
@@ -121,6 +141,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         netGbp: Math.round((totalOwedToMe - totalIOwe) * 100) / 100,
         pendingCount: pendingDebts.length,
       },
+      monthlyHistory,
     })
   );
 });

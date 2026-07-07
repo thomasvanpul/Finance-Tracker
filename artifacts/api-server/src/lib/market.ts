@@ -93,6 +93,72 @@ export async function gbpTo(gbpAmount: number, targetCurrency: string): Promise<
   return gbpAmount * rate;
 }
 
+export type StockQuoteData = {
+  ticker: string;
+  price: number;
+  currency: string;
+  updatedAt: string;
+  pe: number | null;
+  forwardPe: number | null;
+  eps: number | null;
+  high52w: number | null;
+  low52w: number | null;
+  marketCap: number | null;
+  beta: number | null;
+  dividendYield: number | null;
+  analystTargetPrice: number | null;
+  displayName: string | null;
+};
+
+const quoteCache = new Map<string, { data: StockQuoteData; ts: number }>();
+
+export async function getStockQuotes(tickers: string[]): Promise<StockQuoteData[]> {
+  const now = Date.now();
+  const results: StockQuoteData[] = [];
+  const toFetch: string[] = [];
+
+  for (const ticker of tickers) {
+    const cached = quoteCache.get(ticker);
+    if (cached && now - cached.ts < CACHE_TTL_MS) {
+      results.push(cached.data);
+    } else {
+      toFetch.push(ticker);
+    }
+  }
+
+  await Promise.all(
+    toFetch.map(async (ticker) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const q: any = await yahooFinance.quote(ticker);
+        const data: StockQuoteData = {
+          ticker,
+          price: typeof q?.regularMarketPrice === "number" ? q.regularMarketPrice : 0,
+          currency: q?.currency ?? "USD",
+          updatedAt: new Date().toISOString(),
+          pe: typeof q?.trailingPE === "number" ? Math.round(q.trailingPE * 10) / 10 : null,
+          forwardPe: typeof q?.forwardPE === "number" ? Math.round(q.forwardPE * 10) / 10 : null,
+          eps: typeof q?.epsTrailingTwelveMonths === "number" ? Math.round(q.epsTrailingTwelveMonths * 100) / 100 : null,
+          high52w: typeof q?.fiftyTwoWeekHigh === "number" ? q.fiftyTwoWeekHigh : null,
+          low52w: typeof q?.fiftyTwoWeekLow === "number" ? q.fiftyTwoWeekLow : null,
+          marketCap: typeof q?.marketCap === "number" ? q.marketCap : null,
+          beta: typeof q?.beta === "number" ? Math.round(q.beta * 100) / 100 : null,
+          dividendYield: typeof q?.trailingAnnualDividendYield === "number" ? Math.round(q.trailingAnnualDividendYield * 10000) / 100 : null,
+          analystTargetPrice: typeof q?.targetMeanPrice === "number" ? q.targetMeanPrice : null,
+          displayName: q?.displayName ?? q?.longName ?? q?.shortName ?? null,
+        };
+        quoteCache.set(ticker, { data, ts: now });
+        results.push(data);
+      } catch (err) {
+        logger.warn({ err, ticker }, "Stock quote fetch failed");
+        results.push({ ticker, price: 0, currency: "USD", updatedAt: new Date().toISOString(), pe: null, forwardPe: null, eps: null, high52w: null, low52w: null, marketCap: null, beta: null, dividendYield: null, analystTargetPrice: null, displayName: null });
+      }
+    })
+  );
+
+  return results;
+}
+
 export async function getStockPrices(tickers: string[]): Promise<StockPriceData[]> {
   const now = Date.now();
   const results: StockPriceData[] = [];

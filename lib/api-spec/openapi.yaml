@@ -575,6 +575,28 @@ paths:
                 items:
                   $ref: "#/components/schemas/StockPrice"
 
+  /market/quotes:
+    get:
+      operationId: getMarketQuotes
+      tags: [market]
+      summary: Get rich fundamental data for given tickers
+      parameters:
+        - name: tickers
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Comma-separated ticker symbols
+      responses:
+        "200":
+          description: Stock quotes with fundamental data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockQuote"
+
   # ── PLAID ──────────────────────────────────────────────────────────────────
   /plaid/link-token:
     post:
@@ -1080,6 +1102,39 @@ components:
         updatedAt:
           type: string
 
+    StockQuote:
+      type: object
+      required: [ticker, price, currency, updatedAt]
+      properties:
+        ticker:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        updatedAt:
+          type: string
+        pe:
+          type: ["number", "null"]
+        forwardPe:
+          type: ["number", "null"]
+        eps:
+          type: ["number", "null"]
+        high52w:
+          type: ["number", "null"]
+        low52w:
+          type: ["number", "null"]
+        marketCap:
+          type: ["number", "null"]
+        beta:
+          type: ["number", "null"]
+        dividendYield:
+          type: ["number", "null"]
+        analystTargetPrice:
+          type: ["number", "null"]
+        displayName:
+          type: ["string", "null"]
+
     # ── DASHBOARD ─────────────────────────────────────────────────────────────
     DashboardSummary:
       type: object
@@ -1141,6 +1196,20 @@ components:
               type: number
             pendingCount:
               type: integer
+        monthlyHistory:
+          type: array
+          items:
+            type: object
+            required: [month, income, expenses, netSavings]
+            properties:
+              month:
+                type: string
+              income:
+                type: number
+              expenses:
+                type: number
+              netSavings:
+                type: number
 
     # ── PLAID ─────────────────────────────────────────────────────────────────
     PlaidLinkToken:
