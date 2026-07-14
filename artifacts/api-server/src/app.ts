@@ -10,6 +10,11 @@ import { login, logout, check, requireAuth } from "./lib/auth";
 
 const app: Express = express();
 
+// Render (and most PaaS hosts) sit behind a reverse proxy — without this,
+// req.ip would always resolve to the proxy's address, making IP-based rate
+// limiting on the login endpoint meaningless.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,

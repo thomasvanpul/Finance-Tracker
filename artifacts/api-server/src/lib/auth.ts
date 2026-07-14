@@ -11,6 +11,54 @@ import { createHmac, timingSafeEqual } from "crypto";
 const COOKIE_NAME = "fintrack_session";
 const COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+// Rate limiting for the login endpoint — in-memory is fine here: this is a
+// single-instance, single-user app, so there's no need for Redis or similar.
+// A restart resets the counters, which is an acceptable tradeoff at this scale.
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+interface AttemptRecord {
+  count: number;
+  windowStart: number;
+  lockedUntil: number | null;
+}
+
+const attempts = new Map<string, AttemptRecord>();
+
+function getClientKey(req: Request): string {
+  return req.ip ?? "unknown";
+}
+
+function isLockedOut(key: string): number | null {
+  const record = attempts.get(key);
+  if (!record?.lockedUntil) return null;
+  if (Date.now() >= record.lockedUntil) {
+    attempts.delete(key);
+    return null;
+  }
+  return record.lockedUntil;
+}
+
+function recordFailedAttempt(key: string): void {
+  const now = Date.now();
+  const record = attempts.get(key);
+
+  if (!record || now - record.windowStart > WINDOW_MS) {
+    attempts.set(key, { count: 1, windowStart: now, lockedUntil: null });
+    return;
+  }
+
+  record.count++;
+  if (record.count >= MAX_ATTEMPTS) {
+    record.lockedUntil = now + LOCKOUT_MS;
+  }
+}
+
+function clearAttempts(key: string): void {
+  attempts.delete(key);
+}
+
 function sign(value: string): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret) throw new Error("SESSION_SECRET is not set in the environment.");
@@ -31,15 +79,28 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 export function login(req: Request, res: Response): void {
+  const key = getClientKey(req);
+
+  const lockedUntil = isLockedOut(key);
+  if (lockedUntil) {
+    const retryAfterSec = Math.ceil((lockedUntil - Date.now()) / 1000);
+    res.status(429).json({
+      error: `Too many failed attempts. Try again in ${Math.ceil(retryAfterSec / 60)} minute(s).`,
+    });
+    return;
+  }
+
   const { password } = req.body ?? {};
   if (typeof password !== "string" || !process.env.APP_PASSWORD) {
     res.status(400).json({ error: "Password required" });
     return;
   }
   if (!safeEqual(password, process.env.APP_PASSWORD)) {
+    recordFailedAttempt(key);
     res.status(401).json({ error: "Incorrect password" });
     return;
   }
+  clearAttempts(key);
   res.cookie(COOKIE_NAME, expectedToken(), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
