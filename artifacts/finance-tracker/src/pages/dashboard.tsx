@@ -44,8 +44,11 @@ export default function Dashboard() {
 
       {dashboard && (
         <>
-          {/* ── KPI Cards ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          {/* ── KPI Cards — one continuous grid, not separated cards ── */}
+          <div
+            className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-sm border overflow-hidden"
+            style={{ background: "#21262D", borderColor: "#21262D" }}
+          >
             {[
               {
                 label: "Net Worth",
@@ -78,8 +81,8 @@ export default function Dashboard() {
             ].map((card) => (
               <div
                 key={card.label}
-                className="rounded-sm border p-3"
-                style={{ background: "#161B22", borderColor: "#21262D" }}
+                className="p-3"
+                style={{ background: "#161B22" }}
               >
                 <div className="text-xs mb-1" style={{ color: "#6E7681" }}>{card.label}</div>
                 <div className="text-base sm:text-lg font-bold font-mono truncate" style={{ color: card.color }}>
