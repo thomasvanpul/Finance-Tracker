@@ -7,6 +7,7 @@ import {
   useUpdateInvestment,
   useDeleteInvestment,
   useGetMarketQuotes,
+  getGetMarketQuotesQueryKey,
   getListInvestmentsQueryKey,
   getGetInvestmentSummaryQueryKey,
 } from "@workspace/api-client-react";
@@ -88,7 +89,7 @@ export default function Investments() {
   const tickers = [...new Set(investments?.map((i) => i.ticker) ?? [])].join(",");
   const { data: quotes } = useGetMarketQuotes(
     { tickers },
-    { query: { enabled: !!tickers } }
+    { query: { enabled: !!tickers, queryKey: getGetMarketQuotesQueryKey({ tickers }) } }
   );
   const quoteMap = new Map(quotes?.map((q) => [q.ticker, q]) ?? []);
 

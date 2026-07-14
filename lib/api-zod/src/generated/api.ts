@@ -65,9 +65,9 @@ export const ListAccountsResponseItem = zod.object({
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
   "gbpEquivalent": zod.number(),
-  "isPlaidLinked": zod.boolean(),
-  "plaidAccountId": zod.string().nullish(),
-  "plaidItemId": zod.string().nullish(),
+  "isWiseLinked": zod.boolean(),
+  "wiseProfileId": zod.string().nullish(),
+  "wiseBalanceId": zod.string().nullish(),
   "lastSyncedAt": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -103,9 +103,9 @@ export const UpdateAccountResponse = zod.object({
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
   "gbpEquivalent": zod.number(),
-  "isPlaidLinked": zod.boolean(),
-  "plaidAccountId": zod.string().nullish(),
-  "plaidItemId": zod.string().nullish(),
+  "isWiseLinked": zod.boolean(),
+  "wiseProfileId": zod.string().nullish(),
+  "wiseBalanceId": zod.string().nullish(),
   "lastSyncedAt": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -141,8 +141,8 @@ export const ListTransactionsResponseItem = zod.object({
   "nativeAmount": zod.number(),
   "currency": zod.string(),
   "gbpValue": zod.number(),
-  "source": zod.enum(['manual', 'plaid']),
-  "plaidTransactionId": zod.string().nullish(),
+  "source": zod.enum(['manual', 'wise', 'csv']),
+  "externalId": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListTransactionsResponse = zod.array(ListTransactionsResponseItem)
@@ -206,8 +206,8 @@ export const UpdateTransactionResponse = zod.object({
   "nativeAmount": zod.number(),
   "currency": zod.string(),
   "gbpValue": zod.number(),
-  "source": zod.enum(['manual', 'plaid']),
-  "plaidTransactionId": zod.string().nullish(),
+  "source": zod.enum(['manual', 'wise', 'csv']),
+  "externalId": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -596,43 +596,43 @@ export const GetMarketQuotesResponse = zod.array(GetMarketQuotesResponseItem)
 
 
 /**
- * @summary Create a Plaid Link token
+ * @summary Check whether a Wise personal API token is configured and valid
  */
-export const CreatePlaidLinkTokenResponse = zod.object({
-  "linkToken": zod.string()
+export const GetWiseStatusResponse = zod.object({
+  "configured": zod.boolean().describe('Whether WISE_API_TOKEN is set in the environment'),
+  "connected": zod.boolean().describe('Whether the token was successfully verified against the Wise API'),
+  "profileName": zod.string().nullish(),
+  "error": zod.string().nullish()
 })
 
 
 /**
- * @summary Exchange Plaid public token for access token
+ * @summary Sync balances and transactions from Wise using the configured personal API token
  */
-export const ExchangePlaidTokenBody = zod.object({
-  "publicToken": zod.string(),
-  "institutionName": zod.string()
-})
-
-export const ExchangePlaidTokenResponseItem = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
-  "balance": zod.number(),
-  "gbpEquivalent": zod.number(),
-  "isPlaidLinked": zod.boolean(),
-  "plaidAccountId": zod.string().nullish(),
-  "plaidItemId": zod.string().nullish(),
-  "lastSyncedAt": zod.string().nullish(),
-  "createdAt": zod.string()
-})
-export const ExchangePlaidTokenResponse = zod.array(ExchangePlaidTokenResponseItem)
-
-
-/**
- * @summary Sync transactions from Plaid for all linked accounts
- */
-export const SyncPlaidTransactionsResponse = zod.object({
+export const SyncWiseTransactionsResponse = zod.object({
   "synced": zod.number(),
   "added": zod.number(),
   "updated": zod.number()
+})
+
+
+/**
+ * @summary Import transactions from a bank-exported CSV file (Revolut or Maybank)
+ */
+export const ImportCsvQueryParams = zod.object({
+  "provider": zod.enum(['revolut', 'maybank']),
+  "accountId": zod.coerce.number()
+})
+
+export const ImportCsvBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const ImportCsvResponse = zod.object({
+  "provider": zod.enum(['revolut', 'maybank']),
+  "added": zod.number(),
+  "skipped": zod.number(),
+  "errors": zod.array(zod.string())
 })
 
 

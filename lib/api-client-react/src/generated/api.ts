@@ -23,6 +23,7 @@ import type {
   Account,
   AccountInput,
   AccountUpdate,
+  CsvImportResult,
   DashboardSummary,
   Debt,
   DebtInput,
@@ -33,15 +34,14 @@ import type {
   GetMarketQuotesParams,
   GetTransactionSummaryParams,
   HealthStatus,
+  ImportCsvInput,
+  ImportCsvParams,
   InstallmentInput,
   Investment,
   InvestmentInput,
   InvestmentSummary,
   InvestmentUpdate,
   ListTransactionsParams,
-  PlaidExchangeInput,
-  PlaidLinkToken,
-  PlaidSyncResult,
   StockPrice,
   StockQuote,
   Transaction,
@@ -51,7 +51,9 @@ import type {
   UpcomingItem,
   UpcomingItemInput,
   UpcomingItemUpdate,
-  UpcomingSummary
+  UpcomingSummary,
+  WiseStatus,
+  WiseSyncResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -2448,20 +2450,97 @@ export function useGetMarketQuotes<TData = Awaited<ReturnType<typeof getMarketQu
 
 
 
-export const getCreatePlaidLinkTokenUrl = () => {
+export const getGetWiseStatusUrl = () => {
 
 
 
 
-  return `/api/plaid/link-token`
+  return `/api/wise/status`
 }
 
 /**
- * @summary Create a Plaid Link token
+ * @summary Check whether a Wise personal API token is configured and valid
  */
-export const createPlaidLinkToken = async ( options?: RequestInit): Promise<PlaidLinkToken> => {
+export const getWiseStatus = async ( options?: RequestInit): Promise<WiseStatus> => {
 
-  return customFetch<PlaidLinkToken>(getCreatePlaidLinkTokenUrl(),
+  return customFetch<WiseStatus>(getGetWiseStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWiseStatusQueryKey = () => {
+    return [
+    `/api/wise/status`
+    ] as const;
+    }
+
+
+export const getGetWiseStatusQueryOptions = <TData = Awaited<ReturnType<typeof getWiseStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWiseStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWiseStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWiseStatus>>> = ({ signal }) => getWiseStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWiseStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWiseStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getWiseStatus>>>
+export type GetWiseStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Check whether a Wise personal API token is configured and valid
+ */
+
+export function useGetWiseStatus<TData = Awaited<ReturnType<typeof getWiseStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWiseStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWiseStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSyncWiseTransactionsUrl = () => {
+
+
+
+
+  return `/api/wise/sync`
+}
+
+/**
+ * @summary Sync balances and transactions from Wise using the configured personal API token
+ */
+export const syncWiseTransactions = async ( options?: RequestInit): Promise<WiseSyncResult> => {
+
+  return customFetch<WiseSyncResult>(getSyncWiseTransactionsUrl(),
   {
     ...options,
     method: 'POST'
@@ -2473,11 +2552,11 @@ export const createPlaidLinkToken = async ( options?: RequestInit): Promise<Plai
 
 
 
-export const getCreatePlaidLinkTokenMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPlaidLinkToken>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createPlaidLinkToken>>, TError,void, TContext> => {
+export const getSyncWiseTransactionsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncWiseTransactions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncWiseTransactions>>, TError,void, TContext> => {
 
-const mutationKey = ['createPlaidLinkToken'];
+const mutationKey = ['syncWiseTransactions'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -2487,10 +2566,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPlaidLinkToken>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncWiseTransactions>>, void> = () => {
 
 
-          return  createPlaidLinkToken(requestOptions)
+          return  syncWiseTransactions(requestOptions)
         }
 
 
@@ -2500,125 +2579,65 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreatePlaidLinkTokenMutationResult = NonNullable<Awaited<ReturnType<typeof createPlaidLinkToken>>>
+    export type SyncWiseTransactionsMutationResult = NonNullable<Awaited<ReturnType<typeof syncWiseTransactions>>>
 
-    export type CreatePlaidLinkTokenMutationError = ErrorType<unknown>
+    export type SyncWiseTransactionsMutationError = ErrorType<unknown>
 
     /**
- * @summary Create a Plaid Link token
+ * @summary Sync balances and transactions from Wise using the configured personal API token
  */
-export const useCreatePlaidLinkToken = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPlaidLinkToken>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useSyncWiseTransactions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncWiseTransactions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof createPlaidLinkToken>>,
+        Awaited<ReturnType<typeof syncWiseTransactions>>,
         TError,
         void,
         TContext
       > => {
-      return useMutation(getCreatePlaidLinkTokenMutationOptions(options));
+      return useMutation(getSyncWiseTransactionsMutationOptions(options));
     }
 
-export const getExchangePlaidTokenUrl = () => {
+export const getImportCsvUrl = (params: ImportCsvParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/plaid/exchange-token`
+  return stringifiedParams.length > 0 ? `/api/import/csv?${stringifiedParams}` : `/api/import/csv`
 }
 
 /**
- * @summary Exchange Plaid public token for access token
+ * @summary Import transactions from a bank-exported CSV file (Revolut or Maybank)
  */
-export const exchangePlaidToken = async (plaidExchangeInput: PlaidExchangeInput, options?: RequestInit): Promise<Account[]> => {
+export const importCsv = async (importCsvInput: ImportCsvInput,
+    params: ImportCsvParams, options?: RequestInit): Promise<CsvImportResult> => {
+    const formData = new FormData();
+formData.append(`file`, importCsvInput.file);
 
-  return customFetch<Account[]>(getExchangePlaidTokenUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      plaidExchangeInput,)
-  }
-);}
-
-
-
-
-export const getExchangePlaidTokenMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangePlaidToken>>, TError,{data: BodyType<PlaidExchangeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof exchangePlaidToken>>, TError,{data: BodyType<PlaidExchangeInput>}, TContext> => {
-
-const mutationKey = ['exchangePlaidToken'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exchangePlaidToken>>, {data: BodyType<PlaidExchangeInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  exchangePlaidToken(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ExchangePlaidTokenMutationResult = NonNullable<Awaited<ReturnType<typeof exchangePlaidToken>>>
-    export type ExchangePlaidTokenMutationBody = BodyType<PlaidExchangeInput>
-    export type ExchangePlaidTokenMutationError = ErrorType<unknown>
-
-    /**
- * @summary Exchange Plaid public token for access token
- */
-export const useExchangePlaidToken = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangePlaidToken>>, TError,{data: BodyType<PlaidExchangeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof exchangePlaidToken>>,
-        TError,
-        {data: BodyType<PlaidExchangeInput>},
-        TContext
-      > => {
-      return useMutation(getExchangePlaidTokenMutationOptions(options));
-    }
-
-export const getSyncPlaidTransactionsUrl = () => {
-
-
-
-
-  return `/api/plaid/sync`
-}
-
-/**
- * @summary Sync transactions from Plaid for all linked accounts
- */
-export const syncPlaidTransactions = async ( options?: RequestInit): Promise<PlaidSyncResult> => {
-
-  return customFetch<PlaidSyncResult>(getSyncPlaidTransactionsUrl(),
+  return customFetch<CsvImportResult>(getImportCsvUrl(params),
   {
     ...options,
     method: 'POST'
-
-
+    ,
+    body:
+      formData,
   }
 );}
 
 
 
 
-export const getSyncPlaidTransactionsMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncPlaidTransactions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof syncPlaidTransactions>>, TError,void, TContext> => {
+export const getImportCsvMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importCsv>>, TError,{data: BodyType<ImportCsvInput>;params: ImportCsvParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importCsv>>, TError,{data: BodyType<ImportCsvInput>;params: ImportCsvParams}, TContext> => {
 
-const mutationKey = ['syncPlaidTransactions'];
+const mutationKey = ['importCsv'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -2628,10 +2647,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncPlaidTransactions>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importCsv>>, {data: BodyType<ImportCsvInput>;params: ImportCsvParams}> = (props) => {
+          const {data,params} = props ?? {};
 
-
-          return  syncPlaidTransactions(requestOptions)
+          return  importCsv(data,params,requestOptions)
         }
 
 
@@ -2641,21 +2660,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SyncPlaidTransactionsMutationResult = NonNullable<Awaited<ReturnType<typeof syncPlaidTransactions>>>
-
-    export type SyncPlaidTransactionsMutationError = ErrorType<unknown>
+    export type ImportCsvMutationResult = NonNullable<Awaited<ReturnType<typeof importCsv>>>
+    export type ImportCsvMutationBody = BodyType<ImportCsvInput>
+    export type ImportCsvMutationError = ErrorType<unknown>
 
     /**
- * @summary Sync transactions from Plaid for all linked accounts
+ * @summary Import transactions from a bank-exported CSV file (Revolut or Maybank)
  */
-export const useSyncPlaidTransactions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncPlaidTransactions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useImportCsv = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importCsv>>, TError,{data: BodyType<ImportCsvInput>;params: ImportCsvParams}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof syncPlaidTransactions>>,
+        Awaited<ReturnType<typeof importCsv>>,
         TError,
-        void,
+        {data: BodyType<ImportCsvInput>;params: ImportCsvParams},
         TContext
       > => {
-      return useMutation(getSyncPlaidTransactionsMutationOptions(options));
+      return useMutation(getImportCsvMutationOptions(options));
     }
 

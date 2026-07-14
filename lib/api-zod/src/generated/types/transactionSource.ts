@@ -11,5 +11,6 @@ export type TransactionSource = typeof TransactionSource[keyof typeof Transactio
 
 export const TransactionSource = {
   manual: 'manual',
-  plaid: 'plaid',
+  wise: 'wise',
+  csv: 'csv',
 } as const;

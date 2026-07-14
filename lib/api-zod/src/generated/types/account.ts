@@ -13,11 +13,11 @@ export interface Account {
   currency: AccountCurrency;
   balance: number;
   gbpEquivalent: number;
-  isPlaidLinked: boolean;
+  isWiseLinked: boolean;
   /** @nullable */
-  plaidAccountId?: string | null;
+  wiseProfileId?: string | null;
   /** @nullable */
-  plaidItemId?: string | null;
+  wiseBalanceId?: string | null;
   /** @nullable */
   lastSyncedAt?: string | null;
   createdAt: string;

@@ -14,7 +14,8 @@ tags:
   - name: investments
   - name: dashboard
   - name: market
-  - name: plaid
+  - name: wise
+  - name: import
   - name: debts
 
 paths:
@@ -597,53 +598,64 @@ paths:
                 items:
                   $ref: "#/components/schemas/StockQuote"
 
-  # ── PLAID ──────────────────────────────────────────────────────────────────
-  /plaid/link-token:
-    post:
-      operationId: createPlaidLinkToken
-      tags: [plaid]
-      summary: Create a Plaid Link token
+  # ── WISE ───────────────────────────────────────────────────────────────────
+  /wise/status:
+    get:
+      operationId: getWiseStatus
+      tags: [wise]
+      summary: Check whether a Wise personal API token is configured and valid
       responses:
         "200":
-          description: Link token
+          description: Wise connection status
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PlaidLinkToken"
+                $ref: "#/components/schemas/WiseStatus"
 
-  /plaid/exchange-token:
+  /wise/sync:
     post:
-      operationId: exchangePlaidToken
-      tags: [plaid]
-      summary: Exchange Plaid public token for access token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PlaidExchangeInput"
-      responses:
-        "200":
-          description: Accounts linked
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Account"
-
-  /plaid/sync:
-    post:
-      operationId: syncPlaidTransactions
-      tags: [plaid]
-      summary: Sync transactions from Plaid for all linked accounts
+      operationId: syncWiseTransactions
+      tags: [wise]
+      summary: Sync balances and transactions from Wise using the configured personal API token
       responses:
         "200":
           description: Sync result
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PlaidSyncResult"
+                $ref: "#/components/schemas/WiseSyncResult"
+
+  # ── IMPORT (CSV) ─────────────────────────────────────────────────────────────
+  /import/csv:
+    post:
+      operationId: importCsv
+      tags: [import]
+      summary: Import transactions from a bank-exported CSV file (Revolut or Maybank)
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [revolut, maybank]
+        - name: accountId
+          in: query
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ImportCsvInput"
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CsvImportResult"
 
 components:
   schemas:
@@ -657,7 +669,7 @@ components:
     # ── ACCOUNT ──────────────────────────────────────────────────────────────
     Account:
       type: object
-      required: [id, name, currency, balance, gbpEquivalent, isPlaidLinked, createdAt]
+      required: [id, name, currency, balance, gbpEquivalent, isWiseLinked, createdAt]
       properties:
         id:
           type: integer
@@ -670,11 +682,11 @@ components:
           type: number
         gbpEquivalent:
           type: number
-        isPlaidLinked:
+        isWiseLinked:
           type: boolean
-        plaidAccountId:
+        wiseProfileId:
           type: ["string", "null"]
-        plaidItemId:
+        wiseBalanceId:
           type: ["string", "null"]
         lastSyncedAt:
           type: ["string", "null"]
@@ -732,8 +744,8 @@ components:
           type: number
         source:
           type: string
-          enum: [manual, plaid]
-        plaidTransactionId:
+          enum: [manual, wise, csv]
+        externalId:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -1211,24 +1223,23 @@ components:
               netSavings:
                 type: number
 
-    # ── PLAID ─────────────────────────────────────────────────────────────────
-    PlaidLinkToken:
+    # ── WISE ──────────────────────────────────────────────────────────────────
+    WiseStatus:
       type: object
-      required: [linkToken]
+      required: [configured, connected]
       properties:
-        linkToken:
-          type: string
+        configured:
+          type: boolean
+          description: Whether WISE_API_TOKEN is set in the environment
+        connected:
+          type: boolean
+          description: Whether the token was successfully verified against the Wise API
+        profileName:
+          type: ["string", "null"]
+        error:
+          type: ["string", "null"]
 
-    PlaidExchangeInput:
-      type: object
-      required: [publicToken, institutionName]
-      properties:
-        publicToken:
-          type: string
-        institutionName:
-          type: string
-
-    PlaidSyncResult:
+    WiseSyncResult:
       type: object
       required: [synced, added, updated]
       properties:
@@ -1238,3 +1249,28 @@ components:
           type: integer
         updated:
           type: integer
+
+    # ── IMPORT (CSV) ────────────────────────────────────────────────────────────
+    ImportCsvInput:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+
+    CsvImportResult:
+      type: object
+      required: [provider, added, skipped, errors]
+      properties:
+        provider:
+          type: string
+          enum: [revolut, maybank]
+        added:
+          type: integer
+        skipped:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string

@@ -21,6 +21,6 @@ export interface Transaction {
   gbpValue: number;
   source: TransactionSource;
   /** @nullable */
-  plaidTransactionId?: string | null;
+  externalId?: string | null;
   createdAt: string;
 }

@@ -6,6 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PlaidLinkToken {
-  linkToken: string;
+export interface ImportCsvInput {
+  file: Blob;
 }

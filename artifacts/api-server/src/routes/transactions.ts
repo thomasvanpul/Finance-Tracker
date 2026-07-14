@@ -33,7 +33,7 @@ async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, acco
     currency: tx.currency,
     gbpValue: Math.round(gbpValue * 100) / 100,
     source: tx.source,
-    plaidTransactionId: tx.plaidTransactionId ?? null,
+    externalId: tx.externalId ?? null,
     createdAt: tx.createdAt.toISOString(),
   };
 }

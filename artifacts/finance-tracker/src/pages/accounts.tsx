@@ -1,16 +1,15 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListAccounts,
   useCreateAccount,
   useUpdateAccount,
   useDeleteAccount,
-  useCreatePlaidLinkToken,
-  useExchangePlaidToken,
-  useSyncPlaidTransactions,
+  useGetWiseStatus,
+  useSyncWiseTransactions,
+  useImportCsv,
   getListAccountsQueryKey,
 } from "@workspace/api-client-react";
-import { usePlaidLink } from "react-plaid-link";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, RefreshCw, Trash2, Edit2, Landmark, Link2, AlertCircle } from "lucide-react";
+import { Plus, RefreshCw, Trash2, Edit2, Landmark, Link2, Upload, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
@@ -58,70 +57,105 @@ const TH: React.CSSProperties = {
   whiteSpace: "nowrap" as const,
 };
 
-// Plaid Link button — unchanged logic, updated style
-function PlaidLinkButton({ onSuccess }: { onSuccess: () => void }) {
+// Small badge showing whether the Wise personal API token is configured & working.
+function WiseStatusBadge() {
+  const { data: status } = useGetWiseStatus();
+  if (!status) return null;
+
+  const label = !status.configured
+    ? "Wise: not configured"
+    : status.connected
+    ? `Wise: connected${status.profileName ? ` (${status.profileName})` : ""}`
+    : `Wise: ${status.error ?? "connection error"}`;
+  const color = status.connected ? "#3FB950" : status.configured ? "#F85149" : "#8B949E";
+
+  return (
+    <span
+      className="flex items-center gap-1"
+      style={{ fontSize: 11, padding: "3px 8px", borderRadius: 2, background: `${color}22`, color, border: `1px solid ${color}44` }}
+    >
+      <Link2 className="w-3 h-3" />
+      {label}
+    </span>
+  );
+}
+
+// CSV import dialog — used for Revolut and Maybank exports (no live API for either
+// that a hobby project can use for free; see accounts.tsx history for why).
+function CsvImportDialog({ accounts, onImported }: { accounts: { id: number; name: string }[]; onImported: () => void }) {
   const { toast } = useToast();
-  const createToken = useCreatePlaidLinkToken();
-  const exchangeToken = useExchangePlaidToken();
+  const importCsv = useImportCsv();
+  const [open, setOpen] = useState(false);
+  const [provider, setProvider] = useState<"revolut" | "maybank">("revolut");
+  const [accountId, setAccountId] = useState<string>("");
+  const [file, setFile] = useState<File | null>(null);
 
-  const [linkToken, setLinkToken] = useState<string | null>(null);
-  const [fetchingToken, setFetchingToken] = useState(false);
-  const [pendingOpen, setPendingOpen] = useState(false);
-
-  const { open, ready } = usePlaidLink({
-    token: linkToken ?? "",
-    onSuccess: async (publicToken, metadata) => {
-      const institution = metadata.institution?.name ?? "My Bank";
-      try {
-        await exchangeToken.mutateAsync({ data: { publicToken, institutionName: institution } });
-        toast({ title: `${institution} connected successfully` });
-        onSuccess();
-      } catch (err: any) {
-        const detail = err?.response?.data?.details?.error_message ?? err?.message ?? "Unknown error";
-        toast({ title: "Failed to link bank account", description: detail, variant: "destructive" });
-      }
-      setLinkToken(null);
-      setPendingOpen(false);
-    },
-    onExit: (err) => {
-      setLinkToken(null);
-      setPendingOpen(false);
-      if (err) {
-        toast({ title: "Plaid Link exited with error", description: err.display_message ?? err.error_message ?? "Unknown error", variant: "destructive" });
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (pendingOpen && ready) open();
-  }, [pendingOpen, ready, open]);
-
-  const handleClick = async () => {
-    setFetchingToken(true);
+  const handleImport = async () => {
+    if (!file || !accountId) return;
     try {
-      const result = await createToken.mutateAsync();
-      setLinkToken(result.linkToken);
-      setPendingOpen(true);
+      const result = await importCsv.mutateAsync({
+        params: { provider, accountId: Number(accountId) },
+        data: { file },
+      });
+      toast({
+        title: `Import complete — ${result.added} added, ${result.skipped} skipped`,
+        description: result.errors.length > 0 ? `${result.errors.length} row(s) had issues — check details.` : undefined,
+      });
+      onImported();
+      setOpen(false);
+      setFile(null);
     } catch (err: any) {
-      const detail = err?.response?.data?.error ?? err?.message ?? "Unable to create link token";
-      toast({ title: "Could not start bank connection", description: detail, variant: "destructive" });
-    } finally {
-      setFetchingToken(false);
+      toast({ title: "Import failed", description: err?.message ?? "Unknown error", variant: "destructive" });
     }
   };
 
-  const busy = fetchingToken || exchangeToken.isPending || pendingOpen;
-
   return (
-    <Button
-      size="sm"
-      onClick={handleClick}
-      disabled={busy}
-      style={{ background: "#21262D", color: "#C9D1D9", border: "1px solid #30363D", borderRadius: 2, fontSize: 12 }}
-    >
-      <Link2 className={`w-3.5 h-3.5 mr-1.5 ${(fetchingToken || pendingOpen) ? "animate-spin" : ""}`} />
-      {fetchingToken ? "Fetching token…" : pendingOpen ? "Opening…" : "Link Bank (Plaid)"}
-    </Button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        size="sm"
+        onClick={() => setOpen(true)}
+        style={{ background: "#21262D", color: "#C9D1D9", border: "1px solid #30363D", borderRadius: 2, fontSize: 12 }}
+      >
+        <Upload className="w-3.5 h-3.5 mr-1.5" />
+        Import CSV
+      </Button>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Import transactions from CSV</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Bank / Source</Label>
+            <Select value={provider} onValueChange={(v) => setProvider(v as "revolut" | "maybank")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="revolut">Revolut (Statement export)</SelectItem>
+                <SelectItem value="maybank">Maybank (Transaction export)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Account to import into</Label>
+            <Select value={accountId} onValueChange={setAccountId}>
+              <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+              <SelectContent>
+                {accounts.map((a) => (
+                  <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="csv-file">CSV file</Label>
+            <Input id="csv-file" type="file" accept=".csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+          </div>
+        </div>
+        <DialogFooter className="mt-6">
+          <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+          <Button type="button" disabled={!file || !accountId || importCsv.isPending} onClick={handleImport}>
+            {importCsv.isPending ? "Importing…" : "Import"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -133,7 +167,7 @@ export default function Accounts() {
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
   const deleteAccount = useDeleteAccount();
-  const syncPlaid = useSyncPlaidTransactions();
+  const syncWise = useSyncWiseTransactions();
 
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -181,7 +215,7 @@ export default function Accounts() {
 
   const handleSync = async () => {
     try {
-      const result = await syncPlaid.mutateAsync();
+      const result = await syncWise.mutateAsync();
       await invalidate();
       toast({ title: `Sync complete — ${result.added} added, ${result.updated} updated` });
     } catch (err: any) {
@@ -235,16 +269,17 @@ export default function Accounts() {
           <p className="text-xs mt-0.5" style={{ color: "#484F58" }}>Manage your cash and linked bank accounts</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <PlaidLinkButton onSuccess={invalidate} />
+          <WiseStatusBadge />
           <Button
             size="sm"
             onClick={handleSync}
-            disabled={syncPlaid.isPending}
+            disabled={syncWise.isPending}
             style={{ background: "#21262D", color: "#C9D1D9", border: "1px solid #30363D", borderRadius: 2, fontSize: 12 }}
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${syncPlaid.isPending ? "animate-spin" : ""}`} />
-            Sync Plaid
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${syncWise.isPending ? "animate-spin" : ""}`} />
+            Sync Wise
           </Button>
+          <CsvImportDialog accounts={accounts ?? []} onImported={invalidate} />
           <Button
             size="sm"
             onClick={openAdd}
@@ -321,16 +356,16 @@ export default function Accounts() {
               <div className="flex items-center gap-2">
                 <Landmark className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#484F58" }} />
                 <span style={{ color: "#E6EDF3", fontSize: 12 }}>{account.name}</span>
-                {account.isPlaidLinked && (
+                {account.isWiseLinked && (
                   <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: "#1F6FEB22", color: "#58A6FF" }}>
-                    <Link2 className="w-2.5 h-2.5 inline mr-0.5" />PLAID
+                    <Link2 className="w-2.5 h-2.5 inline mr-0.5" />WISE
                   </span>
                 )}
               </div>
             </div>
             {/* Type */}
             <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#8B949E", fontSize: 11 }}>
-              {account.isPlaidLinked ? "Plaid-linked" : "Manual"}
+              {account.isWiseLinked ? "Wise-linked" : "Manual"}
             </div>
             {/* Currency */}
             <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#58A6FF", fontSize: 12, fontWeight: 700 }}>
@@ -364,7 +399,7 @@ export default function Accounts() {
           <div className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
             <div style={{ width: 36, borderRight: "1px solid #21262D", alignSelf: "stretch" }} />
             <div className="flex-1 text-center py-8 text-xs" style={{ color: "#484F58" }}>
-              No accounts yet — add one manually or link via Plaid.
+              No accounts yet — add one manually, sync Wise, or import a CSV.
             </div>
           </div>
         )}

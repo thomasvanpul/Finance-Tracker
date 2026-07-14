@@ -33,11 +33,11 @@ export interface Account {
   currency: AccountCurrency;
   balance: number;
   gbpEquivalent: number;
-  isPlaidLinked: boolean;
+  isWiseLinked: boolean;
   /** @nullable */
-  plaidAccountId?: string | null;
+  wiseProfileId?: string | null;
   /** @nullable */
-  plaidItemId?: string | null;
+  wiseBalanceId?: string | null;
   /** @nullable */
   lastSyncedAt?: string | null;
   createdAt: string;
@@ -105,7 +105,8 @@ export type TransactionSource = typeof TransactionSource[keyof typeof Transactio
 
 export const TransactionSource = {
   manual: 'manual',
-  plaid: 'plaid',
+  wise: 'wise',
+  csv: 'csv',
 } as const;
 
 export interface Transaction {
@@ -121,7 +122,7 @@ export interface Transaction {
   gbpValue: number;
   source: TransactionSource;
   /** @nullable */
-  plaidTransactionId?: string | null;
+  externalId?: string | null;
   createdAt: string;
 }
 
@@ -645,19 +646,40 @@ export interface DashboardSummary {
   monthlyHistory?: DashboardSummaryMonthlyHistoryItem[];
 }
 
-export interface PlaidLinkToken {
-  linkToken: string;
+export interface WiseStatus {
+  /** Whether WISE_API_TOKEN is set in the environment */
+  configured: boolean;
+  /** Whether the token was successfully verified against the Wise API */
+  connected: boolean;
+  /** @nullable */
+  profileName?: string | null;
+  /** @nullable */
+  error?: string | null;
 }
 
-export interface PlaidExchangeInput {
-  publicToken: string;
-  institutionName: string;
-}
-
-export interface PlaidSyncResult {
+export interface WiseSyncResult {
   synced: number;
   added: number;
   updated: number;
+}
+
+export interface ImportCsvInput {
+  file: Blob;
+}
+
+export type CsvImportResultProvider = typeof CsvImportResultProvider[keyof typeof CsvImportResultProvider];
+
+
+export const CsvImportResultProvider = {
+  revolut: 'revolut',
+  maybank: 'maybank',
+} as const;
+
+export interface CsvImportResult {
+  provider: CsvImportResultProvider;
+  added: number;
+  skipped: number;
+  errors: string[];
 }
 
 export type ListTransactionsParams = {
@@ -713,4 +735,17 @@ export type GetMarketQuotesParams = {
  */
 tickers: string;
 };
+
+export type ImportCsvParams = {
+provider: ImportCsvProvider;
+accountId: number;
+};
+
+export type ImportCsvProvider = typeof ImportCsvProvider[keyof typeof ImportCsvProvider];
+
+
+export const ImportCsvProvider = {
+  revolut: 'revolut',
+  maybank: 'maybank',
+} as const;
 

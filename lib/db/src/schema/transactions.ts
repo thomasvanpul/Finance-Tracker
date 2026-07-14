@@ -11,8 +11,8 @@ export const transactionsTable = pgTable("transactions", {
   accountId: integer("account_id").notNull(),
   nativeAmount: numeric("native_amount", { precision: 18, scale: 4 }).notNull(),
   currency: text("currency").notNull(),
-  source: text("source").notNull().default("manual"), // manual | plaid
-  plaidTransactionId: text("plaid_transaction_id"),
+  source: text("source").notNull().default("manual"), // manual | wise | csv
+  externalId: text("external_id"), // wise transaction reference, or a hash for CSV dedup
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

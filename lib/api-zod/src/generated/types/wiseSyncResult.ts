@@ -6,7 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PlaidExchangeInput {
-  publicToken: string;
-  institutionName: string;
+export interface WiseSyncResult {
+  synced: number;
+  added: number;
+  updated: number;
 }

@@ -22,9 +22,9 @@ async function enrichAccount(account: typeof accountsTable.$inferSelect) {
     currency: account.currency,
     balance,
     gbpEquivalent: Math.round(gbpEquivalent * 100) / 100,
-    isPlaidLinked: account.isPlaidLinked,
-    plaidAccountId: account.plaidAccountId ?? null,
-    plaidItemId: account.plaidItemId ?? null,
+    isWiseLinked: account.isWiseLinked,
+    wiseProfileId: account.wiseProfileId ?? null,
+    wiseBalanceId: account.wiseBalanceId ?? null,
     lastSyncedAt: account.lastSyncedAt ? account.lastSyncedAt.toISOString() : null,
     createdAt: account.createdAt.toISOString(),
   };

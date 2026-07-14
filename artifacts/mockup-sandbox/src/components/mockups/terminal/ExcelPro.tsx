@@ -63,7 +63,7 @@ export function ExcelPro() {
           {/* Row 1: Section header */}
           <div style={{ display: "flex", borderBottom: "1px solid #21262D", background: "#0D419D" }}>
             <div style={{ flex: "0 0 3%", borderRight: "1px solid rgba(255,255,255,0.1)", padding: "3px 6px", fontSize: 10, color: "#8B949E", textAlign: "center" }}>1</div>
-            <div style={{ flex: 1, padding: "4px 8px", color: "#E6EDF3", fontWeight: 700, fontSize: 11, letterSpacing: 0.5 }} colSpan={9}>▼ PORTFOLIO POSITIONS — Live Market Data (GBP)</div>
+            <div style={{ flex: 1, padding: "4px 8px", color: "#E6EDF3", fontWeight: 700, fontSize: 11, letterSpacing: 0.5 }}>▼ PORTFOLIO POSITIONS — Live Market Data (GBP)</div>
           </div>
 
           {/* Header row */}
