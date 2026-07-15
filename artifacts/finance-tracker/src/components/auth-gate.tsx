@@ -68,12 +68,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             className="flex items-center gap-2 px-4"
             style={{ borderRight: "1px solid #21262D", height: 44 }}
           >
-            <div
-              className="flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-              style={{ width: 26, height: 26, background: "linear-gradient(135deg,#1F6FEB,#0D419D)", borderRadius: 3 }}
-            >
-              F
-            </div>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+              <rect width="22" height="22" rx="4" fill="#0D1117" />
+              <rect x="3" y="14" width="3" height="5" rx="0.5" fill="#1F6FEB" opacity="0.7" />
+              <rect x="8" y="10" width="3" height="9" rx="0.5" fill="#1F6FEB" opacity="0.85" />
+              <rect x="13" y="6" width="3" height="13" rx="0.5" fill="#1F6FEB" />
+              <polyline points="4.5,13 9.5,9 14.5,5 18,3" stroke="#3FB950" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="18" cy="3" r="1.2" fill="#3FB950" />
+            </svg>
             <span className="font-bold text-sm tracking-tight" style={{ color: "#E6EDF3" }}>
               Fintrack
             </span>
