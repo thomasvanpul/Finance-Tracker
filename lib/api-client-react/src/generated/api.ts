@@ -23,12 +23,14 @@ import type {
   Account,
   AccountInput,
   AccountUpdate,
+  ChangePasswordInput,
   CsvImportResult,
   DashboardSummary,
   Debt,
   DebtInput,
   DebtSummary,
   DebtUpdate,
+  DisableTwoFaInput,
   FxRates,
   GetMarketPricesParams,
   GetMarketQuotesParams,
@@ -42,12 +44,17 @@ import type {
   InvestmentSummary,
   InvestmentUpdate,
   ListTransactionsParams,
+  OkResult,
   StockPrice,
   StockQuote,
   Transaction,
   TransactionInput,
   TransactionSummary,
   TransactionUpdate,
+  TwoFaConfirmInput,
+  TwoFaConfirmResult,
+  TwoFaSetupResult,
+  TwoFaStatus,
   UpcomingItem,
   UpcomingItemInput,
   UpcomingItemUpdate,
@@ -2676,5 +2683,365 @@ export const useImportCsv = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getImportCsvMutationOptions(options));
+    }
+
+export const getChangePasswordUrl = () => {
+
+
+
+
+  return `/api/settings/password`
+}
+
+/**
+ * @summary Change the app password (requires current password)
+ */
+export const changePassword = async (changePasswordInput: ChangePasswordInput, options?: RequestInit): Promise<OkResult> => {
+
+  return customFetch<OkResult>(getChangePasswordUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      changePasswordInput,)
+  }
+);}
+
+
+
+
+export const getChangePasswordMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: BodyType<ChangePasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: BodyType<ChangePasswordInput>}, TContext> => {
+
+const mutationKey = ['changePassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changePassword>>, {data: BodyType<ChangePasswordInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  changePassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangePasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changePassword>>>
+    export type ChangePasswordMutationBody = BodyType<ChangePasswordInput>
+    export type ChangePasswordMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Change the app password (requires current password)
+ */
+export const useChangePassword = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePassword>>, TError,{data: BodyType<ChangePasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changePassword>>,
+        TError,
+        {data: BodyType<ChangePasswordInput>},
+        TContext
+      > => {
+      return useMutation(getChangePasswordMutationOptions(options));
+    }
+
+export const getGet2faStatusUrl = () => {
+
+
+
+
+  return `/api/settings/2fa/status`
+}
+
+/**
+ * @summary Whether TOTP 2FA is currently enabled
+ */
+export const get2faStatus = async ( options?: RequestInit): Promise<TwoFaStatus> => {
+
+  return customFetch<TwoFaStatus>(getGet2faStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGet2faStatusQueryKey = () => {
+    return [
+    `/api/settings/2fa/status`
+    ] as const;
+    }
+
+
+export const getGet2faStatusQueryOptions = <TData = Awaited<ReturnType<typeof get2faStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof get2faStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGet2faStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof get2faStatus>>> = ({ signal }) => get2faStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof get2faStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type Get2faStatusQueryResult = NonNullable<Awaited<ReturnType<typeof get2faStatus>>>
+export type Get2faStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Whether TOTP 2FA is currently enabled
+ */
+
+export function useGet2faStatus<TData = Awaited<ReturnType<typeof get2faStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof get2faStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGet2faStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetup2faUrl = () => {
+
+
+
+
+  return `/api/settings/2fa/setup`
+}
+
+/**
+ * @summary Begin 2FA setup — generates a new TOTP secret and QR code (not yet enabled)
+ */
+export const setup2fa = async ( options?: RequestInit): Promise<TwoFaSetupResult> => {
+
+  return customFetch<TwoFaSetupResult>(getSetup2faUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSetup2faMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setup2fa>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setup2fa>>, TError,void, TContext> => {
+
+const mutationKey = ['setup2fa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setup2fa>>, void> = () => {
+
+
+          return  setup2fa(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type Setup2faMutationResult = NonNullable<Awaited<ReturnType<typeof setup2fa>>>
+
+    export type Setup2faMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Begin 2FA setup — generates a new TOTP secret and QR code (not yet enabled)
+ */
+export const useSetup2fa = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setup2fa>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setup2fa>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSetup2faMutationOptions(options));
+    }
+
+export const getConfirm2faUrl = () => {
+
+
+
+
+  return `/api/settings/2fa/confirm`
+}
+
+/**
+ * @summary Confirm 2FA setup with a code from the authenticator app — enables 2FA and returns backup codes
+ */
+export const confirm2fa = async (twoFaConfirmInput: TwoFaConfirmInput, options?: RequestInit): Promise<TwoFaConfirmResult> => {
+
+  return customFetch<TwoFaConfirmResult>(getConfirm2faUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      twoFaConfirmInput,)
+  }
+);}
+
+
+
+
+export const getConfirm2faMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirm2fa>>, TError,{data: BodyType<TwoFaConfirmInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirm2fa>>, TError,{data: BodyType<TwoFaConfirmInput>}, TContext> => {
+
+const mutationKey = ['confirm2fa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirm2fa>>, {data: BodyType<TwoFaConfirmInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirm2fa(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type Confirm2faMutationResult = NonNullable<Awaited<ReturnType<typeof confirm2fa>>>
+    export type Confirm2faMutationBody = BodyType<TwoFaConfirmInput>
+    export type Confirm2faMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Confirm 2FA setup with a code from the authenticator app — enables 2FA and returns backup codes
+ */
+export const useConfirm2fa = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirm2fa>>, TError,{data: BodyType<TwoFaConfirmInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirm2fa>>,
+        TError,
+        {data: BodyType<TwoFaConfirmInput>},
+        TContext
+      > => {
+      return useMutation(getConfirm2faMutationOptions(options));
+    }
+
+export const getDisable2faUrl = () => {
+
+
+
+
+  return `/api/settings/2fa/disable`
+}
+
+/**
+ * @summary Disable 2FA (requires current password)
+ */
+export const disable2fa = async (disableTwoFaInput: DisableTwoFaInput, options?: RequestInit): Promise<OkResult> => {
+
+  return customFetch<OkResult>(getDisable2faUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      disableTwoFaInput,)
+  }
+);}
+
+
+
+
+export const getDisable2faMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disable2fa>>, TError,{data: BodyType<DisableTwoFaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disable2fa>>, TError,{data: BodyType<DisableTwoFaInput>}, TContext> => {
+
+const mutationKey = ['disable2fa'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disable2fa>>, {data: BodyType<DisableTwoFaInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  disable2fa(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type Disable2faMutationResult = NonNullable<Awaited<ReturnType<typeof disable2fa>>>
+    export type Disable2faMutationBody = BodyType<DisableTwoFaInput>
+    export type Disable2faMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Disable 2FA (requires current password)
+ */
+export const useDisable2fa = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disable2fa>>, TError,{data: BodyType<DisableTwoFaInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disable2fa>>,
+        TError,
+        {data: BodyType<DisableTwoFaInput>},
+        TContext
+      > => {
+      return useMutation(getDisable2faMutationOptions(options));
     }
 

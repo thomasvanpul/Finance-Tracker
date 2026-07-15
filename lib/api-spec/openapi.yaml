@@ -16,6 +16,7 @@ tags:
   - name: market
   - name: wise
   - name: import
+  - name: settings
   - name: debts
 
 paths:
@@ -657,6 +658,90 @@ paths:
               schema:
                 $ref: "#/components/schemas/CsvImportResult"
 
+  # ── SETTINGS (password + 2FA) ───────────────────────────────────────────────
+  /settings/password:
+    post:
+      operationId: changePassword
+      tags: [settings]
+      summary: Change the app password (requires current password)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
+  /settings/2fa/status:
+    get:
+      operationId: get2faStatus
+      tags: [settings]
+      summary: Whether TOTP 2FA is currently enabled
+      responses:
+        "200":
+          description: 2FA status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwoFaStatus"
+
+  /settings/2fa/setup:
+    post:
+      operationId: setup2fa
+      tags: [settings]
+      summary: Begin 2FA setup — generates a new TOTP secret and QR code (not yet enabled)
+      responses:
+        "200":
+          description: Setup data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwoFaSetupResult"
+
+  /settings/2fa/confirm:
+    post:
+      operationId: confirm2fa
+      tags: [settings]
+      summary: Confirm 2FA setup with a code from the authenticator app — enables 2FA and returns backup codes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TwoFaConfirmInput"
+      responses:
+        "200":
+          description: 2FA enabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwoFaConfirmResult"
+
+  /settings/2fa/disable:
+    post:
+      operationId: disable2fa
+      tags: [settings]
+      summary: Disable 2FA (requires current password)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisableTwoFaInput"
+      responses:
+        "200":
+          description: 2FA disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
 components:
   schemas:
     HealthStatus:
@@ -1274,3 +1359,64 @@ components:
           type: array
           items:
             type: string
+
+    # ── SETTINGS (password + 2FA) ───────────────────────────────────────────────
+    OkResult:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+
+    ChangePasswordInput:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+
+    TwoFaStatus:
+      type: object
+      required: [enabled]
+      properties:
+        enabled:
+          type: boolean
+
+    TwoFaSetupResult:
+      type: object
+      required: [secret, qrCodeDataUrl]
+      properties:
+        secret:
+          type: string
+        qrCodeDataUrl:
+          type: string
+          description: Data URL (PNG) — render directly in an <img> tag
+
+    TwoFaConfirmInput:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+
+    TwoFaConfirmResult:
+      type: object
+      required: [ok, backupCodes]
+      properties:
+        ok:
+          type: boolean
+        backupCodes:
+          type: array
+          items:
+            type: string
+          description: Shown once — store these somewhere safe
+
+    DisableTwoFaInput:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string

@@ -6,6 +6,7 @@ import {
   CalendarClock,
   TrendingUp,
   HandCoins,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KpiBar } from "./kpi-bar";
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/upcoming", label: "Upcoming", short: "UPC", icon: CalendarClock },
   { href: "/investments", label: "Investments", short: "INV", icon: TrendingUp },
   { href: "/owing", label: "Owing", short: "OWE", icon: HandCoins },
+  { href: "/settings", label: "Settings", short: "SET", icon: SettingsIcon },
 ];
 
 const now = new Date();

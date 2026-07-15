@@ -636,3 +636,62 @@ export const ImportCsvResponse = zod.object({
 })
 
 
+/**
+ * @summary Change the app password (requires current password)
+ */
+export const changePasswordBodyNewPasswordMin = 8;
+
+
+
+export const ChangePasswordBody = zod.object({
+  "currentPassword": zod.string(),
+  "newPassword": zod.string().min(changePasswordBodyNewPasswordMin)
+})
+
+export const ChangePasswordResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Whether TOTP 2FA is currently enabled
+ */
+export const Get2faStatusResponse = zod.object({
+  "enabled": zod.boolean()
+})
+
+
+/**
+ * @summary Begin 2FA setup — generates a new TOTP secret and QR code (not yet enabled)
+ */
+export const Setup2faResponse = zod.object({
+  "secret": zod.string(),
+  "qrCodeDataUrl": zod.string().describe('Data URL (PNG) — render directly in an <img> tag')
+})
+
+
+/**
+ * @summary Confirm 2FA setup with a code from the authenticator app — enables 2FA and returns backup codes
+ */
+export const Confirm2faBody = zod.object({
+  "code": zod.string()
+})
+
+export const Confirm2faResponse = zod.object({
+  "ok": zod.boolean(),
+  "backupCodes": zod.array(zod.string()).describe('Shown once — store these somewhere safe')
+})
+
+
+/**
+ * @summary Disable 2FA (requires current password)
+ */
+export const Disable2faBody = zod.object({
+  "password": zod.string()
+})
+
+export const Disable2faResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+

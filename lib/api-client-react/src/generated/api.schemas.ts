@@ -682,6 +682,40 @@ export interface CsvImportResult {
   errors: string[];
 }
 
+export interface OkResult {
+  ok: boolean;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  /** @minLength 8 */
+  newPassword: string;
+}
+
+export interface TwoFaStatus {
+  enabled: boolean;
+}
+
+export interface TwoFaSetupResult {
+  secret: string;
+  /** Data URL (PNG) — render directly in an <img> tag */
+  qrCodeDataUrl: string;
+}
+
+export interface TwoFaConfirmInput {
+  code: string;
+}
+
+export interface TwoFaConfirmResult {
+  ok: boolean;
+  /** Shown once — store these somewhere safe */
+  backupCodes: string[];
+}
+
+export interface DisableTwoFaInput {
+  password: string;
+}
+
 export type ListTransactionsParams = {
 /**
  * @nullable

@@ -8,6 +8,8 @@ type Status = "checking" | "authed" | "unauthed";
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("checking");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [needsCode, setNeedsCode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -26,13 +28,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, code: needsCode ? code : undefined }),
       });
-      if (res.ok) {
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body.ok) {
         setStatus("authed");
+      } else if (body.requiresCode) {
+        setNeedsCode(true);
+        setError(res.ok ? null : (body.error ?? "Incorrect code"));
       } else {
-        const body = await res.json().catch(() => ({}));
         setError(body.error ?? "Incorrect password");
+        if (needsCode) setCode("");
       }
     } catch {
       setError("Could not reach the server");
@@ -130,28 +136,54 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               >
                 <span className="text-xs font-mono" style={{ color: "#58A6FF" }}>A1</span>
                 <span className="text-xs" style={{ color: "#484F58" }}>·</span>
-                <span className="text-xs" style={{ color: "#6E7681" }}>Enter password to continue</span>
+                <span className="text-xs" style={{ color: "#6E7681" }}>
+                  {needsCode ? "Enter your 6-digit authenticator code" : "Enter password to continue"}
+                </span>
               </div>
               <div className="p-4">
-                <input
-                  type="password"
-                  autoFocus
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="APP_PASSWORD"
-                  style={{
-                    width: "100%",
-                    boxSizing: "border-box",
-                    background: "#0D1117",
-                    border: "1px solid #30363D",
-                    borderRadius: 2,
-                    color: "#E6EDF3",
-                    fontSize: 13,
-                    fontFamily: "monospace",
-                    padding: "8px 10px",
-                    marginBottom: 12,
-                  }}
-                />
+                {!needsCode ? (
+                  <input
+                    type="password"
+                    autoFocus
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="APP_PASSWORD"
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      background: "#0D1117",
+                      border: "1px solid #30363D",
+                      borderRadius: 2,
+                      color: "#E6EDF3",
+                      fontSize: 13,
+                      fontFamily: "monospace",
+                      padding: "8px 10px",
+                      marginBottom: 12,
+                    }}
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoFocus
+                    maxLength={10}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="000000 or backup code"
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      background: "#0D1117",
+                      border: "1px solid #30363D",
+                      borderRadius: 2,
+                      color: "#E6EDF3",
+                      fontSize: 13,
+                      fontFamily: "monospace",
+                      padding: "8px 10px",
+                      marginBottom: 12,
+                    }}
+                  />
+                )}
                 {error && (
                   <p
                     className="font-mono"
@@ -162,7 +194,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 )}
                 <button
                   type="submit"
-                  disabled={submitting || !password}
+                  disabled={submitting || (needsCode ? !code : !password)}
                   style={{
                     width: "100%",
                     background: "#1F6FEB",
@@ -172,8 +204,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                     fontSize: 13,
                     fontWeight: 600,
                     padding: "8px 0",
-                    cursor: submitting || !password ? "default" : "pointer",
-                    opacity: submitting || !password ? 0.6 : 1,
+                    cursor: submitting || (needsCode ? !code : !password) ? "default" : "pointer",
+                    opacity: submitting || (needsCode ? !code : !password) ? 0.6 : 1,
                   }}
                 >
                   {submitting ? "Verifying…" : "Enter"}
