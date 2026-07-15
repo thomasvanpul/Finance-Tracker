@@ -13,7 +13,7 @@ COPY scripts/ ./scripts/
 
 # --no-frozen-lockfile lets pnpm pick the correct Linux platform binaries
 # (the lockfile was generated on macOS so platform-specific entries differ)
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile --ignore-scripts && pnpm rebuild esbuild
 
 RUN pnpm --filter @workspace/api-server run build
 
