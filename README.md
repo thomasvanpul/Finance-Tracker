@@ -1,8 +1,8 @@
 # Fintrack — Personal Finance Tracker
 
-A full-stack personal finance tracker. GBP base currency, single-user, dark "Excel Pro" spreadsheet theme. Deployed on Render + Neon (both free tier).
+A full-stack personal finance tracker. GBP base currency, single-user, dark "Excel Pro" spreadsheet theme.
 
-**Live site:** check your [Render dashboard](https://dashboard.render.com) → fintrack service for the URL (format: `https://fintrack-xxxx.onrender.com`).
+**Live site:** [finance-tracker-api-server-one.vercel.app](https://finance-tracker-api-server-one.vercel.app/)
 
 ---
 
@@ -54,7 +54,7 @@ A full-stack personal finance tracker. GBP base currency, single-user, dark "Exc
 | Bank sync | Wise personal API token |
 | Market data | yahoo-finance2 (5-min in-memory cache) |
 | Auth | bcrypt, otplib, qrcode |
-| Deployment | Render (web service) + Neon (Postgres), both free tier |
+| Deployment | Vercel (frontend) + Railway (API) + Neon (Postgres) |
 
 ---
 
@@ -62,14 +62,15 @@ A full-stack personal finance tracker. GBP base currency, single-user, dark "Exc
 
 ```
 artifacts/
-  finance-tracker/   # React + Vite frontend
-  api-server/        # Express 5 API
+  finance-tracker/   # React + Vite frontend  →  Vercel
+  api-server/        # Express 5 API          →  Railway
 lib/
   db/                # Drizzle schema (source of truth for DB shape)
   api-spec/          # openapi.yaml (source of truth for API contract)
   api-client-react/  # generated — do not hand-edit
   api-zod/           # generated — do not hand-edit
-render.yaml          # Render deployment config
+vercel.json          # Vercel frontend build config
+Dockerfile           # Railway API build config
 ```
 
 ---
@@ -79,7 +80,7 @@ render.yaml          # Render deployment config
 ```bash
 pnpm install
 pnpm --filter @workspace/api-server run dev       # API on :8080
-pnpm --filter @workspace/finance-tracker run dev  # Vite dev server
+pnpm --filter @workspace/finance-tracker run dev  # Vite dev server on :5173
 ```
 
 Other useful commands:
@@ -88,20 +89,30 @@ Other useful commands:
 pnpm run typecheck                                 # full monorepo typecheck
 pnpm run build                                     # typecheck + build all packages
 pnpm --filter @workspace/api-spec run codegen      # regenerate hooks/schemas after editing openapi.yaml
-pnpm --filter @workspace/db run push               # push DB schema changes (dev only, no migrations file)
+pnpm --filter @workspace/db run push               # push DB schema changes (dev only)
 ```
 
 ---
 
 ## Environment variables
 
+### API server (Railway)
+
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | Neon PostgreSQL connection string |
+| `APP_PASSWORD` | Password gate for the whole app |
+| `JWT_SECRET` | Session signing secret (`openssl rand -hex 32`) |
+| `SESSION_SECRET` | Express session secret |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins (your Vercel URL) |
 | `WISE_API_TOKEN` | Wise personal API token (Settings → API tokens) |
 | `WISE_ENV` | `live` (default) or `sandbox` |
-| `SESSION_SECRET` | Session signing secret (Render auto-generates) |
-| `APP_PASSWORD` | Password gate for the whole app |
+
+### Frontend (Vercel)
+
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | Full URL of your Railway API (e.g. `https://fintrack-production-ddc0.up.railway.app`) |
 
 ---
 
@@ -118,8 +129,14 @@ This app does **not** use Plaid. Here's why and what's used instead:
 
 ## Deployment
 
-See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for the full Render + Neon setup walkthrough.
+The app is split across two platforms:
 
-**TL;DR:** connect the GitHub repo to a new Render web service, set the four env vars, deploy, then run `pnpm --filter @workspace/db run push` once to initialise the schema.
+- **Vercel** — serves the React frontend (CDN, instant cold starts)
+- **Railway** — runs the Express API (always-on, no cold starts, $5/mo free credit)
+- **Neon** — PostgreSQL database (free tier)
 
-Note: Render's free tier spins down after ~15 min of inactivity (30–60s cold start on next visit). Fine for personal use.
+### Initial setup
+
+1. Connect the GitHub repo to a Vercel project. Set `VITE_API_URL` in Vercel environment variables.
+2. Connect the GitHub repo to a Railway service. Railway auto-detects the `Dockerfile`. Add all API env vars in the Variables tab.
+3. Run `pnpm --filter @workspace/db run push` once locally with `DATABASE_URL` set to initialise the schema.
