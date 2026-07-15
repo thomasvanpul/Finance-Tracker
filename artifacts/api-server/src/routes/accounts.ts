@@ -9,13 +9,15 @@ import {
   ListAccountsResponse,
   UpdateAccountResponse,
 } from "@workspace/api-zod";
-import { getFxRates, toGbp } from "../lib/market";
+import { getFxRates, toBase } from "../lib/market";
+import { getBaseCurrency } from "../lib/app-settings-db";
 
 const router: IRouter = Router();
 
 async function enrichAccount(account: typeof accountsTable.$inferSelect) {
   const balance = parseFloat(account.balance);
-  const gbpEquivalent = await toGbp(balance, account.currency);
+  const baseCurrency = await getBaseCurrency();
+  const gbpEquivalent = await toBase(balance, account.currency, baseCurrency);
   return {
     id: account.id,
     name: account.name,

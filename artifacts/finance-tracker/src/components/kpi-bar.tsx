@@ -1,16 +1,19 @@
 import { useGetDashboard } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 export function KpiBar() {
   const { data } = useGetDashboard();
 
   if (!data) return null;
 
+  const currency = data.baseCurrency ?? "GBP";
+  const fmt = (value: number) => formatCurrency(value, currency);
+
   const items = [
-    { label: "Net Worth", value: formatGbp(data.netWorth), color: "#58A6FF" },
-    { label: "Liquidity", value: formatGbp(data.netLiquidity), color: "#3FB950" },
-    { label: "Cash", value: formatGbp(data.totalCash), color: "#C9D1D9" },
-    { label: "Portfolio", value: formatGbp(data.portfolio.totalValueGbp), color: data.portfolio.totalPlGbp >= 0 ? "#3FB950" : "#F85149" },
+    { label: "Net Worth", value: fmt(data.netWorth), color: "#58A6FF" },
+    { label: "Liquidity", value: fmt(data.netLiquidity), color: "#3FB950" },
+    { label: "Cash", value: fmt(data.totalCash), color: "#C9D1D9" },
+    { label: "Portfolio", value: fmt(data.portfolio.totalValueGbp), color: data.portfolio.totalPlGbp >= 0 ? "#3FB950" : "#F85149" },
   ];
 
   return (

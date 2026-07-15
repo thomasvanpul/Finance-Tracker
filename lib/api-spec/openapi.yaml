@@ -658,6 +658,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/CsvImportResult"
 
+  # ── SETTINGS (currency) ────────────────────────────────────────────────────
+  /settings/currency:
+    get:
+      operationId: getSettingsCurrency
+      tags: [settings]
+      summary: Get the current base currency
+      responses:
+        "200":
+          description: Base currency
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrencySettings"
+    put:
+      operationId: updateSettingsCurrency
+      tags: [settings]
+      summary: Update the base currency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CurrencySettings"
+      responses:
+        "200":
+          description: Updated
+
   # ── SETTINGS (password + 2FA) ───────────────────────────────────────────────
   /settings/password:
     post:
@@ -1232,11 +1259,22 @@ components:
         displayName:
           type: ["string", "null"]
 
+    # ── SETTINGS (currency) ──────────────────────────────────────────────────
+    CurrencySettings:
+      type: object
+      required: [baseCurrency]
+      properties:
+        baseCurrency:
+          type: string
+          enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
+
     # ── DASHBOARD ─────────────────────────────────────────────────────────────
     DashboardSummary:
       type: object
-      required: [netLiquidity, netWorth, totalCash, accountBreakdown, portfolio, thisMonth, owing]
+      required: [baseCurrency, netLiquidity, netWorth, totalCash, accountBreakdown, portfolio, thisMonth, owing]
       properties:
+        baseCurrency:
+          type: string
         netLiquidity:
           type: number
         netWorth:

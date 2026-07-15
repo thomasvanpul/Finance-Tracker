@@ -2,17 +2,20 @@ import { Router, type IRouter } from "express";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable } from "@workspace/db";
 import { GetDashboardResponse } from "@workspace/api-zod";
-import { toGbp, getStockPrices } from "../lib/market";
+import { toBase, getStockPrices } from "../lib/market";
+import { getBaseCurrency } from "../lib/app-settings-db";
 
 const router: IRouter = Router();
 
 router.get("/dashboard", async (req, res): Promise<void> => {
+  const baseCurrency = await getBaseCurrency();
+
   // Accounts
   const accounts = await db.select().from(accountsTable);
   const accountBreakdown = await Promise.all(
     accounts.map(async (a) => {
       const balance = parseFloat(a.balance);
-      const gbpEquivalent = await toGbp(balance, a.currency);
+      const gbpEquivalent = await toBase(balance, a.currency, baseCurrency);
       return { id: a.id, name: a.name, currency: a.currency, balance, gbpEquivalent: Math.round(gbpEquivalent * 100) / 100 };
     })
   );
@@ -35,8 +38,8 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       const currency = priceData?.currency ?? "USD";
       const currentValue = shares * livePrice;
       const costBasis = shares * costPrice;
-      portfolioValueGbp += await toGbp(currentValue, currency);
-      portfolioCostGbp += await toGbp(costBasis, currency);
+      portfolioValueGbp += await toBase(currentValue, currency, baseCurrency);
+      portfolioCostGbp += await toBase(costBasis, currency, baseCurrency);
     }
   }
   const portfolioPlGbp = portfolioValueGbp - portfolioCostGbp;
@@ -58,7 +61,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   let monthExpenses = 0;
   for (const tx of txs) {
     const native = Math.abs(parseFloat(tx.nativeAmount));
-    const gbp = await toGbp(native, tx.currency);
+    const gbp = await toBase(native, tx.currency, baseCurrency);
     if (tx.type === "income") monthIncome += gbp;
     else if (tx.type === "expense") monthExpenses += gbp;
   }
@@ -80,7 +83,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   let expectedIn = 0;
   for (const item of upcoming) {
     if (item.status !== "pending") continue;
-    const gbp = await toGbp(parseFloat(item.nativeAmount), item.currency);
+    const gbp = await toBase(parseFloat(item.nativeAmount), item.currency, baseCurrency);
     if (item.type === "expense") committedOut += gbp;
     else if (item.type === "income") expectedIn += gbp;
   }
@@ -101,7 +104,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     let mInc = 0, mExp = 0;
     for (const tx of mTxs) {
       const native = Math.abs(parseFloat(tx.nativeAmount));
-      const gbp = await toGbp(native, tx.currency);
+      const gbp = await toBase(native, tx.currency, baseCurrency);
       if (tx.type === "income") mInc += gbp;
       else if (tx.type === "expense") mExp += gbp;
     }
@@ -113,13 +116,14 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   let totalOwedToMe = 0;
   let totalIOwe = 0;
   for (const d of pendingDebts) {
-    const gbp = await toGbp(parseFloat(d.nativeAmount), d.currency);
+    const gbp = await toBase(parseFloat(d.nativeAmount), d.currency, baseCurrency);
     if (d.direction === "they_owe_me") totalOwedToMe += gbp;
     else totalIOwe += gbp;
   }
 
   res.json(
     GetDashboardResponse.parse({
+      baseCurrency,
       netLiquidity: Math.round(netLiquidity * 100) / 100,
       netWorth: Math.round(netWorth * 100) / 100,
       totalCash: Math.round(totalCash * 100) / 100,

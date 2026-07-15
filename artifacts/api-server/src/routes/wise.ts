@@ -4,7 +4,8 @@ import { db, accountsTable, transactionsTable } from "@workspace/db";
 import { GetWiseStatusResponse, SyncWiseTransactionsResponse } from "@workspace/api-zod";
 import { checkConnection, listProfiles, listBalances, getStatement } from "../lib/wise";
 import { logger } from "../lib/logger";
-import { toGbp } from "../lib/market";
+import { toBase } from "../lib/market";
+import { getBaseCurrency } from "../lib/app-settings-db";
 
 const router: IRouter = Router();
 
@@ -49,7 +50,8 @@ router.post("/wise/sync", async (req, res): Promise<void> => {
     intervalStart.setDate(intervalStart.getDate() - 90);
 
     for (const balance of balances) {
-      const gbpEquivalent = await toGbp(balance.amount.value, balance.amount.currency);
+      const baseCurrency = await getBaseCurrency();
+      const gbpEquivalent = await toBase(balance.amount.value, balance.amount.currency, baseCurrency);
 
       const [account] = await db
         .insert(accountsTable)

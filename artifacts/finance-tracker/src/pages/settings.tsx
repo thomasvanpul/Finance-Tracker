@@ -6,14 +6,24 @@ import {
   useConfirm2fa,
   useDisable2fa,
   getGet2faStatusQueryKey,
+  useGetSettingsCurrency,
+  useUpdateSettingsCurrency,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, ShieldOff, KeyRound, Copy, Settings as SettingsIcon } from "lucide-react";
-import { PageHeader } from "@/components/page-header";
+import { ShieldCheck, ShieldOff, KeyRound, Copy, DollarSign } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const SUPPORTED_CURRENCIES = ["GBP", "USD", "EUR", "MYR", "CNY", "JPY", "AUD", "CAD", "SGD", "HKD", "THB", "INR"] as const;
 
 const sectionHeaderClass =
   "px-3 py-2 text-xs font-semibold uppercase tracking-wide border-b flex items-center gap-2";
@@ -22,6 +32,21 @@ export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: twoFaStatus } = useGet2faStatus();
+
+  // ── Base currency ──
+  const { data: currencySettings } = useGetSettingsCurrency();
+  const updateCurrency = useUpdateSettingsCurrency();
+
+  const handleCurrencyChange = async (value: string) => {
+    try {
+      await updateCurrency.mutateAsync({ data: { baseCurrency: value as (typeof SUPPORTED_CURRENCIES)[number] } });
+      toast({ title: `Base currency updated to ${value}` });
+      queryClient.invalidateQueries();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast({ title: "Could not update currency", description: message, variant: "destructive" });
+    }
+  };
 
   // ── Password change ──
   const changePassword = useChangePassword();
@@ -100,7 +125,42 @@ export default function Settings() {
 
   return (
     <div className="space-y-4 max-w-2xl">
-      <PageHeader icon={SettingsIcon} title="Settings" subtitle="Password and two-factor authentication" />
+      <div>
+        <h1 className="text-lg font-bold" style={{ color: "#E6EDF3" }}>Settings</h1>
+        <p className="text-xs" style={{ color: "#6E7681" }}>Currency, password, and two-factor authentication</p>
+      </div>
+
+      {/* ── Base Currency ── */}
+      <div className="rounded-sm border overflow-hidden" style={{ borderColor: "#21262D" }}>
+        <div className={sectionHeaderClass} style={{ background: "#161B22", borderColor: "#21262D", color: "#58A6FF" }}>
+          <DollarSign className="w-3.5 h-3.5" />
+          Base Currency
+        </div>
+        <div className="p-4 space-y-3" style={{ background: "#0D1117" }}>
+          <p className="text-xs" style={{ color: "#6E7681" }}>
+            All amounts across the app will be converted to this currency for display.
+          </p>
+          <div className="space-y-1.5 max-w-[180px]">
+            <Label className="text-xs">Currency</Label>
+            <Select
+              value={currencySettings?.baseCurrency ?? "GBP"}
+              onValueChange={handleCurrencyChange}
+              disabled={updateCurrency.isPending}
+            >
+              <SelectTrigger className="text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <SelectItem key={c} value={c} className="text-xs">
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {/* ── Change password ── */}
       <div className="rounded-sm border overflow-hidden" style={{ borderColor: "#21262D" }}>

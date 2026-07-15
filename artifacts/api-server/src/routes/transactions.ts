@@ -12,14 +12,16 @@ import {
   GetTransactionSummaryQueryParams,
   GetTransactionSummaryResponse,
 } from "@workspace/api-zod";
-import { toGbp } from "../lib/market";
+import { toBase } from "../lib/market";
+import { getBaseCurrency } from "../lib/app-settings-db";
 import { adjustAccountBalance } from "../lib/balance";
 
 const router: IRouter = Router();
 
 async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, accountMap: Map<number, string>) {
   const nativeAmount = parseFloat(tx.nativeAmount);
-  const rawGbp = await toGbp(Math.abs(nativeAmount), tx.currency);
+  const baseCurrency = await getBaseCurrency();
+  const rawGbp = await toBase(Math.abs(nativeAmount), tx.currency, baseCurrency);
   const gbpValue = tx.type === "expense" ? -rawGbp : rawGbp;
   return {
     id: tx.id,
@@ -101,11 +103,12 @@ router.get("/transactions/summary", async (req, res): Promise<void> => {
     .from(transactionsTable)
     .where(and(gte(transactionsTable.date, dateFrom), lte(transactionsTable.date, dateTo)));
 
+  const baseCurrency = await getBaseCurrency();
   let totalIncome = 0;
   let totalExpenses = 0;
   for (const tx of txs) {
     const native = parseFloat(tx.nativeAmount);
-    const gbp = await toGbp(Math.abs(native), tx.currency);
+    const gbp = await toBase(Math.abs(native), tx.currency, baseCurrency);
     if (tx.type === "income") totalIncome += gbp;
     else if (tx.type === "expense") totalExpenses += gbp;
   }

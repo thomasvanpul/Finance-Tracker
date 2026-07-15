@@ -10,14 +10,16 @@ import {
   ListDebtsResponse,
   GetDebtSummaryResponse,
 } from "@workspace/api-zod";
-import { toGbp } from "../lib/market";
+import { toBase } from "../lib/market";
+import { getBaseCurrency } from "../lib/app-settings-db";
 import { adjustAccountBalance } from "../lib/balance";
 
 const router: IRouter = Router();
 
 async function enrichDebt(item: typeof debtsTable.$inferSelect) {
   const nativeAmount = parseFloat(item.nativeAmount);
-  const gbpEquivalent = await toGbp(nativeAmount, item.currency);
+  const baseCurrency = await getBaseCurrency();
+  const gbpEquivalent = await toBase(nativeAmount, item.currency, baseCurrency);
   return {
     id: item.id,
     personName: item.personName,
@@ -40,11 +42,12 @@ router.get("/debts/summary", async (req, res): Promise<void> => {
     .from(debtsTable)
     .where(eq(debtsTable.status, "pending"));
 
+  const baseCurrency = await getBaseCurrency();
   let totalOwedToMe = 0;
   let totalIOwe = 0;
 
   for (const item of items) {
-    const gbp = await toGbp(parseFloat(item.nativeAmount), item.currency);
+    const gbp = await toBase(parseFloat(item.nativeAmount), item.currency, baseCurrency);
     if (item.direction === "they_owe_me") totalOwedToMe += gbp;
     else totalIOwe += gbp;
   }

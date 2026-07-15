@@ -25,6 +25,7 @@ import type {
   AccountUpdate,
   ChangePasswordInput,
   CsvImportResult,
+  CurrencySettings,
   DashboardSummary,
   Debt,
   DebtInput,
@@ -2683,6 +2684,154 @@ export const useImportCsv = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getImportCsvMutationOptions(options));
+    }
+
+export const getGetSettingsCurrencyUrl = () => {
+
+
+
+
+  return `/api/settings/currency`
+}
+
+/**
+ * @summary Get the current base currency
+ */
+export const getSettingsCurrency = async ( options?: RequestInit): Promise<CurrencySettings> => {
+
+  return customFetch<CurrencySettings>(getGetSettingsCurrencyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSettingsCurrencyQueryKey = () => {
+    return [
+    `/api/settings/currency`
+    ] as const;
+    }
+
+
+export const getGetSettingsCurrencyQueryOptions = <TData = Awaited<ReturnType<typeof getSettingsCurrency>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsCurrency>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSettingsCurrencyQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSettingsCurrency>>> = ({ signal }) => getSettingsCurrency({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSettingsCurrency>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSettingsCurrencyQueryResult = NonNullable<Awaited<ReturnType<typeof getSettingsCurrency>>>
+export type GetSettingsCurrencyQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current base currency
+ */
+
+export function useGetSettingsCurrency<TData = Awaited<ReturnType<typeof getSettingsCurrency>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsCurrency>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSettingsCurrencyQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateSettingsCurrencyUrl = () => {
+
+
+
+
+  return `/api/settings/currency`
+}
+
+/**
+ * @summary Update the base currency
+ */
+export const updateSettingsCurrency = async (currencySettings: CurrencySettings, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUpdateSettingsCurrencyUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      currencySettings,)
+  }
+);}
+
+
+
+
+export const getUpdateSettingsCurrencyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsCurrency>>, TError,{data: BodyType<CurrencySettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSettingsCurrency>>, TError,{data: BodyType<CurrencySettings>}, TContext> => {
+
+const mutationKey = ['updateSettingsCurrency'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSettingsCurrency>>, {data: BodyType<CurrencySettings>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateSettingsCurrency(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSettingsCurrencyMutationResult = NonNullable<Awaited<ReturnType<typeof updateSettingsCurrency>>>
+    export type UpdateSettingsCurrencyMutationBody = BodyType<CurrencySettings>
+    export type UpdateSettingsCurrencyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the base currency
+ */
+export const useUpdateSettingsCurrency = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsCurrency>>, TError,{data: BodyType<CurrencySettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSettingsCurrency>>,
+        TError,
+        {data: BodyType<CurrencySettings>},
+        TContext
+      > => {
+      return useMutation(getUpdateSettingsCurrencyMutationOptions(options));
     }
 
 export const getChangePasswordUrl = () => {

@@ -5,11 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatGbp(value: number): string {
+export function formatCurrency(value: number, currency: string): string {
   return new Intl.NumberFormat("en-GB", {
     style: "currency",
-    currency: "GBP",
+    currency,
   }).format(value);
+}
+
+/** @deprecated Use formatCurrency(value, "GBP") when base currency is known */
+export function formatGbp(value: number): string {
+  return formatCurrency(value, "GBP");
 }
 
 export function formatNative(value: number, currency: string): string {

@@ -9,6 +9,7 @@ export const appSettingsTable = pgTable("app_settings", {
   totpSecret: text("totp_secret"), // base32, set once 2FA setup begins (before confirmed)
   totpEnabled: boolean("totp_enabled").notNull().default(false),
   backupCodesHash: text("backup_codes_hash"), // JSON array of bcrypt hashes, one-time use
+  baseCurrency: text("base_currency").notNull().default("GBP"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 

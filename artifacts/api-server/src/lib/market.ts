@@ -84,6 +84,16 @@ export async function toGbp(amount: number, currency: string): Promise<number> {
   return amount / rate;
 }
 
+export async function toBase(amount: number, fromCurrency: string, baseCurrency: string): Promise<number> {
+  if (fromCurrency === baseCurrency) return amount;
+  const fx = await getFxRates();
+  // Convert fromCurrency → GBP → baseCurrency
+  const fromRate = fromCurrency === "GBP" ? 1 : fx.rates[fromCurrency];
+  const toRate = baseCurrency === "GBP" ? 1 : fx.rates[baseCurrency];
+  if (!fromRate || !toRate) return amount;
+  return (amount / fromRate) * toRate;
+}
+
 /** Convert a GBP amount to the target currency using live FX rates. */
 export async function gbpTo(gbpAmount: number, targetCurrency: string): Promise<number> {
   if (targetCurrency === "GBP") return gbpAmount;

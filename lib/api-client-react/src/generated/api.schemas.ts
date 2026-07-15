@@ -600,6 +600,28 @@ export interface StockQuote {
   displayName?: string | null;
 }
 
+export type CurrencySettingsBaseCurrency = typeof CurrencySettingsBaseCurrency[keyof typeof CurrencySettingsBaseCurrency];
+
+
+export const CurrencySettingsBaseCurrency = {
+  GBP: 'GBP',
+  USD: 'USD',
+  EUR: 'EUR',
+  MYR: 'MYR',
+  CNY: 'CNY',
+  JPY: 'JPY',
+  AUD: 'AUD',
+  CAD: 'CAD',
+  SGD: 'SGD',
+  HKD: 'HKD',
+  THB: 'THB',
+  INR: 'INR',
+} as const;
+
+export interface CurrencySettings {
+  baseCurrency: CurrencySettingsBaseCurrency;
+}
+
 export type DashboardSummaryAccountBreakdownItem = {
   id: number;
   name: string;
@@ -636,6 +658,7 @@ export type DashboardSummaryMonthlyHistoryItem = {
 };
 
 export interface DashboardSummary {
+  baseCurrency: string;
   netLiquidity: number;
   netWorth: number;
   totalCash: number;

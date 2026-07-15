@@ -20,6 +20,7 @@ export const HealthCheckResponse = zod.object({
  * @summary Get full dashboard summary
  */
 export const GetDashboardResponse = zod.object({
+  "baseCurrency": zod.string(),
   "netLiquidity": zod.number(),
   "netWorth": zod.number(),
   "totalCash": zod.number(),
@@ -633,6 +634,22 @@ export const ImportCsvResponse = zod.object({
   "added": zod.number(),
   "skipped": zod.number(),
   "errors": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Get the current base currency
+ */
+export const GetSettingsCurrencyResponse = zod.object({
+  "baseCurrency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR'])
+})
+
+
+/**
+ * @summary Update the base currency
+ */
+export const UpdateSettingsCurrencyBody = zod.object({
+  "baseCurrency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR'])
 })
 
 

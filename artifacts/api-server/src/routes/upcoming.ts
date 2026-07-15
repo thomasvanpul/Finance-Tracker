@@ -13,14 +13,16 @@ import {
   GetUpcomingSummaryResponse,
   GenerateInstallmentsBody,
 } from "@workspace/api-zod";
-import { toGbp } from "../lib/market";
+import { toBase } from "../lib/market";
+import { getBaseCurrency } from "../lib/app-settings-db";
 import { adjustAccountBalance } from "../lib/balance";
 
 const router: IRouter = Router();
 
 async function enrichUpcoming(item: typeof upcomingTable.$inferSelect, accountMap: Map<number, string>) {
   const nativeAmount = parseFloat(item.nativeAmount);
-  const gbpEquivalent = await toGbp(nativeAmount, item.currency);
+  const baseCurrency = await getBaseCurrency();
+  const gbpEquivalent = await toBase(nativeAmount, item.currency, baseCurrency);
   return {
     id: item.id,
     dueDate: item.dueDate,
@@ -64,11 +66,12 @@ router.get("/upcoming/summary", async (req, res): Promise<void> => {
       )
     );
 
+  const baseCurrency = await getBaseCurrency();
   let committedOutgoings30d = 0;
   let expectedIncome30d = 0;
 
   for (const item of items) {
-    const gbp = await toGbp(parseFloat(item.nativeAmount), item.currency);
+    const gbp = await toBase(parseFloat(item.nativeAmount), item.currency, baseCurrency);
     if (item.type === "expense") committedOutgoings30d += gbp;
     else if (item.type === "income") expectedIncome30d += gbp;
   }

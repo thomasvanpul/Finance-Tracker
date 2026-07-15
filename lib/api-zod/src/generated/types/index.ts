@@ -15,6 +15,8 @@ export * from './accountUpdateCurrency';
 export * from './changePasswordInput';
 export * from './csvImportResult';
 export * from './csvImportResultProvider';
+export * from './currencySettings';
+export * from './currencySettingsBaseCurrency';
 export * from './dashboardSummary';
 export * from './dashboardSummaryAccountBreakdownItem';
 export * from './dashboardSummaryMonthlyHistoryItem';
