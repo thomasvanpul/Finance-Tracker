@@ -1,0 +1,6 @@
+{
+  "framework": null,
+  "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @workspace/finance-tracker run build",
+  "outputDirectory": "artifacts/finance-tracker/dist/public",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

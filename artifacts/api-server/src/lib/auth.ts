@@ -124,10 +124,14 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function setSessionCookie(res: Response, token: string): void {
+  const production = process.env.NODE_ENV === "production";
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: production,
+    // SameSite=None is required when the frontend is on a different origin
+    // (e.g. Vercel) from the API (Railway). Requires Secure=true, which is
+    // always true in production.
+    sameSite: production ? "none" : "lax",
     maxAge: COOKIE_MAX_AGE_MS,
   });
 }
