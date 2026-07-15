@@ -2,8 +2,11 @@ import { useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp, formatPercent } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Landmark, TrendingUp, TrendingDown, HandCoins, Wallet, ArrowLeftRight, CalendarClock } from "lucide-react";
+import { AlertCircle, Landmark, TrendingUp, HandCoins, Wallet, ArrowLeftRight, CalendarClock } from "lucide-react";
 import { Link } from "wouter";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
+} from "recharts";
 
 export default function Dashboard() {
   const { data: dashboard, isLoading, isError, error } = useGetDashboard();
@@ -128,6 +131,52 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+
+          {/* ── 6-month spending chart ── */}
+          {(dashboard.monthlyHistory?.length ?? 0) > 0 && (
+            <div className="rounded-sm border overflow-hidden" style={{ borderColor: "#21262D" }}>
+              <div
+                className="px-3 py-2 text-xs font-semibold uppercase tracking-wide border-b flex items-center gap-2"
+                style={{ background: "#161B22", borderColor: "#21262D", color: "#8B949E" }}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                Income vs Expenses — Last 6 Months
+              </div>
+              <div style={{ background: "#0D1117", padding: "12px 8px 8px" }}>
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={dashboard.monthlyHistory} margin={{ top: 0, right: 8, left: -8, bottom: 0 }} barCategoryGap="30%">
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fill: "#6E7681", fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v: string) => {
+                        const [y, m] = v.split("-");
+                        return new Date(parseInt(y), parseInt(m) - 1).toLocaleString("en-GB", { month: "short" });
+                      }}
+                    />
+                    <YAxis
+                      tick={{ fill: "#6E7681", fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v: number) => v >= 1000 ? `£${(v / 1000).toFixed(0)}k` : `£${v}`}
+                    />
+                    <Tooltip
+                      formatter={(value: number, name: string) => [formatGbp(value), name === "income" ? "Income" : "Expenses"]}
+                      contentStyle={{ background: "#161B22", border: "1px solid #30363D", color: "#C9D1D9", fontSize: 11 }}
+                      cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                    />
+                    <Legend
+                      formatter={(value) => <span style={{ fontSize: 10, color: "#6E7681" }}>{value === "income" ? "Income" : "Expenses"}</span>}
+                      iconSize={8}
+                    />
+                    <Bar dataKey="income" fill="#3FB950" radius={[2, 2, 0, 0]} maxBarSize={32} />
+                    <Bar dataKey="expenses" fill="#F85149" radius={[2, 2, 0, 0]} maxBarSize={32} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
 
           {/* ── Two column: Accounts + Owing ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">

@@ -4,6 +4,7 @@ import {
   useListTransactions,
   useGetTransactionSummary,
   useCreateTransaction,
+  useUpdateTransaction,
   useDeleteTransaction,
   useListAccounts,
   getListTransactionsQueryKey,
@@ -16,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, Plus, Trash2, Edit2, Search, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -70,18 +71,50 @@ const TX_TYPE_COLOR: Record<TxType, string> = {
   transfer: "#58A6FF",
 };
 
+const CATEGORIES = [
+  "Salary", "Freelance", "Investment Income", "Gift",
+  "Rent / Mortgage", "Groceries", "Eating Out", "Coffee",
+  "Transport", "Fuel", "Flights", "Accommodation",
+  "Utilities", "Subscriptions", "Healthcare", "Insurance",
+  "Shopping", "Electronics", "Clothing",
+  "Entertainment", "Sport", "Education",
+  "Transfer", "Savings", "Tax",
+  "Other",
+];
+
 export default function Transactions() {
   const { data: transactions, isLoading, isError, error } = useListTransactions();
   const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useGetTransactionSummary();
   const { data: accounts } = useListAccounts();
   const createTx = useCreateTransaction();
+  const updateTx = useUpdateTransaction();
   const deleteTx = useDeleteTransaction();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const [addOpen, setAddOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<TxForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState<"" | TxType>("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+
+  const hasFilters = search || filterType || filterDateFrom || filterDateTo;
+
+  const filtered = (transactions ?? []).filter((tx) => {
+    if (filterType && tx.type !== filterType) return false;
+    if (filterDateFrom && tx.date < filterDateFrom) return false;
+    if (filterDateTo && tx.date > filterDateTo) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (!tx.description.toLowerCase().includes(q) && !tx.category.toLowerCase().includes(q) && !tx.accountName.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getListTransactionsQueryKey() });
@@ -96,12 +129,36 @@ export default function Transactions() {
     setAddOpen(true);
   };
 
+  const openEdit = (id: number) => {
+    const tx = transactions?.find((t) => t.id === id);
+    if (!tx) return;
+    setForm({
+      date: tx.date,
+      description: tx.description,
+      type: tx.type as TxType,
+      category: tx.category,
+      accountId: String(tx.accountId),
+      nativeAmount: String(Math.abs(tx.nativeAmount)),
+      currency: tx.currency as Currency,
+    });
+    setEditId(id);
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
     try {
       await createTx.mutateAsync({ data: { date: form.date, description: form.description, type: form.type, category: form.category, accountId: parseInt(form.accountId), nativeAmount: parseFloat(form.nativeAmount), currency: form.currency } });
       invalidate(); setAddOpen(false); toast({ title: "Transaction added" });
     } catch { toast({ title: "Failed to add transaction", variant: "destructive" }); }
+    finally { setSubmitting(false); }
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault(); if (editId === null) return; setSubmitting(true);
+    try {
+      await updateTx.mutateAsync({ id: editId, data: { date: form.date, description: form.description, type: form.type, category: form.category, nativeAmount: parseFloat(form.nativeAmount), currency: form.currency } });
+      invalidate(); setEditId(null); toast({ title: "Transaction updated" });
+    } catch { toast({ title: "Failed to update", variant: "destructive" }); }
     finally { setSubmitting(false); }
   };
 
@@ -139,37 +196,41 @@ export default function Transactions() {
         </Alert>
       )}
 
-      {/* Add Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Transaction</DialogTitle></DialogHeader>
-          <form onSubmit={handleAdd}>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="tx-date">Date</Label>
-                  <Input id="tx-date" type="date" value={form.date} onChange={(e) => setField("date", e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Type</Label>
-                  <Select value={form.type} onValueChange={(v) => setField("type", v as TxType)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="income">Income</SelectItem>
-                      <SelectItem value="expense">Expense</SelectItem>
-                      <SelectItem value="transfer">Transfer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+      {/* category datalist for native autocomplete */}
+      <datalist id="tx-categories">
+        {CATEGORIES.map((c) => <option key={c} value={c} />)}
+      </datalist>
+
+      {/* Shared form fields used in both Add and Edit dialogs */}
+      {(() => {
+        const FormFields = (isEdit: boolean) => (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="tx-date">Date</Label>
+                <Input id="tx-date" type="date" value={form.date} onChange={(e) => setField("date", e.target.value)} required />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="tx-desc">Description</Label>
-                <Input id="tx-desc" placeholder="e.g. Monthly Salary" value={form.description} onChange={(e) => setField("description", e.target.value)} required />
+                <Label>Type</Label>
+                <Select value={form.type} onValueChange={(v) => setField("type", v as TxType)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="income">Income</SelectItem>
+                    <SelectItem value="expense">Expense</SelectItem>
+                    <SelectItem value="transfer">Transfer</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="tx-cat">Category</Label>
-                <Input id="tx-cat" placeholder="e.g. Payroll, Groceries" value={form.category} onChange={(e) => setField("category", e.target.value)} required />
-              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tx-desc">Description</Label>
+              <Input id="tx-desc" placeholder="e.g. Monthly Salary" value={form.description} onChange={(e) => setField("description", e.target.value)} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tx-cat">Category</Label>
+              <Input id="tx-cat" list="tx-categories" placeholder="e.g. Groceries, Salary…" value={form.category} onChange={(e) => setField("category", e.target.value)} required />
+            </div>
+            {!isEdit && (
               <div className="space-y-1.5">
                 <Label>Account</Label>
                 <Select value={form.accountId} onValueChange={(v) => {
@@ -182,40 +243,58 @@ export default function Transactions() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="tx-amount">Amount</Label>
-                  <Input id="tx-amount" type="number" step="0.01" min="0" placeholder="0.00" value={form.nativeAmount} onChange={(e) => setField("nativeAmount", e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Currency</Label>
-                  <Select value={form.currency} onValueChange={(v) => setField("currency", v as Currency)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="GBP">GBP</SelectItem>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="MYR">MYR</SelectItem>
-                      <SelectItem value="CNY">CNY</SelectItem>
-                      <SelectItem value="JPY">JPY</SelectItem>
-                      <SelectItem value="AUD">AUD</SelectItem>
-                      <SelectItem value="CAD">CAD</SelectItem>
-                      <SelectItem value="SGD">SGD</SelectItem>
-                      <SelectItem value="HKD">HKD</SelectItem>
-                      <SelectItem value="THB">THB</SelectItem>
-                      <SelectItem value="INR">INR</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="tx-amount">Amount</Label>
+                <Input id="tx-amount" type="number" step="0.01" min="0" placeholder="0.00" value={form.nativeAmount} onChange={(e) => setField("nativeAmount", e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Currency</Label>
+                <Select value={form.currency} onValueChange={(v) => setField("currency", v as Currency)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(["GBP","USD","EUR","MYR","CNY","JPY","AUD","CAD","SGD","HKD","THB","INR"] as Currency[]).map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <DialogFooter className="mt-6">
-              <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-              <Button type="submit" disabled={submitting}>{submitting ? "Adding…" : "Add Transaction"}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+          </div>
+        );
+        return (
+          <>
+            {/* Add dialog */}
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Add Transaction</DialogTitle></DialogHeader>
+                <form onSubmit={handleAdd}>
+                  {FormFields(false)}
+                  <DialogFooter className="mt-6">
+                    <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                    <Button type="submit" disabled={submitting}>{submitting ? "Adding…" : "Add Transaction"}</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit dialog */}
+            <Dialog open={editId !== null} onOpenChange={(o) => !o && setEditId(null)}>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Edit Transaction</DialogTitle></DialogHeader>
+                <form onSubmit={handleEdit}>
+                  {FormFields(true)}
+                  <DialogFooter className="mt-6">
+                    <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                    <Button type="submit" disabled={submitting}>{submitting ? "Saving…" : "Save Changes"}</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </>
+        );
+      })()}
 
       {/* Summary bar */}
       {summary && (
@@ -234,75 +313,128 @@ export default function Transactions() {
         </div>
       )}
 
+      {/* Filter bar */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="relative flex-1 min-w-[160px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: "#484F58" }} />
+          <Input
+            placeholder="Search description, category, account…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ paddingLeft: 28, fontSize: 12, height: 30, background: "#161B22", border: "1px solid #30363D", borderRadius: 2, color: "#C9D1D9" }}
+          />
+        </div>
+        <Select value={filterType} onValueChange={(v) => setFilterType(v as "" | TxType)}>
+          <SelectTrigger style={{ width: 110, height: 30, fontSize: 12, background: "#161B22", border: "1px solid #30363D", borderRadius: 2 }}>
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All types</SelectItem>
+            <SelectItem value="income">Income</SelectItem>
+            <SelectItem value="expense">Expense</SelectItem>
+            <SelectItem value="transfer">Transfer</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          type="date"
+          value={filterDateFrom}
+          onChange={(e) => setFilterDateFrom(e.target.value)}
+          style={{ width: 130, height: 30, fontSize: 12, background: "#161B22", border: "1px solid #30363D", borderRadius: 2, color: "#C9D1D9" }}
+        />
+        <span style={{ color: "#484F58", fontSize: 11 }}>to</span>
+        <Input
+          type="date"
+          value={filterDateTo}
+          onChange={(e) => setFilterDateTo(e.target.value)}
+          style={{ width: 130, height: 30, fontSize: 12, background: "#161B22", border: "1px solid #30363D", borderRadius: 2, color: "#C9D1D9" }}
+        />
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setSearch(""); setFilterType(""); setFilterDateFrom(""); setFilterDateTo(""); }}
+            style={{ height: 30, fontSize: 11, color: "#8B949E", padding: "0 8px" }}
+          >
+            <X className="w-3 h-3 mr-1" />Clear
+          </Button>
+        )}
+        <span className="ml-auto text-xs" style={{ color: "#484F58" }}>
+          {filtered.length}{hasFilters ? ` of ${transactions?.length ?? 0}` : ""} transaction{filtered.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
       {/* Transactions spreadsheet table */}
       <div className="border" style={{ borderColor: "#21262D" }}>
         <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "#58A6FF22", borderColor: "#58A6FF44", color: "#58A6FF" }}>
-          ▼ TRANSACTION LEDGER — All Entries
+          ▼ TRANSACTION LEDGER — {hasFilters ? `Filtered (${filtered.length})` : "All Entries"}
         </div>
 
         <div className="overflow-x-auto">
-        {/* Column headers */}
-        <div className="flex" style={{ marginLeft: 36 }}>
-          {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["", "52px"]].map(([h, w]) => (
-            <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["AMOUNT", "GBP", ""].includes(h as string) ? "right" : "left" }}>
-              {h}
+          {/* Column headers */}
+          <div className="flex" style={{ marginLeft: 36 }}>
+            {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["", "68px"]].map(([h, w]) => (
+              <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["AMOUNT", "GBP", ""].includes(h as string) ? "right" : "left" }}>
+                {h}
+              </div>
+            ))}
+          </div>
+
+          {/* Rows */}
+          {filtered.map((tx, i) => (
+            <div
+              key={tx.id}
+              className="flex items-center border-b xls-row"
+              style={{ borderColor: "rgba(33,38,45,0.5)", background: "#0D1117" }}
+            >
+              <div className="flex-shrink-0 flex items-center justify-center text-xs border-r" style={{ width: 36, color: "#484F58", borderColor: "#21262D", alignSelf: "stretch" }}>
+                {i + 2}
+              </div>
+              <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#8B949E", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>
+                {formatDate(tx.date)}
+              </div>
+              <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#C9D1D9", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {tx.description}
+              </div>
+              <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid #21262D" }}>
+                <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "#21262D", color: "#8B949E" }}>
+                  {tx.category}
+                </span>
+              </div>
+              <div style={{ width: 150, minWidth: 150, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#8B949E", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {tx.accountName}
+              </div>
+              <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid #21262D" }}>
+                <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: TX_TYPE_COLOR[tx.type as TxType] + "22", color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase", letterSpacing: "0.3px" }}>
+                  {tx.type}
+                </span>
+              </div>
+              <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid #21262D", textAlign: "right", color: tx.type === "income" ? "#3FB950" : "#F85149", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums", background: tx.type === "income" ? "rgba(63,185,80,0.04)" : tx.type === "expense" ? "rgba(248,81,73,0.04)" : "transparent" }}>
+                {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
+                {formatNative(Math.abs(tx.nativeAmount), tx.currency)}
+              </div>
+              <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid #21262D", textAlign: "right", color: tx.type === "income" ? "#3FB950" : "#F85149", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
+                {formatGbp(Math.abs(tx.gbpValue))}
+              </div>
+              <div style={{ width: 68, minWidth: 68, padding: "4px 4px", display: "flex", justifyContent: "flex-end", gap: 2 }}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tx.id)}>
+                  <Edit2 className="w-3.5 h-3.5" style={{ color: "#8B949E" }} />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(tx.id)}>
+                  <Trash2 className="w-3.5 h-3.5" style={{ color: "#F85149" }} />
+                </Button>
+              </div>
             </div>
           ))}
-        </div>
 
-        {/* Rows */}
-        {transactions?.map((tx, i) => (
-          <div
-            key={tx.id}
-            className="flex items-center border-b xls-row"
-            style={{ borderColor: "rgba(33,38,45,0.5)", background: i % 2 === 0 ? "#0D1117" : "#0D1117" }}
-          >
-            <div className="flex-shrink-0 flex items-center justify-center text-xs border-r" style={{ width: 36, color: "#484F58", borderColor: "#21262D", alignSelf: "stretch" }}>
-              {i + 2}
+          {filtered.length === 0 && (
+            <div className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
+              <div style={{ width: 36, borderRight: "1px solid #21262D", alignSelf: "stretch" }} />
+              <div className="flex-1 text-center py-8 text-xs" style={{ color: "#484F58" }}>
+                {hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
+              </div>
             </div>
-            <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#8B949E", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>
-              {formatDate(tx.date)}
-            </div>
-            <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#C9D1D9", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {tx.description}
-            </div>
-            <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid #21262D" }}>
-              <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "#21262D", color: "#8B949E" }}>
-                {tx.category}
-              </span>
-            </div>
-            <div style={{ width: 150, minWidth: 150, padding: "7px 12px", borderRight: "1px solid #21262D", color: "#8B949E", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {tx.accountName}
-            </div>
-            <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid #21262D" }}>
-              <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: TX_TYPE_COLOR[tx.type as TxType] + "22", color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase", letterSpacing: "0.3px" }}>
-                {tx.type}
-              </span>
-            </div>
-            <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid #21262D", textAlign: "right", color: tx.type === "income" ? "#3FB950" : "#F85149", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums", background: tx.type === "income" ? "rgba(63,185,80,0.04)" : tx.type === "expense" ? "rgba(248,81,73,0.04)" : "transparent" }}>
-              {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
-              {formatNative(Math.abs(tx.nativeAmount), tx.currency)}
-            </div>
-            <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid #21262D", textAlign: "right", color: tx.type === "income" ? "#3FB950" : "#F85149", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-              {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
-              {formatGbp(Math.abs(tx.gbpValue))}
-            </div>
-            <div style={{ width: 52, minWidth: 52, padding: "4px 4px", textAlign: "right", display: "flex", justifyContent: "flex-end" }}>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(tx.id)}>
-                <Trash2 className="w-3.5 h-3.5" style={{ color: "#F85149" }} />
-              </Button>
-            </div>
-          </div>
-        ))}
-
-        {transactions?.length === 0 && (
-          <div className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
-            <div style={{ width: 36, borderRight: "1px solid #21262D", alignSelf: "stretch" }} />
-            <div className="flex-1 text-center py-8 text-xs" style={{ color: "#484F58" }}>
-              No transactions yet — add one to get started.
-            </div>
-          </div>
-        )}
+          )}
         </div>
       </div>
     </div>
