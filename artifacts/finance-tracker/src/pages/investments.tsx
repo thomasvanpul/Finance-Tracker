@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Plus, Trash2, Edit2, TrendingUp } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import {
   Dialog,
   DialogContent,
@@ -181,16 +182,16 @@ export default function Investments() {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight" style={{ color: "#E6EDF3" }}>Investment Positions</h1>
-          <p className="text-xs mt-0.5" style={{ color: "#484F58" }}>Portfolio tracking · Live market prices via Yahoo Finance</p>
-        </div>
-        <Button onClick={openAdd} size="sm" style={{ background: "#1F6FEB", color: "white", border: "none", borderRadius: 2, fontSize: 12 }}>
-          <Plus className="w-3.5 h-3.5 mr-1.5" />Add Position
-        </Button>
-      </div>
+      <PageHeader
+        icon={TrendingUp}
+        title="Investment Positions"
+        subtitle="Portfolio tracking · Live market prices via Yahoo Finance"
+        actions={
+          <Button onClick={openAdd} size="sm" style={{ background: "#1F6FEB", color: "white", border: "none", borderRadius: 2, fontSize: 12 }}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" />Add Position
+          </Button>
+        }
+      />
 
       {(isError || isSummaryError) && (
         <Alert variant="destructive">

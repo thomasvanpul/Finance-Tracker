@@ -44,21 +44,21 @@ export function Layout({ children }: LayoutProps) {
       >
         {/* Logo */}
         <div
-          className="flex items-center gap-2 px-3 sm:px-4 border-r"
+          className="flex items-center gap-2.5 px-3 sm:px-4 border-r"
           style={{ borderColor: "#21262D", height: 44 }}
         >
-          <div
-            className="flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-            style={{ width: 26, height: 26, background: "linear-gradient(135deg,#1F6FEB,#0D419D)", borderRadius: 3 }}
-          >
-            F
-          </div>
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+            <rect width="22" height="22" rx="4" fill="#0D1117" />
+            <rect x="3" y="14" width="3" height="5" rx="0.5" fill="#1F6FEB" opacity="0.7" />
+            <rect x="8" y="10" width="3" height="9" rx="0.5" fill="#1F6FEB" opacity="0.85" />
+            <rect x="13" y="6" width="3" height="13" rx="0.5" fill="#1F6FEB" />
+            <polyline points="4.5,13 9.5,9 14.5,5 18,3" stroke="#3FB950" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="18" cy="3" r="1.2" fill="#3FB950" />
+          </svg>
           <span className="font-bold text-sm tracking-tight" style={{ color: "#E6EDF3" }}>
             Fintrack
           </span>
-          <span className="text-xs ml-1 hidden sm:inline" style={{ color: "#484F58" }}>
-            v2
-          </span>
+          <span className="text-xs ml-0.5 hidden sm:inline" style={{ color: "#30363D" }}>v2</span>
         </div>
 
         {/* Desktop nav tabs — hidden on mobile */}
@@ -127,20 +127,28 @@ export function Layout({ children }: LayoutProps) {
 
       {/* ── Content area ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Row-number gutter — desktop only */}
+        {/* Row gutter — desktop only */}
         <div
           className="hidden sm:flex flex-shrink-0 flex-col border-r select-none"
           style={{ background: "#161B22", borderColor: "#21262D", width: 36 }}
         >
-          {Array.from({ length: 40 }, (_, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-center border-b text-xs"
-              style={{ height: 24, color: "#484F58", borderColor: "rgba(33,38,45,0.5)", flexShrink: 0 }}
-            >
-              {i + 1}
-            </div>
-          ))}
+          {Array.from({ length: 50 }, (_, i) => {
+            const row = i + 1;
+            const isMajor = row % 5 === 0;
+            return (
+              <div
+                key={i}
+                className="flex items-center justify-center border-b"
+                style={{ height: 24, borderColor: "rgba(33,38,45,0.5)", flexShrink: 0 }}
+              >
+                {isMajor ? (
+                  <span className="text-xs font-mono" style={{ color: "#484F58" }}>{row}</span>
+                ) : (
+                  <span style={{ display: "block", width: 6, height: 1, background: "#21262D", borderRadius: 1 }} />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Page content */}

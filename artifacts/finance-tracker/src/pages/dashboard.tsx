@@ -2,7 +2,8 @@ import { useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp, formatPercent } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Landmark, TrendingUp, HandCoins, Wallet, ArrowLeftRight, CalendarClock } from "lucide-react";
+import { AlertCircle, Landmark, TrendingUp, HandCoins, Wallet, ArrowLeftRight, CalendarClock, LayoutDashboard } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { Link } from "wouter";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
@@ -25,15 +26,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4 sm:space-y-5 animate-in fade-in duration-300">
-      {/* Page title */}
-      <div>
-        <h1 className="text-base sm:text-lg font-bold tracking-tight" style={{ color: "#E6EDF3" }}>
-          Portfolio Overview
-        </h1>
-        <p className="text-xs mt-0.5" style={{ color: "#484F58" }}>
-          All figures in GBP · Live market data
-        </p>
-      </div>
+      <PageHeader icon={LayoutDashboard} title="Portfolio Overview" subtitle="All figures in GBP · Live market data" />
 
       {isError && (
         <Alert variant="destructive">

@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Plus, Trash2, CheckCheck, HandCoins, TrendingDown, TrendingUp, RefreshCw } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import {
   Dialog,
   DialogContent,
@@ -177,20 +178,20 @@ export default function Owing() {
 
   return (
     <div className="space-y-5">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-base font-semibold" style={{ color: "#E6EDF3" }}>Owing</h1>
-          <p className="text-xs mt-0.5" style={{ color: "#6E7681" }}>Track who owes who — split bills, IOUs, shared expenses</p>
-        </div>
-        <Button
-          size="sm"
-          onClick={() => setOpen(true)}
-          style={{ background: "#1F6FEB", color: "#fff", height: 30, fontSize: 12, gap: 6 }}
-        >
-          <Plus className="w-3.5 h-3.5" /> Add IOU
-        </Button>
-      </div>
+      <PageHeader
+        icon={HandCoins}
+        title="Owing"
+        subtitle="Track who owes who — split bills, IOUs, shared expenses"
+        actions={
+          <Button
+            size="sm"
+            onClick={() => setOpen(true)}
+            style={{ background: "#1F6FEB", color: "#fff", height: 30, fontSize: 12, gap: 6 }}
+          >
+            <Plus className="w-3.5 h-3.5" /> Add IOU
+          </Button>
+        }
+      />
 
       {error && (
         <Alert variant="destructive">

@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldCheck, ShieldOff, KeyRound, Copy } from "lucide-react";
+import { ShieldCheck, ShieldOff, KeyRound, Copy, Settings as SettingsIcon } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 
 const sectionHeaderClass =
   "px-3 py-2 text-xs font-semibold uppercase tracking-wide border-b flex items-center gap-2";
@@ -99,10 +100,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-4 max-w-2xl">
-      <div>
-        <h1 className="text-lg font-bold" style={{ color: "#E6EDF3" }}>Settings</h1>
-        <p className="text-xs" style={{ color: "#6E7681" }}>Password and two-factor authentication</p>
-      </div>
+      <PageHeader icon={SettingsIcon} title="Settings" subtitle="Password and two-factor authentication" />
 
       {/* ── Change password ── */}
       <div className="rounded-sm border overflow-hidden" style={{ borderColor: "#21262D" }}>

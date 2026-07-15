@@ -30,7 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, RefreshCw, Trash2, Edit2, Landmark, Link2, Upload, AlertCircle } from "lucide-react";
+import { Plus, RefreshCw, Trash2, Edit2, Landmark, Link2, Upload, AlertCircle, Wallet } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
@@ -316,34 +317,34 @@ export default function Accounts() {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold tracking-tight" style={{ color: "#E6EDF3" }}>Accounts</h1>
-          <p className="text-xs mt-0.5" style={{ color: "#484F58" }}>Manage your cash and linked bank accounts</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <WiseStatusBadge />
-          <Button
-            size="sm"
-            onClick={handleSync}
-            disabled={syncWise.isPending}
-            style={{ background: "#21262D", color: "#C9D1D9", border: "1px solid #30363D", borderRadius: 2, fontSize: 12 }}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${syncWise.isPending ? "animate-spin" : ""}`} />
-            Sync Wise
-          </Button>
-          <CsvImportDialog accounts={accounts ?? []} onImported={invalidate} />
-          <Button
-            size="sm"
-            onClick={openAdd}
-            style={{ background: "#1F6FEB", color: "white", border: "none", borderRadius: 2, fontSize: 12 }}
-          >
-            <Plus className="w-3.5 h-3.5 mr-1.5" />
-            Add Account
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        icon={Wallet}
+        title="Accounts"
+        subtitle="Manage your cash and linked bank accounts"
+        actions={
+          <>
+            <WiseStatusBadge />
+            <Button
+              size="sm"
+              onClick={handleSync}
+              disabled={syncWise.isPending}
+              style={{ background: "#21262D", color: "#C9D1D9", border: "1px solid #30363D", borderRadius: 2, fontSize: 12 }}
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${syncWise.isPending ? "animate-spin" : ""}`} />
+              Sync Wise
+            </Button>
+            <CsvImportDialog accounts={accounts ?? []} onImported={invalidate} />
+            <Button
+              size="sm"
+              onClick={openAdd}
+              style={{ background: "#1F6FEB", color: "white", border: "none", borderRadius: 2, fontSize: 12 }}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+              Add Account
+            </Button>
+          </>
+        }
+      />
 
       {isError && (
         <Alert variant="destructive">
