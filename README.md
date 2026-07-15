@@ -2,7 +2,7 @@
 
 A full-stack personal finance tracker. GBP base currency, single-user, dark "Excel Pro" spreadsheet theme.
 
-**Live site:** [finance-tracker-api-server-one.vercel.app](https://finance-tracker-api-server-one.vercel.app/)
+**Live site:** [financetracker.work](https://financetracker.work)
 
 ---
 
@@ -104,7 +104,7 @@ pnpm --filter @workspace/db run push               # push DB schema changes (dev
 | `APP_PASSWORD` | Password gate for the whole app |
 | `JWT_SECRET` | Session signing secret (`openssl rand -hex 32`) |
 | `SESSION_SECRET` | Express session secret |
-| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins (your Vercel URL) |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins (e.g. `https://financetracker.work,https://finance-tracker-api-server-one.vercel.app`) |
 | `WISE_API_TOKEN` | Wise personal API token (Settings → API tokens) |
 | `WISE_ENV` | `live` (default) or `sandbox` |
 
