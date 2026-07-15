@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "installCommand": "pnpm install --no-frozen-lockfile",
+  "installCommand": "pnpm install --no-frozen-lockfile --ignore-scripts && pnpm rebuild esbuild",
   "buildCommand": "pnpm --filter @workspace/finance-tracker run build",
   "outputDirectory": "artifacts/finance-tracker/dist/public",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
