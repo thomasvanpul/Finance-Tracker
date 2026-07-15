@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 // Minimal password gate matching the backend's single shared-password auth.
 // Not per-user auth — just enough to keep a public URL from being wide open.
 
+const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "");
+
 type Status = "checking" | "authed" | "unauthed";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
@@ -14,7 +16,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/check", { credentials: "include" })
+    fetch(`${API_BASE}/api/auth/check`, { credentials: "include" })
       .then((res) => setStatus(res.ok ? "authed" : "unauthed"))
       .catch(() => setStatus("unauthed"));
   }, []);
@@ -24,7 +26,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
