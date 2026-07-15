@@ -27,6 +27,18 @@
 # ============================================================================
 minimumReleaseAge: 1440
 
+# Include linux-x64 in the lockfile so --frozen-lockfile works on Railway/Docker (linux)
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+  libc:
+    - current
+    - glibc
+
 minimumReleaseAgeExclude:
   # Exclude @replit scoped packages from the minimum release age check.
   # These are published by Replit and trusted — the supply-chain attack vector
