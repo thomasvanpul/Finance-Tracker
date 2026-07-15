@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, lte, gte } from "drizzle-orm";
+import { and, eq, lte, gte } from "drizzle-orm";
 import { db, upcomingTable, accountsTable, transactionsTable } from "@workspace/db";
 import {
   CreateUpcomingItemBody,
@@ -19,9 +19,9 @@ import { adjustAccountBalance } from "../lib/balance";
 
 const router: IRouter = Router();
 
-async function enrichUpcoming(item: typeof upcomingTable.$inferSelect, accountMap: Map<number, string>) {
+async function enrichUpcoming(item: typeof upcomingTable.$inferSelect, accountMap: Map<number, string>, userId: string) {
   const nativeAmount = parseFloat(item.nativeAmount);
-  const baseCurrency = await getBaseCurrency();
+  const baseCurrency = await getBaseCurrency(userId);
   const gbpEquivalent = await toBase(nativeAmount, item.currency, baseCurrency);
   return {
     id: item.id,
@@ -41,14 +41,23 @@ async function enrichUpcoming(item: typeof upcomingTable.$inferSelect, accountMa
 }
 
 router.get("/upcoming", async (req, res): Promise<void> => {
-  const items = await db.select().from(upcomingTable).orderBy(upcomingTable.dueDate);
-  const accounts = await db.select({ id: accountsTable.id, name: accountsTable.name }).from(accountsTable);
+  const userId = (req as any).userId as string;
+  const items = await db
+    .select()
+    .from(upcomingTable)
+    .where(eq(upcomingTable.userId, userId))
+    .orderBy(upcomingTable.dueDate);
+  const accounts = await db
+    .select({ id: accountsTable.id, name: accountsTable.name })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId));
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
-  const enriched = await Promise.all(items.map((i) => enrichUpcoming(i, accountMap)));
+  const enriched = await Promise.all(items.map((i) => enrichUpcoming(i, accountMap, userId)));
   res.json(ListUpcomingResponse.parse(enriched));
 });
 
 router.get("/upcoming/summary", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const today = new Date();
   const in30 = new Date(today);
   in30.setDate(today.getDate() + 30);
@@ -60,16 +69,16 @@ router.get("/upcoming/summary", async (req, res): Promise<void> => {
     .from(upcomingTable)
     .where(
       and(
+        eq(upcomingTable.userId, userId),
         gte(upcomingTable.dueDate, todayStr),
         lte(upcomingTable.dueDate, in30Str),
         eq(upcomingTable.status, "pending")
       )
     );
 
-  const baseCurrency = await getBaseCurrency();
+  const baseCurrency = await getBaseCurrency(userId);
   let committedOutgoings30d = 0;
   let expectedIncome30d = 0;
-
   for (const item of items) {
     const gbp = await toBase(parseFloat(item.nativeAmount), item.currency, baseCurrency);
     if (item.type === "expense") committedOutgoings30d += gbp;
@@ -85,6 +94,7 @@ router.get("/upcoming/summary", async (req, res): Promise<void> => {
 });
 
 router.post("/upcoming/installments", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const parsed = GenerateInstallmentsBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -97,9 +107,8 @@ router.post("/upcoming/installments", async (req, res): Promise<void> => {
   for (let i = 0; i < numberOfMonths; i++) {
     const d = new Date(startDate);
     d.setMonth(d.getMonth() + i);
-    const dueDate = d.toISOString().slice(0, 10);
     rows.push({
-      dueDate,
+      dueDate: d.toISOString().slice(0, 10),
       description: `${description} (${i + 1}/${numberOfMonths})`,
       category,
       type: "expense" as const,
@@ -108,59 +117,72 @@ router.post("/upcoming/installments", async (req, res): Promise<void> => {
       nativeAmount: String(Math.round(monthlyAmount * 100) / 100),
       currency,
       accountId: accountId ?? null,
+      userId,
     });
   }
 
   const inserted = await db.insert(upcomingTable).values(rows).returning();
-  const accounts = await db.select({ id: accountsTable.id, name: accountsTable.name }).from(accountsTable);
+  const accounts = await db
+    .select({ id: accountsTable.id, name: accountsTable.name })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId));
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
-  const enriched = await Promise.all(inserted.map((i) => enrichUpcoming(i, accountMap)));
+  const enriched = await Promise.all(inserted.map((i) => enrichUpcoming(i, accountMap, userId)));
   res.status(201).json(enriched);
 });
 
 router.post("/upcoming/:id/pay", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = PayUpcomingItemParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [item] = await db.select().from(upcomingTable).where(eq(upcomingTable.id, params.data.id));
+  const [item] = await db
+    .select()
+    .from(upcomingTable)
+    .where(and(eq(upcomingTable.id, params.data.id), eq(upcomingTable.userId, userId)));
   if (!item) {
     res.status(404).json({ error: "Item not found" });
     return;
   }
 
-  // Mark as paid
   const [updated] = await db
     .update(upcomingTable)
     .set({ status: "paid" })
-    .where(eq(upcomingTable.id, params.data.id))
+    .where(and(eq(upcomingTable.id, params.data.id), eq(upcomingTable.userId, userId)))
     .returning();
 
-  // Auto-log to transactions
-  const targetAccountId = item.accountId ?? 1;
-  await db.insert(transactionsTable).values({
-    date: item.dueDate,
-    description: item.description,
-    type: item.type,
-    category: item.category,
-    accountId: targetAccountId,
-    nativeAmount: item.nativeAmount,
-    currency: item.currency,
-    source: "manual",
-  });
+  const accounts = await db
+    .select({ id: accountsTable.id, name: accountsTable.name })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId));
 
-  // Adjust account balance
-  await adjustAccountBalance(targetAccountId, parseFloat(item.nativeAmount), item.currency, item.type);
+  // Use the first account if none linked; if user has no accounts yet skip balance adjustment
+  const targetAccountId = item.accountId ?? accounts[0]?.id;
+  if (targetAccountId) {
+    await db.insert(transactionsTable).values({
+      date: item.dueDate,
+      description: item.description,
+      type: item.type,
+      category: item.category,
+      accountId: targetAccountId,
+      nativeAmount: item.nativeAmount,
+      currency: item.currency,
+      source: "manual",
+      userId,
+    });
+    await adjustAccountBalance(targetAccountId, parseFloat(item.nativeAmount), item.currency, item.type);
+  }
 
-  const accounts = await db.select({ id: accountsTable.id, name: accountsTable.name }).from(accountsTable);
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
-  const enriched = await enrichUpcoming(updated, accountMap);
+  const enriched = await enrichUpcoming(updated, accountMap, userId);
   res.json(PayUpcomingItemResponse.parse(enriched));
 });
 
 router.patch("/upcoming/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = UpdateUpcomingItemParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -177,19 +199,23 @@ router.patch("/upcoming/:id", async (req, res): Promise<void> => {
   const [item] = await db
     .update(upcomingTable)
     .set(updateData)
-    .where(eq(upcomingTable.id, params.data.id))
+    .where(and(eq(upcomingTable.id, params.data.id), eq(upcomingTable.userId, userId)))
     .returning();
   if (!item) {
     res.status(404).json({ error: "Item not found" });
     return;
   }
-  const accounts = await db.select({ id: accountsTable.id, name: accountsTable.name }).from(accountsTable);
+  const accounts = await db
+    .select({ id: accountsTable.id, name: accountsTable.name })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId));
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
-  const enriched = await enrichUpcoming(item, accountMap);
+  const enriched = await enrichUpcoming(item, accountMap, userId);
   res.json(UpdateUpcomingItemResponse.parse(enriched));
 });
 
 router.delete("/upcoming/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = DeleteUpcomingItemParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -197,7 +223,7 @@ router.delete("/upcoming/:id", async (req, res): Promise<void> => {
   }
   const [item] = await db
     .delete(upcomingTable)
-    .where(eq(upcomingTable.id, params.data.id))
+    .where(and(eq(upcomingTable.id, params.data.id), eq(upcomingTable.userId, userId)))
     .returning();
   if (!item) {
     res.status(404).json({ error: "Item not found" });

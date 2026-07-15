@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, accountsTable, transactionsTable } from "@workspace/db";
 import { GetWiseStatusResponse, SyncWiseTransactionsResponse } from "@workspace/api-zod";
 import { checkConnection, listProfiles, listBalances, getStatement } from "../lib/wise";
@@ -26,6 +26,8 @@ router.get("/wise/status", async (req, res): Promise<void> => {
 // Fetches all balances across the user's Wise profile(s), creates/updates matching
 // accounts, then pulls the last 90 days of transactions for each balance.
 router.post("/wise/sync", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+
   if (!process.env.WISE_API_TOKEN) {
     res.status(400).json({ error: "WISE_API_TOKEN is not configured on the server." });
     return;
@@ -49,8 +51,9 @@ router.post("/wise/sync", async (req, res): Promise<void> => {
     const intervalStart = new Date();
     intervalStart.setDate(intervalStart.getDate() - 90);
 
+    const baseCurrency = await getBaseCurrency(userId);
+
     for (const balance of balances) {
-      const baseCurrency = await getBaseCurrency();
       const gbpEquivalent = await toBase(balance.amount.value, balance.amount.currency, baseCurrency);
 
       const [account] = await db
@@ -63,6 +66,7 @@ router.post("/wise/sync", async (req, res): Promise<void> => {
           wiseProfileId: String(personalProfile.id),
           wiseBalanceId: String(balance.id),
           lastSyncedAt: new Date(),
+          userId,
         })
         .onConflictDoUpdate({
           target: accountsTable.wiseBalanceId,
@@ -89,13 +93,13 @@ router.post("/wise/sync", async (req, res): Promise<void> => {
         const existing = await db
           .select()
           .from(transactionsTable)
-          .where(eq(transactionsTable.externalId, tx.referenceNumber));
+          .where(and(eq(transactionsTable.externalId, tx.referenceNumber), eq(transactionsTable.userId, userId)));
 
         if (existing.length > 0) {
           await db
             .update(transactionsTable)
             .set({ nativeAmount: String(Math.abs(nativeAmount)), type })
-            .where(eq(transactionsTable.externalId, tx.referenceNumber));
+            .where(and(eq(transactionsTable.externalId, tx.referenceNumber), eq(transactionsTable.userId, userId)));
           totalUpdated++;
         } else {
           await db.insert(transactionsTable).values({
@@ -108,6 +112,7 @@ router.post("/wise/sync", async (req, res): Promise<void> => {
             currency: tx.amount.currency,
             source: "wise",
             externalId: tx.referenceNumber,
+            userId,
           });
           totalAdded++;
         }

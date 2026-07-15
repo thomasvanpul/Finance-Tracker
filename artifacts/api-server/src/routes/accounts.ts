@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, accountsTable } from "@workspace/db";
 import {
   CreateAccountBody,
@@ -14,9 +14,9 @@ import { getBaseCurrency } from "../lib/app-settings-db";
 
 const router: IRouter = Router();
 
-async function enrichAccount(account: typeof accountsTable.$inferSelect) {
+async function enrichAccount(account: typeof accountsTable.$inferSelect, userId: string) {
   const balance = parseFloat(account.balance);
-  const baseCurrency = await getBaseCurrency();
+  const baseCurrency = await getBaseCurrency(userId);
   const gbpEquivalent = await toBase(balance, account.currency, baseCurrency);
   return {
     id: account.id,
@@ -33,12 +33,18 @@ async function enrichAccount(account: typeof accountsTable.$inferSelect) {
 }
 
 router.get("/accounts", async (req, res): Promise<void> => {
-  const accounts = await db.select().from(accountsTable).orderBy(accountsTable.createdAt);
-  const enriched = await Promise.all(accounts.map(enrichAccount));
+  const userId = (req as any).userId as string;
+  const accounts = await db
+    .select()
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId))
+    .orderBy(accountsTable.createdAt);
+  const enriched = await Promise.all(accounts.map((a) => enrichAccount(a, userId)));
   res.json(ListAccountsResponse.parse(enriched));
 });
 
 router.post("/accounts", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const parsed = CreateAccountBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -46,13 +52,14 @@ router.post("/accounts", async (req, res): Promise<void> => {
   }
   const [account] = await db
     .insert(accountsTable)
-    .values({ ...parsed.data, balance: String(parsed.data.balance) })
+    .values({ ...parsed.data, balance: String(parsed.data.balance), userId })
     .returning();
-  const enriched = await enrichAccount(account);
+  const enriched = await enrichAccount(account, userId);
   res.status(201).json(UpdateAccountResponse.parse(enriched));
 });
 
 router.patch("/accounts/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = UpdateAccountParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -69,17 +76,18 @@ router.patch("/accounts/:id", async (req, res): Promise<void> => {
   const [account] = await db
     .update(accountsTable)
     .set(updateData)
-    .where(eq(accountsTable.id, params.data.id))
+    .where(and(eq(accountsTable.id, params.data.id), eq(accountsTable.userId, userId)))
     .returning();
   if (!account) {
     res.status(404).json({ error: "Account not found" });
     return;
   }
-  const enriched = await enrichAccount(account);
+  const enriched = await enrichAccount(account, userId);
   res.json(UpdateAccountResponse.parse(enriched));
 });
 
 router.delete("/accounts/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = DeleteAccountParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -87,7 +95,7 @@ router.delete("/accounts/:id", async (req, res): Promise<void> => {
   }
   const [account] = await db
     .delete(accountsTable)
-    .where(eq(accountsTable.id, params.data.id))
+    .where(and(eq(accountsTable.id, params.data.id), eq(accountsTable.userId, userId)))
     .returning();
   if (!account) {
     res.status(404).json({ error: "Account not found" });

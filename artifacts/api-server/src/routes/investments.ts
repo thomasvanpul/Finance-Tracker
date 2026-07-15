@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, investmentsTable } from "@workspace/db";
 import {
   CreateInvestmentBody,
@@ -21,21 +21,17 @@ function enrichInvestmentSync(
 ) {
   const shares = parseFloat(inv.shares);
   const costPrice = parseFloat(inv.costPricePerShare);
-
   const priceData = priceMap.get(inv.ticker);
   const livePrice = priceData?.price ?? 0;
   const currency = priceData?.currency ?? "USD";
-
   const currentValue = shares * livePrice;
   const costBasis = shares * costPrice;
   const plNative = currentValue - costBasis;
   const plPercent = costBasis > 0 ? (plNative / costBasis) * 100 : 0;
-
   const fxRate = currency === "GBP" ? 1 : (fx.rates[currency] ?? 1);
   const gbpValue = currentValue / fxRate;
   const costGbp = costBasis / fxRate;
   const plGbp = gbpValue - costGbp;
-
   return {
     id: inv.id,
     ticker: inv.ticker,
@@ -64,22 +60,29 @@ async function fetchPriceContext(investments: (typeof investmentsTable.$inferSel
 }
 
 router.get("/investments", async (req, res): Promise<void> => {
-  const investments = await db.select().from(investmentsTable).orderBy(investmentsTable.createdAt);
+  const userId = (req as any).userId as string;
+  const investments = await db
+    .select()
+    .from(investmentsTable)
+    .where(eq(investmentsTable.userId, userId))
+    .orderBy(investmentsTable.createdAt);
   const { priceMap, fx } = await fetchPriceContext(investments);
   const enriched = investments.map((inv) => enrichInvestmentSync(inv, priceMap, fx));
   res.json(ListInvestmentsResponse.parse(enriched));
 });
 
 router.get("/investments/summary", async (req, res): Promise<void> => {
-  const investments = await db.select().from(investmentsTable);
+  const userId = (req as any).userId as string;
+  const investments = await db
+    .select()
+    .from(investmentsTable)
+    .where(eq(investmentsTable.userId, userId));
   const { priceMap, fx } = await fetchPriceContext(investments);
   const enriched = investments.map((inv) => enrichInvestmentSync(inv, priceMap, fx));
-
   const totalValueGbp = enriched.reduce((s, i) => s + i.gbpValue, 0);
   const totalPlGbp = enriched.reduce((s, i) => s + i.plGbp, 0);
   const totalCostGbp = totalValueGbp - totalPlGbp;
   const totalPlPercent = totalCostGbp > 0 ? (totalPlGbp / totalCostGbp) * 100 : 0;
-
   res.json(
     GetInvestmentSummaryResponse.parse({
       totalValueGbp: Math.round(totalValueGbp * 100) / 100,
@@ -91,6 +94,7 @@ router.get("/investments/summary", async (req, res): Promise<void> => {
 });
 
 router.post("/investments", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const parsed = CreateInvestmentBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -102,6 +106,7 @@ router.post("/investments", async (req, res): Promise<void> => {
       ...parsed.data,
       shares: String(parsed.data.shares),
       costPricePerShare: String(parsed.data.costPricePerShare),
+      userId,
     })
     .returning();
   const { priceMap, fx } = await fetchPriceContext([inv]);
@@ -109,6 +114,7 @@ router.post("/investments", async (req, res): Promise<void> => {
 });
 
 router.patch("/investments/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = UpdateInvestmentParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -122,11 +128,10 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.shares !== undefined) updateData.shares = String(parsed.data.shares);
   if (parsed.data.costPricePerShare !== undefined) updateData.costPricePerShare = String(parsed.data.costPricePerShare);
-
   const [inv] = await db
     .update(investmentsTable)
     .set(updateData)
-    .where(eq(investmentsTable.id, params.data.id))
+    .where(and(eq(investmentsTable.id, params.data.id), eq(investmentsTable.userId, userId)))
     .returning();
   if (!inv) {
     res.status(404).json({ error: "Investment not found" });
@@ -137,6 +142,7 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
 });
 
 router.delete("/investments/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = DeleteInvestmentParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -144,7 +150,7 @@ router.delete("/investments/:id", async (req, res): Promise<void> => {
   }
   const [inv] = await db
     .delete(investmentsTable)
-    .where(eq(investmentsTable.id, params.data.id))
+    .where(and(eq(investmentsTable.id, params.data.id), eq(investmentsTable.userId, userId)))
     .returning();
   if (!inv) {
     res.status(404).json({ error: "Investment not found" });

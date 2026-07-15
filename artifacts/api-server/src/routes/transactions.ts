@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { db, transactionsTable, accountsTable } from "@workspace/db";
 import {
   CreateTransactionBody,
@@ -18,9 +18,9 @@ import { adjustAccountBalance } from "../lib/balance";
 
 const router: IRouter = Router();
 
-async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, accountMap: Map<number, string>) {
+async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, accountMap: Map<number, string>, userId: string) {
   const nativeAmount = parseFloat(tx.nativeAmount);
-  const baseCurrency = await getBaseCurrency();
+  const baseCurrency = await getBaseCurrency(userId);
   const rawGbp = await toBase(Math.abs(nativeAmount), tx.currency, baseCurrency);
   const gbpValue = tx.type === "expense" ? -rawGbp : rawGbp;
   return {
@@ -41,6 +41,7 @@ async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, acco
 }
 
 router.get("/transactions", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const query = ListTransactionsQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
@@ -48,7 +49,7 @@ router.get("/transactions", async (req, res): Promise<void> => {
   }
   const { accountId, type, category, dateFrom, dateTo } = query.data;
 
-  const conditions = [];
+  const conditions = [eq(transactionsTable.userId, userId)];
   if (accountId) conditions.push(eq(transactionsTable.accountId, accountId));
   if (type) conditions.push(eq(transactionsTable.type, type));
   if (category) conditions.push(eq(transactionsTable.category, category));
@@ -58,17 +59,21 @@ router.get("/transactions", async (req, res): Promise<void> => {
   const txs = await db
     .select()
     .from(transactionsTable)
-    .where(conditions.length ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .orderBy(transactionsTable.date);
 
-  const accounts = await db.select({ id: accountsTable.id, name: accountsTable.name }).from(accountsTable);
+  const accounts = await db
+    .select({ id: accountsTable.id, name: accountsTable.name })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId));
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
 
-  const enriched = await Promise.all(txs.map((tx) => enrichTransaction(tx, accountMap)));
+  const enriched = await Promise.all(txs.map((tx) => enrichTransaction(tx, accountMap, userId)));
   res.json(ListTransactionsResponse.parse(enriched));
 });
 
 router.post("/transactions", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const parsed = CreateTransactionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -76,18 +81,22 @@ router.post("/transactions", async (req, res): Promise<void> => {
   }
   const [tx] = await db
     .insert(transactionsTable)
-    .values({ ...parsed.data, nativeAmount: String(parsed.data.nativeAmount) })
+    .values({ ...parsed.data, nativeAmount: String(parsed.data.nativeAmount), userId })
     .returning();
 
   await adjustAccountBalance(parsed.data.accountId, parsed.data.nativeAmount, parsed.data.currency, parsed.data.type);
 
-  const accounts = await db.select({ id: accountsTable.id, name: accountsTable.name }).from(accountsTable);
+  const accounts = await db
+    .select({ id: accountsTable.id, name: accountsTable.name })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId));
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
-  const enriched = await enrichTransaction(tx, accountMap);
+  const enriched = await enrichTransaction(tx, accountMap, userId);
   res.status(201).json(UpdateTransactionResponse.parse(enriched));
 });
 
 router.get("/transactions/summary", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const query = GetTransactionSummaryQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
@@ -101,9 +110,9 @@ router.get("/transactions/summary", async (req, res): Promise<void> => {
   const txs = await db
     .select()
     .from(transactionsTable)
-    .where(and(gte(transactionsTable.date, dateFrom), lte(transactionsTable.date, dateTo)));
+    .where(and(eq(transactionsTable.userId, userId), gte(transactionsTable.date, dateFrom), lte(transactionsTable.date, dateTo)));
 
-  const baseCurrency = await getBaseCurrency();
+  const baseCurrency = await getBaseCurrency(userId);
   let totalIncome = 0;
   let totalExpenses = 0;
   for (const tx of txs) {
@@ -128,6 +137,7 @@ router.get("/transactions/summary", async (req, res): Promise<void> => {
 });
 
 router.patch("/transactions/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = UpdateTransactionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -144,19 +154,23 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
   const [tx] = await db
     .update(transactionsTable)
     .set(updateData)
-    .where(eq(transactionsTable.id, params.data.id))
+    .where(and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId)))
     .returning();
   if (!tx) {
     res.status(404).json({ error: "Transaction not found" });
     return;
   }
-  const accounts = await db.select({ id: accountsTable.id, name: accountsTable.name }).from(accountsTable);
+  const accounts = await db
+    .select({ id: accountsTable.id, name: accountsTable.name })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId));
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
-  const enriched = await enrichTransaction(tx, accountMap);
+  const enriched = await enrichTransaction(tx, accountMap, userId);
   res.json(UpdateTransactionResponse.parse(enriched));
 });
 
 router.delete("/transactions/:id", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
   const params = DeleteTransactionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -164,13 +178,12 @@ router.delete("/transactions/:id", async (req, res): Promise<void> => {
   }
   const [tx] = await db
     .delete(transactionsTable)
-    .where(eq(transactionsTable.id, params.data.id))
+    .where(and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId)))
     .returning();
   if (!tx) {
     res.status(404).json({ error: "Transaction not found" });
     return;
   }
-  // Reverse the balance adjustment
   await adjustAccountBalance(tx.accountId, parseFloat(tx.nativeAmount), tx.currency, tx.type, true);
   res.sendStatus(204);
 });

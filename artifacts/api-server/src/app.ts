@@ -1,19 +1,17 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import path from "path";
 import { existsSync } from "fs";
+import { toNodeHandler } from "better-auth/node";
 import router from "./routes";
 import healthRouter from "./routes/health";
 import { logger } from "./lib/logger";
-import { login, logout, check, requireAuth } from "./lib/auth";
+import { auth } from "./lib/better-auth";
 
 const app: Express = express();
 
-// Render (and most PaaS hosts) sit behind a reverse proxy — without this,
-// req.ip would always resolve to the proxy's address, making IP-based rate
-// limiting on the login endpoint meaningless.
 app.set("trust proxy", 1);
 
 app.use(
@@ -21,23 +19,15 @@ app.use(
     logger,
     serializers: {
       req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
+        return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
       },
       res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
+        return { statusCode: res.statusCode };
       },
     },
   }),
 );
-// ALLOWED_ORIGINS is a comma-separated list of trusted frontend origins.
-// Set it on Railway to the Vercel URL (e.g. https://fintrack.vercel.app).
-// When unset (local dev), all origins are allowed.
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
   : [];
@@ -54,21 +44,35 @@ app.use(
     credentials: true,
   }),
 );
+
+// Better Auth handles its own body parsing for /api/auth/* routes,
+// so its handler must come BEFORE express.json().
+app.all("/api/auth/*", toNodeHandler(auth));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Auth endpoints and health check are the only unprotected routes.
-app.post("/api/auth/login", login);
-app.post("/api/auth/logout", logout);
-app.get("/api/auth/check", check);
 app.use("/api", healthRouter);
+
+// Middleware that reads the Better Auth session and puts userId on the request.
+export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const session = await auth.api.getSession({ headers: req.headers as any });
+    if (!session?.user) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+    (req as any).userId = session.user.id;
+    (req as any).user = session.user;
+    next();
+  } catch {
+    res.status(401).json({ error: "Not authenticated" });
+  }
+}
 
 app.use("/api", requireAuth, router);
 
-// Serve the built frontend when the static dir exists (single-service Render
-// setup). When the frontend is on Vercel, the dir won't be present and this
-// block is skipped — the API runs as a standalone service.
 if (process.env.NODE_ENV === "production") {
   const staticDir = path.resolve(__dirname, "../../finance-tracker/dist/public");
   if (existsSync(staticDir)) {

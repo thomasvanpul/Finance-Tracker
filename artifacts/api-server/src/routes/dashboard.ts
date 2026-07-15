@@ -8,10 +8,11 @@ import { getBaseCurrency } from "../lib/app-settings-db";
 const router: IRouter = Router();
 
 router.get("/dashboard", async (req, res): Promise<void> => {
-  const baseCurrency = await getBaseCurrency();
+  const userId = (req as any).userId as string;
+  const baseCurrency = await getBaseCurrency(userId);
 
   // Accounts
-  const accounts = await db.select().from(accountsTable);
+  const accounts = await db.select().from(accountsTable).where(eq(accountsTable.userId, userId));
   const accountBreakdown = await Promise.all(
     accounts.map(async (a) => {
       const balance = parseFloat(a.balance);
@@ -22,7 +23,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const totalCash = accountBreakdown.reduce((s, a) => s + a.gbpEquivalent, 0);
 
   // Investments
-  const investments = await db.select().from(investmentsTable);
+  const investments = await db.select().from(investmentsTable).where(eq(investmentsTable.userId, userId));
   let portfolioValueGbp = 0;
   let portfolioCostGbp = 0;
   if (investments.length > 0) {
@@ -55,7 +56,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const txs = await db
     .select()
     .from(transactionsTable)
-    .where(and(gte(transactionsTable.date, dateFrom), lte(transactionsTable.date, dateTo)));
+    .where(and(eq(transactionsTable.userId, userId), gte(transactionsTable.date, dateFrom), lte(transactionsTable.date, dateTo)));
 
   let monthIncome = 0;
   let monthExpenses = 0;
@@ -77,7 +78,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const upcoming = await db
     .select()
     .from(upcomingTable)
-    .where(and(gte(upcomingTable.dueDate, todayStr), lte(upcomingTable.dueDate, in30Str)));
+    .where(and(eq(upcomingTable.userId, userId), gte(upcomingTable.dueDate, todayStr), lte(upcomingTable.dueDate, in30Str)));
 
   let committedOut = 0;
   let expectedIn = 0;
@@ -100,7 +101,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     const mLastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
     const mTo = `${m}-${String(mLastDay).padStart(2, "0")}`;
     const mTxs = await db.select().from(transactionsTable)
-      .where(and(gte(transactionsTable.date, mFrom), lte(transactionsTable.date, mTo)));
+      .where(and(eq(transactionsTable.userId, userId), gte(transactionsTable.date, mFrom), lte(transactionsTable.date, mTo)));
     let mInc = 0, mExp = 0;
     for (const tx of mTxs) {
       const native = Math.abs(parseFloat(tx.nativeAmount));
@@ -112,7 +113,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   }
 
   // Owing — pending debts only
-  const pendingDebts = await db.select().from(debtsTable).where(eq(debtsTable.status, "pending"));
+  const pendingDebts = await db.select().from(debtsTable).where(and(eq(debtsTable.userId, userId), eq(debtsTable.status, "pending")));
   let totalOwedToMe = 0;
   let totalIOwe = 0;
   for (const d of pendingDebts) {

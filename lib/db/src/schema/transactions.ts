@@ -1,9 +1,11 @@
 import { pgTable, serial, text, numeric, timestamp, integer, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { userTable } from "./auth";
 
 export const transactionsTable = pgTable("transactions", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => userTable.id, { onDelete: "cascade" }),
   date: date("date", { mode: "string" }).notNull(),
   description: text("description").notNull(),
   type: text("type").notNull(), // income | expense | transfer
