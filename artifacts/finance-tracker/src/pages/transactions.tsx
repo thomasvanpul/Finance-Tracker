@@ -99,19 +99,22 @@ export default function Transactions() {
 
   // Filters
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState<"" | TxType>("");
+  const [filterType, setFilterType] = useState<"all" | TxType>("all");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
 
-  const hasFilters = search || filterType || filterDateFrom || filterDateTo;
+  const hasFilters = search || filterType !== "all" || filterDateFrom || filterDateTo;
 
   const filtered = (transactions ?? []).filter((tx) => {
-    if (filterType && tx.type !== filterType) return false;
+    if (filterType !== "all" && tx.type !== filterType) return false;
     if (filterDateFrom && tx.date < filterDateFrom) return false;
     if (filterDateTo && tx.date > filterDateTo) return false;
     if (search) {
       const q = search.toLowerCase();
-      if (!tx.description.toLowerCase().includes(q) && !tx.category.toLowerCase().includes(q) && !tx.accountName.toLowerCase().includes(q)) return false;
+      const desc = (tx.description ?? "").toLowerCase();
+      const cat = (tx.category ?? "").toLowerCase();
+      const acct = (tx.accountName ?? "").toLowerCase();
+      if (!desc.includes(q) && !cat.includes(q) && !acct.includes(q)) return false;
     }
     return true;
   });
@@ -324,12 +327,12 @@ export default function Transactions() {
             style={{ paddingLeft: 28, fontSize: 12, height: 30, background: "#161B22", border: "1px solid #30363D", borderRadius: 2, color: "#C9D1D9" }}
           />
         </div>
-        <Select value={filterType} onValueChange={(v) => setFilterType(v as "" | TxType)}>
+        <Select value={filterType} onValueChange={(v) => setFilterType(v as "all" | TxType)}>
           <SelectTrigger style={{ width: 110, height: 30, fontSize: 12, background: "#161B22", border: "1px solid #30363D", borderRadius: 2 }}>
             <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All types</SelectItem>
+            <SelectItem value="all">All types</SelectItem>
             <SelectItem value="income">Income</SelectItem>
             <SelectItem value="expense">Expense</SelectItem>
             <SelectItem value="transfer">Transfer</SelectItem>
@@ -352,7 +355,7 @@ export default function Transactions() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { setSearch(""); setFilterType(""); setFilterDateFrom(""); setFilterDateTo(""); }}
+            onClick={() => { setSearch(""); setFilterType("all"); setFilterDateFrom(""); setFilterDateTo(""); }}
             style={{ height: 30, fontSize: 11, color: "#8B949E", padding: "0 8px" }}
           >
             <X className="w-3 h-3 mr-1" />Clear
