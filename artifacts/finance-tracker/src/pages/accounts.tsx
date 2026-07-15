@@ -80,6 +80,17 @@ function WiseStatusBadge() {
   );
 }
 
+const PROVIDER_HINTS: Record<"revolut" | "maybank", string> = {
+  revolut: "Export from Revolut app: Profile → Statements → select account → Export (CSV)",
+  maybank: "Export from Maybank2u: Accounts → Account History → Download (CSV or Excel)",
+};
+
+interface ImportResult {
+  added: number;
+  skipped: number;
+  errors: string[];
+}
+
 // CSV import dialog — used for Revolut and Maybank exports (no live API for either
 // that a hobby project can use for free; see accounts.tsx history for why).
 function CsvImportDialog({ accounts, onImported }: { accounts: { id: number; name: string }[]; onImported: () => void }) {
@@ -89,28 +100,37 @@ function CsvImportDialog({ accounts, onImported }: { accounts: { id: number; nam
   const [provider, setProvider] = useState<"revolut" | "maybank">("revolut");
   const [accountId, setAccountId] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
+
+  const reset = () => { setFile(null); setResult(null); };
+
+  const handleOpenChange = (v: boolean) => {
+    setOpen(v);
+    if (!v) reset();
+  };
 
   const handleImport = async () => {
     if (!file || !accountId) return;
+    setResult(null);
     try {
-      const result = await importCsv.mutateAsync({
+      const res = await importCsv.mutateAsync({
         params: { provider, accountId: Number(accountId) },
         data: { file },
       });
-      toast({
-        title: `Import complete — ${result.added} added, ${result.skipped} skipped`,
-        description: result.errors.length > 0 ? `${result.errors.length} row(s) had issues — check details.` : undefined,
-      });
+      setResult({ added: res.added, skipped: res.skipped, errors: res.errors });
       onImported();
-      setOpen(false);
-      setFile(null);
+      if (res.errors.length === 0) {
+        toast({ title: `Import complete — ${res.added} added, ${res.skipped} skipped` });
+        setOpen(false);
+        reset();
+      }
     } catch (err: any) {
       toast({ title: "Import failed", description: err?.message ?? "Unknown error", variant: "destructive" });
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <Button
         size="sm"
         onClick={() => setOpen(true)}
@@ -124,13 +144,14 @@ function CsvImportDialog({ accounts, onImported }: { accounts: { id: number; nam
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Bank / Source</Label>
-            <Select value={provider} onValueChange={(v) => setProvider(v as "revolut" | "maybank")}>
+            <Select value={provider} onValueChange={(v) => { setProvider(v as "revolut" | "maybank"); reset(); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="revolut">Revolut (Statement export)</SelectItem>
                 <SelectItem value="maybank">Maybank (Transaction export)</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs" style={{ color: "#6E7681" }}>{PROVIDER_HINTS[provider]}</p>
           </div>
           <div className="space-y-1.5">
             <Label>Account to import into</Label>
@@ -145,14 +166,47 @@ function CsvImportDialog({ accounts, onImported }: { accounts: { id: number; nam
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="csv-file">CSV file</Label>
-            <Input id="csv-file" type="file" accept=".csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            <Input id="csv-file" type="file" accept=".csv" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setResult(null); }} />
           </div>
+
+          {/* Result panel — shown when import finished with parse errors */}
+          {result && (
+            <div className="rounded-sm border p-3 space-y-2" style={{ borderColor: "#30363D", background: "#161B22" }}>
+              <p className="text-xs font-semibold" style={{ color: "#3FB950" }}>
+                Import complete — {result.added} added, {result.skipped} skipped
+              </p>
+              {result.errors.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold" style={{ color: "#F0883E" }}>
+                    {result.errors.length} row{result.errors.length !== 1 ? "s" : ""} skipped due to parse errors:
+                  </p>
+                  <div
+                    className="font-mono text-xs overflow-y-auto space-y-0.5"
+                    style={{ maxHeight: 120, color: "#8B949E" }}
+                  >
+                    {result.errors.map((e, i) => (
+                      <div key={i}>· {e}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-        <DialogFooter className="mt-6">
-          <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-          <Button type="button" disabled={!file || !accountId || importCsv.isPending} onClick={handleImport}>
-            {importCsv.isPending ? "Importing…" : "Import"}
-          </Button>
+        <DialogFooter className="mt-4">
+          <DialogClose asChild><Button type="button" variant="outline">
+            {result ? "Done" : "Cancel"}
+          </Button></DialogClose>
+          {!result && (
+            <Button type="button" disabled={!file || !accountId || importCsv.isPending} onClick={handleImport}>
+              {importCsv.isPending ? "Importing…" : "Import"}
+            </Button>
+          )}
+          {result && result.errors.length > 0 && (
+            <Button type="button" onClick={() => { setResult(null); setFile(null); }}>
+              Import another file
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

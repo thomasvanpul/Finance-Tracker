@@ -10,16 +10,19 @@ import {
   UpdateInvestmentResponse,
   GetInvestmentSummaryResponse,
 } from "@workspace/api-zod";
-import { getStockPrices, toGbp } from "../lib/market";
+import { getStockPrices, getFxRates, type StockPriceData, type FxRatesData } from "../lib/market";
 
 const router: IRouter = Router();
 
-async function enrichInvestment(inv: typeof investmentsTable.$inferSelect) {
+function enrichInvestmentSync(
+  inv: typeof investmentsTable.$inferSelect,
+  priceMap: Map<string, StockPriceData>,
+  fx: FxRatesData,
+) {
   const shares = parseFloat(inv.shares);
   const costPrice = parseFloat(inv.costPricePerShare);
 
-  const prices = await getStockPrices([inv.ticker]);
-  const priceData = prices[0];
+  const priceData = priceMap.get(inv.ticker);
   const livePrice = priceData?.price ?? 0;
   const currency = priceData?.currency ?? "USD";
 
@@ -28,8 +31,9 @@ async function enrichInvestment(inv: typeof investmentsTable.$inferSelect) {
   const plNative = currentValue - costBasis;
   const plPercent = costBasis > 0 ? (plNative / costBasis) * 100 : 0;
 
-  const gbpValue = await toGbp(currentValue, currency);
-  const costGbp = await toGbp(costBasis, currency);
+  const fxRate = currency === "GBP" ? 1 : (fx.rates[currency] ?? 1);
+  const gbpValue = currentValue / fxRate;
+  const costGbp = costBasis / fxRate;
   const plGbp = gbpValue - costGbp;
 
   return {
@@ -49,25 +53,32 @@ async function enrichInvestment(inv: typeof investmentsTable.$inferSelect) {
   };
 }
 
+async function fetchPriceContext(investments: (typeof investmentsTable.$inferSelect)[]) {
+  const tickers = [...new Set(investments.map((i) => i.ticker))];
+  const [prices, fx] = await Promise.all([
+    tickers.length > 0 ? getStockPrices(tickers) : Promise.resolve([]),
+    getFxRates(),
+  ]);
+  const priceMap = new Map(prices.map((p) => [p.ticker, p]));
+  return { priceMap, fx };
+}
+
 router.get("/investments", async (req, res): Promise<void> => {
   const investments = await db.select().from(investmentsTable).orderBy(investmentsTable.createdAt);
-  const enriched = await Promise.all(investments.map(enrichInvestment));
+  const { priceMap, fx } = await fetchPriceContext(investments);
+  const enriched = investments.map((inv) => enrichInvestmentSync(inv, priceMap, fx));
   res.json(ListInvestmentsResponse.parse(enriched));
 });
 
 router.get("/investments/summary", async (req, res): Promise<void> => {
   const investments = await db.select().from(investmentsTable);
-  const enriched = await Promise.all(investments.map(enrichInvestment));
+  const { priceMap, fx } = await fetchPriceContext(investments);
+  const enriched = investments.map((inv) => enrichInvestmentSync(inv, priceMap, fx));
 
   const totalValueGbp = enriched.reduce((s, i) => s + i.gbpValue, 0);
   const totalPlGbp = enriched.reduce((s, i) => s + i.plGbp, 0);
-  const totalCostGbp = enriched.reduce((s, i) => {
-    const cost = i.shares * i.costPricePerShare;
-    return s + cost; // approximate — already converted via enrichInvestment
-  }, 0);
-  const totalPlPercent = totalValueGbp - totalPlGbp > 0
-    ? (totalPlGbp / (totalValueGbp - totalPlGbp)) * 100
-    : 0;
+  const totalCostGbp = totalValueGbp - totalPlGbp;
+  const totalPlPercent = totalCostGbp > 0 ? (totalPlGbp / totalCostGbp) * 100 : 0;
 
   res.json(
     GetInvestmentSummaryResponse.parse({
@@ -93,8 +104,8 @@ router.post("/investments", async (req, res): Promise<void> => {
       costPricePerShare: String(parsed.data.costPricePerShare),
     })
     .returning();
-  const enriched = await enrichInvestment(inv);
-  res.status(201).json(UpdateInvestmentResponse.parse(enriched));
+  const { priceMap, fx } = await fetchPriceContext([inv]);
+  res.status(201).json(UpdateInvestmentResponse.parse(enrichInvestmentSync(inv, priceMap, fx)));
 });
 
 router.patch("/investments/:id", async (req, res): Promise<void> => {
@@ -121,8 +132,8 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Investment not found" });
     return;
   }
-  const enriched = await enrichInvestment(inv);
-  res.json(UpdateInvestmentResponse.parse(enriched));
+  const { priceMap, fx } = await fetchPriceContext([inv]);
+  res.json(UpdateInvestmentResponse.parse(enrichInvestmentSync(inv, priceMap, fx)));
 });
 
 router.delete("/investments/:id", async (req, res): Promise<void> => {
