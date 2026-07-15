@@ -1,7 +1,7 @@
 {
   "framework": null,
   "installCommand": "pnpm install --no-frozen-lockfile --ignore-scripts && pnpm rebuild esbuild",
-  "buildCommand": "pnpm --filter @workspace/finance-tracker run build",
-  "outputDirectory": "artifacts/finance-tracker/dist/public",
+  "buildCommand": "pnpm --filter @workspace/finance-tracker run build && mkdir -p public && if [ -d artifacts/finance-tracker/dist/public ]; then cp -r artifacts/finance-tracker/dist/public/. public/; else cp -r dist/public/. public/; fi",
+  "outputDirectory": "public",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
