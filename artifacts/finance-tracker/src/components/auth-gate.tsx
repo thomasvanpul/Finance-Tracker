@@ -197,7 +197,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   };
 
   const handleGoogle = async () => {
-    await authClient.signIn.social({ provider: "google", callbackURL: window.location.href });
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: window.location.origin,
+      errorCallbackURL: window.location.origin,
+    });
   };
 
   const isSignIn = mode === "signin";
