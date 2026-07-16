@@ -132,8 +132,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [password, setPassword] = useState("");
   const [needsCode, setNeedsCode] = useState(false);
   const [totpCode, setTotpCode] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const urlError = new URLSearchParams(window.location.search).get("error");
+  const [error, setError] = useState<string | null>(
+    urlError === "account_not_linked" ? "Google account not linked. Try signing in with email/password first, then link Google from settings." : urlError
+  );
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   if (isPending) {
     return <div style={{ minHeight: "100vh", background: "#0D1117" }} />;
@@ -197,11 +201,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   };
 
   const handleGoogle = async () => {
+    setGoogleLoading(true);
     await authClient.signIn.social({
       provider: "google",
       callbackURL: window.location.origin,
       errorCallbackURL: window.location.origin,
     });
+    setGoogleLoading(false);
   };
 
   const isSignIn = mode === "signin";
@@ -297,8 +303,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                     {submitting ? "Signing in…" : "Sign in"}
                   </button>
                   {GOOGLE_ENABLED && (
-                    <button type="button" onClick={handleGoogle} style={btnSecondaryStyle}>
-                      Continue with Google
+                    <button type="button" onClick={handleGoogle} disabled={googleLoading} style={{ ...btnSecondaryStyle, opacity: googleLoading ? 0.6 : 1, cursor: googleLoading ? "default" : "pointer" }}>
+                      {googleLoading ? "Redirecting…" : "Continue with Google"}
                     </button>
                   )}
                   <p className="text-center text-xs" style={{ color: "#6E7681", marginTop: 4 }}>
@@ -345,8 +351,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                     {submitting ? "Creating account…" : "Create account"}
                   </button>
                   {GOOGLE_ENABLED && (
-                    <button type="button" onClick={handleGoogle} style={btnSecondaryStyle}>
-                      Continue with Google
+                    <button type="button" onClick={handleGoogle} disabled={googleLoading} style={{ ...btnSecondaryStyle, opacity: googleLoading ? 0.6 : 1, cursor: googleLoading ? "default" : "pointer" }}>
+                      {googleLoading ? "Redirecting…" : "Continue with Google"}
                     </button>
                   )}
                   <p className="text-center text-xs" style={{ color: "#6E7681", marginTop: 4 }}>
