@@ -46,6 +46,14 @@ export const auth = betterAuth({
       maxAge: 60 * 5,
     },
   },
+  advanced: {
+    // Frontend (Vercel) and backend (Railway) are on different domains,
+    // so cookies must be SameSite=None to survive the Google OAuth redirect.
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+    },
+  },
 });
 
 export type Auth = typeof auth;
