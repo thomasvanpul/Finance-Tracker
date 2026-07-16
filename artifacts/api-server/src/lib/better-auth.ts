@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins";
-import { db, userTable, sessionTable, accountTable, verificationTable } from "@workspace/db";
+import { db, userTable, sessionTable, accountTable, verificationTable, twoFactorTable } from "@workspace/db";
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
@@ -16,6 +16,7 @@ export const auth = betterAuth({
       session: sessionTable,
       account: accountTable,
       verification: verificationTable,
+      twoFactor: twoFactorTable,
     },
   }),
   baseURL: process.env.API_BASE_URL
