@@ -14,6 +14,11 @@ const localhostOrigins = DEV_PORTS.flatMap(
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
+  session: {
+    expiresIn: 60 * 60 * 24 * 30,   // 30 days
+    updateAge: 60 * 60 * 24,         // refresh cookie daily while active
+    cookieCache: { enabled: true, maxAge: 60 * 5 },
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {
