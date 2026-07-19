@@ -23,11 +23,10 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
   }
 }
 
-// Point all API calls directly at Railway whenever VITE_API_URL is set.
-// In dev this bypasses the Vite proxy (mirrors production flow, avoids stale-cookie issues).
-const apiUrl = import.meta.env.VITE_API_URL;
-if (apiUrl) {
-  setBaseUrl(apiUrl);
+// In production, point directly at Railway. In dev, leave base URL empty so
+// requests go through the Vite proxy (/api → Railway) which handles cookies correctly.
+if (!import.meta.env.DEV && import.meta.env.VITE_API_URL) {
+  setBaseUrl(import.meta.env.VITE_API_URL as string);
 }
 
 createRoot(document.getElementById("root")!).render(

@@ -42,7 +42,7 @@ function buildContext(path: string): string {
 
 // ── API ───────────────────────────────────────────────────────────────────────
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "";
+const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL ?? "");
 
 async function sendChat(messages: Message[], context: string): Promise<string> {
   const res = await fetch(`${API_BASE}/api/ai/chat`, {

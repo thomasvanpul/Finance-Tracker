@@ -1,11 +1,13 @@
 import { createAuthClient } from "better-auth/react";
 import { twoFactorClient } from "better-auth/client/plugins";
 
-// Always point directly at Railway when VITE_API_URL is set (both dev and prod).
-// Bypassing the Vite proxy avoids cookie-forwarding issues and mirrors the production flow exactly.
-const authBase = import.meta.env.VITE_API_URL
-  ? `${(import.meta.env.VITE_API_URL as string).replace(/\/+$/, "")}/api/auth`
-  : `${window.location.origin}/api/auth`;
+// In dev, route through the Vite proxy (/api → Railway) so cookies land on localhost correctly.
+// In production, go directly to the Railway URL.
+const authBase = import.meta.env.DEV
+  ? `${window.location.origin}/api/auth`
+  : import.meta.env.VITE_API_URL
+    ? `${(import.meta.env.VITE_API_URL as string).replace(/\/+$/, "")}/api/auth`
+    : `${window.location.origin}/api/auth`;
 
 export const authClient = createAuthClient({
   baseURL: authBase,
