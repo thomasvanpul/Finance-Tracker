@@ -15,8 +15,8 @@ const localhostOrigins = DEV_PORTS.flatMap(
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   session: {
-    expiresIn: 60 * 60 * 24 * 30,   // 30 days
-    updateAge: 60 * 60 * 24,         // refresh cookie daily while active
+    expiresIn: 60 * 60 * 24 * 30,
+    updateAge: 60 * 60 * 24,
     cookieCache: { enabled: true, maxAge: 60 * 5 },
   },
   database: drizzleAdapter(db, {
@@ -40,9 +40,7 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
-      // Log to console in dev; in production configure Resend or SMTP
       console.log(`[Password Reset] Send to ${user.email}: ${url}`);
-      // If RESEND_API_KEY is set, attempt to use Resend (must be installed separately)
       if (process.env.RESEND_API_KEY) {
         try {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -79,12 +77,6 @@ export const auth = betterAuth({
       enabled: true,
       trustedProviders: ["google"],
       requireLocalEmailVerified: false,
-    },
-  },
-  session: {
-    cookieCache: {
-      enabled: true,
-      maxAge: 60 * 5,
     },
   },
   advanced: {
