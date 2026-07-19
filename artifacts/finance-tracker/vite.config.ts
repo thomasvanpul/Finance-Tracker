@@ -1,8 +1,9 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 
 const rawPort = process.env.PORT ?? "3000";
 const port = Number(rawPort);
@@ -13,12 +14,16 @@ if (Number.isNaN(port) || port <= 0) {
 
 const basePath = process.env.BASE_PATH ?? "/";
 
-export default defineConfig({
+export default defineConfig(async ({ mode }) => {
+const env = loadEnv(mode, process.cwd(), "");
+const apiUrl = env.VITE_API_URL ?? "";
+return {
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+    basicSsl(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
@@ -48,6 +53,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
   },
   server: {
+    https: {},
     port,
     strictPort: true,
     host: "0.0.0.0",
@@ -55,10 +61,37 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    proxy: apiUrl
+      ? {
+          "/api": {
+            target: apiUrl,
+            changeOrigin: true,
+            secure: true,
+            configure: (proxy) => {
+              proxy.on("proxyReq", (proxyReq) => {
+                proxyReq.setHeader("origin", "https://financetracker.work");
+                proxyReq.setHeader("referer", "https://financetracker.work/");
+              });
+              proxy.on("proxyRes", (proxyRes) => {
+                const cookies = proxyRes.headers["set-cookie"];
+                if (cookies) {
+                  proxyRes.headers["set-cookie"] = (Array.isArray(cookies) ? cookies : [cookies]).map(
+                    (c) => c
+                      .replace(/;\s*Secure/gi, "")
+                      .replace(/;\s*SameSite=None/gi, "; SameSite=Lax")
+                      .replace(/;\s*Domain=[^;]*/gi, "")
+                  );
+                }
+              });
+            },
+          },
+        }
+      : undefined,
   },
   preview: {
     port,
     host: "0.0.0.0",
     allowedHosts: true,
   },
+};
 });

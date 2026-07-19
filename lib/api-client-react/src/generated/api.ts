@@ -3194,3 +3194,75 @@ export const useDisable2fa = <TError = ErrorType<unknown>,
       return useMutation(getDisable2faMutationOptions(options));
     }
 
+
+// ── Linked IOU helpers ──
+
+// GET /api/debts/received
+export const getListReceivedDebtsUrl = () => `/api/debts/received`;
+
+export const listReceivedDebts = async (options?: RequestInit): Promise<Debt[]> => {
+  return customFetch<Debt[]>(getListReceivedDebtsUrl(), { ...options, method: 'GET' });
+};
+
+export const getListReceivedDebtsQueryKey = () => [`/api/debts/received`] as const;
+
+export const getListReceivedDebtsQueryOptions = <TData = Awaited<ReturnType<typeof listReceivedDebts>>, TError = ErrorType<unknown>>(
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof listReceivedDebts>>, TError, TData>; request?: SecondParameter<typeof customFetch> }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getListReceivedDebtsQueryKey();
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listReceivedDebts>>> = ({ signal }) =>
+    listReceivedDebts({ signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof listReceivedDebts>>, TError, TData> & { queryKey: QueryKey };
+};
+
+export function useListReceivedDebts<TData = Awaited<ReturnType<typeof listReceivedDebts>>, TError = ErrorType<unknown>>(
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof listReceivedDebts>>, TError, TData>; request?: SecondParameter<typeof customFetch> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListReceivedDebtsQueryOptions(options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+// GET /api/users/lookup?email=
+export type UserLookupResult = { id: string; name: string; email: string };
+
+export const userLookup = async (email: string, options?: RequestInit): Promise<UserLookupResult> => {
+  return customFetch<UserLookupResult>(
+    `/api/users/lookup?email=${encodeURIComponent(email)}`,
+    { ...options, method: 'GET' }
+  );
+};
+
+// POST /api/debts/:id/reject
+export const rejectDebt = async (id: number, options?: RequestInit): Promise<void> => {
+  return customFetch<void>(`/api/debts/${id}/reject`, { ...options, method: 'POST' });
+};
+
+export const getRejectDebtMutationOptions = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof rejectDebt>>, TError, { id: number }, TContext>; request?: SecondParameter<typeof customFetch> }
+): UseMutationOptions<Awaited<ReturnType<typeof rejectDebt>>, TError, { id: number }, TContext> => {
+  const mutationKey = ['rejectDebt'];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectDebt>>, { id: number }> = (props) => {
+    const { id } = props ?? {};
+    return rejectDebt(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RejectDebtMutationResult = NonNullable<Awaited<ReturnType<typeof rejectDebt>>>;
+export type RejectDebtMutationError = ErrorType<unknown>;
+
+export const useRejectDebt = <TError = ErrorType<unknown>, TContext = unknown>(
+  options?: { mutation?: UseMutationOptions<Awaited<ReturnType<typeof rejectDebt>>, TError, { id: number }, TContext>; request?: SecondParameter<typeof customFetch> }
+): UseMutationResult<Awaited<ReturnType<typeof rejectDebt>>, TError, { id: number }, TContext> => {
+  return useMutation(getRejectDebtMutationOptions(options));
+};
+

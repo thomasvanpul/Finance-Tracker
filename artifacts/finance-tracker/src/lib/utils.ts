@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { getBaseCurrency } from "./currency-store";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,9 +13,8 @@ export function formatCurrency(value: number, currency: string): string {
   }).format(value);
 }
 
-/** @deprecated Use formatCurrency(value, "GBP") when base currency is known */
 export function formatGbp(value: number): string {
-  return formatCurrency(value, "GBP");
+  return formatCurrency(value, getBaseCurrency());
 }
 
 export function formatNative(value: number, currency: string): string {

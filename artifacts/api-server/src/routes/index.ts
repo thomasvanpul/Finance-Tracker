@@ -9,6 +9,7 @@ import importRouter from "./import";
 import dashboardRouter from "./dashboard";
 import debtsRouter from "./debts";
 import settingsRouter from "./settings";
+import aiRouter from "./ai";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(wiseRouter);
 router.use(importRouter);
 router.use(debtsRouter);
 router.use(settingsRouter);
+router.use(aiRouter);
 
 export default router;

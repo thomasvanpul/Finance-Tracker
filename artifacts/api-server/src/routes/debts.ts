@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
-import { db, debtsTable } from "@workspace/db";
+import { db, debtsTable, userTable } from "@workspace/db";
 import {
   CreateDebtBody,
   UpdateDebtParams,
@@ -33,8 +33,43 @@ async function enrichDebt(item: typeof debtsTable.$inferSelect, userId: string) 
     accountId: item.accountId ?? null,
     gbpEquivalent: Math.round(gbpEquivalent * 100) / 100,
     createdAt: item.createdAt.toISOString(),
+    linkedEmail: item.linkedEmail ?? null,
+    linkedUserId: item.linkedUserId ?? null,
+    isReceived: item.isReceived,
+    sourceDebtId: item.sourceDebtId ?? null,
   };
 }
+
+// GET /users/lookup?email= — look up a user by email (for linking IOUs)
+router.get("/users/lookup", async (req, res): Promise<void> => {
+  const email = String(req.query.email ?? "").toLowerCase().trim();
+  if (!email) {
+    res.status(400).json({ error: "email required" });
+    return;
+  }
+  const [user] = await db
+    .select({ id: userTable.id, name: userTable.name, email: userTable.email })
+    .from(userTable)
+    .where(eq(userTable.email, email))
+    .limit(1);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  res.json({ id: user.id, name: user.name, email: user.email });
+});
+
+// GET /debts/received — debts where current user is the linked recipient
+router.get("/debts/received", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const items = await db
+    .select()
+    .from(debtsTable)
+    .where(and(eq(debtsTable.linkedUserId, userId), eq(debtsTable.isReceived, true)))
+    .orderBy(debtsTable.date);
+  const enriched = await Promise.all(items.map((i) => enrichDebt(i, userId)));
+  res.json(ListDebtsResponse.parse(enriched));
+});
 
 router.get("/debts/summary", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
@@ -81,13 +116,80 @@ router.post("/debts", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { nativeAmount, ...rest } = parsed.data;
+  const { nativeAmount, linkedEmail, ...rest } = parsed.data;
+
+  // Insert the primary debt
   const [item] = await db
     .insert(debtsTable)
-    .values({ ...rest, nativeAmount: String(nativeAmount), userId })
+    .values({ ...rest, nativeAmount: String(nativeAmount), userId, linkedEmail: linkedEmail ?? null })
     .returning();
+
+  // If linkedEmail provided, try to find the user and create a mirror debt
+  if (linkedEmail) {
+    const normalizedEmail = linkedEmail.toLowerCase().trim();
+    const [linkedUser] = await db
+      .select({ id: userTable.id, name: userTable.name, email: userTable.email })
+      .from(userTable)
+      .where(eq(userTable.email, normalizedEmail))
+      .limit(1);
+
+    if (linkedUser && linkedUser.id !== userId) {
+      // Direction is flipped for the recipient
+      const mirrorDirection = item.direction === "i_owe_them" ? "they_owe_me" : "i_owe_them";
+
+      // Insert mirror debt for the linked user
+      await db.insert(debtsTable).values({
+        userId: linkedUser.id,
+        personName: item.personName,
+        description: item.description,
+        date: item.date,
+        nativeAmount: item.nativeAmount,
+        currency: item.currency,
+        direction: mirrorDirection,
+        status: "pending",
+        notes: item.notes ?? undefined,
+        linkedEmail: null,
+        linkedUserId: userId,
+        isReceived: true,
+        sourceDebtId: item.id,
+      });
+
+      // Update the original debt's linkedUserId
+      await db
+        .update(debtsTable)
+        .set({ linkedUserId: linkedUser.id })
+        .where(eq(debtsTable.id, item.id));
+    }
+  }
+
   const enriched = await enrichDebt(item, userId);
   res.status(201).json(enriched);
+});
+
+// POST /debts/:id/reject — recipient rejects a received IOU
+router.post("/debts/:id/reject", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const idNum = parseInt(req.params.id);
+  if (isNaN(idNum)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [debt] = await db
+    .select()
+    .from(debtsTable)
+    .where(
+      and(
+        eq(debtsTable.id, idNum),
+        eq(debtsTable.linkedUserId, userId),
+        eq(debtsTable.isReceived, true)
+      )
+    );
+  if (!debt) {
+    res.status(404).json({ error: "Received debt not found" });
+    return;
+  }
+  await db.delete(debtsTable).where(eq(debtsTable.id, idNum));
+  res.sendStatus(204);
 });
 
 router.post("/debts/:id/settle", async (req, res): Promise<void> => {

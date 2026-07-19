@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userTable } from "./auth";
@@ -15,6 +15,11 @@ export const debtsTable = pgTable("debts", {
   status: text("status").notNull().default("pending"), // pending | settled
   notes: text("notes"),
   accountId: integer("account_id"),
+  // Linked IOU columns
+  linkedEmail: text("linked_email"),
+  linkedUserId: text("linked_user_id").references(() => userTable.id, { onDelete: "set null" }),
+  isReceived: boolean("is_received").notNull().default(false),
+  sourceDebtId: integer("source_debt_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

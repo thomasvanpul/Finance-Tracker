@@ -1,253 +1,1492 @@
 import { Link, useLocation } from "wouter";
-import { useState, useEffect } from "react";
-import {
-  LayoutDashboard,
-  Wallet,
-  ArrowLeftRight,
-  CalendarClock,
-  TrendingUp,
-  HandCoins,
-  Settings as SettingsIcon,
-  PanelLeftClose,
-  PanelLeftOpen,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { KpiBar } from "./kpi-bar";
-import { useGetSettingsCurrency } from "@workspace/api-client-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useFintrackTheme } from "@/contexts/theme-context";
+import { authClient } from "@/lib/auth-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGetMarketQuotes, useGetDashboard, useGetSettingsCurrency } from "@workspace/api-client-react";
+import { useTickers } from "@/contexts/tickers-context";
+import { usePrivacy, PrivNum } from "@/contexts/privacy-context";
+import { CommandPalette, useCommandPalette } from "@/components/command-palette";
+import { QuickAddTransaction, useQuickAdd } from "@/components/quick-add-transaction";
+import { GlobalSearch, useGlobalSearch } from "@/components/global-search";
+import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff } from "lucide-react";
+import { Logo, LogoMark } from "@/components/logo";
+import { formatGbp } from "@/lib/utils";
+import { setBaseCurrency } from "@/lib/currency-store";
+import { ThemeEffects } from "@/components/theme-effects";
+import { useEasterEggs, EasterEggRenderer } from "@/components/easter-eggs";
+import { AiAgent } from "@/components/ai-agent";
+import { loadSidebarConfig, saveSidebarConfig } from "@/lib/sidebar-config";
+import type { SidebarConfig, SidebarItemConfig } from "@/lib/sidebar-config";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
-  { href: "/", label: "Overview", short: "OVW", icon: LayoutDashboard },
-  { href: "/accounts", label: "Accounts", short: "ACC", icon: Wallet },
-  { href: "/transactions", label: "Transactions", short: "TXN", icon: ArrowLeftRight },
-  { href: "/upcoming", label: "Upcoming", short: "UPC", icon: CalendarClock },
-  { href: "/investments", label: "Investments", short: "INV", icon: TrendingUp },
-  { href: "/owing", label: "Owing", short: "OWE", icon: HandCoins },
+const NAV_SECTIONS = [
+  {
+    label: "CORE",
+    items: [
+      { href: "/",             label: "Dashboard",    code: "G·D" },
+      { href: "/accounts",     label: "Accounts",     code: "G·A" },
+      { href: "/transactions", label: "Transactions", code: "G·T" },
+      { href: "/learn",        label: "Learn",        code: "G·Q" },
+    ],
+  },
+  {
+    label: "PLAN",
+    items: [
+      { href: "/owing",         label: "Debts",         code: "G·O" },
+      { href: "/goals",         label: "Goals",         code: "G·L" },
+      { href: "/budget",        label: "Budget",        code: "G·B" },
+      { href: "/subscriptions", label: "Subscriptions", code: "G·C" },
+      { href: "/calendar",      label: "Calendar",      code: "G·K" },
+    ],
+  },
+  {
+    label: "INVEST",
+    items: [
+      { href: "/investments",   label: "Investments",   code: "G·I" },
+      { href: "/net-worth",     label: "Net Worth",     code: "G·W" },
+      { href: "/tax",           label: "Tax",           code: "G·Y" },
+    ],
+  },
+  {
+    label: "INSIGHTS",
+    items: [
+      { href: "/analytics",    label: "Analytics",     code: "G·N" },
+      { href: "/health-score", label: "Health Score",  code: "G·H" },
+      { href: "/cashflow",     label: "Cash Flow",     code: "G·V" },
+      { href: "/year-review",  label: "Year Review",   code: "G·E" },
+    ],
+  },
+  {
+    label: "TOOLS",
+    items: [
+      { href: "/whatif",   label: "Calculators", code: "G·F" },
+      { href: "/import",   label: "Import",      code: "G·J" },
+    ],
+  },
 ];
 
-const settingsItem = { href: "/settings", label: "Settings", short: "SET", icon: SettingsIcon };
+const BOTTOM_ITEMS = [
+  { href: "/settings", label: "Settings", code: "G·S" },
+];
 
-const now = new Date();
-const dateStr = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+// Flat list of all configurable nav items (sections only, not bottom items)
+const ALL_NAV_ITEMS: { href: string; label: string; code: string; section: string }[] =
+  NAV_SECTIONS.flatMap((s) => s.items.map((item) => ({ ...item, section: s.label })));
 
-const SIDEBAR_STORAGE_KEY = "sidebar-collapsed";
+const G_KEY_MAP: Record<string, string> = {
+  d: "/", a: "/accounts", t: "/transactions", r: "/reports",
+  u: "/upcoming", o: "/owing", i: "/investments",
+  l: "/goals", n: "/analytics", b: "/budget",
+  x: "/split", c: "/subscriptions", w: "/net-worth",
+  m: "/mortgage", y: "/tax", h: "/health-score",
+  f: "/whatif", k: "/calendar",
+  s: "/settings", p: "/profile", q: "/learn",
+  v: "/cashflow", e: "/year-review", j: "/import",
+};
 
-export function Layout({ children }: LayoutProps) {
-  const [location] = useLocation();
-  const { data: currencySettings } = useGetSettingsCurrency();
-  const baseCurrency = currencySettings?.baseCurrency ?? "GBP";
 
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
-    } catch {
-      return false;
-    }
-  });
-
+function useClock() {
+  const [t, setT] = useState(() =>
+    new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  );
   useEffect(() => {
-    try {
-      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed));
-    } catch {
-      // ignore
-    }
-  }, [collapsed]);
+    const id = setInterval(() =>
+      setT(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }))
+    , 1000);
+    return () => clearInterval(id);
+  }, []);
+  return t;
+}
 
-  const allNavItems = [...navItems, settingsItem];
+function NavRow({
+  href, label, code, collapsed, active,
+}: { href: string; label: string; code: string; collapsed: boolean; active: boolean }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Link href={href}>
+      <button
+        aria-label={label}
+        aria-current={active ? "page" : undefined}
+        title={collapsed ? label : undefined}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 9,
+          width: "100%",
+          padding: collapsed ? "3px 8px" : "3px 10px 3px 12px",
+          justifyContent: collapsed ? "center" : "flex-start",
+          border: "none",
+          borderRadius: 0,
+          background: hovered && !active ? "rgba(255,255,255,0.04)" : "transparent",
+          cursor: "pointer",
+          transition: "background 0.1s",
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* Icon chip */}
+        <span style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 28,
+          height: 26,
+          borderRadius: 5,
+          flexShrink: 0,
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: "0.05em",
+          background: active
+            ? "rgba(244,162,30,0.15)"
+            : "rgba(255,255,255,0.04)",
+          color: active ? "var(--ft-accent)" : "var(--ft-dim)",
+          border: active
+            ? "1px solid rgba(244,162,30,0.3)"
+            : "1px solid rgba(255,255,255,0.06)",
+          boxShadow: active ? "0 0 8px rgba(244,162,30,0.15)" : "none",
+          transition: "all 0.12s",
+        }}>
+          {code}
+        </span>
 
-  const active =
-    allNavItems.find(
-      (n) => n.href === location || (n.href !== "/" && location.startsWith(n.href))
-    ) ?? navItems[0];
+        {/* Label */}
+        {!collapsed && (
+          <span style={{
+            fontSize: 12,
+            fontWeight: active ? 600 : 400,
+            color: active ? "var(--ft-text)" : "var(--ft-muted)",
+            letterSpacing: "0.01em",
+            transition: "color 0.1s",
+          }}>
+            {label}
+          </span>
+        )}
 
-  const sidebarWidth = collapsed ? 52 : 200;
+        {/* Active indicator dot */}
+        {active && collapsed && (
+          <span style={{
+            position: "absolute",
+            right: 6,
+            width: 4,
+            height: 4,
+            borderRadius: "50%",
+            background: "var(--ft-accent)",
+          }} />
+        )}
+      </button>
+    </Link>
+  );
+}
+
+function SectionDivider({ label, collapsed }: { label: string; collapsed: boolean }) {
+  if (collapsed) {
+    return (
+      <div style={{
+        margin: "10px 12px 4px",
+        height: 1,
+        background: "var(--ft-border)",
+      }} />
+    );
+  }
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "10px 12px 3px 14px",
+    }}>
+      <span style={{
+        fontSize: 9,
+        fontFamily: "var(--font-mono)",
+        letterSpacing: "0.14em",
+        color: "var(--ft-dim)",
+        fontWeight: 600,
+        userSelect: "none",
+        flexShrink: 0,
+      }}>
+        {label}
+      </span>
+      <div style={{ flex: 1, height: "1px", background: "var(--ft-border)" }} />
+    </div>
+  );
+}
+
+function formatTickerPrice(ticker: string, price: number): string {
+  if (ticker.endsWith("=X")) return price.toFixed(4);
+  if (ticker.startsWith("BTC") || ticker.startsWith("ETH")) {
+    return new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(price);
+  }
+  return new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price);
+}
+
+function LiveTickerBar() {
+  const { tickers, update, add, remove, reset } = useTickers();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<{ ticker: string; label: string }[]>([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const tickerStr = tickers.map(t => t.ticker).filter(Boolean).join(",");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: quotes } = useGetMarketQuotes(
+    { tickers: tickerStr || "^GSPC" },
+    { query: { enabled: tickerStr.length > 0, refetchInterval: 60000 } } as any
+  );
+
+  const quoteMap = Object.fromEntries((quotes ?? []).map(q => [q.ticker, q]));
+
+  function openEdit() {
+    setDraft(tickers.map(t => ({ ...t })));
+    setEditing(true);
+  }
+
+  function commitEdit() {
+    draft.forEach((d, i) => {
+      if (d.ticker.trim()) update(i, { ticker: d.ticker.trim().toUpperCase(), label: d.label.trim() || d.ticker.trim().toUpperCase() });
+    });
+    setEditing(false);
+  }
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-background text-foreground dark overflow-hidden">
-      {/* ── Top bar ── */}
-      <div
-        className="flex-shrink-0 flex items-center border-b"
-        style={{ background: "#161B22", borderColor: "#21262D", height: 44 }}
-      >
-        {/* Logo — always visible */}
-        <div
-          className="flex items-center gap-2 px-3 border-r flex-shrink-0"
-          style={{ borderColor: "#21262D", height: 44 }}
-        >
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
-            <rect width="22" height="22" rx="4" fill="#0D1117" />
-            <rect x="3" y="14" width="3" height="5" rx="0.5" fill="#1F6FEB" opacity="0.7" />
-            <rect x="8" y="10" width="3" height="9" rx="0.5" fill="#1F6FEB" opacity="0.85" />
-            <rect x="13" y="6" width="3" height="13" rx="0.5" fill="#1F6FEB" />
-            <polyline points="4.5,13 9.5,9 14.5,5 18,3" stroke="#3FB950" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="18" cy="3" r="1.2" fill="#3FB950" />
-          </svg>
-          {!collapsed && (
-            <span className="font-bold text-sm tracking-tight hidden sm:inline" style={{ color: "#E6EDF3" }}>
-              Fintrack
-            </span>
+    <div className="hidden lg:flex items-center" style={{ gap: 0, borderRight: "1px solid var(--ft-border)", paddingRight: 12, marginRight: 12, position: "relative" }}>
+      {!editing ? (
+        <>
+          {tickers.map((slot, i) => {
+            const q = quoteMap[slot.ticker];
+            return (
+              <div key={slot.ticker + i} style={{
+                display: "flex", alignItems: "center", gap: 4,
+                padding: "4px 10px",
+                borderRight: i < tickers.length - 1 ? "1px solid var(--ft-border)" : "none",
+                fontFamily: "var(--font-mono)", fontSize: 10,
+              }}>
+                <span style={{ color: "var(--ft-dim)", letterSpacing: "0.04em" }}>{slot.label || slot.ticker}</span>
+                {q ? (
+                  <>
+                    <span style={{ color: "var(--ft-text)", fontWeight: 600 }}>
+                      {formatTickerPrice(slot.ticker, q.price)}
+                    </span>
+                    {(q as any).changePercent != null && (
+                      <span style={{
+                        color: (q as any).changePercent >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+                        fontSize: 9,
+                      }}>
+                        {(q as any).changePercent >= 0 ? "+" : ""}{((q as any).changePercent as number).toFixed(2)}%
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span style={{ color: "var(--ft-border2)" }}>—</span>
+                )}
+              </div>
+            );
+          })}
+          {/* Edit button */}
+          <button
+            onClick={openEdit}
+            title="Edit tickers"
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--ft-dim)", padding: "4px 6px",
+              fontFamily: "var(--font-mono)", fontSize: 10, lineHeight: 1,
+              transition: "color 0.1s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-accent)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+          >
+            <Pencil size={10} />
+          </button>
+        </>
+      ) : (
+        /* Edit mode */
+        <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "0 4px" }}>
+          {draft.map((d, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <input
+                ref={el => { inputRefs.current[i * 2] = el; }}
+                value={d.label}
+                onChange={e => setDraft(prev => prev.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
+                placeholder="Label"
+                style={{
+                  width: 36, fontFamily: "var(--font-mono)", fontSize: 9,
+                  background: "var(--ft-raised)", border: "1px solid var(--ft-accent)",
+                  color: "var(--ft-text)", padding: "2px 4px", outline: "none",
+                }}
+              />
+              <input
+                ref={el => { inputRefs.current[i * 2 + 1] = el; }}
+                value={d.ticker}
+                onChange={e => setDraft(prev => prev.map((x, j) => j === i ? { ...x, ticker: e.target.value } : x))}
+                placeholder="TICK"
+                style={{
+                  width: 52, fontFamily: "var(--font-mono)", fontSize: 9,
+                  background: "var(--ft-raised)", border: "1px solid var(--ft-border2)",
+                  color: "var(--ft-accent)", padding: "2px 4px", outline: "none",
+                }}
+                onKeyDown={e => e.key === "Enter" && commitEdit()}
+              />
+              <button
+                onClick={() => { setDraft(prev => prev.filter((_, j) => j !== i)); remove(i); }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-red)", fontFamily: "var(--font-mono)", fontSize: 10, padding: "0 2px", lineHeight: 1 }}
+              >×</button>
+            </div>
+          ))}
+          {draft.length < 8 && (
+            <button
+              onClick={() => { setDraft(prev => [...prev, { ticker: "", label: "" }]); add(); }}
+              style={{ background: "none", border: "1px dashed var(--ft-border2)", cursor: "pointer", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 6px" }}
+            >
+              +
+            </button>
           )}
-          {!collapsed && (
-            <span className="text-xs ml-0.5 hidden sm:inline" style={{ color: "#484F58" }}>
-              v2
-            </span>
-          )}
+          <button
+            onClick={commitEdit}
+            style={{
+              background: "var(--ft-accent)", border: "none", cursor: "pointer",
+              color: "var(--ft-base)", fontFamily: "var(--font-mono)", fontSize: 9,
+              padding: "3px 8px", marginLeft: 4,
+            }}
+          >
+            OK
+          </button>
+          <button
+            onClick={() => { reset(); setEditing(false); }}
+            style={{
+              background: "none", border: "1px solid var(--ft-border)", cursor: "pointer",
+              color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 6px",
+            }}
+          >
+            Reset
+          </button>
         </div>
+      )}
+    </div>
+  );
+}
 
-        {/* Collapse toggle — desktop only */}
+interface SidebarConfigPanelProps {
+  config: SidebarConfig;
+  allItems: { href: string; label: string; code: string; section: string }[];
+  collapsed: boolean;
+  onClose: () => void;
+  onChange: (next: SidebarConfig) => void;
+}
+
+function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: SidebarConfigPanelProps) {
+  const itemMap = new Map<string, SidebarItemConfig>(config.items.map((c) => [c.href, c]));
+
+  function getItem(href: string): SidebarItemConfig {
+    return itemMap.get(href) ?? { href, visible: true, pinned: false };
+  }
+
+  function updateItem(href: string, patch: Partial<SidebarItemConfig>) {
+    const next: SidebarConfig = {
+      ...config,
+      items: config.items.map((item) =>
+        item.href === href ? { ...item, ...patch } : item
+      ),
+    };
+    onChange(next);
+  }
+
+  function moveItem(href: string, dir: -1 | 1) {
+    const items = [...config.items];
+    const idx = items.findIndex((i) => i.href === href);
+    if (idx === -1) return;
+    const swapIdx = idx + dir;
+    if (swapIdx < 0 || swapIdx >= items.length) return;
+    const next = [...items];
+    [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+    onChange({ ...config, items: next });
+  }
+
+  function resetToDefault() {
+    onChange({
+      items: allItems.map((item) => ({ href: item.href, visible: true, pinned: false })),
+      pinnedFirst: true,
+    });
+  }
+
+  if (collapsed) {
+    return (
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        paddingTop: 8,
+        gap: 2,
+        overflowY: "auto",
+        scrollbarWidth: "none",
+      }}>
+        <div style={{
+          fontSize: 8,
+          fontFamily: "var(--font-mono)",
+          color: "var(--ft-accent)",
+          letterSpacing: "0.1em",
+          marginBottom: 6,
+          writingMode: "vertical-rl",
+          transform: "rotate(180deg)",
+        }}>CFG</div>
+        {allItems.map((item) => {
+          const c = getItem(item.href);
+          return (
+            <button
+              key={item.href}
+              title={`${item.label} — click to toggle visibility`}
+              onClick={() => updateItem(item.href, { visible: !c.visible })}
+              style={{
+                width: 28,
+                height: 26,
+                background: c.visible
+                  ? c.pinned ? "rgba(244,162,30,0.12)" : "rgba(255,255,255,0.04)"
+                  : "transparent",
+                border: c.visible
+                  ? c.pinned ? "1px solid rgba(244,162,30,0.25)" : "1px solid var(--ft-border)"
+                  : "1px dashed rgba(255,255,255,0.1)",
+                borderRadius: 4,
+                cursor: "pointer",
+                color: c.visible ? (c.pinned ? "var(--ft-accent)" : "var(--ft-muted)") : "var(--ft-dim)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 8,
+                opacity: c.visible ? 1 : 0.4,
+                transition: "all 0.1s",
+                flexShrink: 0,
+                padding: 0,
+              }}
+            >
+              {item.code.split("·")[1]}
+            </button>
+          );
+        })}
         <button
-          className="hidden sm:flex items-center justify-center flex-shrink-0 transition-colors"
-          style={{ width: 40, height: 44, color: "#6E7681" }}
-          onClick={() => setCollapsed((c) => !c)}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="w-4 h-4" />
-          ) : (
-            <PanelLeftClose className="w-4 h-4" />
-          )}
-        </button>
+          onClick={onClose}
+          title="Done"
+          style={{
+            marginTop: 8,
+            width: 28,
+            height: 22,
+            background: "var(--ft-accent)",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            color: "var(--ft-base)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 8,
+            fontWeight: 700,
+          }}
+        >OK</button>
+      </div>
+    );
+  }
 
-        {/* Mobile: current page label */}
-        <div className="flex sm:hidden items-center gap-1.5 px-3 flex-1">
-          <active.icon className="w-3.5 h-3.5" style={{ color: "#58A6FF" }} />
-          <span className="text-xs font-semibold" style={{ color: "#58A6FF" }}>{active.label}</span>
-        </div>
+  // Section groups for configure panel — use config.items order so move up/down is reflected
+  const allItemLookup = new Map(allItems.map(i => [i.href, i]));
+  const orderedForConfig = config.items
+    .map(c => allItemLookup.get(c.href))
+    .filter((i): i is (typeof allItems)[0] => i != null);
+  const sectionGroups: { label: string; items: typeof allItems }[] = [];
+  for (const item of orderedForConfig) {
+    const last = sectionGroups[sectionGroups.length - 1];
+    if (last && last.label === item.section) {
+      last.items.push(item);
+    } else {
+      sectionGroups.push({ label: item.section, items: [item] });
+    }
+  }
 
-        <div className="flex-1" />
-
-        {/* Status bar */}
-        <div className="flex items-center gap-3 px-3 sm:px-4 text-xs" style={{ color: "#484F58" }}>
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3FB950]" />
-            <span style={{ color: "#3FB950" }}>Live</span>
-          </span>
-          <span className="hidden sm:inline">{baseCurrency} Base</span>
-          <span className="hidden sm:inline">{dateStr}</span>
-        </div>
+  return (
+    <div style={{
+      flex: 1,
+      display: "flex",
+      flexDirection: "column",
+      overflowY: "auto",
+      overflowX: "hidden",
+      scrollbarWidth: "none",
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "8px 14px 6px",
+        borderBottom: "1px solid var(--ft-border)",
+        flexShrink: 0,
+      }}>
+        <div style={{
+          fontSize: 9,
+          fontFamily: "var(--font-mono)",
+          letterSpacing: "0.14em",
+          color: "var(--ft-accent)",
+          fontWeight: 700,
+        }}>CONFIGURE NAV</div>
+        <div style={{
+          fontSize: 9,
+          fontFamily: "var(--font-mono)",
+          color: "var(--ft-dim)",
+          marginTop: 2,
+          letterSpacing: "0.04em",
+        }}>toggle · pin · reorder</div>
       </div>
 
-      {/* ── KPI strip — persistent on all pages ── */}
-      <KpiBar />
-
-      {/* ── Main area: sidebar + content ── */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar — desktop only */}
-        <nav
-          className="hidden sm:flex flex-shrink-0 flex-col border-r overflow-hidden transition-all duration-200"
+      {/* Pinned-first toggle */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "6px 14px",
+        borderBottom: "1px solid var(--ft-border)",
+        flexShrink: 0,
+      }}>
+        <span style={{
+          fontSize: 9,
+          fontFamily: "var(--font-mono)",
+          color: "var(--ft-muted)",
+          letterSpacing: "0.06em",
+        }}>PINNED ITEMS FIRST</span>
+        <button
+          onClick={() => onChange({ ...config, pinnedFirst: !config.pinnedFirst })}
           style={{
-            background: "#161B22",
-            borderColor: "#21262D",
-            width: sidebarWidth,
+            width: 28,
+            height: 14,
+            borderRadius: 7,
+            border: "none",
+            cursor: "pointer",
+            background: config.pinnedFirst ? "var(--ft-accent)" : "var(--ft-border2)",
+            position: "relative",
+            transition: "background 0.15s",
+            flexShrink: 0,
+            padding: 0,
           }}
+          aria-label="Toggle pinned items first"
         >
-          {/* Main nav items */}
-          <div className="flex flex-col flex-1 py-2">
-            {navItems.map((item) => {
-              const isActive =
-                location === item.href ||
-                (item.href !== "/" && location.startsWith(item.href));
+          <span style={{
+            position: "absolute",
+            top: 2,
+            left: config.pinnedFirst ? 16 : 2,
+            width: 10,
+            height: 10,
+            borderRadius: "50%",
+            background: "var(--ft-base)",
+            transition: "left 0.15s",
+          }} />
+        </button>
+      </div>
+
+      {/* Nav items */}
+      <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none" }}>
+        {sectionGroups.map((group) => (
+          <div key={group.label}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 14px 3px",
+            }}>
+              <span style={{
+                fontSize: 8,
+                fontFamily: "var(--font-mono)",
+                letterSpacing: "0.14em",
+                color: "var(--ft-dim)",
+                fontWeight: 600,
+              }}>{group.label}</span>
+              <div style={{ flex: 1, height: 1, background: "var(--ft-border)" }} />
+            </div>
+            {group.items.map((item) => {
+              const c = getItem(item.href);
               return (
-                <Link key={item.href} href={item.href}>
-                  <div
-                    className={cn(
-                      "flex items-center gap-3 cursor-pointer transition-colors",
-                      collapsed ? "justify-center px-0" : "px-3",
-                      isActive
-                        ? "bg-[rgba(31,111,235,0.1)]"
-                        : "hover:bg-[rgba(255,255,255,0.03)]"
-                    )}
+                <div
+                  key={item.href}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "0 10px 0 12px",
+                    height: 28,
+                    opacity: c.visible ? 1 : 0.4,
+                    transition: "opacity 0.12s",
+                  }}
+                >
+                  {/* Visibility toggle */}
+                  <button
+                    onClick={() => updateItem(item.href, { visible: !c.visible })}
+                    title={c.visible ? "Hide from nav" : "Show in nav"}
                     style={{
-                      height: 36,
-                      color: isActive ? "#58A6FF" : "#6E7681",
-                      borderLeft: isActive ? "3px solid #1F6FEB" : "3px solid transparent",
+                      width: 16,
+                      height: 16,
+                      borderRadius: 3,
+                      border: `1px solid ${c.visible ? "var(--ft-border2)" : "var(--ft-border)"}`,
+                      background: c.visible ? "var(--ft-raised)" : "transparent",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      padding: 0,
+                      transition: "all 0.1s",
                     }}
-                    title={collapsed ? item.label : undefined}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = c.visible ? "var(--ft-border2)" : "var(--ft-border)"; }}
                   >
-                    <item.icon className="w-4 h-4 flex-shrink-0" />
-                    {!collapsed && (
-                      <span className="text-xs font-medium truncate">{item.label}</span>
+                    {c.visible && (
+                      <Check size={8} color="var(--ft-green)" />
                     )}
+                  </button>
+
+                  {/* Code chip */}
+                  <span style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 8,
+                    color: c.pinned ? "var(--ft-accent)" : "var(--ft-dim)",
+                    letterSpacing: "0.04em",
+                    flexShrink: 0,
+                    width: 26,
+                    textAlign: "center",
+                  }}>{item.code}</span>
+
+                  {/* Label */}
+                  <span style={{
+                    fontSize: 11,
+                    fontFamily: "var(--font-mono)",
+                    color: c.visible ? "var(--ft-text)" : "var(--ft-dim)",
+                    flex: 1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    letterSpacing: "0.02em",
+                  }}>{item.label}</span>
+
+                  {/* Pin toggle */}
+                  <button
+                    onClick={() => updateItem(item.href, { pinned: !c.pinned, visible: c.pinned ? c.visible : true })}
+                    title={c.pinned ? "Unpin" : "Pin to top"}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: c.pinned ? "var(--ft-accent)" : "var(--ft-dim)",
+                      fontSize: 10,
+                      lineHeight: 1,
+                      padding: "0 2px",
+                      flexShrink: 0,
+                      transition: "color 0.1s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-accent)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = c.pinned ? "var(--ft-accent)" : "var(--ft-dim)"; }}
+                  >
+                    <Pin size={10} />
+                  </button>
+
+                  {/* Move up/down */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 0, flexShrink: 0 }}>
+                    <button
+                      onClick={() => moveItem(item.href, -1)}
+                      title="Move up"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--ft-dim)",
+                        fontSize: 7,
+                        lineHeight: 1,
+                        padding: "1px 2px",
+                        height: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "color 0.1s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-text)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+                    ><ChevronUp size={8} /></button>
+                    <button
+                      onClick={() => moveItem(item.href, 1)}
+                      title="Move down"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--ft-dim)",
+                        fontSize: 7,
+                        lineHeight: 1,
+                        padding: "1px 2px",
+                        height: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "color 0.1s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-text)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+                    ><ChevronDown size={8} /></button>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
-
-          {/* Settings at the bottom, separated */}
-          <div
-            className="flex-shrink-0 border-t"
-            style={{ borderColor: "#21262D" }}
-          >
-            {(() => {
-              const item = settingsItem;
-              const isActive =
-                location === item.href || location.startsWith(item.href);
-              return (
-                <Link href={item.href}>
-                  <div
-                    className={cn(
-                      "flex items-center gap-3 cursor-pointer transition-colors",
-                      collapsed ? "justify-center px-0" : "px-3",
-                      isActive
-                        ? "bg-[rgba(31,111,235,0.1)]"
-                        : "hover:bg-[rgba(255,255,255,0.03)]"
-                    )}
-                    style={{
-                      height: 36,
-                      color: isActive ? "#58A6FF" : "#6E7681",
-                      borderLeft: isActive ? "3px solid #1F6FEB" : "3px solid transparent",
-                    }}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <item.icon className="w-4 h-4 flex-shrink-0" />
-                    {!collapsed && (
-                      <span className="text-xs font-medium truncate">{item.label}</span>
-                    )}
-                  </div>
-                </Link>
-              );
-            })()}
-          </div>
-        </nav>
-
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto" style={{ background: "#0D1117" }}>
-          <div className="p-3 sm:p-6 pb-20 sm:pb-6">{children}</div>
-        </main>
+        ))}
       </div>
 
-      {/* ── Bottom tab bar — mobile only ── */}
-      <div
-        className="flex sm:hidden flex-shrink-0 border-t"
-        style={{ background: "#161B22", borderColor: "#21262D" }}
-      >
-        {allNavItems.map((item) => {
-          const isActive =
-            location === item.href ||
-            (item.href !== "/" && location.startsWith(item.href));
-          return (
-            <Link key={item.href} href={item.href} className="flex-1">
-              <div
-                className="flex flex-col items-center justify-center gap-0.5 py-2 transition-colors"
-                style={{
-                  color: isActive ? "#58A6FF" : "#6E7681",
-                  borderTop: isActive ? "2px solid #1F6FEB" : "2px solid transparent",
-                  background: isActive ? "rgba(31,111,235,0.06)" : "transparent",
-                }}
-              >
-                <item.icon className="w-4 h-4" />
-                <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.04em" }}>
-                  {item.short}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+      {/* Footer actions */}
+      <div style={{
+        borderTop: "1px solid var(--ft-border)",
+        padding: "6px 12px",
+        display: "flex",
+        gap: 6,
+        flexShrink: 0,
+      }}>
+        <button
+          onClick={resetToDefault}
+          style={{
+            flex: 1,
+            background: "none",
+            border: "1px solid var(--ft-border)",
+            color: "var(--ft-dim)",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            padding: "4px 0",
+            letterSpacing: "0.06em",
+            transition: "all 0.1s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "var(--ft-text)";
+            e.currentTarget.style.borderColor = "var(--ft-border2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "var(--ft-dim)";
+            e.currentTarget.style.borderColor = "var(--ft-border)";
+          }}
+        >RESET</button>
+        <button
+          onClick={onClose}
+          style={{
+            flex: 1,
+            background: "var(--ft-accent)",
+            border: "none",
+            color: "var(--ft-base)",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            fontWeight: 700,
+            padding: "4px 0",
+            letterSpacing: "0.06em",
+            transition: "opacity 0.1s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.85"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+        >DONE</button>
       </div>
     </div>
+  );
+}
+
+export function Layout({ children }: LayoutProps) {
+  const [location, navigate] = useLocation();
+  const { theme } = useFintrackTheme();
+  const clock = useClock();
+  const queryClient = useQueryClient();
+  const { data: session } = authClient.useSession();
+  const { open: cmdOpen, closePalette } = useCommandPalette();
+  const { open: qaOpen, close: qaClose } = useQuickAdd();
+  const { open: searchOpen, openSearch, closeSearch } = useGlobalSearch();
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem("ft-sidebar") === "collapsed"; } catch { return false; }
+  });
+  const [showHelp, setShowHelp] = useState(false);
+  const [configuring, setConfiguring] = useState(false);
+  const { privacy, togglePrivacy } = usePrivacy();
+  const [sidebarConfig, setSidebarConfig] = useState<SidebarConfig>(() =>
+    loadSidebarConfig(ALL_NAV_ITEMS)
+  );
+  const { data: dashboardData } = useGetDashboard();
+  const { data: currencyData } = useGetSettingsCurrency();
+  useEffect(() => {
+    if (currencyData?.baseCurrency) setBaseCurrency(currencyData.baseCurrency);
+  }, [currencyData?.baseCurrency]);
+  const pendingGRef = useRef(false);
+  const { overlay: eggOverlay, clearOverlay, logoRef } = useEasterEggs();
+
+  const toggleSidebar = useCallback(() => {
+    setCollapsed(c => {
+      const next = !c;
+      try { localStorage.setItem("ft-sidebar", next ? "collapsed" : "expanded"); } catch {}
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isEditable = target.tagName === "INPUT" || target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" || target.isContentEditable;
+      if (isEditable) return;
+
+      if (e.key === "[" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); toggleSidebar(); return; }
+
+      if (e.key === "?" && !e.metaKey && !e.ctrlKey && !pendingGRef.current) {
+        e.preventDefault();
+        setShowHelp(h => !h);
+        return;
+      }
+
+      if (e.key === "Escape") { setShowHelp(false); return; }
+
+      // G+key navigation: press G, then D/A/T/U/O/I/S/P within 1.5s
+      if (e.key.toLowerCase() === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        pendingGRef.current = true;
+        setTimeout(() => { pendingGRef.current = false; }, 1500);
+        return;
+      }
+
+      if (pendingGRef.current) {
+        const path = G_KEY_MAP[e.key.toLowerCase()];
+        if (path !== undefined) {
+          e.preventDefault();
+          pendingGRef.current = false;
+          navigate(path);
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggleSidebar, navigate]);
+
+  useEffect(() => {
+    document.body.classList.toggle("dark", theme !== "arctic");
+  }, [theme]);
+
+  const userInitial = session?.user?.name?.[0]?.toUpperCase() ?? session?.user?.email?.[0]?.toUpperCase() ?? "U";
+  const userName = session?.user?.name ?? "User";
+  const userEmail = session?.user?.email ?? "";
+
+  const handleSignOut = async () => {
+    await authClient.signOut();
+    queryClient.clear();
+  };
+
+  const isActive = (href: string) =>
+    href === "/" ? location === "/" : location.startsWith(href);
+
+  const allItems = NAV_SECTIONS.flatMap(s => s.items).concat(BOTTOM_ITEMS);
+  const activePage = allItems.find(i => isActive(i.href))?.label ?? "Dashboard";
+
+  const sidebarW = collapsed ? 54 : 212;
+
+  return (
+    <>
+    <CommandPalette open={cmdOpen} onClose={closePalette} />
+    <QuickAddTransaction open={qaOpen} onClose={qaClose} />
+    <GlobalSearch open={searchOpen} onClose={closeSearch} />
+
+    {showHelp && (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Keyboard shortcuts"
+        onClick={() => setShowHelp(false)}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9998,
+          background: "rgba(0,0,0,0.75)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: 520,
+            background: "var(--ft-surface)",
+            border: "1px solid var(--ft-border)",
+            padding: "24px 28px",
+          }}
+        >
+          <div style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--ft-accent)",
+            letterSpacing: "0.18em",
+            marginBottom: 20,
+            fontWeight: 700,
+          }}>
+            KEYBOARD SHORTCUTS
+          </div>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "8px 24px",
+          }}>
+            {[
+              ["G·D", "Dashboard"],
+              ["G·A", "Accounts"],
+              ["G·T", "Transactions"],
+              ["G·R", "Reports"],
+              ["G·U", "Upcoming"],
+              ["G·O", "Owing"],
+              ["G·L", "Goals"],
+              ["G·I", "Investments"],
+              ["G·N", "Analytics"],
+              ["G·S", "Settings"],
+              ["G·P", "Profile"],
+              ["⌘[", "Toggle sidebar"],
+              ["⌘K", "Global search"],
+              ["/", "Focus search"],
+              ["N", "Quick add transaction"],
+              ["?", "This help"],
+            ].map(([key, label]) => (
+              <div key={key} style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+              }}>
+                <span style={{
+                  background: "var(--ft-raised)",
+                  border: "1px solid var(--ft-border2)",
+                  color: "var(--ft-accent)",
+                  padding: "2px 6px",
+                  fontSize: 10,
+                  letterSpacing: "0.04em",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  minWidth: 52,
+                  textAlign: "center",
+                }}>
+                  {key}
+                </span>
+                <span style={{ color: "var(--ft-muted)", fontSize: 11 }}>{label}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{
+            marginTop: 20,
+            paddingTop: 14,
+            borderTop: "1px solid var(--ft-border)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "var(--ft-dim)",
+            letterSpacing: "0.08em",
+          }}>
+            PRESS ESC OR CLICK OUTSIDE TO CLOSE
+          </div>
+        </div>
+      </div>
+    )}
+    <div
+      className="flex h-[100dvh] overflow-hidden"
+      style={{ background: "var(--ft-base)", color: "var(--ft-text)", fontFamily: "var(--font-body, var(--font-sans))" }}
+    >
+      <ThemeEffects />
+
+      {/* ══ Sidebar ══ */}
+      <aside
+        style={{
+          width: sidebarW,
+          flexShrink: 0,
+          display: "flex",
+          flexDirection: "column",
+          background: "var(--ft-surface)",
+          borderRight: "1px solid var(--ft-border)",
+          transition: "width 0.2s cubic-bezier(0.4,0,0.2,1)",
+          overflow: "hidden",
+          position: "relative",
+          zIndex: 10,
+        }}
+      >
+        {/* Left accent rail */}
+        <div style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 3,
+          background: "var(--ft-accent)",
+          opacity: 0.7,
+        }} />
+
+        {/* Brand */}
+        <div
+          ref={logoRef}
+          data-logo
+          style={{
+            height: 52,
+            display: "flex",
+            alignItems: "center",
+            paddingLeft: collapsed ? 0 : 16,
+            paddingRight: 10,
+            justifyContent: collapsed ? "center" : "space-between",
+            borderBottom: "1px solid var(--ft-border)",
+            flexShrink: 0,
+            cursor: "default",
+          }}
+        >
+          {collapsed ? (
+            <LogoMark />
+          ) : (
+            <Logo />
+          )}
+        </div>
+
+        {/* Nav or Configure Panel */}
+        {configuring ? (
+          <SidebarConfigPanel
+            config={sidebarConfig}
+            allItems={ALL_NAV_ITEMS}
+            collapsed={collapsed}
+            onClose={() => setConfiguring(false)}
+            onChange={(next) => {
+              setSidebarConfig(next);
+              saveSidebarConfig(next);
+            }}
+          />
+        ) : (
+          <nav style={{ flex: 1, overflowY: "auto", overflowX: "hidden", paddingTop: 8, paddingBottom: 4, scrollbarWidth: "none" }}>
+            {(() => {
+              const configMap = new Map<string, SidebarItemConfig>(
+                sidebarConfig.items.map((c) => [c.href, c])
+              );
+
+              const pinnedItems = sidebarConfig.pinnedFirst
+                ? ALL_NAV_ITEMS.filter((item) => configMap.get(item.href)?.pinned && configMap.get(item.href)?.visible !== false)
+                : [];
+
+              // Build sections from config.items order so reordering is reflected in nav
+              const allNavLookup = new Map(ALL_NAV_ITEMS.map(i => [i.href, i]));
+              const orderedNavItems = sidebarConfig.items
+                .filter(c => {
+                  if (c.visible === false) return false;
+                  if (sidebarConfig.pinnedFirst && c.pinned) return false;
+                  return true;
+                })
+                .map(c => allNavLookup.get(c.href))
+                .filter((i): i is (typeof ALL_NAV_ITEMS)[0] => i != null);
+              const filteredSections: { label: string; items: typeof ALL_NAV_ITEMS }[] = [];
+              for (const item of orderedNavItems) {
+                const last = filteredSections[filteredSections.length - 1];
+                if (last && last.label === item.section) {
+                  last.items.push(item);
+                } else {
+                  filteredSections.push({ label: item.section, items: [item] });
+                }
+              }
+
+              return (
+                <>
+                  {/* Pinned section */}
+                  {pinnedItems.length > 0 && (
+                    <div>
+                      {!collapsed && (
+                        <div style={{ padding: "0 12px 3px 14px" }}>
+                          <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.14em", color: "var(--ft-accent)", fontWeight: 700, opacity: 0.8 }}>
+                            PINNED
+                          </span>
+                        </div>
+                      )}
+                      {collapsed && <div style={{ height: 4 }} />}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        {pinnedItems.map((item) => (
+                          <NavRow
+                            key={item.href + "-pinned"}
+                            href={item.href}
+                            label={item.label}
+                            code={item.code}
+                            collapsed={collapsed}
+                            active={isActive(item.href)}
+                          />
+                        ))}
+                      </div>
+                      <div style={{ margin: "6px 12px 2px", height: 1, background: "rgba(244,162,30,0.2)" }} />
+                    </div>
+                  )}
+
+                  {/* Regular sections */}
+                  {filteredSections.map((section, i) => (
+                    <div key={`${section.label}-${i}`}>
+                      {(i > 0 || pinnedItems.length > 0) && (
+                        <SectionDivider label={section.label} collapsed={collapsed} />
+                      )}
+                      {i === 0 && pinnedItems.length === 0 && !collapsed && (
+                        <div style={{ padding: "0 12px 3px 14px" }}>
+                          <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.14em", color: "var(--ft-dim)", fontWeight: 600 }}>
+                            {section.label}
+                          </span>
+                        </div>
+                      )}
+                      {i === 0 && pinnedItems.length === 0 && collapsed && <div style={{ height: 4 }} />}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        {section.items.map((item) => (
+                          <NavRow
+                            key={item.href}
+                            href={item.href}
+                            label={item.label}
+                            code={item.code}
+                            collapsed={collapsed}
+                            active={isActive(item.href)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              );
+            })()}
+          </nav>
+        )}
+
+        {/* Configure sidebar gear button */}
+        <div style={{ borderTop: "1px solid var(--ft-border)", flexShrink: 0 }}>
+          <button
+            onClick={() => setConfiguring((c) => !c)}
+            title="Configure sidebar"
+            aria-label="Configure sidebar"
+            style={{
+              width: "100%",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: configuring ? "var(--ft-accent)" : "var(--ft-dim)",
+              fontFamily: "var(--font-mono)",
+              fontSize: collapsed ? 13 : 9,
+              letterSpacing: "0.06em",
+              padding: "5px 0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: collapsed ? "center" : "flex-start",
+              gap: 6,
+              paddingLeft: collapsed ? 0 : 14,
+              transition: "color 0.1s, background 0.1s",
+            }}
+            onMouseEnter={(e) => {
+              if (!configuring) {
+                e.currentTarget.style.color = "var(--ft-text)";
+                e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!configuring) {
+                e.currentTarget.style.color = "var(--ft-dim)";
+                e.currentTarget.style.background = "none";
+              }
+            }}
+          >
+            <Settings2 size={11} />
+            {!collapsed && <span>CONFIGURE NAV</span>}
+          </button>
+        </div>
+
+        {/* Bottom: settings / profile */}
+        <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 6, flexShrink: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {BOTTOM_ITEMS.map(item => (
+              <NavRow
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                code={item.code}
+                collapsed={collapsed}
+                active={isActive(item.href)}
+              />
+            ))}
+          </div>
+
+          {/* User card — click navigates to profile */}
+          <div
+            onClick={() => navigate("/profile")}
+            title="View profile"
+            style={{
+              margin: "8px 8px 6px",
+              padding: collapsed ? "6px 4px" : "8px 10px",
+              borderRadius: 7,
+              background: "var(--ft-raised)",
+              border: "1px solid var(--ft-border)",
+              display: "flex",
+              alignItems: "center",
+              gap: 9,
+              justifyContent: collapsed ? "center" : "flex-start",
+              cursor: "pointer",
+              transition: "border-color 0.15s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--ft-border2)")}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--ft-border)")}
+          >
+            {/* Avatar with status ring */}
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              {session?.user?.image ? (
+                <img
+                  src={session.user.image}
+                  alt="Profile"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    display: "block",
+                    boxShadow: "0 0 0 2px var(--ft-raised), 0 0 0 3px var(--ft-border2)",
+                  }}
+                />
+              ) : (
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, var(--ft-accent) 0%, color-mix(in srgb, var(--ft-accent) 60%, var(--ft-blue)) 100%)",
+                color: "var(--ft-base)",
+                fontSize: 11,
+                fontWeight: 800,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: "var(--font-head)",
+                boxShadow: "0 0 0 2px var(--ft-raised), 0 0 0 3px var(--ft-border2)",
+              }}>
+                {userInitial}
+              </div>
+              )}
+              {/* Online dot */}
+              <span className="ft-live-dot" style={{
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                width: 7,
+                height: 7,
+                boxShadow: "0 0 0 1.5px var(--ft-raised)",
+              }} />
+            </div>
+
+            {!collapsed && (
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {userName}
+                </div>
+                <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {userEmail}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Net worth strip */}
+          {dashboardData && (
+            <div style={{
+              borderTop: "1px solid var(--ft-border)",
+              padding: collapsed ? "5px 0" : "5px 12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: collapsed ? "center" : "space-between",
+              gap: 4,
+              fontFamily: "var(--font-mono)",
+            }}>
+              {collapsed ? (
+                <PrivNum style={{ fontSize: 9, color: "var(--ft-accent)", fontWeight: 700, letterSpacing: "0.02em" }}>
+                  {formatGbp(dashboardData.netWorth)}
+                </PrivNum>
+              ) : (
+                <>
+                  <span style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>NET WORTH</span>
+                  <PrivNum style={{ fontSize: 10, color: "var(--ft-text)", fontWeight: 700 }}>
+                    {formatGbp(dashboardData.netWorth)}
+                  </PrivNum>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Collapse toggle */}
+          <button
+            onClick={toggleSidebar}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title="⌘["
+            style={{
+              width: "100%",
+              background: "none",
+              border: "none",
+              borderTop: "1px solid var(--ft-border)",
+              color: "var(--ft-dim)",
+              cursor: "pointer",
+              padding: "5px 0",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.06em",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; e.currentTarget.style.background = "none"; }}
+          >
+            {collapsed ? <ChevronsRight size={10} /> : <ChevronsLeft size={10} />}
+            {!collapsed && <span style={{ fontSize: 9 }}>⌘[</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* ══ Right panel ══ */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+
+        {/* Top bar */}
+        <header style={{
+          height: 48,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px",
+          background: "var(--ft-surface)",
+          borderBottom: "1px solid var(--ft-border)",
+          flexShrink: 0,
+          gap: 16,
+        }}>
+          {/* Breadcrumb */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.1em", flexShrink: 0 }}>
+              NUMERIS
+            </span>
+            <span style={{ color: "var(--ft-border2)", fontSize: 12, flexShrink: 0 }}>›</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", flexShrink: 0 }}>
+              {activePage.toUpperCase()}
+            </span>
+          </div>
+
+          {/* Right: market + clock + sign out */}
+          <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
+            {/* Live market ticker bar */}
+            <LiveTickerBar />
+
+            {/* Clock */}
+            <span style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--ft-muted)",
+              letterSpacing: "0.08em",
+              paddingRight: 16,
+              borderRight: "1px solid var(--ft-border)",
+              marginRight: 16,
+            }}>
+              {clock}
+            </span>
+
+            {/* Global search button */}
+            <button
+              onClick={openSearch}
+              title="Search (⌘K)"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: "var(--ft-raised)",
+                border: "1px solid var(--ft-border)",
+                color: "var(--ft-muted)",
+                cursor: "pointer",
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                padding: "4px 10px",
+                borderRadius: 4,
+                letterSpacing: "0.06em",
+                marginRight: 10,
+                transition: "all 0.1s",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = "var(--ft-text)";
+                e.currentTarget.style.borderColor = "var(--ft-border2)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = "var(--ft-muted)";
+                e.currentTarget.style.borderColor = "var(--ft-border)";
+              }}
+            >
+              <Search size={12} />
+              <span>SEARCH</span>
+              <span style={{ color: "var(--ft-dim)", fontSize: 9, borderLeft: "1px solid var(--ft-border)", paddingLeft: 6 }}>⌘K</span>
+            </button>
+
+            {/* Privacy toggle */}
+            <button
+              onClick={togglePrivacy}
+              title={privacy ? "Show numbers" : "Hide numbers"}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "4px 9px",
+                background: privacy ? "rgba(244,162,30,0.12)" : "var(--ft-raised)",
+                border: `1px solid ${privacy ? "var(--ft-accent)" : "var(--ft-border)"}`,
+                color: privacy ? "var(--ft-accent)" : "var(--ft-muted)",
+                cursor: "pointer", borderRadius: 4, marginRight: 8,
+                transition: "all 0.1s",
+              }}
+            >
+              {privacy ? <EyeOff size={13} /> : <Eye size={13} />}
+            </button>
+
+            {/* Sign out */}
+            <button
+              onClick={handleSignOut}
+              style={{
+                background: "var(--ft-raised)",
+                border: "1px solid var(--ft-border)",
+                color: "var(--ft-muted)",
+                cursor: "pointer",
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                padding: "4px 10px",
+                borderRadius: 4,
+                letterSpacing: "0.08em",
+                transition: "all 0.1s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-red)"; e.currentTarget.style.borderColor = "var(--ft-red)"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-muted)"; e.currentTarget.style.borderColor = "var(--ft-border)"; }}
+            >
+              SIGN OUT
+            </button>
+          </div>
+        </header>
+
+        {/* Main */}
+        <main style={{ flex: 1, overflowY: "auto", background: "var(--ft-base)" }}>
+          <div style={{ padding: "20px 24px 32px" }}>{children}</div>
+        </main>
+
+        {/* Status strip */}
+        <footer style={{
+          height: 24,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 20px",
+          background: "var(--ft-raised)",
+          borderTop: "1px solid var(--ft-border)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          color: "var(--ft-dim)",
+          flexShrink: 0,
+          letterSpacing: "0.06em",
+          gap: 12,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span className="ft-live-dot" />
+              <span style={{ color: "var(--ft-green)" }}>CONNECTED</span>
+            </span>
+            <span style={{ color: "var(--ft-border2)" }}>│</span>
+            <span>RAILWAY · TLS 1.3</span>
+            <span style={{ color: "var(--ft-border2)" }}>│</span>
+            <span>{userEmail}</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span>⌘[ SIDEBAR</span>
+            <span style={{ color: "var(--ft-border2)" }}>│</span>
+            <span>/ COMMAND</span>
+            <span style={{ color: "var(--ft-border2)" }}>│</span>
+            <span>financetracker.work</span>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <EasterEggRenderer overlay={eggOverlay} clearOverlay={clearOverlay} />
+    <AiAgent />
+    </>
   );
 }

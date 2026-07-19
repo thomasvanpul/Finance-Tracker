@@ -5,79 +5,69 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
+  /* Bridge shadcn utilities → ft theme tokens so ALL shadcn components
+     (Dialog, Select, Popover, DropdownMenu, etc.) respond to theme switches */
+  --color-background:         var(--ft-base);
+  --color-foreground:         var(--ft-text);
+  --color-border:             var(--ft-border);
+  --color-input:              var(--ft-border2);
+  --color-ring:               var(--ft-accent);
 
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-card-border: hsl(var(--card-border));
+  --color-card:               var(--ft-surface);
+  --color-card-foreground:    var(--ft-text);
+  --color-card-border:        var(--ft-border);
 
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-popover:            var(--ft-raised);
+  --color-popover-foreground: var(--ft-text);
 
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-primary:            var(--ft-accent);
+  --color-primary-foreground: var(--ft-base);
 
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-secondary:          var(--ft-raised);
+  --color-secondary-foreground: var(--ft-muted);
 
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-muted:              var(--ft-surface);
+  --color-muted-foreground:   var(--ft-muted);
 
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-accent:             var(--ft-raised);
+  --color-accent-foreground:  var(--ft-text);
 
-  --color-success: hsl(var(--success));
-  --color-success-foreground: hsl(var(--success-foreground));
+  --color-destructive:        var(--ft-red);
+  --color-destructive-foreground: var(--ft-text);
 
-  --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
+  --color-success:            var(--ft-green);
+  --color-success-foreground: var(--ft-base);
+
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Cascadia Code", monospace;
+  --font-head: "Space Grotesk", system-ui, sans-serif;
 }
 
 :root {
-  /* Excel Pro — GitHub Dark Palette */
-  --background: 216 28% 7%;       /* #0D1117 */
-  --foreground: 213 17% 83%;      /* #C9D1D9 */
-
-  --card: 214 27% 11%;            /* #161B22 */
-  --card-foreground: 210 18% 87%; /* #E6EDF3 */
-  --card-border: 216 20% 16%;     /* #21262D */
-
-  --popover: 214 27% 11%;
-  --popover-foreground: 210 18% 87%;
-  --popover-border: 216 20% 16%;
-
-  --primary: 217 91% 58%;         /* #1F6FEB (blue) */
-  --primary-foreground: 216 28% 7%;
-
-  --secondary: 216 20% 16%;       /* #21262D */
-  --secondary-foreground: 213 17% 83%;
-
-  --muted: 216 20% 16%;
-  --muted-foreground: 218 11% 56%; /* #8B949E */
-
-  --accent: 216 20% 16%;
-  --accent-foreground: 210 18% 87%;
-
-  --destructive: 4 90% 63%;       /* #F85149 (red) */
-  --destructive-foreground: 210 18% 87%;
-
-  --success: 130 74% 54%;         /* #3FB950 (green) */
-  --success-foreground: 216 28% 7%;
-
-  --border: 216 20% 16%;          /* #21262D */
-  --input: 216 20% 16%;
-  --ring: 217 91% 58%;
-
-  --radius: 0.125rem;             /* near-sharp corners */
+  --radius: 0.125rem; /* near-sharp corners */
 }
 
-.dark {
-  --background: 216 28% 7%;
-  --foreground: 213 17% 83%;
+/* Density: affects row/cell padding, not page zoom */
+:root {
+  --ft-cell-py: 7px;
+  --ft-cell-px: 12px;
+  --ft-panel-header-h: 34px;
+  --ft-metric-py: 10px;
+  --ft-row-gap: 8px;
+}
+body.density-compact {
+  --ft-cell-py: 3px;
+  --ft-cell-px: 10px;
+  --ft-panel-header-h: 28px;
+  --ft-metric-py: 6px;
+  --ft-row-gap: 4px;
+}
+body.density-comfortable {
+  --ft-cell-py: 12px;
+  --ft-cell-px: 16px;
+  --ft-panel-header-h: 42px;
+  --ft-metric-py: 14px;
+  --ft-row-gap: 14px;
 }
 
 @layer base {
@@ -98,16 +88,58 @@
     width: 8px;
     height: 8px;
   }
+
+  .ft-no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   ::-webkit-scrollbar-track {
-    background: #0D1117;
+    background: var(--ft-base);
   }
   ::-webkit-scrollbar-thumb {
-    background: #30363D;
+    background: var(--ft-border2);
     border-radius: 0;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #484F58;
+    background: var(--ft-dim);
   }
+}
+
+/* ── Privacy mode: blur sensitive numbers ── */
+body.privacy-mode .pnum {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ── Global interactive element defaults ── */
+button,
+[role="button"],
+a,
+label[for],
+select,
+[type="submit"],
+[type="reset"],
+[type="button"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+[disabled] {
+  cursor: not-allowed;
+}
+
+/* Click feedback — subtle press animation on all buttons */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  transition: transform 0.08s ease, opacity 0.08s ease;
+}
+
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(0.96);
+  opacity: 0.85;
 }
 
 /* Excel-style row hover */
@@ -117,12 +149,343 @@
 
 /* Column header style */
 .xls-col-header {
-  background: #161B22;
-  border-bottom: 2px solid #30363D;
+  background: var(--ft-surface);
+  border-bottom: 2px solid var(--ft-border2);
   font-size: 10px;
   font-weight: 600;
-  color: #8B949E;
+  color: var(--ft-muted);
   letter-spacing: 0.4px;
   text-transform: uppercase;
-  padding: 6px 12px;
+  padding: var(--ft-cell-py) var(--ft-cell-px);
+}
+
+/* Density-aware table cell padding */
+.xls-row td, .xls-row th {
+  padding-top: var(--ft-cell-py);
+  padding-bottom: var(--ft-cell-py);
+}
+
+/* ── Bloomberg Terminal Design Tokens ── */
+:root {
+  --ft-base:    #08090B;
+  --ft-surface: #0F1117;
+  --ft-raised:  #161B24;
+  --ft-border:  #1E2532;
+  --ft-border2: #252D3D;
+  --ft-text:    #CDD6F4;
+  --ft-muted:   #6C7A96;
+  --ft-dim:     #3A4258;
+  --ft-accent:  #F4A21E;
+  --ft-amber:   #F0883E;
+  --ft-green:   #4ADE80;
+  --ft-red:     #F87171;
+  --ft-blue:    #60A5FA;
+  --ft-cyan:    #22D3EE;
+}
+
+[data-theme="phosphor"] {
+  --ft-base:    #020802;
+  --ft-surface: #050F05;
+  --ft-raised:  #0A1A0A;
+  --ft-border:  #0D2A0D;
+  --ft-border2: #1A3D1A;
+  --ft-text:    #39FF14;
+  --ft-muted:   #1E8C0A;
+  --ft-dim:     #0D4406;
+  --ft-accent:  #7FFF00;
+  --ft-amber:   #FF8C00;
+  --ft-green:   #00FF88;
+  --ft-red:     #FF4444;
+  --ft-blue:    #00FFCC;
+  --ft-cyan:    #AAFFAA;
+}
+
+[data-theme="arctic"] {
+  --ft-base:    #F0F4F8;
+  --ft-surface: #FFFFFF;
+  --ft-raised:  #E8EDF5;
+  --ft-border:  #C9D4E0;
+  --ft-border2: #B0BDD0;
+  --ft-text:    #1A2333;
+  --ft-muted:   #5A6A84;
+  --ft-dim:     #8A9AB4;
+  --ft-accent:  #0052CC;
+  --ft-amber:   #FF6600;
+  --ft-green:   #006644;
+  --ft-red:     #CC0000;
+  --ft-blue:    #0065FF;
+  --ft-cyan:    #0052CC;
+}
+
+[data-theme="amber"] {
+  --ft-base:    #0A0600;
+  --ft-surface: #120C00;
+  --ft-raised:  #1C1400;
+  --ft-border:  #2A1E00;
+  --ft-border2: #3D2B00;
+  --ft-text:    #FFB000;
+  --ft-muted:   #A07020;
+  --ft-dim:     #5A3E0A;
+  --ft-accent:  #FFD700;
+  --ft-amber:   #FFA500;
+  --ft-green:   #AAFF44;
+  --ft-red:     #FF4400;
+  --ft-blue:    #44AAFF;
+  --ft-cyan:    #FFEE88;
+}
+
+[data-theme="midnight"] {
+  --ft-base:    #010817;
+  --ft-surface: #05112A;
+  --ft-raised:  #091A3D;
+  --ft-border:  #0F2456;
+  --ft-border2: #163070;
+  --ft-text:    #E8F0FF;
+  --ft-muted:   #7A99CC;
+  --ft-dim:     #3A5080;
+  --ft-accent:  #4D9FFF;
+  --ft-amber:   #FF9500;
+  --ft-green:   #2EFF9F;
+  --ft-red:     #FF4466;
+  --ft-blue:    #80BFFF;
+  --ft-cyan:    #00DDFF;
+}
+
+[data-theme="matrix"] {
+  --ft-base:    #000300;
+  --ft-surface: #010601;
+  --ft-raised:  #020902;
+  --ft-border:  #003300;
+  --ft-border2: #004400;
+  --ft-text:    #00CC33;
+  --ft-muted:   #007700;
+  --ft-dim:     #004400;
+  --ft-accent:  #00FF41;
+  --ft-green:   #00FF41;
+  --ft-red:     #FF3300;
+  --ft-amber:   #FFAA00;
+  --ft-blue:    #00FFCC;
+  --ft-cyan:    #AAFFAA;
+}
+
+[data-theme="rose"] {
+  --ft-base:    #0A0005;
+  --ft-surface: #0F0008;
+  --ft-raised:  #14000C;
+  --ft-border:  #2A0015;
+  --ft-border2: #380020;
+  --ft-text:    #FFB3CB;
+  --ft-muted:   #CC5580;
+  --ft-dim:     #663344;
+  --ft-accent:  #FF2D78;
+  --ft-green:   #FF7EB3;
+  --ft-red:     #FF2D78;
+  --ft-amber:   #FFB347;
+  --ft-blue:    #CC88FF;
+  --ft-cyan:    #FF99CC;
+}
+
+[data-theme="ocean"] {
+  --ft-base:    #010A12;
+  --ft-surface: #011520;
+  --ft-raised:  #012030;
+  --ft-border:  #012040;
+  --ft-border2: #013060;
+  --ft-text:    #B0E8FF;
+  --ft-muted:   #5599BB;
+  --ft-dim:     #224455;
+  --ft-accent:  #00D4FF;
+  --ft-green:   #00FFB3;
+  --ft-red:     #FF4444;
+  --ft-amber:   #FFD700;
+  --ft-blue:    #4488FF;
+  --ft-cyan:    #00EEFF;
+}
+
+/* ── Terminal layout primitives ── */
+.ft-panel {
+  background: var(--ft-surface);
+  border: 1px solid var(--ft-border);
+  overflow: hidden;
+}
+
+.ft-panel-header {
+  background: var(--ft-raised);
+  border-bottom: 1px solid var(--ft-border);
+  padding: 0 var(--ft-cell-px);
+  height: var(--ft-panel-header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ft-panel-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ft-muted);
+}
+
+.ft-panel-label .accent-dot {
+  color: var(--ft-accent);
+  margin-right: 4px;
+}
+
+.ft-metric-cell {
+  background: var(--ft-raised);
+  padding: var(--ft-metric-py) var(--ft-cell-px);
+}
+
+.ft-tx-row {
+  border-bottom: 1px solid var(--ft-border);
+  transition: background 0.1s;
+}
+
+.ft-tx-row:hover {
+  background: var(--ft-raised);
+}
+
+.ft-tx-row:focus-visible {
+  outline: none;
+  border-left: 2px solid var(--ft-accent);
+}
+
+.ft-tx-row.selected {
+  background: var(--ft-raised);
+  border-left: 2px solid var(--ft-accent);
+}
+
+*:focus-visible {
+  outline: 1px solid var(--ft-accent);
+  outline-offset: 2px;
+}
+
+@keyframes ft-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
+
+@keyframes ft-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.ft-live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ft-green);
+  animation: ft-pulse 2s ease-in-out infinite;
+}
+
+/* Dashboard widget hover toolbar */
+.widget-container:hover .widget-toolbar {
+  opacity: 1 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEME ANIMATION KEYFRAMES
+   All ambient background effects and overlay animations for the 8 themes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── void: tiny stars drifting gently ── */
+@keyframes ft-star-drift {
+  0%   { transform: translate(0, 0) scale(1);    opacity: var(--star-op, 0.07); }
+  33%  { transform: translate(4px, -6px) scale(1.2); }
+  66%  { transform: translate(-3px, 3px) scale(0.9); }
+  100% { transform: translate(2px, -4px) scale(1.1); opacity: var(--star-op, 0.07); }
+}
+
+/* ── phosphor + amber: scanlines scrolling upward ── */
+@keyframes ft-scanline-scroll {
+  from { background-position: 0 0; }
+  to   { background-position: 0 -80px; }
+}
+
+/* ── arctic: snowflakes falling ── */
+@keyframes ft-snow-fall {
+  0%   { transform: translateY(0)    translateX(0);   opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { transform: translateY(110vh) translateX(12px); opacity: 0; }
+}
+
+/* ── midnight: aurora blobs drifting ── */
+@keyframes ft-aurora-drift-a {
+  0%   { transform: translate(0, 0)       scale(1); }
+  50%  { transform: translate(15%, 8%)    scale(1.15); }
+  100% { transform: translate(-8%, -5%)   scale(0.9); }
+}
+
+@keyframes ft-aurora-drift-b {
+  0%   { transform: translate(0, 0)      scale(1); }
+  50%  { transform: translate(-12%, 6%)  scale(1.1); }
+  100% { transform: translate(10%, -8%)  scale(0.95); }
+}
+
+@keyframes ft-aurora-drift-c {
+  0%   { transform: translate(0, 0)     scale(1); }
+  50%  { transform: translate(8%, -10%) scale(1.2); }
+  100% { transform: translate(-5%, 6%)  scale(0.85); }
+}
+
+/* ── ocean: background shimmer pulse ── */
+@keyframes ft-ocean-shimmer {
+  0%   { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+/* ── ocean: bubble rise ── */
+@keyframes ft-bubble-rise {
+  from {
+    transform: translateY(100vh) scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100px) scale(1);
+    opacity: 0;
+  }
+}
+
+/* ── rose: hearts + sparkles floating upward ── */
+@keyframes ft-rose-float {
+  0%   { transform: translateY(0)    scale(0.8); opacity: 0; }
+  20%  { opacity: 1; }
+  60%  { transform: translateY(-28px) scale(1.05); opacity: 1; }
+  100% { transform: translateY(-8px)  scale(0.9);  opacity: 0; }
+}
+
+/* ── void easter egg: glitch flash + text ── */
+@keyframes ft-glitch-flash {
+  0%   { opacity: 0; }
+  8%   { opacity: 1; }
+  20%  { opacity: 0.85; }
+  30%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes ft-glitch-bg {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; }
+  18%  { opacity: 0.4; }
+  25%  { opacity: 0.9; }
+  80%  { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+
+@keyframes ft-glitch-text {
+  0%   { opacity: 0; transform: translateX(-4px); }
+  10%  { opacity: 1; transform: translateX(2px); }
+  20%  { transform: translateX(-2px); }
+  30%  { transform: translateX(0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
 }

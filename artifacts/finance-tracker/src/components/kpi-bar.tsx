@@ -1,5 +1,6 @@
 import { useGetDashboard } from "@workspace/api-client-react";
 import { formatCurrency } from "@/lib/utils";
+import { PrivNum } from "@/contexts/privacy-context";
 
 export function KpiBar() {
   const { data } = useGetDashboard();
@@ -10,18 +11,18 @@ export function KpiBar() {
   const fmt = (value: number) => formatCurrency(value, currency);
 
   const items = [
-    { label: "Net Worth", value: fmt(data.netWorth), color: "#58A6FF" },
-    { label: "Liquidity", value: fmt(data.netLiquidity), color: "#3FB950" },
-    { label: "Cash", value: fmt(data.totalCash), color: "#C9D1D9" },
-    { label: "Portfolio", value: fmt(data.portfolio.totalValueGbp), color: data.portfolio.totalPlGbp >= 0 ? "#3FB950" : "#F85149" },
+    { label: "Net Worth", value: fmt(data.netWorth), color: "var(--ft-blue)" },
+    { label: "Liquidity", value: fmt(data.netLiquidity), color: "var(--ft-green)" },
+    { label: "Cash", value: fmt(data.totalCash), color: "var(--ft-text)" },
+    { label: "Portfolio", value: fmt(data.portfolio.totalValueGbp), color: data.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
   ];
 
   return (
     <div
       className="flex-shrink-0 flex border-b overflow-x-auto"
       style={{
-        background: "#0D1117",
-        borderColor: "#21262D",
+        background: "var(--ft-base)",
+        borderColor: "var(--ft-border)",
         scrollbarWidth: "none",
         msOverflowStyle: "none",
       } as React.CSSProperties}
@@ -30,17 +31,14 @@ export function KpiBar() {
         <div
           key={item.label}
           className="flex items-center gap-2 px-3 sm:px-4 py-1 border-r flex-shrink-0"
-          style={{ borderColor: "#21262D" }}
+          style={{ borderColor: "var(--ft-border)" }}
         >
-          <span className="text-xs whitespace-nowrap" style={{ color: "#484F58" }}>
+          <span className="text-xs whitespace-nowrap" style={{ color: "var(--ft-dim)" }}>
             {item.label}
           </span>
-          <span
-            className="text-xs font-bold font-mono whitespace-nowrap"
-            style={{ color: item.color }}
-          >
+          <PrivNum className="text-xs font-bold font-mono whitespace-nowrap" style={{ color: item.color }}>
             {item.value}
-          </span>
+          </PrivNum>
         </div>
       ))}
       <div className="flex-1" />

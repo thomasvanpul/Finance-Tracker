@@ -466,6 +466,13 @@ export interface Debt {
   accountId?: number | null;
   gbpEquivalent: number;
   createdAt: string;
+  /** @nullable */
+  linkedEmail?: string | null;
+  /** @nullable */
+  linkedUserId?: string | null;
+  isReceived?: boolean;
+  /** @nullable */
+  sourceDebtId?: number | null;
 }
 
 export type DebtInputCurrency = typeof DebtInputCurrency[keyof typeof DebtInputCurrency];
@@ -503,6 +510,7 @@ export interface DebtInput {
   direction: DebtInputDirection;
   notes?: string;
   accountId?: number;
+  linkedEmail?: string;
 }
 
 export type DebtUpdateCurrency = typeof DebtUpdateCurrency[keyof typeof DebtUpdateCurrency];

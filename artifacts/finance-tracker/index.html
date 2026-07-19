@@ -3,22 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>Personal Finance Tracker</title>
-    <meta name="description" content="Personal Finance Tracker — built on Replit. Update this description to reflect the app." />
+    <title>Numeris</title>
+    <meta name="description" content="Numeris — your personal finance OS. Accounts, investments, budgets, goals and more." />
     <meta name="robots" content="index, follow" />
-    <meta property="og:title" content="Personal Finance Tracker" />
-    <meta property="og:description" content="Personal Finance Tracker — built on Replit. Update this description to reflect the app." />
+    <meta property="og:title" content="Numeris" />
+    <meta property="og:description" content="Numeris — your personal finance OS." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Personal Finance Tracker" />
-    <meta name="twitter:description" content="Personal Finance Tracker — built on Replit. Update this description to reflect the app." />
+    <meta name="twitter:title" content="Numeris" />
+    <meta name="twitter:description" content="Numeris — your personal finance OS." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      window.onerror = function(msg, src, line, col, err) {
+        document.body.style.cssText = 'background:#0D1117;color:#F87171;padding:32px;font-family:monospace;font-size:13px;';
+        document.body.innerHTML = '<div style="color:#F4A21E;margin-bottom:12px">! MODULE CRASH</div><pre>' + msg + '\n\n' + (err && err.stack ? err.stack : src + ':' + line) + '</pre>';
+      };
+      window.onunhandledrejection = function(e) {
+        document.body.style.cssText = 'background:#0D1117;color:#F87171;padding:32px;font-family:monospace;font-size:13px;';
+        document.body.innerHTML = '<div style="color:#F4A21E;margin-bottom:12px">! UNHANDLED PROMISE</div><pre>' + String(e.reason) + '</pre>';
+      };
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

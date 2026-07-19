@@ -447,7 +447,11 @@ export const ListDebtsResponseItem = zod.object({
   "notes": zod.string().nullish(),
   "accountId": zod.number().nullish(),
   "gbpEquivalent": zod.number(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "linkedEmail": zod.string().nullish(),
+  "linkedUserId": zod.string().nullish(),
+  "isReceived": zod.boolean().optional(),
+  "sourceDebtId": zod.number().nullish(),
 })
 export const ListDebtsResponse = zod.array(ListDebtsResponseItem)
 
@@ -463,7 +467,8 @@ export const CreateDebtBody = zod.object({
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "direction": zod.enum(['i_owe_them', 'they_owe_me']),
   "notes": zod.string().optional(),
-  "accountId": zod.number().optional()
+  "accountId": zod.number().optional(),
+  "linkedEmail": zod.string().email().optional(),
 })
 
 

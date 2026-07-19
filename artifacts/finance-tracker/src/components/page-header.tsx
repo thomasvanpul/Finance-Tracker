@@ -21,17 +21,17 @@ export function PageHeader({ icon: Icon, title, subtitle, actions }: PageHeaderP
             borderRadius: 4,
           }}
         >
-          <Icon className="w-4 h-4" style={{ color: "#58A6FF" }} />
+          <Icon className="w-4 h-4" style={{ color: "var(--ft-blue)" }} />
         </div>
         <div>
           <h1
             className="text-base font-bold tracking-tight leading-tight"
-            style={{ color: "#E6EDF3" }}
+            style={{ color: "var(--ft-text)" }}
           >
             {title}
           </h1>
           {subtitle && (
-            <p className="text-xs mt-0.5" style={{ color: "#484F58" }}>
+            <p className="text-xs mt-0.5" style={{ color: "var(--ft-dim)" }}>
               {subtitle}
             </p>
           )}
