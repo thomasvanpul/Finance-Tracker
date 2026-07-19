@@ -3,16 +3,14 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins";
 import { db, userTable, sessionTable, accountTable, verificationTable, twoFactorTable } from "@workspace/db";
 
-const DEV_ORIGINS = [
-  "http://localhost:5173", "https://localhost:5173",
-  "http://localhost:5174", "https://localhost:5174",
-  "http://localhost:5175", "https://localhost:5175",
-  "http://localhost:4173", "https://localhost:4173",
-];
-
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
   : [];
+
+const DEV_PORTS = [3000, 4173, 4321, 5173, 5174, 5175, 5176, 8080, 8000, 9000];
+const localhostOrigins = DEV_PORTS.flatMap(
+  (port) => [`http://localhost:${port}`, `https://localhost:${port}`],
+);
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
@@ -31,8 +29,8 @@ export const auth = betterAuth({
       ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
       : "http://localhost:3000"),
   trustedOrigins: allowedOrigins.length
-    ? [...allowedOrigins, ...DEV_ORIGINS]
-    : DEV_ORIGINS,
+    ? [...allowedOrigins, ...localhostOrigins]
+    : localhostOrigins,
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,

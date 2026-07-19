@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
-import basicSsl from "@vitejs/plugin-basic-ssl";
 
 const rawPort = process.env.PORT ?? "3000";
 const port = Number(rawPort);
@@ -23,8 +22,7 @@ return {
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
-    basicSsl(),
-    ...(process.env.NODE_ENV !== "production" &&
+...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>
@@ -53,7 +51,6 @@ return {
     chunkSizeWarningLimit: 1000,
   },
   server: {
-    https: {},
     port,
     strictPort: true,
     host: "0.0.0.0",
