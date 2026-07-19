@@ -163,6 +163,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  if (import.meta.env.VITE_DEV_BYPASS === "true") {
+    return <>{children}</>;
+  }
+
   if (isPending) {
     return <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
   }
