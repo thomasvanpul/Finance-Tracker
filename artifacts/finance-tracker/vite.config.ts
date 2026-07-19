@@ -68,12 +68,18 @@ return {
               proxy.on("proxyReq", (proxyReq) => {
                 proxyReq.setHeader("origin", "https://financetracker.work");
                 proxyReq.setHeader("referer", "https://financetracker.work/");
+                // Restore __Secure- prefix so Railway recognises the cookies it set
+                const cookie = proxyReq.getHeader("cookie");
+                if (cookie && typeof cookie === "string") {
+                  proxyReq.setHeader("cookie", cookie.replace(/\bbetter-auth\./g, "__Secure-better-auth."));
+                }
               });
               proxy.on("proxyRes", (proxyRes) => {
                 const cookies = proxyRes.headers["set-cookie"];
                 if (cookies) {
                   proxyRes.headers["set-cookie"] = (Array.isArray(cookies) ? cookies : [cookies]).map(
                     (c) => c
+                      .replace(/__Secure-better-auth\./g, "better-auth.")  // strip prefix so HTTP localhost stores it
                       .replace(/;\s*Secure/gi, "")
                       .replace(/;\s*SameSite=None/gi, "; SameSite=Lax")
                       .replace(/;\s*Domain=[^;]*/gi, "")
