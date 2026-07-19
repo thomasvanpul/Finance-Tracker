@@ -163,11 +163,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  if (import.meta.env.VITE_DEV_BYPASS === "true") {
-    return <>{children}</>;
-  }
-
+  // Dev bypass: skip the loading spinner but still require a real session.
+  // Once signed in, the 30-day session means this only shows once a month.
   if (isPending) {
+    if (import.meta.env.VITE_DEV_BYPASS === "true") return <>{children}</>;
     return <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
   }
 
