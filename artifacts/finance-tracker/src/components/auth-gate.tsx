@@ -178,10 +178,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     setSubmitting(true);
     setError(null);
     try {
-      await authClient.signIn.email({ email: "dev@bypass.local", password: "DevBypass123!" });
+      const res = await authClient.signIn.email({ email: "dev@bypass.local", password: "DevBypass123!" });
+      if (!res?.error) {
+        window.location.href = "/";
+      } else {
+        setError("Dev bypass failed");
+        setSubmitting(false);
+      }
     } catch {
       setError("Dev bypass failed");
-    } finally {
       setSubmitting(false);
     }
   };
