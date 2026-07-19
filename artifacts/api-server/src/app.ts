@@ -28,8 +28,22 @@ app.use(
   }),
 );
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
+const DEV_ORIGINS = [
+  "http://localhost:5173", "https://localhost:5173",
+  "http://localhost:5174", "https://localhost:5174",
+  "http://localhost:5175", "https://localhost:5175",
+  "http://localhost:4173", "https://localhost:4173",
+];
+
+const configuredOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : [];
+
+// When ALLOWED_ORIGINS is explicitly set, merge in localhost dev origins so
+// the local Vite dev server can call Railway directly (same as production flow).
+// When ALLOWED_ORIGINS is unset, allow all origins (open dev default).
+const allowedOrigins = configuredOrigins.length > 0
+  ? [...configuredOrigins, ...DEV_ORIGINS]
   : [];
 
 app.use(

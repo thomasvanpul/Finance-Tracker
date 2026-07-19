@@ -3,6 +3,13 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins";
 import { db, userTable, sessionTable, accountTable, verificationTable, twoFactorTable } from "@workspace/db";
 
+const DEV_ORIGINS = [
+  "http://localhost:5173", "https://localhost:5173",
+  "http://localhost:5174", "https://localhost:5174",
+  "http://localhost:5175", "https://localhost:5175",
+  "http://localhost:4173", "https://localhost:4173",
+];
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
   : [];
@@ -23,10 +30,33 @@ export const auth = betterAuth({
     ?? (process.env.RAILWAY_PUBLIC_DOMAIN
       ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
       : "http://localhost:3000"),
-  trustedOrigins: allowedOrigins.length ? allowedOrigins : ["http://localhost:5173"],
+  trustedOrigins: allowedOrigins.length
+    ? [...allowedOrigins, ...DEV_ORIGINS]
+    : DEV_ORIGINS,
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
+    sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+      // Log to console in dev; in production configure Resend or SMTP
+      console.log(`[Password Reset] Send to ${user.email}: ${url}`);
+      // If RESEND_API_KEY is set, attempt to use Resend (must be installed separately)
+      if (process.env.RESEND_API_KEY) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore – resend is an optional peer; install it to enable email delivery
+          const { Resend } = await import("resend");
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          await resend.emails.send({
+            from: process.env.EMAIL_FROM ?? "noreply@financetracker.work",
+            to: user.email,
+            subject: "Reset your Fintrack password",
+            html: `<p>Click <a href="${url}">here</a> to reset your password. This link expires in 1 hour.</p>`,
+          });
+        } catch (err) {
+          console.error("[Password Reset] Resend delivery failed:", err);
+        }
+      }
+    },
   },
   socialProviders: {
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
