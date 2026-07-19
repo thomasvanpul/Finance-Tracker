@@ -174,6 +174,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  const handleDevBypass = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await authClient.signIn.email({ email: "dev@bypass.local", password: "DevBypass123!" });
+    } catch {
+      setError("Dev bypass failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -514,6 +526,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                       Sign up
                     </button>
                   </p>
+                  {import.meta.env.VITE_DEV_BYPASS === "true" && (
+                    <>
+                      <div style={{ borderTop: "1px solid var(--ft-border)", margin: "12px 0 10px" }} />
+                      <button
+                        type="button"
+                        onClick={handleDevBypass}
+                        disabled={submitting}
+                        style={{
+                          width: "100%", padding: "7px 0", fontSize: 11,
+                          fontFamily: "var(--font-mono)", letterSpacing: "0.06em",
+                          background: "transparent", border: "1px dashed var(--ft-border2)",
+                          color: "var(--ft-dim)", cursor: "pointer",
+                        }}
+                      >
+                        {submitting ? "entering…" : "[ dev bypass ]"}
+                      </button>
+                    </>
+                  )}
                 </form>
               ) : (
                 <form onSubmit={handleSignUp}>
