@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { getAiStyle, setAiStylePref, type AiStyle } from "@/components/ai-agent";
 import { loadCatRules, saveCatRules, type CatRule } from "@/lib/auto-cat";
 import {
   useGetSettingsCurrency,
@@ -33,7 +34,7 @@ type NavItem =
   | "security" | "privacy"
   | "currency" | "alerts" | "rules" | "dashboard"
   | "widgets" | "data" | "advanced"
-  | "shortcuts";
+  | "shortcuts" | "ai";
 
 interface AlertRules {
   largeTxThreshold: number;
@@ -116,6 +117,12 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
       { id: "widgets",  label: "Widgets" },
       { id: "data",     label: "Export & Backup" },
       { id: "advanced", label: "Advanced" },
+    ],
+  },
+  {
+    label: "AI",
+    items: [
+      { id: "ai", label: "AI Assistant" },
     ],
   },
   {
@@ -680,6 +687,105 @@ function AdvancedPanel({ toast }: { toast: ReturnType<typeof useToast>["toast"] 
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
+// ── AI Settings Panel ────────────────────────────────────────────────────────
+
+const AI_STYLES: { id: AiStyle; label: string; desc: string; preview: string }[] = [
+  {
+    id: "classic",
+    label: "Classic",
+    desc: "Floating button in the bottom-right corner. Always visible, one click to open.",
+    preview: "●  bottom-right button",
+  },
+  {
+    id: "wanderer",
+    label: "Wanderer",
+    desc: "A little AI mascot that roams around your screen. Click it or press G to chat.",
+    preview: "🤖  roaming mascot character",
+  },
+  {
+    id: "minimal",
+    label: "Minimal",
+    desc: "No persistent UI. Press G anywhere on the site to open the assistant.",
+    preview: "⌨  keyboard-only · press G",
+  },
+];
+
+function AiSettingsPanel() {
+  const [selected, setSelected] = useState<AiStyle>(getAiStyle);
+
+  const pick = useCallback((s: AiStyle) => {
+    setSelected(s);
+    setAiStylePref(s);
+  }, []);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Assistant Style</div>
+        <div style={{ padding: "4px 0" }}>
+          {AI_STYLES.map((s) => (
+            <div
+              key={s.id}
+              onClick={() => pick(s.id)}
+              style={{
+                ...ROW,
+                cursor: "pointer",
+                background: selected === s.id ? "var(--ft-raised)" : "transparent",
+                borderLeft: selected === s.id ? `2px solid var(--ft-accent)` : "2px solid transparent",
+                paddingLeft: 12,
+                transition: "background 0.1s",
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: selected === s.id ? "var(--ft-accent)" : "var(--ft-text)", marginBottom: 3 }}>
+                  {s.label}
+                </div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5 }}>{s.desc}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, letterSpacing: "0.05em" }}>{s.preview}</div>
+              </div>
+              <div style={{
+                width: 14, height: 14, borderRadius: "50%", flexShrink: 0,
+                border: `1.5px solid ${selected === s.id ? "var(--ft-accent)" : "var(--ft-border2)"}`,
+                background: selected === s.id ? "var(--ft-accent)" : "transparent",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {selected === s.id && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+          Hotkey: <kbd style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-accent)", padding: "1px 5px", fontSize: 9 }}>G</kbd> — summons the assistant from anywhere on the site (not when typing).
+        </div>
+      </div>
+
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Contextual Awareness</div>
+        <div style={{ padding: "12px 14px" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7 }}>
+            The AI automatically knows which page you're on and tailors its responses accordingly.
+            On the Accounts page it knows you're managing balances; on Investments it focuses on portfolios, etc.
+          </div>
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+            {[
+              ["Page awareness", "Current page name sent with every message"],
+              ["Financial context", "Responses tailored to the active section"],
+              ["Powered by", "Google Gemini 2.0 Flash"],
+            ].map(([label, val]) => (
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 0", borderBottom: "1px solid var(--ft-border)" }}>
+                <span style={{ color: "var(--ft-muted)" }}>{label}</span>
+                <span style={{ color: "var(--ft-text)" }}>{val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1106,6 +1212,8 @@ export default function Settings() {
         )}
 
         {activePanel === "advanced" && <AdvancedPanel toast={toast} />}
+
+        {activePanel === "ai" && <AiSettingsPanel />}
 
         {activePanel === "shortcuts" && (
           <div style={PANEL_STYLE}>

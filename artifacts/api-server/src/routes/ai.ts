@@ -15,14 +15,19 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
     return;
   }
 
-  const { messages } = req.body as {
+  const { messages, context } = req.body as {
     messages?: Array<{ role: "user" | "model"; text: string }>;
+    context?: string;
   };
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     res.status(400).json({ error: "messages array is required" });
     return;
   }
+
+  const fullSystemPrompt = context
+    ? `${SYSTEM_PROMPT}\n\n--- CURRENT CONTEXT ---\n${context}`
+    : SYSTEM_PROMPT;
 
   const contents = messages.map((m) => ({
     role: m.role,
@@ -37,7 +42,7 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents,
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          systemInstruction: { parts: [{ text: fullSystemPrompt }] },
           generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
         }),
       },
