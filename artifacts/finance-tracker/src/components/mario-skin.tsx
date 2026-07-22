@@ -208,16 +208,6 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
             <text x="38" y="33" fontFamily="serif" fontSize="12" fill={MC} opacity="0.7">♫</text>
           </>}
 
-          {/* Green warp pipe */}
-          {phase === "idle" && <>
-            <rect x="35" y="33" width="20" height="8" rx="3" fill="#22c55e"/>
-            <rect x="35" y="33" width="20" height="3.5" rx="2" fill="#4ade80" opacity="0.55"/>
-            <rect x="35" y="38.5" width="20" height="1.5" fill="#15803d" opacity="0.35"/>
-            <rect x="37" y="41" width="16" height="28" rx="1.5" fill="#16a34a"/>
-            <rect x="44" y="43" width="3" height="26" rx="1" fill="#15803d" opacity="0.55"/>
-            <rect x="38" y="43" width="2" height="26" rx="1" fill="#4ade80" opacity="0.2"/>
-          </>}
-
           {/* Brick block */}
           {phase === "sitting" && <>
             <rect x="36" y="42" width="18" height="18" rx="1.5" fill="#b45309"/>

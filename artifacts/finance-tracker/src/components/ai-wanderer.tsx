@@ -1107,6 +1107,7 @@ export function AiWanderer({ onOpen, summoned, locationKey, sidebarW, portfolioS
         @keyframes ix-achievement{0%{opacity:0;transform:translateX(-50%) translateY(10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}85%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-6px)}}
         @keyframes ix-bed-appear{0%{opacity:0;transform:translateY(8px)}55%{opacity:1;transform:translateY(-1px)}100%{opacity:1;transform:translateY(0)}}
         @keyframes ix-char-dive{0%{opacity:0;transform:translateY(-22px)}55%{opacity:1;transform:translateY(3px)}80%{transform:translateY(-1px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes ix-pipe-overlay{0%{transform:scaleY(0)}15%{transform:scaleY(1)}72%{transform:scaleY(1)}88%{transform:scaleY(0)}100%{transform:scaleY(0)}}
       `}</style>
 
       <div ref={outerDivRef} style={outerStyle}>
@@ -1189,35 +1190,6 @@ export function AiWanderer({ onOpen, summoned, locationKey, sidebarW, portfolioS
             }}>+ {newAchievement}</div>
           )}
 
-          {/* ── Pipe overlay (Mario entry only) ── */}
-          {/* Single masking div at z=9991: sky-blue background hides Mario while inside the pipe.
-              As Mario rises above the 83px top, his head becomes visible. */}
-          {navPhase === "crawling" && entryType === "pipe" && (
-            <div style={{
-              position: "fixed",
-              left: x - 4,
-              bottom: 0,
-              width: 44,
-              height: 83,
-              zIndex: 9991,
-              pointerEvents: "none",
-              background: "#5C94FC",
-              transformOrigin: "bottom",
-              animation: "ix-pipe-overlay 1800ms linear both",
-            }}>
-              {/* Pipe cap rim */}
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 14, background: "#3ABB3A", borderTop: "3px solid #289028" }}>
-                <div style={{ position: "absolute", left: 3, top: 3, width: 4, height: 9, background: "#50D050", borderRadius: 1 }}/>
-                <div style={{ position: "absolute", right: 0, top: 0, width: 5, bottom: 0, background: "#289028" }}/>
-              </div>
-              {/* Pipe shaft */}
-              <div style={{ position: "absolute", top: 14, left: 4, right: 4, bottom: 0, background: "#3ABB3A" }}>
-                <div style={{ position: "absolute", left: 0, top: 0, width: 3, bottom: 0, background: "#289028" }}/>
-                <div style={{ position: "absolute", left: 6, top: 4, width: 3, bottom: 8, background: "#50D050", borderRadius: 2 }}/>
-              </div>
-            </div>
-          )}
-
           {/* ── Entry animation wrapper ── */}
           <div style={{
             animation: navPhase === "crawling"
@@ -1263,6 +1235,30 @@ export function AiWanderer({ onOpen, summoned, locationKey, sidebarW, portfolioS
 
         </div>
       </div>
+      {/* ── Pipe overlay rendered outside all transforms so position:fixed is truly viewport-fixed ── */}
+      {navPhase === "crawling" && entryType === "pipe" && (
+        <div style={{
+          position: "fixed",
+          left: x - 4,
+          bottom: 0,
+          width: 44,
+          height: 83,
+          zIndex: 9991,
+          pointerEvents: "none",
+          background: "#5C94FC",
+          transformOrigin: "bottom center",
+          animation: "ix-pipe-overlay 1800ms linear both",
+        }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 14, background: "#3ABB3A", borderTop: "3px solid #289028" }}>
+            <div style={{ position: "absolute", left: 3, top: 3, width: 4, height: 9, background: "#50D050", borderRadius: 1 }}/>
+            <div style={{ position: "absolute", right: 0, top: 0, width: 5, bottom: 0, background: "#289028" }}/>
+          </div>
+          <div style={{ position: "absolute", top: 14, left: 4, right: 4, bottom: 0, background: "#3ABB3A" }}>
+            <div style={{ position: "absolute", left: 0, top: 0, width: 3, bottom: 0, background: "#289028" }}/>
+            <div style={{ position: "absolute", left: 6, top: 4, width: 3, bottom: 8, background: "#50D050", borderRadius: 2 }}/>
+          </div>
+        </div>
+      )}
     </>
   );
 }
