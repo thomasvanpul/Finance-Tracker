@@ -619,8 +619,6 @@ function MarioEffect() {
       // Layer 1 clouds (far, slower)
       for (let i = clouds.length - 1; i >= 0; i--) { const c = clouds[i]; c.x += c.vx; drawCloud(ctx, c); if (c.x > cw + 200) clouds.splice(i, 1); }
 
-      drawGround(ctx, cw, ch);
-
       QBLOCKS.forEach(b => { if (b.bounce > 0) b.bounce--; drawQBlock(ctx, b, cw, ch); });
 
       for (let i = items.length - 1; i >= 0; i--) {
