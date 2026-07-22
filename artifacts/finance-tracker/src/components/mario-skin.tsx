@@ -86,7 +86,7 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
   return (
     <svg width="36" height="66" viewBox="0 0 36 66" fill="none" overflow="visible">
       <>
-      {phase === "lying" && <rect x="-2" y="0" width="40" height="28" rx="10" fill="#F0EBD5" stroke="#CEC8B4" strokeWidth="0.8"/>}
+      {phase === "lying" && <ellipse cx="-2" cy="14" rx="12" ry="9" fill="#F8F5EE" stroke="#E0DAD0" strokeWidth="0.8"/>}
           {/* === HEAD === */}
           <ellipse cx="18" cy="6" rx="11" ry="7" fill={MH}/>
           <circle cx="18" cy="16" r="12" fill={MS}/>
@@ -234,7 +234,12 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
       {phase === "lying" && (
         <>
           <rect x="-2" y="27" width="40" height="43" rx="3" fill={MC} opacity="0.92"/>
-          <rect x="-2" y="27" width="40" height="4" rx="1.5" fill={MO} opacity="0.75"/>
+          <rect x="-2" y="27" width="40" height="5" rx="3" fill="#e03010" stroke="#cc2000" strokeWidth="0.7"/>
+          <path d="M-2 30 Q6 31.5 11 30 Q18 28.5 23 30 Q30 31.5 38 30" stroke="#aa1800" strokeWidth="0.8" fill="none" opacity="0.8"/>
+          <ellipse cx="10" cy="64" rx="5" ry="3.5" fill={MB} stroke="#3a1800" strokeWidth="0.7"/>
+          <ellipse cx="24" cy="64" rx="5" ry="3.5" fill={MB} stroke="#3a1800" strokeWidth="0.7"/>
+          <ellipse cx="10" cy="62" rx="3" ry="1.2" fill="rgba(255,255,255,0.07)"/>
+          <ellipse cx="24" cy="62" rx="3" ry="1.2" fill="rgba(255,255,255,0.07)"/>
           <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
             <text x="28" y="-2" fontFamily="monospace" fontSize="9" fill="#CC2000" opacity="0.9">z</text>
             <text x="34" y="-9" fontFamily="monospace" fontSize="7" fill="#CC2000" opacity="0.65">z</text>
