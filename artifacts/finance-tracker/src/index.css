@@ -1,6 +1,44 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 @plugin "@tailwindcss/typography";
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   ANTI-VIBE CONSTITUTION
+   This codebase is a financial operating system, not a consumer dashboard.
+   Every pattern below has been tested and confirmed to make UIs look generic,
+   AI-generated, or vibe-coded. They are permanently banned. Read before adding.
+
+   BANNED — do not introduce these patterns under any circumstances:
+   ✗  border-radius > 3px on data containers (panels, tables, metric cells)
+   ✗  box-shadow on any element that displays financial data
+   ✗  gradient backgrounds anywhere outside chart plot areas
+   ✗  gradient text (background-clip: text) on any UI element
+   ✗  backdrop-filter: blur() — glassmorphism is not a terminal
+   ✗  animation on button press: scale, opacity bounce, spring, lift
+   ✗  transform: scale() on hover for cards or interactive containers
+   ✗  blurred color blobs / radial-gradient circles as decorative background
+   ✗  particle effects used as theme decoration (hearts, bubbles, stars, snow)
+   ✗  purple, violet, or pink as primary or accent color
+   ✗  Inter or Roboto as a font choice anywhere in the product
+   ✗  Framer Motion spring or inertia animations on layout state changes
+   ✗  uniform padding (p-4 / gap-4 / p-6) applied identically across contexts
+   ✗  SVG illustrations or icon sets used decoratively on data pages
+   ✗  empty-state artwork — show a zero-row table, not a drawing
+   ✗  CSS transitions longer than 150ms on UI state changes
+   ✗  accent color applied to non-interactive, non-semantic elements
+   ✗  rounded-full pill badges on financial category labels (use rect chips)
+   ✗  tw-animate-css — imports bounce, zoom, and spring defaults we don't want
+
+   REQUIRED — these patterns are mandatory, not optional:
+   ✓  font-mono (JetBrains Mono) for every numeric value without exception
+   ✓  semantic color only: green=positive, red=negative, accent=interactive
+   ✓  1px solid var(--ft-border) between data regions — never box-shadow
+   ✓  asymmetric padding: row padding ≠ section padding ≠ page padding
+   ✓  CSS variables (--ft-*) for every color, spacing, and font reference
+   ✓  instant click feedback — state change is the feedback, no animation
+   ✓  font-variant-numeric: tabular-nums on all financial numbers
+   ✓  status bar always visible at bottom — never hidden or collapsible
+   ✓  data density first: if you can show 12 numbers, show 12, not 6
+   ══════════════════════════════════════════════════════════════════════════════ */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -130,21 +168,16 @@ button:disabled,
   cursor: not-allowed;
 }
 
-/* Click feedback — subtle press animation on all buttons */
-button:not(:disabled),
-[role="button"]:not([aria-disabled="true"]) {
-  transition: transform 0.08s ease, opacity 0.08s ease;
-}
-
+/* Terminal buttons: instant feedback only — state change IS the response.
+   No scale, no opacity bounce. Terminals don't animate keypresses. */
 button:not(:disabled):active,
 [role="button"]:not([aria-disabled="true"]):active {
-  transform: scale(0.96);
-  opacity: 0.85;
+  opacity: 0.7;
 }
 
-/* Excel-style row hover */
+/* Row hover — uses theme surface token, not a hardcoded blue */
 .xls-row:hover td {
-  background-color: rgba(31, 111, 235, 0.06) !important;
+  background-color: var(--ft-raised) !important;
 }
 
 /* Column header style */
@@ -268,39 +301,92 @@ button:not(:disabled):active,
   --ft-cyan:    #AAFFAA;
 }
 
-[data-theme="rose"] {
-  --ft-base:    #0A0005;
-  --ft-surface: #0F0008;
-  --ft-raised:  #14000C;
-  --ft-border:  #2A0015;
-  --ft-border2: #380020;
-  --ft-text:    #FFB3CB;
-  --ft-muted:   #CC5580;
-  --ft-dim:     #663344;
-  --ft-accent:  #FF2D78;
-  --ft-green:   #FF7EB3;
-  --ft-red:     #FF2D78;
-  --ft-amber:   #FFB347;
-  --ft-blue:    #CC88FF;
-  --ft-cyan:    #FF99CC;
+[data-theme="synthwave"] {
+  --ft-base:    #0D001A;
+  --ft-surface: #170028;
+  --ft-raised:  #220040;
+  --ft-border:  #2D0050;
+  --ft-border2: #440077;
+  --ft-text:    #E8D5FF;
+  --ft-muted:   #9966CC;
+  --ft-dim:     #55007A;
+  --ft-accent:  #FF007A;
+  --ft-amber:   #FF6B00;
+  --ft-green:   #39FF4E;
+  --ft-red:     #FF1133;
+  --ft-blue:    #00C8FF;
+  --ft-cyan:    #CC88FF;
 }
 
-[data-theme="ocean"] {
-  --ft-base:    #010A12;
-  --ft-surface: #011520;
-  --ft-raised:  #012030;
-  --ft-border:  #012040;
-  --ft-border2: #013060;
-  --ft-text:    #B0E8FF;
-  --ft-muted:   #5599BB;
-  --ft-dim:     #224455;
-  --ft-accent:  #00D4FF;
-  --ft-green:   #00FFB3;
-  --ft-red:     #FF4444;
-  --ft-amber:   #FFD700;
-  --ft-blue:    #4488FF;
-  --ft-cyan:    #00EEFF;
+[data-theme="deep-space"] {
+  --ft-base:    #010108;
+  --ft-surface: #06060F;
+  --ft-raised:  #0C0C1E;
+  --ft-border:  #0F0F20;
+  --ft-border2: #1A1A38;
+  --ft-text:    #C8D0E8;
+  --ft-muted:   #6870A0;
+  --ft-dim:     #30305A;
+  --ft-accent:  #7B5EA7;
+  --ft-amber:   #FFD166;
+  --ft-green:   #2ECC71;
+  --ft-red:     #FF4455;
+  --ft-blue:    #4466FF;
+  --ft-cyan:    #00DDEE;
 }
+
+[data-theme="mario"] {
+  --ft-base:    #5C94FC;
+  --ft-surface: #3A70DC;
+  --ft-raised:  #2850C0;
+  --ft-border:  #1A38A0;
+  --ft-border2: #102890;
+  --ft-text:    #FCFCFC;
+  --ft-muted:   #B8CCFC;
+  --ft-dim:     #A8C0F0;
+  --ft-accent:  #F8C800;
+  --ft-amber:   #D07010;
+  --ft-green:   #3ABB3A;
+  --ft-red:     #CC2000;
+  --ft-blue:    #1830A0;
+  --ft-cyan:    #90C8FC;
+}
+
+[data-theme="gilded"] {
+  --ft-base:    #080600;
+  --ft-surface: #0E0C00;
+  --ft-raised:  #161200;
+  --ft-border:  #1E1800;
+  --ft-border2: #2E2400;
+  --ft-text:    #F0E6C8;
+  --ft-muted:   #7A5E0A;
+  --ft-dim:     #3C2E04;
+  --ft-accent:  #C8941E;
+  --ft-amber:   #D4A017;
+  --ft-green:   #4ECCA3;
+  --ft-red:     #CC3333;
+  --ft-blue:    #6699BB;
+  --ft-cyan:    #EED080;
+}
+
+[data-theme="bloodline"] {
+  --ft-base:    #0F0003;
+  --ft-surface: #1A0008;
+  --ft-raised:  #250010;
+  --ft-border:  #2D0009;
+  --ft-border2: #440015;
+  --ft-text:    #F5C2C7;
+  --ft-muted:   #883344;
+  --ft-dim:     #4D0018;
+  --ft-accent:  #CC1A2F;
+  --ft-amber:   #FF6600;
+  --ft-green:   #1A8C3A;
+  --ft-red:     #FF0022;
+  --ft-blue:    #6688AA;
+  --ft-cyan:    #FF8899;
+}
+
+/* rose and ocean themes removed — not a financial terminal aesthetic */
 
 /* ── Terminal layout primitives ── */
 .ft-panel {
@@ -389,77 +475,19 @@ button:not(:disabled):active,
 
 /* ═══════════════════════════════════════════════════════════════════════════
    THEME ANIMATION KEYFRAMES
-   All ambient background effects and overlay animations for the 8 themes.
+   Only legitimate terminal effects. No particles, no blobs, no aurora.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── void: tiny stars drifting gently ── */
-@keyframes ft-star-drift {
-  0%   { transform: translate(0, 0) scale(1);    opacity: var(--star-op, 0.07); }
-  33%  { transform: translate(4px, -6px) scale(1.2); }
-  66%  { transform: translate(-3px, 3px) scale(0.9); }
-  100% { transform: translate(2px, -4px) scale(1.1); opacity: var(--star-op, 0.07); }
-}
-
-/* ── phosphor + amber: scanlines scrolling upward ── */
+/* ── phosphor + amber: CRT scanlines scrolling (legitimate terminal effect) ── */
 @keyframes ft-scanline-scroll {
   from { background-position: 0 0; }
   to   { background-position: 0 -80px; }
 }
 
-/* ── arctic: snowflakes falling ── */
-@keyframes ft-snow-fall {
-  0%   { transform: translateY(0)    translateX(0);   opacity: 0; }
-  5%   { opacity: 1; }
-  95%  { opacity: 1; }
-  100% { transform: translateY(110vh) translateX(12px); opacity: 0; }
-}
-
-/* ── midnight: aurora blobs drifting ── */
-@keyframes ft-aurora-drift-a {
-  0%   { transform: translate(0, 0)       scale(1); }
-  50%  { transform: translate(15%, 8%)    scale(1.15); }
-  100% { transform: translate(-8%, -5%)   scale(0.9); }
-}
-
-@keyframes ft-aurora-drift-b {
-  0%   { transform: translate(0, 0)      scale(1); }
-  50%  { transform: translate(-12%, 6%)  scale(1.1); }
-  100% { transform: translate(10%, -8%)  scale(0.95); }
-}
-
-@keyframes ft-aurora-drift-c {
-  0%   { transform: translate(0, 0)     scale(1); }
-  50%  { transform: translate(8%, -10%) scale(1.2); }
-  100% { transform: translate(-5%, 6%)  scale(0.85); }
-}
-
-/* ── ocean: background shimmer pulse ── */
-@keyframes ft-ocean-shimmer {
-  0%   { opacity: 0.6; }
-  100% { opacity: 1; }
-}
-
-/* ── ocean: bubble rise ── */
-@keyframes ft-bubble-rise {
-  from {
-    transform: translateY(100vh) scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  to {
-    transform: translateY(-100px) scale(1);
-    opacity: 0;
-  }
-}
-
-/* ── rose: hearts + sparkles floating upward ── */
-@keyframes ft-rose-float {
-  0%   { transform: translateY(0)    scale(0.8); opacity: 0; }
-  20%  { opacity: 1; }
-  60%  { transform: translateY(-28px) scale(1.05); opacity: 1; }
-  100% { transform: translateY(-8px)  scale(0.9);  opacity: 0; }
+/* ── void / matrix / midnight: cursor blink (used in easter eggs) ── */
+@keyframes ft-cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
 }
 
 /* ── void easter egg: glitch flash + text ── */

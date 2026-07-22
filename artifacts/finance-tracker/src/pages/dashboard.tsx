@@ -405,14 +405,18 @@ function SortableWidget({ id, span, onToggleSpan, onRemove }: SortableWidgetProp
           style={{
             position: "absolute",
             top: 0,
-            right: 0,
-            height: 34,
+            left: "50%",
+            transform: "translateX(-50%)",
+            height: 30,
             zIndex: 20,
             display: "flex",
             alignItems: "center",
             gap: 0,
             opacity: 0,
             transition: "opacity 0.15s",
+            borderRadius: "0 0 4px 4px",
+            overflow: "hidden",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
           }}
         >
           {/* Drag handle */}
