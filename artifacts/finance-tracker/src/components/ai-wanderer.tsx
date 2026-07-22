@@ -301,13 +301,13 @@ function BotSprite({ phase, blinking, walking, skinId }: { phase: Phase; blinkin
 
   // Per-phase leg styles
   const lLegStyle: React.CSSProperties =
-    phase === "lying"   ? { transform: "rotate(-20deg)", transformBox: "fill-box", transformOrigin: "50% 0%" } :
+    phase === "lying"   ? {} :
     phase === "sitting" ? { transform: "rotate(-50deg)", transformBox: "fill-box", transformOrigin: "50% 0%" } :
     phase === "dancing" ? { animation: "ix-walk-leg-l 0.5s ease-in-out infinite" } :
     walking             ? { animation: "ix-walk-leg-l 0.42s ease-in-out infinite" } : {};
 
   const rLegStyle: React.CSSProperties =
-    phase === "lying"   ? { transform: "rotate(20deg)", transformBox: "fill-box", transformOrigin: "50% 0%" } :
+    phase === "lying"   ? {} :
     phase === "sitting" ? { transform: "rotate(50deg)", transformBox: "fill-box", transformOrigin: "50% 0%" } :
     phase === "dancing" ? { animation: "ix-walk-leg-r 0.5s ease-in-out infinite" } :
     walking             ? { animation: "ix-walk-leg-r 0.42s ease-in-out infinite" } : {};
@@ -317,7 +317,9 @@ function BotSprite({ phase, blinking, walking, skinId }: { phase: Phase; blinkin
   return (
     <svg width="36" height="66" viewBox="0 0 36 66" fill="none" overflow="visible" style={svgTransform}>
       <>
-      {phase === "lying" && <ellipse cx="-2" cy="17" rx="12" ry="10" fill="#F2EDE0" stroke="#D8D2C4" strokeWidth="0.8"/>}
+      {/* Pillow — behind rotated character */}
+      {phase === "lying" && <ellipse cx="-3" cy="33" rx="18" ry="11" fill="#F2EDE0" stroke="#D8D2C4" strokeWidth="0.8"/>}
+      <g transform={phase === "lying" ? "rotate(-90, 18, 33)" : undefined}>
       <FrontHead phase={phase} blinking={blinking} hStroke={hStroke}/>
 
       {/* Neck */}
@@ -471,19 +473,21 @@ function BotSprite({ phase, blinking, walking, skinId }: { phase: Phase; blinkin
         <path d="M36 32 L36.5 30 L37 32 L39 32.5 L37 33 L36.5 35 L36 33 L34 32.5 Z" fill="#fbbf24" opacity="0.85"/>
         <path d="M-3 33 L-2.5 31.5 L-2 33 L-0.5 33.5 L-2 34 L-2.5 35.5 L-3 34 L-4.5 33.5 Z" fill="#fbbf24" opacity="0.7"/>
       </>}
+      </g>
+      {/* Blanket + ZZZs — head peeks out on the left, body covered */}
       {phase === "lying" && (
         <>
-          <rect x="-3" y="29" width="42" height="40" rx="3" fill="#1d4ed8" stroke="#2563eb" strokeWidth="1"/>
-          <rect x="-3" y="29" width="42" height="6" rx="3" fill="#3b82f6" stroke="#60a5fa" strokeWidth="0.8"/>
-          <path d="M-3 32 Q5 33.5 10 32 Q18 30.5 23 32 Q31 33.5 39 32" stroke="#60a5fa" strokeWidth="0.9" fill="none" opacity="0.7"/>
-          <ellipse cx="11" cy="63" rx="5" ry="3.5" fill="#1e3a8a" stroke="#2563eb" strokeWidth="0.7"/>
-          <ellipse cx="25" cy="63" rx="5" ry="3.5" fill="#1e3a8a" stroke="#2563eb" strokeWidth="0.7"/>
-          <circle cx="11" cy="62" r="0.8" fill="#06b6d4" opacity="0.6"/>
-          <circle cx="25" cy="62" r="0.8" fill="#06b6d4" opacity="0.6"/>
+          <rect x="10" y="18" width="52" height="29" rx="3" fill="#1d4ed8" stroke="#2563eb" strokeWidth="1"/>
+          <rect x="10" y="18" width="52" height="5" rx="3" fill="#3b82f6" stroke="#60a5fa" strokeWidth="0.8"/>
+          <path d="M12 21 Q20 22.5 27 21 Q35 19.5 43 21 Q51 22.5 58 21" stroke="#60a5fa" strokeWidth="0.9" fill="none" opacity="0.7"/>
+          <ellipse cx="55" cy="22" rx="5" ry="4" fill="#1e3a8a"/>
+          <ellipse cx="55" cy="43" rx="5" ry="4" fill="#1e3a8a"/>
+          <circle cx="55" cy="21" r="0.8" fill="#06b6d4" opacity="0.6"/>
+          <circle cx="55" cy="44" r="0.8" fill="#06b6d4" opacity="0.6"/>
           <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
-            <text x="28" y="-2" fontFamily="monospace" fontSize="9" fill="#64748b" opacity="0.9">z</text>
-            <text x="34" y="-9" fontFamily="monospace" fontSize="7" fill="#64748b" opacity="0.65">z</text>
-            <text x="40" y="-15" fontFamily="monospace" fontSize="5.5" fill="#64748b" opacity="0.4">z</text>
+            <text x="-8" y="12" fontFamily="monospace" fontSize="9" fill="#64748b" opacity="0.9">z</text>
+            <text x="-2" y="5" fontFamily="monospace" fontSize="7" fill="#64748b" opacity="0.65">z</text>
+            <text x="4" y="-1" fontFamily="monospace" fontSize="5.5" fill="#64748b" opacity="0.4">z</text>
           </g>
         </>
       )}

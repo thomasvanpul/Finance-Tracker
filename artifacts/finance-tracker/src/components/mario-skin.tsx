@@ -33,13 +33,13 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
                               { animation: "ix-arm-idle-r 3.5s ease-in-out infinite" };
 
   const lLegStyle =
-    phase === "lying"   ? { transform: "rotate(-20deg)", transformBox: "fill-box" as const, transformOrigin: "50% 0%" } :
+    phase === "lying"   ? {} :
     phase === "sitting" ? { transform: "rotate(-50deg)", transformBox: "fill-box" as const, transformOrigin: "50% 0%" } :
     phase === "dancing" ? { animation: "ix-walk-leg-l 0.5s ease-in-out infinite" } :
     walking             ? { animation: "ix-walk-leg-l 0.42s ease-in-out infinite" } : {};
 
   const rLegStyle =
-    phase === "lying"   ? { transform: "rotate(20deg)", transformBox: "fill-box" as const, transformOrigin: "50% 0%" } :
+    phase === "lying"   ? {} :
     phase === "sitting" ? { transform: "rotate(50deg)", transformBox: "fill-box" as const, transformOrigin: "50% 0%" } :
     phase === "dancing" ? { animation: "ix-walk-leg-r 0.5s ease-in-out infinite" } :
     walking             ? { animation: "ix-walk-leg-r 0.42s ease-in-out infinite" } : {};
@@ -86,7 +86,9 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
   return (
     <svg width="36" height="66" viewBox="0 0 36 66" fill="none" overflow="visible">
       <>
-      {phase === "lying" && <ellipse cx="-2" cy="14" rx="12" ry="9" fill="#F8F5EE" stroke="#E0DAD0" strokeWidth="0.8"/>}
+      {/* Pillow — rendered behind rotated character */}
+      {phase === "lying" && <ellipse cx="-3" cy="33" rx="18" ry="11" fill="#F8F5EE" stroke="#E0DAD0" strokeWidth="0.8"/>}
+      <g transform={phase === "lying" ? "rotate(-90, 18, 33)" : undefined}>
           {/* === HEAD === */}
           <ellipse cx="18" cy="6" rx="11" ry="7" fill={MH}/>
           <circle cx="18" cy="16" r="12" fill={MS}/>
@@ -231,19 +233,19 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
             <circle cx="-4" cy="30" r="1.5" fill={MY} opacity="0.5"/>
             <circle cx="-9" cy="28" r="1" fill={MY} opacity="0.3"/>
           </>}
+      </g>
+      {/* Blanket + ZZZs — rendered on top of rotated character, head peeks out left */}
       {phase === "lying" && (
         <>
-          <rect x="-2" y="27" width="40" height="43" rx="3" fill={MO} stroke="#1040b0" strokeWidth="1"/>
-          <rect x="-2" y="27" width="40" height="5" rx="3" fill="#3060e0" stroke="#5080ff" strokeWidth="0.7"/>
-          <path d="M-2 30 Q6 31.5 11 30 Q18 28.5 23 30 Q30 31.5 38 30" stroke="#7ab4ff" strokeWidth="0.9" fill="none" opacity="0.7"/>
-          <ellipse cx="10" cy="64" rx="5" ry="3.5" fill={MB} stroke="#3a1800" strokeWidth="0.7"/>
-          <ellipse cx="24" cy="64" rx="5" ry="3.5" fill={MB} stroke="#3a1800" strokeWidth="0.7"/>
-          <ellipse cx="10" cy="62" rx="3" ry="1.2" fill="rgba(255,255,255,0.07)"/>
-          <ellipse cx="24" cy="62" rx="3" ry="1.2" fill="rgba(255,255,255,0.07)"/>
+          <rect x="10" y="18" width="52" height="29" rx="3" fill={MO} stroke="#1040b0" strokeWidth="1"/>
+          <rect x="10" y="18" width="52" height="5" rx="3" fill="#3060e0" stroke="#5080ff" strokeWidth="0.7"/>
+          <path d="M12 21 Q20 22.5 27 21 Q35 19.5 43 21 Q51 22.5 58 21" stroke="#7ab4ff" strokeWidth="0.9" fill="none" opacity="0.7"/>
+          <ellipse cx="55" cy="22" rx="5" ry="4" fill="#0a2060"/>
+          <ellipse cx="55" cy="43" rx="5" ry="4" fill="#0a2060"/>
           <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
-            <text x="28" y="-2" fontFamily="monospace" fontSize="9" fill="#CC2000" opacity="0.9">z</text>
-            <text x="34" y="-9" fontFamily="monospace" fontSize="7" fill="#CC2000" opacity="0.65">z</text>
-            <text x="40" y="-15" fontFamily="monospace" fontSize="5.5" fill="#CC2000" opacity="0.4">z</text>
+            <text x="-8" y="12" fontFamily="monospace" fontSize="9" fill="#CC2000" opacity="0.9">z</text>
+            <text x="-2" y="5" fontFamily="monospace" fontSize="7" fill="#CC2000" opacity="0.65">z</text>
+            <text x="4" y="-1" fontFamily="monospace" fontSize="5.5" fill="#CC2000" opacity="0.4">z</text>
           </g>
         </>
       )}
