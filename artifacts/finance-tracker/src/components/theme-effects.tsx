@@ -379,7 +379,6 @@ function MarioEffect() {
     interface Cloud   { x: number; y: number; vx: number; w: number; h: number; alpha: number; layer: number; }
     interface Item    { x: number; y: number; vy: number; ay: number; alpha: number; f: number; type: "coin"|"mushroom"|"star"; }
     interface Goomba  { x: number; y: number; vx: number; vy: number; f: number; dead: boolean; dt: number; deathPhase: 0|1|2; }
-    interface QBlock  { rx: number; ry: number; bounce: number; hits: number; }
     interface StarItem { x: number; y: number; vx: number; vy: number; rot: number; alpha: number; life: number; }
     interface Trail   { x: number; y: number; alpha: number; }
 
@@ -390,15 +389,6 @@ function MarioEffect() {
     const trail:   Trail[]  = [];
     let coinsTotal = 0;
 
-    // Fixed ? blocks — near the ground, staggered heights
-    const QBLOCKS: QBlock[] = [
-      { rx: 0.24, ry: 0.84, bounce: 0, hits: 0 },
-      { rx: 0.42, ry: 0.82, bounce: 0, hits: 0 },
-      { rx: 0.62, ry: 0.85, bounce: 0, hits: 0 },
-      { rx: 0.80, ry: 0.83, bounce: 0, hits: 0 },
-    ];
-
-    const BS = 22; // block size
     let rafId = 0, frame = 0;
     let lastBotX = -1;
 
@@ -416,19 +406,6 @@ function MarioEffect() {
     }
     spawnGoomba();
 
-    function ejectItem(bx: number, by: number) {
-      const r = Math.random();
-      const type: "coin"|"mushroom"|"star" = r < 0.55 ? "coin" : r < 0.80 ? "mushroom" : "star";
-      if (type === "coin") coinsTotal++;
-      items.push({ x: bx, y: by - BS, vy: -(3.2 + Math.random()), ay: 0.1, alpha: 0, f: 0, type });
-    }
-
-    function hitBlock(b: QBlock, cw: number, ch: number) {
-      if (b.bounce > 0) return;
-      b.bounce = 28; b.hits++;
-      ejectItem(b.rx * cw, b.ry * ch);
-    }
-
     function spawnStar(x: number, y: number) {
       for (let i = 0; i < 5; i++) {
         const a = (i / 5) * Math.PI * 2;
@@ -436,26 +413,19 @@ function MarioEffect() {
       }
     }
 
-    function onBotFling(e: Event) {
-      if (!canvas) return;
-      const bx = ((e as CustomEvent).detail as { x: number }).x;
-      QBLOCKS.forEach(b => { if (Math.abs(bx - b.rx * canvas.width) < 80) hitBlock(b, canvas.width, canvas.height); });
-      spawnStar(bx, canvas.height - 80);
-    }
     function onBotLand(e: Event) {
       if (!canvas) return;
       const bx = ((e as CustomEvent).detail as { x: number }).x;
       for (let i = 0; i < 6; i++) { items.push({ x: bx + (Math.random() - 0.5) * 60, y: canvas.height - 55, vy: -(2.5 + Math.random() * 3), ay: 0.1, alpha: 0, f: 0, type: "coin" }); coinsTotal++; }
       spawnStar(bx, canvas.height - 70);
-      // Goomba stomp — squash and pop upward then fall off screen
+      // Goomba stomp — immediately pop upward then fall off screen
       for (const g of goombas) {
         if (!g.dead && Math.abs(bx - g.x) < 35) {
-          g.dead = true; g.dt = 0; g.deathPhase = 0; g.vy = 0;
+          g.dead = true; g.dt = 0; g.deathPhase = 1; g.vy = -6;
           coinsTotal++;
         }
       }
     }
-    window.addEventListener("ft-bot-fling", onBotFling);
     window.addEventListener("ft-bot-land", onBotLand);
 
     function drawCloud(ctx: CanvasRenderingContext2D, c: Cloud) {
@@ -497,30 +467,6 @@ function MarioEffect() {
       ctx.restore();
     }
 
-    function drawQBlock(ctx: CanvasRenderingContext2D, b: QBlock, cw: number, ch: number) {
-      const cx = b.rx * cw;
-      const cy = b.ry * ch - (b.bounce > 0 ? Math.sin(b.bounce / 28 * Math.PI) * 12 : 0);
-      const spent = b.hits > 0;
-      const botX = ((window as unknown as Record<string, unknown>).__ft_bot as { x: number } | undefined)?.x ?? -1;
-      const near = botX > 0 && Math.abs(botX - cx) < 100;
-      ctx.save();
-      ctx.fillStyle = spent ? "#705010" : near ? "#E88020" : "#D07010";
-      ctx.fillRect(cx - BS / 2, cy - BS / 2, BS, BS);
-      ctx.fillStyle = spent ? "#503000" : "#AF5000";
-      ctx.fillRect(cx - BS / 2, cy - BS / 2, BS, 2); ctx.fillRect(cx - BS / 2, cy + BS / 2 - 2, BS, 2);
-      ctx.fillRect(cx - BS / 2, cy - BS / 2, 2, BS); ctx.fillRect(cx + BS / 2 - 2, cy - BS / 2, 2, BS);
-      if (!spent) {
-        ctx.fillStyle = "#FCFCFC";
-        ctx.font = `bold ${BS * 0.7}px monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("?", cx, cy + 1);
-      }
-      if (near && !spent) {
-        ctx.globalAlpha = 0.25 * (1 - Math.abs(botX - cx) / 100);
-        ctx.fillStyle = "#FFEC60"; ctx.fillRect(cx - BS / 2 - 3, cy - BS / 2 - 3, BS + 6, BS + 6);
-      }
-      ctx.restore();
-    }
-
     function drawItem(ctx: CanvasRenderingContext2D, it: Item) {
       ctx.save(); ctx.globalAlpha = it.alpha; ctx.translate(it.x, it.y);
       if (it.type === "coin") {
@@ -556,25 +502,13 @@ function MarioEffect() {
       if (g.dead) {
         const fade = Math.max(0, 1 - Math.max(0, g.y - (ctx.canvas.height - 20)) / 60);
         ctx.globalAlpha = fade;
-        if (g.deathPhase === 0) {
-          // Phase A: squash flat (scaleY ≈ 0.3) — stays at ground level
-          ctx.scale(1, 0.3);
-          ctx.fillStyle = "#7A3810"; ctx.fillRect(-14, -14, 28, 20);
-          ctx.fillStyle = "#2A0A00"; ctx.fillRect(-8, -15, 5, 5); ctx.fillRect(3, -15, 5, 5);
-          ctx.strokeStyle = "#F0F0F0"; ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(-8, -15); ctx.lineTo(-4, -11); ctx.moveTo(-4, -15); ctx.lineTo(-8, -11);
-          ctx.moveTo(4, -15); ctx.lineTo(8, -11); ctx.moveTo(8, -15); ctx.lineTo(4, -11);
-          ctx.stroke();
-        } else {
-          // Phase B + C: flipped upside down, popping up then falling
-          ctx.rotate(Math.PI);
-          ctx.fillStyle = "#8B4513"; ctx.fillRect(-10, -16, 20, 16);
-          ctx.fillStyle = "#2A0A00"; ctx.fillRect(-8, -20, 6, 3); ctx.fillRect(2, -20, 6, 3);
-          ctx.fillStyle = "#FCFCFC"; ctx.fillRect(-7, -15, 5, 4); ctx.fillRect(2, -15, 5, 4);
-          ctx.fillStyle = "#1A1A1A"; ctx.fillRect(-5, -14, 3, 3); ctx.fillRect(4, -14, 3, 3);
-          ctx.fillStyle = "#5A2D00"; ctx.fillRect(-10, 0, 8, 4); ctx.fillRect(2, 0, 8, 4);
-        }
+        // Flipped upside down, popping up then falling
+        ctx.rotate(Math.PI);
+        ctx.fillStyle = "#8B4513"; ctx.fillRect(-10, -16, 20, 16);
+        ctx.fillStyle = "#2A0A00"; ctx.fillRect(-8, -20, 6, 3); ctx.fillRect(2, -20, 6, 3);
+        ctx.fillStyle = "#FCFCFC"; ctx.fillRect(-7, -15, 5, 4); ctx.fillRect(2, -15, 5, 4);
+        ctx.fillStyle = "#1A1A1A"; ctx.fillRect(-5, -14, 3, 3); ctx.fillRect(4, -14, 3, 3);
+        ctx.fillStyle = "#5A2D00"; ctx.fillRect(-10, 0, 8, 4); ctx.fillRect(2, 0, 8, 4);
       } else {
         ctx.fillStyle = "#8B4513"; ctx.fillRect(-10, -16, 20, 16);
         ctx.fillStyle = "#2A0A00"; ctx.fillRect(-8, -20, 6, 3); ctx.fillRect(2, -20, 6, 3);
@@ -619,8 +553,6 @@ function MarioEffect() {
       // Layer 1 clouds (far, slower)
       for (let i = clouds.length - 1; i >= 0; i--) { const c = clouds[i]; c.x += c.vx; drawCloud(ctx, c); if (c.x > cw + 200) clouds.splice(i, 1); }
 
-      QBLOCKS.forEach(b => { if (b.bounce > 0) b.bounce--; drawQBlock(ctx, b, cw, ch); });
-
       for (let i = items.length - 1; i >= 0; i--) {
         const it = items[i]; it.y += it.vy; it.vy += it.ay; it.f++;
         it.alpha = Math.min(it.alpha + 0.08, 0.92);
@@ -631,12 +563,7 @@ function MarioEffect() {
       for (let i = goombas.length - 1; i >= 0; i--) {
         const g = goombas[i];
         if (g.dead) {
-          if (g.deathPhase === 0) {
-            g.dt++;
-            if (g.dt >= 9) { g.deathPhase = 1; g.vy = -6; }
-          } else {
-            g.y += g.vy; g.vy += 0.3; g.dt++;
-          }
+          g.y += g.vy; g.vy += 0.3; g.dt++;
           drawGoomba(ctx, g);
           if (g.y > ch + 50) goombas.splice(i, 1);
         } else {
@@ -644,6 +571,7 @@ function MarioEffect() {
           if (g.x < -30) goombas.splice(i, 1);
         }
       }
+      (window as unknown as Record<string, unknown>).__ft_goombas = goombas.filter(g => !g.dead).map(g => ({ x: g.x, topY: g.y - 16 }));
 
       // Coin trail behind bot
       const botX = ((window as unknown as Record<string, unknown>).__ft_bot as { x: number } | undefined)?.x ?? -1;
@@ -675,8 +603,8 @@ function MarioEffect() {
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("ft-bot-fling", onBotFling);
       window.removeEventListener("ft-bot-land", onBotLand);
+      delete (window as unknown as Record<string, unknown>).__ft_goombas;
     };
   }, []);
 

@@ -741,12 +741,28 @@ export function AiWanderer({ onOpen, summoned, locationKey, sidebarW, portfolioS
       velYRef.current += 0.65;
       velXRef.current *= 0.985;
       physXRef.current += velXRef.current;
+      const prevY = physYRef.current;
       physYRef.current += velYRef.current;
 
       if (physYRef.current < peakYRef.current) peakYRef.current = physYRef.current;
 
       const wallL = sidebarWRef.current;
       const wallR = window.innerWidth - FLING_W - 8;
+
+      // Goomba stomp: Mario bounces off creatures when falling (Mario skin only)
+      if (velYRef.current > 0 && skinIdRef.current === "mario") {
+        const liveGoombas = ((window as unknown as Record<string, unknown>).__ft_goombas as { x: number; topY: number }[] | undefined) ?? [];
+        for (const g of liveGoombas) {
+          const gFloor = g.topY - FLING_H;
+          if (Math.abs(physXRef.current - g.x) < 22 && prevY < gFloor && physYRef.current >= gFloor) {
+            physYRef.current = gFloor;
+            velYRef.current = -Math.abs(velYRef.current) * 0.5;
+            velXRef.current *= 0.7;
+            window.dispatchEvent(new CustomEvent("ft-bot-land", { detail: { x: physXRef.current } }));
+            break;
+          }
+        }
+      }
 
       if (physYRef.current >= floorTop) {
         physYRef.current = floorTop;
@@ -1002,8 +1018,8 @@ export function AiWanderer({ onOpen, summoned, locationKey, sidebarW, portfolioS
         setFacingLeft(false);
         phaseRef.current = "walking"; setPhase("walking");
       } else if (type === "pipe") {
-        // Use the right warp pipe (cw - 78), ensure it's within safe range
-        const pipeX = Math.max(window.innerWidth - 78, sw + 80);
+        const { xMin, xMax } = safeXRange(sw);
+        const pipeX = Math.floor(rand(xMin + 20, xMax - 20));
         xRef.current = pipeX; setX(pipeX);
         setFacingLeft(true); // faces left, walking into the screen after emerging
         phaseRef.current = "idle"; setPhase("idle");
@@ -1245,7 +1261,7 @@ export function AiWanderer({ onOpen, summoned, locationKey, sidebarW, portfolioS
           height: 83,
           zIndex: 9991,
           pointerEvents: "none",
-          background: "#5C94FC",
+          background: "transparent",
           transformOrigin: "bottom center",
           animation: "ix-pipe-overlay 1800ms linear both",
         }}>
