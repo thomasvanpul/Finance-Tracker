@@ -86,9 +86,17 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
   return (
     <svg width="36" height="66" viewBox="0 0 36 66" fill="none" overflow="visible">
       <>
-      {/* Pillow — rendered behind rotated character */}
-      {phase === "lying" && <ellipse cx="-3" cy="33" rx="18" ry="11" fill="#F8F5EE" stroke="#E0DAD0" strokeWidth="0.8"/>}
-      <g transform={phase === "lying" ? "rotate(-90, 18, 33)" : undefined}>
+      {phase === "lying" && (
+        <>
+          <rect x="-9" y="-6" width="10" height="54" rx="4.5" fill="#6b3a1f" stroke="#5c2f14" strokeWidth="1.2"/>
+          <rect x="-7" y="4" width="6" height="38" rx="1.5" fill="#7c4422"/>
+          <rect x="-6" y="14" width="4" height="26" rx="1.5" fill="#5c2f14"/>
+          <rect x="-1" y="11" width="101" height="52" rx="3" fill="#5c2f14" stroke="#4a2510" strokeWidth="1"/>
+          <rect x="0" y="15" width="99" height="48" rx="2" fill="#6b3a1f"/>
+          <ellipse cx="17" cy="23" rx="18" ry="11" fill="#F8F4EC" stroke="#E0D8CC" strokeWidth="0.8"/>
+          <ellipse cx="17" cy="23" rx="14" ry="8" fill="none" stroke="#E8E0D4" strokeWidth="0.4" strokeDasharray="2 1" opacity="0.6"/>
+        </>
+      )}
           {/* === HEAD === */}
           <ellipse cx="18" cy="6" rx="11" ry="7" fill={MH}/>
           <circle cx="18" cy="16" r="12" fill={MS}/>
@@ -233,19 +241,20 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
             <circle cx="-4" cy="30" r="1.5" fill={MY} opacity="0.5"/>
             <circle cx="-9" cy="28" r="1" fill={MY} opacity="0.3"/>
           </>}
-      </g>
-      {/* Blanket + ZZZs — rendered on top of rotated character, head peeks out left */}
       {phase === "lying" && (
         <>
-          <rect x="10" y="18" width="52" height="29" rx="3" fill={MO} stroke="#1040b0" strokeWidth="1"/>
-          <rect x="10" y="18" width="52" height="5" rx="3" fill="#3060e0" stroke="#5080ff" strokeWidth="0.7"/>
-          <path d="M12 21 Q20 22.5 27 21 Q35 19.5 43 21 Q51 22.5 58 21" stroke="#7ab4ff" strokeWidth="0.9" fill="none" opacity="0.7"/>
-          <ellipse cx="55" cy="22" rx="5" ry="4" fill="#0a2060"/>
-          <ellipse cx="55" cy="43" rx="5" ry="4" fill="#0a2060"/>
+          <rect x="-1" y="26" width="98" height="50" rx="3" fill={MC} stroke="#9b0a0a" strokeWidth="1"/>
+          <rect x="-1" y="26" width="98" height="6" rx="3" fill="#cc1414" stroke="#ff3030" strokeWidth="0.8"/>
+          <path d="M1 29 Q15 31 30 29 Q45 27 60 29 Q75 31 90 29 Q95 30 97 29" stroke="#ff5555" strokeWidth="0.8" fill="none" opacity="0.45"/>
+          <path d="M2 34 Q20 36 40 34 Q60 32 80 34 Q90 35 97 34" stroke="#9b0a0a" strokeWidth="0.6" fill="none" opacity="0.35"/>
+          <rect x="85" y="34" width="13" height="8" rx="4" fill={MB} stroke="#3D1800" strokeWidth="0.8"/>
+          <rect x="83" y="38" width="15" height="4" rx="2" fill={MB}/>
+          <rect x="85" y="46" width="13" height="8" rx="4" fill={MB} stroke="#3D1800" strokeWidth="0.8"/>
+          <rect x="83" y="50" width="15" height="4" rx="2" fill={MB}/>
           <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
-            <text x="-8" y="12" fontFamily="monospace" fontSize="9" fill="#CC2000" opacity="0.9">z</text>
-            <text x="-2" y="5" fontFamily="monospace" fontSize="7" fill="#CC2000" opacity="0.65">z</text>
-            <text x="4" y="-1" fontFamily="monospace" fontSize="5.5" fill="#CC2000" opacity="0.4">z</text>
+            <text x="28" y="-2" fontFamily="monospace" fontSize="9" fill="#CC2000" opacity="0.9">z</text>
+            <text x="35" y="-9" fontFamily="monospace" fontSize="7" fill="#CC2000" opacity="0.65">z</text>
+            <text x="41" y="-15" fontFamily="monospace" fontSize="5.5" fill="#CC2000" opacity="0.4">z</text>
           </g>
         </>
       )}
