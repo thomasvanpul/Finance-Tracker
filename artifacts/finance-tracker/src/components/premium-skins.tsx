@@ -262,9 +262,9 @@ export function GildedSprite({ phase, blinking, walking }: { phase: Phase; blink
           </>}
       {phase === "lying" && (
         <>
-          <rect x="-3" y="34" width="42" height="35" rx="3" fill="#0d0a00" stroke="#b8860b" strokeWidth="1.2"/>
-          <rect x="-3" y="34" width="42" height="6" rx="3" fill="#1a1200" stroke="#b8860b" strokeWidth="0.8"/>
-          <path d="M-3 37 Q5 38.5 10 37 Q18 35.5 23 37 Q31 38.5 39 37" stroke="#b8860b" strokeWidth="0.7" fill="none" opacity="0.6"/>
+          <rect x="-3" y="34" width="42" height="35" rx="3" fill="#0d0a00" stroke="#b8860b" strokeWidth="1.5"/>
+          <rect x="-3" y="34" width="42" height="6" rx="3" fill="#2a1a00" stroke="#fbbf24" strokeWidth="1"/>
+          <path d="M-3 37 Q5 38.5 10 37 Q18 35.5 23 37 Q31 38.5 39 37" stroke="#fbbf24" strokeWidth="1" fill="none" opacity="0.8"/>
           <path d="M3 45 L8 49 L3 53 L-2 49 Z" fill="none" stroke="#b8860b" strokeWidth="0.4" opacity="0.3"/>
           <path d="M28 45 L33 49 L28 53 L23 49 Z" fill="none" stroke="#b8860b" strokeWidth="0.4" opacity="0.3"/>
           <ellipse cx="11" cy="63" rx="5" ry="3.5" fill="#1a1200" stroke="#b8860b" strokeWidth="0.8"/>
@@ -553,9 +553,9 @@ export function BloodlineSprite({ phase, blinking, walking }: { phase: Phase; bl
           </>}
       {phase === "lying" && (
         <>
-          <rect x="-3" y="38" width="42" height="31" rx="3" fill="#0d0000" stroke="#7f1d1d" strokeWidth="1.2"/>
-          <rect x="-3" y="38" width="42" height="6" rx="3" fill="#150000" stroke="#991b1b" strokeWidth="0.8"/>
-          <path d="M-3 41 Q5 42.5 10 41 Q18 39.5 23 41 Q31 42.5 39 41" stroke="#ef4444" strokeWidth="0.6" fill="none" opacity="0.3"/>
+          <rect x="-3" y="38" width="42" height="31" rx="3" fill="#0d0000" stroke="#ef4444" strokeWidth="1.5"/>
+          <rect x="-3" y="38" width="42" height="6" rx="3" fill="#3d0000" stroke="#ef4444" strokeWidth="1"/>
+          <path d="M-3 41 Q5 42.5 10 41 Q18 39.5 23 41 Q31 42.5 39 41" stroke="#ef4444" strokeWidth="1" fill="none" opacity="0.7"/>
           <path d="M5 50 Q9 54 5 58 Q2 54 5 50 Z" fill="none" stroke="#7f1d1d" strokeWidth="0.5" opacity="0.6"/>
           <path d="M26 50 Q30 54 28 58 Q24 54 26 50 Z" fill="none" stroke="#7f1d1d" strokeWidth="0.5" opacity="0.6"/>
           <ellipse cx="11" cy="63" rx="5" ry="3.5" fill="#0d0000" stroke="#7f1d1d" strokeWidth="0.8"/>

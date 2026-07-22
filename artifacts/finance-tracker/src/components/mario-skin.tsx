@@ -233,9 +233,9 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
           </>}
       {phase === "lying" && (
         <>
-          <rect x="-2" y="27" width="40" height="43" rx="3" fill={MC} opacity="0.92"/>
-          <rect x="-2" y="27" width="40" height="5" rx="3" fill="#e03010" stroke="#cc2000" strokeWidth="0.7"/>
-          <path d="M-2 30 Q6 31.5 11 30 Q18 28.5 23 30 Q30 31.5 38 30" stroke="#aa1800" strokeWidth="0.8" fill="none" opacity="0.8"/>
+          <rect x="-2" y="27" width="40" height="43" rx="3" fill={MO} stroke="#1040b0" strokeWidth="1"/>
+          <rect x="-2" y="27" width="40" height="5" rx="3" fill="#3060e0" stroke="#5080ff" strokeWidth="0.7"/>
+          <path d="M-2 30 Q6 31.5 11 30 Q18 28.5 23 30 Q30 31.5 38 30" stroke="#7ab4ff" strokeWidth="0.9" fill="none" opacity="0.7"/>
           <ellipse cx="10" cy="64" rx="5" ry="3.5" fill={MB} stroke="#3a1800" strokeWidth="0.7"/>
           <ellipse cx="24" cy="64" rx="5" ry="3.5" fill={MB} stroke="#3a1800" strokeWidth="0.7"/>
           <ellipse cx="10" cy="62" rx="3" ry="1.2" fill="rgba(255,255,255,0.07)"/>
