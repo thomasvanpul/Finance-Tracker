@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListInvestments,
@@ -40,6 +41,7 @@ import {
 import { OrdersTab } from "@/components/investments/orders-tab";
 import { DerivativesTab } from "@/components/investments/derivatives-tab";
 import { ChartAnalysisModal } from "@/components/investments/chart-analysis-modal";
+import { StatDrillModal } from "@/components/investments/stat-drill-modal";
 import { FundamentalsTable, DividendTracker } from "@/components/investments/portfolio-tables";
 import { grahamNumber, dcfValue } from "@/components/investments/black-scholes";
 
@@ -445,6 +447,10 @@ function MarketsTab() {
   const searchRef = useRef<HTMLInputElement>(null);
   const [watchlists, setWatchlists] = useState<Watchlist[]>(() => readWatchlists());
   const [wlDropdownOpen, setWlDropdownOpen] = useState(false);
+  // Tooltip portal state
+  const [tipInfo, setTipInfo] = useState<{ label: string; text: string; x: number; y: number } | null>(null);
+  // Stat drill-down state
+  const [drillLabel, setDrillLabel] = useState<string | null>(null);
 
   const addTickerToWatchlist = (ticker: string, wlId: string) => {
     const updated = watchlists.map((w) =>
@@ -545,18 +551,31 @@ function MarketsTab() {
       "Target Low": "Most pessimistic 12-month price target. Represents the bear case scenario from analysts.",
     };
 
+    const hasDrill = (lbl: string) => STAT_INFO[lbl] != null;
+
     const StatCell = ({ label, value, color }: { label: string; value: string; color?: string }) => (
-      <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", position: "relative" }}>
+      <div
+        onClick={() => hasDrill(label) && setDrillLabel(label)}
+        style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", position: "relative", cursor: hasDrill(label) ? "pointer" : "default", transition: "background 0.1s" }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
           {STAT_INFO[label] && (
-            <div style={{ position: "relative", display: "inline-flex" }} className="stat-info-wrap">
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", cursor: "help", border: "1px solid var(--ft-border)", borderRadius: "50%", width: 12, height: 12, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 }}>i</span>
-              <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", zIndex: 200, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: "8px 10px", width: 220, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5, boxShadow: "0 4px 16px rgba(0,0,0,0.5)", pointerEvents: "none", display: "none" }} className="stat-info-tip">
-                <div style={{ fontWeight: 700, color: "var(--ft-text)", marginBottom: 4, fontSize: 9 }}>{label}</div>
-                {STAT_INFO[label]}
-              </div>
-            </div>
+            <span
+              onMouseEnter={(e) => {
+                e.stopPropagation();
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                setTipInfo({ label, text: STAT_INFO[label], x: rect.left + rect.width / 2, y: rect.top });
+              }}
+              onMouseLeave={() => setTipInfo(null)}
+              onClick={(e) => e.stopPropagation()}
+              style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", cursor: "help", border: "1px solid var(--ft-border)", borderRadius: "50%", width: 12, height: 12, display: "inline-flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 }}
+            >i</span>
+          )}
+          {hasDrill(label) && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", marginLeft: "auto", opacity: 0.5, letterSpacing: "0.04em" }}>↗</span>
           )}
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: color ?? "var(--ft-text)" }}>{value}</div>
@@ -564,6 +583,54 @@ function MarketsTab() {
     );
 
     return (
+      <>
+      {/* ── Portal tooltip — renders over sidebar via document.body ── */}
+      {tipInfo && createPortal(
+        <div style={{ position: "fixed", left: tipInfo.x, top: tipInfo.y - 8, transform: "translate(-50%, -100%)", zIndex: 9999, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: "8px 10px", width: 240, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5, boxShadow: "0 4px 20px rgba(0,0,0,0.7)", pointerEvents: "none" }}>
+          <div style={{ fontWeight: 700, color: "var(--ft-text)", marginBottom: 4, fontSize: 9 }}>{tipInfo.label}</div>
+          {tipInfo.text}
+        </div>,
+        document.body,
+      )}
+
+      {/* ── Stat drill-down modal ─────────────────────────────────────────── */}
+      {drillLabel && (
+        <StatDrillModal
+          label={drillLabel}
+          value={(() => {
+            const q = selectedQuote;
+            const d = detail;
+            const map: Record<string, string> = {
+              "P/E (TTM)": q?.pe != null ? `${q.pe.toFixed(1)}×` : "—",
+              "Forward P/E": q?.forwardPe != null ? `${q.forwardPe.toFixed(1)}×` : "—",
+              "EPS (TTM)": q?.eps != null ? `$${q.eps.toFixed(2)}` : "—",
+              "Fwd EPS": d?.forwardEps != null ? `$${d.forwardEps.toFixed(2)}` : "—",
+              "Beta": q?.beta != null ? q.beta.toFixed(2) : "—",
+              "Gross Margin": d?.grossMargins != null ? `${d.grossMargins.toFixed(1)}%` : "—",
+              "Operating Margin": d?.operatingMargins != null ? `${d.operatingMargins.toFixed(1)}%` : "—",
+              "Net Margin": d?.netMargins != null ? `${d.netMargins.toFixed(1)}%` : "—",
+              "ROE": d?.returnOnEquity != null ? `${d.returnOnEquity.toFixed(1)}%` : "—",
+              "ROA": d?.returnOnAssets != null ? `${d.returnOnAssets.toFixed(1)}%` : "—",
+              "PEG Ratio": d?.pegRatio != null ? d.pegRatio.toFixed(2) : "—",
+              "P/Sales": d?.priceToSales != null ? `${d.priceToSales.toFixed(2)}×` : "—",
+              "P/Book": d?.priceToBook != null ? `${d.priceToBook.toFixed(2)}×` : "—",
+              "Div Yield": q?.dividendYield != null ? `${q.dividendYield.toFixed(2)}%` : "—",
+              "Debt / Equity": d?.debtToEquity != null ? `${d.debtToEquity.toFixed(2)}x` : "—",
+              "Current Ratio": d?.currentRatio != null ? d.currentRatio.toFixed(2) : "—",
+              "Quick Ratio": d?.quickRatio != null ? d.quickRatio.toFixed(2) : "—",
+              "Short Float": d?.shortPercentFloat != null ? `${d.shortPercentFloat.toFixed(1)}%` : "—",
+              "Short Ratio": d?.shortRatio != null ? `${d.shortRatio.toFixed(1)}d` : "—",
+              "Institutional": d?.institutionalOwnership != null ? `${d.institutionalOwnership.toFixed(1)}%` : "—",
+            };
+            return map[drillLabel] ?? "—";
+          })()}
+          info={STAT_INFO[drillLabel] ?? ""}
+          earningsHistory={detail?.earningsHistory}
+          recTrend={detail?.recommendationTrend}
+          onClose={() => setDrillLabel(null)}
+        />
+      )}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
         {/* Back + search + watchlist */}
@@ -887,6 +954,7 @@ function MarketsTab() {
         )}
 
       </div>
+      </>
     );
   }
 
