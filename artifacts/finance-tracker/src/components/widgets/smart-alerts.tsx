@@ -1,11 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { useGetDashboard, useListTransactions, useListUpcoming, useListDebts } from "@workspace/api-client-react";
+import { useGetDashboard, useListTransactions, useListUpcoming, useListDebts, useListGoals, useListBudgets } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
-
-interface Budget {
-  category: string;
-  limit: number;
-}
 
 interface Alert {
   id: string;
@@ -27,14 +22,6 @@ const LEVEL_LABEL: Record<Alert["level"], string> = {
   critical: "CRIT",
   success: "OK",
 };
-
-function loadBudgets(): Budget[] {
-  try {
-    const raw = localStorage.getItem("ft-budgets");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
 
 function loadDismissed(): string[] {
   try {
@@ -61,8 +48,18 @@ function getLast7DaysFrom(): string {
   return d.toISOString().slice(0, 10);
 }
 
+function loadAlertRules() {
+  const defaults = { largeTxThreshold: 500, budgetWarningPct: 80 };
+  try {
+    const raw = localStorage.getItem("nr-alert-rules");
+    if (!raw) return defaults;
+    return { ...defaults, ...JSON.parse(raw) };
+  } catch { return defaults; }
+}
+
 export function SmartAlertsWidget() {
   const [dismissed, setDismissed] = useState<string[]>(() => loadDismissed());
+  const alertRules = useMemo(() => loadAlertRules(), []);
 
   const dateFrom = useMemo(() => getMonthDateFrom(), []);
   const sevenDaysAgo = useMemo(() => getLast7DaysFrom(), []);
@@ -72,11 +69,12 @@ export function SmartAlertsWidget() {
   const { data: recentTxs } = useListTransactions({ dateFrom: sevenDaysAgo });
   const { data: upcoming } = useListUpcoming();
   const { data: debts } = useListDebts();
+  const { data: goals = [] } = useListGoals();
+  const { data: budgets = [] } = useListBudgets();
 
   const alerts = useMemo<Alert[]>(() => {
     const result: Alert[] = [];
 
-    const budgets = loadBudgets();
     if (budgets.length > 0 && monthTxs) {
       const spent: Record<string, number> = {};
       for (const tx of monthTxs) {
@@ -86,20 +84,20 @@ export function SmartAlertsWidget() {
       for (const budget of budgets) {
         const key = budget.category.toLowerCase();
         const total = spent[key] ?? 0;
-        const pct = total / budget.limit;
+        const pct = total / budget.monthlyLimit;
         if (pct >= 1) {
           result.push({
             id: `budget-critical-${key}`,
             level: "critical",
             title: `${budget.category} budget exceeded`,
-            detail: `${formatGbp(total)} spent of ${formatGbp(budget.limit)} limit (${Math.round(pct * 100)}%)`,
+            detail: `${formatGbp(total)} spent of ${formatGbp(budget.monthlyLimit)} limit (${Math.round(pct * 100)}%)`,
           });
-        } else if (pct >= 0.8) {
+        } else if (pct >= alertRules.budgetWarningPct / 100) {
           result.push({
             id: `budget-warn-${key}`,
             level: "warn",
             title: `${budget.category} budget at ${Math.round(pct * 100)}%`,
-            detail: `${formatGbp(total)} of ${formatGbp(budget.limit)} used`,
+            detail: `${formatGbp(total)} of ${formatGbp(budget.monthlyLimit)} used`,
           });
         }
       }
@@ -107,7 +105,7 @@ export function SmartAlertsWidget() {
 
     if (recentTxs) {
       for (const tx of recentTxs) {
-        if (tx.gbpValue > 500) {
+        if (tx.gbpValue > alertRules.largeTxThreshold) {
           result.push({
             id: `large-tx-${tx.id}`,
             level: "info",
@@ -153,22 +151,18 @@ export function SmartAlertsWidget() {
       }
     }
 
-    try {
-      const rawGoals = localStorage.getItem("ft-savings-goals");
-      if (rawGoals) {
-        const goals = JSON.parse(rawGoals) as Array<{ id: string; name: string; target: number; current: number }>;
-        for (const g of goals) {
-          if (g.current >= g.target) {
-            result.push({
-              id: `goal-achieved-${g.id}`,
-              level: "success",
-              title: `Goal achieved: ${g.name}`,
-              detail: `${formatGbp(g.current)} saved — target of ${formatGbp(g.target)} reached 🎉`,
-            });
-          }
-        }
+    for (const g of goals) {
+      const current = parseFloat(String(g.current));
+      const target = parseFloat(String(g.target));
+      if (current >= target) {
+        result.push({
+          id: `goal-achieved-${g.id}`,
+          level: "success",
+          title: `Goal achieved: ${g.name}`,
+          detail: `${formatGbp(current)} saved — target of ${formatGbp(target)} reached 🎉`,
+        });
       }
-    } catch {}
+    }
 
     const savingsRate = (dashboard as { thisMonth?: { savingsRate?: number } } | undefined)
       ?.thisMonth?.savingsRate;
@@ -182,7 +176,7 @@ export function SmartAlertsWidget() {
     }
 
     return result;
-  }, [dashboard, monthTxs, recentTxs, upcoming, debts]);
+  }, [dashboard, monthTxs, recentTxs, upcoming, debts, goals, budgets, alertRules]);
 
   const visible = useMemo(
     () => alerts.filter((a) => !dismissed.includes(a.id)),

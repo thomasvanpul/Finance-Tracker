@@ -1,9 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { getAiStyle, setAiStylePref, type AiStyle } from "@/components/ai-agent";
 import { loadCatRules, saveCatRules, type CatRule } from "@/lib/auto-cat";
+import { loadSidebarConfig, saveSidebarConfig } from "@/lib/sidebar-config";
 import {
   useGetSettingsCurrency,
   useUpdateSettingsCurrency,
+  useGetWiseStatus,
+  useSyncWiseTransactions,
+  useListAccounts,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -22,6 +26,9 @@ import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
 import { useWidgets, WIDGET_REGISTRY } from "@/contexts/widgets-context";
 import { THEME_REWARDS, ThemeRewardsPanel, getLearnXP } from "@/components/investments/learn-tab";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId } from "@/lib/bot-skins";
+import { BotPreview, type Phase } from "@/components/ai-wanderer";
+
+const WARDROBE_PHASES: Phase[] = ["idle", "sitting", "coffee", "thinking", "dancing", "complaining", "tired", "jumping", "lying"];
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 const ALERT_RULES_KEY = "ft-alert-rules";
@@ -32,10 +39,11 @@ type Density = "compact" | "normal" | "comfortable";
 
 type NavItem =
   | "appearance" | "animations" | "display"
-  | "security" | "privacy"
-  | "currency" | "alerts" | "rules" | "dashboard"
+  | "security" | "privacy" | "profile"
+  | "currency" | "alerts" | "rules" | "dashboard" | "tx-defaults"
   | "widgets" | "data" | "advanced"
-  | "shortcuts" | "ai";
+  | "shortcuts" | "ai"
+  | "wise" | "crypto-wallets";
 
 interface AlertRules {
   largeTxThreshold: number;
@@ -90,6 +98,30 @@ const SHORTCUTS = [
   ["Tab","Cycle panels"],
 ];
 
+const ALL_NAV_ITEMS_FOR_SETTINGS = [
+  { href: "/",              label: "Dashboard",    section: "CORE" },
+  { href: "/accounts",      label: "Accounts",     section: "CORE" },
+  { href: "/transactions",  label: "Transactions", section: "CORE" },
+  { href: "/investments",   label: "Portfolio",    section: "INVEST" },
+  { href: "/net-worth",     label: "Net Worth",    section: "INVEST" },
+  { href: "/budget",        label: "Budget",       section: "PLAN" },
+  { href: "/goals",         label: "Goals",        section: "PLAN" },
+  { href: "/analytics",     label: "Analytics",    section: "INSIGHTS" },
+  { href: "/ai-coach",      label: "AI Coach",     section: "INSIGHTS" },
+  { href: "/owing",         label: "Debts",        section: "PLAN" },
+  { href: "/subscriptions", label: "Subscriptions",section: "PLAN" },
+  { href: "/calendar",      label: "Calendar",     section: "PLAN" },
+  { href: "/tax",           label: "Tax",          section: "INVEST" },
+  { href: "/health-score",  label: "Health Score", section: "INSIGHTS" },
+  { href: "/cashflow",      label: "Cash Flow",    section: "INSIGHTS" },
+  { href: "/year-review",   label: "Year Review",  section: "INSIGHTS" },
+  { href: "/reports",       label: "Reports",      section: "INSIGHTS" },
+  { href: "/recurring",     label: "Recurring",    section: "TOOLS" },
+  { href: "/whatif",        label: "Calculators",  section: "TOOLS" },
+  { href: "/import",        label: "Import",       section: "TOOLS" },
+  { href: "/learn",         label: "Learn",        section: "TOOLS" },
+];
+
 const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] = [
   {
     label: "Personalise",
@@ -102,6 +134,7 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
   {
     label: "Account",
     items: [
+      { id: "profile",  label: "Profile" },
       { id: "security", label: "Security" },
       { id: "privacy",  label: "Privacy" },
     ],
@@ -109,10 +142,11 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
   {
     label: "Finance",
     items: [
-      { id: "currency",  label: "Currency" },
-      { id: "alerts",    label: "Alerts" },
-      { id: "rules",     label: "Categories" },
-      { id: "dashboard", label: "Dashboard" },
+      { id: "currency",    label: "Currency" },
+      { id: "alerts",      label: "Alerts" },
+      { id: "rules",       label: "Categories" },
+      { id: "tx-defaults", label: "Tx Defaults" },
+      { id: "dashboard",   label: "Dashboard" },
     ],
   },
   {
@@ -121,6 +155,13 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
       { id: "widgets",  label: "Widgets" },
       { id: "data",     label: "Export & Backup" },
       { id: "advanced", label: "Advanced" },
+    ],
+  },
+  {
+    label: "Integrations",
+    items: [
+      { id: "wise", label: "Wise" },
+      { id: "crypto-wallets", label: "Crypto Wallets" },
     ],
   },
   {
@@ -268,9 +309,200 @@ function ActionBtn({ label, variant = "accent", onClick, disabled }: { label: st
   );
 }
 
+// ── Savings Rate Target ───────────────────────────────────────────────────────
+const SAVINGS_TARGET_KEY = "ft-savings-target";
+const SAVINGS_TARGET_DEFAULT = 20;
+
+function loadSavingsTarget(): number {
+  try {
+    const raw = localStorage.getItem(SAVINGS_TARGET_KEY);
+    if (raw === null) return SAVINGS_TARGET_DEFAULT;
+    const parsed = parseInt(raw, 10);
+    return isNaN(parsed) ? SAVINGS_TARGET_DEFAULT : Math.max(0, Math.min(100, parsed));
+  } catch { return SAVINGS_TARGET_DEFAULT; }
+}
+
+function SavingsRateTargetInput() {
+  const [value, setValue] = useState<number>(() => loadSavingsTarget());
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = Math.max(0, Math.min(100, Number(e.target.value)));
+    setValue(v);
+    try { localStorage.setItem(SAVINGS_TARGET_KEY, String(v)); } catch { /* ignore */ }
+  };
+
+  return (
+    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          type="number"
+          min={0}
+          max={100}
+          step={1}
+          value={value}
+          onChange={handleChange}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border2)",
+            color: "var(--ft-text)",
+            padding: "5px 10px",
+            width: 80,
+            outline: "none",
+          }}
+        />
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>%</span>
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+        Saved automatically · used on the dashboard KPI
+      </div>
+    </div>
+  );
+}
+
 function useIsDevUser() {
   const { data: session } = authClient.useSession();
   return session?.user?.email === "dev@bypass.local";
+}
+
+// ── Profile panel ─────────────────────────────────────────────────────────────
+function ProfilePanel() {
+  const { data: session } = authClient.useSession();
+  const { toast } = useToast();
+  const [nameEditing, setNameEditing] = useState(false);
+  const [nameVal, setNameVal] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+
+  const user = session?.user;
+
+  const startEdit = () => { setNameVal(user?.name ?? ""); setNameEditing(true); };
+
+  const handleSaveName = async () => {
+    if (!nameVal.trim()) return;
+    setNameSaving(true);
+    try {
+      await authClient.updateUser({ name: nameVal.trim() });
+      setNameEditing(false);
+      toast({ title: "Display name updated" });
+    } catch (err) {
+      toast({ title: "Could not update name", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
+    } finally {
+      setNameSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Profile</div>
+        <div style={{ padding: "16px", background: "var(--ft-surface)", display: "flex", gap: 16, alignItems: "flex-start" }}>
+          <div style={{ width: 52, height: 52, background: "var(--ft-accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-base)", lineHeight: 1 }}>
+              {((user?.name || user?.email || "U").charAt(0)).toUpperCase()}
+            </span>
+          </div>
+          <div style={{ flex: 1 }}>
+            {!nameEditing ? (
+              <>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)", marginBottom: 4 }}>
+                  {user?.name || <span style={{ color: "var(--ft-dim)", fontStyle: "italic" }}>No display name</span>}
+                </div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 10 }}>{user?.email}</div>
+                <ActionBtn label="Edit Name" variant="muted" onClick={startEdit} />
+              </>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <input
+                  type="text" autoFocus value={nameVal}
+                  onChange={e => setNameVal(e.target.value)}
+                  placeholder="Display name"
+                  onKeyDown={e => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setNameEditing(false); }}
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 12, background: "var(--ft-raised)", border: "1px solid var(--ft-accent)", color: "var(--ft-text)", padding: "6px 10px", outline: "none" }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={handleSaveName} disabled={nameSaving || !nameVal.trim()} style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "5px 14px", cursor: "pointer", opacity: (nameSaving || !nameVal.trim()) ? 0.5 : 1 }}>
+                    {nameSaving ? "Saving…" : "Save"}
+                  </button>
+                  <button onClick={() => setNameEditing(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "5px 12px", cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Account Details</div>
+        {([
+          ["Email", user?.email ?? "—"],
+          ["User ID", user?.id ? `…${String(user.id).slice(-8)}` : "—"],
+          ["Created", user?.createdAt ? new Date(String(user.createdAt)).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" }) : "—"],
+        ] as [string, string][]).map(([label, val]) => (
+          <div key={label} style={ROW}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{label}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{val}</span>
+          </div>
+        ))}
+      </div>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Session</div>
+        <div style={{ ...ROW, flexDirection: "column", alignItems: "flex-start", gap: 10 }}>
+          <RowLabel title="Sign out" sub="Ends your current session on this device" />
+          <ActionBtn label="Sign Out" variant="danger" onClick={async () => { await authClient.signOut(); window.location.href = "/"; }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Transaction defaults panel ────────────────────────────────────────────────
+function TransactionDefaultsPanel() {
+  const [defType, setDefType] = useState(() => ls("nr-tx-default-type", "expense"));
+  const [defCurrency, setDefCurrency] = useState(() => ls("nr-tx-default-currency", "GBP"));
+  const [defCategory, setDefCategory] = useState(() => ls("nr-tx-default-category", ""));
+
+  const customCats = useMemo(() => {
+    try { return JSON.parse(localStorage.getItem("nr-custom-categories") ?? "[]") as string[]; } catch { return []; }
+  }, []);
+  const allCats = useMemo(() => [...new Set([...CATEGORIES, ...customCats])].sort(), [customCats]);
+
+  const setType = (v: string) => { setDefType(v); lsSet("nr-tx-default-type", v); };
+  const setCur = (v: string) => { setDefCurrency(v); lsSet("nr-tx-default-currency", v); };
+  const setCat = (v: string) => { setDefCategory(v); lsSet("nr-tx-default-category", v); };
+
+  return (
+    <div style={PANEL_STYLE}>
+      <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Transaction Defaults</div>
+      <div style={ROW}>
+        <RowLabel title="Default type" sub='Pre-selects the transaction type in Quick Add (N)' />
+        <div style={{ display: "flex", gap: 4 }}>
+          {(["expense","income","transfer"] as const).map(t => (
+            <button key={t} onClick={() => setType(t)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "4px 10px", background: defType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${defType === t ? "var(--ft-accent)" : "var(--ft-border)"}`, color: defType === t ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer", transition: "background 0.1s" }}>
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={ROW}>
+        <RowLabel title="Default currency" sub="Pre-selects the currency in Quick Add" />
+        <select value={defCurrency} onChange={e => setCur(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
+          {SUPPORTED_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      <div style={ROW}>
+        <RowLabel title="Default category" sub='Pre-fills the category field (leave blank to skip)' />
+        <select value={defCategory} onChange={e => setCat(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
+          <option value="">— none —</option>
+          {allCats.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+        Defaults apply when you press <kbd style={{ color: "var(--ft-accent)", border: "1px solid var(--ft-border)", padding: "0px 4px" }}>N</kbd> to quick-add a transaction.
+      </div>
+    </div>
+  );
 }
 
 // ── Sub-panels ────────────────────────────────────────────────────────────────
@@ -282,11 +514,14 @@ const RARITY_COLOR: Record<string, string> = {
   LEGENDARY: "var(--ft-amber)",
 };
 
+const ACCENT_PRESETS = ["#F4A21E","#00FF41","#FF007A","#4D9FFF","#C8941E","#CC1A2F","#7FFF00","#7B5EA7","#56D364","#F8C800","#FF6B6B","#00BCD4"];
+
 function AppearancePanel({ theme, setTheme, density, setDensity }: {
   theme: FintrackTheme; setTheme: (t: FintrackTheme) => void;
   density: Density; setDensity: (d: Density) => void;
 }) {
   const [hoveredTheme, setHoveredTheme] = useState<FintrackTheme | null>(null);
+  const [accentOverride, setAccentOverride] = useState(() => ls("nr-accent-override", ""));
   const isDevUser = useIsDevUser();
   const learnXP = isDevUser ? Infinity : getLearnXP();
   const previewId = hoveredTheme ?? theme;
@@ -396,27 +631,6 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
         </div>
       </div>
 
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => { window.location.href = "/wardrobe"; }}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") window.location.href = "/wardrobe"; }}
-        style={{ ...PANEL_STYLE, cursor: "pointer" }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ft-accent)"; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ft-border)"; }}
-      >
-        <div style={{ ...HEADER_STYLE, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span><span style={{ color: "var(--ft-accent)" }}>·</span> Bot Wardrobe</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>G·Z →</span>
-        </div>
-        <div style={{ padding: "10px 16px", background: "var(--ft-surface)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>
-            Preview &amp; equip bot skins — common, epic, and legendary
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)" }}>→</span>
-        </div>
-      </div>
-
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Display Density</div>
         <div style={{ background: "var(--ft-surface)", padding: "12px 16px", display: "flex", gap: 8 }}>
@@ -429,6 +643,50 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Custom accent override */}
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Custom Accent Colour</div>
+        <div style={{ padding: "14px 16px", background: "var(--ft-surface)" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 12, lineHeight: 1.6 }}>
+            Override the accent colour for any theme. Persists across sessions.
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14 }}>
+            <input
+              type="color"
+              value={accentOverride || "#F4A21E"}
+              onChange={e => {
+                const c = e.target.value;
+                setAccentOverride(c);
+                lsSet("nr-accent-override", c);
+                document.documentElement.style.setProperty("--ft-accent", c);
+              }}
+              style={{ width: 36, height: 28, padding: 2, border: "1px solid var(--ft-border2)", background: "var(--ft-raised)", cursor: "pointer" }}
+            />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: accentOverride ? "var(--ft-text)" : "var(--ft-dim)" }}>
+              {accentOverride || "Theme default"}
+            </span>
+            {accentOverride && (
+              <button onClick={() => {
+                setAccentOverride("");
+                localStorage.removeItem("nr-accent-override");
+                document.documentElement.style.removeProperty("--ft-accent");
+              }} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "1px solid var(--ft-border)", padding: "3px 10px", cursor: "pointer" }}>
+                Reset
+              </button>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {ACCENT_PRESETS.map(c => (
+              <button key={c} onClick={() => {
+                setAccentOverride(c);
+                lsSet("nr-accent-override", c);
+                document.documentElement.style.setProperty("--ft-accent", c);
+              }} aria-label={c} style={{ width: 24, height: 24, background: c, border: accentOverride === c ? "2px solid var(--ft-text)" : "1px solid var(--ft-border)", cursor: "pointer", padding: 0, flexShrink: 0 }} />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -502,8 +760,10 @@ function DisplayPanel() {
   const [numFormat, setNumFormat] = useState(() => ls("nr-number-format", "1,234.56"));
   const [weekStart, setWeekStart] = useState(() => ls("nr-week-start", "mon"));
   const [fontScale, setFontScale] = useState(() => parseInt(ls("nr-font-scale", "100"), 10));
+  const [timeFormat, setTimeFormat] = useState(() => ls("nr-time-format", "24h"));
+  const [compactNums, setCompactNums] = useState(() => lsBool("nr-compact-numbers", false));
+  const [showCents, setShowCents] = useState(() => lsBool("nr-show-cents", true));
 
-  const now = new Date(2026, 6, 18);
   const datePreviewMap: Record<string, string> = {
     "DD/MM/YYYY": "18/07/2026",
     "MM/DD/YYYY": "07/18/2026",
@@ -524,50 +784,83 @@ function DisplayPanel() {
     lsSet("nr-font-scale", String(v));
     document.documentElement.style.setProperty("--nr-font-scale", v + "%");
   };
-
-  void now;
+  const setTime = (v: string) => { setTimeFormat(v); lsSet("nr-time-format", v); };
+  const setCompact = (v: boolean) => { setCompactNums(v); lsSet("nr-compact-numbers", String(v)); };
+  const setCents = (v: boolean) => { setShowCents(v); lsSet("nr-show-cents", String(v)); };
 
   return (
-    <div style={PANEL_STYLE}>
-      <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Display</div>
-      <SectionHeader label="Date format" />
-      {(["DD/MM/YYYY","MM/DD/YYYY","YYYY-MM-DD","D MMM YYYY"] as const).map(fmt => (
-        <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <input type="radio" name="date-format" checked={dateFormat === fmt} onChange={() => setDate(fmt)} style={{ accentColor: "var(--ft-accent)" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>{fmt}</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Date &amp; Time</div>
+        <SectionHeader label="Date format" />
+        {(["DD/MM/YYYY","MM/DD/YYYY","YYYY-MM-DD","D MMM YYYY"] as const).map(fmt => (
+          <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <input type="radio" name="date-format" checked={dateFormat === fmt} onChange={() => setDate(fmt)} style={{ accentColor: "var(--ft-accent)" }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>{fmt}</span>
+            </div>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{datePreviewMap[fmt]}</span>
+          </label>
+        ))}
+        <SectionHeader label="Time format" />
+        <div style={ROW}>
+          <RowLabel title="Clock display" sub="Affects timestamps throughout the app" />
+          <div style={{ display: "flex", gap: 6 }}>
+            {[["24h","24h"],["12h","12h (AM/PM)"]].map(([val, lbl]) => (
+              <button key={val} onClick={() => setTime(val)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 12px", background: timeFormat === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${timeFormat === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: timeFormat === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
+            ))}
           </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{datePreviewMap[fmt]}</span>
-        </label>
-      ))}
-      <SectionHeader label="Number format" />
-      {(["1,234.56","1.234,56","1 234.56"] as const).map(fmt => (
-        <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <input type="radio" name="num-format" checked={numFormat === fmt} onChange={() => setNum(fmt)} style={{ accentColor: "var(--ft-accent)" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>{fmt}</span>
+        </div>
+        <SectionHeader label="Calendar" />
+        <div style={ROW}>
+          <RowLabel title="First day of week" sub="Affects calendar and weekly views" />
+          <div style={{ display: "flex", gap: 6 }}>
+            {[["mon","Mon"],["sun","Sun"]].map(([val, lbl]) => (
+              <button key={val} onClick={() => setWeek(val)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 12px", background: weekStart === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${weekStart === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: weekStart === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
+            ))}
           </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{numPreviewMap[fmt]}</span>
-        </label>
-      ))}
-      <SectionHeader label="Calendar" />
-      <div style={ROW}>
-        <RowLabel title="First day of week" sub="Affects calendar and weekly views" />
-        <div style={{ display: "flex", gap: 6 }}>
-          {[["mon","Mon"],["sun","Sun"]].map(([val, lbl]) => (
-            <button key={val} onClick={() => setWeek(val)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 12px", background: weekStart === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${weekStart === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: weekStart === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
-          ))}
         </div>
       </div>
-      <SectionHeader label="Font scale" />
-      <div style={{ padding: "12px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 28 }}>85%</span>
-          <input type="range" min={85} max={115} value={fontScale} onChange={e => setScale(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 32 }}>115%</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 36, textAlign: "right" }}>{fontScale}%</span>
+
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Numbers &amp; Currency</div>
+        <SectionHeader label="Number format" />
+        {(["1,234.56","1.234,56","1 234.56"] as const).map(fmt => (
+          <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <input type="radio" name="num-format" checked={numFormat === fmt} onChange={() => setNum(fmt)} style={{ accentColor: "var(--ft-accent)" }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>{fmt}</span>
+            </div>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{numPreviewMap[fmt]}</span>
+          </label>
+        ))}
+        <div style={ROW}>
+          <RowLabel title="Compact large numbers" sub='Show £1.2K and £3.4M instead of full values' />
+          <Toggle on={compactNums} onChange={setCompact} />
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>Scales all app text. Larger = more readable, smaller = denser layout.</div>
+        <div style={ROW}>
+          <RowLabel title="Show pence / cents" sub='Display £12.50 instead of £12' />
+          <Toggle on={showCents} onChange={setCents} />
+        </div>
+        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+          Preview: <span style={{ color: "var(--ft-text)" }}>
+            {compactNums ? "£1.2K" : showCents ? "£1,234.56" : "£1,234"}
+          </span>
+        </div>
+      </div>
+
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Typography</div>
+        <SectionHeader label="Font scale" />
+        <div style={{ padding: "12px 14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 28 }}>85%</span>
+            <input type="range" min={85} max={115} value={fontScale} onChange={e => setScale(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 32 }}>115%</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 36, textAlign: "right" }}>{fontScale}%</span>
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>Scales all app text. Larger = more readable, smaller = denser layout.</div>
+        </div>
       </div>
     </div>
   );
@@ -577,35 +870,64 @@ function PrivacyPanel() {
   const [blurAmounts, setBlurAmounts] = useState(() => lsBool("nr-blur-amounts", false));
   const [autoBlurDelay, setAutoBlurDelay] = useState(() => parseInt(ls("nr-auto-blur-delay", "10"), 10));
   const [maskMode, setMaskMode] = useState(() => ls("nr-mask-mode", "none"));
+  const [hideFromPrint, setHideFromPrint] = useState(() => lsBool("nr-hide-from-print", false));
 
-  const setBlur = (v: boolean) => { setBlurAmounts(v); lsSet("nr-blur-amounts", String(v)); };
-  const setDelay = (v: number) => { setAutoBlurDelay(v); lsSet("nr-auto-blur-delay", String(v)); };
-  const setMask = (v: string) => { setMaskMode(v); lsSet("nr-mask-mode", v); };
+  const notify = () => window.dispatchEvent(new CustomEvent("nr-privacy-update"));
+
+  const setBlur = (v: boolean) => { setBlurAmounts(v); lsSet("nr-blur-amounts", String(v)); notify(); };
+  const setDelay = (v: number) => { setAutoBlurDelay(v); lsSet("nr-auto-blur-delay", String(v)); notify(); };
+  const setMask = (v: string) => { setMaskMode(v); lsSet("nr-mask-mode", v); notify(); };
+  const setPrint = (v: boolean) => {
+    setHideFromPrint(v);
+    lsSet("nr-hide-from-print", String(v));
+    if (v) {
+      if (!document.getElementById("nr-print-style")) {
+        const el = document.createElement("style");
+        el.id = "nr-print-style";
+        el.textContent = "@media print { .pnum, .pdesc { filter: blur(8px) !important; } }";
+        document.head.appendChild(el);
+      }
+    } else {
+      document.getElementById("nr-print-style")?.remove();
+    }
+  };
 
   return (
-    <div style={PANEL_STYLE}>
-      <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Privacy</div>
-      <div style={ROW}>
-        <RowLabel title="Blur sensitive amounts" sub='Amounts show as "£ ••••" until hovered. Useful in public places.' />
-        <Toggle on={blurAmounts} onChange={setBlur} />
-      </div>
-      {blurAmounts && (
-        <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 8 }}>Auto-blur delay: <span style={{ color: "var(--ft-accent)" }}>{autoBlurDelay === 0 ? "Immediate" : `${autoBlurDelay}s`}</span></div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>0s</span>
-            <input type="range" min={0} max={30} value={autoBlurDelay} onChange={e => setDelay(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>30s</span>
-          </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Amount Privacy</div>
+        <div style={ROW}>
+          <RowLabel title="Blur sensitive amounts" sub='Amounts show as "£ ••••" until hovered. Useful in public places.' />
+          <Toggle on={blurAmounts} onChange={setBlur} />
         </div>
-      )}
-      <div style={ROW}>
-        <RowLabel title="Data masking mode" sub="Controls how transaction details are masked" />
-        <select value={maskMode} onChange={e => setMask(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
-          <option value="none">None</option>
-          <option value="partial">Partial (last 4 digits)</option>
-          <option value="full">Full blur</option>
-        </select>
+        {blurAmounts && (
+          <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 8 }}>Auto-blur delay after hover: <span style={{ color: "var(--ft-accent)" }}>{autoBlurDelay === 0 ? "Immediate" : `${autoBlurDelay}s`}</span></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>0s</span>
+              <input type="range" min={0} max={30} value={autoBlurDelay} onChange={e => setDelay(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>30s</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Data Masking</div>
+        <div style={ROW}>
+          <RowLabel title="Transaction description masking" sub="Controls how merchant names and descriptions appear" />
+          <select value={maskMode} onChange={e => setMask(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
+            <option value="none">None — show full text</option>
+            <option value="partial">Partial — show last 4 chars</option>
+            <option value="full">Full blur — hover to reveal</option>
+          </select>
+        </div>
+        <div style={ROW}>
+          <RowLabel title="Hide amounts when printing" sub="Blurs all financial figures in print / PDF export" />
+          <Toggle on={hideFromPrint} onChange={setPrint} />
+        </div>
+        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+          All privacy settings apply instantly across the app.
+        </div>
       </div>
     </div>
   );
@@ -615,33 +937,125 @@ function DashboardPanel() {
   const [defaultPage, setDefaultPage] = useState(() => ls("nr-default-page", "/"));
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => lsBool("nr-sidebar-collapsed-default", false));
   const [showNwStrip, setShowNwStrip] = useState(() => lsBool("nr-show-nw-strip", true));
+  const [navConfig, setNavConfig] = useState(() => loadSidebarConfig(ALL_NAV_ITEMS_FOR_SETTINGS));
 
   const setPage = (v: string) => { setDefaultPage(v); lsSet("nr-default-page", v); };
   const setSidebar = (v: boolean) => { setSidebarCollapsed(v); lsSet("nr-sidebar-collapsed-default", String(v)); };
   const setNwStrip = (v: boolean) => { setShowNwStrip(v); lsSet("nr-show-nw-strip", String(v)); };
 
+  const toggleNavItem = (href: string, visible: boolean) => {
+    const next = { ...navConfig, items: navConfig.items.map(item => item.href === href ? { ...item, visible } : item) };
+    setNavConfig(next);
+    saveSidebarConfig(next);
+    window.dispatchEvent(new CustomEvent("nr-sidebar-config-update"));
+  };
+
   const pages = [
     ["/", "Dashboard"], ["/transactions", "Transactions"], ["/accounts", "Accounts"],
-    ["/analytics", "Analytics"], ["/budgets", "Budgets"], ["/goals", "Goals"],
-    ["/bills", "Bills"], ["/profile", "Profile"],
+    ["/analytics", "Analytics"], ["/budget", "Budget"], ["/goals", "Goals"],
+    ["/profile", "Profile"],
   ];
+
+  const navItemMap = new Map(navConfig.items.map(i => [i.href, i]));
+  const navBySection = ALL_NAV_ITEMS_FOR_SETTINGS.reduce<{ label: string; items: { href: string; label: string; visible: boolean }[] }[]>((acc, item) => {
+    const visible = navItemMap.get(item.href)?.visible !== false;
+    const last = acc[acc.length - 1];
+    if (last && last.label === item.section) { last.items.push({ href: item.href, label: item.label, visible }); }
+    else { acc.push({ label: item.section, items: [{ href: item.href, label: item.label, visible }] }); }
+    return acc;
+  }, []);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Dashboard</div>
+        <div style={ROW}>
+          <RowLabel title="Default landing page" sub="Navigate here when opening the app" />
+          <select value={defaultPage} onChange={e => setPage(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
+            {pages.map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
+          </select>
+        </div>
+        <div style={ROW}>
+          <RowLabel title="Sidebar collapsed by default" sub="Start with the sidebar in a collapsed state" />
+          <Toggle on={sidebarCollapsed} onChange={setSidebar} />
+        </div>
+        <div style={ROW}>
+          <RowLabel title="Show net worth in sidebar" sub="Display net worth strip in the sidebar footer" />
+          <Toggle on={showNwStrip} onChange={setNwStrip} />
+        </div>
+      </div>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Navigation Visibility</div>
+        <div style={{ padding: "8px 14px 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderBottom: "1px solid var(--ft-border)" }}>
+          Toggle which pages appear in the sidebar. Hidden pages are still accessible via keyboard shortcuts and the command palette.
+        </div>
+        {navBySection.map(section => (
+          <div key={section.label}>
+            <SectionHeader label={section.label} />
+            {section.items.map(item => (
+              <div key={item.href} style={ROW}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: item.visible ? "var(--ft-text)" : "var(--ft-dim)" }}>{item.label}</span>
+                <Toggle on={item.visible} onChange={v => toggleNavItem(item.href, v)} />
+              </div>
+            ))}
+          </div>
+        ))}
+        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+          Changes apply immediately. Use the sidebar ⚙ icon to reorder and pin items.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomCategoriesPanel() {
+  const [customCats, setCustomCats] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("nr-custom-categories") ?? "[]"); } catch { return []; }
+  });
+  const [newCat, setNewCat] = useState("");
+
+  const save = (cats: string[]) => {
+    setCustomCats(cats);
+    try { localStorage.setItem("nr-custom-categories", JSON.stringify(cats)); } catch { /* ignore */ }
+  };
+
+  const handleAdd = () => {
+    const v = newCat.trim();
+    if (!v || customCats.includes(v) || CATEGORIES.includes(v)) return;
+    save([...customCats, v]);
+    setNewCat("");
+  };
+
+  const handleRemove = (cat: string) => save(customCats.filter(c => c !== cat));
 
   return (
     <div style={PANEL_STYLE}>
-      <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Dashboard</div>
-      <div style={ROW}>
-        <RowLabel title="Default landing page" sub="Navigate here when opening the app" />
-        <select value={defaultPage} onChange={e => setPage(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
-          {pages.map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
-        </select>
+      <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Custom Categories</div>
+      <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderBottom: "1px solid var(--ft-border)" }}>
+        Add your own categories. They appear alongside built-in categories in Quick Add and auto-cat rules.
       </div>
-      <div style={ROW}>
-        <RowLabel title="Sidebar collapsed by default" sub="Start with the sidebar in a collapsed state" />
-        <Toggle on={sidebarCollapsed} onChange={setSidebar} />
-      </div>
-      <div style={ROW}>
-        <RowLabel title="Show net worth in sidebar" sub="Display net worth strip in the sidebar footer" />
-        <Toggle on={showNwStrip} onChange={setNwStrip} />
+      {customCats.length > 0 ? (
+        <div style={{ padding: "8px 14px" }}>
+          {customCats.map(cat => (
+            <div key={cat} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid var(--ft-border)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{cat}</span>
+              <button onClick={() => handleRemove(cat)} style={{ background: "none", border: "none", color: "var(--ft-red)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "2px 4px" }} aria-label={`Remove ${cat}`}>×</button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ padding: "12px 14px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", fontStyle: "italic" }}>No custom categories yet.</div>
+      )}
+      <div style={{ padding: "10px 14px", display: "flex", gap: 8, alignItems: "center", borderTop: "1px solid var(--ft-border)" }}>
+        <input
+          type="text" value={newCat} placeholder="New category name"
+          onChange={e => setNewCat(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
+          style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 10px", outline: "none" }}
+        />
+        <button onClick={handleAdd} disabled={!newCat.trim()} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: newCat.trim() ? "var(--ft-accent)" : "var(--ft-dim)", background: "transparent", border: `1px solid ${newCat.trim() ? "var(--ft-accent)" : "var(--ft-border2)"}`, padding: "5px 14px", cursor: newCat.trim() ? "pointer" : "not-allowed", whiteSpace: "nowrap" }}>
+          + Add
+        </button>
       </div>
     </div>
   );
@@ -663,6 +1077,7 @@ function AdvancedPanel({ toast }: { toast: ReturnType<typeof useToast>["toast"] 
 
   const handleResetOnboarding = () => {
     localStorage.removeItem("nr-onboarding-complete");
+    localStorage.removeItem("ft-onboarding-dismissed");
     toast({ title: "Onboarding reset. Reload the app." });
     setTimeout(() => window.location.reload(), 800);
   };
@@ -743,8 +1158,29 @@ const AI_STYLES: { id: AiStyle; label: string; desc: string; preview: string }[]
 function AiSettingsPanel() {
   const [selected, setSelected] = useState<AiStyle>(getAiStyle);
   const [skinId, setSkinId] = useState<BotSkinId>(getBotSkin);
+  const [previewPhase, setPreviewPhase] = useState<Phase>("idle");
+  const [blinking, setBlinking] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const phaseIdxRef = useRef(0);
   const isDevUser = useIsDevUser();
   const learnXP = isDevUser ? Infinity : getLearnXP();
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setBlinking(true);
+      setTimeout(() => setBlinking(false), 180);
+    }, 2800 + Math.random() * 1400);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!autoPlay) return;
+    const id = setInterval(() => {
+      phaseIdxRef.current = (phaseIdxRef.current + 1) % WARDROBE_PHASES.length;
+      setPreviewPhase(WARDROBE_PHASES[phaseIdxRef.current]);
+    }, 2800);
+    return () => clearInterval(id);
+  }, [autoPlay]);
 
   const pick = useCallback((s: AiStyle) => {
     setSelected(s);
@@ -800,7 +1236,78 @@ function AiSettingsPanel() {
 
       {selected === "wanderer" && (
         <div style={PANEL_STYLE}>
+          <style>{`
+            @keyframes wand-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+            @keyframes wand-sit-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+            @keyframes wand-dance{0%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(-4deg)}50%{transform:translateY(-8px) rotate(0deg)}75%{transform:translateY(-6px) rotate(4deg)}100%{transform:translateY(0) rotate(0deg)}}
+            @keyframes wand-complain{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+            @keyframes wand-jump{0%{transform:translateY(0)}45%{transform:translateY(-30px)}70%{transform:translateY(-3px)}100%{transform:translateY(0)}}
+          `}</style>
           <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Bot Skin</div>
+
+          {/* Live preview */}
+          <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)", display: "flex", gap: 12, alignItems: "flex-start" }}>
+            {/* Stage */}
+            <div style={{ width: 86, height: 120, background: "var(--ft-base)", border: "1px solid var(--ft-border)", display: "flex", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, overflow: "hidden", position: "relative" }}>
+              <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "16px 16px", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", bottom: 24, left: "8%", right: "8%", height: 1, background: "linear-gradient(90deg,transparent,var(--ft-border2),transparent)" }} />
+              <div style={{
+                width: previewPhase === "lying" ? 110 : 36,
+                height: previewPhase === "lying" ? 57 : 66,
+                flexShrink: 0,
+                transform: previewPhase === "lying" ? "scale(0.62)" : "scale(1.4)",
+                transformOrigin: "center bottom",
+                marginBottom: 24,
+                animation:
+                  previewPhase === "sitting" ? "wand-sit-bob 3s ease-in-out infinite" :
+                  previewPhase === "dancing" ? "wand-dance 0.52s ease-in-out infinite" :
+                  previewPhase === "complaining" ? "wand-complain 0.3s ease-in-out infinite" :
+                  previewPhase === "tired" || previewPhase === "lying" ? "none" :
+                  previewPhase === "jumping" ? "wand-jump 0.75s cubic-bezier(0.36,0.07,0.19,0.97) infinite" :
+                  "wand-bob 2.6s ease-in-out infinite",
+              }}>
+                <BotPreview skinId={skinId} phase={previewPhase} blinking={blinking} />
+              </div>
+            </div>
+
+            {/* Phase controls */}
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.12em", color: "var(--ft-dim)" }}>PHASE</span>
+                <button
+                  onClick={() => setAutoPlay(a => !a)}
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.06em", color: autoPlay ? "var(--ft-accent)" : "var(--ft-dim)", background: autoPlay ? "var(--ft-accent)15" : "transparent", border: `1px solid ${autoPlay ? "var(--ft-accent)44" : "var(--ft-border)"}`, padding: "2px 6px", cursor: "pointer" }}
+                >
+                  {autoPlay ? "AUTO ●" : "AUTO ○"}
+                </button>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                {WARDROBE_PHASES.map(p => (
+                  <button
+                    key={p}
+                    onClick={() => { setAutoPlay(false); setPreviewPhase(p); }}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: "0.05em", padding: "2px 5px", border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`, background: previewPhase === p ? "var(--ft-accent)15" : "transparent", color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+              {/* Active skin info */}
+              {(() => {
+                const skin = SKINS.find(s => s.id === skinId);
+                if (!skin) return null;
+                const RARITY_COLOR: Record<string, string> = { COMMON: "var(--ft-dim)", EPIC: "#a855f7", LEGENDARY: "var(--ft-amber, #f59e0b)" };
+                return (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)" }}>{skin.label}</span>
+                    {" "}
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", color: RARITY_COLOR[skin.rarity] }}>{skin.rarity}</span>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
           <div style={{ padding: "4px 0" }}>
             {SKINS.map((skin) => {
               const themeReq = skin.requiredTheme ? THEME_REWARDS.find(t => t.id === skin.requiredTheme) : null;
@@ -885,6 +1392,611 @@ function AiSettingsPanel() {
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Wise Integration Panel ────────────────────────────────────────────────────
+function WiseIntegrationPanel() {
+  const { toast } = useToast();
+  const { data: status, isLoading: statusLoading } = useGetWiseStatus();
+  const { data: accountsData } = useListAccounts();
+  const syncMutation = useSyncWiseTransactions();
+
+  const wiseAccounts = (accountsData ?? []).filter(a => a.isWiseLinked);
+
+  const isConfigured = status?.configured ?? false;
+  const isConnected = status?.connected ?? false;
+
+  const handleSync = async () => {
+    try {
+      const result = await syncMutation.mutateAsync();
+      toast({
+        title: "Wise sync complete",
+        description: `Synced ${result.synced} transactions (${result.added} new, ${result.updated} updated)`,
+      });
+    } catch (err: unknown) {
+      toast({
+        title: "Wise sync failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const lastSyncResult = syncMutation.data;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Status panel */}
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}>
+          <span style={{ color: "var(--ft-accent)" }}>·</span> Wise Integration
+        </div>
+
+        {/* Status row */}
+        <div style={{ ...ROW, flexWrap: "wrap", gap: 10 }}>
+          <RowLabel
+            title="Connection status"
+            sub={
+              statusLoading
+                ? "Checking..."
+                : !isConfigured
+                ? "Add WISE_API_TOKEN to your server environment to enable Wise sync"
+                : isConnected
+                ? status?.profileName
+                  ? `Connected as ${status.profileName}`
+                  : "Token verified"
+                : (status?.error ?? "Connection error")
+            }
+          />
+          <div style={{ flexShrink: 0 }}>
+            {statusLoading ? (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>
+                CHECKING...
+              </span>
+            ) : !isConfigured ? (
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em",
+                fontWeight: 700, color: "#F59E0B",
+                border: "1px solid #F59E0B44", padding: "2px 8px",
+                background: "#F59E0B11",
+              }}>
+                NOT CONFIGURED
+              </span>
+            ) : isConnected ? (
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em",
+                fontWeight: 700, color: "var(--ft-green)",
+                border: "1px solid var(--ft-green)44", padding: "2px 8px",
+                background: "var(--ft-green)11",
+              }}>
+                CONNECTED
+              </span>
+            ) : (
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em",
+                fontWeight: 700, color: "var(--ft-red)",
+                border: "1px solid var(--ft-red)44", padding: "2px 8px",
+                background: "var(--ft-red)11",
+              }}>
+                ERROR
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Sync button + last result */}
+        {isConfigured && isConnected && (
+          <div style={{ ...ROW, flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", fontWeight: 500 }}>
+                Sync transactions
+              </div>
+              {lastSyncResult && (
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 3 }}>
+                  Last sync: {lastSyncResult.synced} transactions ({lastSyncResult.added} new, {lastSyncResult.updated} updated)
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleSync}
+              disabled={syncMutation.isPending}
+              style={{
+                flexShrink: 0,
+                fontFamily: "var(--font-mono)", fontSize: 11,
+                color: syncMutation.isPending ? "var(--ft-muted)" : "var(--ft-accent)",
+                background: "transparent",
+                border: `1px solid ${syncMutation.isPending ? "var(--ft-border2)" : "var(--ft-accent)"}`,
+                padding: "7px 18px",
+                cursor: syncMutation.isPending ? "not-allowed" : "pointer",
+                opacity: syncMutation.isPending ? 0.6 : 1,
+                letterSpacing: "0.04em",
+              }}
+            >
+              {syncMutation.isPending ? "SYNCING..." : "↻ SYNC NOW"}
+            </button>
+          </div>
+        )}
+
+        {/* Info note */}
+        <div style={{
+          padding: "8px 14px",
+          background: "var(--ft-raised)",
+          borderTop: "1px solid var(--ft-border)",
+          fontFamily: "var(--font-mono)", fontSize: 9,
+          color: "var(--ft-dim)", letterSpacing: "0.04em",
+        }}>
+          Wise sync imports the last 90 days of transactions across all your Wise currency balances
+        </div>
+      </div>
+
+      {/* Linked accounts */}
+      {isConfigured && isConnected && (
+        <div style={PANEL_STYLE}>
+          <div style={HEADER_STYLE}>
+            <span style={{ color: "var(--ft-accent)" }}>·</span> Linked Accounts
+          </div>
+          {wiseAccounts.length === 0 ? (
+            <div style={{ padding: "14px 16px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", fontStyle: "italic" }}>
+              No Wise accounts synced yet — click Sync Now to import
+            </div>
+          ) : (
+            wiseAccounts.map(account => (
+              <div key={account.id} style={ROW}>
+                <div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", fontWeight: 500 }}>
+                    {account.name}
+                  </div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>
+                    {account.lastSyncedAt
+                      ? `Last synced ${new Date(account.lastSyncedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`
+                      : "Never synced"}
+                  </div>
+                </div>
+                <span style={{
+                  fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em",
+                  fontWeight: 700, color: "var(--ft-accent)",
+                  border: "1px solid var(--ft-accent)44", padding: "2px 8px",
+                  background: "var(--ft-accent)11",
+                }}>
+                  {account.currency}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Crypto Wallets Panel ──────────────────────────────────────────────────────
+
+const CRYPTO_WALLETS_KEY = "ft-crypto-wallets";
+const CRYPTO_PRICES_KEY = "ft-crypto-prices";
+
+interface CryptoWallet {
+  id: string;
+  label: string;
+  address: string;
+  chain: "ETH" | "BTC";
+  balance?: number;
+  lastSynced?: string;
+  error?: string;
+}
+
+interface CryptoPrices {
+  ETH: number;
+  BTC: number;
+}
+
+const DEFAULT_CRYPTO_PRICES: CryptoPrices = { ETH: 2500, BTC: 60000 };
+
+function loadCryptoWallets(): CryptoWallet[] {
+  try {
+    const raw = localStorage.getItem(CRYPTO_WALLETS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as CryptoWallet[];
+  } catch { return []; }
+}
+
+function saveCryptoWallets(wallets: CryptoWallet[]) {
+  try { localStorage.setItem(CRYPTO_WALLETS_KEY, JSON.stringify(wallets)); } catch { /* ignore */ }
+}
+
+function loadCryptoPrices(): CryptoPrices {
+  try {
+    const raw = localStorage.getItem(CRYPTO_PRICES_KEY);
+    if (!raw) return { ...DEFAULT_CRYPTO_PRICES };
+    return { ...DEFAULT_CRYPTO_PRICES, ...JSON.parse(raw) } as CryptoPrices;
+  } catch { return { ...DEFAULT_CRYPTO_PRICES }; }
+}
+
+function saveCryptoPrices(prices: CryptoPrices) {
+  try { localStorage.setItem(CRYPTO_PRICES_KEY, JSON.stringify(prices)); } catch { /* ignore */ }
+}
+
+async function fetchEthBalance(address: string): Promise<number> {
+  const url = `https://api.etherscan.io/api?module=account&action=balance&address=${encodeURIComponent(address)}&tag=latest`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json() as { status: string; message: string; result: string };
+  if (json.status !== "1") throw new Error(json.message || "Etherscan error");
+  return parseFloat(json.result) / 1e18;
+}
+
+async function fetchBtcBalance(address: string): Promise<number> {
+  const url = `https://blockstream.info/api/address/${encodeURIComponent(address)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json() as { chain_stats: { funded_txo_sum: number; spent_txo_sum: number } };
+  const sats = json.chain_stats.funded_txo_sum - json.chain_stats.spent_txo_sum;
+  return sats / 1e8;
+}
+
+async function syncWalletBalance(wallet: CryptoWallet): Promise<CryptoWallet> {
+  try {
+    const balance = wallet.chain === "ETH"
+      ? await fetchEthBalance(wallet.address)
+      : await fetchBtcBalance(wallet.address);
+    return { ...wallet, balance, lastSynced: new Date().toISOString(), error: undefined };
+  } catch (err: unknown) {
+    return { ...wallet, error: err instanceof Error ? err.message : "Sync failed", lastSynced: wallet.lastSynced };
+  }
+}
+
+const CRYPTO_INPUT_STYLE: React.CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 12,
+  background: "var(--ft-raised)",
+  border: "1px solid var(--ft-border2)",
+  color: "var(--ft-text)",
+  padding: "6px 10px",
+  outline: "none",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+function CryptoWalletsPanel() {
+  const [wallets, setWallets] = useState<CryptoWallet[]>(() => loadCryptoWallets());
+  const [prices, setPrices] = useState<CryptoPrices>(() => loadCryptoPrices());
+  const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
+  const [syncingAll, setSyncingAll] = useState(false);
+
+  // Add wallet form state
+  const [showForm, setShowForm] = useState(false);
+  const [formLabel, setFormLabel] = useState("");
+  const [formAddress, setFormAddress] = useState("");
+  const [formChain, setFormChain] = useState<"ETH" | "BTC">("ETH");
+  const [formError, setFormError] = useState("");
+
+  // Price override form
+  const [priceEth, setPriceEth] = useState(String(prices.ETH));
+  const [priceBtc, setPriceBtc] = useState(String(prices.BTC));
+
+  const persistWallets = useCallback((updated: CryptoWallet[]) => {
+    setWallets(updated);
+    saveCryptoWallets(updated);
+  }, []);
+
+  const handleAddWallet = () => {
+    setFormError("");
+    const label = formLabel.trim();
+    const address = formAddress.trim();
+    if (!label) { setFormError("Label is required"); return; }
+    if (!address) { setFormError("Address is required"); return; }
+    if (formChain === "ETH" && !/^0x[0-9a-fA-F]{40}$/.test(address)) {
+      setFormError("Invalid ETH address (must be 0x + 40 hex chars)");
+      return;
+    }
+    if (formChain === "BTC" && address.length < 25) {
+      setFormError("Invalid BTC address");
+      return;
+    }
+    const newWallet: CryptoWallet = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      label,
+      address,
+      chain: formChain,
+    };
+    persistWallets([...wallets, newWallet]);
+    setFormLabel("");
+    setFormAddress("");
+    setFormChain("ETH");
+    setShowForm(false);
+  };
+
+  const handleDeleteWallet = (id: string) => {
+    persistWallets(wallets.filter(w => w.id !== id));
+  };
+
+  const handleSync = useCallback(async (id: string) => {
+    const wallet = wallets.find(w => w.id === id);
+    if (!wallet) return;
+    setSyncingIds(prev => new Set(prev).add(id));
+    const updated = await syncWalletBalance(wallet);
+    setWallets(prev => {
+      const next = prev.map(w => w.id === id ? updated : w);
+      saveCryptoWallets(next);
+      return next;
+    });
+    setSyncingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+  }, [wallets]);
+
+  const handleSyncAll = useCallback(async () => {
+    setSyncingAll(true);
+    const results: CryptoWallet[] = [];
+    for (const wallet of wallets) {
+      setSyncingIds(prev => new Set(prev).add(wallet.id));
+      const updated = await syncWalletBalance(wallet);
+      results.push(updated);
+      setSyncingIds(prev => { const s = new Set(prev); s.delete(wallet.id); return s; });
+    }
+    persistWallets(results);
+    setSyncingAll(false);
+  }, [wallets, persistWallets]);
+
+  const handleSavePrices = () => {
+    const eth = parseFloat(priceEth);
+    const btc = parseFloat(priceBtc);
+    if (isNaN(eth) || eth <= 0 || isNaN(btc) || btc <= 0) return;
+    const updated: CryptoPrices = { ETH: eth, BTC: btc };
+    setPrices(updated);
+    saveCryptoPrices(updated);
+  };
+
+  const totalValueGbp = wallets.reduce((acc, w) => {
+    if (w.balance == null) return acc;
+    return acc + w.balance * (w.chain === "ETH" ? prices.ETH : prices.BTC);
+  }, 0);
+
+  const hasSynced = wallets.some(w => w.balance != null);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+      {/* Header panel with wallet list and Sync All */}
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}>
+          <span style={{ color: "var(--ft-accent)" }}>·</span> Crypto Wallets
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+            {hasSynced && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+                Total ≈ £{totalValueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}
+              </span>
+            )}
+            <button
+              onClick={handleSyncAll}
+              disabled={syncingAll || wallets.length === 0}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: 10,
+                color: syncingAll || wallets.length === 0 ? "var(--ft-muted)" : "var(--ft-accent)",
+                background: "transparent",
+                border: `1px solid ${syncingAll || wallets.length === 0 ? "var(--ft-border2)" : "var(--ft-accent)"}`,
+                padding: "3px 10px", cursor: syncingAll || wallets.length === 0 ? "not-allowed" : "pointer",
+                opacity: syncingAll || wallets.length === 0 ? 0.5 : 1,
+                letterSpacing: "0.04em",
+              }}
+            >
+              {syncingAll ? "SYNCING..." : "↻ SYNC ALL"}
+            </button>
+            <button
+              onClick={() => setShowForm(v => !v)}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: 10,
+                color: "var(--ft-accent)", background: "transparent",
+                border: "1px solid var(--ft-accent)", padding: "3px 10px",
+                cursor: "pointer", letterSpacing: "0.04em",
+              }}
+            >
+              {showForm ? "✕ CANCEL" : "+ ADD WALLET"}
+            </button>
+          </div>
+        </div>
+
+        {/* Add wallet form */}
+        {showForm && (
+          <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 2 }}>
+              New Wallet
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, alignItems: "end" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>LABEL</label>
+                <input
+                  type="text"
+                  value={formLabel}
+                  onChange={e => setFormLabel(e.target.value)}
+                  placeholder="e.g. Main ETH wallet"
+                  style={CRYPTO_INPUT_STYLE}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>CHAIN</label>
+                <select
+                  value={formChain}
+                  onChange={e => setFormChain(e.target.value as "ETH" | "BTC")}
+                  style={{ ...CRYPTO_INPUT_STYLE, cursor: "pointer" }}
+                >
+                  <option value="ETH">ETH — Ethereum</option>
+                  <option value="BTC">BTC — Bitcoin</option>
+                </select>
+              </div>
+              <button
+                onClick={handleAddWallet}
+                style={{
+                  fontFamily: "var(--font-mono)", fontSize: 11,
+                  color: "var(--ft-base)", background: "var(--ft-accent)",
+                  border: "none", padding: "6px 16px", cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Add
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>ADDRESS</label>
+              <input
+                type="text"
+                value={formAddress}
+                onChange={e => setFormAddress(e.target.value)}
+                placeholder={formChain === "ETH" ? "0x..." : "bc1... or 1... or 3..."}
+                style={CRYPTO_INPUT_STYLE}
+                onKeyDown={e => { if (e.key === "Enter") handleAddWallet(); }}
+              />
+            </div>
+            {formError && (
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-red)", padding: "4px 0" }}>
+                ⚠ {formError}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Wallet list */}
+        {wallets.length === 0 ? (
+          <div style={{ padding: "14px 16px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", fontStyle: "italic" }}>
+            No wallets saved — click + ADD WALLET to start tracking
+          </div>
+        ) : (
+          wallets.map(wallet => {
+            const isSyncing = syncingIds.has(wallet.id);
+            const valueGbp = wallet.balance != null
+              ? wallet.balance * (wallet.chain === "ETH" ? prices.ETH : prices.BTC)
+              : null;
+
+            return (
+              <div key={wallet.id} style={{ ...ROW, flexWrap: "wrap", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                    <span style={{
+                      fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+                      letterSpacing: "0.06em",
+                      color: wallet.chain === "ETH" ? "#818CF8" : "#F59E0B",
+                      border: `1px solid ${wallet.chain === "ETH" ? "#818CF844" : "#F59E0B44"}`,
+                      background: wallet.chain === "ETH" ? "#818CF811" : "#F59E0B11",
+                      padding: "1px 7px",
+                    }}>
+                      {wallet.chain}
+                    </span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-text)" }}>
+                      {wallet.label}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", wordBreak: "break-all", marginBottom: 2 }}>
+                    {wallet.address}
+                  </div>
+                  {wallet.error ? (
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-red)", marginTop: 2 }}>
+                      ⚠ {wallet.error}
+                    </div>
+                  ) : wallet.balance != null ? (
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 3 }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
+                        {wallet.balance.toFixed(6)} {wallet.chain}
+                      </span>
+                      {valueGbp != null && (
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
+                          ≈ £{valueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
+                  {wallet.lastSynced && (
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+                      Synced {new Date(wallet.lastSynced).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center", paddingTop: 2 }}>
+                  <button
+                    onClick={() => { void handleSync(wallet.id); }}
+                    disabled={isSyncing || syncingAll}
+                    style={{
+                      fontFamily: "var(--font-mono)", fontSize: 10,
+                      color: isSyncing ? "var(--ft-muted)" : "var(--ft-accent)",
+                      background: "transparent",
+                      border: `1px solid ${isSyncing ? "var(--ft-border2)" : "var(--ft-accent)"}`,
+                      padding: "4px 10px", cursor: isSyncing ? "not-allowed" : "pointer",
+                      opacity: isSyncing ? 0.6 : 1, letterSpacing: "0.04em",
+                    }}
+                  >
+                    {isSyncing ? "..." : "↻ SYNC"}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteWallet(wallet.id)}
+                    disabled={isSyncing || syncingAll}
+                    style={{
+                      fontFamily: "var(--font-mono)", fontSize: 10,
+                      color: "var(--ft-red)", background: "transparent",
+                      border: "1px solid var(--ft-red)44", padding: "4px 10px",
+                      cursor: isSyncing ? "not-allowed" : "pointer",
+                      opacity: isSyncing ? 0.4 : 1,
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Price rate overrides */}
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}>
+          <span style={{ color: "var(--ft-accent)" }}>·</span> Price Rates (GBP)
+        </div>
+        <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+            Override the approximate GBP rate used to calculate fiat values. Stored in localStorage.
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto 1fr auto", gap: 8, alignItems: "center" }}>
+            <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", whiteSpace: "nowrap" }}>1 ETH ≈ £</label>
+            <input
+              type="number"
+              min={1}
+              step={100}
+              value={priceEth}
+              onChange={e => setPriceEth(e.target.value)}
+              style={{ ...CRYPTO_INPUT_STYLE, width: "100%" }}
+            />
+            <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", whiteSpace: "nowrap", paddingLeft: 8 }}>1 BTC ≈ £</label>
+            <input
+              type="number"
+              min={1}
+              step={1000}
+              value={priceBtc}
+              onChange={e => setPriceBtc(e.target.value)}
+              style={{ ...CRYPTO_INPUT_STYLE, width: "100%" }}
+            />
+            <button
+              onClick={handleSavePrices}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: 10,
+                color: "var(--ft-base)", background: "var(--ft-accent)",
+                border: "none", padding: "6px 14px", cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* API info footer */}
+      <div style={{
+        padding: "8px 14px",
+        background: "var(--ft-raised)",
+        border: "1px solid var(--ft-border)",
+        fontFamily: "var(--font-mono)", fontSize: 9,
+        color: "var(--ft-dim)", letterSpacing: "0.04em", lineHeight: 1.6,
+      }}>
+        ETH balances via Etherscan public API · BTC balances via Blockstream · No API key required · All requests are client-side
       </div>
     </div>
   );
@@ -1000,18 +2112,19 @@ export default function Settings() {
   const handleSaveAlertRules = () => { localStorage.setItem(ALERT_RULES_KEY, JSON.stringify(alertRules)); toast({ title: "Alert rules saved" }); };
 
   // Data export
-  const handleExportBackup = () => {
-    const entries: Record<string,unknown> = {};
-    for (const key of Object.keys(localStorage).filter(k => k.startsWith("ft-"))) {
-      const raw = localStorage.getItem(key);
-      try { entries[key] = raw ? JSON.parse(raw) : null; } catch { entries[key] = raw; }
+  const handleExportBackup = async () => {
+    try {
+      const res = await fetch("/api/export/backup");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url;
+      a.download = `numeris-backup-${new Date().toISOString().slice(0,10)}.json`;
+      a.click(); URL.revokeObjectURL(url);
+      toast({ title: "Backup exported", description: "All account data downloaded" });
+    } catch {
+      toast({ title: "Export failed", description: "Could not download backup" });
     }
-    const blob = new Blob([JSON.stringify(entries, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url;
-    a.download = `numeris-backup-${new Date().toISOString().slice(0,10)}.json`;
-    a.click(); URL.revokeObjectURL(url);
-    toast({ title: "Backup exported", description: `${Object.keys(entries).length} keys saved` });
   };
 
   const handleExportData = () => {
@@ -1102,6 +2215,8 @@ export default function Settings() {
         )}
 
         {activePanel === "privacy" && <PrivacyPanel />}
+
+        {activePanel === "profile" && <ProfilePanel />}
 
         {activePanel === "currency" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1201,6 +2316,11 @@ export default function Settings() {
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>days before</span>
               </div>
             </div>
+            <SectionHeader label="Goals" />
+            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
+              <RowLabel title="SAVINGS RATE TARGET" sub="Your monthly income % goal to save/invest" />
+              <SavingsRateTargetInput />
+            </div>
             <div style={{ padding: "12px 14px" }}>
               <ActionBtn label="Save Alert Rules" onClick={handleSaveAlertRules} />
             </div>
@@ -1208,6 +2328,7 @@ export default function Settings() {
         )}
 
         {activePanel === "rules" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={PANEL_STYLE}>
             <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Auto-Categorization Rules</div>
             <div style={{ padding: "12px 14px" }}>
@@ -1253,9 +2374,13 @@ export default function Settings() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 12, letterSpacing: "0.04em" }}>Rules apply when adding transactions and during CSV import.</div>
             </div>
           </div>
+          <CustomCategoriesPanel />
+          </div>
         )}
 
         {activePanel === "dashboard" && <DashboardPanel />}
+
+        {activePanel === "tx-defaults" && <TransactionDefaultsPanel />}
 
         {activePanel === "widgets" && (
           <div style={PANEL_STYLE}>
@@ -1318,6 +2443,10 @@ export default function Settings() {
         )}
 
         {activePanel === "advanced" && <AdvancedPanel toast={toast} />}
+
+        {activePanel === "wise" && <WiseIntegrationPanel />}
+
+        {activePanel === "crypto-wallets" && <CryptoWalletsPanel />}
 
         {activePanel === "ai" && <AiSettingsPanel />}
 

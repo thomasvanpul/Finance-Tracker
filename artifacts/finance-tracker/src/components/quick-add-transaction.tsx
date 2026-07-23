@@ -63,6 +63,7 @@ function buildInitialState() {
 export function QuickAddTransaction({ open, onClose }: Props) {
   const [form, setForm] = useState(buildInitialState);
   const amountRef = useRef<HTMLInputElement>(null);
+  const prevFocusRef = useRef<Element | null>(null);
   const createTransaction = useCreateTransaction();
   const { data: accountsData } = useListAccounts();
   const queryClient = useQueryClient();
@@ -81,7 +82,10 @@ export function QuickAddTransaction({ open, onClose }: Props) {
 
   useEffect(() => {
     if (open) {
+      prevFocusRef.current = document.activeElement;
       setTimeout(() => amountRef.current?.focus(), 50);
+    } else {
+      (prevFocusRef.current as HTMLElement | null)?.focus?.();
     }
   }, [open]);
 
@@ -491,9 +495,10 @@ export function QuickAddTransaction({ open, onClose }: Props) {
   );
 }
 
-export function useQuickAdd(): { open: boolean; close: () => void } {
+export function useQuickAdd(): { open: boolean; openQuickAdd: () => void; close: () => void } {
   const [open, setOpen] = useState(false);
 
+  const openQuickAdd = useCallback(() => setOpen(true), []);
   const close = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
@@ -515,5 +520,5 @@ export function useQuickAdd(): { open: boolean; close: () => void } {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  return { open, close };
+  return { open, openQuickAdd, close };
 }

@@ -1,40 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import {
+  useListBudgets,
+  useCreateBudget,
+  useUpdateBudget,
+  useDeleteBudget,
+} from "@workspace/api-client-react";
+import { getListBudgetsQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useListTransactions } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
-
-interface Budget {
-  category: string;
-  limit: number;
-}
-
-function loadBudgets(): Budget[] {
-  try {
-    const raw = localStorage.getItem("ft-budgets");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [
-    { category: "Food", limit: 400 },
-    { category: "Transport", limit: 150 },
-    { category: "Entertainment", limit: 100 },
-    { category: "Utilities", limit: 200 },
-    { category: "Shopping", limit: 300 },
-  ];
-}
-
-function saveBudgets(budgets: Budget[]) {
-  try { localStorage.setItem("ft-budgets", JSON.stringify(budgets)); } catch {}
-}
+import type { Budget } from "@workspace/api-client-react";
 
 export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
-  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const queryClient = useQueryClient();
+  const { data: budgets = [] } = useListBudgets();
+  const createBudget = useCreateBudget();
+  const updateBudget = useUpdateBudget();
+  const deleteBudget = useDeleteBudget();
+
   const [editing, setEditing] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [adding, setAdding] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [newLimit, setNewLimit] = useState("");
-
-  useEffect(() => { setBudgets(loadBudgets()); }, []);
 
   const now = new Date();
   const dateFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -55,28 +44,25 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
     setEditValue(String(limit));
   }
 
-  function commitEdit(cat: string) {
+  async function commitEdit(budget: Budget) {
     const parsed = parseFloat(editValue);
     if (!isNaN(parsed) && parsed > 0) {
-      const next = budgets.map(b => b.category === cat ? { ...b, limit: parsed } : b);
-      setBudgets(next);
-      saveBudgets(next);
+      await updateBudget.mutateAsync({ id: budget.id, data: { monthlyLimit: parsed } });
+      queryClient.invalidateQueries({ queryKey: getListBudgetsQueryKey() });
     }
     setEditing(null);
   }
 
-  function removeBudget(cat: string) {
-    const next = budgets.filter(b => b.category !== cat);
-    setBudgets(next);
-    saveBudgets(next);
+  async function removeBudget(budget: Budget) {
+    await deleteBudget.mutateAsync({ id: budget.id });
+    queryClient.invalidateQueries({ queryKey: getListBudgetsQueryKey() });
   }
 
-  function addBudget() {
+  async function addBudget() {
     const limit = parseFloat(newLimit);
     if (!newCat.trim() || isNaN(limit) || limit <= 0) return;
-    const next = [...budgets, { category: newCat.trim(), limit }];
-    setBudgets(next);
-    saveBudgets(next);
+    await createBudget.mutateAsync({ data: { category: newCat.trim(), monthlyLimit: limit } });
+    queryClient.invalidateQueries({ queryKey: getListBudgetsQueryKey() });
     setNewCat("");
     setNewLimit("");
     setAdding(false);
@@ -84,7 +70,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const monthLabel = now.toLocaleString("en-GB", { month: "long", year: "numeric" });
 
-  const totalLimit = budgets.reduce((s, b) => s + b.limit, 0);
+  const totalLimit = budgets.reduce((s, b) => s + b.monthlyLimit, 0);
   const totalSpent = budgets.reduce((s, b) => s + getSpent(b.category), 0);
   const totalPct = totalLimit > 0 ? Math.min((totalSpent / totalLimit) * 100, 100) : 0;
   const totalOver = totalSpent > totalLimit;
@@ -94,14 +80,14 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const budgetCard = (budget: Budget, i: number) => {
     const s = getSpent(budget.category);
-    const pct = Math.min((s / budget.limit) * 100, 100);
-    const over = s > budget.limit;
+    const pct = Math.min((s / budget.monthlyLimit) * 100, 100);
+    const over = s > budget.monthlyLimit;
     const barColor = over ? "var(--ft-red)" : pct > 75 ? "var(--ft-amber)" : "var(--ft-green)";
     const cols = isExpanded ? 3 : 2;
     const isLastInRow = (i + 1) % cols === 0;
 
     return (
-      <div key={budget.category} style={{
+      <div key={budget.id} style={{
         padding: "10px 12px",
         borderBottom: "1px solid var(--ft-border)",
         borderRight: !isLastInRow ? "1px solid var(--ft-border)" : undefined,
@@ -117,7 +103,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
               </span>
             )}
             <button
-              onClick={() => removeBudget(budget.category)}
+              onClick={() => removeBudget(budget)}
               style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
             >
               ×
@@ -135,7 +121,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
           </span>
           <span
             style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", cursor: "pointer" }}
-            onClick={() => startEdit(budget.category, budget.limit)}
+            onClick={() => startEdit(budget.category, budget.monthlyLimit)}
           >
             {editing === budget.category ? (
               <input
@@ -143,8 +129,8 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                 type="number"
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
-                onBlur={() => commitEdit(budget.category)}
-                onKeyDown={e => e.key === "Enter" && commitEdit(budget.category)}
+                onBlur={() => commitEdit(budget)}
+                onKeyDown={e => e.key === "Enter" && commitEdit(budget)}
                 style={{
                   width: 56,
                   fontFamily: "var(--font-mono)",
@@ -159,7 +145,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                 onClick={e => e.stopPropagation()}
               />
             ) : (
-              <span className="pnum" title="Click to edit">/ {formatGbp(budget.limit)}</span>
+              <span className="pnum" title="Click to edit">/ {formatGbp(budget.monthlyLimit)}</span>
             )}
           </span>
         </div>

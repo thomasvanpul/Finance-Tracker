@@ -67,6 +67,7 @@ type AssetClass = "ETF" | "Stock" | "Bond" | "Crypto" | "Cash" | "Real Estate" |
 const ASSET_CLASSES: AssetClass[] = ["ETF", "Stock", "Bond", "Crypto", "Cash", "Real Estate", "Other"];
 const LS_CLASSES_KEY = "ft-inv-classes";
 const LS_WATCHLISTS_KEY = "ft-watchlists";
+const LS_REBALANCE_KEY = "ft-rebalance-targets";
 type Watchlist = { id: string; name: string; tickers: string[] };
 
 interface QuoteData {
@@ -89,7 +90,7 @@ interface QuoteData {
   previousClose?: number | null;
 }
 
-type TabId = "portfolio" | "orders" | "derivatives" | "markets";
+type TabId = "portfolio" | "orders" | "derivatives" | "markets" | "rebalance";
 
 // ── Auto-detection helpers ────────────────────────────────────────────────────
 
@@ -179,6 +180,7 @@ const TABS: { id: TabId; label: string; color: string }[] = [
   { id: "portfolio", label: "PORTFOLIO", color: "var(--ft-blue)" },
   { id: "orders", label: "ORDERS", color: "var(--ft-amber)" },
   { id: "derivatives", label: "DERIVATIVES", color: "var(--ft-cyan)" },
+  { id: "rebalance", label: "REBALANCE", color: "var(--ft-accent)" },
 ];
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -482,7 +484,7 @@ function MarketsTab() {
     { query: { enabled: !!selectedTicker } }
   );
   const { data: detail, isFetching: detailFetching } = useGetMarketDetail(
-    selectedTicker ?? "",
+    { ticker: selectedTicker ?? "" },
     { query: { enabled: !!selectedTicker } }
   );
 
@@ -774,7 +776,7 @@ function MarketsTab() {
         {/* Key Statistics */}
         <div style={{ border: "1px solid var(--ft-border)" }}>
           <div style={{ padding: "6px 14px", background: "rgba(88,166,255,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Key Statistics</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+          <div className="ft-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
             <StatCell label="P/E (TTM)" value={q?.pe != null ? `${q.pe.toFixed(1)}×` : "—"} color={q?.pe ? (q.pe > 40 ? "var(--ft-amber)" : q.pe < 15 ? "var(--ft-green)" : "var(--ft-text)") : undefined} />
             <StatCell label="Forward P/E" value={q?.forwardPe != null ? `${q.forwardPe.toFixed(1)}×` : "—"} />
             <StatCell label="EPS (TTM)" value={q?.eps != null ? `$${q.eps.toFixed(2)}` : "—"} />
@@ -803,7 +805,7 @@ function MarketsTab() {
         {detail && (detail.totalRevenue != null || detail.grossMargins != null) && (
           <div style={{ border: "1px solid var(--ft-border)" }}>
             <div style={{ padding: "6px 14px", background: "rgba(163,113,247,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Financials</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+            <div className="ft-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
               <StatCell label="Revenue" value={fmtCap(detail.totalRevenue)} />
               <StatCell label="Revenue Growth" value={detail.revenueGrowth != null ? `${detail.revenueGrowth > 0 ? "+" : ""}${detail.revenueGrowth.toFixed(1)}%` : "—"} color={detail.revenueGrowth != null ? (detail.revenueGrowth > 0 ? "var(--ft-green)" : "var(--ft-red)") : undefined} />
               <StatCell label="Earnings Growth" value={detail.earningsGrowth != null ? `${detail.earningsGrowth > 0 ? "+" : ""}${detail.earningsGrowth.toFixed(1)}%` : "—"} color={detail.earningsGrowth != null ? (detail.earningsGrowth > 0 ? "var(--ft-green)" : "var(--ft-red)") : undefined} />
@@ -820,7 +822,7 @@ function MarketsTab() {
         {detail && (detail.operatingCashflow != null || detail.totalDebt != null || detail.debtToEquity != null || detail.currentRatio != null) && (
           <div style={{ border: "1px solid var(--ft-border)" }}>
             <div style={{ padding: "6px 14px", background: "rgba(34,211,238,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-cyan)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Balance Sheet</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+            <div className="ft-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
               <StatCell label="Op. Cash Flow" value={fmtCap(detail.operatingCashflow)} />
               <StatCell label="Free Cash Flow" value={fmtCap(detail.freeCashflow)} />
               <StatCell label="Total Cash" value={fmtCap(detail.totalCash)} color="var(--ft-green)" />
@@ -835,7 +837,7 @@ function MarketsTab() {
 
         {/* Returns/Valuation + Ownership */}
         {detail && (detail.returnOnEquity != null || detail.institutionalOwnership != null || detail.pegRatio != null || detail.shortRatio != null) && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div style={{ border: "1px solid var(--ft-border)" }}>
               <div style={{ padding: "6px 14px", background: "rgba(63,185,80,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-green)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Returns & Valuation</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)" }}>
@@ -862,7 +864,7 @@ function MarketsTab() {
         )}
 
         {/* Two-column: Earnings + Analyst Recs */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
 
           {/* Earnings History */}
           <div style={{ border: "1px solid var(--ft-border)" }}>
@@ -974,7 +976,7 @@ function MarketsTab() {
       {/* Index strip */}
       <div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><span style={{ color: "var(--ft-green)" }}>·</span> Global Indices</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+        <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {INDEX_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
             const chg = q?.changePercent ?? 0;
@@ -1074,7 +1076,7 @@ function MarketsTab() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
               <span style={{ color: "var(--ft-cyan)" }}>·</span> Top Movers Today
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-green)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>▲ Top Gainers</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -1123,7 +1125,7 @@ function MarketsTab() {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
           <span style={{ color: "var(--ft-amber)" }}>·</span> Crypto Markets
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+        <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {CRYPTO_MARKET_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
             const chg = q?.changePercent ?? 0;
@@ -1154,7 +1156,7 @@ function MarketsTab() {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
           <span style={{ color: "var(--ft-blue)" }}>·</span> Forex — Major Pairs
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+        <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {FOREX_TICKERS_STR.split(",").map((ticker) => {
             const q = qMap.get(ticker);
             const chg = q?.changePercent ?? 0;
@@ -1185,7 +1187,7 @@ function MarketsTab() {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
           <span style={{ color: "var(--ft-green)" }}>·</span> Commodities
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+        <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
           {COMMODITY_TICKERS_STR.split(",").map((ticker) => {
             const q = qMap.get(ticker);
             const chg = q?.changePercent ?? 0;
@@ -1210,7 +1212,7 @@ function MarketsTab() {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
           <span style={{ color: "var(--ft-cyan)" }}>·</span> Global Indices
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+        <div className="ft-five-col" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
           {GLOBAL_INDEX_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
             const chg = q?.changePercent ?? 0;
@@ -1439,6 +1441,287 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
   );
 }
 
+// ── Rebalance Tab ─────────────────────────────────────────────────────────────
+
+function readRebalanceTargets(): Record<string, number> {
+  try { const r = localStorage.getItem(LS_REBALANCE_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; }
+}
+
+function writeRebalanceTargets(m: Record<string, number>): void {
+  try { localStorage.setItem(LS_REBALANCE_KEY, JSON.stringify(m)); } catch { /* noop */ }
+}
+
+interface RebalanceRow {
+  assetClass: string;
+  currentValue: number;
+  currentPct: number;
+  targetPct: number;
+  driftPp: number;
+  action: "Buy" | "Sell" | "Hold";
+  actionAmount: number;
+}
+
+interface RebalanceTabProps {
+  classAllocData: { name: string; value: number }[];
+  totalPortfolioValue: number;
+}
+
+function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps) {
+  const [targets, setTargets] = useState<Record<string, number>>(() => readRebalanceTargets());
+  const [editingTargets, setEditingTargets] = useState<Record<string, string>>({});
+
+  // Derive rows from classAllocData + targets
+  const rows: RebalanceRow[] = classAllocData.map((d) => {
+    const currentPct = totalPortfolioValue > 0 ? (d.value / totalPortfolioValue) * 100 : 0;
+    const targetPct = targets[d.name] ?? 0;
+    const driftPp = currentPct - targetPct;
+    const targetValue = totalPortfolioValue * (targetPct / 100);
+    const diff = targetValue - d.value;
+    return {
+      assetClass: d.name,
+      currentValue: d.value,
+      currentPct,
+      targetPct,
+      driftPp,
+      action: Math.abs(diff) < 0.005 ? "Hold" : diff > 0 ? "Buy" : "Sell",
+      actionAmount: Math.abs(diff),
+    };
+  });
+
+  const totalTargetPct = rows.reduce((s, r) => s + r.targetPct, 0);
+  const totalCurrentValue = rows.reduce((s, r) => s + r.currentValue, 0);
+
+  const handleTargetChange = (assetClass: string, raw: string) => {
+    setEditingTargets((prev) => ({ ...prev, [assetClass]: raw }));
+  };
+
+  const handleTargetBlur = (assetClass: string) => {
+    const raw = editingTargets[assetClass] ?? "";
+    const parsed = parseFloat(raw);
+    const newVal = isNaN(parsed) ? 0 : Math.max(0, Math.min(100, Math.round(parsed * 10) / 10));
+    const updated = { ...targets, [assetClass]: newVal };
+    setTargets(updated);
+    writeRebalanceTargets(updated);
+    setEditingTargets((prev) => { const next = { ...prev }; delete next[assetClass]; return next; });
+  };
+
+  const resetToEqualWeight = () => {
+    if (classAllocData.length === 0) return;
+    const equal = Math.round((100 / classAllocData.length) * 10) / 10;
+    const newTargets: Record<string, number> = {};
+    classAllocData.forEach((d, i) => {
+      // Distribute remainder to the last item to ensure sum is exactly 100
+      if (i === classAllocData.length - 1) {
+        const assigned = equal * (classAllocData.length - 1);
+        newTargets[d.name] = Math.round((100 - assigned) * 10) / 10;
+      } else {
+        newTargets[d.name] = equal;
+      }
+    });
+    setTargets(newTargets);
+    writeRebalanceTargets(newTargets);
+    setEditingTargets({});
+  };
+
+  const driftColor = (driftPp: number): string => {
+    const abs = Math.abs(driftPp);
+    if (abs <= 2) return "var(--ft-green)";
+    if (abs <= 5) return "var(--ft-amber)";
+    return "var(--ft-red)";
+  };
+
+  const targetSumOk = Math.abs(totalTargetPct - 100) < 0.15;
+
+  const RTBH: React.CSSProperties = {
+    padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
+    background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)",
+    borderRight: "1px solid var(--ft-border)", textTransform: "uppercase" as const,
+    letterSpacing: "0.4px", whiteSpace: "nowrap" as const,
+  };
+
+  const RTBD: React.CSSProperties = {
+    padding: "7px 12px", borderRight: "1px solid var(--ft-border)",
+    fontSize: 12, fontVariantNumeric: "tabular-nums", fontFamily: "var(--font-mono)",
+  };
+
+  if (classAllocData.length === 0) {
+    return (
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "40px 24px", textAlign: "center" }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ft-text)", marginBottom: 8 }}>No positions to rebalance</div>
+        <div style={{ fontSize: 12, color: "var(--ft-dim)" }}>
+          Add positions in the Portfolio tab and assign asset classes. The rebalancer groups positions by asset class.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)" }}>REBALANCING CALCULATOR</div>
+          <div style={{ fontSize: 11, color: "var(--ft-dim)", marginTop: 2 }}>
+            Set target allocations per asset class · Buy/Sell amounts computed automatically
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {!targetSumOk && (
+            <span style={{ fontSize: 11, color: "var(--ft-amber)", fontFamily: "var(--font-mono)" }}>
+              Targets sum: {totalTargetPct.toFixed(1)}% (must equal 100%)
+            </span>
+          )}
+          {targetSumOk && (
+            <span style={{ fontSize: 11, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>
+              Targets sum: 100% ✓
+            </span>
+          )}
+          <button
+            onClick={resetToEqualWeight}
+            style={{
+              padding: "5px 12px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)",
+              letterSpacing: "0.04em", border: "1px solid var(--ft-border2)",
+              background: "var(--ft-raised)", color: "var(--ft-muted)", cursor: "pointer",
+              borderRadius: 2,
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-text)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-muted)"; }}
+          >
+            EQUAL WEIGHT
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
+        <div style={{ overflowX: "auto" }}>
+          {/* Header */}
+          <div style={{ display: "flex", background: "var(--ft-surface)" }}>
+            {[
+              ["ASSET CLASS", "160px"],
+              ["CURRENT VALUE", "130px"],
+              ["CURRENT %", "100px"],
+              ["TARGET %", "120px"],
+              ["DRIFT (pp)", "100px"],
+              ["ACTION", "160px"],
+            ].map(([h, w]) => (
+              <div key={h} style={{ ...RTBH, width: w, minWidth: w, flex: h === "ASSET CLASS" ? 1 : undefined, textAlign: ["CURRENT VALUE", "CURRENT %", "DRIFT (pp)", "ACTION"].includes(h) ? "right" : "left" }}>
+                {h}
+              </div>
+            ))}
+          </div>
+
+          {/* Data rows */}
+          {rows.map((row) => {
+            const color = CLASS_COLORS[row.assetClass as AssetClass] ?? "var(--ft-dim)";
+            const drift = driftColor(row.driftPp);
+            const inputVal = editingTargets[row.assetClass] !== undefined
+              ? editingTargets[row.assetClass]
+              : row.targetPct.toFixed(1);
+            return (
+              <div
+                key={row.assetClass}
+                style={{ display: "flex", alignItems: "center", borderBottom: "1px solid rgba(33,38,45,0.5)", background: "var(--ft-base)" }}
+              >
+                {/* Asset class */}
+                <div style={{ ...RTBD, flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+                  <span style={{ color: "var(--ft-text)", fontWeight: 600, fontSize: 12 }}>{row.assetClass}</span>
+                </div>
+                {/* Current value */}
+                <div style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)" }}>
+                  {formatGbp(row.currentValue)}
+                </div>
+                {/* Current % */}
+                <div style={{ ...RTBD, width: 100, minWidth: 100, textAlign: "right", color: "var(--ft-muted)" }}>
+                  {row.currentPct.toFixed(1)}%
+                </div>
+                {/* Target % (editable) */}
+                <div style={{ ...RTBD, width: 120, minWidth: 120, padding: "4px 8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={inputVal}
+                      onChange={(e) => handleTargetChange(row.assetClass, e.target.value)}
+                      onBlur={() => handleTargetBlur(row.assetClass)}
+                      style={{
+                        width: 60, textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 12,
+                        background: "var(--ft-raised)", border: "1px solid var(--ft-border2)",
+                        color: "var(--ft-text)", padding: "2px 5px", borderRadius: 2, outline: "none",
+                      }}
+                    />
+                    <span style={{ fontSize: 12, color: "var(--ft-muted)" }}>%</span>
+                  </div>
+                </div>
+                {/* Drift */}
+                <div style={{ ...RTBD, width: 100, minWidth: 100, textAlign: "right", color: drift, fontWeight: 600 }}>
+                  {row.driftPp > 0 ? "+" : ""}{row.driftPp.toFixed(1)} pp
+                </div>
+                {/* Action */}
+                <div style={{ ...RTBD, width: 160, minWidth: 160, textAlign: "right" }}>
+                  {row.action === "Hold" ? (
+                    <span style={{ fontSize: 11, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>— HOLD</span>
+                  ) : (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)",
+                      color: row.action === "Buy" ? "var(--ft-green)" : "var(--ft-red)",
+                      padding: "1px 6px", borderRadius: 2,
+                      background: row.action === "Buy" ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)",
+                    }}>
+                      {row.action} {formatGbp(row.actionAmount)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Totals row */}
+          <div style={{ display: "flex", alignItems: "center", borderTop: "2px solid var(--ft-border2)", background: "rgba(163,113,247,0.04)" }}>
+            <div style={{ ...RTBD, flex: 1, color: "var(--ft-dim)", fontWeight: 700, fontSize: 10, letterSpacing: "0.4px", textTransform: "uppercase" }}>
+              TOTAL
+            </div>
+            <div style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)", fontWeight: 700 }}>
+              {formatGbp(totalCurrentValue)}
+            </div>
+            <div style={{ ...RTBD, width: 100, minWidth: 100, textAlign: "right", color: "var(--ft-muted)", fontWeight: 700 }}>
+              {totalPortfolioValue > 0 ? "100.0%" : "—"}
+            </div>
+            <div style={{ ...RTBD, width: 120, minWidth: 120, textAlign: "right", color: targetSumOk ? "var(--ft-green)" : "var(--ft-amber)", fontWeight: 700, fontSize: 12, padding: "7px 12px" }}>
+              {totalTargetPct.toFixed(1)}%
+            </div>
+            <div style={{ ...RTBD, width: 100, minWidth: 100 }} />
+            <div style={{ ...RTBD, width: 160, minWidth: 160 }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", paddingTop: 2 }}>
+        {[
+          { color: "var(--ft-green)", label: "Within ±2pp — on target" },
+          { color: "var(--ft-amber)", label: "±2–5pp drift — consider rebalancing" },
+          { color: "var(--ft-red)", label: ">5pp drift — rebalance recommended" },
+        ].map(({ color, label }) => (
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+            <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: color }} />
+            {label}
+          </div>
+        ))}
+      </div>
+
+      {/* Info note */}
+      <div style={{ padding: "8px 12px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-dim)" }}>
+        Targets persist in localStorage. Asset classes are derived from your portfolio positions using the class tags you assign to each holding.
+        Portfolio total used: <span style={{ fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>{formatGbp(totalPortfolioValue)}</span>.
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function Investments() {
@@ -1558,6 +1841,22 @@ export default function Investments() {
     const cpp = parseFloat(form.costPricePerShare) || 0;
     return sh > 0 ? cpp + fees / sh : null;
   })();
+
+  // ── Portfolio snapshot history (localStorage) — must be above early return ──
+  const SNAPSHOT_KEY = "ft-portfolio-snapshots";
+  useEffect(() => {
+    const totalVal = summary?.totalValueGbp;
+    const hasPosNow = (investments?.length ?? 0) > 0;
+    if (totalVal != null && hasPosNow && totalVal > 0) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      try {
+        const existing: Record<string, number> = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) ?? "{}");
+        existing[todayStr] = Math.round(totalVal * 100) / 100;
+        const sorted = Object.entries(existing).sort(([a], [b]) => a.localeCompare(b)).slice(-90);
+        localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(Object.fromEntries(sorted)));
+      } catch { /* noop */ }
+    }
+  }, [summary?.totalValueGbp, investments?.length]);
 
   if (isLoading || isSummaryLoading) {
     return <div className="space-y-4"><Skeleton className="h-6 w-48" /><Skeleton className="h-8 w-full" /><Skeleton className="h-64 w-full" /></div>;
@@ -1688,6 +1987,15 @@ export default function Investments() {
 
   const hasPositions = (investments?.length ?? 0) > 0;
 
+  const portfolioHistory = (() => {
+    try {
+      const raw = localStorage.getItem(SNAPSHOT_KEY);
+      if (!raw) return [];
+      const obj: Record<string, number> = JSON.parse(raw);
+      return Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value }));
+    } catch { return []; }
+  })();
+
   // ── Chart data ──
   const pieData = (investments ?? []).map((inv, i) => ({ name: inv.ticker, value: Math.round(inv.gbpValue * 100) / 100, color: CHART_COLORS[i % CHART_COLORS.length] }));
   const classAllocMap: Record<string, number> = {};
@@ -1801,6 +2109,58 @@ export default function Investments() {
               <div className="px-3 sm:px-4 py-3 flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" style={{ color: "var(--ft-dim)" }} />
                 <span className="text-xs" style={{ color: "var(--ft-dim)" }}>{investments?.length ?? 0} position{investments?.length !== 1 ? "s" : ""}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state — no positions yet */}
+          {!hasPositions && !isLoading && (
+            <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "40px 24px", textAlign: "center" }}>
+              <pre style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6, marginBottom: 20 }}>{`  ┌──────────────────────────────────────────┐
+  │   PORTFOLIO                              │
+  │                                          │
+  │   TICKER   VALUE    GAIN   RETURN        │
+  │   ────────────────────────────────────── │
+  │   (no positions yet)                     │
+  │                                          │
+  └──────────────────────────────────────────┘`}</pre>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ft-text)", marginBottom: 6 }}>No positions yet</div>
+              <div style={{ fontSize: 12, color: "var(--ft-dim)", marginBottom: 20, maxWidth: 400, margin: "0 auto 20px" }}>
+                Add your first holding to start tracking live P&amp;L, allocation, and portfolio analytics.
+                Prices are fetched live from Yahoo Finance.
+              </div>
+              <Button onClick={openAdd} size="sm" style={{ background: "var(--ft-blue)", color: "#fff", fontSize: 12 }}>
+                <Plus className="w-3.5 h-3.5 mr-1.5" />Add First Position
+              </Button>
+            </div>
+          )}
+
+          {/* Portfolio value history chart (builds up over time via localStorage snapshots) */}
+          {hasPositions && portfolioHistory.length >= 2 && (
+            <div className="border" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
+              <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(96,165,250,0.06)", borderColor: "rgba(96,165,250,0.18)", color: "var(--ft-blue)" }}>
+                ▼ PORTFOLIO VALUE — Historical ({portfolioHistory.length} day snapshots)
+              </div>
+              <div style={{ padding: "12px 12px 4px" }}>
+                <ResponsiveContainer width="100%" height={160}>
+                  <AreaChart data={portfolioHistory} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="portHistGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--ft-blue)" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="var(--ft-blue)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="2 4" stroke="var(--ft-raised)" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(d: string) => d.slice(5)} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} width={46} />
+                    <Tooltip
+                      contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
+                      formatter={(v: number) => [formatGbp(v), "Portfolio Value"]}
+                      labelFormatter={(l: string) => l}
+                    />
+                    <Area type="monotone" dataKey="value" stroke="var(--ft-blue)" strokeWidth={2} fill="url(#portHistGrad)" dot={false} activeDot={{ r: 3, fill: "var(--ft-blue)" }} />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
           )}
@@ -1974,6 +2334,14 @@ export default function Investments() {
 
       {/* ─── MARKETS TAB ─── */}
       {activeTab === "markets" && <MarketsTab />}
+
+      {/* ─── REBALANCE TAB ─── */}
+      {activeTab === "rebalance" && (
+        <RebalanceTab
+          classAllocData={classAllocData}
+          totalPortfolioValue={totalClassValue}
+        />
+      )}
 
     </div>
   );

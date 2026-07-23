@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
+import { usePrivacy } from "@/contexts/privacy-context";
 
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
+  onNewTransaction?: () => void;
 }
 
 type CommandSection = "navigation" | "actions";
@@ -17,44 +19,104 @@ interface Command {
   action: () => void;
 }
 
-function buildCommands(navigate: (path: string) => void, onClose: () => void): Command[] {
+function buildCommands(
+  navigate: (path: string) => void,
+  onClose: () => void,
+  onNewTransaction?: () => void,
+  togglePrivacy?: () => void,
+): Command[] {
   const nav = (path: string) => () => {
     navigate(path);
     onClose();
   };
 
+  const act = (fn: () => void) => () => {
+    fn();
+    onClose();
+  };
+
   return [
-    { id: "go-dashboard",    section: "navigation", icon: "◈", title: "Go to Dashboard",    shortcut: "G D", action: nav("/") },
-    { id: "go-transactions", section: "navigation", icon: "⇌", title: "Go to Transactions", shortcut: "G T", action: nav("/transactions") },
-    { id: "go-accounts",     section: "navigation", icon: "▣", title: "Go to Accounts",     shortcut: "G A", action: nav("/accounts") },
-    { id: "go-reports",      section: "navigation", icon: "≡", title: "Go to Reports",      shortcut: "G R", action: nav("/reports") },
-    { id: "go-settings",     section: "navigation", icon: "◎", title: "Go to Settings",     shortcut: "G S", action: nav("/settings") },
-    { id: "go-upcoming",     section: "navigation", icon: "◷", title: "Go to Upcoming",     shortcut: "G U", action: nav("/upcoming") },
-    { id: "go-investments",  section: "navigation", icon: "△", title: "Go to Investments",  shortcut: "G I", action: nav("/investments") },
-    { id: "go-owing",        section: "navigation", icon: "◁", title: "Go to Owing",        shortcut: "G O", action: nav("/owing") },
-    { id: "go-goals",        section: "navigation", icon: "◎", title: "Go to Goals",        shortcut: "G L", action: nav("/goals") },
-    { id: "go-analytics",       section: "navigation", icon: "◈", title: "Go to Analytics",       shortcut: "G N",  action: nav("/analytics") },
-    { id: "go-profile",         section: "navigation", icon: "○", title: "Go to Profile",         shortcut: "G P",  action: nav("/profile") },
-    { id: "go-budget",          section: "navigation", icon: "▦", title: "Go to Budget",          shortcut: "G B",  action: nav("/budget") },
-    { id: "go-health-score",    section: "navigation", icon: "♥", title: "Go to Health Score",    shortcut: "G H",  action: nav("/health-score") },
-    { id: "go-net-worth",       section: "navigation", icon: "◇", title: "Go to Net Worth",       shortcut: "G W",  action: nav("/net-worth") },
-    { id: "go-whatif",          section: "navigation", icon: "?", title: "Go to What-If",         shortcut: "G F",  action: nav("/whatif") },
-    { id: "go-subscriptions",   section: "navigation", icon: "↻", title: "Go to Subscriptions",   shortcut: "G C",  action: nav("/subscriptions") },
-    { id: "go-tax",             section: "navigation", icon: "£", title: "Go to Tax",             shortcut: "G Y",  action: nav("/tax") },
-    { id: "go-mortgage",        section: "navigation", icon: "⌂", title: "Go to Mortgage",        shortcut: "G M",  action: nav("/mortgage") },
-    { id: "go-calendar",        section: "navigation", icon: "▦", title: "Go to Calendar",        shortcut: "G K",  action: nav("/calendar") },
-    { id: "go-split",           section: "navigation", icon: "÷", title: "Go to Bill Split",      shortcut: "G X",  action: nav("/split") },
-    { id: "go-cashflow",        section: "navigation", icon: "→", title: "Go to Cash Flow",        shortcut: "G V",  action: nav("/cashflow") },
-    { id: "go-year-review",     section: "navigation", icon: "★", title: "Go to Year Review",      shortcut: "G E",  action: nav("/year-review") },
-    { id: "go-import",          section: "navigation", icon: "↑", title: "Go to Import",           shortcut: "G J",  action: nav("/import") },
-    { id: "go-recurring",       section: "navigation", icon: "↺", title: "Go to Recurring Rules",  shortcut: "G Z",  action: nav("/recurring") },
+    { id: "go-dashboard",     section: "navigation", icon: "◈", title: "Go to Dashboard",     shortcut: "G D", action: nav("/") },
+    { id: "go-transactions",  section: "navigation", icon: "⇌", title: "Go to Transactions",  shortcut: "G T", action: nav("/transactions") },
+    { id: "go-accounts",      section: "navigation", icon: "▣", title: "Go to Accounts",      shortcut: "G A", action: nav("/accounts") },
+    { id: "go-reports",       section: "navigation", icon: "≡", title: "Go to Reports",       shortcut: "G R", action: nav("/reports") },
+    { id: "go-settings",      section: "navigation", icon: "◎", title: "Go to Settings",      shortcut: "G S", action: nav("/settings") },
+    { id: "go-recurring",     section: "navigation", icon: "↺", title: "Go to Recurring",     shortcut: "G U", action: nav("/recurring") },
+    { id: "go-investments",   section: "navigation", icon: "△", title: "Go to Investments",   shortcut: "G I", action: nav("/investments") },
+    { id: "go-owing",         section: "navigation", icon: "◁", title: "Go to Owing",         shortcut: "G O", action: nav("/owing") },
+    { id: "go-goals",         section: "navigation", icon: "◎", title: "Go to Goals",         shortcut: "G L", action: nav("/goals") },
+    { id: "go-analytics",     section: "navigation", icon: "◈", title: "Go to Analytics",     shortcut: "G N", action: nav("/analytics") },
+    { id: "go-profile",       section: "navigation", icon: "○", title: "Go to Profile",       shortcut: "G P", action: nav("/profile") },
+    { id: "go-budget",        section: "navigation", icon: "▦", title: "Go to Budget",        shortcut: "G B", action: nav("/budget") },
+    { id: "go-health-score",  section: "navigation", icon: "♥", title: "Go to Health Score",  shortcut: "G H", action: nav("/health-score") },
+    { id: "go-net-worth",     section: "navigation", icon: "◇", title: "Go to Net Worth",     shortcut: "G W", action: nav("/net-worth") },
+    { id: "go-whatif",        section: "navigation", icon: "?", title: "Go to Calculators",   shortcut: "G F", action: nav("/whatif") },
+    { id: "go-subscriptions", section: "navigation", icon: "↻", title: "Go to Subscriptions", shortcut: "G C", action: nav("/subscriptions") },
+    { id: "go-tax",           section: "navigation", icon: "£", title: "Go to Tax",           shortcut: "G Y", action: nav("/tax") },
+    { id: "go-mortgage",      section: "navigation", icon: "⌂", title: "Go to Mortgage",      shortcut: "G M", action: nav("/mortgage") },
+    { id: "go-calendar",      section: "navigation", icon: "▦", title: "Go to Calendar",      shortcut: "G K", action: nav("/calendar") },
+    { id: "go-split",         section: "navigation", icon: "÷", title: "Go to Bill Split",    shortcut: "G X", action: nav("/split") },
+    { id: "go-cashflow",      section: "navigation", icon: "→", title: "Go to Cash Flow",     shortcut: "G V", action: nav("/cashflow") },
+    { id: "go-year-review",   section: "navigation", icon: "★", title: "Go to Year Review",   shortcut: "G E", action: nav("/year-review") },
+    { id: "go-import",        section: "navigation", icon: "↑", title: "Go to Import",        shortcut: "G J", action: nav("/import") },
+    { id: "go-ai-coach",      section: "navigation", icon: "✦", title: "Go to AI Coach",      shortcut: "G G", action: nav("/ai-coach") },
     {
       id: "new-transaction",
       section: "actions",
       icon: "+",
       title: "New Transaction",
       shortcut: "N",
-      action: onClose,
+      action: onNewTransaction ? act(onNewTransaction) : onClose,
+    },
+    {
+      id: "import-transactions",
+      section: "actions",
+      icon: "↑",
+      title: "Import Transactions (CSV)",
+      action: nav("/import"),
+    },
+    {
+      id: "set-budget-limits",
+      section: "actions",
+      icon: "▦",
+      title: "Set Budget Limits",
+      action: nav("/budget"),
+    },
+    {
+      id: "manage-accounts",
+      section: "actions",
+      icon: "▣",
+      title: "Manage Accounts",
+      action: nav("/accounts"),
+    },
+    {
+      id: "toggle-privacy",
+      section: "actions",
+      icon: "◉",
+      title: "Toggle Privacy Mode",
+      shortcut: "P",
+      action: togglePrivacy ? act(togglePrivacy) : onClose,
+    },
+    {
+      id: "add-new-goal",
+      section: "actions",
+      icon: "◎",
+      title: "Add New Goal",
+      action: nav("/goals"),
+    },
+    {
+      id: "new-debt-iou",
+      section: "actions",
+      icon: "◁",
+      title: "New Debt / IOU",
+      action: nav("/owing"),
+    },
+    {
+      id: "quick-csv-import",
+      section: "actions",
+      icon: "↑",
+      title: "Import CSV",
+      action: nav("/import"),
     },
     {
       id: "toggle-sidebar",
@@ -74,14 +136,16 @@ const SECTION_LABELS: Record<CommandSection, string> = {
 
 const SECTION_ORDER: CommandSection[] = ["navigation", "actions"];
 
-export function CommandPalette({ open, onClose }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, onNewTransaction }: CommandPaletteProps) {
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const prevFocusRef = useRef<Element | null>(null);
+  const { togglePrivacy } = usePrivacy();
 
-  const commands = buildCommands(navigate, onClose);
+  const commands = buildCommands(navigate, onClose, onNewTransaction, togglePrivacy);
 
   const filtered = query.trim() === ""
     ? commands
@@ -101,9 +165,12 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   useEffect(() => {
     if (open) {
+      prevFocusRef.current = document.activeElement;
       setQuery("");
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 0);
+    } else {
+      (prevFocusRef.current as HTMLElement | null)?.focus?.();
     }
   }, [open]);
 
@@ -205,7 +272,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a command..."
+            placeholder="Type a command or destination..."
             style={{
               flex: 1,
               background: "transparent",

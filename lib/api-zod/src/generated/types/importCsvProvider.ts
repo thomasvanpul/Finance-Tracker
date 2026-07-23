@@ -12,4 +12,8 @@ export type ImportCsvProvider = typeof ImportCsvProvider[keyof typeof ImportCsvP
 export const ImportCsvProvider = {
   revolut: 'revolut',
   maybank: 'maybank',
+  monzo: 'monzo',
+  hsbc: 'hsbc',
+  wise: 'wise',
+  chase: 'chase',
 } as const;

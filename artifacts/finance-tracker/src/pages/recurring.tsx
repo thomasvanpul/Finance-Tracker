@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
-import { useListTransactions } from "@workspace/api-client-react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useListTransactions, useUpdateTransaction, getListTransactionsQueryKey } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -11,6 +13,9 @@ interface Tx {
   type: string;
   category: string;
   gbpValue: number;
+  nativeAmount: number;
+  currency: string;
+  accountId: number;
 }
 
 interface RecurringPattern {
@@ -510,13 +515,38 @@ function ApplyRules({
   allTxs: Tx[];
 }) {
   const [showPreview, setShowPreview] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [confirmApply, setConfirmApply] = useState(false);
+  const confirmAreaRef = useRef<HTMLDivElement>(null);
+  const updateTx = useUpdateTransaction();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Auto-reset confirm state after 5 seconds if user doesn't follow through
+  useEffect(() => {
+    if (!confirmApply) return;
+    const id = setTimeout(() => setConfirmApply(false), 5000);
+    return () => clearTimeout(id);
+  }, [confirmApply]);
+
+  // Reset confirm state when user clicks anywhere outside the confirm area
+  useEffect(() => {
+    if (!confirmApply) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (confirmAreaRef.current && !confirmAreaRef.current.contains(e.target as Node)) {
+        setConfirmApply(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [confirmApply]);
 
   const activeRules = rules.filter((r) => r.isActive);
 
   const preview = useMemo(() => {
     const changes: { tx: Tx; newCategory: string; rule: RecurringRule }[] = [];
     for (const tx of allTxs) {
-      if (tx.category) continue; // skip already categorized
+      if (tx.category) continue;
       for (const rule of activeRules) {
         if (tx.description.toLowerCase().includes(rule.matchText.toLowerCase())) {
           changes.push({ tx, newCategory: rule.category, rule });
@@ -527,42 +557,112 @@ function ApplyRules({
     return changes;
   }, [allTxs, activeRules]);
 
+  const handleApply = async () => {
+    if (preview.length === 0 || applying) return;
+    setApplying(true);
+    try {
+      await Promise.all(
+        preview.map(({ tx, newCategory }) =>
+          updateTx.mutateAsync({
+            id: tx.id,
+            data: {
+              date: tx.date,
+              description: tx.description,
+              type: tx.type as "income" | "expense" | "transfer",
+              category: newCategory,
+              nativeAmount: tx.nativeAmount,
+              currency: tx.currency,
+              accountId: tx.accountId,
+            },
+          })
+        )
+      );
+      await queryClient.invalidateQueries({ queryKey: getListTransactionsQueryKey() });
+      toast({ title: `Applied ${preview.length} rule${preview.length !== 1 ? "s" : ""}`, description: "Transactions re-categorised successfully." });
+      setShowPreview(false);
+      setConfirmApply(false);
+    } catch {
+      toast({ title: "Failed to apply rules", description: "Some transactions could not be updated.", variant: "destructive" });
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const handleApplyClick = () => {
+    if (!confirmApply) {
+      setConfirmApply(true);
+    } else {
+      void handleApply();
+    }
+  };
+
   return (
     <div style={card}>
       <div style={secTitle}>APPLY RULES</div>
       <div style={secSub}>
-        Preview which un-categorized transactions would be updated by your active rules
+        Preview and apply active rules to un-categorized transactions
       </div>
 
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
-        <div style={{
-          ...mono,
-          fontSize: 11,
-          color: "var(--ft-text)",
-        }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap" }}>
+        <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", alignSelf: "center" }}>
           {activeRules.length} active rule{activeRules.length !== 1 ? "s" : ""} · {preview.length} un-categorized transaction{preview.length !== 1 ? "s" : ""} would be updated
         </div>
         <button
           onClick={() => setShowPreview((v) => !v)}
           disabled={preview.length === 0}
-          style={{
-            ...BTN_GHOST,
-            opacity: preview.length === 0 ? 0.5 : 1,
-            cursor: preview.length === 0 ? "not-allowed" : "pointer",
-          }}
+          style={{ ...BTN_GHOST, opacity: preview.length === 0 ? 0.5 : 1, cursor: preview.length === 0 ? "not-allowed" : "pointer", alignSelf: "center" }}
         >
           {showPreview ? "Hide" : "Show"} Preview ({preview.length})
         </button>
-        <div style={{
-          ...mono,
-          fontSize: 9,
-          color: "var(--ft-amber)",
-          padding: "4px 10px",
-          background: "var(--ft-amber)10",
-          border: "1px solid var(--ft-amber)33",
-          marginLeft: "auto",
-        }}>
-          API update coming soon — this is a preview only
+        <div ref={confirmAreaRef} style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <button
+            onClick={handleApplyClick}
+            disabled={preview.length === 0 || applying}
+            style={{
+              ...BTN_GHOST,
+              background: applying
+                ? undefined
+                : confirmApply
+                  ? "rgba(210,140,0,0.12)"
+                  : preview.length > 0
+                    ? "var(--ft-blue)18"
+                    : undefined,
+              color: applying
+                ? "var(--ft-dim)"
+                : confirmApply
+                  ? "var(--ft-amber)"
+                  : preview.length > 0
+                    ? "var(--ft-blue)"
+                    : "var(--ft-dim)",
+              borderColor: applying
+                ? undefined
+                : confirmApply
+                  ? "rgba(210,140,0,0.4)"
+                  : preview.length > 0
+                    ? "var(--ft-blue)44"
+                    : undefined,
+              opacity: preview.length === 0 || applying ? 0.5 : 1,
+              cursor: preview.length === 0 || applying ? "not-allowed" : "pointer",
+              transition: "background 0.15s, color 0.15s, border-color 0.15s",
+            }}
+          >
+            {applying
+              ? "Applying…"
+              : confirmApply
+                ? `Confirm Apply (${preview.length}) →`
+                : `Apply ${preview.length > 0 ? `(${preview.length})` : ""}`}
+          </button>
+          {confirmApply && !applying && (
+            <div style={{
+              ...mono,
+              fontSize: 9,
+              color: "var(--ft-amber)",
+              letterSpacing: "0.04em",
+              opacity: 0.85,
+            }}>
+              This will update {preview.length} transaction{preview.length !== 1 ? "s" : ""}. Click again to confirm.
+            </div>
+          )}
         </div>
       </div>
 
@@ -584,12 +684,7 @@ function ApplyRules({
                   <td style={{ ...td, color: "var(--ft-muted)" }}>{tx.category || <em style={{ color: "var(--ft-dim)" }}>none</em>}</td>
                   <td style={{ ...td, color: "var(--ft-accent)", fontSize: 9 }}>{rule.matchText}</td>
                   <td style={{ ...td }}>
-                    <span style={{
-                      fontSize: 9,
-                      padding: "1px 6px",
-                      background: "var(--ft-green)22",
-                      color: "var(--ft-green)",
-                    }}>
+                    <span style={{ fontSize: 9, padding: "1px 6px", background: "var(--ft-green)22", color: "var(--ft-green)" }}>
                       {newCategory}
                     </span>
                   </td>

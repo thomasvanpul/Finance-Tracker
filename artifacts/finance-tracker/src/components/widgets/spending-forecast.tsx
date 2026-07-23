@@ -1,20 +1,6 @@
-import { useState, useEffect } from "react";
-import { useListTransactions } from "@workspace/api-client-react";
+import { useListTransactions, useListBudgets } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
-
-interface Budget {
-  category: string;
-  limit: number;
-}
-
-function loadBudgets(): Budget[] {
-  try {
-    const raw = localStorage.getItem("ft-budgets");
-    if (raw) return JSON.parse(raw) as Budget[];
-  } catch {}
-  return [];
-}
 
 type ForecastStatus = "ON TRACK" | "AT RISK" | "OVER";
 
@@ -37,11 +23,7 @@ function calcStatus(projected: number, limit: number): ForecastStatus {
 }
 
 export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean }) {
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-
-  useEffect(() => {
-    setBudgets(loadBudgets());
-  }, []);
+  const { data: budgets = [] } = useListBudgets();
 
   const now = new Date();
   const dayOfMonth = now.getDate();
@@ -57,7 +39,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
   const dailyRate = dayOfMonth > 0 ? totalSpentSoFar / dayOfMonth : 0;
   const projectedTotal = dailyRate * daysInMonth;
 
-  const totalBudget = budgets.reduce((s, b) => s + b.limit, 0);
+  const totalBudget = budgets.reduce((s, b) => s + b.monthlyLimit, 0);
   const hasBudgets = budgets.length > 0;
 
   // Category totals
@@ -85,8 +67,8 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
     const spent = catSpent[cat] ?? 0;
     const projectedCat = dayOfMonth > 0 ? (spent / dayOfMonth) * daysInMonth : 0;
     const budget = budgets.find((b) => b.category.toLowerCase() === cat.toLowerCase());
-    const status = budget ? calcStatus(projectedCat, budget.limit) : null;
-    return { category: cat, spent, projected: projectedCat, budget: budget ? budget.limit : null, status };
+    const status = budget ? calcStatus(projectedCat, budget.monthlyLimit) : null;
+    return { category: cat, spent, projected: projectedCat, budget: budget ? budget.monthlyLimit : null, status };
   }).sort((a, b) => b.spent - a.spent);
 
   const overallStatus = hasBudgets && totalBudget > 0 ? calcStatus(projectedTotal, totalBudget) : null;

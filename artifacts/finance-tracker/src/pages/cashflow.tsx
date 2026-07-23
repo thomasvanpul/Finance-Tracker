@@ -259,6 +259,27 @@ export default function CashflowPage() {
     );
   }
 
+  if (accounts.length === 0) {
+    return (
+      <div>
+        <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 20 }}>
+          CASH FLOW FORECAST
+        </div>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "48px 32px", textAlign: "center" }}>
+          <div style={{ ...mono, fontSize: 11, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
+            NO ACCOUNTS FOUND
+          </div>
+          <div style={{ ...mono, fontSize: 13, color: "var(--ft-text)", fontWeight: 700, marginBottom: 8 }}>
+            Add an account to see your cash flow forecast
+          </div>
+          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", maxWidth: 380, margin: "0 auto" }}>
+            Cash flow projections are based on your current account balances, upcoming bills, and your average spending over the last 30 days.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Header */}
@@ -322,7 +343,7 @@ export default function CashflowPage() {
       </div>
 
       {/* KPI strip */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
+      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
         {[
           {
             label: "Starting Balance",

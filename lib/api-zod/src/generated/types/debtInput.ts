@@ -17,4 +17,5 @@ export interface DebtInput {
   direction: DebtInputDirection;
   notes?: string;
   accountId?: number;
+  linkedEmail?: string;
 }

@@ -459,7 +459,7 @@ export default function Upcoming() {
 
       {/* Summary bar */}
       {summary && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-raised)" }}>
             <div style={{ fontSize: 10, color: "var(--ft-dim)", marginBottom: 3, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.4px" }}>30-Day Outgoings</div>
             <div style={{ fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>-{formatGbp(summary.committedOutgoings30d)}</div>
@@ -516,7 +516,7 @@ export default function Upcoming() {
         </button>
 
         {forecastOpen && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
+          <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
             {([
               { label: "30d", net: forecast30 },
               { label: "60d", net: forecast60 },

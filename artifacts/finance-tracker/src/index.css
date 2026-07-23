@@ -175,6 +175,16 @@ button:not(:disabled):active,
   opacity: 0.7;
 }
 
+/* Checkbox check animation — spring pop on check */
+@keyframes ft-check-pop {
+  0%   { transform: scale(0.8); }
+  50%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+input[type="checkbox"]:checked {
+  animation: ft-check-pop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* Row hover — uses theme surface token, not a hardcoded blue */
 .xls-row:hover td {
   background-color: var(--ft-raised) !important;
@@ -445,7 +455,7 @@ button:not(:disabled):active,
 }
 
 *:focus-visible {
-  outline: 1px solid var(--ft-accent);
+  outline: 1.5px solid var(--ft-accent);
   outline-offset: 2px;
 }
 
@@ -468,9 +478,182 @@ button:not(:disabled):active,
   animation: ft-pulse 2s ease-in-out infinite;
 }
 
-/* Dashboard widget hover toolbar */
-.widget-container:hover .widget-toolbar {
-  opacity: 1 !important;
+/* Dashboard widget left rail — controlled via React state, no CSS needed */
+
+/* ── Dashboard responsive grid ── */
+.ft-dashboard-two-col {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.ft-dashboard-two-col > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ft-dashboard-insights {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+/* ── Mobile bottom navigation ── */
+.ft-mobile-nav {
+  display: none;
+}
+
+/* ── Mobile breakpoint: ≤ 640px ── */
+@media (max-width: 640px) {
+  /* Hide sidebar on mobile */
+  aside.ft-sidebar {
+    display: none !important;
+  }
+
+  /* Tighten main content padding */
+  .ft-main-inner {
+    padding: 14px 14px 80px !important;
+  }
+
+  /* Dashboard two-col → single col */
+  .ft-dashboard-two-col {
+    flex-direction: column;
+  }
+
+  /* Insights grid → single col */
+  .ft-dashboard-insights {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Show mobile bottom nav */
+  .ft-mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
+    background: var(--ft-surface);
+    border-top: 1px solid var(--ft-border);
+    z-index: 50;
+    align-items: stretch;
+    justify-content: space-around;
+  }
+
+  /* Mobile: hide status strip footer */
+  footer {
+    display: none !important;
+  }
+
+  /* ── Responsive grid utilities ── */
+
+  /* 5-col KPI strips → 2-col */
+  .ft-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+
+  /* 4-col cards → 2-col */
+  .ft-four-col {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* 5-col cards → 2-col */
+  .ft-five-col {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Stat grids (many cols) → 2-col */
+  .ft-stat-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* 3-col → single col */
+  .ft-three-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Generic 2-col page sections → single col */
+  .ft-two-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Wardrobe: preview 340px + list → stacked */
+  .ft-wardrobe-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .ft-wardrobe-layout > :first-child {
+    position: static !important;
+  }
+
+  /* Analytics: chart + sidebar → stacked */
+  .ft-chart-sidebar {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Year review header: flex-wrap for year buttons */
+  .ft-yr-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* ── Tablet breakpoint: 641px – 900px ── */
+@media (min-width: 641px) and (max-width: 900px) {
+  /* Compact main padding */
+  .ft-main-inner {
+    padding: 16px 18px 28px !important;
+  }
+
+  /* Tighten insights grid */
+  .ft-dashboard-insights {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* 5-col KPI strips → 3-col on tablet */
+  .ft-kpi-grid {
+    grid-template-columns: 1fr 1fr 1fr !important;
+  }
+
+  .ft-five-col {
+    grid-template-columns: 1fr 1fr 1fr !important;
+  }
+
+  .ft-stat-grid {
+    grid-template-columns: 1fr 1fr 1fr 1fr !important;
+  }
+
+  /* Wardrobe: tighter preview panel */
+  .ft-wardrobe-layout {
+    grid-template-columns: 260px 1fr !important;
+  }
+}
+
+/* ── Print / PDF export ── */
+@media print {
+  aside.ft-sidebar,
+  nav.ft-mobile-nav,
+  .ft-no-print {
+    display: none !important;
+  }
+
+  body, html {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .ft-main-inner {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  * {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -517,4 +700,22 @@ button:not(:disabled):active,
   80%  { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ── dashboard widget staggered reveal ── */
+@keyframes ft-widget-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.widget-container {
+  animation: ft-widget-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--widget-stagger, 0ms);
+}
+
+/* ── Typography utility classes ── */
+.ft-label    { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ft-dim); }
+.ft-sublabel { font-family: var(--font-mono); font-size: 10px; color: var(--ft-muted); }
+.ft-value    { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.ft-headline { font-family: var(--font-mono); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.ft-caption  { font-family: var(--font-mono); font-size: 8px; color: var(--ft-dim); letter-spacing: 0.06em; }
 

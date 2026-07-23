@@ -14,13 +14,15 @@ import {
   getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { PrivDesc } from "@/contexts/privacy-context";
+import { convertWithOverride } from "@/lib/currency-store";
 import { applyAutoCategory } from "@/lib/auto-cat";
 import { loadTemplates, saveTemplate, deleteTemplate, type TxTemplate } from "@/lib/tx-templates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Plus, Trash2, Edit2, Search, X, ArrowLeftRight, Save } from "lucide-react";
+import { AlertCircle, Plus, Trash2, Edit2, Search, X, ArrowLeftRight, Save, FileText, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import {
   Dialog,
@@ -37,7 +39,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton as FtSkeleton } from "@/components/skeleton";
+import { EmptyState } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
 import { useToast } from "@/hooks/use-toast";
 
 type TxType = "income" | "expense" | "transfer";
@@ -51,6 +55,41 @@ interface TxForm {
   accountId: string;
   nativeAmount: string;
   currency: Currency;
+}
+
+interface TxFormErrors {
+  date?: string;
+  description?: string;
+  category?: string;
+  accountId?: string;
+  nativeAmount?: string;
+}
+
+const EMPTY_ERRORS: TxFormErrors = {};
+
+function validateTxField(field: keyof TxFormErrors, value: string, isEdit: boolean): string | undefined {
+  switch (field) {
+    case "date":
+      if (!value) return "Date is required";
+      return undefined;
+    case "description":
+      if (!value.trim()) return "Description is required";
+      return undefined;
+    case "category":
+      if (!value.trim()) return "Category is required";
+      return undefined;
+    case "accountId":
+      if (!isEdit && !value) return "Account is required";
+      return undefined;
+    case "nativeAmount": {
+      if (!value) return "Amount is required";
+      const n = parseFloat(value);
+      if (isNaN(n) || n <= 0) return "Enter a positive amount";
+      return undefined;
+    }
+    default:
+      return undefined;
+  }
 }
 
 interface SplitLine {
@@ -141,8 +180,9 @@ function exportCsv(rows: Array<{
   nativeAmount: number;
   currency: string;
   accountName: string;
+  gbpValue?: number;
 }>) {
-  const header = ["Date", "Description", "Category", "Type", "Amount", "Currency", "Account"];
+  const header = ["Date", "Description", "Category", "Type", "Amount", "Currency", "Account", "GBP Value"];
   const escape = (v: string | number) => {
     const s = String(v);
     return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
@@ -150,7 +190,7 @@ function exportCsv(rows: Array<{
   const lines = [
     header.join(","),
     ...rows.map((r) =>
-      [r.date, r.description, r.category, r.type, Math.abs(r.nativeAmount), r.currency, r.accountName]
+      [r.date, r.description, r.category, r.type, Math.abs(r.nativeAmount), r.currency, r.accountName, r.gbpValue != null ? Math.abs(r.gbpValue).toFixed(2) : ""]
         .map(escape)
         .join(",")
     ),
@@ -162,6 +202,19 @@ function exportCsv(rows: Array<{
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
+function exportJson(rows: Array<{ date: string; description: string; category: string; type: string; nativeAmount: number; currency: string; gbpValue: number; accountName: string }>) {
+  const data = rows.map((r) => ({ date: r.date, description: r.description, category: r.category, type: r.type, amount: Math.abs(r.nativeAmount), currency: r.currency, gbpValue: Math.abs(r.gbpValue), account: r.accountName }));
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `transactions-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
@@ -185,11 +238,19 @@ export default function Transactions() {
   const [editId, setEditId] = useState<number | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
   const [form, setForm] = useState<TxForm>(EMPTY_FORM);
+  const [formErrors, setFormErrors] = useState<TxFormErrors>(EMPTY_ERRORS);
   const [submitting, setSubmitting] = useState(false);
 
   // ── filters ─────────────────────────────────────────────────────────────
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("q") ?? "";
+    } catch { return ""; }
+  });
   const [filterType, setFilterType] = useState<"all" | TxType>("all");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterAccount, setFilterAccount] = useState("all");
+  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-high" | "amount-low">("date-desc");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [amountMin, setAmountMin] = useState("");
@@ -197,8 +258,19 @@ export default function Transactions() {
 
   // ── bulk selection ───────────────────────────────────────────────────────
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [bulkCatOpen, setBulkCatOpen] = useState(false);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkFormCat, setBulkFormCat] = useState("");
+  const [bulkFormType, setBulkFormType] = useState<"" | TxType>("");
+
+  // ── per-transaction notes (localStorage) ─────────────────────────────────
+  const [notes, setNotes] = useState<Record<number, string>>(() => {
+    try {
+      const raw = localStorage.getItem("ft-tx-notes");
+      return raw ? (JSON.parse(raw) as Record<number, string>) : {};
+    } catch { return {}; }
+  });
+  const [openNoteId, setOpenNoteId] = useState<number | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
 
   // ── merchant grouping ────────────────────────────────────────────────────
   const [groupByMerchant, setGroupByMerchant] = useState(false);
@@ -206,6 +278,10 @@ export default function Transactions() {
 
   // ── group by day ─────────────────────────────────────────────────────────
   const [groupByDay, setGroupByDay] = useState(false);
+
+  // ── pagination ────────────────────────────────────────────────────────────
+  const PAGE_SIZE = 75;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // ── split transaction ─────────────────────────────────────────────────────
   const [splitTxId, setSplitTxId] = useState<number | null>(null);
@@ -223,44 +299,73 @@ export default function Transactions() {
   // ── search input ref for / shortcut ─────────────────────────────────────
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // ── escape key deselects + / focuses search ──────────────────────────────
+  // ── AI batch categorize ──────────────────────────────────────────────────
+  const [aiCatConfirmOpen, setAiCatConfirmOpen] = useState(false);
+  const [aiCatRunning, setAiCatRunning] = useState(false);
+
+  // ── keyboard navigation ──────────────────────────────────────────────────
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  const hasFilters = search || filterType !== "all" || filterCategory !== "all" || filterAccount !== "all" || filterDateFrom || filterDateTo || amountMin || amountMax;
+
+  // Reset pagination when filters change
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax]);
+
+  // Reset row selection when filters change
+  useEffect(() => { setSelectedRowIndex(null); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, sortBy]);
+
+  // Scroll selected row into view
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSelectedIds(new Set());
-        setBulkCatOpen(false);
-        return;
-      }
-      if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
+    if (selectedRowIndex === null || !tableContainerRef.current) return;
+    const rows = tableContainerRef.current.querySelectorAll<HTMLElement>("[data-tx-row]");
+    const el = rows[selectedRowIndex];
+    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedRowIndex]);
 
-  const hasFilters = search || filterType !== "all" || filterDateFrom || filterDateTo || amountMin || amountMax;
+  const allCategories = [...new Set((transactions ?? []).map(tx => tx.category).filter(Boolean))].sort();
+  const allAccounts = [...new Set((transactions ?? []).map(tx => tx.accountName).filter(Boolean))].sort();
 
-  const filtered = (transactions ?? []).filter((tx) => {
-    if (filterType !== "all" && tx.type !== filterType) return false;
-    if (filterDateFrom && tx.date < filterDateFrom) return false;
-    if (filterDateTo && tx.date > filterDateTo) return false;
-    if (amountMin !== "" && tx.gbpValue < parseFloat(amountMin)) return false;
-    if (amountMax !== "" && tx.gbpValue > parseFloat(amountMax)) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      const desc = (tx.description ?? "").toLowerCase();
-      const cat = (tx.category ?? "").toLowerCase();
-      const acct = (tx.accountName ?? "").toLowerCase();
-      if (!desc.includes(q) && !cat.includes(q) && !acct.includes(q)) return false;
-    }
-    return true;
-  });
+  const filtered = (() => {
+    const base = (transactions ?? []).filter((tx) => {
+      if (filterType !== "all" && tx.type !== filterType) return false;
+      if (filterCategory !== "all" && tx.category !== filterCategory) return false;
+      if (filterAccount !== "all" && tx.accountName !== filterAccount) return false;
+      if (filterDateFrom && tx.date < filterDateFrom) return false;
+      if (filterDateTo && tx.date > filterDateTo) return false;
+      if (amountMin !== "" && Math.abs(tx.gbpValue) < parseFloat(amountMin)) return false;
+      if (amountMax !== "" && Math.abs(tx.gbpValue) > parseFloat(amountMax)) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const desc = (tx.description ?? "").toLowerCase();
+        const cat = (tx.category ?? "").toLowerCase();
+        const acct = (tx.accountName ?? "").toLowerCase();
+        if (!desc.includes(q) && !cat.includes(q) && !acct.includes(q)) return false;
+      }
+      return true;
+    });
+    if (sortBy === "date-asc") return [...base].sort((a, b) => a.date.localeCompare(b.date));
+    if (sortBy === "amount-high") return [...base].sort((a, b) => Math.abs(b.gbpValue) - Math.abs(a.gbpValue));
+    if (sortBy === "amount-low") return [...base].sort((a, b) => Math.abs(a.gbpValue) - Math.abs(b.gbpValue));
+    return base; // date-desc is server default
+  })();
 
   const filteredAvg = filtered.length > 0
     ? filtered.reduce((acc, tx) => acc + tx.gbpValue, 0) / filtered.length
     : 0;
+
+  // ── keyboard shortcuts ────────────────────────────────────────────────────
+  useEffect(() => {
+    const inInput = () => { const t = document.activeElement?.tagName; return t === "INPUT" || t === "TEXTAREA" || t === "SELECT"; };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setSelectedIds(new Set()); setBulkFormCat(""); setBulkFormType(""); setOpenNoteId(null); return; }
+      if (e.key === "/" && !inInput()) { e.preventDefault(); searchInputRef.current?.focus(); }
+      if (e.key === "n" && !inInput() && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setForm(EMPTY_FORM); setAutoCatFilled(false); setAddOpen(true); }
+      if (e.key === "e" && !inInput() && !e.metaKey && !e.ctrlKey) { e.preventDefault(); exportCsv(filtered); }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [filtered]);
 
   // ── quick date range helpers ─────────────────────────────────────────────
   const activeQuickRange = (() => {
@@ -348,6 +453,27 @@ export default function Transactions() {
       }));
   })();
 
+  // Paginated slices
+  const visibleFiltered = filtered.slice(0, visibleCount);
+  const hasMoreFlat = filtered.length > visibleCount;
+  const visibleDayGroups = (() => {
+    if (!groupByDay) return [];
+    let shown = 0;
+    const groups: typeof dayGroups = [];
+    for (const g of dayGroups) {
+      if (shown >= visibleCount) break;
+      groups.push({ ...g, txs: g.txs.slice(0, visibleCount - shown) });
+      shown += g.txs.length;
+    }
+    return groups;
+  })();
+  const hasMoreDayGroups = (() => {
+    if (!groupByDay) return false;
+    let total = 0;
+    for (const g of dayGroups) total += g.txs.length;
+    return total > visibleCount;
+  })();
+
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: getListTransactionsQueryKey() });
     queryClient.invalidateQueries({ queryKey: getGetTransactionSummaryQueryKey() });
@@ -358,6 +484,7 @@ export default function Transactions() {
   const openAdd = () => {
     const first = accounts?.[0];
     setForm({ ...EMPTY_FORM, accountId: first ? String(first.id) : "", currency: (first?.currency as Currency) ?? "GBP" });
+    setFormErrors(EMPTY_ERRORS);
     setAutoCatFilled(false);
     setTemplates(loadTemplates());
     setAddOpen(true);
@@ -375,6 +502,7 @@ export default function Transactions() {
       nativeAmount: String(Math.abs(tx.nativeAmount)),
       currency: tx.currency as Currency,
     });
+    setFormErrors(EMPTY_ERRORS);
     setEditId(id);
   };
 
@@ -506,26 +634,61 @@ export default function Transactions() {
     ids.forEach((id) => deleteTimers.current.set(id, timer));
   }, [selectedIds, toast, deleteTx, invalidate]);
 
-  const handleBulkRecategorise = async (category: string) => {
-    setBulkCatOpen(false);
+  const handleBulkApply = async () => {
+    if (!bulkFormCat && !bulkFormType) return;
     setBulkSubmitting(true);
+    const ids = Array.from(selectedIds);
     try {
-      const ids = Array.from(selectedIds);
       await Promise.all(
         ids.map((id) => {
           const tx = transactions?.find((t) => t.id === id);
           if (!tx) return Promise.resolve();
-          return updateTx.mutateAsync({ id, data: { date: tx.date, description: tx.description, type: tx.type, category, nativeAmount: tx.nativeAmount, currency: tx.currency } });
+          return updateTx.mutateAsync({
+            id,
+            data: {
+              date: tx.date,
+              description: tx.description ?? "",
+              type: (bulkFormType || tx.type) as TxType,
+              category: bulkFormCat || tx.category || "",
+              nativeAmount: tx.nativeAmount,
+              currency: tx.currency,
+            },
+          });
         })
       );
-      invalidate();
+      await invalidate();
       setSelectedIds(new Set());
-      toast({ title: `Re-categorised ${ids.length} transaction${ids.length !== 1 ? "s" : ""} to "${category}"` });
+      setBulkFormCat("");
+      setBulkFormType("");
+      toast({ title: `Updated ${ids.length} transaction${ids.length !== 1 ? "s" : ""}` });
     } catch {
-      toast({ title: "Failed to re-categorise some transactions", variant: "destructive" });
+      toast({ title: "Failed to update some transactions", variant: "destructive" });
     } finally {
       setBulkSubmitting(false);
     }
+  };
+
+  // ── note helpers ─────────────────────────────────────────────────────────
+  const saveNote = (id: number, text: string) => {
+    setNotes((prev) => {
+      const next = { ...prev, [id]: text };
+      try { localStorage.setItem("ft-tx-notes", JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+  };
+
+  const clearNote = (id: number) => {
+    setNotes((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      try { localStorage.setItem("ft-tx-notes", JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+  };
+
+  const openNote = (id: number) => {
+    setOpenNoteId(id);
+    setNoteDraft(notes[id] ?? "");
   };
 
   // ── split submit ─────────────────────────────────────────────────────────
@@ -622,8 +785,175 @@ export default function Transactions() {
     setTemplates(loadTemplates());
   };
 
+  // ── AI batch categorize ──────────────────────────────────────────────────
+  const uncategorizedTxs = (transactions ?? []).filter((tx) => {
+    const cat = (tx.category ?? "").trim();
+    return !cat || cat === "Other" || cat === "Uncategorized";
+  });
+
+  const handleAiCategorize = async () => {
+    if (uncategorizedTxs.length === 0) return;
+    setAiCatRunning(true);
+    setAiCatConfirmOpen(false);
+
+    const CHUNK = 50;
+    let categorized = 0;
+    let failed = 0;
+
+    try {
+      for (let i = 0; i < uncategorizedTxs.length; i += CHUNK) {
+        const batch = uncategorizedTxs.slice(i, i + CHUNK).map((tx) => ({
+          id: tx.id,
+          description: tx.description,
+          amount: Math.abs(tx.nativeAmount),
+          type: tx.type,
+        }));
+
+        let suggestions: Array<{ id: number; category: string }> = [];
+        try {
+          const res = await fetch("/api/ai/batch-categorize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ transactions: batch }),
+          });
+          if (res.ok) {
+            const data = (await res.json()) as { suggestions?: Array<{ id: number; category: string }> };
+            suggestions = data.suggestions ?? [];
+          } else {
+            failed += batch.length;
+            continue;
+          }
+        } catch {
+          failed += batch.length;
+          continue;
+        }
+
+        await Promise.all(
+          suggestions.map(async ({ id, category }) => {
+            const tx = transactions?.find((t) => t.id === id);
+            if (!tx) return;
+            try {
+              await updateTx.mutateAsync({
+                id,
+                data: {
+                  date: tx.date,
+                  description: tx.description ?? "",
+                  type: tx.type as TxType,
+                  category,
+                  nativeAmount: tx.nativeAmount,
+                  currency: tx.currency,
+                },
+              });
+              categorized++;
+            } catch {
+              failed++;
+            }
+          })
+        );
+      }
+
+      await invalidate();
+
+      if (failed === 0) {
+        toast({ title: `${categorized} transaction${categorized !== 1 ? "s" : ""} categorized` });
+      } else {
+        toast({ title: `${categorized} categorized, ${failed} failed`, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "AI categorize failed", variant: "destructive" });
+    } finally {
+      setAiCatRunning(false);
+    }
+  };
+
+  // ── keyboard navigation handler ──────────────────────────────────────────
+  const handleTableKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const visibleRows = groupByDay
+        ? visibleDayGroups.flatMap((g) => g.txs)
+        : groupByMerchant
+        ? []
+        : visibleFiltered;
+
+      if (visibleRows.length === 0) return;
+
+      const inInput = () => {
+        const t = document.activeElement?.tagName;
+        return t === "INPUT" || t === "TEXTAREA" || t === "SELECT";
+      };
+
+      if (e.key === "ArrowDown" || (e.key === "j" && !inInput())) {
+        e.preventDefault();
+        setSelectedRowIndex((prev) =>
+          prev === null ? 0 : Math.min(prev + 1, visibleRows.length - 1)
+        );
+      } else if (e.key === "ArrowUp" || (e.key === "k" && !inInput())) {
+        e.preventDefault();
+        setSelectedRowIndex((prev) =>
+          prev === null ? 0 : Math.max(prev - 1, 0)
+        );
+      } else if (e.key === "Escape") {
+        setSelectedRowIndex(null);
+      } else if (e.key === "Enter" && selectedRowIndex !== null) {
+        e.preventDefault();
+        const tx = visibleRows[selectedRowIndex];
+        if (tx) {
+          if (openNoteId === tx.id) {
+            setOpenNoteId(null);
+          } else {
+            openNote(tx.id);
+          }
+        }
+      }
+    },
+    [visibleFiltered, visibleDayGroups, groupByDay, groupByMerchant, selectedRowIndex, openNoteId, openNote]
+  );
+
   if (isLoading || isSummaryLoading) {
-    return <div className="space-y-4"><Skeleton className="h-6 w-48" /><Skeleton className="h-8 w-full" /><Skeleton className="h-64 w-full" /></div>;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* Header skeleton */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <FtSkeleton width={180} height={16} />
+          <FtSkeleton width={240} height={28} />
+        </div>
+        {/* Summary bar skeleton */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} style={{ padding: "12px 16px", borderRight: "1px solid var(--ft-border)" }}>
+              <FtSkeleton width="60%" height={9} />
+              <div style={{ marginTop: 6 }}><FtSkeleton width="80%" height={14} /></div>
+            </div>
+          ))}
+        </div>
+        {/* Table skeleton */}
+        <div style={{ border: "1px solid var(--ft-border)" }}>
+          <div style={{ padding: "6px 12px", background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border)" }}>
+            <FtSkeleton width={200} height={10} />
+          </div>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} style={{ display: "flex", gap: 12, padding: "9px 12px", borderBottom: "1px solid var(--ft-raised)", alignItems: "center" }}>
+              <FtSkeleton width={14} height={14} />
+              <FtSkeleton width={76} height={11} />
+              <FtSkeleton width="30%" height={12} />
+              <FtSkeleton width={90} height={11} />
+              <FtSkeleton width={120} height={11} />
+              <FtSkeleton width={60} height={10} />
+              <FtSkeleton width={80} height={12} />
+              <FtSkeleton width={70} height={12} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-5">
+        <ErrorState message={(error as Error)?.message ?? "Could not load transactions. Check your connection and try again."} />
+      </div>
+    );
   }
 
   // ── split modal data ────────────────────────────────────────────────────
@@ -631,6 +961,31 @@ export default function Transactions() {
   const splitTotal = splitLines.reduce((acc, l) => acc + (parseFloat(l.amount) || 0), 0);
   const splitOriginal = splitTx ? Math.abs(splitTx.nativeAmount) : 0;
   const splitRemaining = parseFloat((splitOriginal - splitTotal).toFixed(2));
+
+  // ── inline field blur/change validation ──────────────────────────────────
+  const blurField = (field: keyof TxFormErrors, value: string, isEdit: boolean) => {
+    const err = validateTxField(field, value, isEdit);
+    setFormErrors((prev) => ({ ...prev, [field]: err }));
+  };
+
+  const clearFieldError = (field: keyof TxFormErrors) => {
+    setFormErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const ERR_STYLE: React.CSSProperties = {
+    fontFamily: "var(--font-mono)",
+    fontSize: 9,
+    color: "var(--ft-red)",
+    marginTop: 2,
+  };
+
+  const errBorder = (field: keyof TxFormErrors): React.CSSProperties | undefined =>
+    formErrors[field] ? { border: "1px solid var(--ft-red)" } : undefined;
 
   // ── shared form fields ───────────────────────────────────────────────────
   const FormFields = (isEdit: boolean) => (
@@ -683,7 +1038,16 @@ export default function Transactions() {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="tx-date">Date</Label>
-          <Input id="tx-date" type="date" value={form.date} onChange={(e) => setField("date", e.target.value)} required />
+          <Input
+            id="tx-date"
+            type="date"
+            value={form.date}
+            onChange={(e) => { setField("date", e.target.value); if (e.target.value) clearFieldError("date"); }}
+            onBlur={(e) => blurField("date", e.target.value, isEdit)}
+            required
+            style={errBorder("date")}
+          />
+          {formErrors.date && <div style={ERR_STYLE}>{formErrors.date}</div>}
         </div>
         <div className="space-y-1.5">
           <Label>Type</Label>
@@ -700,7 +1064,15 @@ export default function Transactions() {
       <div className="space-y-1.5">
         <Label htmlFor="tx-desc">Description</Label>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <Input id="tx-desc" placeholder="e.g. Monthly Salary" value={form.description} onChange={(e) => setField("description", e.target.value)} required style={{ flex: 1 }} />
+          <Input
+            id="tx-desc"
+            placeholder="e.g. Monthly Salary"
+            value={form.description}
+            onChange={(e) => { setField("description", e.target.value); if (e.target.value.trim()) clearFieldError("description"); }}
+            onBlur={(e) => blurField("description", e.target.value, isEdit)}
+            required
+            style={{ flex: 1, ...errBorder("description") }}
+          />
           {!isEdit && form.description && (
             <button
               type="button"
@@ -712,6 +1084,7 @@ export default function Transactions() {
             </button>
           )}
         </div>
+        {formErrors.description && <div style={ERR_STYLE}>{formErrors.description}</div>}
       </div>
       <div className="space-y-1.5">
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -736,7 +1109,17 @@ export default function Transactions() {
             </span>
           )}
         </div>
-        <Input id="tx-cat" list="tx-categories" placeholder="e.g. Groceries, Salary…" value={form.category} onChange={(e) => setField("category", e.target.value)} required />
+        <Input
+          id="tx-cat"
+          list="tx-categories"
+          placeholder="e.g. Groceries, Salary…"
+          value={form.category}
+          onChange={(e) => { setField("category", e.target.value); if (e.target.value.trim()) clearFieldError("category"); }}
+          onBlur={(e) => blurField("category", e.target.value, isEdit)}
+          required
+          style={errBorder("category")}
+        />
+        {formErrors.category && <div style={ERR_STYLE}>{formErrors.category}</div>}
       </div>
       {!isEdit && (
         <div className="space-y-1.5">
@@ -744,18 +1127,38 @@ export default function Transactions() {
           <Select value={form.accountId} onValueChange={(v) => {
             const acct = accounts?.find((a) => String(a.id) === v);
             setForm((f) => ({ ...f, accountId: v, currency: (acct?.currency as Currency) ?? f.currency }));
+            if (v) clearFieldError("accountId");
           }}>
-            <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+            <SelectTrigger style={errBorder("accountId")}>
+              <SelectValue placeholder="Select account" />
+            </SelectTrigger>
             <SelectContent>
               {accounts?.map((a) => <SelectItem key={a.id} value={String(a.id)}>{a.name} ({a.currency})</SelectItem>)}
             </SelectContent>
           </Select>
+          {formErrors.accountId && <div style={ERR_STYLE}>{formErrors.accountId}</div>}
         </div>
       )}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="tx-amount">Amount</Label>
-          <Input id="tx-amount" type="number" step="0.01" min="0" placeholder="0.00" value={form.nativeAmount} onChange={(e) => setField("nativeAmount", e.target.value)} required />
+          <Input
+            id="tx-amount"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0.00"
+            value={form.nativeAmount}
+            onChange={(e) => {
+              setField("nativeAmount", e.target.value);
+              const err = validateTxField("nativeAmount", e.target.value, isEdit);
+              setFormErrors((prev) => ({ ...prev, nativeAmount: err }));
+            }}
+            onBlur={(e) => blurField("nativeAmount", e.target.value, isEdit)}
+            required
+            style={errBorder("nativeAmount")}
+          />
+          {formErrors.nativeAmount && <div style={ERR_STYLE}>{formErrors.nativeAmount}</div>}
         </div>
         <div className="space-y-1.5">
           <Label>Currency</Label>
@@ -795,61 +1198,150 @@ export default function Transactions() {
     </button>
   );
 
-  const TxRow = ({ tx, indented = false }: { tx: typeof filtered[number]; indented?: boolean }) => (
-    <div
-      key={tx.id}
-      className="flex items-center border-b xls-row"
-      style={{ borderColor: "rgba(33,38,45,0.5)", background: selectedIds.has(tx.id) ? "#1F3A5F55" : "var(--ft-base)", opacity: pendingDeleteIds.has(tx.id) ? 0.4 : 1, textDecoration: pendingDeleteIds.has(tx.id) ? "line-through" : "none", transition: "opacity 0.2s" }}
-    >
-      <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }}>
-        <input
-          type="checkbox"
-          checked={selectedIds.has(tx.id)}
-          onChange={() => toggleSelect(tx.id)}
-          style={{ cursor: "pointer", accentColor: "var(--ft-blue)" }}
-          aria-label={`Select transaction ${tx.description}`}
-        />
+  const TxRow = ({ tx, indented = false, isKeyboardSelected = false }: { tx: typeof filtered[number]; indented?: boolean; isKeyboardSelected?: boolean }) => {
+    const fxGbp = tx.currency !== "GBP" ? convertWithOverride(Math.abs(tx.nativeAmount), tx.currency, "GBP") : null;
+    const hasOverride = fxGbp != null;
+    const displayGbp = hasOverride ? fxGbp : Math.abs(tx.gbpValue);
+    const hasNote = Boolean(notes[tx.id]);
+    const isNoteOpen = openNoteId === tx.id;
+    return (
+    <div style={{ position: "relative" }} data-tx-row>
+      <div
+        key={tx.id}
+        className="flex items-center border-b xls-row"
+        style={{
+          borderColor: "rgba(33,38,45,0.5)",
+          background: selectedIds.has(tx.id) ? "#1F3A5F55" : isKeyboardSelected ? "var(--ft-raised)" : "var(--ft-base)",
+          borderLeft: isKeyboardSelected ? "2px solid var(--ft-amber)" : "2px solid transparent",
+          opacity: pendingDeleteIds.has(tx.id) ? 0.4 : 1,
+          textDecoration: pendingDeleteIds.has(tx.id) ? "line-through" : "none",
+          transition: "opacity 0.2s, background 0.1s, border-left 0.1s",
+        }}
+      >
+        <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }}>
+          <input
+            type="checkbox"
+            checked={selectedIds.has(tx.id)}
+            onChange={() => toggleSelect(tx.id)}
+            style={{ cursor: "pointer", accentColor: "var(--ft-blue)" }}
+            aria-label={`Select transaction ${tx.description}`}
+          />
+        </div>
+        <div style={{ width: 90, minWidth: 90, padding: indented ? "7px 12px 7px 20px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>
+          {formatDate(tx.date)}
+        </div>
+        <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <PrivDesc>{tx.description}</PrivDesc>
+        </div>
+        <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
+            {tx.category}
+          </span>
+        </div>
+        <div style={{ width: 150, minWidth: 150, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {tx.accountName}
+        </div>
+        <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
+          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: TX_TYPE_COLOR[tx.type as TxType] + "22", color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase", letterSpacing: "0.3px" }}>
+            {tx.type}
+          </span>
+        </div>
+        <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums", background: tx.type === "income" ? "rgba(63,185,80,0.04)" : tx.type === "expense" ? "rgba(248,81,73,0.04)" : "transparent" }}>
+          {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
+          {formatNative(Math.abs(tx.nativeAmount), tx.currency)}
+        </div>
+        <div className="pnum" style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+          {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
+          {formatGbp(displayGbp)}
+          {hasOverride && <span title="Custom FX rate applied" style={{ fontSize: 8, color: "var(--ft-amber)", marginLeft: 2, verticalAlign: "super" }}>★</span>}
+        </div>
+        {/* Note icon column */}
+        <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }}>
+          <button
+            type="button"
+            onClick={() => { if (isNoteOpen) { setOpenNoteId(null); } else { openNote(tx.id); } }}
+            title={hasNote ? "View/edit note" : "Add note"}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", justifyContent: "center" }}
+            aria-label={hasNote ? `Note for ${tx.description}` : `Add note for ${tx.description}`}
+          >
+            <FileText
+              className="w-3.5 h-3.5"
+              style={{ color: hasNote ? "var(--ft-amber)" : "var(--ft-border2)", transition: "color 0.1s" }}
+            />
+          </button>
+        </div>
+        <div style={{ width: 100, minWidth: 100, padding: "4px 4px", display: "flex", justifyContent: "flex-end", gap: 2 }}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSplit(tx.id)} title="Split transaction">
+            <span style={{ color: "var(--ft-muted)", fontSize: 13 }}>⊕</span>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tx.id)}>
+            <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(tx.id)}>
+            <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
+          </Button>
+        </div>
       </div>
-      <div style={{ width: 90, minWidth: 90, padding: indented ? "7px 12px 7px 20px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>
-        {formatDate(tx.date)}
-      </div>
-      <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {tx.description}
-      </div>
-      <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
-        <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
-          {tx.category}
-        </span>
-      </div>
-      <div style={{ width: 150, minWidth: 150, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {tx.accountName}
-      </div>
-      <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
-        <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: TX_TYPE_COLOR[tx.type as TxType] + "22", color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase", letterSpacing: "0.3px" }}>
-          {tx.type}
-        </span>
-      </div>
-      <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums", background: tx.type === "income" ? "rgba(63,185,80,0.04)" : tx.type === "expense" ? "rgba(248,81,73,0.04)" : "transparent" }}>
-        {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
-        {formatNative(Math.abs(tx.nativeAmount), tx.currency)}
-      </div>
-      <div className="pnum" style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-        {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
-        {formatGbp(Math.abs(tx.gbpValue))}
-      </div>
-      <div style={{ width: 100, minWidth: 100, padding: "4px 4px", display: "flex", justifyContent: "flex-end", gap: 2 }}>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSplit(tx.id)} title="Split transaction">
-          <span style={{ color: "var(--ft-muted)", fontSize: 13 }}>⊕</span>
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tx.id)}>
-          <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(tx.id)}>
-          <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
-        </Button>
-      </div>
+      {/* Note popover — inline below the row */}
+      {isNoteOpen && (
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "100%",
+            zIndex: 60,
+            background: "var(--ft-surface)",
+            border: "1px solid var(--ft-border2)",
+            borderRadius: 2,
+            padding: "10px 12px",
+            width: 280,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6, fontFamily: "var(--font-mono)" }}>
+            NOTE — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
+          </div>
+          <textarea
+            autoFocus
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            rows={3}
+            placeholder="Add a note…"
+            style={{
+              width: "100%",
+              background: "var(--ft-base)",
+              border: "1px solid var(--ft-border2)",
+              borderRadius: 2,
+              color: "var(--ft-text)",
+              fontSize: 12,
+              fontFamily: "var(--font-mono)",
+              padding: "6px 8px",
+              resize: "vertical",
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+          <div style={{ display: "flex", gap: 6, marginTop: 8, justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              onClick={() => { clearNote(tx.id); setOpenNoteId(null); }}
+              style={{ fontSize: 11, padding: "3px 10px", background: "none", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => { saveNote(tx.id, noteDraft); setOpenNoteId(null); }}
+              style={{ fontSize: 11, padding: "3px 10px", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "#000", cursor: "pointer", fontFamily: "var(--font-mono)", fontWeight: 600 }}
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
+  };
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
@@ -980,6 +1472,48 @@ export default function Transactions() {
         </DialogContent>
       </Dialog>
 
+      {/* ── AI Categorize confirmation modal ── */}
+      <Dialog open={aiCatConfirmOpen} onOpenChange={setAiCatConfirmOpen}>
+        <DialogContent style={{ maxWidth: 420 }}>
+          <DialogHeader>
+            <DialogTitle style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Sparkles className="w-4 h-4" style={{ color: "var(--ft-amber)" }} />
+              AI Auto-Categorize
+            </DialogTitle>
+          </DialogHeader>
+          <div style={{ padding: "8px 0 16px" }}>
+            {uncategorizedTxs.length === 0 ? (
+              <p style={{ fontSize: 13, color: "var(--ft-muted)" }}>
+                All transactions already have categories assigned.
+              </p>
+            ) : (
+              <p style={{ fontSize: 13, color: "var(--ft-muted)", lineHeight: 1.6 }}>
+                Found <span style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{uncategorizedTxs.length}</span>{" "}
+                transaction{uncategorizedTxs.length !== 1 ? "s" : ""} without a category.
+                Use AI to suggest categories for all of them?
+              </p>
+            )}
+            <div style={{ marginTop: 12, fontSize: 11, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+              Categories: Food & Drink, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Income, Savings, Other
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              type="button"
+              disabled={uncategorizedTxs.length === 0}
+              onClick={handleAiCategorize}
+              style={{ background: "var(--ft-amber)", color: "#000", border: "none", borderRadius: 2, fontWeight: 700 }}
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              Proceed
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Page header ── */}
       <PageHeader
         icon={ArrowLeftRight}
@@ -988,11 +1522,36 @@ export default function Transactions() {
         actions={
           <div style={{ display: "flex", gap: 8 }}>
             <Button
+              onClick={() => setAiCatConfirmOpen(true)}
+              disabled={aiCatRunning}
+              size="sm"
+              style={{ background: aiCatRunning ? "var(--ft-raised)" : "rgba(245,158,11,0.12)", color: aiCatRunning ? "var(--ft-dim)" : "var(--ft-amber)", border: `1px solid ${aiCatRunning ? "var(--ft-border)" : "var(--ft-amber)"}`, borderRadius: 2, fontSize: 12, display: "flex", alignItems: "center", gap: 5 }}
+              title="Auto-categorize uncategorized transactions using AI"
+            >
+              <Sparkles className="w-3 h-3" />
+              {aiCatRunning ? "Categorizing…" : "AI Categorize"}
+            </Button>
+            <Button
               onClick={() => exportCsv(filtered)}
               size="sm"
               style={{ background: "var(--ft-raised)", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", borderRadius: 2, fontSize: 12 }}
             >
-              ↓ Export CSV
+              ↓ CSV
+            </Button>
+            <Button
+              onClick={() => exportJson(filtered)}
+              size="sm"
+              style={{ background: "var(--ft-raised)", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", borderRadius: 2, fontSize: 12 }}
+            >
+              ↓ JSON
+            </Button>
+            <Button
+              onClick={() => window.print()}
+              size="sm"
+              className="ft-no-print"
+              style={{ background: "var(--ft-raised)", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", borderRadius: 2, fontSize: 12 }}
+            >
+              ↓ Export PDF
             </Button>
             <Button
               onClick={() => setCsvOpen(true)}
@@ -1009,11 +1568,11 @@ export default function Transactions() {
         }
       />
 
-      {(isError || isSummaryError) && (
+      {isSummaryError && !isError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Failed to load transactions</AlertTitle>
-          <AlertDescription>{(error as Error)?.message ?? "Could not reach the server."}</AlertDescription>
+          <AlertTitle>Summary unavailable</AlertTitle>
+          <AlertDescription>Could not load the transaction summary. Transactions are still shown below.</AlertDescription>
         </Alert>
       )}
 
@@ -1065,7 +1624,7 @@ export default function Transactions() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { setSearch(""); setFilterType("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); }}
+              onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); }}
               style={{ height: 30, fontSize: 11, color: "var(--ft-muted)", padding: "0 8px" }}
             >
               <X className="w-3 h-3 mr-1" />Clear
@@ -1074,6 +1633,40 @@ export default function Transactions() {
           <span className="ml-auto text-xs" style={{ color: "var(--ft-dim)" }}>
             {filtered.length}{hasFilters ? ` of ${transactions?.length ?? 0}` : ""} transaction{filtered.length !== 1 ? "s" : ""}
           </span>
+        </div>
+
+        {/* Row 1b: category + account + sort */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger style={{ width: 148, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2 }}>
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {allCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterAccount} onValueChange={setFilterAccount}>
+            <SelectTrigger style={{ width: 148, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2 }}>
+              <SelectValue placeholder="All accounts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All accounts</SelectItem>
+              {allAccounts.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <div style={{ width: 1, height: 20, background: "var(--ft-border2)", margin: "0 2px" }} />
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+            <SelectTrigger style={{ width: 138, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2 }}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date-desc">Date: Newest first</SelectItem>
+              <SelectItem value="date-asc">Date: Oldest first</SelectItem>
+              <SelectItem value="amount-high">Amount: High → Low</SelectItem>
+              <SelectItem value="amount-low">Amount: Low → High</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Row 2: quick date ranges + date inputs + amount range */}
@@ -1123,83 +1716,114 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* ── Bulk action bar ── */}
+      {/* ── Floating bulk action bar (bottom-center) ── */}
       {selectedIds.size > 0 && (
         <div
           style={{
+            position: "fixed",
+            bottom: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 100,
             display: "flex",
             alignItems: "center",
             gap: 10,
-            padding: "8px 12px",
-            background: "#1F3A5F",
+            padding: "10px 16px",
+            background: "#0d1117",
             border: "1px solid var(--ft-blue)",
-            borderRadius: 2,
+            borderRadius: 4,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.7)",
+            fontFamily: "var(--font-mono)",
+            whiteSpace: "nowrap",
           }}
         >
-          <span style={{ fontSize: 12, color: "var(--ft-blue)", fontWeight: 600, minWidth: 80 }}>
+          <span style={{ fontSize: 12, color: "var(--ft-blue)", fontWeight: 700, minWidth: 70 }}>
             {selectedIds.size} selected
           </span>
+          <div style={{ width: 1, height: 18, background: "var(--ft-border2)" }} />
+          {/* Category dropdown */}
+          <div style={{ position: "relative" }}>
+            <select
+              value={bulkFormCat}
+              onChange={(e) => setBulkFormCat(e.target.value)}
+              disabled={bulkSubmitting}
+              style={{
+                fontSize: 11,
+                padding: "4px 8px",
+                background: "var(--ft-surface)",
+                border: "1px solid var(--ft-border2)",
+                borderRadius: 2,
+                color: bulkFormCat ? "var(--ft-text)" : "var(--ft-dim)",
+                cursor: "pointer",
+                fontFamily: "var(--font-mono)",
+                minWidth: 130,
+              }}
+            >
+              <option value="">Category (unchanged)</option>
+              {allCategories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+              {BULK_CATEGORIES.filter((c) => !allCategories.includes(c)).map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+          {/* Type dropdown */}
+          <select
+            value={bulkFormType}
+            onChange={(e) => setBulkFormType(e.target.value as "" | TxType)}
+            disabled={bulkSubmitting}
+            style={{
+              fontSize: 11,
+              padding: "4px 8px",
+              background: "var(--ft-surface)",
+              border: "1px solid var(--ft-border2)",
+              borderRadius: 2,
+              color: bulkFormType ? "var(--ft-text)" : "var(--ft-dim)",
+              cursor: "pointer",
+              fontFamily: "var(--font-mono)",
+              minWidth: 110,
+            }}
+          >
+            <option value="">Type (unchanged)</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+            <option value="transfer">Transfer</option>
+          </select>
+          {/* Apply */}
+          <button
+            type="button"
+            onClick={handleBulkApply}
+            disabled={bulkSubmitting || (!bulkFormCat && !bulkFormType)}
+            style={{
+              fontSize: 11,
+              padding: "4px 14px",
+              background: bulkSubmitting || (!bulkFormCat && !bulkFormType) ? "var(--ft-raised)" : "var(--ft-accent)",
+              border: "1px solid var(--ft-accent)",
+              borderRadius: 2,
+              color: bulkSubmitting || (!bulkFormCat && !bulkFormType) ? "var(--ft-dim)" : "#000",
+              cursor: bulkSubmitting || (!bulkFormCat && !bulkFormType) ? "not-allowed" : "pointer",
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+            }}
+          >
+            {bulkSubmitting ? "Applying…" : "Apply"}
+          </button>
+          <div style={{ width: 1, height: 18, background: "var(--ft-border2)" }} />
+          {/* Delete */}
           <button
             type="button"
             onClick={handleBulkDelete}
             disabled={bulkSubmitting}
-            style={{ fontSize: 11, padding: "3px 10px", background: "var(--ft-red)22", border: "1px solid var(--ft-red)", borderRadius: 2, color: "var(--ft-red)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
+            style={{ fontSize: 11, padding: "4px 10px", background: "var(--ft-red)22", border: "1px solid var(--ft-red)", borderRadius: 2, color: "var(--ft-red)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
           >
-            {bulkSubmitting ? "Deleting…" : "Delete selected"}
+            Delete
           </button>
-          <div style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => setBulkCatOpen((v) => !v)}
-              disabled={bulkSubmitting}
-              style={{ fontSize: 11, padding: "3px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
-            >
-              Re-categorise ▾
-            </button>
-            {bulkCatOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 4px)",
-                  left: 0,
-                  zIndex: 50,
-                  background: "var(--ft-surface)",
-                  border: "1px solid var(--ft-border2)",
-                  borderRadius: 2,
-                  minWidth: 180,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                }}
-              >
-                {BULK_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => handleBulkRecategorise(cat)}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "6px 12px",
-                      fontSize: 12,
-                      color: "var(--ft-text)",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      fontFamily: "var(--font-mono)",
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--ft-raised)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Clear */}
           <button
             type="button"
-            onClick={() => { setSelectedIds(new Set()); setBulkCatOpen(false); }}
-            style={{ marginLeft: "auto", fontSize: 11, padding: "3px 8px", background: "none", border: "none", color: "var(--ft-muted)", cursor: "pointer" }}
+            onClick={() => { setSelectedIds(new Set()); setBulkFormCat(""); setBulkFormType(""); }}
+            style={{ fontSize: 11, padding: "4px 8px", background: "none", border: "none", color: "var(--ft-muted)", cursor: "pointer" }}
           >
             ✕ Clear
           </button>
@@ -1252,7 +1876,14 @@ export default function Transactions() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div
+          className="overflow-x-auto"
+          ref={tableContainerRef}
+          tabIndex={0}
+          onKeyDown={handleTableKeyDown}
+          style={{ outline: "none" }}
+          aria-label="Transaction table — use ↑↓ or j/k to navigate, Enter to open note, Escape to clear"
+        >
           {/* Column headers */}
           <div style={{ display: "flex" }}>
             <div style={{ ...TH, width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", padding: "6px 0" }}>
@@ -1264,8 +1895,8 @@ export default function Transactions() {
                 aria-label="Select all"
               />
             </div>
-            {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["", "100px"]].map(([h, w]) => (
-              <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["AMOUNT", "GBP", ""].includes(h as string) ? "right" : "left" }}>
+            {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["NOTE", "36px"], ["", "100px"]].map(([h, w]) => (
+              <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["AMOUNT", "GBP"].includes(h as string) ? "right" : "center", padding: h === "NOTE" ? "6px 0" : undefined }}>
                 {h}
               </div>
             ))}
@@ -1274,13 +1905,23 @@ export default function Transactions() {
           {/* Rows — flat, grouped by day, or grouped by merchant */}
           {!groupByMerchant && !groupByDay && (
             <>
-              {filtered.map((tx) => <TxRow key={tx.id} tx={tx} />)}
+              {visibleFiltered.map((tx, idx) => <TxRow key={tx.id} tx={tx} isKeyboardSelected={selectedRowIndex === idx} />)}
               {filtered.length === 0 && (
-                <div className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
-                  <div style={{ width: 36, borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }} />
-                  <div className="flex-1 text-center py-8 text-xs" style={{ color: "var(--ft-dim)" }}>
-                    {hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
-                  </div>
+                <EmptyState
+                  title={hasFilters ? "No matches" : "No data"}
+                  description={hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
+                  action={!hasFilters ? { label: "+ Add Transaction", onClick: openAdd } : undefined}
+                />
+              )}
+              {hasMoreFlat && (
+                <div className="flex items-center justify-center py-3 border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "4px 14px", cursor: "pointer", letterSpacing: "0.06em" }}
+                  >
+                    LOAD MORE · showing {visibleCount} of {filtered.length}
+                  </button>
                 </div>
               )}
             </>
@@ -1288,26 +1929,42 @@ export default function Transactions() {
 
           {groupByDay && !groupByMerchant && (
             <>
-              {dayGroups.map((group) => (
-                <div key={group.date}>
-                  <div style={{ display: "flex", alignItems: "center", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", padding: "6px 12px 6px 48px", gap: 12 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)" }}>
-                      {new Date(group.date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-                    </span>
-                    <span style={{ fontSize: 10, color: "var(--ft-muted)" }}>{group.txs.length} transaction{group.txs.length !== 1 ? "s" : ""}</span>
-                    <span className="pnum" style={{ fontSize: 11, fontWeight: 600, color: group.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontVariantNumeric: "tabular-nums", marginLeft: "auto" }}>
-                      net {group.net >= 0 ? "+" : ""}{formatGbp(group.net)}
-                    </span>
+              {(() => {
+                let flatIdx = 0;
+                return visibleDayGroups.map((group) => (
+                  <div key={group.date}>
+                    <div style={{ display: "flex", alignItems: "center", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", padding: "6px 12px 6px 48px", gap: 12 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)" }}>
+                        {new Date(group.date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+                      </span>
+                      <span style={{ fontSize: 10, color: "var(--ft-muted)" }}>{group.txs.length} transaction{group.txs.length !== 1 ? "s" : ""}</span>
+                      <span className="pnum" style={{ fontSize: 11, fontWeight: 600, color: group.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontVariantNumeric: "tabular-nums", marginLeft: "auto" }}>
+                        net {group.net >= 0 ? "+" : ""}{formatGbp(group.net)}
+                      </span>
+                    </div>
+                    {group.txs.map((tx) => {
+                      const rowIdx = flatIdx++;
+                      return <TxRow key={tx.id} tx={tx} indented isKeyboardSelected={selectedRowIndex === rowIdx} />;
+                    })}
                   </div>
-                  {group.txs.map((tx) => <TxRow key={tx.id} tx={tx} indented />)}
-                </div>
-              ))}
+                ));
+              })()}
               {dayGroups.length === 0 && (
-                <div className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
-                  <div style={{ width: 36, borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }} />
-                  <div className="flex-1 text-center py-8 text-xs" style={{ color: "var(--ft-dim)" }}>
-                    {hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
-                  </div>
+                <EmptyState
+                  title={hasFilters ? "No matches" : "No data"}
+                  description={hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
+                  action={!hasFilters ? { label: "+ Add Transaction", onClick: openAdd } : undefined}
+                />
+              )}
+              {hasMoreDayGroups && (
+                <div className="flex items-center justify-center py-3 border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "4px 14px", cursor: "pointer", letterSpacing: "0.06em" }}
+                  >
+                    LOAD MORE · showing {Math.min(visibleCount, filtered.length)} of {filtered.length}
+                  </button>
                 </div>
               )}
             </>
@@ -1336,7 +1993,7 @@ export default function Transactions() {
                       </div>
                       <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-dim)", fontSize: 11 }} />
                       <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, fontWeight: 600 }}>
-                        {group.description}
+                        <PrivDesc>{group.description}</PrivDesc>
                       </div>
                       <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
                         <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
@@ -1349,6 +2006,7 @@ export default function Transactions() {
                       <div className="pnum" style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: group.total >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                         {group.total >= 0 ? "+" : ""}{formatGbp(group.total)}
                       </div>
+                      <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-raised)" }} />
                       <div style={{ width: 100, minWidth: 100 }} />
                     </div>
 
@@ -1358,12 +2016,11 @@ export default function Transactions() {
               })}
 
               {merchantGroups.length === 0 && (
-                <div className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
-                  <div style={{ width: 36, borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }} />
-                  <div className="flex-1 text-center py-8 text-xs" style={{ color: "var(--ft-dim)" }}>
-                    {hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
-                  </div>
-                </div>
+                <EmptyState
+                  title={hasFilters ? "No matches" : "No data"}
+                  description={hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
+                  action={!hasFilters ? { label: "+ Add Transaction", onClick: openAdd } : undefined}
+                />
               )}
             </>
           )}

@@ -1,7 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
+import { Skeleton as FtSkeleton } from "@/components/skeleton";
+import { ErrorState } from "@/components/error-state";
 import { Target, Trophy, Check, AlertTriangle, X as XIcon, ChevronDown, ChevronRight } from "lucide-react";
 import { formatGbp } from "@/lib/utils";
-import { useGetDashboard } from "@workspace/api-client-react";
+import {
+  useGetDashboard,
+  useListGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useAddGoalFunds,
+  getListGoalsQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface HistoryEntry {
   date: string;
@@ -9,7 +16,7 @@ interface HistoryEntry {
 }
 
 interface Goal {
-  id: string;
+  id: number;
   name: string;
   target: number;
   current: number;
@@ -35,19 +42,6 @@ function GoalIcon({ emoji, color, size = 18 }: { emoji?: string; color?: string;
   return <Target size={size} color={color ?? "var(--ft-accent)"} />;
 }
 
-function loadGoals(): Goal[] {
-  try {
-    const raw = localStorage.getItem("ft-savings-goals");
-    if (raw) return JSON.parse(raw) as Goal[];
-  } catch {}
-  return [];
-}
-
-function saveGoals(goals: Goal[]) {
-  try {
-    localStorage.setItem("ft-savings-goals", JSON.stringify(goals));
-  } catch {}
-}
 
 function deadlineLabel(deadline: string): { text: string; isOverdue: boolean } {
   const now = new Date();
@@ -132,7 +126,26 @@ const EMPTY_FORM = {
 };
 
 export default function Goals() {
-  const [goals, setGoals] = useState<Goal[]>([]);
+  const queryClient = useQueryClient();
+  const { data: rawGoals = [], isLoading: goalsLoading, isError: goalsError, error: goalsErrorObj } = useListGoals();
+  const goals: Goal[] = rawGoals.map(g => ({
+    id: g.id,
+    name: g.name,
+    target: g.target,
+    current: g.current,
+    deadline: g.deadline ?? undefined,
+    emoji: g.emoji ?? undefined,
+    color: g.color ?? undefined,
+    image: g.image ?? undefined,
+    monthlyContribution: g.monthlyContribution ?? undefined,
+    history: (g.history as HistoryEntry[] | undefined) ?? [],
+  }));
+
+  const createGoalMutation = useCreateGoal();
+  const updateGoalMutation = useUpdateGoal();
+  const deleteGoalMutation = useDeleteGoal();
+  const addFundsMutation = useAddGoalFunds();
+
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [addFunds, setAddFunds] = useState<Record<string, string>>({});
@@ -167,24 +180,13 @@ export default function Goals() {
     | { thisMonth?: { income?: number; expenses?: number; savingsRate?: number } }
     | undefined;
 
-  useEffect(() => {
-    setGoals(loadGoals());
-  }, []);
-
-  function updateGoals(next: Goal[]) {
-    setGoals(next);
-    saveGoals(next);
-  }
-
-  function handleSave() {
+  async function handleSave() {
     const target = parseFloat(form.target);
     const current = parseFloat(form.current) || 0;
     if (!form.name.trim() || isNaN(target) || target <= 0) return;
     const monthlyContrib = parseFloat(form.monthlyContribution);
-    const next: Goal[] = [
-      ...goals,
-      {
-        id: Date.now().toString(),
+    await createGoalMutation.mutateAsync({
+      data: {
         name: form.name.trim(),
         target,
         current,
@@ -195,32 +197,28 @@ export default function Goals() {
         monthlyContribution: !isNaN(monthlyContrib) && monthlyContrib > 0 ? monthlyContrib : undefined,
         history: current > 0 ? [{ date: todayStr(), amount: current }] : [],
       },
-    ];
-    updateGoals(next);
+    });
+    queryClient.invalidateQueries({ queryKey: getListGoalsQueryKey() });
     setForm({ ...EMPTY_FORM });
     setShowForm(false);
   }
 
-  function handleAddFunds(id: string) {
-    const amount = parseFloat(addFunds[id] ?? "");
+  async function handleAddFunds(id: number) {
+    const amount = parseFloat(addFunds[String(id)] ?? "");
     if (isNaN(amount) || amount <= 0) return;
-    const today = todayStr();
-    const next = goals.map((g) => {
-      if (g.id !== id) return g;
-      const newTotal = g.current + amount;
-      const history: HistoryEntry[] = [...(g.history ?? []), { date: today, amount: newTotal }];
-      return { ...g, current: newTotal, history };
-    });
-    updateGoals(next);
-    setAddFunds((prev) => ({ ...prev, [id]: "" }));
+    await addFundsMutation.mutateAsync({ id, data: { amount } });
+    queryClient.invalidateQueries({ queryKey: getListGoalsQueryKey() });
+    setAddFunds((prev) => ({ ...prev, [String(id)]: "" }));
   }
 
-  function handleDelete(id: string) {
-    updateGoals(goals.filter((g) => g.id !== id));
+  async function handleDelete(id: number) {
+    await deleteGoalMutation.mutateAsync({ id });
+    queryClient.invalidateQueries({ queryKey: getListGoalsQueryKey() });
   }
 
-  function handleSetDeadline(id: string, deadline: string) {
-    updateGoals(goals.map((g) => (g.id === id ? { ...g, deadline } : g)));
+  async function handleSetDeadline(id: number, deadline: string) {
+    await updateGoalMutation.mutateAsync({ id, data: { deadline } });
+    queryClient.invalidateQueries({ queryKey: getListGoalsQueryKey() });
   }
 
   // Dashboard derived values
@@ -312,6 +310,50 @@ export default function Goals() {
     marginBottom: 4,
   };
 
+  if (goalsLoading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Header skeleton */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <FtSkeleton width={140} height={14} />
+          <FtSkeleton width={100} height={28} />
+        </div>
+        {/* Analytics banner skeleton */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "14px 16px" }}>
+              <FtSkeleton width="60%" height={9} />
+              <div style={{ marginTop: 8 }}><FtSkeleton width="80%" height={18} /></div>
+              <div style={{ marginTop: 6 }}><FtSkeleton width="70%" height={9} /></div>
+            </div>
+          ))}
+        </div>
+        {/* Goal cards skeleton */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 20 }}>
+              <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+                <FtSkeleton width={52} height={52} />
+                <div style={{ flex: 1 }}>
+                  <FtSkeleton width="70%" height={13} />
+                  <div style={{ marginTop: 6 }}><FtSkeleton width="40%" height={9} /></div>
+                </div>
+              </div>
+              <FtSkeleton width="100%" height={6} />
+              <div style={{ marginTop: 10 }}><FtSkeleton width="60%" height={9} /></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (goalsError) {
+    return (
+      <ErrorState message={(goalsErrorObj as Error)?.message ?? "Could not load goals. Check your connection and try again."} />
+    );
+  }
+
   return (
     <div>
       {/* ── Page Header ── */}
@@ -340,7 +382,7 @@ export default function Goals() {
       </div>
 
       {/* ── Section 1: Dashboard Analytics Banner ── */}
-      <div style={{
+      {goals.length > 0 && <div className="ft-four-col" style={{
         display: "grid",
         gridTemplateColumns: "repeat(4, 1fr)",
         gap: 8,
@@ -404,7 +446,7 @@ export default function Goals() {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* ── Section 3: Goal Insights Summary (between banner and grid) ── */}
       {goals.length >= 2 && (mostUrgent || biggestGap || closestToDone) && (
@@ -513,7 +555,7 @@ export default function Goals() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>
             New Goal
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <div>
               <label style={labelStyle}>Goal Name</label>
               <input type="text" placeholder="e.g. Holiday Fund" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} style={inputStyle} />
@@ -648,7 +690,7 @@ export default function Goals() {
       )}
 
       {/* ── Goal Cards Grid ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         {goals.map((goal) => {
           const pct = Math.min((goal.current / goal.target) * 100, 100);
           const done = goal.current >= goal.target;
@@ -873,7 +915,7 @@ export default function Goals() {
                   {isAnalyticsOpen && (
                     <div style={{ marginTop: 10, borderTop: "1px solid var(--ft-border)", paddingTop: 10 }}>
                       {/* Projections row */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+                      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
                         <div style={{ background: "var(--ft-raised)", padding: "8px 10px", border: "1px solid var(--ft-border)" }}>
                           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Months to Complete</div>
                           <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>

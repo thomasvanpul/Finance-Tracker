@@ -102,7 +102,7 @@ export default function Wardrobe() {
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 24, alignItems: "start" }}>
+        <div className="ft-wardrobe-layout" style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 24, alignItems: "start" }}>
           {/* ── Left: Preview panel ── */}
           <div style={{
             background: "var(--ft-surface)",

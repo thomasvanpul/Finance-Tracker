@@ -23,7 +23,8 @@ function formatRange(val?: number | null): string {
 }
 
 export function MarketSnapshotWidget() {
-  const { data, isLoading, isError } = useGetMarketQuotes({ tickers: TICKERS });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, isLoading, isError } = useGetMarketQuotes({ tickers: TICKERS }, { query: { refetchInterval: 5 * 60 * 1000 } as any });
 
   const quotes = data ?? [];
 

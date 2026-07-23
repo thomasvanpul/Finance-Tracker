@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,13 +13,13 @@ import {
   getListAccountsQueryKey,
   getListTransactionsQueryKey,
   useGetSettingsCurrency,
+  useGetDashboard,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -43,14 +43,15 @@ import {
   Landmark,
   Link2,
   Upload,
-  AlertCircle,
   Wallet,
   ArrowLeftRight,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton as FtSkeleton } from "@/components/skeleton";
+import { EmptyState } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
 import { useToast } from "@/hooks/use-toast";
 import {
   AreaChart,
@@ -457,9 +458,10 @@ interface DetailPanelProps {
   accountId: number;
   balance: number;
   currency: string;
+  nwHistory: { date: string; netWorth: number }[];
 }
 
-function AccountDetailPanel({ accountName, balance, currency }: DetailPanelProps) {
+function AccountDetailPanel({ accountName, balance, currency, nwHistory }: DetailPanelProps) {
   const now = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     .toISOString()
@@ -473,7 +475,7 @@ function AccountDetailPanel({ accountName, balance, currency }: DetailPanelProps
     dateTo: lastOfMonth,
   });
 
-  const nwHistory = useMemo(() => loadNwHistory(), []);
+  // nwHistory passed as prop from parent (written after dashData loads)
 
   // Filter monthly transactions for this account
   const acctMonthlyTxs = useMemo(
@@ -555,7 +557,7 @@ function AccountDetailPanel({ accountName, balance, currency }: DetailPanelProps
         </span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+      <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
         {/* Col 1: Balance history */}
         <div>
           <div style={sectionLabel}>Net Worth History</div>
@@ -569,7 +571,7 @@ function AccountDetailPanel({ accountName, balance, currency }: DetailPanelProps
                 border: "1px dashed var(--ft-raised)",
               }}
             >
-              Balance history coming soon
+              History builds up daily — check back tomorrow
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={100}>
@@ -872,6 +874,27 @@ export default function Accounts() {
   }, []);
 
   const { data: healthTxs } = useListTransactions({ dateFrom: ninetyDaysAgo });
+  const { data: dashData } = useGetDashboard();
+
+  const [nwHistory, setNwHistory] = useState<{ date: string; netWorth: number }[]>(() => loadNwHistory());
+
+  // Write daily net-worth snapshot and keep nwHistory state in sync
+  useEffect(() => {
+    if (!dashData) return;
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      const existing: { date: string; netWorth: number; cash?: number; portfolio?: number }[] = raw ? JSON.parse(raw) : [];
+      if (existing.some(e => e.date === today)) {
+        setNwHistory(existing);
+        return;
+      }
+      const entry = { date: today, netWorth: dashData.netWorth, cash: dashData.totalCash, portfolio: dashData.portfolio.totalValueGbp };
+      const updated = [...existing, entry].slice(-365);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      setNwHistory(updated);
+    } catch { /* noop */ }
+  }, [dashData]);
 
   // Per-account stats derived from health transactions
   const accountStatsMap = useMemo(() => {
@@ -890,6 +913,12 @@ export default function Accounts() {
   const [submitting, setSubmitting] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [expandedAccountId, setExpandedAccountId] = useState<number | null>(null);
+  const [highlightId, setHighlightId] = useState<number | null>(() => {
+    try {
+      const v = new URLSearchParams(window.location.search).get("highlight");
+      return v ? parseInt(v, 10) : null;
+    } catch { return null; }
+  });
 
   const invalidate = useCallback(
     () => queryClient.invalidateQueries({ queryKey: getListAccountsQueryKey() }),
@@ -989,10 +1018,47 @@ export default function Accounts() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-64 w-full" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* Header skeleton */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <FtSkeleton width={160} height={16} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <FtSkeleton width={90} height={28} />
+            <FtSkeleton width={90} height={28} />
+            <FtSkeleton width={100} height={28} />
+          </div>
+        </div>
+        {/* Table skeleton */}
+        <div style={{ border: "1px solid var(--ft-border)" }}>
+          <div style={{ padding: "6px 12px", background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border)" }}>
+            <FtSkeleton width={280} height={10} />
+          </div>
+          {/* Column headers */}
+          <div style={{ display: "flex", gap: 12, padding: "6px 12px", background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)" }}>
+            {[160, 80, 70, 130, 110, 160, 100, 70].map((w, i) => (
+              <FtSkeleton key={i} width={w} height={9} />
+            ))}
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} style={{ display: "flex", gap: 12, padding: "10px 12px", borderBottom: "1px solid var(--ft-raised)", alignItems: "center" }}>
+              <FtSkeleton width={160} height={12} />
+              <FtSkeleton width={80} height={11} />
+              <FtSkeleton width={50} height={12} />
+              <FtSkeleton width={110} height={12} />
+              <FtSkeleton width={90} height={12} />
+              <FtSkeleton width={120} height={11} />
+              <FtSkeleton width={80} height={11} />
+              <FtSkeleton width={50} height={11} />
+            </div>
+          ))}
+        </div>
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <ErrorState message={(error as Error)?.message ?? "Could not load accounts. Check your connection and try again."} />
     );
   }
 
@@ -1107,13 +1173,6 @@ export default function Accounts() {
         }
       />
 
-      {isError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Failed to load accounts</AlertTitle>
-          <AlertDescription>{(error as Error)?.message ?? "Unknown error"}</AlertDescription>
-        </Alert>
-      )}
 
       {/* Add Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -1217,6 +1276,7 @@ export default function Accounts() {
               isActive: false,
             };
 
+            const isHighlighted = highlightId === account.id;
             return (
               <div key={account.id}>
                 {/* Main row */}
@@ -1226,7 +1286,10 @@ export default function Accounts() {
                     borderColor: "rgba(33,38,45,0.5)",
                     background: isExpanded ? "var(--ft-surface)" : "var(--ft-base)",
                     cursor: "pointer",
+                    outline: isHighlighted ? "1.5px solid var(--ft-accent)" : undefined,
+                    outlineOffset: isHighlighted ? "-1px" : undefined,
                   }}
+                  ref={isHighlighted ? (el) => { if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(() => setHighlightId(null), 2000); } } : undefined}
                   onClick={() => toggleExpand(account.id)}
                 >
                   {/* Row number + expand toggle */}
@@ -1430,6 +1493,7 @@ export default function Accounts() {
                     accountId={account.id}
                     balance={account.balance}
                     currency={account.currency}
+                    nwHistory={nwHistory}
                   />
                 )}
               </div>
@@ -1437,20 +1501,11 @@ export default function Accounts() {
           })}
 
           {accounts?.length === 0 && (
-            <div
-              className="flex items-center border-b"
-              style={{ borderColor: "rgba(33,38,45,0.5)" }}
-            >
-              <div
-                style={{ width: 52, borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }}
-              />
-              <div
-                className="flex-1 text-center py-8 text-xs"
-                style={{ color: "var(--ft-dim)" }}
-              >
-                No accounts yet — add one manually, sync Wise, or import a CSV.
-              </div>
-            </div>
+            <EmptyState
+              title="No accounts"
+              description="No accounts yet — add one manually, sync Wise, or import a CSV."
+              action={{ label: "+ Add Account", onClick: openAdd }}
+            />
           )}
 
           {/* Total row */}

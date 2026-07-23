@@ -1,6 +1,16 @@
 import { useGetDashboard } from "@workspace/api-client-react";
 import { formatCurrency } from "@/lib/utils";
 import { PrivNum } from "@/contexts/privacy-context";
+import { useCountUp } from "@/hooks/use-count-up";
+
+function KpiValue({ raw, color, fmt }: { raw: number; color: string; fmt: (v: number) => string }) {
+  const animated = useCountUp(raw);
+  return (
+    <PrivNum className="text-xs font-bold font-mono whitespace-nowrap" style={{ color }}>
+      {fmt(animated)}
+    </PrivNum>
+  );
+}
 
 export function KpiBar() {
   const { data } = useGetDashboard();
@@ -11,10 +21,10 @@ export function KpiBar() {
   const fmt = (value: number) => formatCurrency(value, currency);
 
   const items = [
-    { label: "Net Worth", value: fmt(data.netWorth), color: "var(--ft-blue)" },
-    { label: "Liquidity", value: fmt(data.netLiquidity), color: "var(--ft-green)" },
-    { label: "Cash", value: fmt(data.totalCash), color: "var(--ft-text)" },
-    { label: "Portfolio", value: fmt(data.portfolio.totalValueGbp), color: data.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
+    { label: "Net Worth", raw: data.netWorth, color: "var(--ft-blue)" },
+    { label: "Liquidity", raw: data.netLiquidity, color: "var(--ft-green)" },
+    { label: "Cash", raw: data.totalCash, color: "var(--ft-text)" },
+    { label: "Portfolio", raw: data.portfolio.totalValueGbp, color: data.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
   ];
 
   return (
@@ -36,9 +46,7 @@ export function KpiBar() {
           <span className="text-xs whitespace-nowrap" style={{ color: "var(--ft-dim)" }}>
             {item.label}
           </span>
-          <PrivNum className="text-xs font-bold font-mono whitespace-nowrap" style={{ color: item.color }}>
-            {item.value}
-          </PrivNum>
+          <KpiValue raw={item.raw} color={item.color} fmt={fmt} />
         </div>
       ))}
       <div className="flex-1" />

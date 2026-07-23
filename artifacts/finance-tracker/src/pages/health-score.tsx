@@ -4,9 +4,11 @@ import {
   useListTransactions,
   useListDebts,
   useListUpcoming,
+  useListGoals,
+  useListBudgets,
 } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
-import type { Transaction, Debt, UpcomingItem } from "@workspace/api-client-react";
+import type { Transaction, Debt, UpcomingItem, Budget } from "@workspace/api-client-react";
 import { PiggyBank, CalendarCheck, BarChart3, Zap, Star } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -26,11 +28,6 @@ interface SavingsGoal {
   name: string;
   target: number;
   current: number;
-}
-
-interface Budget {
-  category: string;
-  limit: number;
 }
 
 interface SubScore {
@@ -57,21 +54,6 @@ function saveAchievements(achievements: Achievement[]): void {
   } catch {}
 }
 
-function loadSavingsGoals(): SavingsGoal[] {
-  try {
-    const raw = localStorage.getItem("ft-savings-goals");
-    if (raw) return JSON.parse(raw) as SavingsGoal[];
-  } catch {}
-  return [];
-}
-
-function loadBudgets(): Budget[] {
-  try {
-    const raw = localStorage.getItem("ft-budgets");
-    if (raw) return JSON.parse(raw) as Budget[];
-  } catch {}
-  return [];
-}
 
 // ── Score math ───────────────────────────────────────────────────────────────
 
@@ -148,7 +130,7 @@ function calcBudgetAdherenceScore(
   if (budgets.length === 0) return 50;
   const overBudget = budgets.filter((b) => {
     const spent = spentByCategory[b.category.toLowerCase()] ?? 0;
-    return spent > b.limit;
+    return spent > b.monthlyLimit;
   }).length;
   return ((budgets.length - overBudget) / budgets.length) * 100;
 }
@@ -513,6 +495,7 @@ export default function HealthScore() {
   });
   const { data: debts, isLoading: debtsLoading } = useListDebts();
   const { data: upcoming, isLoading: upcomingLoading } = useListUpcoming();
+  const { data: goalsData = [] } = useListGoals();
 
   // ── Local state ───────────────────────────────────────────────────────────────
 
@@ -522,8 +505,14 @@ export default function HealthScore() {
 
   // ── Derived values ────────────────────────────────────────────────────────────
 
-  const savingsGoals = useMemo(() => loadSavingsGoals(), []);
-  const budgets = useMemo(() => loadBudgets(), []);
+  const savingsGoals = useMemo<SavingsGoal[]>(() =>
+    goalsData.map(g => ({
+      id: String(g.id),
+      name: g.name,
+      target: parseFloat(String(g.target)),
+      current: parseFloat(String(g.current)),
+    })), [goalsData]);
+  const { data: budgets = [] } = useListBudgets();
 
   // Per-category spend this month
   const spentByCategory = useMemo(() => {
@@ -619,7 +608,7 @@ export default function HealthScore() {
       if (budgets.length === 0) return "No budgets set — add categories in the Budget page.";
       const over = budgets.filter((b) => {
         const spent = spentByCategory[b.category.toLowerCase()] ?? 0;
-        return spent > b.limit;
+        return spent > b.monthlyLimit;
       }).length;
       if (over === 0) return "All categories within budget this month — great discipline!";
       return `${over} of ${budgets.length} categories over budget this month.`;
@@ -1003,6 +992,7 @@ export default function HealthScore() {
           Score Breakdown
         </div>
         <div
+          className="ft-three-col"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",

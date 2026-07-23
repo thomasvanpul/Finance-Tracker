@@ -539,7 +539,7 @@ function StrategyTab() {
 
       {/* Summary strip */}
       {result && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+        <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
           <div style={{
             background: "var(--ft-surface)",
             border: "1px solid var(--ft-border)",
@@ -795,6 +795,43 @@ function StrategyTab() {
   );
 }
 
+function csvField(val: string | number | undefined): string {
+  const s = String(val ?? "");
+  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function exportDebtsCSV(debts: Array<{ personName: string; description: string; date: string; direction: string; nativeAmount: number; currency: string; gbpEquivalent: number; status: string; notes?: string | null }>) {
+  const header = ["Person", "Description", "Date", "Direction", "Amount", "Currency", "GBP", "Status", "Notes"];
+  const lines = [
+    header.map(csvField).join(","),
+    ...debts.map(d => [
+      d.personName,
+      d.description,
+      d.date,
+      d.direction === "i_owe_them" ? "I Owe" : "Owed to Me",
+      Math.abs(d.nativeAmount).toFixed(2),
+      d.currency,
+      d.gbpEquivalent.toFixed(2),
+      d.status,
+      d.notes ?? "",
+    ].map(csvField).join(",")),
+  ];
+  // UTF-8 BOM ensures Excel opens the file without garbling special characters (André, José, etc.)
+  const BOM = "﻿";
+  const blob = new Blob([BOM + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `debts-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ── Main Owing page ────────────────────────────────────────────────────────────
 
 export default function Owing() {
@@ -821,6 +858,7 @@ export default function Owing() {
   const [settleForm, setSettleForm] = useState<SettleFormState | null>(null);
   const [mainTab, setMainTab] = useState<"debts" | "strategy">("debts");
 
+  const [personSearch, setPersonSearch] = useState("");
   const [linkStatus, setLinkStatus] = useState<LinkStatus>("idle");
   const [linkedUser, setLinkedUser] = useState<UserLookupResult | null>(null);
   const lookupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -926,7 +964,7 @@ export default function Owing() {
 
   async function handleReject(id: number, personName: string) {
     try {
-      await rejectDebt.mutateAsync({ id });
+      await rejectDebt.mutateAsync(id);
       invalidate();
       toast({ title: "Rejected", description: `IOU from ${personName} rejected.` });
     } catch {
@@ -1053,6 +1091,14 @@ export default function Owing() {
       list = list.filter((d) => d.direction === "they_owe_me");
     }
 
+    if (personSearch.trim()) {
+      const q = personSearch.trim().toLowerCase();
+      list = list.filter((d) =>
+        d.personName.toLowerCase().includes(q) ||
+        (d.description ?? "").toLowerCase().includes(q)
+      );
+    }
+
     return [...list].sort((a, b) => {
       switch (sortOption) {
         case "date-newest":
@@ -1089,6 +1135,14 @@ export default function Owing() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
+              onClick={() => exportDebtsCSV(debts ?? [])}
+              disabled={!(debts && debts.length > 0)}
+              style={{ background: "var(--ft-raised)", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", height: 30, fontSize: 12, gap: 6 }}
+            >
+              ↓ CSV
+            </Button>
+            <Button
+              size="sm"
               onClick={() => setSplitOpen(true)}
               style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", height: 30, fontSize: 12, gap: 6 }}
             >
@@ -1114,7 +1168,7 @@ export default function Owing() {
       )}
 
       {/* ── Summary stat bar ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
         {/* Owed to me */}
         <div style={{
           background: "var(--ft-raised)",
@@ -1195,6 +1249,30 @@ export default function Owing() {
           <div style={{ fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>this month</div>
         </div>
       </div>
+
+      {/* ── First-time empty state ── */}
+      {!isLoading && (debts ?? []).length === 0 && (
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "40px 24px", textAlign: "center" }}>
+          <pre style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6, marginBottom: 20 }}>{`  ┌─────────────────────────────────┐
+  │   IOU LEDGER                    │
+  │                                 │
+  │   Person          Amount   Age  │
+  │   ──────────────────────────── │
+  │   (no entries yet)              │
+  │                                 │
+  └─────────────────────────────────┘`}</pre>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ft-text)", marginBottom: 6 }}>No IOUs yet</div>
+          <div style={{ fontSize: 12, color: "var(--ft-dim)", marginBottom: 20 }}>Track who owes you, what you owe others, and split bills with the tools above.</div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <Button size="sm" onClick={() => setSplitOpen(true)} style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", fontSize: 12 }}>
+              <SplitSquareHorizontal className="w-3.5 h-3.5 mr-1.5" /> Split a Bill
+            </Button>
+            <Button size="sm" onClick={() => setOpen(true)} style={{ background: "var(--ft-blue)", color: "#fff", fontSize: 12 }}>
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Add IOU
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ── Main tab bar: DEBTS / STRATEGY ── */}
       <div style={{
@@ -1457,6 +1535,20 @@ export default function Owing() {
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Person search */}
+              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRight: "1px solid var(--ft-border)" }}>
+                <input
+                  type="search"
+                  value={personSearch}
+                  onChange={(e) => setPersonSearch(e.target.value)}
+                  placeholder="Search person…"
+                  style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11, padding: "3px 8px", borderRadius: 2, outline: "none", width: 130, fontFamily: "var(--font-mono)" }}
+                />
+                {personSearch && (
+                  <button onClick={() => setPersonSearch("")} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>
+                )}
               </div>
 
               <div style={{ flex: 1 }} />

@@ -5,10 +5,12 @@ import {
   useListTransactions,
   useListAccounts,
   useListDebts,
+  useListGoals,
+  useListInvestments,
 } from "@workspace/api-client-react";
 import { formatGbp, formatDate } from "@/lib/utils";
 
-type ResultKind = "transaction" | "account" | "iou";
+type ResultKind = "transaction" | "account" | "investment" | "iou" | "goal";
 
 interface SearchResult {
   id: string;
@@ -58,12 +60,14 @@ export function useGlobalSearch() {
   return { open, openSearch, closeSearch };
 }
 
-const SECTION_ORDER: ResultKind[] = ["transaction", "account", "iou"];
+const SECTION_ORDER: ResultKind[] = ["transaction", "account", "investment", "iou", "goal"];
 
 const SECTION_LABELS: Record<ResultKind, string> = {
   transaction: "TRANSACTIONS",
   account: "ACCOUNTS",
+  investment: "INVESTMENTS",
   iou: "IOUs",
+  goal: "GOALS",
 };
 
 interface GlobalSearchProps {
@@ -77,14 +81,17 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const prevFocusRef = useRef<Element | null>(null);
 
   const debouncedQuery = useDebounce(query.trim().toLowerCase(), 200);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: transactions } = useListTransactions({} as any);
   const { data: accounts } = useListAccounts();
+  const { data: investments } = useListInvestments();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: debts } = useListDebts({} as any);
+  const { data: goals } = useListGoals();
 
   const results: SearchResult[] = debouncedQuery
     ? [
@@ -103,7 +110,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             tertiary: `${formatDate(tx.date)} · ${tx.type === "income" ? "+" : "-"}${formatGbp(tx.gbpValue)}`,
             amountColor:
               tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
-            navigateTo: "/transactions",
+            navigateTo: `/transactions?q=${encodeURIComponent(tx.description)}`,
           }))),
         ...((accounts ?? [])
           .filter((a) =>
@@ -116,7 +123,23 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             primary: a.name,
             secondary: a.currency,
             tertiary: formatGbp(a.balance),
-            navigateTo: "/accounts",
+            navigateTo: `/accounts?highlight=${a.id}`,
+          }))),
+        ...((investments ?? [])
+          .filter(
+            (inv) =>
+              inv.ticker.toLowerCase().includes(debouncedQuery) ||
+              inv.name.toLowerCase().includes(debouncedQuery)
+          )
+          .slice(0, 3)
+          .map((inv) => ({
+            id: `inv-${inv.id}`,
+            kind: "investment" as ResultKind,
+            primary: inv.ticker,
+            secondary: inv.name,
+            tertiary: formatGbp(inv.gbpValue),
+            amountColor: inv.plGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+            navigateTo: "/investments",
           }))),
         ...((debts ?? [])
           .filter(
@@ -133,6 +156,23 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             tertiary: formatGbp(d.gbpEquivalent),
             navigateTo: "/owing",
           }))),
+        ...((goals ?? [])
+          .filter((g) => g.name.toLowerCase().includes(debouncedQuery))
+          .slice(0, 3)
+          .map((g) => {
+            const current = parseFloat(String(g.current));
+            const target = parseFloat(String(g.target));
+            const pct = target > 0 ? Math.round((current / target) * 100) : 0;
+            return {
+              id: `goal-${g.id}`,
+              kind: "goal" as ResultKind,
+              primary: `${g.emoji ? g.emoji + " " : ""}${g.name}`,
+              secondary: `${pct}% complete`,
+              tertiary: `${formatGbp(current)} of ${formatGbp(target)}`,
+              amountColor: current >= target ? "var(--ft-green)" : undefined,
+              navigateTo: `/goals?highlight=${g.id}`,
+            };
+          })),
       ]
     : [];
 
@@ -141,16 +181,19 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
       acc[kind] = results.filter((r) => r.kind === kind);
       return acc;
     },
-    { transaction: [], account: [], iou: [] }
+    { transaction: [], account: [], investment: [], iou: [], goal: [] }
   );
 
   const flatResults = SECTION_ORDER.flatMap((k) => grouped[k]);
 
   useEffect(() => {
     if (open) {
+      prevFocusRef.current = document.activeElement;
       setQuery("");
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 0);
+    } else {
+      (prevFocusRef.current as HTMLElement | null)?.focus?.();
     }
   }, [open]);
 
@@ -261,7 +304,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search transactions, accounts, IOUs..."
+            placeholder="Search transactions, accounts, investments, goals, IOUs..."
             style={{
               flex: 1,
               height: 44,
@@ -297,7 +340,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
                 color: "var(--ft-dim)",
               }}
             >
-              Type to search transactions, accounts, and IOUs
+              Type to search transactions, accounts, investments, goals, and IOUs
             </div>
           )}
 
@@ -422,7 +465,7 @@ function ResultRow({ result, isSelected, onMouseEnter, onClick }: ResultRowProps
           textAlign: "center",
         }}
       >
-        {result.kind === "transaction" ? "TX" : result.kind === "account" ? "ACC" : "IOU"}
+        {result.kind === "transaction" ? "TX" : result.kind === "account" ? "ACC" : result.kind === "investment" ? "INV" : result.kind === "goal" ? "GOAL" : "IOU"}
       </span>
 
       {/* Primary label */}

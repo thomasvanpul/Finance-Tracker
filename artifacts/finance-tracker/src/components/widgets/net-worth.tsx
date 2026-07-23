@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp, formatPercent } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
+import { useCountUp } from "@/hooks/use-count-up";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const HISTORY_KEY = "ft-nw-history";
@@ -9,6 +10,93 @@ const MAX_ENTRIES = 365;
 
 type HistoryEntry = { date: string; netWorth: number; cash: number; portfolio: number };
 type Period = "7D" | "1M" | "3M" | "ALL";
+
+type CurrencyGroup = { currency: string; nativeTotal: number; gbpTotal: number; share: number };
+
+function buildCurrencyGroups(
+  accountBreakdown: { currency: string; balance: number; gbpEquivalent: number }[],
+  totalCash: number
+): CurrencyGroup[] {
+  const map = new Map<string, { native: number; gbp: number }>();
+  for (const acct of accountBreakdown) {
+    const prev = map.get(acct.currency) ?? { native: 0, gbp: 0 };
+    map.set(acct.currency, { native: prev.native + acct.balance, gbp: prev.gbp + acct.gbpEquivalent });
+  }
+  return Array.from(map.entries())
+    .map(([currency, { native, gbp }]) => ({
+      currency,
+      nativeTotal: native,
+      gbpTotal: gbp,
+      share: totalCash > 0 ? (gbp / totalCash) * 100 : 0,
+    }))
+    .sort((a, b) => b.gbpTotal - a.gbpTotal);
+}
+
+const CURRENCY_FLAGS: Record<string, string> = {
+  GBP: "🇬🇧", USD: "🇺🇸", EUR: "🇪🇺", MYR: "🇲🇾", SGD: "🇸🇬",
+  AUD: "🇦🇺", CAD: "🇨🇦", JPY: "🇯🇵", HKD: "🇭🇰", CHF: "🇨🇭",
+  NZD: "🇳🇿", SEK: "🇸🇪", NOK: "🇳🇴", DKK: "🇩🇰", CNY: "🇨🇳",
+};
+
+function formatNative(amount: number, currency: string): string {
+  const symbols: Record<string, string> = { GBP: "£", USD: "$", EUR: "€", MYR: "RM ", SGD: "S$", AUD: "A$", CAD: "C$", JPY: "¥", HKD: "HK$", CHF: "CHF " };
+  const sym = symbols[currency] ?? `${currency} `;
+  return `${sym}${Math.abs(amount).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
+  if (groups.length <= 1) return null;
+  return (
+    <div style={{ borderTop: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 0, overflowX: "auto", scrollbarWidth: "none" }}>
+        {groups.map((g, i) => (
+          <div
+            key={g.currency}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              padding: "8px 12px",
+              borderRight: i < groups.length - 1 ? "1px solid var(--ft-border)" : undefined,
+              minWidth: 0,
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
+              <span style={{ fontSize: 10 }}>{CURRENCY_FLAGS[g.currency] ?? "🌐"}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-muted)" }}>
+                {g.currency}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 2 }}>
+                {g.share.toFixed(0)}%
+              </span>
+            </div>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-accent)", whiteSpace: "nowrap" }}>
+              {formatNative(g.nativeTotal, g.currency)}
+            </div>
+            {g.currency !== "GBP" && (
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>
+                {formatGbp(g.gbpTotal)}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div style={{ height: 3, background: "var(--ft-border)", display: "flex" }}>
+        {groups.map((g) => (
+          <div
+            key={g.currency}
+            style={{
+              height: "100%",
+              width: `${g.share}%`,
+              background: `hsl(${(groups.indexOf(g) * 47 + 200) % 360}, 60%, 55%)`,
+              opacity: 0.8,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const PERIODS: { label: Period; days: number | null }[] = [
   { label: "7D",  days: 7 },
@@ -103,6 +191,11 @@ function PeriodSelector({ period, setPeriod }: { period: Period; setPeriod: (p: 
   );
 }
 
+function AnimatedGbp({ value }: { value: number }) {
+  const animated = useCountUp(value);
+  return <>{formatGbp(animated)}</>;
+}
+
 export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   const { data: d, isLoading } = useGetDashboard();
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
@@ -124,11 +217,13 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
     ? history.slice(-periodDef.days)
     : history;
 
+  const currencyGroups = d ? buildCurrencyGroups(d.accountBreakdown, d.totalCash) : [];
+
   const kpis = d ? [
-    { label: "Net Worth",    value: formatGbp(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio" },
-    { label: "Total Cash",   value: formatGbp(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts` },
-    { label: "Portfolio",    value: formatGbp(d.portfolio.totalValueGbp), color: d.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlGbp >= 0 ? "+" : ""}${formatGbp(d.portfolio.totalPlGbp)}` },
-    { label: "Net Liquidity",value: formatGbp(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments" },
+    { label: "Net Worth",    raw: d.netWorth,                            value: formatGbp(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true },
+    { label: "Total Cash",   raw: null,                                  value: formatGbp(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false },
+    { label: "Portfolio",    raw: null,                                  value: formatGbp(d.portfolio.totalValueGbp), color: d.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlGbp >= 0 ? "+" : ""}${formatGbp(d.portfolio.totalPlGbp)}`, animate: false },
+    { label: "Net Liquidity",raw: null,                                  value: formatGbp(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false },
   ] : [];
 
   const breakdownRow = d && (
@@ -194,7 +289,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
               {k.label}
             </div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: k.color, lineHeight: 1.1 }}>
-              {k.value}
+              {k.animate && k.raw !== null ? <AnimatedGbp value={k.raw} /> : k.value}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               {k.sub}
@@ -221,6 +316,8 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
       </div>
 
       {breakdownRow}
+
+      <CurrencyExposureStrip groups={currencyGroups} />
 
       {history.length >= 2 && chartSection}
     </>

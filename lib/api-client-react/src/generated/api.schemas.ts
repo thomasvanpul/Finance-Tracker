@@ -566,6 +566,137 @@ export interface DebtSummary {
   pendingCount: number;
 }
 
+export interface Budget {
+  id: number;
+  category: string;
+  monthlyLimit: number;
+}
+
+export interface CreateBudgetBody {
+  category: string;
+  /** @minimum 0.01 */
+  monthlyLimit: number;
+}
+
+export interface UpdateBudgetBody {
+  /** @minimum 0.01 */
+  monthlyLimit: number;
+}
+
+export interface GoalHistoryEntry {
+  date: string;
+  amount: number;
+}
+
+export interface Goal {
+  id: number;
+  name: string;
+  target: number;
+  current: number;
+  deadline?: string;
+  emoji?: string;
+  color?: string;
+  image?: string;
+  monthlyContribution?: number;
+  history: GoalHistoryEntry[];
+}
+
+export interface CreateGoalBody {
+  name: string;
+  /** @minimum 0.01 */
+  target: number;
+  current?: number;
+  deadline?: string;
+  emoji?: string;
+  color?: string;
+  image?: string;
+  monthlyContribution?: number;
+  history?: GoalHistoryEntry[];
+}
+
+export interface UpdateGoalBody {
+  name?: string;
+  target?: number;
+  current?: number;
+  deadline?: string | null;
+  emoji?: string | null;
+  color?: string | null;
+  image?: string | null;
+  monthlyContribution?: number | null;
+  history?: GoalHistoryEntry[];
+}
+
+export type SubscriptionFrequency = typeof SubscriptionFrequency[keyof typeof SubscriptionFrequency];
+
+
+export const SubscriptionFrequency = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  quarterly: 'quarterly',
+  annual: 'annual',
+} as const;
+
+export interface Subscription {
+  id: number;
+  name: string;
+  amount: number;
+  currency: string;
+  frequency: SubscriptionFrequency;
+  category: string;
+  nextDue?: string;
+  startDate: string;
+  active: boolean;
+  notes?: string;
+  manuallyAdded: boolean;
+}
+
+export type CreateSubscriptionBodyFrequency = typeof CreateSubscriptionBodyFrequency[keyof typeof CreateSubscriptionBodyFrequency];
+
+
+export const CreateSubscriptionBodyFrequency = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  quarterly: 'quarterly',
+  annual: 'annual',
+} as const;
+
+export interface CreateSubscriptionBody {
+  name: string;
+  /** @minimum 0.01 */
+  amount: number;
+  currency?: string;
+  frequency?: CreateSubscriptionBodyFrequency;
+  category?: string;
+  nextDue?: string;
+  startDate?: string;
+  active?: boolean;
+  notes?: string;
+  manuallyAdded?: boolean;
+}
+
+export type UpdateSubscriptionBodyFrequency = typeof UpdateSubscriptionBodyFrequency[keyof typeof UpdateSubscriptionBodyFrequency];
+
+
+export const UpdateSubscriptionBodyFrequency = {
+  weekly: 'weekly',
+  monthly: 'monthly',
+  quarterly: 'quarterly',
+  annual: 'annual',
+} as const;
+
+export interface UpdateSubscriptionBody {
+  name?: string;
+  amount?: number;
+  currency?: string;
+  frequency?: UpdateSubscriptionBodyFrequency;
+  category?: string;
+  nextDue?: string | null;
+  startDate?: string;
+  active?: boolean;
+  notes?: string | null;
+  manuallyAdded?: boolean;
+}
+
 export type FxRatesRates = {[key: string]: number};
 
 export interface FxRates {
@@ -606,157 +737,6 @@ export interface StockQuote {
   analystTargetPrice?: number | null;
   /** @nullable */
   displayName?: string | null;
-  /** @nullable */
-  changePercent?: number | null;
-  /** @nullable */
-  dayHigh?: number | null;
-  /** @nullable */
-  dayLow?: number | null;
-  /** @nullable */
-  volume?: number | null;
-  /** @nullable */
-  previousClose?: number | null;
-}
-
-export interface StockHistoryPoint {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
-
-export interface EarningsEntry {
-  date: string;
-  /** @nullable */
-  epsActual?: number | null;
-  /** @nullable */
-  epsEstimate?: number | null;
-  /** @nullable */
-  surprise?: number | null;
-}
-
-export interface RecTrend {
-  period: string;
-  strongBuy: number;
-  buy: number;
-  hold: number;
-  sell: number;
-  strongSell: number;
-}
-
-export interface StockDetail {
-  ticker: string;
-  /** @nullable */
-  sector?: string | null;
-  /** @nullable */
-  industry?: string | null;
-  /** @nullable */
-  country?: string | null;
-  /** @nullable */
-  employees?: number | null;
-  /** @nullable */
-  description?: string | null;
-  /** @nullable */
-  website?: string | null;
-  /** @nullable */
-  totalRevenue?: number | null;
-  /** @nullable */
-  grossMargins?: number | null;
-  /** @nullable */
-  operatingMargins?: number | null;
-  /** @nullable */
-  netMargins?: number | null;
-  /** @nullable */
-  revenueGrowth?: number | null;
-  /** @nullable */
-  earningsGrowth?: number | null;
-  /** @nullable */
-  freeCashflow?: number | null;
-  /** @nullable */
-  operatingCashflow?: number | null;
-  /** @nullable */
-  totalDebt?: number | null;
-  /** @nullable */
-  totalCash?: number | null;
-  /** @nullable */
-  debtToEquity?: number | null;
-  /** @nullable */
-  currentRatio?: number | null;
-  /** @nullable */
-  quickRatio?: number | null;
-  /** @nullable */
-  sharesOutstanding?: number | null;
-  /** @nullable */
-  bookValue?: number | null;
-  /** @nullable */
-  priceToBook?: number | null;
-  /** @nullable */
-  priceToSales?: number | null;
-  /** @nullable */
-  enterpriseValue?: number | null;
-  /** @nullable */
-  pegRatio?: number | null;
-  /** @nullable */
-  forwardEps?: number | null;
-  /** @nullable */
-  returnOnEquity?: number | null;
-  /** @nullable */
-  returnOnAssets?: number | null;
-  /** @nullable */
-  institutionalOwnership?: number | null;
-  /** @nullable */
-  insiderOwnership?: number | null;
-  /** @nullable */
-  shortRatio?: number | null;
-  /** @nullable */
-  shortPercentFloat?: number | null;
-  /** @nullable */
-  targetHigh?: number | null;
-  /** @nullable */
-  targetLow?: number | null;
-  /** @nullable */
-  targetMedian?: number | null;
-  /** @nullable */
-  fiftyTwoWeekChange?: number | null;
-  earningsHistory: EarningsEntry[];
-  recommendationTrend: RecTrend[];
-  /** @nullable */
-  nextEarningsDate?: string | null;
-  /** @nullable */
-  analystCount?: number | null;
-  /** @nullable */
-  recommendationKey?: string | null;
-}
-
-export interface OptionsContract {
-  strike: number;
-  expiry: string;
-  type: 'call' | 'put';
-  /** @nullable */
-  bid?: number | null;
-  /** @nullable */
-  ask?: number | null;
-  /** @nullable */
-  lastPrice?: number | null;
-  /** @nullable */
-  volume?: number | null;
-  /** @nullable */
-  openInterest?: number | null;
-  /** @nullable */
-  impliedVolatility?: number | null;
-  /** @nullable */
-  inTheMoney?: boolean | null;
-}
-
-export interface OptionsChain {
-  ticker: string;
-  underlyingPrice: number;
-  expiryDates: string[];
-  selectedExpiry: string;
-  calls: OptionsContract[];
-  puts: OptionsContract[];
 }
 
 export type CurrencySettingsBaseCurrency = typeof CurrencySettingsBaseCurrency[keyof typeof CurrencySettingsBaseCurrency];
@@ -855,6 +835,10 @@ export type CsvImportResultProvider = typeof CsvImportResultProvider[keyof typeo
 export const CsvImportResultProvider = {
   revolut: 'revolut',
   maybank: 'maybank',
+  monzo: 'monzo',
+  hsbc: 'hsbc',
+  wise: 'wise',
+  chase: 'chase',
 } as const;
 
 export interface CsvImportResult {
@@ -963,5 +947,17 @@ export type ImportCsvProvider = typeof ImportCsvProvider[keyof typeof ImportCsvP
 export const ImportCsvProvider = {
   revolut: 'revolut',
   maybank: 'maybank',
+  monzo: 'monzo',
+  hsbc: 'hsbc',
+  wise: 'wise',
+  chase: 'chase',
 } as const;
+
+export type AddGoalFundsBody = {
+  amount: number;
+};
+
+export type DismissSubscriptionBody = {
+  description: string;
+};
 

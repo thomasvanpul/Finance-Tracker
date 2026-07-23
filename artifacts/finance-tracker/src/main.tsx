@@ -29,6 +29,12 @@ if (!import.meta.env.DEV && import.meta.env.VITE_API_URL) {
   setBaseUrl(import.meta.env.VITE_API_URL as string);
 }
 
+// Apply stored accent override synchronously before first render to avoid FOUC
+try {
+  const acc = localStorage.getItem("nr-accent-override");
+  if (acc) document.documentElement.style.setProperty("--ft-accent", acc);
+} catch { /* ignore */ }
+
 createRoot(document.getElementById("root")!).render(
   <RootErrorBoundary>
     <App />

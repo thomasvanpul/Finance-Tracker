@@ -968,7 +968,7 @@ function OptionsChainViewer() {
   const [selectedExpiry, setSelectedExpiry] = useState<string | undefined>(undefined);
 
   const { data: chain, isLoading } = useGetOptionsChain(
-    { ticker: activeTicker, expiry: selectedExpiry },
+    { ticker: activeTicker, expiration: selectedExpiry },
     { query: { enabled: !!activeTicker } },
   );
 

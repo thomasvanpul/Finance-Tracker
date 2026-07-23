@@ -9,9 +9,12 @@ interface WidgetShellProps {
   children: ReactNode;
   isLoading?: boolean;
   isExpanded?: boolean;
+  isEmpty?: boolean;
+  emptyMessage?: string;
+  emptyAction?: { label: string; href: string };
 }
 
-export function WidgetShell({ title, href, linkLabel = "→ View", accent, children, isLoading, isExpanded: _isExpanded }: WidgetShellProps) {
+export function WidgetShell({ title, href, linkLabel = "→ View", accent, children, isLoading, isExpanded: _isExpanded, isEmpty, emptyMessage, emptyAction }: WidgetShellProps) {
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
       <div style={{
@@ -41,7 +44,44 @@ export function WidgetShell({ title, href, linkLabel = "→ View", accent, child
           </Link>
         )}
       </div>
-      {isLoading ? <SkeletonRows /> : children}
+      {isLoading ? (
+        <SkeletonRows />
+      ) : isEmpty ? (
+        <EmptyState message={emptyMessage} action={emptyAction} />
+      ) : (
+        children
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ message, action }: { message?: string; action?: { label: string; href: string } }) {
+  return (
+    <div style={{ padding: "20px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 9,
+        color: "var(--ft-dim)",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        borderLeft: "2px solid var(--ft-border2)",
+        paddingLeft: 8,
+      }}>
+        {message ?? "NO DATA"}
+      </div>
+      {action && (
+        <Link href={action.href}>
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "var(--ft-accent)",
+            letterSpacing: "0.06em",
+            cursor: "pointer",
+          }}>
+            {action.label}
+          </span>
+        </Link>
+      )}
     </div>
   );
 }

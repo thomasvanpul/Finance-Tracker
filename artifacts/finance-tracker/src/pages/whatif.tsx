@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatGbp } from "@/lib/utils";
-import { useGetDashboard } from "@workspace/api-client-react";
+import { useGetDashboard, useListBudgets } from "@workspace/api-client-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -215,7 +215,7 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
     <div>
       {sectionTitle("Income Change Simulator")}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 20 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 20 }}>
         <div>
           <SliderRow
             label="Current Monthly Income"
@@ -329,18 +329,13 @@ interface CategorySlider {
 }
 
 function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
+  const { data: apiBudgets = [] } = useListBudgets();
+
   const defaultCategories: CategorySlider[] = useMemo(() => {
-    // Try reading from ft-budgets, fall back to generic allocation
-    try {
-      const raw = localStorage.getItem("ft-budgets");
-      if (raw) {
-        const budgets = JSON.parse(raw) as Array<{ category: string; amount: number }>;
-        if (Array.isArray(budgets) && budgets.length > 0) {
-          return budgets.map((b) => ({ label: b.category, base: b.amount, cut: 0 }));
-        }
-      }
-    } catch {}
-    // Generic allocation
+    if (apiBudgets.length > 0) {
+      return apiBudgets.map((b) => ({ label: b.category, base: b.monthlyLimit, cut: 0 }));
+    }
+    // Generic allocation fallback
     const share = baseExpenses > 0 ? baseExpenses : 2500;
     return [
       { label: "Housing", base: Math.round(share * 0.35), cut: 0 },
@@ -352,9 +347,14 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
       { label: "Clothing", base: Math.round(share * 0.05), cut: 0 },
       { label: "Other", base: Math.round(share * 0.13), cut: 0 },
     ];
-  }, [baseExpenses]);
+  }, [apiBudgets, baseExpenses]);
 
   const [categories, setCategories] = useState<CategorySlider[]>(defaultCategories);
+
+  useEffect(() => {
+    setCategories(defaultCategories);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiBudgets]);
 
   const totalMonthlySaving = categories.reduce((s, c) => s + c.base * (c.cut / 100), 0);
   const annualSaving = totalMonthlySaving * 12;
@@ -420,7 +420,7 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         {/* Sliders */}
         <div>
           {categories.map((c, i) => (
@@ -524,7 +524,7 @@ function LumpSumTab() {
     <div>
       {sectionTitle("Lump Sum Investment Calculator")}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         <div>
           <SliderRow label="Lump Sum Amount" value={principal} min={100} max={100000} step={100} onChange={setPrincipal} display={formatGbp(principal)} />
           <SliderRow label="Annual Return Rate" value={annualRate} min={1} max={20} step={0.5} onChange={setAnnualRate} display={`${annualRate}%`} />
@@ -613,7 +613,7 @@ function DebtPayoffTab() {
     <div>
       {sectionTitle("Debt Payoff Calculator")}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         <div>
           <SliderRow label="Loan Amount" value={loanAmount} min={500} max={100000} step={500} onChange={setLoanAmount} display={formatGbp(loanAmount)} />
           <SliderRow label="Interest Rate (APR %)" value={apr} min={0.5} max={40} step={0.5} onChange={setApr} display={`${apr}%`} />
@@ -628,7 +628,7 @@ function DebtPayoffTab() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-amber)", marginBottom: 12 }}>
                 {formatGbp(minPay)}/mo min to cover interest
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+              <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <BigNumber value={`${baseMonths} mo`} label="Months to Payoff" color="var(--ft-text)" />
                 <BigNumber value={formatGbp(Math.round(baseTotalInterest))} label="Total Interest" color="var(--ft-red)" />
               </div>
@@ -637,7 +637,7 @@ function DebtPayoffTab() {
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 8 }}>
                     With +{formatGbp(extraPayment)}/mo
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <BigNumber value={`-${monthsSaved} mo`} label="Months Saved" color="var(--ft-green)" />
                     <BigNumber value={`-${formatGbp(Math.round(interestSaved))}`} label="Interest Saved" color="var(--ft-green)" />
                   </div>

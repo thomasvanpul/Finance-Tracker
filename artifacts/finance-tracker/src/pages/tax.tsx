@@ -417,9 +417,39 @@ export default function Tax() {
     setDisposalForm({ assetName: "", ticker: "", acquiredDate: "", disposedDate: "", proceeds: "", costBasis: "" });
   };
 
+  const holdingDays = (d: Disposal) => {
+    const ms = new Date(d.disposedDate).getTime() - new Date(d.acquiredDate).getTime();
+    return Math.floor(ms / 86400000);
+  };
+
+  const holdingLabel = (d: Disposal) => {
+    const days = holdingDays(d);
+    if (days < 0) return { text: "—", color: "var(--ft-dim)" };
+    const months = Math.floor(days / 30);
+    const label = days < 30 ? `${days}d` : months < 12 ? `${months}mo` : `${(days / 365).toFixed(1)}yr`;
+    const longTerm = days >= 365;
+    return { text: label, color: longTerm ? "var(--ft-green)" : "var(--ft-amber)", longTerm };
+  };
+
   const handleExport = () => {
     const blob = new Blob([JSON.stringify({ country, taxYear: selectedYear, disposals: yearDisposals, shelterContributions: yearShelter, summary: { totalGains, totalLosses, netGains, cgtAllowance: rules.cgtAllowance, taxableGains, estCgtLow: cgtLowEst, estCgtHigh: cgtHighEst } }, null, 2)], { type: "application/json" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `tax-${country}-${selectedYear.replace("/", "-")}.json`; a.click();
+  };
+
+  const handleExportCsv = () => {
+    const rows = [
+      ["Asset", "Ticker", "Acquired", "Disposed", `Proceeds (${sym})`, `Cost Basis (${sym})`, `Gain/Loss (${sym})`, "Holding Days", "Term"].join(","),
+      ...yearDisposals.map(d => {
+        const days = holdingDays(d);
+        return [
+          `"${d.assetName}"`, d.ticker ?? "", d.acquiredDate, d.disposedDate,
+          d.proceeds.toFixed(2), d.costBasis.toFixed(2), d.gainLoss.toFixed(2),
+          days, days >= 365 ? "Long-term" : "Short-term",
+        ].join(",");
+      }),
+    ].join("\n");
+    const blob = new Blob([rows], { type: "text/csv" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `disposals-${country}-${selectedYear.replace("/", "-")}.csv`; a.click();
   };
 
   const TH: React.CSSProperties = { padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)", background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)", borderRight: "1px solid var(--ft-border)", textTransform: "uppercase" as const, letterSpacing: "0.4px", whiteSpace: "nowrap" as const };
@@ -458,7 +488,10 @@ export default function Tax() {
               minWidth={90}
             />
             <Button onClick={handleExport} size="sm" variant="outline" style={{ borderColor: "var(--ft-border2)", color: "var(--ft-muted)", fontSize: 11, height: 32 }}>
-              <Download className="w-3.5 h-3.5 mr-1.5" />Export JSON
+              <Download className="w-3.5 h-3.5 mr-1.5" />JSON
+            </Button>
+            <Button onClick={handleExportCsv} size="sm" variant="outline" style={{ borderColor: "var(--ft-border2)", color: "var(--ft-muted)", fontSize: 11, height: 32 }}>
+              <Download className="w-3.5 h-3.5 mr-1.5" />CSV
             </Button>
           </div>
         }
@@ -527,7 +560,7 @@ export default function Tax() {
         {/* Disposals table */}
         <div className="overflow-x-auto">
           <div className="flex">
-            {[["ASSET", "1"], ["TICKER", "80px"], ["ACQUIRED", "110px"], ["DISPOSED", "110px"], [`PROCEEDS (${sym})`, "120px"], [`COST (${sym})`, "110px"], [`GAIN/LOSS`, "120px"], ["", "56px"]].map(([h, w]) => (
+            {[["ASSET", "1"], ["TICKER", "80px"], ["ACQUIRED", "100px"], ["DISPOSED", "100px"], ["HELD", "70px"], [`PROCEEDS (${sym})`, "120px"], [`COST (${sym})`, "110px"], [`GAIN/LOSS`, "120px"], ["", "56px"]].map(([h, w]) => (
               <div key={h} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, textAlign: ["PROCEEDS", "COST", "GAIN/LOSS"].some(x => (h as string).startsWith(x)) ? "right" : "left" }}>{h}</div>
             ))}
           </div>
@@ -538,8 +571,9 @@ export default function Tax() {
             <div key={d.id} className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)", background: "var(--ft-base)" }}>
               <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 12, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.assetName}</div>
               <div style={{ width: 80, minWidth: 80, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-cyan)", fontFamily: "var(--font-mono)" }}>{d.ticker ?? "—"}</div>
-              <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)" }}>{d.acquiredDate}</div>
-              <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)" }}>{d.disposedDate}</div>
+              <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)" }}>{d.acquiredDate}</div>
+              <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)" }}>{d.disposedDate}</div>
+              <div style={{ width: 70, minWidth: 70, padding: "7px 8px", borderRight: "1px solid var(--ft-border)", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, color: holdingLabel(d).color, textAlign: "center" }}>{holdingLabel(d).text}</div>
               <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-text)" }}>{fmt(d.proceeds, sym)}</div>
               <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>{fmt(d.costBasis, sym)}</div>
               <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 600, color: d.gainLoss >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>{d.gainLoss >= 0 ? "+" : ""}{fmt(d.gainLoss, sym)}</div>

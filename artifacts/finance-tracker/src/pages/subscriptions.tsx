@@ -1,7 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   useListTransactions,
+  useListSubscriptions, useCreateSubscription, useUpdateSubscription, useDeleteSubscription,
+  useListDismissedSubscriptions, useDismissSubscription,
+  getListSubscriptionsQueryKey, getListDismissedSubscriptionsQueryKey,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatGbp } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +29,7 @@ type SubFrequency = "weekly" | "monthly" | "quarterly" | "annual";
 type SubStatus = "active" | "paused" | "cancelled";
 
 interface Subscription {
-  id: string;
+  id: number;
   name: string;
   amount: number;
   currency: string;
@@ -50,8 +54,6 @@ interface SubForm {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const LS_SUBS_KEY = "ft-subscriptions";
-const LS_DISMISSED_KEY = "ft-subscriptions-dismissed";
 
 const FREQ_LABELS: Record<SubFrequency, string> = {
   weekly: "WEEKLY",
@@ -93,27 +95,6 @@ const TH: React.CSSProperties = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function loadSubs(): Subscription[] {
-  try {
-    const raw = localStorage.getItem(LS_SUBS_KEY);
-    return raw ? (JSON.parse(raw) as Subscription[]) : [];
-  } catch { return []; }
-}
-
-function saveSubs(subs: Subscription[]): void {
-  try { localStorage.setItem(LS_SUBS_KEY, JSON.stringify(subs)); } catch { /* noop */ }
-}
-
-function loadDismissed(): string[] {
-  try {
-    const raw = localStorage.getItem(LS_DISMISSED_KEY);
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch { return []; }
-}
-
-function saveDismissed(list: string[]): void {
-  try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify(list)); } catch { /* noop */ }
-}
 
 function toMonthly(amount: number, freq: SubFrequency): number {
   switch (freq) {
@@ -219,16 +200,33 @@ function detectRecurring(
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function Subscriptions() {
+  const queryClient = useQueryClient();
   const { data: txs } = useListTransactions({});
 
-  const [subs, setSubs] = useState<Subscription[]>(() => loadSubs());
-  const [dismissed, setDismissed] = useState<string[]>(() => loadDismissed());
-  const [addOpen, setAddOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<SubForm>(EMPTY_FORM);
+  const { data: rawSubs = [] } = useListSubscriptions();
+  const subs: Subscription[] = rawSubs.map(s => ({
+    id: s.id,
+    name: s.name,
+    amount: s.amount,
+    currency: s.currency,
+    frequency: s.frequency as SubFrequency,
+    category: s.category,
+    nextDue: s.nextDue ?? undefined,
+    startDate: s.startDate,
+    active: s.active,
+    notes: s.notes ?? undefined,
+    manuallyAdded: s.manuallyAdded,
+  }));
 
-  useEffect(() => { saveSubs(subs); }, [subs]);
-  useEffect(() => { saveDismissed(dismissed); }, [dismissed]);
+  const { data: dismissed = [] } = useListDismissedSubscriptions();
+  const createSubMutation = useCreateSubscription();
+  const updateSubMutation = useUpdateSubscription();
+  const deleteSubMutation = useDeleteSubscription();
+  const dismissMutation = useDismissSubscription();
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [form, setForm] = useState<SubForm>(EMPTY_FORM);
 
   // ── Detection ──
   const detected = useMemo((): DetectedCandidate[] => {
@@ -247,7 +245,7 @@ export default function Subscriptions() {
 
   // ── Last transaction per sub ──
   const lastTxByName = useMemo(() => {
-    const map = new Map<string, { date: string; amount: number; prevAmount: number | null }>();
+    const map = new Map<number, { date: string; amount: number; prevAmount: number | null }>();
     if (!txs) return map;
     for (const sub of subs) {
       const matches = txs
@@ -332,39 +330,48 @@ export default function Subscriptions() {
   const setField = <K extends keyof SubForm>(k: K, v: SubForm[K]) =>
     setForm(f => ({ ...f, [k]: v }));
 
-  const handleAdd = (e: React.FormEvent) => {
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: getListSubscriptionsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListDismissedSubscriptionsQueryKey() });
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newSub: Subscription = {
-      id: nanoid(),
-      name: form.name,
-      amount: parseFloat(form.amount),
-      currency: form.currency,
-      frequency: form.frequency,
-      category: form.category,
-      nextDue: form.nextDue || undefined,
-      startDate: new Date().toISOString().slice(0, 10),
-      active: true,
-      notes: form.notes || undefined,
-      manuallyAdded: true,
-    };
-    setSubs(p => [...p, newSub]);
+    await createSubMutation.mutateAsync({
+      data: {
+        name: form.name,
+        amount: parseFloat(form.amount),
+        currency: form.currency,
+        frequency: form.frequency,
+        category: form.category,
+        nextDue: form.nextDue || undefined,
+        startDate: new Date().toISOString().slice(0, 10),
+        active: true,
+        notes: form.notes || undefined,
+        manuallyAdded: true,
+      },
+    });
+    invalidate();
     setAddOpen(false);
     setForm(EMPTY_FORM);
   };
 
-  const handleEdit = (e: React.FormEvent) => {
+  const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editId) return;
-    setSubs(p => p.map(s => s.id !== editId ? s : {
-      ...s,
-      name: form.name,
-      amount: parseFloat(form.amount),
-      currency: form.currency,
-      frequency: form.frequency,
-      category: form.category,
-      nextDue: form.nextDue || undefined,
-      notes: form.notes || undefined,
-    }));
+    await updateSubMutation.mutateAsync({
+      id: editId,
+      data: {
+        name: form.name,
+        amount: parseFloat(form.amount),
+        currency: form.currency,
+        frequency: form.frequency,
+        category: form.category,
+        nextDue: form.nextDue || null,
+        notes: form.notes || null,
+      },
+    });
+    invalidate();
     setEditId(null);
     setForm(EMPTY_FORM);
   };
@@ -382,31 +389,39 @@ export default function Subscriptions() {
     setEditId(sub.id);
   };
 
-  const deleteSub = (id: string) => {
+  const deleteSub = async (id: number) => {
     if (!confirm("Delete this subscription?")) return;
-    setSubs(p => p.filter(s => s.id !== id));
+    await deleteSubMutation.mutateAsync({ id });
+    invalidate();
   };
 
-  const toggleActive = (id: string) =>
-    setSubs(p => p.map(s => s.id !== id ? s : { ...s, active: !s.active }));
-
-  const confirmCandidate = (candidate: DetectedCandidate) => {
-    const newSub: Subscription = {
-      id: nanoid(),
-      name: candidate.description,
-      amount: Math.round(candidate.avgAmount * 100) / 100,
-      currency: "GBP",
-      frequency: "monthly",
-      category: "Other",
-      startDate: candidate.transactions[candidate.transactions.length - 1]?.date ?? new Date().toISOString().slice(0, 10),
-      active: true,
-      manuallyAdded: false,
-    };
-    setSubs(p => [...p, newSub]);
+  const toggleActive = async (id: number) => {
+    const sub = subs.find(s => s.id === id);
+    if (!sub) return;
+    await updateSubMutation.mutateAsync({ id, data: { active: !sub.active } });
+    invalidate();
   };
 
-  const dismissCandidate = (desc: string) =>
-    setDismissed(p => [...p, desc]);
+  const confirmCandidate = async (candidate: DetectedCandidate) => {
+    await createSubMutation.mutateAsync({
+      data: {
+        name: candidate.description,
+        amount: Math.round(candidate.avgAmount * 100) / 100,
+        currency: "GBP",
+        frequency: "monthly",
+        category: "Other",
+        startDate: candidate.transactions[candidate.transactions.length - 1]?.date ?? new Date().toISOString().slice(0, 10),
+        active: true,
+        manuallyAdded: false,
+      },
+    });
+    invalidate();
+  };
+
+  const dismissCandidate = async (desc: string) => {
+    await dismissMutation.mutateAsync({ data: { description: desc } });
+    invalidate();
+  };
 
   const FormFields = (
     <div className="space-y-4">

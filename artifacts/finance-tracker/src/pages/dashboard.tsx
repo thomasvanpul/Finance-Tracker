@@ -35,10 +35,22 @@ import { DailySpendWidget } from "@/components/widgets/daily-spend";
 import { TopMerchantsWidget } from "@/components/widgets/top-merchants";
 import { SmartAlertsWidget } from "@/components/widgets/smart-alerts";
 import { OnboardingWizard } from "@/components/onboarding-wizard";
-import { useListAccounts, useListTransactions, useListUpcoming } from "@workspace/api-client-react";
+import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { ComponentType } from "react";
+import { createPortal } from "react-dom";
+import { useCountUp } from "@/hooks/use-count-up";
+
+function AnimatedNet({ value }: { value: number }) {
+  const animated = useCountUp(value);
+  return <>{animated >= 0 ? "+" : ""}{formatGbp(animated)}</>;
+}
+
+function AnimatedSpendRate({ value }: { value: number }) {
+  const animated = useCountUp(value);
+  return <>{formatGbp(animated)}</>;
+}
 
 // Widget wrappers — delegate to panel components defined later in this file.
 // function declarations are hoisted, so forward references are safe here.
@@ -47,6 +59,87 @@ function CashFlowPreviewWidgetProxy(_props: { isExpanded?: boolean }) {
 }
 function SpendingVelocityWidgetProxy(_props: { isExpanded?: boolean }) {
   return <SpendingVelocityPanel />;
+}
+
+// ── Savings Rate KPI ───────────────────────────────────────────────────────────
+
+const SAVINGS_TARGET_KEY = "ft-savings-target";
+const SAVINGS_TARGET_DEFAULT = 20;
+
+function loadSavingsTarget(): number {
+  try {
+    const raw = localStorage.getItem(SAVINGS_TARGET_KEY);
+    if (raw === null) return SAVINGS_TARGET_DEFAULT;
+    const parsed = parseInt(raw, 10);
+    return isNaN(parsed) ? SAVINGS_TARGET_DEFAULT : Math.max(0, Math.min(100, parsed));
+  } catch { return SAVINGS_TARGET_DEFAULT; }
+}
+
+function SavingsRateKpi() {
+  const { data: dashData } = useGetDashboard();
+  const target = useMemo(() => loadSavingsTarget(), []);
+
+  const savingsRate = dashData?.thisMonth?.savingsRate ?? null;
+
+  if (savingsRate === null) return null;
+
+  const rate = Math.round(savingsRate);
+  const pct = Math.min(100, (rate / target) * 100);
+  const diff = rate - target;
+
+  const barColor =
+    diff >= 0
+      ? "var(--ft-green)"
+      : diff >= -5
+      ? "var(--ft-amber)"
+      : "var(--ft-red)";
+
+  const labelColor = barColor;
+
+  return (
+    <div style={{
+      background: "var(--ft-surface)",
+      border: "1px solid var(--ft-border)",
+      borderLeft: `2px solid ${barColor}`,
+      padding: "8px 14px",
+      marginBottom: 10,
+      display: "flex",
+      alignItems: "center",
+      gap: 14,
+      flexWrap: "wrap" as const,
+    }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-dim)", flexShrink: 0 }}>
+        Savings Rate
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200 }}>
+        {/* Bar */}
+        <div style={{ flex: 1, height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
+          <div style={{
+            height: "100%",
+            width: `${pct}%`,
+            background: barColor,
+            transition: "width 0.4s ease",
+          }} />
+        </div>
+        {/* Label */}
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: labelColor, whiteSpace: "nowrap" as const }}>
+          {rate}%
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" as const }}>
+          / {target}% target
+        </span>
+        {diff >= 0 ? (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", whiteSpace: "nowrap" as const }}>
+            +{diff}pp
+          </span>
+        ) : (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: barColor, whiteSpace: "nowrap" as const }}>
+            {diff}pp
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<{ isExpanded?: boolean }>> = {
@@ -141,7 +234,7 @@ function CashFlowPreviewPanel() {
       <div style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: 14 }}>
         <div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: netColor, lineHeight: 1 }}>
-            {net >= 0 ? "+" : ""}{formatGbp(net)}
+            <AnimatedNet value={net} />
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>projected net</div>
         </div>
@@ -221,7 +314,7 @@ function SpendingVelocityPanel() {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>
-            {formatGbp(avgDailyThis)}<span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)" }}>/day</span>
+            <AnimatedSpendRate value={avgDailyThis} /><span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)" }}>/day</span>
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
             vs <span className="pnum">{formatGbp(avgDailyPrev)}</span>/day last month
@@ -343,7 +436,7 @@ function AiInsightsStrip() {
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
         <span style={{ color: "var(--ft-accent)" }}>·</span> Insights
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+      <div className="ft-dashboard-insights">
         {insights.map((text, i) => (
           <div
             key={i}
@@ -368,16 +461,168 @@ function AiInsightsStrip() {
   );
 }
 
+// ── Widget left-rail button ────────────────────────────────────────────────────
+
+function RailBtn({ icon, title, onClick, danger }: {
+  icon: string;
+  title: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      onPointerDown={e => e.stopPropagation()}
+      style={{
+        background: "none",
+        border: "none",
+        color: "var(--ft-dim)",
+        cursor: "pointer",
+        fontFamily: "var(--font-mono)",
+        fontSize: 13,
+        width: 30,
+        height: 28,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        transition: "color 0.1s, background 0.1s",
+        lineHeight: 1,
+        borderRadius: 0,
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.color = danger ? "var(--ft-red)" : "var(--ft-accent)";
+        e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.color = "var(--ft-dim)";
+        e.currentTarget.style.background = "none";
+      }}
+    >
+      {icon}
+    </button>
+  );
+}
+
+// ── Expanded widget modal ──────────────────────────────────────────────────────
+
+function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
+  const Component = WIDGET_COMPONENTS[id];
+  const def = WIDGET_DEF_MAP[id];
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.78)",
+        zIndex: 200,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+        backdropFilter: "blur(2px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "var(--ft-bg)",
+          border: "1px solid var(--ft-border)",
+          width: "min(95vw, 1400px)",
+          height: "min(90vh, 900px)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Modal header */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          borderBottom: "1px solid var(--ft-border2)",
+          padding: "0 16px",
+          height: 40,
+          flexShrink: 0,
+          background: "var(--ft-raised)",
+          gap: 12,
+        }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>⤢</span>
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "var(--ft-accent)",
+          }}>
+            {def?.label ?? id}
+          </span>
+          {def?.description && (
+            <span style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              color: "var(--ft-dim)",
+              flex: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}>
+              — {def.description}
+            </span>
+          )}
+          {!def?.description && <span style={{ flex: 1 }} />}
+          <button
+            onClick={onClose}
+            title="Close (Esc)"
+            style={{
+              background: "none",
+              border: "1px solid var(--ft-border2)",
+              color: "var(--ft-dim)",
+              cursor: "pointer",
+              fontFamily: "var(--font-mono)",
+              fontSize: 14,
+              lineHeight: 1,
+              padding: "3px 8px",
+              transition: "color 0.1s, border-color 0.1s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-red)"; e.currentTarget.style.borderColor = "var(--ft-red)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; e.currentTarget.style.borderColor = "var(--ft-border2)"; }}
+          >
+            ×
+          </button>
+        </div>
+        {/* Widget content */}
+        <div style={{ flex: 1, overflow: "auto" }}>
+          <Component isExpanded={true} />
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 // ── Sortable widget wrapper ────────────────────────────────────────────────────
 
 interface SortableWidgetProps {
   id: WidgetId;
   span: "half" | "full";
+  index: number;
   onToggleSpan: () => void;
   onRemove: () => void;
+  onExpand: () => void;
 }
 
-function SortableWidget({ id, span, onToggleSpan, onRemove }: SortableWidgetProps) {
+function SortableWidget({ id, span, index, onToggleSpan, onRemove, onExpand }: SortableWidgetProps) {
   const {
     attributes,
     listeners,
@@ -387,107 +632,86 @@ function SortableWidget({ id, span, onToggleSpan, onRemove }: SortableWidgetProp
     isDragging,
   } = useSortable({ id });
 
-  const style = {
+  const [hovered, setHovered] = useState(false);
+
+  const outerStyle = {
     transform: isDragging ? undefined : CSS.Transform.toString(transform ? { ...transform, scaleX: 1, scaleY: 1 } : null),
     transition: isDragging ? undefined : transition,
     opacity: isDragging ? 0 : 1,
     position: "relative" as const,
-  };
+    "--widget-stagger": `${index * 40}ms`,
+  } as React.CSSProperties;
 
   const Component = WIDGET_COMPONENTS[id];
 
   return (
-    <div ref={setNodeRef} style={style} className="widget-container">
-      <div style={{ position: "relative", height: "100%" }}>
-        {/* Toolbar — sits over the header right side, revealed on hover */}
+    <div
+      ref={setNodeRef}
+      style={outerStyle}
+      className="widget-container"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Flex row: rail + widget side by side — rail pushes content, never overlays it */}
+      <div style={{ display: "flex", alignItems: "stretch" }}>
+
+        {/* Left rail */}
         <div
-          className="widget-toolbar"
           style={{
-            position: "absolute",
-            top: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
-            height: 30,
-            zIndex: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 0,
-            opacity: 0,
-            transition: "opacity 0.15s",
-            borderRadius: "0 0 4px 4px",
+            width: hovered ? 30 : 0,
+            minWidth: 0,
             overflow: "hidden",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
+            flexShrink: 0,
+            background: "var(--ft-raised)",
+            borderRight: hovered ? "1px solid var(--ft-border2)" : "none",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 2,
+            transition: "width 0.16s cubic-bezier(0.4,0,0.2,1)",
           }}
         >
-          {/* Drag handle */}
           <button
             {...attributes}
             {...listeners}
             title="Drag to reorder"
             style={{
-              background: "var(--ft-raised)",
+              background: "none",
               border: "none",
-              borderRight: "1px solid var(--ft-border2)",
               color: "var(--ft-dim)",
               cursor: isDragging ? "grabbing" : "grab",
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              padding: "0 8px",
-              height: "100%",
-              lineHeight: 1,
-            }}
-          >
-            ⠿
-          </button>
-
-          {/* Resize toggle */}
-          <button
-            onClick={onToggleSpan}
-            title={span === "full" ? "Make half-width" : "Make full-width"}
-            style={{
-              background: "var(--ft-raised)",
-              border: "none",
-              borderRight: "1px solid var(--ft-border2)",
-              color: "var(--ft-dim)",
-              cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              padding: "0 7px",
-              letterSpacing: "0.04em",
-              height: "100%",
+              fontSize: 13,
+              width: 30,
+              height: 28,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
               transition: "color 0.1s",
             }}
             onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-accent)"; }}
             onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
           >
-            {span === "full" ? "⊟" : "⊞"}
+            ⠿
           </button>
 
-          {/* Remove */}
-          <button
-            onClick={onRemove}
-            title="Remove widget"
-            style={{
-              background: "var(--ft-raised)",
-              border: "none",
-              borderRight: "1px solid var(--ft-border2)",
-              color: "var(--ft-dim)",
-              cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              padding: "0 8px",
-              height: "100%",
-              lineHeight: 1,
-              transition: "color 0.1s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-red)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
-          >
-            ×
-          </button>
+          <div style={{ width: 14, height: 1, background: "var(--ft-border2)", flexShrink: 0 }} />
+
+          <RailBtn icon="⤢" title="Expand to fullscreen" onClick={onExpand} />
+          <RailBtn
+            icon={span === "full" ? "⊟" : "⊞"}
+            title={span === "full" ? "Make half-width" : "Make full-width"}
+            onClick={onToggleSpan}
+          />
+          <RailBtn icon="×" title="Remove widget" onClick={onRemove} danger />
         </div>
 
-        <Component isExpanded={span === "full"} />
+        {/* Widget fills remaining width */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Component isExpanded={span === "full"} />
+        </div>
       </div>
     </div>
   );
@@ -573,13 +797,15 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
 export default function Dashboard() {
   const { order, isEnabled, setOrder, toggle, toggleSpan, getSpan } = useWidgets();
   const [activeId, setActiveId] = useState<WidgetId | null>(null);
-  const accounts = useListAccounts({});
+  const [expandedWidgetId, setExpandedWidgetId] = useState<WidgetId | null>(null);
   const [onboardingDismissed, setOnboardingDismissed] = useState(
     () =>
       localStorage.getItem("nr-onboarding-complete") === "1" ||
       localStorage.getItem("ft-onboarding-dismissed") === "1"
   );
-  const showOnboarding = !onboardingDismissed && accounts.data !== undefined && accounts.data.length === 0;
+  // Show the wizard whenever the user hasn't completed/dismissed it, regardless of account count.
+  // This ensures returning users who reset onboarding also see it.
+  const showOnboarding = !onboardingDismissed;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -610,6 +836,11 @@ export default function Dashboard() {
 
   return (
     <div>
+      {/* Expanded widget modal */}
+      {expandedWidgetId && (
+        <WidgetModal id={expandedWidgetId} onClose={() => setExpandedWidgetId(null)} />
+      )}
+
       {/* Smart alerts — renders nothing when no active alerts */}
       <SmartAlertsWidget />
 
@@ -631,6 +862,9 @@ export default function Dashboard() {
         <span style={{ color: "var(--ft-border2)", fontSize: 9 }}>· drag to reorder · hover for controls</span>
       </div>
 
+      {/* Savings rate KPI */}
+      <SavingsRateKpi />
+
       {enabledIds.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "60px 0" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-muted)" }}>
@@ -648,18 +882,18 @@ export default function Dashboard() {
               const rightIds = halfIds.filter((_, i) => i % 2 === 1);
               return (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {fullIds.map(id => (
-                    <SortableWidget key={id} id={id} span="full" onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} />
+                  {fullIds.map((id, idx) => (
+                    <SortableWidget key={id} id={id} span="full" index={idx} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
                   ))}
-                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
-                      {leftIds.map(id => (
-                        <SortableWidget key={id} id={id} span="half" onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} />
+                  <div className="ft-dashboard-two-col">
+                    <div>
+                      {leftIds.map((id, idx) => (
+                        <SortableWidget key={id} id={id} span="half" index={fullIds.length + idx * 2} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
                       ))}
                     </div>
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
-                      {rightIds.map(id => (
-                        <SortableWidget key={id} id={id} span="half" onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} />
+                    <div>
+                      {rightIds.map((id, idx) => (
+                        <SortableWidget key={id} id={id} span="half" index={fullIds.length + idx * 2 + 1} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
                       ))}
                     </div>
                   </div>

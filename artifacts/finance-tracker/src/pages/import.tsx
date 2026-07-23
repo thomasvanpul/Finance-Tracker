@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from "react";
-import { useListAccounts, useCreateTransaction } from "@workspace/api-client-react";
+import { useListAccounts, useCreateTransaction, useListTransactions } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
+import { applyAutoCategory } from "@/lib/auto-cat";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -14,6 +15,7 @@ interface ParsedRow {
   type: "income" | "expense";
   category: string;
   selected: boolean;
+  isDuplicate?: boolean;
   error?: string;
 }
 
@@ -509,6 +511,7 @@ function Step3({
   onToggleAll,
   onImport,
   onBack,
+  onDeselectDuplicates,
   importing,
   progress,
   errors,
@@ -521,12 +524,14 @@ function Step3({
   onToggleAll: (v: boolean) => void;
   onImport: () => void;
   onBack: () => void;
+  onDeselectDuplicates: () => void;
   importing: boolean;
   progress: number;
   errors: Record<string, string>;
 }) {
   const selectedCount = rows.filter((r) => r.selected).length;
   const allSelected = rows.length > 0 && rows.every((r) => r.selected);
+  const dupCount = rows.filter((r) => r.isDuplicate).length;
 
   return (
     <div style={card}>
@@ -565,6 +570,14 @@ function Step3({
           </span>
         )}
       </div>
+
+      {/* Duplicate warning */}
+      {dupCount > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "var(--ft-amber)15", border: "1px solid var(--ft-amber)44", marginBottom: 12 }}>
+          <span style={{ ...mono, fontSize: 10, color: "var(--ft-amber)" }}>⚠ {dupCount} potential duplicate{dupCount !== 1 ? "s" : ""} detected</span>
+          <button onClick={onDeselectDuplicates} style={{ ...BTN_GHOST, fontSize: 9, padding: "4px 10px" }}>Deselect duplicates</button>
+        </div>
+      )}
 
       {/* Progress bar */}
       {importing && (
@@ -649,6 +662,8 @@ function Step3({
                       <span style={{ color: "var(--ft-red)" }}>ERROR: {errors[row.id]}</span>
                     ) : importing && row.selected ? (
                       <span style={{ color: "var(--ft-dim)" }}>…</span>
+                    ) : row.isDuplicate ? (
+                      <span style={{ color: "var(--ft-amber)", background: "var(--ft-amber)22", padding: "1px 5px", fontSize: 9 }}>DUP</span>
                     ) : (
                       <span style={{ color: "var(--ft-green)" }}>READY</span>
                     )}
@@ -706,6 +721,7 @@ export default function ImportPage() {
   const [history, setHistory] = useState<ImportHistoryEntry[]>(loadHistory);
 
   const { data: rawAccounts } = useListAccounts();
+  const { data: existingTxs } = useListTransactions();
   const accounts = (rawAccounts ?? []) as { id: number; name: string }[];
   const createTransaction = useCreateTransaction();
 
@@ -782,15 +798,25 @@ export default function ImportPage() {
           description: description,
           amount,
           type,
-          category: guessCategory(description),
+          category: applyAutoCategory(description) ?? guessCategory(description),
           selected: true,
         };
       });
 
-    setParsedRows(built);
+    const withDups = built.map((r) => {
+      const isDuplicate = (existingTxs ?? []).some(
+        (tx) => tx.date === r.rawDate && Math.abs(Math.abs(tx.nativeAmount) - r.amount) < 0.01
+      );
+      return isDuplicate ? { ...r, isDuplicate: true, selected: false } : r;
+    });
+    setParsedRows(withDups);
     setImportErrors({});
     setImportDone(false);
     setStep(3);
+  };
+
+  const handleDeselectDuplicates = () => {
+    setParsedRows((rows) => rows.map((r) => r.isDuplicate ? { ...r, selected: false } : r));
   };
 
   const handleToggleRow = (id: string) => {
@@ -934,6 +960,7 @@ export default function ImportPage() {
           onToggleAll={handleToggleAll}
           onImport={handleImport}
           onBack={() => setStep(2)}
+          onDeselectDuplicates={handleDeselectDuplicates}
           importing={importing}
           progress={importProgress}
           errors={importErrors}

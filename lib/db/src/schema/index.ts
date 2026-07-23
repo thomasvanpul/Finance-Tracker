@@ -5,3 +5,6 @@ export * from "./upcoming";
 export * from "./investments";
 export * from "./debts";
 export * from "./app-settings";
+export * from "./budgets";
+export * from "./goals";
+export * from "./subscriptions";

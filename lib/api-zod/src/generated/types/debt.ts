@@ -24,4 +24,11 @@ export interface Debt {
   accountId?: number | null;
   gbpEquivalent: number;
   createdAt: string;
+  /** @nullable */
+  linkedEmail?: string | null;
+  /** @nullable */
+  linkedUserId?: string | null;
+  isReceived?: boolean;
+  /** @nullable */
+  sourceDebtId?: number | null;
 }

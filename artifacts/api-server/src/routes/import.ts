@@ -6,7 +6,12 @@ import { db, accountsTable, transactionsTable } from "@workspace/db";
 import { ImportCsvResponse } from "@workspace/api-zod";
 import { parseRevolutCsv } from "../lib/csv-import/revolut";
 import { parseMaybankCsv } from "../lib/csv-import/maybank";
+import { parseMonzoCsv } from "../lib/csv-import/monzo";
+import { parseHsbcCsv } from "../lib/csv-import/hsbc";
+import { parseWiseCsv } from "../lib/csv-import/wise";
+import { parseChaseCsv } from "../lib/csv-import/chase";
 import { logger } from "../lib/logger";
+import { normalizeMerchant } from "../lib/merchant-normalizer";
 
 const router: IRouter = Router();
 
@@ -31,8 +36,9 @@ router.post("/import/csv", upload.single("file"), async (req, res): Promise<void
   const provider = req.query.provider as string;
   const accountId = Number(req.query.accountId);
 
-  if (!["revolut", "maybank"].includes(provider)) {
-    res.status(400).json({ error: "provider must be 'revolut' or 'maybank'" });
+  const VALID_PROVIDERS = ["revolut", "maybank", "monzo", "hsbc", "wise", "chase"];
+  if (!VALID_PROVIDERS.includes(provider)) {
+    res.status(400).json({ error: `provider must be one of: ${VALID_PROVIDERS.join(", ")}` });
     return;
   }
   if (!Number.isInteger(accountId)) {
@@ -56,8 +62,15 @@ router.post("/import/csv", upload.single("file"), async (req, res): Promise<void
   }
 
   const fileContent = req.file.buffer.toString("utf-8");
-  const { rows, errors } =
-    provider === "revolut" ? parseRevolutCsv(fileContent) : parseMaybankCsv(fileContent);
+  const parsers: Record<string, (content: string) => { rows: any[]; errors: string[] }> = {
+    revolut: parseRevolutCsv,
+    maybank: parseMaybankCsv,
+    monzo: parseMonzoCsv,
+    hsbc: parseHsbcCsv,
+    wise: parseWiseCsv,
+    chase: parseChaseCsv,
+  };
+  const { rows, errors } = parsers[provider](fileContent);
 
   let added = 0;
   let skipped = 0;
@@ -78,7 +91,7 @@ router.post("/import/csv", upload.single("file"), async (req, res): Promise<void
     await db.insert(transactionsTable).values({
       userId,
       date: row.date,
-      description: row.description,
+      description: normalizeMerchant(row.description),
       type: row.amount > 0 ? "income" : "expense",
       category: "Other",
       accountId,

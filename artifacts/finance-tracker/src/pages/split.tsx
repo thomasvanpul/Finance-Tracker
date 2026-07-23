@@ -602,7 +602,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
         Add Expense
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
         <div style={{ gridColumn: "1 / -1" }}>
           <label style={LABEL_S}>Description</label>
           <input
@@ -1554,7 +1554,7 @@ function GroupSummaryStats({ group, expenses, myName }: GroupSummaryStatsProps) 
   );
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+    <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
       {statCell("Total Expenses", formatGbp(total), "var(--ft-text)", `${expenses.length} items`)}
       {myName && statCell("Your Share", formatGbp(myShare), "var(--ft-blue)", "of total")}
       {myName && statCell("You Paid", formatGbp(myPaid), "var(--ft-accent)", "as payer")}

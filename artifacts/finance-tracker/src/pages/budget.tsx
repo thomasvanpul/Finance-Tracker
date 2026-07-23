@@ -1,8 +1,17 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { Skeleton as FtSkeleton } from "@/components/skeleton";
+import { EmptyState } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
 import {
   useListTransactions,
   useGetDashboard,
+  useListBudgets,
+  useCreateBudget,
+  useUpdateBudget,
+  useDeleteBudget,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getListBudgetsQueryKey } from "@workspace/api-client-react";
 import {
   BarChart,
   Bar,
@@ -18,6 +27,7 @@ import type { Transaction } from "@workspace/api-client-react";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface Budget {
+  id: number;
   category: string;
   limit: number;
 }
@@ -28,20 +38,35 @@ interface CopyCandidate {
   confirmed: boolean;
 }
 
-// ── LocalStorage helpers ─────────────────────────────────────────────────────
+// ── Rollover types ───────────────────────────────────────────────────────────
 
-function loadBudgets(): Budget[] {
-  try {
-    const raw = localStorage.getItem("ft-budgets");
-    if (raw) return JSON.parse(raw) as Budget[];
-  } catch {}
-  return [];
+interface RolloverEntry {
+  enabled: boolean;
+  accumulated: number;
 }
 
-function saveBudgets(budgets: Budget[]): void {
+type RolloverMap = Record<string, RolloverEntry>;
+
+const ROLLOVER_KEY = "ft-budget-rollover";
+const ROLLOVER_MONTH_KEY = "ft-budget-rollover-month";
+
+function currentMonthStr(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function loadRolloverMap(): RolloverMap {
   try {
-    localStorage.setItem("ft-budgets", JSON.stringify(budgets));
-  } catch {}
+    const raw = localStorage.getItem(ROLLOVER_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as RolloverMap;
+  } catch {
+    return {};
+  }
+}
+
+function saveRolloverMap(map: RolloverMap): void {
+  localStorage.setItem(ROLLOVER_KEY, JSON.stringify(map));
 }
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
@@ -163,8 +188,13 @@ export default function Budget() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
 
-  // budgets state — loaded from localStorage
-  const [budgets, setBudgets] = useState<Budget[]>(() => loadBudgets());
+  // budgets from API
+  const { data: rawBudgets = [], isLoading: budgetsLoading, isError: budgetsError, error: budgetsErrorObj } = useListBudgets();
+  const budgets: Budget[] = rawBudgets.map(b => ({ id: b.id, category: b.category, limit: b.monthlyLimit }));
+  const createBudget = useCreateBudget();
+  const updateBudget = useUpdateBudget();
+  const deleteBudget = useDeleteBudget();
+  const queryClient = useQueryClient();
 
   // add/edit form
   const [formCategory, setFormCategory] = useState("");
@@ -178,6 +208,19 @@ export default function Budget() {
   // copy-last-month panel
   const [showCopyPanel, setShowCopyPanel] = useState(false);
   const [copyCandidates, setCopyCandidates] = useState<CopyCandidate[]>([]);
+
+  // ── Rollover state ───────────────────────────────────────────────────────────
+
+  const [rolloverMap, setRolloverMapState] = useState<RolloverMap>(() => loadRolloverMap());
+
+  // Persist rollover map whenever it changes
+  const setRolloverMap = useCallback((updater: (prev: RolloverMap) => RolloverMap) => {
+    setRolloverMapState(prev => {
+      const next = updater(prev);
+      saveRolloverMap(next);
+      return next;
+    });
+  }, []);
 
   // ── Date strings for API calls ──────────────────────────────────────────────
 
@@ -213,18 +256,9 @@ export default function Budget() {
 
   const { data: dashboard } = useGetDashboard();
 
-  // ── Derive category suggestions from all transactions ───────────────────────
-
-  const categorySuggestions = useMemo(() => {
-    if (!allTxs) return [];
-    const cats = new Set<string>();
-    allTxs.forEach((tx: Transaction) => {
-      if (tx.type === "expense") cats.add(tx.category);
-    });
-    return Array.from(cats).sort();
-  }, [allTxs]);
-
-  // ── Compute spent per category for selected month ───────────────────────────
+  // ── Month-rollover accumulation logic ────────────────────────────────────────
+  // Runs once on mount (and whenever budgets/spentByCategory loads) to check
+  // if we've crossed into a new calendar month and need to accumulate unused budget.
 
   const spentByCategory = useMemo(() => {
     const map: Record<string, number> = {};
@@ -236,6 +270,85 @@ export default function Budget() {
     return map;
   }, [expenseTxs]);
 
+  // Accumulate rollover when month changes — use a separate query for last month's spend
+  const lastMonthSpentByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    if (!lastMonthTxs) return map;
+    lastMonthTxs.forEach((tx: Transaction) => {
+      const key = tx.category.toLowerCase();
+      map[key] = (map[key] ?? 0) + tx.gbpValue;
+    });
+    return map;
+  }, [lastMonthTxs]);
+
+  useEffect(() => {
+    // Only run accumulation logic when we're viewing the current month
+    const isCurrentMonthView =
+      selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
+    if (!isCurrentMonthView) return;
+    if (budgets.length === 0) return;
+
+    const thisMonth = currentMonthStr();
+    const storedMonth = localStorage.getItem(ROLLOVER_MONTH_KEY);
+
+    if (storedMonth === thisMonth) return; // already processed this month
+
+    // We've entered a new month: accumulate unused budget for enabled categories
+    setRolloverMap(prev => {
+      const next = { ...prev };
+      for (const budget of budgets) {
+        const entry = next[budget.category];
+        if (!entry?.enabled) continue;
+        const spent = lastMonthSpentByCategory[budget.category.toLowerCase()] ?? 0;
+        const unused = Math.max(budget.limit - spent, 0);
+        next[budget.category] = {
+          ...entry,
+          accumulated: (entry.accumulated ?? 0) + unused,
+        };
+      }
+      return next;
+    });
+
+    localStorage.setItem(ROLLOVER_MONTH_KEY, thisMonth);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budgets.length, selectedYear, selectedMonth]);
+
+  // ── Rollover helpers ─────────────────────────────────────────────────────────
+
+  function toggleRollover(category: string) {
+    setRolloverMap(prev => {
+      const entry = prev[category];
+      return {
+        ...prev,
+        [category]: {
+          enabled: !entry?.enabled,
+          accumulated: entry?.accumulated ?? 0,
+        },
+      };
+    });
+  }
+
+  function resetRollover(category: string) {
+    setRolloverMap(prev => ({
+      ...prev,
+      [category]: {
+        enabled: prev[category]?.enabled ?? false,
+        accumulated: 0,
+      },
+    }));
+  }
+
+  // ── Derive category suggestions from all transactions ───────────────────────
+
+  const categorySuggestions = useMemo(() => {
+    if (!allTxs) return [];
+    const cats = new Set<string>();
+    allTxs.forEach((tx: Transaction) => {
+      if (tx.type === "expense") cats.add(tx.category);
+    });
+    return Array.from(cats).sort();
+  }, [allTxs]);
+
   // ── Total spent (all expense transactions in selected month) ─────────────────
 
   const totalSpent = useMemo(
@@ -246,17 +359,23 @@ export default function Budget() {
   // ── Summary row values ───────────────────────────────────────────────────────
 
   const totalBudgeted = useMemo(
-    () => budgets.reduce((s, b) => s + b.limit, 0),
-    [budgets]
+    () => budgets.reduce((s, b) => {
+      const entry = rolloverMap[b.category];
+      const effective = b.limit + (entry?.enabled ? (entry.accumulated ?? 0) : 0);
+      return s + effective;
+    }, 0),
+    [budgets, rolloverMap]
   );
 
   const overBudgetCount = useMemo(
     () =>
       budgets.filter((b) => {
         const spent = spentByCategory[b.category.toLowerCase()] ?? 0;
-        return spent >= b.limit;
+        const entry = rolloverMap[b.category];
+        const effective = b.limit + (entry?.enabled ? (entry.accumulated ?? 0) : 0);
+        return spent >= effective;
       }).length,
-    [budgets, spentByCategory]
+    [budgets, spentByCategory, rolloverMap]
   );
 
   const overallPct = totalBudgeted > 0 ? totalSpent / totalBudgeted : 0;
@@ -271,11 +390,17 @@ export default function Budget() {
   const sortedBudgets = useMemo(
     () =>
       [...budgets].sort((a, b) => {
-        const pA = (spentByCategory[a.category.toLowerCase()] ?? 0) / (a.limit || 1);
-        const pB = (spentByCategory[b.category.toLowerCase()] ?? 0) / (b.limit || 1);
+        const entryA = rolloverMap[a.category];
+        const effectiveA = a.limit + (entryA?.enabled ? (entryA.accumulated ?? 0) : 0);
+        const pA = (spentByCategory[a.category.toLowerCase()] ?? 0) / (effectiveA || 1);
+
+        const entryB = rolloverMap[b.category];
+        const effectiveB = b.limit + (entryB?.enabled ? (entryB.accumulated ?? 0) : 0);
+        const pB = (spentByCategory[b.category.toLowerCase()] ?? 0) / (effectiveB || 1);
+
         return pB - pA;
       }),
-    [budgets, spentByCategory]
+    [budgets, spentByCategory, rolloverMap]
   );
 
   // ── Chart data ───────────────────────────────────────────────────────────────
@@ -284,31 +409,29 @@ export default function Budget() {
     () =>
       sortedBudgets.map((b) => {
         const spent = spentByCategory[b.category.toLowerCase()] ?? 0;
-        return { category: b.category, Budget: b.limit, Actual: spent };
+        const entry = rolloverMap[b.category];
+        const effective = b.limit + (entry?.enabled ? (entry.accumulated ?? 0) : 0);
+        return { category: b.category, Budget: effective, Actual: spent };
       }),
-    [sortedBudgets, spentByCategory]
+    [sortedBudgets, spentByCategory, rolloverMap]
   );
-
-  // ── Save budgets whenever they change ────────────────────────────────────────
-
-  useEffect(() => {
-    saveBudgets(budgets);
-  }, [budgets]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
-  function handleAddBudget() {
+  async function handleAddBudget() {
     const trimmed = formCategory.trim();
     const limit = parseFloat(formLimit);
     if (!trimmed || isNaN(limit) || limit <= 0) return;
     if (budgets.some((b) => b.category.toLowerCase() === trimmed.toLowerCase())) return;
-    setBudgets((prev) => [...prev, { category: trimmed, limit }]);
+    await createBudget.mutateAsync({ data: { category: trimmed, monthlyLimit: limit } });
+    queryClient.invalidateQueries({ queryKey: getListBudgetsQueryKey() });
     setFormCategory("");
     setFormLimit("");
   }
 
-  function handleDeleteBudget(category: string) {
-    setBudgets((prev) => prev.filter((b) => b.category !== category));
+  async function handleDeleteBudget(id: number) {
+    await deleteBudget.mutateAsync({ id });
+    queryClient.invalidateQueries({ queryKey: getListBudgetsQueryKey() });
   }
 
   function startEdit(category: string, currentLimit: number) {
@@ -316,12 +439,12 @@ export default function Budget() {
     setEditingLimit(String(currentLimit));
   }
 
-  function commitEdit(category: string) {
+  async function commitEdit(category: string) {
     const newLimit = parseFloat(editingLimit);
-    if (!isNaN(newLimit) && newLimit > 0) {
-      setBudgets((prev) =>
-        prev.map((b) => (b.category === category ? { ...b, limit: newLimit } : b))
-      );
+    const budget = budgets.find(b => b.category === category);
+    if (!isNaN(newLimit) && newLimit > 0 && budget) {
+      await updateBudget.mutateAsync({ id: budget.id, data: { monthlyLimit: newLimit } });
+      queryClient.invalidateQueries({ queryKey: getListBudgetsQueryKey() });
     }
     setEditingCategory(null);
     setEditingLimit("");
@@ -344,20 +467,18 @@ export default function Budget() {
     setShowCopyPanel(true);
   }, [lastMonthTxs, lastMonthYear, lastMonth]);
 
-  function applyLastMonthActuals() {
+  async function applyLastMonthActuals() {
     const toAdd = copyCandidates.filter((c) => c.confirmed);
-    const updated = [...budgets];
-    toAdd.forEach((c) => {
-      const existingIdx = updated.findIndex(
-        (b) => b.category.toLowerCase() === c.category.toLowerCase()
-      );
-      if (existingIdx >= 0) {
-        updated[existingIdx] = { ...updated[existingIdx], limit: Math.ceil(c.total) };
+    for (const c of toAdd) {
+      const existing = budgets.find(b => b.category.toLowerCase() === c.category.toLowerCase());
+      const limit = Math.ceil(c.total);
+      if (existing) {
+        await updateBudget.mutateAsync({ id: existing.id, data: { monthlyLimit: limit } });
       } else {
-        updated.push({ category: c.category, limit: Math.ceil(c.total) });
+        await createBudget.mutateAsync({ data: { category: c.category, monthlyLimit: limit } });
       }
-    });
-    setBudgets(updated);
+    }
+    queryClient.invalidateQueries({ queryKey: getListBudgetsQueryKey() });
     setShowCopyPanel(false);
     setCopyCandidates([]);
   }
@@ -389,6 +510,104 @@ export default function Budget() {
 
   const isCurrentMonth =
     selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Loading / Error guards
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  if (budgetsLoading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Header skeleton */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <FtSkeleton width={160} height={14} />
+          <FtSkeleton width={220} height={28} />
+        </div>
+        {/* Summary tiles skeleton */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-border2)", padding: "12px 14px" }}>
+              <FtSkeleton width="60%" height={9} />
+              <div style={{ marginTop: 8 }}><FtSkeleton width="80%" height={20} /></div>
+              <div style={{ marginTop: 6 }}><FtSkeleton width="50%" height={9} /></div>
+            </div>
+          ))}
+        </div>
+        {/* Budget rows skeleton */}
+        <div style={{ border: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 1, background: "var(--ft-border)" }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 100px 140px 180px 90px 80px 120px 80px", padding: "10px 14px", gap: 8, background: "var(--ft-surface)", alignItems: "center", borderLeft: "3px solid var(--ft-border)" }}>
+              <FtSkeleton width="70%" height={12} />
+              <FtSkeleton width={70} height={12} />
+              <FtSkeleton width={90} height={12} />
+              <FtSkeleton width="90%" height={6} />
+              <FtSkeleton width={40} height={11} />
+              <FtSkeleton width={60} height={11} />
+              <FtSkeleton width={80} height={11} />
+              <FtSkeleton width={20} height={14} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (budgetsError) {
+    return (
+      <ErrorState message={(budgetsErrorObj as Error)?.message ?? "Could not load budget data. Check your connection and try again."} />
+    );
+  }
+
+  // ── First-time / empty state ──────────────────────────────────────────────────
+  if (sortedBudgets.length === 0 && !showCopyPanel) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 2 }}>
+            <span style={{ color: "var(--ft-accent)" }}>·</span> Budget Manager
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Set monthly limits · track spending · allocate every pound</div>
+        </div>
+        <div style={{ border: "1px dashed var(--ft-border)", background: "var(--ft-surface)", padding: "52px 40px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ft-border2)", lineHeight: 1.55, userSelect: "none", marginBottom: 20, whiteSpace: "pre", textAlign: "left" }}>
+            {"┌─────────────────────────┐\n│  CATEGORY    LIMIT  PCT │\n│  ─────────────────────  │\n│  Groceries   £400   ███ │\n│  Transport   £150   ██░ │\n│  Eating Out  £200   █░░ │\n│                         │\n│  0 of 3 over budget     │\n└─────────────────────────┘"}
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)", marginBottom: 6, textAlign: "center" }}>Set your first budget</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center", marginBottom: 28, maxWidth: 380 }}>Define monthly spending limits by category. The app tracks your actual spending and shows progress in real time.</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", width: "100%", maxWidth: 480 }}>
+            <input
+              list="budget-category-suggestions"
+              value={formCategory}
+              onChange={(e) => setFormCategory(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddBudget()}
+              placeholder="Category (e.g. Groceries)"
+              style={{ ...INPUT_STYLE, flex: 2, minWidth: 180 }}
+            />
+            <datalist id="budget-category-suggestions">
+              {categorySuggestions.map(c => <option key={c} value={c} />)}
+            </datalist>
+            <input
+              type="number" min={1} placeholder="Monthly limit"
+              value={formLimit}
+              onChange={(e) => setFormLimit(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddBudget()}
+              style={{ ...INPUT_STYLE, width: 150 }}
+            />
+            <button onClick={handleAddBudget} style={BTN_ACCENT}>+ Add Budget</button>
+          </div>
+          <div style={{ marginTop: 20, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center" }}>
+            Already tracking spending?{" "}
+            <span
+              style={{ color: "var(--ft-accent)", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}
+              onClick={buildCopyCandidates}
+            >
+              Import last month's categories →
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Render
@@ -508,6 +727,7 @@ export default function Budget() {
 
       {/* ── Summary strip ── */}
       <div
+        className="ft-four-col"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -871,24 +1091,10 @@ export default function Budget() {
 
       {/* ── Budget list ── */}
       {sortedBudgets.length === 0 ? (
-        <div
-          style={{
-            padding: "48px 24px",
-            textAlign: "center",
-            border: "1px dashed var(--ft-border)",
-            background: "var(--ft-surface)",
-            fontFamily: "var(--font-mono)",
-          }}
-        >
-          <div
-            style={{ fontSize: 12, color: "var(--ft-muted)", marginBottom: 6 }}
-          >
-            No budgets yet — add a category above
-          </div>
-          <div style={{ fontSize: 9, color: "var(--ft-dim)" }}>
-            Budgets persist across sessions via localStorage
-          </div>
-        </div>
+        <EmptyState
+          title="No budgets"
+          description="Add a budget category above to start tracking your spending limits."
+        />
       ) : (
         <div
           style={{
@@ -903,7 +1109,7 @@ export default function Budget() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 100px 140px 180px 90px 80px 80px",
+              gridTemplateColumns: "1fr 100px 140px 180px 90px 80px 120px 80px",
               background: "var(--ft-surface)",
               padding: "6px 14px",
               gap: 8,
@@ -917,6 +1123,7 @@ export default function Budget() {
               "Progress",
               "% Used",
               "Remaining",
+              "Rollover",
               "",
             ].map((h) => (
               <div
@@ -936,9 +1143,13 @@ export default function Budget() {
 
           {sortedBudgets.map((budget) => {
             const spent = spentByCategory[budget.category.toLowerCase()] ?? 0;
-            const pct = budget.limit > 0 ? spent / budget.limit : 0;
-            const remaining = budget.limit - spent;
-            const isOver = spent >= budget.limit;
+            const rolloverEntry = rolloverMap[budget.category];
+            const rolloverEnabled = rolloverEntry?.enabled ?? false;
+            const rolloverAccumulated = rolloverEntry?.accumulated ?? 0;
+            const effectiveLimit = budget.limit + (rolloverEnabled ? rolloverAccumulated : 0);
+            const pct = effectiveLimit > 0 ? spent / effectiveLimit : 0;
+            const remaining = effectiveLimit - spent;
+            const isOver = spent >= effectiveLimit;
             const isEditing = editingCategory === budget.category;
             const color = progressBg(pct);
 
@@ -948,7 +1159,7 @@ export default function Budget() {
                 style={{
                   display: "grid",
                   gridTemplateColumns:
-                    "1fr 100px 140px 180px 90px 80px 80px",
+                    "1fr 100px 140px 180px 90px 80px 120px 80px",
                   background: isOver
                     ? "rgba(248,81,73,0.04)"
                     : "var(--ft-surface)",
@@ -959,18 +1170,33 @@ export default function Budget() {
                 }}
               >
                 {/* Category */}
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "var(--ft-text)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap" as const,
-                  }}
-                >
-                  {budget.category}
+                <div>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "var(--ft-text)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap" as const,
+                    }}
+                  >
+                    {budget.category}
+                  </div>
+                  {rolloverEnabled && rolloverAccumulated > 0 && (
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 9,
+                        color: "var(--ft-cyan)",
+                        marginTop: 2,
+                        whiteSpace: "nowrap" as const,
+                      }}
+                    >
+                      ↻ +{formatGbp(rolloverAccumulated)} carried over
+                    </div>
+                  )}
                 </div>
 
                 {/* Limit (inline edit) */}
@@ -997,31 +1223,48 @@ export default function Budget() {
                       }}
                     />
                   ) : (
-                    <button
-                      title="Click to edit"
-                      onClick={() => startEdit(budget.category, budget.limit)}
-                      className="pnum"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: "var(--ft-text)",
-                        padding: 0,
-                        textAlign: "left" as const,
-                        width: "100%",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = "var(--ft-accent)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = "var(--ft-text)";
-                      }}
-                    >
-                      {formatGbp(budget.limit)}
-                    </button>
+                    <div>
+                      <button
+                        title="Click to edit"
+                        onClick={() => startEdit(budget.category, budget.limit)}
+                        className="pnum"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "var(--ft-text)",
+                          padding: 0,
+                          textAlign: "left" as const,
+                          width: "100%",
+                          display: "block",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = "var(--ft-accent)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = "var(--ft-text)";
+                        }}
+                      >
+                        {rolloverEnabled
+                          ? formatGbp(effectiveLimit)
+                          : formatGbp(budget.limit)}
+                      </button>
+                      {rolloverEnabled && rolloverAccumulated > 0 && (
+                        <div
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 8,
+                            color: "var(--ft-dim)",
+                            marginTop: 1,
+                          }}
+                        >
+                          base {formatGbp(budget.limit)}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -1095,10 +1338,60 @@ export default function Budget() {
                   )}
                 </div>
 
+                {/* Rollover controls */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <button
+                    onClick={() => toggleRollover(budget.category)}
+                    title={rolloverEnabled ? "Disable rollover for this category" : "Enable rollover — unused budget carries to next month"}
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9,
+                      letterSpacing: "0.04em",
+                      padding: "3px 6px",
+                      border: `1px solid ${rolloverEnabled ? "var(--ft-cyan)" : "var(--ft-border2)"}`,
+                      background: rolloverEnabled ? "rgba(86,182,194,0.12)" : "transparent",
+                      color: rolloverEnabled ? "var(--ft-cyan)" : "var(--ft-dim)",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap" as const,
+                      textAlign: "left" as const,
+                    }}
+                  >
+                    ↻ {rolloverEnabled ? "On" : "Rollover"}
+                  </button>
+                  {rolloverEnabled && rolloverAccumulated > 0 && (
+                    <button
+                      onClick={() => resetRollover(budget.category)}
+                      title="Reset accumulated rollover to zero"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 8,
+                        letterSpacing: "0.04em",
+                        padding: "2px 6px",
+                        border: "1px solid var(--ft-border2)",
+                        background: "transparent",
+                        color: "var(--ft-dim)",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap" as const,
+                        textAlign: "left" as const,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = "var(--ft-red)";
+                        e.currentTarget.style.borderColor = "var(--ft-red)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = "var(--ft-dim)";
+                        e.currentTarget.style.borderColor = "var(--ft-border2)";
+                      }}
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+
                 {/* Delete */}
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <button
-                    onClick={() => handleDeleteBudget(budget.category)}
+                    onClick={() => handleDeleteBudget(budget.id)}
                     style={{
                       background: "none",
                       border: "none",

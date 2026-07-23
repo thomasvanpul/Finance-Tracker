@@ -423,7 +423,7 @@ export default function NetWorthHistory() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>
             Record Today's Net Worth
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <div>
               <label style={labelSt}>Total Assets (£)</label>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>
@@ -535,7 +535,7 @@ export default function NetWorthHistory() {
 
       {/* ── Stats panel ── */}
       {history.length > 0 && (
-        <div style={{
+        <div className="ft-four-col" style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
           gap: 8,

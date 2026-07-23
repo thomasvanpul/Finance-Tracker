@@ -1,4 +1,6 @@
-import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
+import { useEffect } from "react";
+import { loadFxOverrides } from "@/lib/currency-store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -35,9 +37,35 @@ import YearReview from "@/pages/year-review";
 import Import from "@/pages/import";
 import Recurring from "@/pages/recurring";
 import Learn from "@/pages/learn";
-import Wardrobe from "@/pages/wardrobe";
-
+import AiCoach from "@/pages/ai-coach";
+import Fire from "@/pages/fire";
+import { PageTransitionOverlay } from "@/components/page-transition";
 const queryClient = new QueryClient();
+
+function DefaultPageRedirector() {
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    if (sessionStorage.getItem("ft-initial-redirect-done")) return;
+    sessionStorage.setItem("ft-initial-redirect-done", "1");
+    const page = localStorage.getItem("nr-default-page");
+    if (page && page !== "/" && window.location.pathname === (import.meta.env.BASE_URL.replace(/\/$/, "") || "/")) {
+      navigate(page);
+    }
+  }, [navigate]);
+  return null;
+}
+
+function BootEffects() {
+  useEffect(() => {
+    const density = localStorage.getItem("ft-density") ?? "normal";
+    document.body.classList.remove("density-compact", "density-normal", "density-comfortable");
+    document.body.classList.add(`density-${density}`);
+    const fontScale = parseInt(localStorage.getItem("nr-font-scale") ?? "100", 10);
+    document.documentElement.style.setProperty("--nr-font-scale", fontScale + "%");
+    loadFxOverrides();
+  }, []);
+  return null;
+}
 
 function Router() {
   return (
@@ -56,6 +84,7 @@ function Router() {
         <Route path="/health-score" component={HealthScore} />
         <Route path="/net-worth" component={NetWorthHistory} />
         <Route path="/whatif" component={WhatIf} />
+        <Route path="/fire" component={Fire} />
         <Route path="/subscriptions" component={Subscriptions} />
         <Route path="/tax" component={Tax} />
         <Route path="/mortgage" component={Mortgage} />
@@ -74,7 +103,7 @@ function Router() {
         <Route path="/recurring" component={Recurring} />
         <Route path="/settings" component={Settings} />
         <Route path="/profile" component={Profile} />
-        <Route path="/wardrobe" component={Wardrobe} />
+        <Route path="/ai-coach" component={AiCoach} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -84,6 +113,7 @@ function Router() {
 function App() {
   return (
     <ThemeProvider>
+      <BootEffects />
       <PrivacyProvider>
       <TickersProvider>
       <WidgetsProvider>
@@ -91,6 +121,8 @@ function App() {
           <TooltipProvider>
             <AuthGate>
               <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <DefaultPageRedirector />
+                <PageTransitionOverlay />
                 <Router />
               </WouterRouter>
               <Toaster />

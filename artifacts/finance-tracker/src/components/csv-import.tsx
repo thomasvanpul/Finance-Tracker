@@ -71,6 +71,10 @@ interface Props {
 
 const PROVIDERS = [
   { id: "revolut", label: "Revolut" },
+  { id: "monzo", label: "Monzo" },
+  { id: "hsbc", label: "HSBC" },
+  { id: "wise", label: "Wise" },
+  { id: "chase", label: "Chase" },
   { id: "maybank", label: "Maybank" },
 ] as const;
 
@@ -312,8 +316,16 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                   : fileType === "qif"
                   ? "QIF: Quicken Interchange Format. Supported by most banking software."
                   : provider === "revolut"
-                  ? "Export from Revolut app → Accounts → Statement → CSV. Includes all transaction types."
-                  : "Export from Maybank2u → Transaction History → Download as CSV."}
+                  ? "Revolut app → Accounts → Statement → Export → CSV."
+                  : provider === "monzo"
+                  ? "Monzo app → Payments → Export → Download CSV."
+                  : provider === "hsbc"
+                  ? "HSBC Online Banking → Account → Statements → Export → CSV."
+                  : provider === "wise"
+                  ? "Wise dashboard → Statements → Download → CSV."
+                  : provider === "chase"
+                  ? "Chase app → Statements & documents → Download transactions → CSV."
+                  : "Maybank2u → Account → Transaction History → Download → CSV."}
               </div>
 
               {/* Actions */}

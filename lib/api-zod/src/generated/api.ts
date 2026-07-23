@@ -451,7 +451,7 @@ export const ListDebtsResponseItem = zod.object({
   "linkedEmail": zod.string().nullish(),
   "linkedUserId": zod.string().nullish(),
   "isReceived": zod.boolean().optional(),
-  "sourceDebtId": zod.number().nullish(),
+  "sourceDebtId": zod.number().nullish()
 })
 export const ListDebtsResponse = zod.array(ListDebtsResponseItem)
 
@@ -468,7 +468,7 @@ export const CreateDebtBody = zod.object({
   "direction": zod.enum(['i_owe_them', 'they_owe_me']),
   "notes": zod.string().optional(),
   "accountId": zod.number().optional(),
-  "linkedEmail": zod.string().email().optional(),
+  "linkedEmail": zod.string().optional()
 })
 
 
@@ -514,7 +514,11 @@ export const UpdateDebtResponse = zod.object({
   "notes": zod.string().nullish(),
   "accountId": zod.number().nullish(),
   "gbpEquivalent": zod.number(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "linkedEmail": zod.string().nullish(),
+  "linkedUserId": zod.string().nullish(),
+  "isReceived": zod.boolean().optional(),
+  "sourceDebtId": zod.number().nullish()
 })
 
 
@@ -545,7 +549,11 @@ export const SettleDebtResponse = zod.object({
   "notes": zod.string().nullish(),
   "accountId": zod.number().nullish(),
   "gbpEquivalent": zod.number(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "linkedEmail": zod.string().nullish(),
+  "linkedUserId": zod.string().nullish(),
+  "isReceived": zod.boolean().optional(),
+  "sourceDebtId": zod.number().nullish()
 })
 
 
@@ -596,12 +604,7 @@ export const GetMarketQuotesResponseItem = zod.object({
   "beta": zod.number().nullish(),
   "dividendYield": zod.number().nullish(),
   "analystTargetPrice": zod.number().nullish(),
-  "displayName": zod.string().nullish(),
-  "changePercent": zod.number().nullish(),
-  "dayHigh": zod.number().nullish(),
-  "dayLow": zod.number().nullish(),
-  "volume": zod.number().nullish(),
-  "previousClose": zod.number().nullish()
+  "displayName": zod.string().nullish()
 })
 export const GetMarketQuotesResponse = zod.array(GetMarketQuotesResponseItem)
 
@@ -631,7 +634,7 @@ export const SyncWiseTransactionsResponse = zod.object({
  * @summary Import transactions from a bank-exported CSV file (Revolut or Maybank)
  */
 export const ImportCsvQueryParams = zod.object({
-  "provider": zod.enum(['revolut', 'maybank']),
+  "provider": zod.enum(['revolut', 'maybank', 'monzo', 'hsbc', 'wise', 'chase']),
   "accountId": zod.coerce.number()
 })
 
@@ -640,10 +643,293 @@ export const ImportCsvBody = zod.object({
 })
 
 export const ImportCsvResponse = zod.object({
-  "provider": zod.enum(['revolut', 'maybank']),
+  "provider": zod.enum(['revolut', 'maybank', 'monzo', 'hsbc', 'wise', 'chase']),
   "added": zod.number(),
   "skipped": zod.number(),
   "errors": zod.array(zod.string())
+})
+
+
+/**
+ * @summary List all budgets for the current user
+ */
+export const ListBudgetsResponseItem = zod.object({
+  "id": zod.number(),
+  "category": zod.string(),
+  "monthlyLimit": zod.number()
+})
+export const ListBudgetsResponse = zod.array(ListBudgetsResponseItem)
+
+
+/**
+ * @summary Create a new budget
+ */
+export const createBudgetBodyMonthlyLimitMin = 0.01;
+
+
+
+export const CreateBudgetBody = zod.object({
+  "category": zod.string(),
+  "monthlyLimit": zod.number().min(createBudgetBodyMonthlyLimitMin)
+})
+
+
+/**
+ * @summary Update a budget's monthly limit
+ */
+export const UpdateBudgetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateBudgetBodyMonthlyLimitMin = 0.01;
+
+
+
+export const UpdateBudgetBody = zod.object({
+  "monthlyLimit": zod.number().min(updateBudgetBodyMonthlyLimitMin)
+})
+
+export const UpdateBudgetResponse = zod.object({
+  "id": zod.number(),
+  "category": zod.string(),
+  "monthlyLimit": zod.number()
+})
+
+
+/**
+ * @summary Delete a budget
+ */
+export const DeleteBudgetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteBudgetResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary List all savings goals
+ */
+export const ListGoalsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "target": zod.number(),
+  "current": zod.number(),
+  "deadline": zod.string().optional(),
+  "emoji": zod.string().optional(),
+  "color": zod.string().optional(),
+  "image": zod.string().optional(),
+  "monthlyContribution": zod.number().optional(),
+  "history": zod.array(zod.object({
+  "date": zod.string(),
+  "amount": zod.number()
+}))
+})
+export const ListGoalsResponse = zod.array(ListGoalsResponseItem)
+
+
+/**
+ * @summary Create a savings goal
+ */
+export const createGoalBodyTargetMin = 0.01;
+
+
+
+export const CreateGoalBody = zod.object({
+  "name": zod.string(),
+  "target": zod.number().min(createGoalBodyTargetMin),
+  "current": zod.number().optional(),
+  "deadline": zod.string().optional(),
+  "emoji": zod.string().optional(),
+  "color": zod.string().optional(),
+  "image": zod.string().optional(),
+  "monthlyContribution": zod.number().optional(),
+  "history": zod.array(zod.object({
+  "date": zod.string(),
+  "amount": zod.number()
+})).optional()
+})
+
+
+/**
+ * @summary Update a goal
+ */
+export const UpdateGoalParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateGoalBody = zod.object({
+  "name": zod.string().optional(),
+  "target": zod.number().optional(),
+  "current": zod.number().optional(),
+  "deadline": zod.string().nullish(),
+  "emoji": zod.string().nullish(),
+  "color": zod.string().nullish(),
+  "image": zod.string().nullish(),
+  "monthlyContribution": zod.number().nullish(),
+  "history": zod.array(zod.object({
+  "date": zod.string(),
+  "amount": zod.number()
+})).optional()
+})
+
+export const UpdateGoalResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "target": zod.number(),
+  "current": zod.number(),
+  "deadline": zod.string().optional(),
+  "emoji": zod.string().optional(),
+  "color": zod.string().optional(),
+  "image": zod.string().optional(),
+  "monthlyContribution": zod.number().optional(),
+  "history": zod.array(zod.object({
+  "date": zod.string(),
+  "amount": zod.number()
+}))
+})
+
+
+/**
+ * @summary Delete a goal
+ */
+export const DeleteGoalParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteGoalResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Add funds to a goal
+ */
+export const AddGoalFundsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddGoalFundsBody = zod.object({
+  "amount": zod.number()
+})
+
+export const AddGoalFundsResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "target": zod.number(),
+  "current": zod.number(),
+  "deadline": zod.string().optional(),
+  "emoji": zod.string().optional(),
+  "color": zod.string().optional(),
+  "image": zod.string().optional(),
+  "monthlyContribution": zod.number().optional(),
+  "history": zod.array(zod.object({
+  "date": zod.string(),
+  "amount": zod.number()
+}))
+})
+
+
+/**
+ * @summary List all subscriptions
+ */
+export const ListSubscriptionsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "frequency": zod.enum(['weekly', 'monthly', 'quarterly', 'annual']),
+  "category": zod.string(),
+  "nextDue": zod.string().optional(),
+  "startDate": zod.string(),
+  "active": zod.boolean(),
+  "notes": zod.string().optional(),
+  "manuallyAdded": zod.boolean()
+})
+export const ListSubscriptionsResponse = zod.array(ListSubscriptionsResponseItem)
+
+
+/**
+ * @summary Create a subscription
+ */
+export const createSubscriptionBodyAmountMin = 0.01;
+
+
+
+export const CreateSubscriptionBody = zod.object({
+  "name": zod.string(),
+  "amount": zod.number().min(createSubscriptionBodyAmountMin),
+  "currency": zod.string().optional(),
+  "frequency": zod.enum(['weekly', 'monthly', 'quarterly', 'annual']).optional(),
+  "category": zod.string().optional(),
+  "nextDue": zod.string().optional(),
+  "startDate": zod.string().optional(),
+  "active": zod.boolean().optional(),
+  "notes": zod.string().optional(),
+  "manuallyAdded": zod.boolean().optional()
+})
+
+
+/**
+ * @summary List dismissed subscription candidates
+ */
+export const ListDismissedSubscriptionsResponseItem = zod.string()
+export const ListDismissedSubscriptionsResponse = zod.array(ListDismissedSubscriptionsResponseItem)
+
+
+/**
+ * @summary Dismiss a detected subscription candidate
+ */
+export const DismissSubscriptionBody = zod.object({
+  "description": zod.string()
+})
+
+
+/**
+ * @summary Update a subscription
+ */
+export const UpdateSubscriptionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSubscriptionBody = zod.object({
+  "name": zod.string().optional(),
+  "amount": zod.number().optional(),
+  "currency": zod.string().optional(),
+  "frequency": zod.enum(['weekly', 'monthly', 'quarterly', 'annual']).optional(),
+  "category": zod.string().optional(),
+  "nextDue": zod.string().nullish(),
+  "startDate": zod.string().optional(),
+  "active": zod.boolean().optional(),
+  "notes": zod.string().nullish(),
+  "manuallyAdded": zod.boolean().optional()
+})
+
+export const UpdateSubscriptionResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "frequency": zod.enum(['weekly', 'monthly', 'quarterly', 'annual']),
+  "category": zod.string(),
+  "nextDue": zod.string().optional(),
+  "startDate": zod.string(),
+  "active": zod.boolean(),
+  "notes": zod.string().optional(),
+  "manuallyAdded": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a subscription
+ */
+export const DeleteSubscriptionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteSubscriptionResponse = zod.object({
+  "ok": zod.boolean()
 })
 
 

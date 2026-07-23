@@ -452,11 +452,27 @@ export default function Reports() {
           >
             ↓ Export CSV
           </button>
+          <button
+            onClick={() => window.print()}
+            className="ft-no-print"
+            style={{
+              background: "var(--ft-raised)",
+              color: "var(--ft-muted)",
+              border: "1px solid var(--ft-border)",
+              borderRadius: 2,
+              fontSize: 12,
+              fontFamily: "var(--font-mono)",
+              padding: "5px 12px",
+              cursor: "pointer",
+            }}
+          >
+            ↓ Export PDF
+          </button>
         </div>
       </div>
 
       <div style={{ display: "flex", alignItems: "stretch", borderBottom: "1px solid var(--ft-border)" }}>
-        <div style={{
+        <div className="ft-four-col" style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
           flex: 1,
@@ -544,7 +560,7 @@ export default function Reports() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
 
         <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
           <div style={{

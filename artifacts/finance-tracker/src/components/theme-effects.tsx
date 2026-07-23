@@ -7,6 +7,18 @@ function getCurrentTheme(): ActiveTheme {
   return document.documentElement.getAttribute("data-theme") ?? "void";
 }
 
+export function getAnimIntensity(): number {
+  try { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--nr-anim-intensity").trim() || "0.5"); } catch { return 0.5; }
+}
+
+const INTENSITY_STYLE: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  pointerEvents: "none",
+  zIndex: 0,
+  opacity: "clamp(0, calc(var(--nr-anim-intensity, 0.5) * 2), 1)",
+};
+
 // ── Void — no ambient decoration.
 function VoidEffect() {
   return null;
@@ -15,7 +27,7 @@ function VoidEffect() {
 // ── Phosphor — CRT scanlines + pixel grid + edge vignette.
 function PhosphorEffect() {
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+    <div style={INTENSITY_STYLE}>
       <div
         style={{
           position: "absolute",
@@ -49,7 +61,7 @@ function PhosphorEffect() {
 // ── Arctic — precision graph-paper grid.
 function ArcticEffect() {
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+    <div style={INTENSITY_STYLE}>
       <div
         style={{
           position: "absolute",
@@ -75,7 +87,7 @@ function ArcticEffect() {
 // ── Amber — warm scanlines + CRT vignette.
 function AmberEffect() {
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+    <div style={INTENSITY_STYLE}>
       <div
         style={{
           position: "absolute",
@@ -100,7 +112,7 @@ function AmberEffect() {
 // ── Midnight — ruled ledger lines.
 function MidnightEffect() {
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+    <div style={INTENSITY_STYLE}>
       <div
         style={{
           position: "absolute",
@@ -144,8 +156,8 @@ const MARIO_CSS = `
   @keyframes mario-coin-pulse{0%,100%{box-shadow:0 0 0 2px #F8C800,0 0 6px #F8C800}50%{box-shadow:0 0 0 2px #F8C800,0 0 16px #F8C800,0 0 28px rgba(248,200,0,0.35)}}
   @keyframes mario-star-spin{0%{filter:hue-rotate(0deg) brightness(1.2)}100%{filter:hue-rotate(360deg) brightness(1.5)}}
   [data-theme="mario"] aside{border-right:4px solid #3ABB3A!important;background:linear-gradient(to bottom,#2850C0,#1A38A0)!important;box-shadow:4px 0 0 #1A7A1A,8px 0 20px rgba(0,0,0,0.3)!important;}
-  [data-theme="mario"] header{border-bottom:4px solid #AF4000!important;background:linear-gradient(to right,#2850C0,#3A70DC,#2850C0)!important;box-shadow:0 4px 0 #7A2800,0 6px 20px rgba(0,0,0,0.4)!important;}
-  [data-theme="mario"] footer{border-top:4px solid #AF4000!important;background:linear-gradient(to right,#AF4000 0%,#2850C0 30%)!important;box-shadow:0 -4px 0 #7A2800!important;}
+  [data-theme="mario"] header{border-bottom:4px solid #AF4000!important;background:linear-gradient(to right,#2850C0,#3A70DC,#2850C0)!important;box-shadow:0 6px 20px rgba(0,0,0,0.4)!important;}
+  [data-theme="mario"] footer{border-top:4px solid #AF4000!important;background:linear-gradient(to right,#AF4000 0%,#2850C0 30%)!important;}
   [data-theme="mario"] button,[data-theme="mario"] input,[data-theme="mario"] [style*="border-radius"]{border-radius:0!important;}
   [data-theme="mario"] nav button:hover{background:rgba(248,200,0,0.22)!important;box-shadow:inset 0 0 0 2px rgba(248,200,0,0.3)!important;}
   [data-theme="mario"] nav button[aria-current="page"] span:first-child{animation:mario-coin-pulse 1.1s ease-in-out infinite!important;}
@@ -161,15 +173,16 @@ const MARIO_CSS = `
 const GILDED_CSS = `
   @keyframes ft-gld-shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}
   @keyframes ft-gld-sidebar-pulse{0%,100%{box-shadow:4px 0 28px rgba(212,160,10,0.18),inset -2px 0 0 rgba(255,200,50,0.15)}50%{box-shadow:4px 0 48px rgba(255,200,10,0.35),inset -2px 0 0 rgba(255,215,80,0.3)}}
-  @keyframes ft-gld-crown{0%,100%{opacity:0.7;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
   @keyframes ft-gld-active{0%,100%{box-shadow:0 0 10px rgba(212,160,10,0.5),0 0 0 1px rgba(255,200,50,0.4)}50%{box-shadow:0 0 22px rgba(255,200,10,0.8),0 0 0 1px rgba(255,220,80,0.7)}}
+  @keyframes ft-gld-border-shimmer{0%,100%{border-color:rgba(212,160,10,0.25)}50%{border-color:rgba(255,200,50,0.5)}}
   [data-theme="gilded"] aside{animation:ft-gld-sidebar-pulse 3s ease-in-out infinite;border-right-color:rgba(212,160,10,0.4)!important;}
   [data-theme="gilded"] header{box-shadow:0 2px 24px rgba(212,160,10,0.18);border-bottom:1px solid rgba(212,160,10,0.45)!important;position:relative;overflow:hidden;}
-  [data-theme="gilded"] header::after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(105deg,transparent 20%,rgba(255,200,50,0.12) 50%,transparent 80%);animation:ft-gld-shimmer 3.5s ease-in-out infinite;pointer-events:none;}
+  [data-theme="gilded"] header::after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(105deg,transparent 25%,rgba(255,200,50,0.07) 50%,transparent 75%);animation:ft-gld-shimmer 9s ease-in-out infinite;pointer-events:none;}
   [data-theme="gilded"] footer{border-top-color:rgba(212,160,10,0.35)!important;background:linear-gradient(to right,rgba(60,35,0,0.5),var(--ft-raised) 40%)!important;}
   [data-theme="gilded"] nav button:hover span:first-child{box-shadow:0 0 10px rgba(212,160,10,0.45)!important;}
   [data-theme="gilded"] nav button[aria-current="page"] span:first-child{animation:ft-gld-active 1.4s ease-in-out infinite!important;}
-  [data-theme="gilded"] aside::before{content:"♛";position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:18px;color:rgba(212,160,10,0.35);animation:ft-gld-crown 2.5s ease-in-out infinite;pointer-events:none;}
+  [data-theme="gilded"] nav button[aria-current="page"]{border-left:2px solid rgba(212,160,10,0.7)!important;}
+  [data-theme="gilded"] main *[style*="border: 1px solid var(--ft-border)"],[data-theme="gilded"] main *[style*="border:1px solid var(--ft-border)"]{animation:ft-gld-border-shimmer 4s ease-in-out infinite;}
 `;
 
 // ── Bloodline CSS perks — crimson pulsing sidebar + red glow on interactions.
@@ -178,13 +191,23 @@ const BLOODLINE_CSS = `
   @keyframes bloodline-pulse{0%,100%{opacity:0.5}50%{opacity:1}}
   @keyframes ft-blood-heartbeat{0%,100%{box-shadow:0 4px 20px rgba(185,0,0,0.12),0 1px 0 rgba(120,0,0,0.5)}40%{box-shadow:0 4px 32px rgba(240,20,20,0.28),0 1px 0 rgba(160,0,0,0.8)}42%{box-shadow:0 4px 14px rgba(185,0,0,0.1),0 1px 0 rgba(100,0,0,0.4)}60%{box-shadow:0 4px 40px rgba(255,10,10,0.36),0 1px 0 rgba(180,0,0,0.9)}62%{box-shadow:0 4px 20px rgba(185,0,0,0.12),0 1px 0 rgba(120,0,0,0.5)}}
   @keyframes ft-blood-active{0%,100%{box-shadow:0 0 12px rgba(220,38,38,0.5),0 0 0 1px rgba(180,0,0,0.5)}50%{box-shadow:0 0 28px rgba(255,30,30,0.9),0 0 0 1px rgba(240,0,0,0.8)}}
-  @keyframes ft-drip{0%{clip-path:inset(0 0 100% 0)}80%{clip-path:inset(0 0 0% 0);opacity:1}100%{clip-path:inset(0 0 0% 0);opacity:0}}
+  @keyframes ft-blood-border-breathe{0%,100%{border-color:rgba(120,0,0,0.45)}50%{border-color:rgba(200,0,0,0.75)}}
+  @keyframes ft-blood-title-pulse{0%,100%{text-shadow:0 0 8px rgba(180,0,0,0)}50%{text-shadow:0 0 18px rgba(220,20,20,0.45),0 0 4px rgba(180,0,0,0.3)}}
+  @keyframes ft-blood-scroll-bar{0%,100%{background:rgba(140,0,0,0.4)}50%{background:rgba(220,30,30,0.7)}}
   [data-theme="bloodline"] aside{animation:ft-blood-rail 1.4s ease-in-out infinite;border-right:2px solid rgba(150,0,0,0.8)!important;background:linear-gradient(to bottom,var(--ft-raised),rgba(15,0,0,0.6))!important;}
   [data-theme="bloodline"] header{border-bottom:2px solid rgba(140,0,0,0.8)!important;animation:ft-blood-heartbeat 1.4s ease-in-out infinite;background:linear-gradient(to right,rgba(25,0,0,0.45),var(--ft-surface) 25%,var(--ft-surface) 75%,rgba(25,0,0,0.45))!important;}
   [data-theme="bloodline"] footer{border-top:2px solid rgba(100,0,0,0.6)!important;background:linear-gradient(to right,rgba(40,0,0,0.6),var(--ft-raised) 40%)!important;box-shadow:0 -4px 24px rgba(120,0,0,0.2)!important;}
   [data-theme="bloodline"] nav button:hover{background:rgba(100,0,0,0.15)!important;}
   [data-theme="bloodline"] nav button:hover span:first-child{box-shadow:0 0 14px rgba(255,30,30,0.55)!important;}
   [data-theme="bloodline"] nav button[aria-current="page"] span:first-child{animation:ft-blood-active 0.7s ease-in-out infinite!important;}
+  [data-theme="bloodline"] nav button[aria-current="page"]{border-left:3px solid rgba(200,0,0,0.9)!important;background:rgba(80,0,0,0.22)!important;}
+  [data-theme="bloodline"] main h1,[data-theme="bloodline"] main h2,[data-theme="bloodline"] [style*="font-size: 18"],[data-theme="bloodline"] [style*="fontSize: 18"]{animation:ft-blood-title-pulse 2.8s ease-in-out infinite;}
+  [data-theme="bloodline"] ::-webkit-scrollbar-thumb{background:rgba(160,0,0,0.5)!important;animation:ft-blood-scroll-bar 1.4s ease-in-out infinite;}
+  [data-theme="bloodline"] ::-webkit-scrollbar-track{background:rgba(20,0,0,0.3)!important;}
+  [data-theme="bloodline"] input:focus,[data-theme="bloodline"] select:focus,[data-theme="bloodline"] textarea:focus{outline:none!important;box-shadow:0 0 0 1.5px rgba(200,0,0,0.8),0 0 12px rgba(180,0,0,0.25)!important;}
+  [data-theme="bloodline"] button:not([disabled]):hover{box-shadow:0 0 10px rgba(200,0,0,0.2)!important;}
+  [data-theme="bloodline"] table thead th{border-bottom-color:rgba(160,0,0,0.5)!important;}
+  [data-theme="bloodline"] table tbody tr:hover{background:rgba(80,0,0,0.12)!important;}
 `;
 
 // ── Synthwave — neon retro-grid + horizontal neon horizon.
@@ -277,7 +300,7 @@ function SynthwaveEffect() {
   }, []);
 
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+    <div style={INTENSITY_STYLE}>
       <style>{SYNTHWAVE_CSS}</style>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, opacity: 1 }} />
       <div style={{
@@ -361,7 +384,7 @@ function DeepSpaceEffect() {
   }, []);
 
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+    <div style={INTENSITY_STYLE}>
       <style>{DEEPSPACE_CSS}</style>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0 }} />
     </div>
@@ -609,7 +632,7 @@ function MarioEffect() {
   }, []);
 
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+    <div style={INTENSITY_STYLE}>
       <style>{MARIO_CSS}</style>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0 }} />
     </div>
@@ -661,18 +684,39 @@ function GildedEffect() {
       spawnSparkle(bx, canvas.height - 80);
       spawnSparkle(bx - 30, canvas.height - 65);
       spawnSparkle(bx + 30, canvas.height - 65);
-      waves.push({ x: 0, alpha: 0.28 });
-      waves.push({ x: 0, alpha: 0.16 });
+      waves.push({ x: 0, alpha: 0.12 });
       stormTimer = 180;
     }
     window.addEventListener("ft-bot-land", onBotLand);
 
     function drawCoin(ctx: CanvasRenderingContext2D, c: Coin) {
       const shine = 0.5 + 0.5 * Math.sin(c.shimmer);
-      const r = Math.round(212 + shine * 43), g = Math.round(160 + shine * 30), b = Math.round(10 + shine * 20);
       ctx.save(); ctx.globalAlpha = c.alpha;
-      ctx.fillStyle = `rgb(${r},${g},${b})`; ctx.strokeStyle = "rgba(255,200,50,0.4)"; ctx.lineWidth = 0.5;
-      ctx.beginPath(); ctx.arc(c.x, c.y, c.size/2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      if (c.burst) {
+        // Burst coins: bright spinning gold discs
+        const flipX = Math.abs(Math.cos(c.shimmer * 0.4));
+        const r = Math.round(248 + shine * 7), g = Math.round(200 + shine * 15), b = 0;
+        ctx.scale(flipX, 1);
+        const cx = c.x / flipX;
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.beginPath(); ctx.arc(cx, c.y, c.size / 2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "rgba(255,240,100,0.6)"; ctx.lineWidth = 1;
+        ctx.stroke();
+        // inner highlight
+        ctx.fillStyle = `rgba(255,240,120,${shine * 0.5})`;
+        ctx.beginPath(); ctx.arc(cx - c.size * 0.12, c.y - c.size * 0.12, c.size * 0.18, 0, Math.PI * 2); ctx.fill();
+      } else {
+        // Ambient rising coins: subtle gold orbs with gentle glow
+        const grd = ctx.createRadialGradient(c.x - c.size*0.15, c.y - c.size*0.15, 0, c.x, c.y, c.size * 0.7);
+        grd.addColorStop(0, `rgba(255,230,80,${0.6 + shine * 0.3})`);
+        grd.addColorStop(0.5, `rgba(212,160,10,${0.4 + shine * 0.2})`);
+        grd.addColorStop(1, `rgba(140,90,0,0)`);
+        ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.arc(c.x, c.y, c.size * 0.7, 0, Math.PI * 2); ctx.fill();
+        // soft outer ring
+        ctx.strokeStyle = `rgba(255,200,50,${0.2 + shine * 0.15})`; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.arc(c.x, c.y, c.size * 0.7, 0, Math.PI * 2); ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -745,7 +789,7 @@ function GildedEffect() {
 
       if (stormTimer > 0) { stormTimer--; if (frame % 6 === 0) spawnCoin(); }
       else if (frame % 28 === 0) spawnCoin();
-      if (frame % 200 === 0) waves.push({ x: 0, alpha: 0.26 });
+      if (frame % 700 === 0) waves.push({ x: 0, alpha: 0.09 });
       if (frame % 38 === 0) flares.push({ x: Math.random()*cw, y: Math.random()*ch*0.85, life: 0, maxLife: 32, size: 3+Math.random()*4 });
       if (frame % 900 === 0) crowns.push({ x: -40, y: ch * (0.2 + Math.random() * 0.35), vx: 0.55 + Math.random() * 0.3, vy: Math.sin(frame * 0.01) * 0.2, alpha: 0, life: 0, rot: 0 });
 
@@ -772,7 +816,7 @@ function GildedEffect() {
 
       // Shimmer waves
       for (let i = waves.length - 1; i >= 0; i--) {
-        const w = waves[i]; w.x += 2.8;
+        const w = waves[i]; w.x += 1.2;
         drawWave(ctx, w, cw, ch);
         if (w.x > cw + 120) waves.splice(i, 1);
       }
@@ -811,7 +855,7 @@ function GildedEffect() {
   }, []);
 
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+    <div style={INTENSITY_STYLE}>
       <style>{GILDED_CSS}</style>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0 }} />
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(40,20,0,0.4) 100%)" }} />
@@ -1098,7 +1142,7 @@ function BloodlineEffect() {
   }, []);
 
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+    <div style={INTENSITY_STYLE}>
       <style>{BLOODLINE_CSS}</style>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0 }} />
       {/* Red film tint — very subtle blood atmosphere */}
@@ -1114,6 +1158,9 @@ function BloodlineEffect() {
 // ── ThemeEffects ───────────────────────────────────────────────────────────────
 
 export function ThemeEffects() {
+  const [enabled] = useState(() => {
+    try { return localStorage.getItem("nr-theme-effects-enabled") !== "false"; } catch { return true; }
+  });
   const [theme, setTheme] = useState<ActiveTheme>(getCurrentTheme);
 
   useEffect(() => {
@@ -1123,6 +1170,17 @@ export function ThemeEffects() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const intensity = parseInt(localStorage.getItem("nr-animation-intensity") ?? "50", 10);
+    document.documentElement.style.setProperty("--nr-anim-intensity", String(intensity / 100));
+  }, []);
+
+  if (!enabled) return null;
+
+  const perThemeEnabled = (() => {
+    try { return localStorage.getItem(`nr-theme-effects-${theme}`) !== "false"; } catch { return true; }
+  })();
+  if (!perThemeEnabled) return null;
   if (theme === "void")        return <VoidEffect />;
   if (theme === "phosphor")    return <PhosphorEffect />;
   if (theme === "arctic")      return <ArcticEffect />;

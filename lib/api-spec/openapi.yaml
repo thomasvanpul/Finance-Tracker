@@ -18,6 +18,9 @@ tags:
   - name: import
   - name: settings
   - name: debts
+  - name: budgets
+  - name: goals
+  - name: subscriptions
 
 paths:
   /healthz:
@@ -638,7 +641,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [revolut, maybank]
+            enum: [revolut, maybank, monzo, hsbc, wise, chase]
         - name: accountId
           in: query
           required: true
@@ -657,6 +660,310 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CsvImportResult"
+
+  # ── BUDGETS ────────────────────────────────────────────────────────────────
+  /budgets:
+    get:
+      operationId: listBudgets
+      tags: [budgets]
+      summary: List all budgets for the current user
+      responses:
+        "200":
+          description: List of budgets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Budget"
+    post:
+      operationId: createBudget
+      tags: [budgets]
+      summary: Create a new budget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBudgetBody"
+      responses:
+        "201":
+          description: Created budget
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+
+  /budgets/{id}:
+    put:
+      operationId: updateBudget
+      tags: [budgets]
+      summary: Update a budget's monthly limit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBudgetBody"
+      responses:
+        "200":
+          description: Updated budget
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+    delete:
+      operationId: deleteBudget
+      tags: [budgets]
+      summary: Delete a budget
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
+  # ── GOALS ─────────────────────────────────────────────────────────────────
+  /goals:
+    get:
+      operationId: listGoals
+      tags: [goals]
+      summary: List all savings goals
+      responses:
+        "200":
+          description: List of goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+    post:
+      operationId: createGoal
+      tags: [goals]
+      summary: Create a savings goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGoalBody"
+      responses:
+        "201":
+          description: Created goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+
+  /goals/{id}:
+    put:
+      operationId: updateGoal
+      tags: [goals]
+      summary: Update a goal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGoalBody"
+      responses:
+        "200":
+          description: Updated goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+    delete:
+      operationId: deleteGoal
+      tags: [goals]
+      summary: Delete a goal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
+  /goals/{id}/add-funds:
+    post:
+      operationId: addGoalFunds
+      tags: [goals]
+      summary: Add funds to a goal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: number
+      responses:
+        "200":
+          description: Updated goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+
+  # ── SUBSCRIPTIONS ─────────────────────────────────────────────────────────
+  /subscriptions:
+    get:
+      operationId: listSubscriptions
+      tags: [subscriptions]
+      summary: List all subscriptions
+      responses:
+        "200":
+          description: List of subscriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subscription"
+    post:
+      operationId: createSubscription
+      tags: [subscriptions]
+      summary: Create a subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubscriptionBody"
+      responses:
+        "201":
+          description: Created subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+
+  /subscriptions/dismissed:
+    get:
+      operationId: listDismissedSubscriptions
+      tags: [subscriptions]
+      summary: List dismissed subscription candidates
+      responses:
+        "200":
+          description: List of dismissed descriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    post:
+      operationId: dismissSubscription
+      tags: [subscriptions]
+      summary: Dismiss a detected subscription candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description]
+              properties:
+                description:
+                  type: string
+      responses:
+        "201":
+          description: Dismissed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
+  /subscriptions/{id}:
+    put:
+      operationId: updateSubscription
+      tags: [subscriptions]
+      summary: Update a subscription
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubscriptionBody"
+      responses:
+        "200":
+          description: Updated subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+    delete:
+      operationId: deleteSubscription
+      tags: [subscriptions]
+      summary: Delete a subscription
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResult"
+
+  # ── EXPORT ────────────────────────────────────────────────────────────────
+  /export/backup:
+    get:
+      operationId: downloadBackup
+      tags: [settings]
+      summary: Download full data backup as JSON
+      responses:
+        "200":
+          description: JSON backup file
+          content:
+            application/json:
+              schema:
+                type: object
 
   # ── SETTINGS (currency) ────────────────────────────────────────────────────
   /settings/currency:
@@ -1137,6 +1444,14 @@ components:
           type: number
         createdAt:
           type: string
+        linkedEmail:
+          type: ["string", "null"]
+        linkedUserId:
+          type: ["string", "null"]
+        isReceived:
+          type: boolean
+        sourceDebtId:
+          type: ["integer", "null"]
 
     DebtInput:
       type: object
@@ -1160,6 +1475,8 @@ components:
           type: string
         accountId:
           type: integer
+        linkedEmail:
+          type: string
 
     DebtUpdate:
       type: object
@@ -1198,6 +1515,211 @@ components:
           type: number
         pendingCount:
           type: integer
+
+    # ── BUDGETS ──────────────────────────────────────────────────────────────
+    Budget:
+      type: object
+      required: [id, category, monthlyLimit]
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+        monthlyLimit:
+          type: number
+
+    CreateBudgetBody:
+      type: object
+      required: [category, monthlyLimit]
+      properties:
+        category:
+          type: string
+        monthlyLimit:
+          type: number
+          minimum: 0.01
+
+    UpdateBudgetBody:
+      type: object
+      required: [monthlyLimit]
+      properties:
+        monthlyLimit:
+          type: number
+          minimum: 0.01
+
+    # ── GOALS ────────────────────────────────────────────────────────────────
+    GoalHistoryEntry:
+      type: object
+      required: [date, amount]
+      properties:
+        date:
+          type: string
+        amount:
+          type: number
+
+    Goal:
+      type: object
+      required: [id, name, target, current, history]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        target:
+          type: number
+        current:
+          type: number
+        deadline:
+          type: string
+        emoji:
+          type: string
+        color:
+          type: string
+        image:
+          type: string
+        monthlyContribution:
+          type: number
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoalHistoryEntry"
+
+    CreateGoalBody:
+      type: object
+      required: [name, target]
+      properties:
+        name:
+          type: string
+        target:
+          type: number
+          minimum: 0.01
+        current:
+          type: number
+        deadline:
+          type: string
+        emoji:
+          type: string
+        color:
+          type: string
+        image:
+          type: string
+        monthlyContribution:
+          type: number
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoalHistoryEntry"
+
+    UpdateGoalBody:
+      type: object
+      properties:
+        name:
+          type: string
+        target:
+          type: number
+        current:
+          type: number
+        deadline:
+          type: string
+          nullable: true
+        emoji:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        image:
+          type: string
+          nullable: true
+        monthlyContribution:
+          type: number
+          nullable: true
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoalHistoryEntry"
+
+    # ── SUBSCRIPTIONS ─────────────────────────────────────────────────────────
+    Subscription:
+      type: object
+      required: [id, name, amount, currency, frequency, category, startDate, active, manuallyAdded]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        frequency:
+          type: string
+          enum: [weekly, monthly, quarterly, annual]
+        category:
+          type: string
+        nextDue:
+          type: string
+        startDate:
+          type: string
+        active:
+          type: boolean
+        notes:
+          type: string
+        manuallyAdded:
+          type: boolean
+
+    CreateSubscriptionBody:
+      type: object
+      required: [name, amount]
+      properties:
+        name:
+          type: string
+        amount:
+          type: number
+          minimum: 0.01
+        currency:
+          type: string
+        frequency:
+          type: string
+          enum: [weekly, monthly, quarterly, annual]
+        category:
+          type: string
+        nextDue:
+          type: string
+        startDate:
+          type: string
+        active:
+          type: boolean
+        notes:
+          type: string
+        manuallyAdded:
+          type: boolean
+
+    UpdateSubscriptionBody:
+      type: object
+      properties:
+        name:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        frequency:
+          type: string
+          enum: [weekly, monthly, quarterly, annual]
+        category:
+          type: string
+        nextDue:
+          type: string
+          nullable: true
+        startDate:
+          type: string
+        active:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+        manuallyAdded:
+          type: boolean
 
     # ── MARKET DATA ──────────────────────────────────────────────────────────
     FxRates:
@@ -1388,7 +1910,7 @@ components:
       properties:
         provider:
           type: string
-          enum: [revolut, maybank]
+          enum: [revolut, maybank, monzo, hsbc, wise, chase]
         added:
           type: integer
         skipped:

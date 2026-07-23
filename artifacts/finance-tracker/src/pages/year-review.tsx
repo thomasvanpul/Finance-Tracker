@@ -90,7 +90,7 @@ function KpiStrip({ income, expenses, txCount, year }: {
   const net = income - expenses;
   const savingsRate = income > 0 ? (net / income) * 100 : 0;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
+    <div className="ft-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
       {[
         { label: "Total Income", value: formatGbp(income), color: "var(--ft-green)" },
         { label: "Total Expenses", value: formatGbp(expenses), color: "var(--ft-red)" },
@@ -133,7 +133,7 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
     <div style={card}>
       <div style={secTitle}>BIGGEST MOMENTS</div>
       <div style={secSub}>The standout transactions and months of the year</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         {[
           {
             icon: "↓",
@@ -451,7 +451,7 @@ function ShareableCard({ income, expenses, txCount, year }: {
             {txCount} transactions tracked
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
+        <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 16 }}>
           {[
             { label: "Earned", value: formatGbp(income), color: "var(--ft-green)" },
             { label: "Spent", value: formatGbp(expenses), color: "var(--ft-red)" },
@@ -485,6 +485,19 @@ function ShareableCard({ income, expenses, txCount, year }: {
       </div>
     </div>
   );
+}
+
+// ─── export ──────────────────────────────────────────────────────────────────
+
+function exportYearCSV(txs: Tx[], year: number) {
+  const header = ["Date", "Description", "Type", "Category", "GBP"];
+  const escape = (v: string | number) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s; };
+  const lines = [header.join(","), ...txs.map((t) => [t.date, t.description, t.type, t.category ?? "", t.gbpValue.toFixed(2)].map(escape).join(","))];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `year-review-${year}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 // ─── page ────────────────────────────────────────────────────────────────────
@@ -535,7 +548,7 @@ export default function YearReviewPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+      <div className="ft-yr-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1 }}>
             YEAR IN REVIEW · {year}
@@ -544,6 +557,7 @@ export default function YearReviewPage() {
             your financial year — wrapped
           </div>
         </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         {/* Year selector */}
         <div style={{ display: "flex", gap: 2 }}>
           {availableYears.map((y) => (
@@ -566,6 +580,25 @@ export default function YearReviewPage() {
               {y}
             </button>
           ))}
+        </div>
+        {yearTxs.length > 0 && (
+          <button
+            onClick={() => exportYearCSV(yearTxs, year)}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              padding: "4px 10px",
+              cursor: "pointer",
+              border: "1px solid var(--ft-border)",
+              background: "var(--ft-surface)",
+              color: "var(--ft-muted)",
+            }}
+          >
+            ↓ CSV
+          </button>
+        )}
         </div>
       </div>
 
@@ -591,7 +624,7 @@ export default function YearReviewPage() {
 
           <BiggestMoments txs={yearTxs} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
             <CategoryBreakdown expenses={yearTxs.filter((t) => t.type === "expense")} />
             <MonthByMonth txs={yearTxs} year={year} />
           </div>

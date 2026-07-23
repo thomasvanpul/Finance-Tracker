@@ -8,6 +8,7 @@ import {
   useListAccounts,
   useListDebts,
   useGetDashboard,
+  useListGoals,
 } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { getLevel, getLearnXP } from "@/components/investments/learn-tab";
@@ -106,6 +107,7 @@ export default function Profile() {
   const { data: accounts } = useListAccounts();
   const { data: debts } = useListDebts();
   const { data: dashboard } = useGetDashboard();
+  const { data: goalsFromApi = [] } = useListGoals();
 
   const [currency, setCurrency] = useState(() => readPref("ft-default-currency", "GBP"));
   const [amountDisplay, setAmountDisplay] = useState(() => readPref("ft-amount-display", "GBP"));
@@ -284,7 +286,6 @@ export default function Profile() {
   const catRulesCount = parseJsonLength("ft-cat-rules");
   const templatesCount = parseJsonLength("ft-tx-templates");
   const nwHistoryCount = parseJsonLength("ft-nw-history");
-  const savingsGoalsCount = parseJsonLength("ft-savings-goals");
 
   const timelineItems: { date: string; label: string; sub?: string }[] = [];
 
@@ -615,7 +616,7 @@ export default function Profile() {
         )}
 
 
-        <div style={{
+        <div className="ft-four-col" style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
           gap: 6,
@@ -812,13 +813,13 @@ export default function Profile() {
         <span style={{ color: "var(--ft-accent)" }}>·</span> Usage
       </div>
       <div style={{ background: "var(--ft-surface)", padding: "16px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
           {[
             { label: "Settings Stored", value: `${ftKeyCount} keys` },
             { label: "Auto-Cat Rules", value: String(catRulesCount) },
             { label: "TX Templates", value: String(templatesCount) },
             { label: "NW History", value: `${nwHistoryCount} entries` },
-            { label: "Savings Goals", value: String(savingsGoalsCount) },
+            { label: "Savings Goals", value: String(goalsFromApi.length) },
           ].map(({ label, value }) => (
             <div key={label} style={{ background: "var(--ft-raised)", padding: "7px 10px", border: "1px solid var(--ft-border2)" }}>
               <div style={MONO_LABEL}>{label}</div>

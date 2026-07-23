@@ -353,7 +353,7 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
         {[
           { label: "Standard", months: standard.length, interest: stdInterest, color: "var(--ft-muted)" },
           { label: "With Overpayment", months: overpaid.length, interest: ovInterest, color: "var(--ft-accent)" },
@@ -366,7 +366,7 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
         ))}
       </div>
 
-      <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 14px", marginBottom: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+      <div className="ft-three-col" style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 14px", marginBottom: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
         <div>
           <div style={LABEL_STYLE}>Months Saved</div>
           <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: monthsSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>{monthsSaved > 0 ? `${monthsSaved}mo` : "—"}</div>
@@ -425,7 +425,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
           style={{ ...INPUT_STYLE, width: 90 }}
         />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
         {scenarios.map((delta) => {
           const rate = baseRate + delta;
           const monthly = monthlyPayment(mortgage.principal, rate, mortgage.termYears, mortgage.type);
@@ -477,7 +477,7 @@ function AffordabilityTab() {
   return (
     <div>
       <div style={SECTION_HEADER}>Affordability Calculator</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
         <div style={FIELD_STYLE}>
           <div style={LABEL_STYLE}>Annual income (£)</div>
           <input type="number" placeholder="e.g. 60000" value={annualIncome} onChange={(e) => setAnnualIncome(e.target.value)} style={INPUT_STYLE} />
@@ -525,7 +525,7 @@ function AffordabilityTab() {
       </div>
 
       {maxLoan > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[
             { label: "Max Loan", value: formatGbp(maxLoan), color: "var(--ft-text)" },
             { label: "Max Property Value", value: formatGbp(maxPropertyValue), color: "var(--ft-accent)" },
@@ -584,7 +584,7 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
               {mortgage.type === "repayment" ? "Repayment" : "Interest-only"}
             </span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+          <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
             {[
               { label: "Outstanding", value: formatGbp(balance), color: "var(--ft-text)" },
               { label: "Monthly", value: formatGbp(monthly), color: "var(--ft-amber)" },
@@ -669,7 +669,7 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
     <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "14px 16px", marginBottom: 16 }}>
       <div style={SECTION_HEADER}>Add Loan / Mortgage</div>
       <form onSubmit={handleSubmit}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <div style={{ ...FIELD_STYLE, gridColumn: "1 / -1" }}>
             <div style={LABEL_STYLE}>Name</div>
             <input type="text" required placeholder="e.g. Home mortgage" value={form.name} onChange={(e) => setField("name", e.target.value)} style={INPUT_STYLE} />

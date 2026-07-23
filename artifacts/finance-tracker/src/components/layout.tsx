@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useFintrackTheme } from "@/contexts/theme-context";
 import { authClient } from "@/lib/auth-client";
@@ -10,13 +10,15 @@ import { usePrivacy, PrivNum } from "@/contexts/privacy-context";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import { QuickAddTransaction, useQuickAdd } from "@/components/quick-add-transaction";
 import { GlobalSearch, useGlobalSearch } from "@/components/global-search";
-import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight } from "lucide-react";
+import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Menu } from "lucide-react";
 import { Logo, LogoMark } from "@/components/logo";
 import { formatGbp } from "@/lib/utils";
 import { setBaseCurrency } from "@/lib/currency-store";
 import { ThemeEffects } from "@/components/theme-effects";
 import { useEasterEggs, EasterEggRenderer } from "@/components/easter-eggs";
 import { AiAgent } from "@/components/ai-agent";
+import { PWAInstallButton } from "@/components/pwa-install";
+import { NotificationsPanel, useAlerts, loadDismissed } from "@/components/notifications-panel";
 import { loadSidebarConfig, saveSidebarConfig } from "@/lib/sidebar-config";
 import type { SidebarConfig, SidebarItemConfig } from "@/lib/sidebar-config";
 
@@ -52,6 +54,7 @@ const NAV_SECTIONS = [
     label: "INSIGHTS",
     items: [
       { href: "/analytics",    label: "Analytics",    code: "G·N" },
+      { href: "/ai-coach",     label: "AI Coach",     code: "G·G" },
     ],
   },
 ];
@@ -62,6 +65,7 @@ const SECONDARY_NAV_SECTIONS = [
     label: "PLAN",
     items: [
       { href: "/owing",         label: "Debts",         code: "G·O" },
+      { href: "/split",         label: "Bill Split",    code: "G·X" },
       { href: "/subscriptions", label: "Subscriptions", code: "G·C" },
       { href: "/calendar",      label: "Calendar",      code: "G·K" },
     ],
@@ -78,14 +82,19 @@ const SECONDARY_NAV_SECTIONS = [
       { href: "/health-score",  label: "Health Score",  code: "G·H" },
       { href: "/cashflow",      label: "Cash Flow",     code: "G·V" },
       { href: "/year-review",   label: "Year Review",   code: "G·E" },
+      { href: "/reports",       label: "Reports",       code: "G·R" },
     ],
   },
   {
     label: "TOOLS",
     items: [
-      { href: "/whatif",    label: "Calculators", code: "G·F" },
-      { href: "/import",    label: "Import",      code: "G·J" },
-      { href: "/learn",     label: "Learn",       code: "G·Q" },
+      { href: "/recurring",  label: "Recurring",   code: "G·U" },
+      { href: "/whatif",     label: "Calculators", code: "G·F" },
+      { href: "/mortgage",   label: "Mortgage",    code: "G·M" },
+      { href: "/fire",       label: "FIRE Calc",   code: "G·0" },
+      { href: "/wardrobe",   label: "Wardrobe",    code: "G·Z" },
+      { href: "/import",     label: "Import",      code: "G·J" },
+      { href: "/learn",      label: "Learn",       code: "G·Q" },
     ],
   },
 ];
@@ -107,13 +116,15 @@ const SECONDARY_HREFS = new Set(
 
 const G_KEY_MAP: Record<string, string> = {
   d: "/", a: "/accounts", t: "/transactions", r: "/reports",
-  u: "/upcoming", o: "/owing", i: "/investments",
+  u: "/recurring", o: "/owing", i: "/investments",
   l: "/goals", n: "/analytics", b: "/budget",
   x: "/split", c: "/subscriptions", w: "/net-worth",
   m: "/mortgage", y: "/tax", h: "/health-score",
   f: "/whatif", k: "/calendar",
-  s: "/settings", p: "/profile", q: "/learn",
-  v: "/cashflow", e: "/year-review", j: "/import", z: "/wardrobe",
+  s: "/settings", q: "/learn",
+  v: "/cashflow", e: "/year-review", j: "/import",
+  g: "/ai-coach", z: "/wardrobe",
+  "0": "/fire",
 };
 
 
@@ -141,16 +152,26 @@ function tzTime(tz: string, now: Date): string {
   return now.toLocaleTimeString("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-function isMarketOpen(city: WorldCity, now: Date): boolean {
-  const localStr = now.toLocaleString("en-GB", { timeZone: city.tz, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
-  const parts = localStr.match(/(\w+), (\d+):(\d+)/);
-  if (!parts) return false;
-  const [, day, hh, mm] = parts;
-  if (["Sat", "Sun"].includes(day)) return false;
-  const t = parseInt(hh) * 60 + parseInt(mm);
+type MarketStatus = "OPEN" | "PRE" | "CLOSED";
+
+function getMarketStatus(city: WorldCity, now: Date): MarketStatus {
+  // Use formatToParts — avoids brittle regex on locale string output
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: city.tz, weekday: "short", hour: "numeric", minute: "numeric", hour12: false,
+    }).formatToParts(now).map(p => [p.type, p.value])
+  );
+  if (["Sat", "Sun"].includes(parts.weekday ?? "")) return "CLOSED";
+  const h = parseInt(parts.hour ?? "0") % 24; // some impls emit "24" for midnight
+  const m = parseInt(parts.minute ?? "0");
+  const t = h * 60 + m;
   const [oh, om] = city.marketOpen.split(":").map(Number);
   const [ch, cm] = city.marketClose.split(":").map(Number);
-  return t >= oh * 60 + om && t < ch * 60 + cm;
+  const openMin = oh * 60 + om;
+  const closeMin = ch * 60 + cm;
+  if (t >= openMin && t < closeMin) return "OPEN";
+  if (t >= openMin - 60 && t < openMin) return "PRE"; // up to 1h pre-market
+  return "CLOSED";
 }
 
 function useClock() {
@@ -194,8 +215,11 @@ function ClockDisplay({ clock }: { clock: string; }) {
         >
           <div style={{ padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em" }}>WORLD CLOCK — MAJOR EXCHANGES</div>
           {WORLD_CITIES.map((city) => {
-            const open = isMarketOpen(city, now);
+            const status = getMarketStatus(city, now);
             const t = tzTime(city.tz, now);
+            const badgeColor = status === "OPEN" ? "var(--ft-green)" : status === "PRE" ? "var(--ft-amber)" : "var(--ft-dim)";
+            const badgeBg   = status === "OPEN" ? "rgba(63,185,80,0.15)" : status === "PRE" ? "rgba(244,162,30,0.12)" : "rgba(255,255,255,0.05)";
+            const badgeBdr  = status === "OPEN" ? "rgba(63,185,80,0.3)"  : status === "PRE" ? "rgba(244,162,30,0.3)"  : "var(--ft-border)";
             return (
               <div key={city.tz} style={{ display: "flex", alignItems: "center", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", gap: 10 }}>
                 <span style={{ fontSize: 13, flexShrink: 0 }}>{city.flag}</span>
@@ -205,8 +229,8 @@ function ClockDisplay({ clock }: { clock: string; }) {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", letterSpacing: "0.04em" }}>{t}</span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, padding: "1px 6px", background: open ? "rgba(63,185,80,0.15)" : "rgba(255,255,255,0.05)", color: open ? "var(--ft-green)" : "var(--ft-dim)", border: `1px solid ${open ? "rgba(63,185,80,0.3)" : "var(--ft-border)"}` }}>
-                    {open ? "OPEN" : "CLOSED"}
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, padding: "1px 6px", background: badgeBg, color: badgeColor, border: `1px solid ${badgeBdr}` }}>
+                    {status}
                   </span>
                 </div>
               </div>
@@ -978,13 +1002,20 @@ export function Layout({ children }: LayoutProps) {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const { open: cmdOpen, closePalette } = useCommandPalette();
-  const { open: qaOpen, close: qaClose } = useQuickAdd();
+  const { open: qaOpen, openQuickAdd, close: qaClose } = useQuickAdd();
   const { open: searchOpen, openSearch, closeSearch } = useGlobalSearch();
   const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem("ft-sidebar") === "collapsed"; } catch { return false; }
+    try {
+      const current = localStorage.getItem("ft-sidebar");
+      if (current !== null) return current === "collapsed";
+      return localStorage.getItem("nr-sidebar-collapsed-default") === "true";
+    } catch { return false; }
   });
   const [moreOpen, setMoreOpen] = useState(() => {
     try { return localStorage.getItem("nr-sidebar-more") === "1"; } catch { return false; }
+  });
+  const [showNwStrip] = useState(() => {
+    try { return localStorage.getItem("nr-show-nw-strip") !== "false"; } catch { return true; }
   });
   const [showHelp, setShowHelp] = useState(false);
   const [configuring, setConfiguring] = useState(false);
@@ -992,6 +1023,11 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarConfig, setSidebarConfig] = useState<SidebarConfig>(() =>
     loadSidebarConfig(ALL_NAV_ITEMS)
   );
+  useEffect(() => {
+    const handler = () => setSidebarConfig(loadSidebarConfig(ALL_NAV_ITEMS));
+    window.addEventListener("nr-sidebar-config-update", handler);
+    return () => window.removeEventListener("nr-sidebar-config-update", handler);
+  }, []);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     try {
       const s = localStorage.getItem("ft-sidebar-width");
@@ -1009,6 +1045,29 @@ export function Layout({ children }: LayoutProps) {
   }, [currencyData?.baseCurrency]);
   const pendingGRef = useRef(false);
   const { overlay: eggOverlay, clearOverlay, logoRef } = useEasterEggs();
+
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setCollapsed(true);
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const allAlerts = useAlerts();
+  const unreadCount = useMemo(() => {
+    const dismissed = loadDismissed();
+    return allAlerts.filter((a) => !dismissed.includes(a.id)).length;
+  }, [allAlerts]);
 
   const toggleSidebar = useCallback(() => {
     setCollapsed(c => {
@@ -1103,7 +1162,7 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <>
-    <CommandPalette open={cmdOpen} onClose={closePalette} />
+    <CommandPalette open={cmdOpen} onClose={closePalette} onNewTransaction={openQuickAdd} />
     <QuickAddTransaction open={qaOpen} onClose={qaClose} />
     <GlobalSearch open={searchOpen} onClose={closeSearch} />
 
@@ -1158,7 +1217,6 @@ export function Layout({ children }: LayoutProps) {
               ["G·I", "Investments"],
               ["G·N", "Analytics"],
               ["G·S", "Settings"],
-              ["G·P", "Profile"],
               ["⌘[", "Toggle sidebar"],
               ["⌘K", "Global search"],
               ["/", "Focus search"],
@@ -1211,18 +1269,35 @@ export function Layout({ children }: LayoutProps) {
       <ThemeEffects />
 
       {/* ══ Sidebar ══ */}
+      {/* Mobile overlay backdrop */}
+      {isMobile && mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 299,
+            background: "rgba(0,0,0,0.55)",
+          }}
+        />
+      )}
       <aside
+        className="ft-sidebar"
         style={{
-          width: sidebarW,
-          flexShrink: 0,
+          width: isMobile ? 240 : sidebarW,
+          flexShrink: isMobile ? 0 : 0,
           display: "flex",
           flexDirection: "column",
           background: "var(--ft-surface)",
           borderRight: "1px solid var(--ft-border)",
-          transition: isResizing ? "none" : "width 0.2s cubic-bezier(0.4,0,0.2,1)",
+          transition: isResizing ? "none" : isMobile ? "transform 0.2s ease" : "width 0.2s cubic-bezier(0.4,0,0.2,1)",
           overflow: "hidden",
-          position: "relative",
-          zIndex: 10,
+          position: isMobile ? "fixed" : "relative",
+          top: isMobile ? 0 : undefined,
+          left: isMobile ? 0 : undefined,
+          bottom: isMobile ? 0 : undefined,
+          zIndex: isMobile ? 300 : 10,
+          transform: isMobile ? (mobileOpen ? "translateX(0)" : "translateX(-100%)") : undefined,
         }}
       >
         {/* Left accent rail */}
@@ -1565,7 +1640,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           {/* Net worth strip */}
-          {dashboardData && (
+          {dashboardData && showNwStrip && (
             <div style={{
               borderTop: "1px solid var(--ft-border)",
               padding: collapsed ? "5px 0" : "5px 12px",
@@ -1635,24 +1710,100 @@ export function Layout({ children }: LayoutProps) {
           flexShrink: 0,
           gap: 16,
         }}>
-          {/* Breadcrumb */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.1em", flexShrink: 0 }}>
+          {/* Breadcrumb — never shrinks, always visible */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {/* Hamburger — mobile only */}
+            {isMobile && (
+              <button
+                type="button"
+                onClick={() => setMobileOpen((o) => !o)}
+                aria-label="Toggle navigation"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "none",
+                  border: "none",
+                  color: "var(--ft-muted)",
+                  cursor: "pointer",
+                  padding: "4px 6px 4px 0",
+                  marginRight: 2,
+                }}
+              >
+                <Menu size={18} />
+              </button>
+            )}
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>
               NUMERIS
             </span>
-            <span style={{ color: "var(--ft-border2)", fontSize: 12, flexShrink: 0 }}>›</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", flexShrink: 0 }}>
+            <span style={{ color: "var(--ft-border2)", fontSize: 12 }}>›</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em" }}>
               {activePage.toUpperCase()}
             </span>
           </div>
 
-          {/* Right: market + clock + sign out */}
-          <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
-            {/* Live market ticker bar */}
-            <LiveTickerBar />
+          {/* Right side — ticker shrinks first, essential buttons never disappear */}
+          <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 1, minWidth: 0 }}>
+
+            {/* Ticker — isolated so it's the only thing that compresses */}
+            <div style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", borderRight: "1px solid var(--ft-border)", marginRight: 12 }}>
+              <LiveTickerBar />
+            </div>
+
+            {/* Essential buttons — flex-shrink: 0 so they're always visible */}
+            <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
 
             {/* Clock with world timezone hover */}
             <ClockDisplay clock={clock} />
+
+            {/* PWA install prompt */}
+            <PWAInstallButton />
+
+            {/* Notifications bell */}
+            <div style={{ position: "relative", marginRight: 10 }}>
+              <button
+                type="button"
+                onClick={() => setNotifOpen((o) => !o)}
+                title="Alerts"
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "4px 9px",
+                  background: notifOpen ? "rgba(244,162,30,0.08)" : "var(--ft-raised)",
+                  border: `1px solid ${notifOpen ? "var(--ft-amber)" : "var(--ft-border)"}`,
+                  color: notifOpen ? "var(--ft-amber)" : "var(--ft-muted)",
+                  cursor: "pointer", borderRadius: 4,
+                  transition: "all 0.1s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!notifOpen) {
+                    e.currentTarget.style.color = "var(--ft-text)";
+                    e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!notifOpen) {
+                    e.currentTarget.style.color = "var(--ft-muted)";
+                    e.currentTarget.style.background = "var(--ft-raised)";
+                  }
+                }}
+              >
+                <Bell size={13} />
+              </button>
+              {unreadCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 3,
+                    right: 3,
+                    width: 5,
+                    height: 5,
+                    borderRadius: "50%",
+                    background: "var(--ft-amber)",
+                    pointerEvents: "none",
+                  }}
+                />
+              )}
+            </div>
 
             {/* Global search button */}
             <button
@@ -1725,12 +1876,14 @@ export function Layout({ children }: LayoutProps) {
             >
               SIGN OUT
             </button>
-          </div>
+
+            </div>{/* end essential buttons */}
+          </div>{/* end right side */}
         </header>
 
         {/* Main */}
-        <main style={{ flex: 1, overflowY: "auto", background: "var(--ft-base)" }}>
-          <div style={{ padding: "20px 24px 32px" }}>{children}</div>
+        <main className="ft-main" style={{ flex: 1, overflowY: "auto", background: "var(--ft-base)" }}>
+          <div className="ft-main-inner" style={{ padding: "20px 24px 32px" }}>{children}</div>
         </main>
 
         {/* Status strip */}
@@ -1769,8 +1922,52 @@ export function Layout({ children }: LayoutProps) {
         </footer>
       </div>
     </div>
+    <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
     <EasterEggRenderer overlay={eggOverlay} clearOverlay={clearOverlay} />
     <AiAgent sidebarW={sidebarW} />
+    {/* Mobile bottom navigation — only shows on small screens via CSS */}
+    <MobileBottomNav />
     </>
+  );
+}
+
+function MobileBottomNav() {
+  const [loc] = useLocation();
+  const items = [
+    { href: "/",             label: "Home",  icon: "⬡" },
+    { href: "/accounts",     label: "Accts", icon: "⊟" },
+    { href: "/transactions", label: "Txns",  icon: "≡" },
+    { href: "/analytics",    label: "Stats", icon: "▲" },
+    { href: "/budget",       label: "Budget",icon: "◎" },
+  ];
+  return (
+    <nav className="ft-mobile-nav" aria-label="Mobile navigation">
+      {items.map(item => {
+        const active = item.href === "/" ? loc === "/" : loc.startsWith(item.href);
+        return (
+          <Link key={item.href} href={item.href}>
+            <span
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 3,
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.06em",
+                color: active ? "var(--ft-accent)" : "var(--ft-dim)",
+                padding: "8px 12px",
+                cursor: "pointer",
+                transition: "color 0.1s",
+                textTransform: "uppercase",
+              }}
+            >
+              <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }

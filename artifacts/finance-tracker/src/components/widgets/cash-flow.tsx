@@ -48,7 +48,7 @@ function CashFlowTooltip({ active, payload, label, avgIncome, avgExpense }: Cust
   const parts = label.split("-");
   const monthLabel = new Date(parseInt(parts[0] ?? "0"), parseInt(parts[1] ?? "1") - 1).toLocaleString("en-GB", { month: "long", year: "numeric" });
   return (
-    <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "8px 10px", fontFamily: "var(--font-mono)", minWidth: 160 }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px", fontFamily: "var(--font-mono)", minWidth: 160, boxShadow: "none" }}>
       <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {monthLabel}
       </div>

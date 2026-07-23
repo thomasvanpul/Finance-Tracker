@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
-import { useListTransactions, useListUpcoming } from "@workspace/api-client-react";
+import { useListTransactions, useListUpcoming, useListSubscriptions } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
-import type { Transaction, UpcomingItem } from "@workspace/api-client-react";
+import type { Transaction, UpcomingItem, Subscription } from "@workspace/api-client-react";
 import { Download, Upload, Plus, Bell, BellOff, Calendar, X, Check } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -34,6 +34,7 @@ const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 interface DayTransactions {
   transactions: Transaction[];
   upcoming: UpcomingItem[];
+  subscriptions: Subscription[];
   totalIncome: number;
   totalExpenses: number;
   net: number;
@@ -368,6 +369,10 @@ function Legend() {
         Bill due
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ width: 8, height: 3, background: "var(--ft-amber)", display: "inline-block", borderRadius: 1 }} />
+        Subscription
+      </span>
+      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <span style={{ width: 8, height: 3, background: "var(--ft-accent)", display: "inline-block", borderRadius: 1 }} />
         Event
       </span>
@@ -405,7 +410,7 @@ function EventForm({
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: 16, marginBottom: 12 }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Add Event</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+      <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
         <div style={{ gridColumn: "1 / -1" }}>
           <label style={lbl}>Title</label>
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Event title" style={inp} />
@@ -596,7 +601,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
       </div>
 
       {(data.totalIncome > 0 || data.totalExpenses > 0) && (
-        <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+        <div className="ft-three-col" style={{ padding: "8px 12px", borderBottom: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
           {[
             { label: "In", value: data.totalIncome, color: "var(--ft-green)" },
             { label: "Out", value: data.totalExpenses, color: "var(--ft-red)" },
@@ -686,7 +691,26 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
         </div>
       )}
 
-      {data.transactions.length === 0 && data.upcoming.length === 0 && feedEvents.length === 0 && customEvents.length === 0 && (
+      {/* Subscriptions due */}
+      {data.subscriptions.length > 0 && (
+        <div style={{ padding: "6px 0" }}>
+          <div style={{ padding: "4px 12px", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Subscriptions Due</div>
+          {data.subscriptions.map((sub) => (
+            <div key={sub.id} style={{ padding: "5px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ft-amber)", flexShrink: 0, display: "inline-block" }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
+                <div style={{ fontSize: 8, color: "var(--ft-dim)" }}>{sub.frequency} · {sub.category}</div>
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 600, color: "var(--ft-amber)", flexShrink: 0 }}>
+                {formatGbp(sub.amount)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {data.transactions.length === 0 && data.upcoming.length === 0 && data.subscriptions.length === 0 && feedEvents.length === 0 && customEvents.length === 0 && (
         <div style={{ padding: "16px 12px", fontSize: 10, color: "var(--ft-dim)", textAlign: "center" }}>No activity this day</div>
       )}
     </div>
@@ -756,7 +780,8 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
           const expenseCount = data?.transactions.filter((t) => t.type === "expense").length ?? 0;
           const billCount = data?.upcoming.length ?? 0;
           const paidBillCount = data?.upcoming.filter((u) => u.status === "paid").length ?? 0;
-          const hasActivity = !!(data || feedEvs.length > 0 || custEvs.length > 0);
+          const subCount = data?.subscriptions.length ?? 0;
+          const hasActivity = !!(data || feedEvs.length > 0 || custEvs.length > 0 || subCount > 0);
 
           return (
             <div
@@ -809,6 +834,11 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
                 <div key={i} style={{ height: 3, background: ev.color, borderRadius: 1, marginBottom: 2 }} title={ev.title} />
               ))}
 
+              {/* Subscription due bars */}
+              {subCount > 0 && (data?.subscriptions ?? []).slice(0, 2).map((sub) => (
+                <div key={sub.id} style={{ height: 3, background: "var(--ft-amber)", borderRadius: 1, marginBottom: 2, opacity: 0.9 }} title={`${sub.name} — ${formatGbp(sub.amount)}`} />
+              ))}
+
               {/* Transaction dots */}
               {(incomeCount > 0 || expenseCount > 0) && (
                 <div style={{ display: "flex", gap: 2, flexWrap: "wrap", marginBottom: 2, marginTop: 1 }}>
@@ -855,7 +885,7 @@ function SummaryStrip({ transactions, upcoming, year, month }: { transactions: T
   const billsPending = monthBills.filter((u) => u.status === "pending").length;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", border: "1px solid var(--ft-border)", borderTop: "none", background: "var(--ft-surface)" }}>
+    <div className="ft-five-col" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", border: "1px solid var(--ft-border)", borderTop: "none", background: "var(--ft-surface)" }}>
       {[
         { label: "Income", value: formatGbp(income), color: "var(--ft-green)" },
         { label: "Expenses", value: formatGbp(expenses), color: "var(--ft-red)" },
@@ -891,11 +921,18 @@ export default function CalendarPage() {
 
   const { data: transactions = [] } = useListTransactions({});
   const { data: upcoming = [] } = useListUpcoming();
+  const { data: rawSubscriptions = [] } = useListSubscriptions();
+
+  // Only active subscriptions with a nextDue date
+  const activeSubscriptions = useMemo(
+    () => rawSubscriptions.filter((s) => s.active && s.nextDue),
+    [rawSubscriptions]
+  );
 
   const dayMap = useMemo(() => {
     const map = new Map<string, DayTransactions>();
     const ensureDay = (ds: string) => {
-      if (!map.has(ds)) map.set(ds, { transactions: [], upcoming: [], totalIncome: 0, totalExpenses: 0, net: 0 });
+      if (!map.has(ds)) map.set(ds, { transactions: [], upcoming: [], subscriptions: [], totalIncome: 0, totalExpenses: 0, net: 0 });
       return map.get(ds)!;
     };
     for (const tx of transactions) {
@@ -906,8 +943,11 @@ export default function CalendarPage() {
       d.net = d.totalIncome - d.totalExpenses;
     }
     for (const item of upcoming) { ensureDay(item.dueDate).upcoming.push(item); }
+    for (const sub of activeSubscriptions) {
+      if (sub.nextDue) ensureDay(sub.nextDue).subscriptions.push(sub);
+    }
     return map;
-  }, [transactions, upcoming]);
+  }, [transactions, upcoming, activeSubscriptions]);
 
   // Build feed event map
   const feedEventMap = useMemo(() => {
@@ -989,10 +1029,10 @@ export default function CalendarPage() {
     downloadICS(buildICS(allEvs), `finance-tracker-${year}-${String(month + 1).padStart(2, "0")}.ics`);
   }
 
-  const selectedData = selectedDate ? dayMap.get(selectedDate) ?? { transactions: [], upcoming: [], totalIncome: 0, totalExpenses: 0, net: 0 } : null;
+  const selectedData = selectedDate ? dayMap.get(selectedDate) ?? { transactions: [], upcoming: [], subscriptions: [], totalIncome: 0, totalExpenses: 0, net: 0 } : null;
   const selectedFeedEvs = selectedDate ? (feedEventMap.get(selectedDate) ?? []) : [];
   const selectedCustomEvs = selectedDate ? (customEventMap.get(selectedDate) ?? []) : [];
-  const hasSelectedActivity = selectedData && (selectedData.transactions.length > 0 || selectedData.upcoming.length > 0 || selectedFeedEvs.length > 0 || selectedCustomEvs.length > 0);
+  const hasSelectedActivity = selectedData && (selectedData.transactions.length > 0 || selectedData.upcoming.length > 0 || selectedData.subscriptions.length > 0 || selectedFeedEvs.length > 0 || selectedCustomEvs.length > 0);
 
   return (
     <div>
@@ -1083,7 +1123,7 @@ export default function CalendarPage() {
           <div style={{ flexShrink: 0 }}>
             <DayDetailPanel
               dateStr={selectedDate}
-              data={selectedData ?? { transactions: [], upcoming: [], totalIncome: 0, totalExpenses: 0, net: 0 }}
+              data={selectedData ?? { transactions: [], upcoming: [], subscriptions: [], totalIncome: 0, totalExpenses: 0, net: 0 }}
               feedEvents={selectedFeedEvs}
               customEvents={selectedCustomEvs}
               onClose={() => setSelectedDate(null)}

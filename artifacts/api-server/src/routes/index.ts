@@ -10,9 +10,17 @@ import dashboardRouter from "./dashboard";
 import debtsRouter from "./debts";
 import settingsRouter from "./settings";
 import aiRouter from "./ai";
+import budgetsRouter from "./budgets";
+import goalsRouter from "./goals";
+import subscriptionsRouter from "./subscriptions";
+import exportRouter from "./export";
 
 const router: IRouter = Router();
 
+router.use(budgetsRouter);
+router.use(goalsRouter);
+router.use(subscriptionsRouter);
+router.use(exportRouter);
 router.use(dashboardRouter);
 router.use(accountsRouter);
 router.use(transactionsRouter);
