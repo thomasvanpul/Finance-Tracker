@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type ChangeEvent } from "react";
 import {
   useCreateTransaction,
   useListAccounts,
@@ -60,8 +60,26 @@ function buildInitialState() {
   };
 }
 
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // result is "data:<mime>;base64,<data>" — strip the prefix
+      const base64 = result.split(",")[1] ?? "";
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function QuickAddTransaction({ open, onClose }: Props) {
   const [form, setForm] = useState(buildInitialState);
+  const [scanState, setScanState] = useState<"idle" | "scanning" | "error">("idle");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
   const createTransaction = useCreateTransaction();
@@ -98,6 +116,49 @@ export function QuickAddTransaction({ open, onClose }: Props) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   });
+
+  const handleFileChange = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input so the same file can be re-selected if needed
+    e.target.value = "";
+
+    setScanState("scanning");
+    try {
+      const imageBase64 = await readFileAsBase64(file);
+      const response = await fetch(`${API_BASE}/api/ai/receipt-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64, mimeType: file.type }),
+      });
+
+      if (!response.ok) {
+        setScanState("error");
+        return;
+      }
+
+      const data = (await response.json()) as {
+        merchant?: string;
+        amount?: number;
+        date?: string;
+        category?: string;
+        currency?: string;
+      };
+
+      setForm((f) => ({
+        ...f,
+        description: data.merchant ?? f.description,
+        amount: data.amount != null ? String(data.amount) : f.amount,
+        date: data.date ?? f.date,
+        category: data.category ?? f.category,
+        currency: data.currency ?? f.currency,
+      }));
+      setScanState("idle");
+    } catch {
+      setScanState("error");
+    }
+  }, []);
 
   const handleSubmit = async () => {
     if (!form.amount || !form.accountId) {
@@ -206,7 +267,58 @@ export function QuickAddTransaction({ open, onClose }: Props) {
           </button>
         </div>
 
+        {/* Hidden file input for receipt scanning */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+        />
+
         <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Scan Receipt button */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setScanState("idle");
+                fileInputRef.current?.click();
+              }}
+              disabled={scanState === "scanning"}
+              style={{
+                background: "none",
+                border: "1px solid var(--ft-border)",
+                color: scanState === "scanning" ? "var(--ft-dim)" : "var(--ft-muted)",
+                fontSize: 10,
+                fontFamily: "var(--font-mono)",
+                padding: "4px 10px",
+                cursor: scanState === "scanning" ? "not-allowed" : "pointer",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <span style={{ fontSize: 12 }}>📷</span>
+              {scanState === "scanning" ? "Scanning…" : "Scan Receipt"}
+            </button>
+            {scanState === "error" && (
+              <span
+                style={{
+                  fontSize: 10,
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--ft-red)",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                Could not read receipt
+              </span>
+            )}
+          </div>
+
           <div>
             <div
               style={{

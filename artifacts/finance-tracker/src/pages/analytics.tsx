@@ -649,7 +649,231 @@ function CategoryIntelligence({ expenses, range, onCategoryClick }: CategoryInte
   );
 }
 
-// Section 5: Spending heatmap
+// Section 5a: Calendar heatmap — daily spend intensity for a selected month
+const CAL_MONTH_NAMES = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
+];
+
+function intensityColor(amount: number): string {
+  if (amount === 0) return "var(--ft-surface)";
+  if (amount < 25) return "rgba(34,197,94,0.20)";
+  if (amount < 75) return "rgba(245,158,11,0.40)";
+  if (amount < 150) return "rgba(239,68,68,0.50)";
+  return "rgba(239,68,68,0.85)";
+}
+
+interface HeatmapDay {
+  day: number;
+  date: string;
+  total: number;
+  txs: Tx[];
+}
+
+function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth()); // 0-indexed
+  const [tooltip, setTooltip] = useState<{ day: HeatmapDay; x: number; y: number } | null>(null);
+
+  const navigateMonth = (delta: number) => {
+    let m = month + delta;
+    let y = year;
+    if (m < 0) { m = 11; y -= 1; }
+    if (m > 11) { m = 0; y += 1; }
+    setMonth(m);
+    setYear(y);
+    setTooltip(null);
+  };
+
+  const days = useMemo<HeatmapDay[]>(() => {
+    const ym = `${y}-${String(m + 1).padStart(2, "0")}`;
+    // Filter expenses for this month
+    const monthTxs = expenses.filter(t => t.date.startsWith(ym));
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const result: HeatmapDay[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${ym}-${String(d).padStart(2, "0")}`;
+      const txs = monthTxs.filter(t => t.date === dateStr);
+      result.push({ day: d, date: dateStr, total: txs.reduce((s, t) => s + t.gbpValue, 0), txs });
+    }
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expenses, year, month]);
+
+  // Capture current y/m in memos
+  const y = year;
+  const m = month;
+
+  // First day of month: 0=Sun,1=Mon,... convert to Mon-first (0=Mon,6=Sun)
+  const firstDOW = (() => {
+    const d = new Date(y, m, 1).getDay();
+    return d === 0 ? 6 : d - 1;
+  })();
+
+  // Build a 6-row × 7-col grid
+  const gridCells: (HeatmapDay | null)[] = [];
+  for (let i = 0; i < firstDOW; i++) gridCells.push(null);
+  for (const d of days) gridCells.push(d);
+  // Pad to fill last row
+  while (gridCells.length % 7 !== 0) gridCells.push(null);
+
+  const rows: (HeatmapDay | null)[][] = [];
+  for (let i = 0; i < gridCells.length; i += 7) rows.push(gridCells.slice(i, i + 7));
+
+  const CELL_W = 46;
+  const CELL_H = 46;
+
+  return (
+    <div style={card}>
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <div>
+          <div style={secTitle}>DAILY SPEND HEATMAP</div>
+          <div style={secSub}>Spending intensity by day · {CAL_MONTH_NAMES[m]} {y}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button
+            onClick={() => navigateMonth(-1)}
+            style={{ ...mono, background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", cursor: "pointer", padding: "3px 8px", fontSize: 12, lineHeight: 1 }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-muted)"; }}
+          >
+            ‹
+          </button>
+          <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)", minWidth: 110, textAlign: "center" }}>
+            {CAL_MONTH_NAMES[m].toUpperCase()} {y}
+          </span>
+          <button
+            onClick={() => navigateMonth(1)}
+            style={{ ...mono, background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", cursor: "pointer", padding: "3px 8px", fontSize: 12, lineHeight: 1 }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-muted)"; }}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+
+      {/* Day-of-week headers */}
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(7, ${CELL_W}px)`, gap: 2, marginBottom: 2 }}>
+        {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d => (
+          <div key={d} style={{ ...label, textAlign: "center", fontSize: 8, padding: "2px 0" }}>{d}</div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div style={{ position: "relative" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {rows.map((row, ri) => (
+            <div key={ri} style={{ display: "grid", gridTemplateColumns: `repeat(7, ${CELL_W}px)`, gap: 2 }}>
+              {row.map((cell, ci) => {
+                if (!cell) {
+                  return <div key={ci} style={{ width: CELL_W, height: CELL_H, background: "transparent" }} />;
+                }
+                const bg = intensityColor(cell.total);
+                const isToday = cell.date === now.toISOString().slice(0, 10);
+                return (
+                  <div
+                    key={ci}
+                    onMouseEnter={e => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const parent = e.currentTarget.closest<HTMLElement>("[data-heatmap-root]");
+                      const parentRect = parent?.getBoundingClientRect() ?? rect;
+                      setTooltip({ day: cell, x: rect.left - parentRect.left + CELL_W / 2, y: rect.top - parentRect.top });
+                    }}
+                    onMouseLeave={() => setTooltip(null)}
+                    style={{
+                      width: CELL_W,
+                      height: CELL_H,
+                      background: bg,
+                      border: isToday ? "1px solid var(--ft-accent)" : "1px solid rgba(255,255,255,0.05)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: cell.txs.length > 0 ? "pointer" : "default",
+                      gap: 1,
+                    }}
+                  >
+                    <span style={{ ...mono, fontSize: 9, color: cell.total > 75 ? "rgba(255,255,255,0.9)" : "var(--ft-dim)", lineHeight: 1 }}>
+                      {cell.day}
+                    </span>
+                    {cell.total > 0 && (
+                      <span style={{ ...mono, fontSize: 8, fontWeight: 700, color: cell.total > 75 ? "rgba(255,255,255,0.95)" : "var(--ft-muted)", lineHeight: 1 }}>
+                        £{Math.round(cell.total)}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Tooltip */}
+        {tooltip && tooltip.day.txs.length > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              left: tooltip.x,
+              top: tooltip.y - 8,
+              transform: "translate(-50%, -100%)",
+              background: "var(--ft-raised)",
+              border: "1px solid var(--ft-border)",
+              padding: "8px 10px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              zIndex: 50,
+              pointerEvents: "none",
+              minWidth: 160,
+              maxWidth: 240,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 5, letterSpacing: "0.06em" }}>
+              {tooltip.day.date} · {formatGbp(tooltip.day.total)}
+            </div>
+            {tooltip.day.txs.slice(0, 5).map(t => (
+              <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
+                <span style={{ color: "var(--ft-muted)", fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
+                  {t.description || t.category || "—"}
+                </span>
+                <span style={{ color: "var(--ft-red)", fontWeight: 700, fontSize: 9, flexShrink: 0 }}>
+                  {formatGbp(t.gbpValue)}
+                </span>
+              </div>
+            ))}
+            {tooltip.day.txs.length > 5 && (
+              <div style={{ color: "var(--ft-dim)", fontSize: 8, marginTop: 3 }}>
+                +{tooltip.day.txs.length - 5} more
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+        <span style={{ ...label, fontSize: 8 }}>Intensity:</span>
+        {[
+          { color: intensityColor(0), label: "None" },
+          { color: intensityColor(10), label: "<£25" },
+          { color: intensityColor(50), label: "£25-75" },
+          { color: intensityColor(100), label: "£75-150" },
+          { color: intensityColor(200), label: "£150+" },
+        ].map(l => (
+          <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ width: 10, height: 10, background: l.color, border: "1px solid rgba(255,255,255,0.08)" }} />
+            <span style={{ ...label, fontSize: 8 }}>{l.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Section 5b: Spending heatmap (day-of-week × week-of-month, all-time)
 function SpendingHeatmap({ expenses }: { expenses: Tx[] }) {
   const WEEK_LABELS = ["Wk 1","Wk 2","Wk 3","Wk 4","Wk 5"];
   const heatmap = useMemo(() => {
@@ -1050,6 +1274,11 @@ export default function Analytics() {
         range={range}
         onCategoryClick={(cat) => setDrillCategory(cat)}
       />
+
+      {/* Section 4.5: Calendar heatmap */}
+      <div data-heatmap-root="" style={{ position: "relative" }}>
+        <CalendarHeatmap expenses={expenses} />
+      </div>
 
       {/* Sections 5 + 6 side by side */}
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 0 }}>

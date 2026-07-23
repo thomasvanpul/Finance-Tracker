@@ -39,6 +39,8 @@ import Recurring from "@/pages/recurring";
 import Learn from "@/pages/learn";
 import AiCoach from "@/pages/ai-coach";
 import Fire from "@/pages/fire";
+import Pension from "@/pages/pension";
+import Calculators from "@/pages/calculators";
 import { PageTransitionOverlay } from "@/components/page-transition";
 const queryClient = new QueryClient();
 
@@ -85,6 +87,8 @@ function Router() {
         <Route path="/net-worth" component={NetWorthHistory} />
         <Route path="/whatif" component={WhatIf} />
         <Route path="/fire" component={Fire} />
+        <Route path="/pension" component={Pension} />
+        <Route path="/calculators" component={Calculators} />
         <Route path="/subscriptions" component={Subscriptions} />
         <Route path="/tax" component={Tax} />
         <Route path="/mortgage" component={Mortgage} />

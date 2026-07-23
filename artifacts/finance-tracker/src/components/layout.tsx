@@ -88,13 +88,11 @@ const SECONDARY_NAV_SECTIONS = [
   {
     label: "TOOLS",
     items: [
-      { href: "/recurring",  label: "Recurring",   code: "G·U" },
-      { href: "/whatif",     label: "Calculators", code: "G·F" },
-      { href: "/mortgage",   label: "Mortgage",    code: "G·M" },
-      { href: "/fire",       label: "FIRE Calc",   code: "G·0" },
-      { href: "/wardrobe",   label: "Wardrobe",    code: "G·Z" },
-      { href: "/import",     label: "Import",      code: "G·J" },
-      { href: "/learn",      label: "Learn",       code: "G·Q" },
+      { href: "/recurring",    label: "Recurring",    code: "G·U" },
+      { href: "/calculators",  label: "Calculators",  code: "G·F" },
+      { href: "/wardrobe",     label: "Wardrobe",     code: "G·Z" },
+      { href: "/import",       label: "Import",       code: "G·J" },
+      { href: "/learn",        label: "Learn",        code: "G·Q" },
     ],
   },
 ];
@@ -119,12 +117,13 @@ const G_KEY_MAP: Record<string, string> = {
   u: "/recurring", o: "/owing", i: "/investments",
   l: "/goals", n: "/analytics", b: "/budget",
   x: "/split", c: "/subscriptions", w: "/net-worth",
-  m: "/mortgage", y: "/tax", h: "/health-score",
-  f: "/whatif", k: "/calendar",
+  y: "/tax", h: "/health-score",
+  f: "/calculators", k: "/calendar",
   s: "/settings", q: "/learn",
   v: "/cashflow", e: "/year-review", j: "/import",
   g: "/ai-coach", z: "/wardrobe",
-  "0": "/fire",
+  // Power-user shortcuts for individual calc pages (not shown in sidebar)
+  m: "/mortgage", p: "/pension", "0": "/fire",
 };
 
 

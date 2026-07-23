@@ -142,6 +142,99 @@ function SavingsRateKpi() {
   );
 }
 
+// ── Emergency Fund Widget ──────────────────────────────────────────────────────
+
+function EmergencyFundWidget() {
+  const { data: accounts } = useListAccounts({});
+  const { data: allTxs } = useListTransactions({});
+
+  // Sum all accounts as liquid savings (the Account schema has no type field)
+  const liquidSavings = useMemo(() => {
+    return (accounts ?? []).reduce((s, a) => s + a.gbpEquivalent, 0);
+  }, [accounts]);
+
+  const avgMonthlyExpenses = useMemo(() => {
+    const txs = (allTxs ?? []) as { type: string; gbpValue: number; date: string }[];
+    const expenses = txs.filter(t => t.type === "expense");
+    if (expenses.length === 0) return 0;
+
+    // Last 3 calendar months
+    const now = new Date();
+    const monthTotals: number[] = [];
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const total = expenses
+        .filter(t => t.date.startsWith(ym))
+        .reduce((s, t) => s + t.gbpValue, 0);
+      monthTotals.push(total);
+    }
+    const nonZero = monthTotals.filter(v => v > 0);
+    if (nonZero.length === 0) return 0;
+    return nonZero.reduce((s, v) => s + v, 0) / nonZero.length;
+  }, [allTxs]);
+
+  const monthsCovered = avgMonthlyExpenses > 0 ? liquidSavings / avgMonthlyExpenses : 0;
+  const TARGET_MONTHS = 6;
+  const pct = Math.min(100, (monthsCovered / TARGET_MONTHS) * 100);
+
+  const valueColor =
+    monthsCovered < 3 ? "var(--ft-red)" :
+    monthsCovered < 6 ? "var(--ft-amber)" :
+    "var(--ft-green)";
+
+  const barColor = valueColor;
+
+  if (accounts === undefined) return null;
+
+  return (
+    <div style={{
+      background: "var(--ft-surface)",
+      border: "1px solid var(--ft-border)",
+      borderLeft: `2px solid ${barColor}`,
+      padding: "8px 14px",
+      marginBottom: 10,
+      display: "flex",
+      alignItems: "center",
+      gap: 14,
+      flexWrap: "wrap" as const,
+    }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-dim)", flexShrink: 0 }}>
+        Emergency Fund
+      </div>
+      <div style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 18,
+        fontWeight: 700,
+        color: valueColor,
+        lineHeight: 1,
+        flexShrink: 0,
+        letterSpacing: "-0.02em",
+      }}>
+        {monthsCovered > 0 ? `${monthsCovered.toFixed(1)}mo` : "—"}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 180 }}>
+        {/* Progress bar toward 6-month target */}
+        <div style={{ flex: 1, height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
+          <div style={{
+            height: "100%",
+            width: `${pct}%`,
+            background: barColor,
+            transition: "width 0.4s ease",
+          }} />
+        </div>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" as const }}>
+          / {TARGET_MONTHS}mo target
+        </span>
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" as const }}>
+        {formatGbp(liquidSavings)} liquid
+        {avgMonthlyExpenses > 0 && ` · ${formatGbp(avgMonthlyExpenses)}/mo avg`}
+      </div>
+    </div>
+  );
+}
+
 const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<{ isExpanded?: boolean }>> = {
   "net-worth": NetWorthWidget,
   "accounts-summary": AccountsSummaryWidget,
@@ -864,6 +957,9 @@ export default function Dashboard() {
 
       {/* Savings rate KPI */}
       <SavingsRateKpi />
+
+      {/* Emergency fund widget */}
+      <EmergencyFundWidget />
 
       {enabledIds.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "60px 0" }}>

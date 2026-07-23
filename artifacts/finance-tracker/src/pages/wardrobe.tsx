@@ -43,14 +43,55 @@ export default function Wardrobe() {
     return () => clearInterval(id);
   }, [autoPlay]);
 
+  // ── Unlock criteria (localStorage-based) ─────────────────────────────────────
+  // COMMON  : always unlocked
+  // EPIC    : unlock when the user has done basic setup (onboarding complete)
+  //           or has connected a crypto wallet / set a savings target
+  // LEGENDARY: unlock when the user has evidence of real ongoing usage
+  //           (rebalance targets set + savings target + budget rollover configured)
+
+  const achievements = (() => {
+    try {
+      const raw = localStorage.getItem("ft-achievements");
+      return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    } catch { return {}; }
+  })();
+
+  const isOnboardingComplete = !!localStorage.getItem("ft-onboarding-complete");
+  const hasSavingsTarget    = !!localStorage.getItem("ft-savings-target");
+  const hasCryptoWallet     = (() => {
+    try {
+      const raw = localStorage.getItem("ft-crypto-wallets");
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.length > 0 : false;
+    } catch { return false; }
+  })();
+  const hasRebalanceTargets = (() => {
+    try {
+      const raw = localStorage.getItem("ft-rebalance-targets");
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return Object.keys(parsed).length > 0;
+    } catch { return false; }
+  })();
+  const hasBudgetRollover = !!localStorage.getItem("ft-budget-rollover");
+
+  const epicUnlocked = isOnboardingComplete || hasSavingsTarget || hasCryptoWallet || achievements["epic_unlock"] === true;
+  const legendaryUnlocked = epicUnlocked && hasRebalanceTargets && hasBudgetRollover || achievements["legendary_unlock"] === true;
+
+  function isUnlocked(skin: typeof SKINS[0]): boolean {
+    if (skin.rarity === "COMMON") return true;
+    if (skin.rarity === "EPIC") return epicUnlocked;
+    if (skin.rarity === "LEGENDARY") return legendaryUnlocked;
+    return false;
+  }
+
   function selectSkin(skin: typeof SKINS[0]) {
+    if (!isUnlocked(skin)) return;
     setActiveSkin(skin.id);
     setBotSkin(skin.id);
     window.dispatchEvent(new CustomEvent("bot-skin-change", { detail: skin.id }));
-  }
-
-  function isUnlocked(_skin: typeof SKINS[0]) {
-    return true;
   }
 
   return (
@@ -391,6 +432,24 @@ export default function Wardrobe() {
                           ↳ Pairs with <strong style={{ color: rarityCol }}>{skin.requiredTheme.toUpperCase()}</strong> theme for full effects
                         </div>
                       )}
+
+                      {/* Unlock hint for locked skins */}
+                      {!unlocked && (
+                        <div style={{
+                          marginTop: 8,
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 8,
+                          color: "var(--ft-dim)",
+                          letterSpacing: "0.06em",
+                          padding: "4px 6px",
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid var(--ft-border)",
+                        }}>
+                          {skin.rarity === "EPIC"
+                            ? "UNLOCK: Complete onboarding, set a savings target, or add a crypto wallet"
+                            : "UNLOCK: Complete Epic requirements + configure rebalance targets & budget rollover"}
+                        </div>
+                      )}
                     </div>
 
                     {/* Equip radio */}
@@ -428,8 +487,9 @@ export default function Wardrobe() {
               letterSpacing: "0.06em",
               lineHeight: 1.6,
             }}>
-              <span style={{ color: "var(--ft-accent)" }}>TIP</span> — All skins are available to equip freely.
-              For the full experience, pair Epic and Legendary skins with their matching theme via Settings → Appearance.
+              <span style={{ color: "var(--ft-accent)" }}>TIP</span> — Common skins are always unlocked.
+              Epic skins unlock via basic setup (onboarding / savings target / crypto wallet).
+              Legendary skins require full app engagement. Pair unlocked skins with their matching theme via Settings → Appearance.
             </div>
           </div>
         </div>

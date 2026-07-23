@@ -99,6 +99,120 @@ router.get("/ai/status", (_req, res): void => {
   res.json({ available: !!process.env.GEMINI_API_KEY });
 });
 
+// ── Receipt scanning ──────────────────────────────────────────────────────────
+
+const RECEIPT_CATEGORIES = [
+  "Food & Drink",
+  "Transport",
+  "Shopping",
+  "Entertainment",
+  "Bills & Utilities",
+  "Health",
+  "Travel",
+  "Other",
+] as const;
+
+type ReceiptCategory = (typeof RECEIPT_CATEGORIES)[number];
+
+interface ReceiptScanResult {
+  merchant: string;
+  amount: number;
+  date: string;
+  category: ReceiptCategory;
+  currency: string;
+}
+
+router.post("/ai/receipt-scan", async (req, res): Promise<void> => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    res.status(503).json({ error: "AI assistant is not configured on this server." });
+    return;
+  }
+
+  const { imageBase64, mimeType } = req.body as {
+    imageBase64?: string;
+    mimeType?: string;
+  };
+
+  if (!imageBase64 || typeof imageBase64 !== "string" || imageBase64.length === 0) {
+    res.status(400).json({ error: "imageBase64 is required" });
+    return;
+  }
+
+  const safeMimeType = typeof mimeType === "string" && mimeType.length > 0 ? mimeType : "image/jpeg";
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { inline_data: { mime_type: safeMimeType, data: imageBase64 } },
+                {
+                  text: 'Extract from this receipt: merchant name, total amount (number only), date (YYYY-MM-DD format), category (one of: Food & Drink, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Other), currency code. Return ONLY valid JSON: {"merchant": "...", "amount": 0.00, "date": "...", "category": "...", "currency": "GBP"}',
+                },
+              ],
+            },
+          ],
+          generationConfig: { maxOutputTokens: 512, temperature: 0.1 },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const err = await response.text();
+      res.status(502).json({ error: `Gemini API error: ${response.status}`, detail: err });
+      return;
+    }
+
+    const data = (await response.json()) as {
+      candidates?: Array<{ content: { parts: Array<{ text: string }> } }>;
+      error?: { message: string };
+    };
+
+    if (data.error) {
+      res.status(502).json({ error: data.error.message });
+      return;
+    }
+
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+    // Strip markdown code fences if Gemini wraps the JSON
+    const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+
+    let result: ReceiptScanResult;
+    try {
+      const parsed = JSON.parse(cleaned) as Record<string, unknown>;
+
+      const merchant = typeof parsed.merchant === "string" ? parsed.merchant : "Unknown";
+      const amount = typeof parsed.amount === "number" ? parsed.amount : parseFloat(String(parsed.amount ?? 0)) || 0;
+      const date = typeof parsed.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date)
+        ? parsed.date
+        : new Date().toISOString().slice(0, 10);
+      const rawCategory = typeof parsed.category === "string" ? parsed.category : "Other";
+      const category: ReceiptCategory = (RECEIPT_CATEGORIES as readonly string[]).includes(rawCategory)
+        ? (rawCategory as ReceiptCategory)
+        : "Other";
+      const currency = typeof parsed.currency === "string" && parsed.currency.length === 3
+        ? parsed.currency.toUpperCase()
+        : "GBP";
+
+      result = { merchant, amount, date, category, currency };
+    } catch {
+      res.status(500).json({ error: "Failed to parse AI response", raw: rawText.slice(0, 500) });
+      return;
+    }
+
+    res.json(result);
+  } catch {
+    res.status(500).json({ error: "Failed to reach AI service" });
+  }
+});
+
 // ── Batch auto-categorize ─────────────────────────────────────────────────────
 
 const AI_CATEGORIES = [

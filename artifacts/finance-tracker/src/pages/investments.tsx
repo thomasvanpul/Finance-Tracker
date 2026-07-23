@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Plus, Trash2, Edit2, TrendingUp, Star, X, Maximize2 } from "lucide-react";
+import { AlertCircle, Plus, Trash2, Edit2, TrendingUp, Star, X, Maximize2, Bell } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
@@ -68,7 +68,26 @@ const ASSET_CLASSES: AssetClass[] = ["ETF", "Stock", "Bond", "Crypto", "Cash", "
 const LS_CLASSES_KEY = "ft-inv-classes";
 const LS_WATCHLISTS_KEY = "ft-watchlists";
 const LS_REBALANCE_KEY = "ft-rebalance-targets";
+const LS_ALERTS_KEY = "ft-price-alerts";
 type Watchlist = { id: string; name: string; tickers: string[] };
+
+// ── Price Alerts ──────────────────────────────────────────────────────────────
+interface PriceAlert {
+  id: string;
+  ticker: string;
+  targetPrice: number;
+  direction: "above" | "below";
+  triggered: boolean;
+  createdAt: string;
+}
+
+function readAlerts(): PriceAlert[] {
+  try { const r = localStorage.getItem(LS_ALERTS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+}
+
+function writeAlerts(alerts: PriceAlert[]): void {
+  try { localStorage.setItem(LS_ALERTS_KEY, JSON.stringify(alerts)); } catch { /* noop */ }
+}
 
 interface QuoteData {
   ticker: string;
@@ -1441,6 +1460,195 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
   );
 }
 
+// ── Price Alert Popover ────────────────────────────────────────────────────────
+
+interface PriceAlertPopoverProps {
+  ticker: string;
+  currentPrice: number;
+  alerts: PriceAlert[];
+  onAlertsChange: (alerts: PriceAlert[]) => void;
+}
+
+function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: PriceAlertPopoverProps) {
+  const [open, setOpen] = useState(false);
+  const [direction, setDirection] = useState<"above" | "below">("above");
+  const [targetInput, setTargetInput] = useState("");
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const existing = alerts.find((a) => a.ticker === ticker && !a.triggered);
+
+  useEffect(() => {
+    if (existing) {
+      setDirection(existing.direction);
+      setTargetInput(existing.targetPrice.toString());
+    } else {
+      setDirection("above");
+      setTargetInput("");
+    }
+  }, [existing, open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node) &&
+          buttonRef.current && !buttonRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const setAlert = () => {
+    const price = parseFloat(targetInput);
+    if (isNaN(price) || price <= 0) return;
+    const withoutOld = alerts.filter((a) => !(a.ticker === ticker && !a.triggered));
+    const newAlert: PriceAlert = {
+      id: `${ticker}-${Date.now()}`,
+      ticker,
+      targetPrice: price,
+      direction,
+      triggered: false,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...withoutOld, newAlert];
+    onAlertsChange(updated);
+    writeAlerts(updated);
+    setOpen(false);
+  };
+
+  const removeAlert = () => {
+    const updated = alerts.filter((a) => !(a.ticker === ticker && !a.triggered));
+    onAlertsChange(updated);
+    writeAlerts(updated);
+    setOpen(false);
+  };
+
+  const hasAlert = !!existing;
+
+  return (
+    <div style={{ position: "relative", display: "inline-flex" }}>
+      <button
+        ref={buttonRef}
+        onClick={() => setOpen((o) => !o)}
+        title={hasAlert ? `Alert: ${existing.direction} £${existing.targetPrice}` : "Set price alert"}
+        style={{
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          padding: "2px 3px",
+          display: "flex",
+          alignItems: "center",
+          color: hasAlert ? "var(--ft-amber)" : "var(--ft-dim)",
+          opacity: hasAlert ? 1 : 0.5,
+          transition: "opacity 0.15s, color 0.15s",
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = hasAlert ? "1" : "0.5"; }}
+      >
+        <Bell style={{ width: 13, height: 13 }} />
+      </button>
+
+      {open && createPortal(
+        <div
+          ref={popoverRef}
+          style={{
+            position: "fixed",
+            zIndex: 9999,
+            background: "var(--ft-surface)",
+            border: "1px solid var(--ft-border2)",
+            padding: "14px 16px",
+            width: 240,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+            top: (() => {
+              const rect = buttonRef.current?.getBoundingClientRect();
+              return rect ? rect.bottom + 6 : 100;
+            })(),
+            left: (() => {
+              const rect = buttonRef.current?.getBoundingClientRect();
+              return rect ? Math.min(rect.left, window.innerWidth - 256) : 100;
+            })(),
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", marginBottom: 10 }}>
+            ALERT · {ticker}
+          </div>
+
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 6 }}>
+            CURRENT: <span style={{ color: "var(--ft-text)" }}>£{currentPrice.toFixed(2)}</span>
+          </div>
+
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 5 }}>ALERT WHEN PRICE GOES:</div>
+            <div style={{ display: "flex", gap: 0, border: "1px solid var(--ft-border2)" }}>
+              {(["above", "below"] as const).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDirection(d)}
+                  style={{
+                    flex: 1, padding: "5px 8px", fontSize: 10, fontWeight: 600,
+                    fontFamily: "var(--font-mono)", letterSpacing: "0.06em", border: "none",
+                    cursor: "pointer", textTransform: "uppercase",
+                    background: direction === d ? (d === "above" ? "rgba(63,185,80,0.18)" : "rgba(248,81,73,0.18)") : "transparent",
+                    color: direction === d ? (d === "above" ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-dim)",
+                    transition: "all 0.1s",
+                  }}
+                >{d}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>TARGET PRICE (£)</div>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={targetInput}
+              onChange={(e) => setTargetInput(e.target.value)}
+              placeholder="e.g. 150.00"
+              style={{
+                width: "100%", fontFamily: "var(--font-mono)", fontSize: 12,
+                background: "var(--ft-raised)", border: "1px solid var(--ft-border2)",
+                color: "var(--ft-text)", padding: "5px 8px", outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", gap: 6 }}>
+            <button
+              onClick={setAlert}
+              style={{
+                flex: 1, padding: "6px 10px", fontSize: 10, fontWeight: 700,
+                fontFamily: "var(--font-mono)", letterSpacing: "0.06em", cursor: "pointer",
+                background: "var(--ft-amber)", color: "var(--ft-base)", border: "none",
+              }}
+            >
+              {existing ? "UPDATE" : "SET ALERT"}
+            </button>
+            {existing && (
+              <button
+                onClick={removeAlert}
+                style={{
+                  padding: "6px 10px", fontSize: 10, fontWeight: 700,
+                  fontFamily: "var(--font-mono)", letterSpacing: "0.06em", cursor: "pointer",
+                  background: "transparent", color: "var(--ft-red)",
+                  border: "1px solid var(--ft-red)",
+                }}
+              >
+                REMOVE
+              </button>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 // ── Rebalance Tab ─────────────────────────────────────────────────────────────
 
 function readRebalanceTargets(): Record<string, number> {
@@ -1740,6 +1948,9 @@ export default function Investments() {
   const [form, setForm] = useState<InvForm>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [classMap, setClassMap] = useState<Record<number, AssetClass>>(() => readClassMap());
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() => readAlerts());
+  const [triggeredAlerts, setTriggeredAlerts] = useState<PriceAlert[]>([]);
+  const [alertsBannerDismissed, setAlertsBannerDismissed] = useState(false);
 
   useEffect(() => { writeClassMap(classMap); }, [classMap]);
 
@@ -1857,6 +2068,34 @@ export default function Investments() {
       } catch { /* noop */ }
     }
   }, [summary?.totalValueGbp, investments?.length]);
+
+  // ── Check price alerts on load (once investments & quotes are available) ──
+  useEffect(() => {
+    if (!investments || investments.length === 0) return;
+    const alerts = readAlerts();
+    const nowTriggered: PriceAlert[] = [];
+    const updated = alerts.map((alert) => {
+      if (alert.triggered) return alert;
+      const inv = investments.find((i) => i.ticker === alert.ticker);
+      if (!inv) return alert;
+      const price = inv.livePrice;
+      const fired =
+        (alert.direction === "above" && price >= alert.targetPrice) ||
+        (alert.direction === "below" && price <= alert.targetPrice);
+      if (fired) {
+        nowTriggered.push({ ...alert, triggered: true });
+        return { ...alert, triggered: true };
+      }
+      return alert;
+    });
+    if (nowTriggered.length > 0) {
+      writeAlerts(updated);
+      setPriceAlerts(updated);
+      setTriggeredAlerts(nowTriggered);
+      setAlertsBannerDismissed(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [investments]);
 
   if (isLoading || isSummaryLoading) {
     return <div className="space-y-4"><Skeleton className="h-6 w-48" /><Skeleton className="h-8 w-full" /><Skeleton className="h-64 w-full" /></div>;
@@ -2041,6 +2280,46 @@ export default function Investments() {
           <AlertTitle>Failed to load investments</AlertTitle>
           <AlertDescription>{(error as Error)?.message ?? "Could not reach the server."}</AlertDescription>
         </Alert>
+      )}
+
+      {/* ── Triggered alerts banner ── */}
+      {triggeredAlerts.length > 0 && !alertsBannerDismissed && (
+        <div style={{
+          background: "rgba(245,158,11,0.08)",
+          border: "1px solid rgba(245,158,11,0.35)",
+          padding: "10px 14px",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 10,
+        }}>
+          <Bell style={{ width: 14, height: 14, color: "var(--ft-amber)", flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.08em", marginBottom: 5 }}>
+              PRICE ALERTS TRIGGERED
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {triggeredAlerts.map((a) => {
+                const inv = investments?.find((i) => i.ticker === a.ticker);
+                return (
+                  <div key={a.id} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>
+                    <span style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{a.ticker}</span>
+                    {" "}crossed {a.direction === "above" ? "above" : "below"}{" "}
+                    <span style={{ fontWeight: 700 }}>£{a.targetPrice.toFixed(2)}</span>
+                    {inv && (
+                      <span style={{ color: "var(--ft-dim)" }}> · current: £{inv.livePrice.toFixed(2)}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <button
+            onClick={() => setAlertsBannerDismissed(true)}
+            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: "0 2px" }}
+          >
+            <X style={{ width: 13, height: 13 }} />
+          </button>
+        </div>
       )}
 
       {/* Tabs */}
@@ -2241,7 +2520,7 @@ export default function Investments() {
             <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(96,165,250,0.08)", borderColor: "rgba(96,165,250,0.18)", color: "var(--ft-blue)" }}>▼ PORTFOLIO POSITIONS — Live Market Data ({getBaseCurrency()})</div>
             <div className="overflow-x-auto">
               <div className="flex" style={{ marginLeft: 36 }}>
-                {[["TICKER", "80px"], ["SECURITY NAME", "1"], ["SHARES", "80px"], ["COST/SHARE", "100px"], ["LIVE PRICE", "100px"], [`VALUE (${getBaseCurrency()})`, "110px"], ["GAIN / LOSS", "120px"], ["RETURN %", "100px"], ["ACTIONS", "80px"]].map(([h, w]) => (
+                {[["TICKER", "80px"], ["SECURITY NAME", "1"], ["SHARES", "80px"], ["COST/SHARE", "100px"], ["LIVE PRICE", "100px"], [`VALUE (${getBaseCurrency()})`, "110px"], ["GAIN / LOSS", "120px"], ["RETURN %", "100px"], ["ACTIONS", "104px"]].map(([h, w]) => (
                   <div key={h} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, textAlign: ["SHARES", "COST/SHARE", "LIVE PRICE", `VALUE (${getBaseCurrency()})`, "GAIN / LOSS", "RETURN %", "ACTIONS"].includes(h as string) ? "right" : "left" }}>{h}</div>
                 ))}
               </div>
@@ -2260,7 +2539,13 @@ export default function Investments() {
                       {inv.plPercent >= 0 ? "▲" : "▼"} {Math.abs(inv.plPercent).toFixed(2)}%
                     </span>
                   </div>
-                  <div style={{ width: 80, minWidth: 80, padding: "4px 6px", textAlign: "right", display: "flex", justifyContent: "flex-end", gap: 2 }}>
+                  <div style={{ width: 104, minWidth: 104, padding: "4px 6px", textAlign: "right", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2 }}>
+                    <PriceAlertPopover
+                      ticker={inv.ticker}
+                      currentPrice={inv.livePrice}
+                      alerts={priceAlerts}
+                      onAlertsChange={setPriceAlerts}
+                    />
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv.id)}><Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} /></Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(inv.id)}><Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} /></Button>
                   </div>
@@ -2280,7 +2565,7 @@ export default function Investments() {
                   <div style={{ width: 110, minWidth: 110, padding: "6px 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontWeight: 700, textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: 12 }}>{formatGbp(summary.totalValueGbp)}</div>
                   <div style={{ width: 120, minWidth: 120, padding: "6px 12px", borderRight: "1px solid var(--ft-border)", color: summary.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: 12 }}>{summary.totalPlGbp > 0 ? "+" : ""}{formatGbp(summary.totalPlGbp)}</div>
                   <div style={{ width: 100, minWidth: 100, padding: "6px 12px", borderRight: "1px solid var(--ft-border)", color: summary.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: 12 }}>{summary.totalPlPercent >= 0 ? "▲" : "▼"} {Math.abs(summary.totalPlPercent).toFixed(2)}%</div>
-                  <div style={{ width: 80, minWidth: 80 }} />
+                  <div style={{ width: 104, minWidth: 104 }} />
                 </div>
               )}
             </div>
@@ -2337,10 +2622,80 @@ export default function Investments() {
 
       {/* ─── REBALANCE TAB ─── */}
       {activeTab === "rebalance" && (
-        <RebalanceTab
-          classAllocData={classAllocData}
-          totalPortfolioValue={totalClassValue}
-        />
+        <div className="space-y-6">
+          <RebalanceTab
+            classAllocData={classAllocData}
+            totalPortfolioValue={totalClassValue}
+          />
+
+          {/* ── Price Alerts Management Panel ── */}
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <div style={{ padding: "8px 14px", background: "rgba(245,158,11,0.07)", borderBottom: "1px solid rgba(245,158,11,0.2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Bell style={{ width: 12, height: 12, color: "var(--ft-amber)" }} />
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em" }}>
+                  PRICE ALERTS
+                </span>
+              </div>
+              {priceAlerts.some((a) => a.triggered) && (
+                <button
+                  onClick={() => {
+                    const cleared = priceAlerts.filter((a) => !a.triggered);
+                    setPriceAlerts(cleared);
+                    writeAlerts(cleared);
+                  }}
+                  style={{
+                    fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                    background: "transparent", border: "1px solid var(--ft-border2)",
+                    color: "var(--ft-dim)", cursor: "pointer", padding: "3px 8px",
+                  }}
+                >
+                  CLEAR ALL TRIGGERED
+                </button>
+              )}
+            </div>
+
+            {priceAlerts.length === 0 ? (
+              <div style={{ padding: "20px 16px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+                No alerts set · use the bell icon next to any holding in the Portfolio tab
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <div style={{ display: "flex", background: "var(--ft-surface)" }}>
+                  {[["TICKER", "100px"], ["DIRECTION", "100px"], ["TARGET", "110px"], ["CURRENT", "110px"], ["STATUS", "100px"], ["CREATED", "1"]].map(([h, w]) => (
+                    <div key={h} style={{ ...TH, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, flex: w === "1" ? 1 : undefined }}>{h}</div>
+                  ))}
+                </div>
+                {priceAlerts.map((alert) => {
+                  const inv = investments?.find((i) => i.ticker === alert.ticker);
+                  const statusColor = alert.triggered ? "var(--ft-green)" : "var(--ft-amber)";
+                  return (
+                    <div key={alert.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px solid rgba(33,38,45,0.5)", background: alert.triggered ? "rgba(63,185,80,0.03)" : "var(--ft-base)" }}>
+                      <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-blue)" }}>
+                        {alert.ticker}
+                      </div>
+                      <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 11, color: alert.direction === "above" ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, textTransform: "uppercase" }}>
+                        {alert.direction === "above" ? "▲ Above" : "▼ Below"}
+                      </div>
+                      <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", textAlign: "right" }}>
+                        £{alert.targetPrice.toFixed(2)}
+                      </div>
+                      <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-muted)", textAlign: "right" }}>
+                        {inv ? `£${inv.livePrice.toFixed(2)}` : "—"}
+                      </div>
+                      <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: statusColor, letterSpacing: "0.06em" }}>
+                        {alert.triggered ? "TRIGGERED" : "ACTIVE"}
+                      </div>
+                      <div style={{ flex: 1, padding: "7px 12px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                        {alert.createdAt.slice(0, 10)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
     </div>

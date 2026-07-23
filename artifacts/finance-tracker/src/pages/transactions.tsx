@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Plus, Trash2, Edit2, Search, X, ArrowLeftRight, Save, FileText, Sparkles } from "lucide-react";
+import { AlertCircle, Plus, Trash2, Edit2, Search, X, ArrowLeftRight, Save, FileText, Sparkles, Tag } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import {
   Dialog,
@@ -272,6 +272,17 @@ export default function Transactions() {
   const [openNoteId, setOpenNoteId] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
 
+  // ── per-transaction tags (localStorage) ──────────────────────────────────
+  const [tags, setTags] = useState<Record<number, string[]>>(() => {
+    try {
+      const raw = localStorage.getItem("ft-tx-tags");
+      return raw ? (JSON.parse(raw) as Record<number, string[]>) : {};
+    } catch { return {}; }
+  });
+  const [openTagId, setOpenTagId] = useState<number | null>(null);
+  const [tagInput, setTagInput] = useState("");
+  const [filterTag, setFilterTag] = useState("");
+
   // ── merchant grouping ────────────────────────────────────────────────────
   const [groupByMerchant, setGroupByMerchant] = useState(false);
   const [expandedMerchants, setExpandedMerchants] = useState<Set<string>>(new Set());
@@ -307,13 +318,13 @@ export default function Transactions() {
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  const hasFilters = search || filterType !== "all" || filterCategory !== "all" || filterAccount !== "all" || filterDateFrom || filterDateTo || amountMin || amountMax;
+  const hasFilters = search || filterType !== "all" || filterCategory !== "all" || filterAccount !== "all" || filterDateFrom || filterDateTo || amountMin || amountMax || filterTag;
 
   // Reset pagination when filters change
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax]);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, filterTag]);
 
   // Reset row selection when filters change
-  useEffect(() => { setSelectedRowIndex(null); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, sortBy]);
+  useEffect(() => { setSelectedRowIndex(null); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, sortBy, filterTag]);
 
   // Scroll selected row into view
   useEffect(() => {
@@ -342,6 +353,11 @@ export default function Transactions() {
         const acct = (tx.accountName ?? "").toLowerCase();
         if (!desc.includes(q) && !cat.includes(q) && !acct.includes(q)) return false;
       }
+      if (filterTag) {
+        const txTags = tags[tx.id] ?? [];
+        const q = filterTag.toLowerCase();
+        if (!txTags.some((t) => t.toLowerCase().includes(q))) return false;
+      }
       return true;
     });
     if (sortBy === "date-asc") return [...base].sort((a, b) => a.date.localeCompare(b.date));
@@ -358,7 +374,7 @@ export default function Transactions() {
   useEffect(() => {
     const inInput = () => { const t = document.activeElement?.tagName; return t === "INPUT" || t === "TEXTAREA" || t === "SELECT"; };
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setSelectedIds(new Set()); setBulkFormCat(""); setBulkFormType(""); setOpenNoteId(null); return; }
+      if (e.key === "Escape") { setSelectedIds(new Set()); setBulkFormCat(""); setBulkFormType(""); setOpenNoteId(null); setOpenTagId(null); return; }
       if (e.key === "/" && !inInput()) { e.preventDefault(); searchInputRef.current?.focus(); }
       if (e.key === "n" && !inInput() && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setForm(EMPTY_FORM); setAutoCatFilled(false); setAddOpen(true); }
       if (e.key === "e" && !inInput() && !e.metaKey && !e.ctrlKey) { e.preventDefault(); exportCsv(filtered); }
@@ -690,6 +706,32 @@ export default function Transactions() {
     setOpenNoteId(id);
     setNoteDraft(notes[id] ?? "");
   };
+
+  // ── tag helpers ──────────────────────────────────────────────────────────
+  const addTag = (id: number, tag: string) => {
+    const trimmed = tag.trim();
+    if (!trimmed) return;
+    setTags((prev) => {
+      const existing = prev[id] ?? [];
+      if (existing.includes(trimmed)) return prev;
+      const next = { ...prev, [id]: [...existing, trimmed] };
+      try { localStorage.setItem("ft-tx-tags", JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+  };
+
+  const removeTag = (id: number, tag: string) => {
+    setTags((prev) => {
+      const existing = prev[id] ?? [];
+      const next = { ...prev, [id]: existing.filter((t) => t !== tag) };
+      if (next[id].length === 0) delete next[id];
+      try { localStorage.setItem("ft-tx-tags", JSON.stringify(next)); } catch { /* noop */ }
+      return next;
+    });
+  };
+
+  // All unique tags across all transactions for autocomplete
+  const allTagSuggestions = [...new Set(Object.values(tags).flat())].sort();
 
   // ── split submit ─────────────────────────────────────────────────────────
   const handleSplitSubmit = async (e: React.FormEvent) => {
@@ -1198,12 +1240,35 @@ export default function Transactions() {
     </button>
   );
 
+  const TAG_CHIP_STYLE: React.CSSProperties = {
+    background: "rgba(245,158,11,0.15)",
+    color: "var(--ft-amber)",
+    border: "1px solid rgba(245,158,11,0.3)",
+    borderRadius: 2,
+    padding: "0 4px",
+    fontSize: 9,
+    fontFamily: "var(--font-mono)",
+    whiteSpace: "nowrap" as const,
+    lineHeight: "16px",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 2,
+  };
+
   const TxRow = ({ tx, indented = false, isKeyboardSelected = false }: { tx: typeof filtered[number]; indented?: boolean; isKeyboardSelected?: boolean }) => {
     const fxGbp = tx.currency !== "GBP" ? convertWithOverride(Math.abs(tx.nativeAmount), tx.currency, "GBP") : null;
     const hasOverride = fxGbp != null;
     const displayGbp = hasOverride ? fxGbp : Math.abs(tx.gbpValue);
     const hasNote = Boolean(notes[tx.id]);
     const isNoteOpen = openNoteId === tx.id;
+    const txTags = tags[tx.id] ?? [];
+    const hasTags = txTags.length > 0;
+    const isTagOpen = openTagId === tx.id;
+    const visibleTags = txTags.slice(0, 2);
+    const hiddenTagCount = txTags.length - 2;
+    const tagSuggestionsFiltered = tagInput
+      ? allTagSuggestions.filter((s) => s.toLowerCase().includes(tagInput.toLowerCase()) && !txTags.includes(s))
+      : allTagSuggestions.filter((s) => !txTags.includes(s));
     return (
     <div style={{ position: "relative" }} data-tx-row>
       <div
@@ -1230,8 +1295,20 @@ export default function Transactions() {
         <div style={{ width: 90, minWidth: 90, padding: indented ? "7px 12px 7px 20px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>
           {formatDate(tx.date)}
         </div>
-        <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          <PrivDesc>{tx.description}</PrivDesc>
+        <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+            <PrivDesc>{tx.description}</PrivDesc>
+          </span>
+          {hasTags && (
+            <span style={{ display: "flex", gap: 3, flexShrink: 0, alignItems: "center" }}>
+              {visibleTags.map((t) => (
+                <span key={t} style={TAG_CHIP_STYLE}>{t}</span>
+              ))}
+              {hiddenTagCount > 0 && (
+                <span style={{ ...TAG_CHIP_STYLE, background: "rgba(245,158,11,0.08)" }}>+{hiddenTagCount}</span>
+              )}
+            </span>
+          )}
         </div>
         <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
           <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
@@ -1259,7 +1336,7 @@ export default function Transactions() {
         <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }}>
           <button
             type="button"
-            onClick={() => { if (isNoteOpen) { setOpenNoteId(null); } else { openNote(tx.id); } }}
+            onClick={() => { if (isNoteOpen) { setOpenNoteId(null); } else { openNote(tx.id); setOpenTagId(null); } }}
             title={hasNote ? "View/edit note" : "Add note"}
             style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", justifyContent: "center" }}
             aria-label={hasNote ? `Note for ${tx.description}` : `Add note for ${tx.description}`}
@@ -1268,6 +1345,26 @@ export default function Transactions() {
               className="w-3.5 h-3.5"
               style={{ color: hasNote ? "var(--ft-amber)" : "var(--ft-border2)", transition: "color 0.1s" }}
             />
+          </button>
+        </div>
+        {/* Tag icon column */}
+        <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch", position: "relative" }}>
+          <button
+            type="button"
+            onClick={() => { if (isTagOpen) { setOpenTagId(null); } else { setOpenTagId(tx.id); setTagInput(""); setOpenNoteId(null); } }}
+            title={hasTags ? `Tags: ${txTags.join(", ")}` : "Add tag"}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}
+            aria-label={hasTags ? `Tags for ${tx.description}` : `Add tag for ${tx.description}`}
+          >
+            <Tag
+              className="w-3.5 h-3.5"
+              style={{ color: hasTags ? "var(--ft-amber)" : "var(--ft-border2)", transition: "color 0.1s" }}
+            />
+            {hasTags && (
+              <span style={{ position: "absolute", top: -1, right: -1, background: "var(--ft-amber)", color: "#000", borderRadius: 2, fontSize: 7, fontWeight: 700, fontFamily: "var(--font-mono)", lineHeight: 1, padding: "1px 2px", minWidth: 10, textAlign: "center" }}>
+                {txTags.length}
+              </span>
+            )}
           </button>
         </div>
         <div style={{ width: 100, minWidth: 100, padding: "4px 4px", display: "flex", justifyContent: "flex-end", gap: 2 }}>
@@ -1335,6 +1432,124 @@ export default function Transactions() {
               style={{ fontSize: 11, padding: "3px 10px", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "#000", cursor: "pointer", fontFamily: "var(--font-mono)", fontWeight: 600 }}
             >
               Save
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Tag popover — inline below the row */}
+      {isTagOpen && (
+        <div
+          style={{
+            position: "absolute",
+            right: 100,
+            top: "100%",
+            zIndex: 60,
+            background: "var(--ft-surface)",
+            border: "1px solid var(--ft-border2)",
+            borderRadius: 2,
+            padding: "10px 12px",
+            width: 300,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+          }}
+        >
+          <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8, fontFamily: "var(--font-mono)" }}>
+            TAGS — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
+          </div>
+          {/* Existing tag chips */}
+          {txTags.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+              {txTags.map((t) => (
+                <span key={t} style={{ ...TAG_CHIP_STYLE, cursor: "pointer" }} onClick={() => removeTag(tx.id, t)} title="Click to remove">
+                  {t}
+                  <span style={{ marginLeft: 2, opacity: 0.7 }}>×</span>
+                </span>
+              ))}
+            </div>
+          )}
+          {/* Tag input */}
+          <div style={{ position: "relative" }}>
+            <input
+              autoFocus
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === ",") {
+                  e.preventDefault();
+                  const parts = tagInput.split(",").map((s) => s.trim()).filter(Boolean);
+                  parts.forEach((p) => addTag(tx.id, p));
+                  setTagInput("");
+                } else if (e.key === "Escape") {
+                  setOpenTagId(null);
+                }
+              }}
+              placeholder="Add tag… (Enter or comma)"
+              style={{
+                width: "100%",
+                background: "var(--ft-base)",
+                border: "1px solid var(--ft-border2)",
+                borderRadius: 2,
+                color: "var(--ft-text)",
+                fontSize: 12,
+                fontFamily: "var(--font-mono)",
+                padding: "5px 8px",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+            {/* Autocomplete suggestions */}
+            {tagSuggestionsFiltered.length > 0 && tagInput && (
+              <div style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                right: 0,
+                background: "var(--ft-surface)",
+                border: "1px solid var(--ft-border2)",
+                borderTop: "none",
+                borderRadius: "0 0 2px 2px",
+                zIndex: 70,
+                maxHeight: 120,
+                overflowY: "auto",
+              }}>
+                {tagSuggestionsFiltered.slice(0, 8).map((s) => (
+                  <div
+                    key={s}
+                    onClick={() => { addTag(tx.id, s); setTagInput(""); }}
+                    style={{ padding: "5px 8px", fontSize: 11, color: "var(--ft-muted)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
+                  >
+                    {s}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Existing tag suggestions (not typing) */}
+          {!tagInput && tagSuggestionsFiltered.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>Suggestions</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {tagSuggestionsFiltered.slice(0, 10).map((s) => (
+                  <span
+                    key={s}
+                    onClick={() => addTag(tx.id, s)}
+                    style={{ ...TAG_CHIP_STYLE, cursor: "pointer", opacity: 0.65 }}
+                  >
+                    + {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+            <button
+              type="button"
+              onClick={() => setOpenTagId(null)}
+              style={{ fontSize: 11, padding: "3px 10px", background: "none", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
+            >
+              Done
             </button>
           </div>
         </div>
@@ -1624,7 +1839,7 @@ export default function Transactions() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); }}
+              onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); }}
               style={{ height: 30, fontSize: 11, color: "var(--ft-muted)", padding: "0 8px" }}
             >
               <X className="w-3 h-3 mr-1" />Clear
@@ -1667,6 +1882,41 @@ export default function Transactions() {
               <SelectItem value="amount-low">Amount: Low → High</SelectItem>
             </SelectContent>
           </Select>
+          <div style={{ width: 1, height: 20, background: "var(--ft-border2)", margin: "0 2px" }} />
+          {/* Tag filter */}
+          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+            <Tag className="w-3 h-3" style={{ position: "absolute", left: 7, color: filterTag ? "var(--ft-amber)" : "var(--ft-dim)", pointerEvents: "none" }} />
+            <input
+              type="text"
+              placeholder="TAG"
+              value={filterTag}
+              onChange={(e) => setFilterTag(e.target.value)}
+              style={{
+                paddingLeft: 22,
+                paddingRight: filterTag ? 22 : 8,
+                height: 30,
+                fontSize: 11,
+                fontFamily: "var(--font-mono)",
+                background: filterTag ? "rgba(245,158,11,0.06)" : "var(--ft-surface)",
+                border: `1px solid ${filterTag ? "var(--ft-amber)" : "var(--ft-border2)"}`,
+                borderRadius: 2,
+                color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)",
+                outline: "none",
+                width: 90,
+                letterSpacing: "0.04em",
+              }}
+            />
+            {filterTag && (
+              <button
+                type="button"
+                onClick={() => setFilterTag("")}
+                style={{ position: "absolute", right: 5, background: "none", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: 0, display: "flex", alignItems: "center" }}
+                aria-label="Clear tag filter"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Row 2: quick date ranges + date inputs + amount range */}
@@ -1895,8 +2145,8 @@ export default function Transactions() {
                 aria-label="Select all"
               />
             </div>
-            {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["NOTE", "36px"], ["", "100px"]].map(([h, w]) => (
-              <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["AMOUNT", "GBP"].includes(h as string) ? "right" : "center", padding: h === "NOTE" ? "6px 0" : undefined }}>
+            {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["NOTE", "36px"], ["TAG", "36px"], ["", "100px"]].map(([h, w]) => (
+              <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["AMOUNT", "GBP"].includes(h as string) ? "right" : "center", padding: h === "NOTE" || h === "TAG" ? "6px 0" : undefined }}>
                 {h}
               </div>
             ))}
@@ -2006,6 +2256,7 @@ export default function Transactions() {
                       <div className="pnum" style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: group.total >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                         {group.total >= 0 ? "+" : ""}{formatGbp(group.total)}
                       </div>
+                      <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-raised)" }} />
                       <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-raised)" }} />
                       <div style={{ width: 100, minWidth: 100 }} />
                     </div>

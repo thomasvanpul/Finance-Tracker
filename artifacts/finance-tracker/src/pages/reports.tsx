@@ -204,10 +204,56 @@ function DonutTooltip({ active, payload }: {
   );
 }
 
+const CURRENT_YEAR = new Date().getFullYear();
+// Generate last 5 UK tax years. The "current" tax year start is Apr 6 of this year,
+// but only include it if today is on or after 6 April of CURRENT_YEAR.
+const TAX_YEARS: number[] = (() => {
+  const now = new Date();
+  const taxYearStart = new Date(CURRENT_YEAR, 3, 6); // April 6 of current year
+  const latestTaxYear = now >= taxYearStart ? CURRENT_YEAR : CURRENT_YEAR - 1;
+  return Array.from({ length: 5 }, (_, i) => latestTaxYear - i);
+})();
+
+function formatTaxYear(startYear: number): string {
+  return `${startYear}/${String(startYear + 1).slice(2)}`;
+}
+
+async function downloadTaxYearCsv(year: number): Promise<void> {
+  const res = await fetch(`/api/export/tax-year/${year}`, { credentials: "include" });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error((err as { error: string }).error ?? "Failed to download CSV");
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `tax-year-${year}-${String(year + 1).slice(2)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function Reports() {
   const [dateFrom, setDateFrom] = useState(firstOfMonth());
   const [dateTo, setDateTo] = useState(today());
   const [activeQuick, setActiveQuick] = useState("This month");
+  const [selectedTaxYear, setSelectedTaxYear] = useState<number>(TAX_YEARS[0] ?? CURRENT_YEAR - 1);
+  const [taxYearDownloading, setTaxYearDownloading] = useState(false);
+  const [taxYearError, setTaxYearError] = useState<string | null>(null);
+
+  const handleTaxYearDownload = async () => {
+    setTaxYearDownloading(true);
+    setTaxYearError(null);
+    try {
+      await downloadTaxYearCsv(selectedTaxYear);
+    } catch (err: unknown) {
+      setTaxYearError(err instanceof Error ? err.message : "Download failed");
+    } finally {
+      setTaxYearDownloading(false);
+    }
+  };
 
   const applyQuick = (qr: typeof QUICK_RANGES[number]) => {
     const { from, to } = qr.getRange();
@@ -1017,6 +1063,110 @@ export default function Reports() {
               );
             })
           )}
+        </div>
+      </div>
+
+      {/* Tax Year Export */}
+      <div style={{ borderTop: "1px solid var(--ft-border)" }}>
+        <div style={{
+          padding: "8px 16px",
+          background: "rgba(244,162,30,0.05)",
+          borderBottom: "1px solid rgba(244,162,30,0.15)",
+          display: "flex",
+          alignItems: "center",
+        }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.04em" }}>
+            ▼ TAX YEAR EXPORT
+          </span>
+        </div>
+        <div style={{
+          padding: "16px 20px",
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          flexWrap: "wrap",
+          background: "var(--ft-surface)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+              TAX YEAR
+            </span>
+            <select
+              value={selectedTaxYear}
+              onChange={(e) => {
+                setSelectedTaxYear(Number(e.target.value));
+                setTaxYearError(null);
+              }}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                background: "var(--ft-raised)",
+                border: "1px solid var(--ft-border2)",
+                borderRadius: 2,
+                color: "var(--ft-text)",
+                padding: "4px 8px",
+                height: 28,
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              {TAX_YEARS.map((yr) => (
+                <option key={yr} value={yr}>
+                  {formatTaxYear(yr)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--ft-dim)",
+            padding: "4px 10px",
+            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border)",
+            borderRadius: 2,
+          }}>
+            UK Tax Year: 6 April {selectedTaxYear} – 5 April {selectedTaxYear + 1}
+          </div>
+
+          <button
+            onClick={handleTaxYearDownload}
+            disabled={taxYearDownloading}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              background: taxYearDownloading ? "var(--ft-raised)" : "rgba(244,162,30,0.1)",
+              color: taxYearDownloading ? "var(--ft-dim)" : "var(--ft-accent)",
+              border: `1px solid ${taxYearDownloading ? "var(--ft-border)" : "rgba(244,162,30,0.4)"}`,
+              borderRadius: 2,
+              padding: "5px 14px",
+              cursor: taxYearDownloading ? "not-allowed" : "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            {taxYearDownloading ? "Downloading…" : `↓ Download CSV (${formatTaxYear(selectedTaxYear)})`}
+          </button>
+
+          {taxYearError && (
+            <span style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--ft-red)",
+            }}>
+              {taxYearError}
+            </span>
+          )}
+
+          <div style={{
+            marginLeft: "auto",
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "var(--ft-dim)",
+            letterSpacing: "0.04em",
+          }}>
+            Columns: Date · Description · Amount · Type · Category · Account · Notes
+          </div>
         </div>
       </div>
     </div>

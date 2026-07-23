@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import {
   useListUpcoming,
   useListTransactions,
@@ -40,6 +40,46 @@ interface Account {
 
 type Horizon = 30 | 60 | 90 | 180;
 type Scenario = "optimistic" | "base" | "pessimistic";
+
+interface ScenarioMultipliers {
+  optimisticIncomeBoost: number;   // e.g. 20 means +20% income
+  optimisticExpenseCut: number;    // e.g. 10 means -10% expenses
+  pessimisticIncomeCut: number;    // e.g. 10 means -10% income
+  pessimisticExpenseBoost: number; // e.g. 15 means +15% expenses
+}
+
+const DEFAULT_MULTIPLIERS: ScenarioMultipliers = {
+  optimisticIncomeBoost: 20,
+  optimisticExpenseCut: 10,
+  pessimisticIncomeCut: 10,
+  pessimisticExpenseBoost: 15,
+};
+
+const LS_KEY = "numeris:cashflow:multipliers";
+
+function loadMultipliers(): ScenarioMultipliers {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return DEFAULT_MULTIPLIERS;
+    const parsed = JSON.parse(raw) as Partial<ScenarioMultipliers>;
+    return {
+      optimisticIncomeBoost: parsed.optimisticIncomeBoost ?? DEFAULT_MULTIPLIERS.optimisticIncomeBoost,
+      optimisticExpenseCut: parsed.optimisticExpenseCut ?? DEFAULT_MULTIPLIERS.optimisticExpenseCut,
+      pessimisticIncomeCut: parsed.pessimisticIncomeCut ?? DEFAULT_MULTIPLIERS.pessimisticIncomeCut,
+      pessimisticExpenseBoost: parsed.pessimisticExpenseBoost ?? DEFAULT_MULTIPLIERS.pessimisticExpenseBoost,
+    };
+  } catch {
+    return DEFAULT_MULTIPLIERS;
+  }
+}
+
+function saveMultipliers(m: ScenarioMultipliers): void {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(m));
+  } catch {
+    // ignore storage errors
+  }
+}
 
 // ─── style atoms ─────────────────────────────────────────────────────────────
 
@@ -84,12 +124,6 @@ const SCENARIO_COLORS: Record<Scenario, string> = {
   pessimistic: "var(--ft-red)",
 };
 
-const SCENARIO_MULTIPLIERS: Record<Scenario, number> = {
-  optimistic: 0.8,
-  base: 1.0,
-  pessimistic: 1.2,
-};
-
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function addDays(date: Date, days: number): Date {
@@ -107,35 +141,67 @@ function formatShortDate(str: string): string {
   return `${d.getDate()} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]}`;
 }
 
+/**
+ * Compute the average monthly income and expense from the last 3 months of
+ * transaction history. Returns daily averages.
+ */
+function computeBaseTrend(allTxs: Tx[]): { dailyIncome: number; dailyExpense: number } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const cutoff = addDays(today, -90);
+
+  let totalIncome = 0;
+  let totalExpense = 0;
+
+  for (const tx of allTxs) {
+    const d = new Date(tx.date);
+    if (d < cutoff || d > today) continue;
+    if (tx.type === "income") totalIncome += Math.abs(tx.gbpValue);
+    else if (tx.type === "expense") totalExpense += Math.abs(tx.gbpValue);
+  }
+
+  return {
+    dailyIncome: totalIncome / 90,
+    dailyExpense: totalExpense / 90,
+  };
+}
+
 // ─── projection engine ───────────────────────────────────────────────────────
 
 function buildProjection(
   startingBalance: number,
   upcomingItems: UpcomingItem[],
-  expenses: Tx[],
+  allTxs: Tx[],
   horizonDays: Horizon,
   scenario: Scenario,
+  multipliers: ScenarioMultipliers,
 ): { date: string; balance: number; events: string[] }[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Compute last-30-day average daily spend per category
-  const cutoff30 = addDays(today, -30);
-  const recentExpenses = expenses.filter(
-    (t) => t.type === "expense" && new Date(t.date) >= cutoff30
-  );
+  // Derive base daily income/expense from last 3 months of real data
+  const { dailyIncome: baseDailyIncome, dailyExpense: baseDailyExpense } =
+    computeBaseTrend(allTxs);
 
-  const dailyAvgByCategory: Record<string, number> = {};
-  const catTotals: Record<string, number> = {};
-  for (const tx of recentExpenses) {
-    const cat = tx.category || "Other";
-    catTotals[cat] = (catTotals[cat] || 0) + tx.gbpValue;
+  // Apply scenario adjustments
+  let dailyIncome: number;
+  let dailyExpense: number;
+
+  switch (scenario) {
+    case "optimistic":
+      dailyIncome = baseDailyIncome * (1 + multipliers.optimisticIncomeBoost / 100);
+      dailyExpense = baseDailyExpense * (1 - multipliers.optimisticExpenseCut / 100);
+      break;
+    case "pessimistic":
+      dailyIncome = baseDailyIncome * (1 - multipliers.pessimisticIncomeCut / 100);
+      dailyExpense = baseDailyExpense * (1 + multipliers.pessimisticExpenseBoost / 100);
+      break;
+    default: // base
+      dailyIncome = baseDailyIncome;
+      dailyExpense = baseDailyExpense;
   }
-  for (const [cat, total] of Object.entries(catTotals)) {
-    dailyAvgByCategory[cat] = (total / 30) * SCENARIO_MULTIPLIERS[scenario];
-  }
-  const totalDailyVariableSpend =
-    Object.values(dailyAvgByCategory).reduce((s, v) => s + v, 0);
+
+  const dailyNetFlow = dailyIncome - dailyExpense;
 
   // Index upcoming items by date within horizon
   const endDate = addDays(today, horizonDays);
@@ -159,8 +225,8 @@ function buildProjection(
     const events: string[] = [];
 
     if (i > 0) {
-      // Deduct variable daily spend
-      balance -= totalDailyVariableSpend;
+      // Apply daily net trend (income - expenses)
+      balance += dailyNetFlow;
 
       // Apply scheduled items
       const scheduled = upcomingByDate[dateStr] ?? [];
@@ -178,6 +244,81 @@ function buildProjection(
   }
 
   return points;
+}
+
+/**
+ * Find the first date index where balance crosses zero (from positive to negative).
+ * Returns null if the balance never goes negative.
+ */
+function findBreakEvenDate(
+  projection: { date: string; balance: number }[],
+): string | null {
+  for (let i = 1; i < projection.length; i++) {
+    const prev = projection[i - 1];
+    const curr = projection[i];
+    if (prev && curr && prev.balance >= 0 && curr.balance < 0) {
+      return curr.date;
+    }
+  }
+  return null;
+}
+
+// ─── editable multiplier input ────────────────────────────────────────────────
+
+function MultiplierInput({
+  label: labelText,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const [localVal, setLocalVal] = useState(String(value));
+
+  useEffect(() => {
+    setLocalVal(String(value));
+  }, [value]);
+
+  const commit = () => {
+    const n = parseFloat(localVal);
+    if (!isNaN(n) && n >= 0 && n <= 100) {
+      onChange(n);
+    } else {
+      setLocalVal(String(value));
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <span style={{ ...label, fontSize: 8 }}>{labelText}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <input
+          type="number"
+          min={0}
+          max={100}
+          step={1}
+          value={localVal}
+          onChange={(e) => setLocalVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
+          style={{
+            ...mono,
+            width: 48,
+            padding: "3px 6px",
+            fontSize: 11,
+            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border2)",
+            borderRadius: 2,
+            color: "var(--ft-text)",
+            outline: "none",
+            textAlign: "right",
+          }}
+        />
+        <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}>%</span>
+      </div>
+    </div>
+  );
 }
 
 // ─── custom tooltip ──────────────────────────────────────────────────────────
@@ -210,6 +351,9 @@ function CfTooltip({ active, payload, label: dateLbl }: {
 export default function CashflowPage() {
   const [horizon, setHorizon] = useState<Horizon>(30);
   const [scenario, setScenario] = useState<Scenario>("base");
+  const [showSettings, setShowSettings] = useState(false);
+  const [multipliers, setMultipliers] = useState<ScenarioMultipliers>(loadMultipliers);
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   const { data: rawUpcoming, isLoading: loadingUp } = useListUpcoming();
   const { data: rawTxs, isLoading: loadingTx } = useListTransactions({});
@@ -218,7 +362,7 @@ export default function CashflowPage() {
   const isLoading = loadingUp || loadingTx || loadingAcc;
 
   const upcoming = (rawUpcoming ?? []) as UpcomingItem[];
-  const txs = (rawTxs ?? []) as Tx[];
+  const allTxs = (rawTxs ?? []) as Tx[];
   const accounts = (rawAccounts ?? []) as Account[];
 
   const startingBalance = useMemo(
@@ -226,15 +370,17 @@ export default function CashflowPage() {
     [accounts]
   );
 
-  const expenses = useMemo(
-    () => txs.filter((t) => t.type === "expense"),
-    [txs]
+  const projection = useMemo(
+    () => buildProjection(startingBalance, upcoming, allTxs, horizon, scenario, multipliers),
+    [startingBalance, upcoming, allTxs, horizon, scenario, multipliers]
   );
 
-  const projection = useMemo(
-    () => buildProjection(startingBalance, upcoming, expenses, horizon, scenario),
-    [startingBalance, upcoming, expenses, horizon, scenario]
+  // Compute base trend stats for display
+  const { dailyIncome: baseDailyIncome, dailyExpense: baseDailyExpense } = useMemo(
+    () => computeBaseTrend(allTxs),
+    [allTxs]
   );
+  const baseMonthlyNet = (baseDailyIncome - baseDailyExpense) * 30;
 
   const finalBalance = projection[projection.length - 1]?.balance ?? startingBalance;
   const lowestPoint = projection.reduce(
@@ -246,10 +392,22 @@ export default function CashflowPage() {
     -Infinity
   );
 
+  // Break-even date (only relevant when pessimistic or balance trends negative)
+  const breakEvenDate = useMemo(() => findBreakEvenDate(projection), [projection]);
+
   // Events table: only days with scheduled items
   const eventRows = projection.filter((p) => p.events.length > 0);
 
   const scenarioColor = SCENARIO_COLORS[scenario];
+
+  // Persist multipliers to localStorage whenever they change
+  useEffect(() => {
+    saveMultipliers(multipliers);
+  }, [multipliers]);
+
+  const updateMultiplier = (key: keyof ScenarioMultipliers) => (v: number) => {
+    setMultipliers((prev) => ({ ...prev, [key]: v }));
+  };
 
   if (isLoading) {
     return (
@@ -273,7 +431,7 @@ export default function CashflowPage() {
             Add an account to see your cash flow forecast
           </div>
           <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", maxWidth: 380, margin: "0 auto" }}>
-            Cash flow projections are based on your current account balances, upcoming bills, and your average spending over the last 30 days.
+            Cash flow projections are based on your current account balances, upcoming bills, and your average income/spending over the last 3 months.
           </div>
         </div>
       </div>
@@ -289,7 +447,7 @@ export default function CashflowPage() {
             CASH FLOW FORECAST
           </div>
           <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", marginTop: 4 }}>
-            projected account balances based on bills + avg. spending
+            projected balances · based on 3-month avg income/expense trend + scheduled bills
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -335,12 +493,117 @@ export default function CashflowPage() {
                   fontWeight: scenario === s ? 700 : 400,
                 }}
               >
-                {s === "optimistic" ? "OPT -20%" : s === "pessimistic" ? "PESS +20%" : "BASE"}
+                {s === "optimistic"
+                  ? `OPT +${multipliers.optimisticIncomeBoost}%/-${multipliers.optimisticExpenseCut}%`
+                  : s === "pessimistic"
+                  ? `PESS -${multipliers.pessimisticIncomeCut}%/+${multipliers.pessimisticExpenseBoost}%`
+                  : "BASE"}
               </button>
             ))}
           </div>
+          {/* Scenario settings toggle */}
+          <button
+            onClick={() => setShowSettings((v) => !v)}
+            style={{
+              ...mono,
+              fontSize: 9,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              padding: "4px 8px",
+              cursor: "pointer",
+              border: `1px solid ${showSettings ? "rgba(244,162,30,0.4)" : "var(--ft-border)"}`,
+              background: showSettings ? "rgba(244,162,30,0.1)" : "var(--ft-surface)",
+              color: showSettings ? "var(--ft-accent)" : "var(--ft-muted)",
+            }}
+          >
+            ⚙ Multipliers
+          </button>
         </div>
       </div>
+
+      {/* Editable scenario multipliers panel */}
+      {showSettings && (
+        <div
+          ref={settingsRef}
+          style={{
+            ...card,
+            marginBottom: 12,
+            padding: "14px 20px",
+            borderColor: "rgba(244,162,30,0.3)",
+            background: "rgba(244,162,30,0.04)",
+          }}
+        >
+          <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 14 }}>
+            SCENARIO MULTIPLIERS
+          </div>
+          <div style={{ display: "flex", gap: 32, flexWrap: "wrap", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ ...mono, fontSize: 9, color: "var(--ft-green)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+                Optimistic
+              </div>
+              <div style={{ display: "flex", gap: 20 }}>
+                <MultiplierInput
+                  label="Income boost"
+                  value={multipliers.optimisticIncomeBoost}
+                  onChange={updateMultiplier("optimisticIncomeBoost")}
+                />
+                <MultiplierInput
+                  label="Expense cut"
+                  value={multipliers.optimisticExpenseCut}
+                  onChange={updateMultiplier("optimisticExpenseCut")}
+                />
+              </div>
+            </div>
+            <div style={{ width: 1, background: "var(--ft-border)", alignSelf: "stretch" }} />
+            <div>
+              <div style={{ ...mono, fontSize: 9, color: "var(--ft-red)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+                Pessimistic
+              </div>
+              <div style={{ display: "flex", gap: 20 }}>
+                <MultiplierInput
+                  label="Income cut"
+                  value={multipliers.pessimisticIncomeCut}
+                  onChange={updateMultiplier("pessimisticIncomeCut")}
+                />
+                <MultiplierInput
+                  label="Expense boost"
+                  value={multipliers.pessimisticExpenseBoost}
+                  onChange={updateMultiplier("pessimisticExpenseBoost")}
+                />
+              </div>
+            </div>
+            <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+                Base: 3-month avg net/day = <span style={{ color: baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                  {baseMonthlyNet >= 0 ? "+" : ""}{formatGbp(baseMonthlyNet)}/mo
+                </span>
+              </div>
+              <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+                Avg income: <span style={{ color: "var(--ft-green)" }}>+{formatGbp(baseDailyIncome * 30)}/mo</span>
+              </div>
+              <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+                Avg expense: <span style={{ color: "var(--ft-red)" }}>-{formatGbp(baseDailyExpense * 30)}/mo</span>
+              </div>
+              <button
+                onClick={() => setMultipliers(DEFAULT_MULTIPLIERS)}
+                style={{
+                  ...mono,
+                  fontSize: 9,
+                  color: "var(--ft-dim)",
+                  background: "var(--ft-raised)",
+                  border: "1px solid var(--ft-border)",
+                  borderRadius: 2,
+                  padding: "3px 8px",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                Reset to defaults
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* KPI strip */}
       <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
@@ -404,12 +667,29 @@ export default function CashflowPage() {
               : `${formatGbp(finalBalance - startingBalance)}`}</span> vs today
           </div>
         </div>
+
+        {breakEvenDate && (
+          <div style={{
+            background: "var(--ft-red)15",
+            border: "1px solid var(--ft-red)44",
+            padding: "10px 16px",
+          }}>
+            <div style={{ ...label, color: "var(--ft-red)", marginBottom: 4 }}>BREAK-EVEN DATE</div>
+            <div style={{ ...mono, fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>
+              {formatShortDate(breakEvenDate)}
+            </div>
+            <div style={{ ...mono, fontSize: 9, color: "var(--ft-red)", marginTop: 2, opacity: 0.75 }}>
+              Balance crosses zero
+            </div>
+          </div>
+        )}
+
         {lowestPoint < 0 && (
           <div style={{
             background: "var(--ft-red)15",
             border: "1px solid var(--ft-red)44",
             padding: "10px 16px",
-            marginLeft: "auto",
+            marginLeft: breakEvenDate ? 0 : "auto",
           }}>
             <div style={{ ...label, color: "var(--ft-red)", marginBottom: 4 }}>WARNING — BALANCE GOES NEGATIVE</div>
             <div style={{ ...mono, fontSize: 12, color: "var(--ft-red)" }}>
@@ -425,7 +705,7 @@ export default function CashflowPage() {
           BALANCE PROJECTION
         </div>
         <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 14 }}>
-          Day-by-day projected cumulative balance · shaded area below chart = danger zone
+          Day-by-day projected cumulative balance · based on 3-month avg trend
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={projection} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
@@ -472,6 +752,21 @@ export default function CashflowPage() {
                 fill: "var(--ft-red)",
               }}
             />
+            {breakEvenDate && (
+              <ReferenceLine
+                x={breakEvenDate}
+                stroke="var(--ft-red)"
+                strokeWidth={1}
+                strokeDasharray="2 4"
+                label={{
+                  value: `Break-even: ${formatShortDate(breakEvenDate)}`,
+                  position: "top",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 8,
+                  fill: "var(--ft-red)",
+                }}
+              />
+            )}
             <Area
               type="monotone"
               dataKey="balance"
@@ -554,13 +849,16 @@ export default function CashflowPage() {
           <div key={s} style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 24, height: 2, background: SCENARIO_COLORS[s] }} />
             <span style={{ ...mono, fontSize: 10, color: SCENARIO_COLORS[s] }}>
-              {s === "optimistic" ? "Optimistic (spend −20%)" :
-               s === "pessimistic" ? "Pessimistic (spend +20%)" : "Base"}
+              {s === "optimistic"
+                ? `Optimistic (income +${multipliers.optimisticIncomeBoost}%, spend -${multipliers.optimisticExpenseCut}%)`
+                : s === "pessimistic"
+                ? `Pessimistic (income -${multipliers.pessimisticIncomeCut}%, spend +${multipliers.pessimisticExpenseBoost}%)`
+                : "Base (3-month avg trend)"}
             </span>
           </div>
         ))}
         <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginLeft: "auto" }}>
-          Variable spend based on 30-day average · scheduled items use exact amounts
+          Variable trend based on 3-month avg · scheduled items use exact amounts
         </div>
       </div>
     </div>
