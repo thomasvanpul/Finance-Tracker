@@ -797,8 +797,13 @@ function SortableWidget({ id, span, index, onToggleSpan, onRemove, onExpand }: S
 
 function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: (id: WidgetId) => void }) {
   const [open, setOpen] = useState(false);
+  const [hoveredId, setHoveredId] = useState<WidgetId | null>(null);
 
   if (disabledIds.length === 0) return null;
+
+  const previewId = hoveredId ?? disabledIds[0];
+  const PreviewComponent = previewId ? WIDGET_COMPONENTS[previewId] : null;
+  const previewDef = previewId ? WIDGET_DEF_MAP[previewId] : null;
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -829,41 +834,87 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
       </button>
 
       {open && (
-        <div style={{
-          marginTop: 8,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-          gap: 8,
-        }}>
-          {disabledIds.map(id => {
-            const def = WIDGET_DEF_MAP[id];
-            return (
-              <button
-                key={id}
-                onClick={() => { onAdd(id); }}
-                style={{
-                  background: "var(--ft-surface)",
-                  border: "1px solid var(--ft-border)",
-                  padding: "10px 12px",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                  transition: "border-color 0.1s",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}
-              >
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                  + {def?.label ?? id}
+        <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start" }}>
+          {/* Left — widget list */}
+          <div style={{
+            width: 220,
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+            maxHeight: 420,
+            overflowY: "auto",
+          }}>
+            {disabledIds.map(id => {
+              const def = WIDGET_DEF_MAP[id];
+              const isHovered = id === hoveredId;
+              return (
+                <button
+                  key={id}
+                  onClick={() => { onAdd(id); setOpen(false); }}
+                  onMouseEnter={() => setHoveredId(id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    background: isHovered ? "var(--ft-raised)" : "var(--ft-surface)",
+                    border: `1px solid ${isHovered ? "var(--ft-accent)" : "var(--ft-border)"}`,
+                    padding: "9px 11px",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 3,
+                    transition: "border-color 0.1s, background 0.1s",
+                    flexShrink: 0,
+                  }}
+                >
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: isHovered ? "var(--ft-accent)" : "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    {def?.label ?? id}
+                  </div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5 }}>
+                    {def?.description ?? ""}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right — live preview */}
+          <div style={{
+            flex: 1,
+            minWidth: 0,
+            border: "1px solid var(--ft-border)",
+            background: "var(--ft-surface)",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+            <div style={{
+              padding: "5px 10px",
+              background: "var(--ft-raised)",
+              borderBottom: "1px solid var(--ft-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Preview — {previewDef?.label ?? "widget"}
+              </span>
+              {previewId && (
+                <button
+                  onClick={() => { onAdd(previewId); setOpen(false); }}
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "2px 8px", cursor: "pointer" }}
+                >
+                  + Add
+                </button>
+              )}
+            </div>
+            <div style={{ overflow: "auto", maxHeight: 400, padding: 12 }}>
+              {PreviewComponent ? <PreviewComponent /> : (
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", padding: "20px 0", textAlign: "center" }}>
+                  Hover a widget to preview it
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5 }}>
-                  {def?.description ?? ""}
-                </div>
-              </button>
-            );
-          })}
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

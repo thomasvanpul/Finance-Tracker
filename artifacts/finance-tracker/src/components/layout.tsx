@@ -90,7 +90,6 @@ const SECONDARY_NAV_SECTIONS = [
     items: [
       { href: "/recurring",    label: "Recurring",    code: "G·U" },
       { href: "/calculators",  label: "Calculators",  code: "G·F" },
-      { href: "/wardrobe",     label: "Wardrobe",     code: "G·Z" },
       { href: "/import",       label: "Import",       code: "G·J" },
       { href: "/learn",        label: "Learn",        code: "G·Q" },
     ],
@@ -122,7 +121,7 @@ const G_KEY_MAP: Record<string, string> = {
   s: "/settings", q: "/learn",
   v: "/cashflow", e: "/year-review", j: "/import",
   g: "/ai-coach", z: "/wardrobe",
-  // Power-user shortcuts for individual calc pages (not shown in sidebar)
+  // Power-user shortcuts not shown in sidebar
   m: "/mortgage", p: "/pension", "0": "/fire",
 };
 

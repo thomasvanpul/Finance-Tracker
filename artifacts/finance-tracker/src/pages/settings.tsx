@@ -38,7 +38,7 @@ const DENSITY_KEY = "ft-density";
 type Density = "compact" | "normal" | "comfortable";
 
 type NavItem =
-  | "appearance" | "animations" | "display"
+  | "appearance" | "animations" | "display" | "wardrobe"
   | "security" | "privacy" | "profile"
   | "currency" | "alerts" | "rules" | "dashboard" | "tx-defaults"
   | "widgets" | "data" | "advanced"
@@ -129,6 +129,7 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
       { id: "appearance", label: "Appearance" },
       { id: "animations", label: "Animations" },
       { id: "display",    label: "Display" },
+      { id: "wardrobe",   label: "Wardrobe" },
     ],
   },
   {
@@ -1155,8 +1156,7 @@ const AI_STYLES: { id: AiStyle; label: string; desc: string; preview: string }[]
   },
 ];
 
-function AiSettingsPanel() {
-  const [selected, setSelected] = useState<AiStyle>(getAiStyle);
+function WardrobePanel() {
   const [skinId, setSkinId] = useState<BotSkinId>(getBotSkin);
   const [previewPhase, setPreviewPhase] = useState<Phase>("idle");
   const [blinking, setBlinking] = useState(false);
@@ -1182,15 +1182,107 @@ function AiSettingsPanel() {
     return () => clearInterval(id);
   }, [autoPlay]);
 
-  const pick = useCallback((s: AiStyle) => {
-    setSelected(s);
-    setAiStylePref(s);
-  }, []);
-
   const pickSkin = useCallback((id: BotSkinId) => {
     setBotSkin(id);
     setSkinId(id);
     window.dispatchEvent(new CustomEvent("numeris-skin-change"));
+  }, []);
+
+  const RARITY_COLOR_MAP: Record<string, string> = { COMMON: "var(--ft-dim)", EPIC: "#a855f7", LEGENDARY: "var(--ft-amber, #f59e0b)" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Bot Skin</div>
+        <style>{`
+          @keyframes wand-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+          @keyframes wand-sit-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+          @keyframes wand-dance{0%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(-4deg)}50%{transform:translateY(-8px) rotate(0deg)}75%{transform:translateY(-6px) rotate(4deg)}100%{transform:translateY(0) rotate(0deg)}}
+          @keyframes wand-complain{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+          @keyframes wand-jump{0%{transform:translateY(0)}45%{transform:translateY(-30px)}70%{transform:translateY(-3px)}100%{transform:translateY(0)}}
+        `}</style>
+        {/* Live preview */}
+        <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)", display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <div style={{ width: 86, height: 120, background: "var(--ft-base)", border: "1px solid var(--ft-border)", display: "flex", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, overflow: "hidden", position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "16px 16px", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: 24, left: "8%", right: "8%", height: 1, background: "linear-gradient(90deg,transparent,var(--ft-border2),transparent)" }} />
+            <div style={{
+              width: previewPhase === "lying" ? 110 : 36, height: previewPhase === "lying" ? 57 : 66, flexShrink: 0,
+              transform: previewPhase === "lying" ? "scale(0.62)" : "scale(1.4)", transformOrigin: "center bottom", marginBottom: 24,
+              animation: previewPhase === "sitting" ? "wand-sit-bob 3s ease-in-out infinite" : previewPhase === "dancing" ? "wand-dance 0.52s ease-in-out infinite" : previewPhase === "complaining" ? "wand-complain 0.3s ease-in-out infinite" : previewPhase === "tired" || previewPhase === "lying" ? "none" : previewPhase === "jumping" ? "wand-jump 0.75s cubic-bezier(0.36,0.07,0.19,0.97) infinite" : "wand-bob 2.6s ease-in-out infinite",
+            }}>
+              <BotPreview skinId={skinId} phase={previewPhase} blinking={blinking} />
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.12em", color: "var(--ft-dim)" }}>PHASE</span>
+              <button onClick={() => setAutoPlay(a => !a)} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.06em", color: autoPlay ? "var(--ft-accent)" : "var(--ft-dim)", background: autoPlay ? "var(--ft-accent)15" : "transparent", border: `1px solid ${autoPlay ? "var(--ft-accent)44" : "var(--ft-border)"}`, padding: "2px 6px", cursor: "pointer" }}>
+                {autoPlay ? "AUTO ●" : "AUTO ○"}
+              </button>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+              {WARDROBE_PHASES.map(p => (
+                <button key={p} onClick={() => { setAutoPlay(false); setPreviewPhase(p); }} style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: "0.05em", padding: "2px 5px", border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`, background: previewPhase === p ? "var(--ft-accent)15" : "transparent", color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" }}>
+                  {p}
+                </button>
+              ))}
+            </div>
+            {(() => {
+              const skin = SKINS.find(s => s.id === skinId);
+              if (!skin) return null;
+              return (
+                <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)" }}>{skin.label}</span>
+                  {" "}
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", color: RARITY_COLOR_MAP[skin.rarity] }}>{skin.rarity}</span>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+        <div style={{ padding: "4px 0" }}>
+          {SKINS.map((skin) => {
+            const themeReq = skin.requiredTheme ? THEME_REWARDS.find(t => t.id === skin.requiredTheme) : null;
+            const isOwned = !themeReq || learnXP >= themeReq.requiredXP;
+            const isActive = skinId === skin.id;
+            const rarityCol = RARITY_COLOR_MAP[skin.rarity] ?? "var(--ft-dim)";
+            return (
+              <div key={skin.id} onClick={() => isOwned && pickSkin(skin.id)} style={{ ...ROW, cursor: isOwned ? "pointer" : "not-allowed", opacity: isOwned ? 1 : 0.5, background: isActive && isOwned ? "var(--ft-raised)" : "transparent", borderLeft: isActive && isOwned ? `2px solid ${rarityCol}` : "2px solid transparent", paddingLeft: 12, transition: "background 0.1s", alignItems: "flex-start", paddingTop: 10, paddingBottom: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive && isOwned ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>{skin.rarity}</span>
+                  </div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, marginBottom: skin.perks.length > 0 ? 5 : 0 }}>{skin.desc}</div>
+                  {skin.perks.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 6px" }}>
+                      {skin.perks.map((perk) => (<span key={perk} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>))}
+                    </div>
+                  )}
+                  {!isOwned && themeReq && (<div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5, letterSpacing: "0.04em" }}>Requires {themeReq.requiredXP.toLocaleString()} XP to unlock</div>)}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginTop: 2 }}>
+                  {!isOwned && <Lock style={{ width: 10, height: 10, color: "var(--ft-dim)" }} />}
+                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${isActive && isOwned ? rarityCol : "var(--ft-border2)"}`, background: isActive && isOwned ? rarityCol : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {isActive && isOwned && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AiSettingsPanel() {
+  const [selected, setSelected] = useState<AiStyle>(getAiStyle);
+
+  const pick = useCallback((s: AiStyle) => {
+    setSelected(s);
+    setAiStylePref(s);
   }, []);
 
   return (
@@ -1235,139 +1327,12 @@ function AiSettingsPanel() {
       </div>
 
       {selected === "wanderer" && (
-        <div style={PANEL_STYLE}>
-          <style>{`
-            @keyframes wand-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-            @keyframes wand-sit-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
-            @keyframes wand-dance{0%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(-4deg)}50%{transform:translateY(-8px) rotate(0deg)}75%{transform:translateY(-6px) rotate(4deg)}100%{transform:translateY(0) rotate(0deg)}}
-            @keyframes wand-complain{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
-            @keyframes wand-jump{0%{transform:translateY(0)}45%{transform:translateY(-30px)}70%{transform:translateY(-3px)}100%{transform:translateY(0)}}
-          `}</style>
-          <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Bot Skin</div>
-
-          {/* Live preview */}
-          <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)", display: "flex", gap: 12, alignItems: "flex-start" }}>
-            {/* Stage */}
-            <div style={{ width: 86, height: 120, background: "var(--ft-base)", border: "1px solid var(--ft-border)", display: "flex", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, overflow: "hidden", position: "relative" }}>
-              <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "16px 16px", pointerEvents: "none" }} />
-              <div style={{ position: "absolute", bottom: 24, left: "8%", right: "8%", height: 1, background: "linear-gradient(90deg,transparent,var(--ft-border2),transparent)" }} />
-              <div style={{
-                width: previewPhase === "lying" ? 110 : 36,
-                height: previewPhase === "lying" ? 57 : 66,
-                flexShrink: 0,
-                transform: previewPhase === "lying" ? "scale(0.62)" : "scale(1.4)",
-                transformOrigin: "center bottom",
-                marginBottom: 24,
-                animation:
-                  previewPhase === "sitting" ? "wand-sit-bob 3s ease-in-out infinite" :
-                  previewPhase === "dancing" ? "wand-dance 0.52s ease-in-out infinite" :
-                  previewPhase === "complaining" ? "wand-complain 0.3s ease-in-out infinite" :
-                  previewPhase === "tired" || previewPhase === "lying" ? "none" :
-                  previewPhase === "jumping" ? "wand-jump 0.75s cubic-bezier(0.36,0.07,0.19,0.97) infinite" :
-                  "wand-bob 2.6s ease-in-out infinite",
-              }}>
-                <BotPreview skinId={skinId} phase={previewPhase} blinking={blinking} />
-              </div>
-            </div>
-
-            {/* Phase controls */}
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.12em", color: "var(--ft-dim)" }}>PHASE</span>
-                <button
-                  onClick={() => setAutoPlay(a => !a)}
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.06em", color: autoPlay ? "var(--ft-accent)" : "var(--ft-dim)", background: autoPlay ? "var(--ft-accent)15" : "transparent", border: `1px solid ${autoPlay ? "var(--ft-accent)44" : "var(--ft-border)"}`, padding: "2px 6px", cursor: "pointer" }}
-                >
-                  {autoPlay ? "AUTO ●" : "AUTO ○"}
-                </button>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                {WARDROBE_PHASES.map(p => (
-                  <button
-                    key={p}
-                    onClick={() => { setAutoPlay(false); setPreviewPhase(p); }}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: "0.05em", padding: "2px 5px", border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`, background: previewPhase === p ? "var(--ft-accent)15" : "transparent", color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" }}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-              {/* Active skin info */}
-              {(() => {
-                const skin = SKINS.find(s => s.id === skinId);
-                if (!skin) return null;
-                const RARITY_COLOR: Record<string, string> = { COMMON: "var(--ft-dim)", EPIC: "#a855f7", LEGENDARY: "var(--ft-amber, #f59e0b)" };
-                return (
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)" }}>{skin.label}</span>
-                    {" "}
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", color: RARITY_COLOR[skin.rarity] }}>{skin.rarity}</span>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-
-          <div style={{ padding: "4px 0" }}>
-            {SKINS.map((skin) => {
-              const themeReq = skin.requiredTheme ? THEME_REWARDS.find(t => t.id === skin.requiredTheme) : null;
-              const isOwned = !themeReq || learnXP >= themeReq.requiredXP;
-              const isActive = skinId === skin.id;
-              const rarityCol = RARITY_COLOR[skin.rarity] ?? "var(--ft-dim)";
-              return (
-                <div
-                  key={skin.id}
-                  onClick={() => isOwned && pickSkin(skin.id)}
-                  style={{
-                    ...ROW,
-                    cursor: isOwned ? "pointer" : "not-allowed",
-                    opacity: isOwned ? 1 : 0.5,
-                    background: isActive && isOwned ? "var(--ft-raised)" : "transparent",
-                    borderLeft: isActive && isOwned ? `2px solid ${rarityCol}` : "2px solid transparent",
-                    paddingLeft: 12,
-                    transition: "background 0.1s",
-                    alignItems: "flex-start",
-                    paddingTop: 10,
-                    paddingBottom: 10,
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive && isOwned ? rarityCol : "var(--ft-text)" }}>
-                        {skin.label}
-                      </span>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>
-                        {skin.rarity}
-                      </span>
-                    </div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, marginBottom: skin.perks.length > 0 ? 5 : 0 }}>{skin.desc}</div>
-                    {skin.perks.length > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 6px" }}>
-                        {skin.perks.map((perk) => (
-                          <span key={perk} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>
-                        ))}
-                      </div>
-                    )}
-                    {!isOwned && themeReq && (
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5, letterSpacing: "0.04em" }}>
-                        Requires {themeReq.requiredXP.toLocaleString()} XP to unlock
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginTop: 2 }}>
-                    {!isOwned && <Lock style={{ width: 10, height: 10, color: "var(--ft-dim)" }}/>}
-                    <div style={{
-                      width: 14, height: 14, borderRadius: "50%",
-                      border: `1.5px solid ${isActive && isOwned ? rarityCol : "var(--ft-border2)"}`,
-                      background: isActive && isOwned ? rarityCol : "transparent",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      {isActive && isOwned && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+        <div style={{ ...PANEL_STYLE, padding: "10px 14px" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+            Bot skin can be customised in{" "}
+            <span style={{ color: "var(--ft-accent)", cursor: "pointer", textDecoration: "underline" }} onClick={() => window.dispatchEvent(new CustomEvent("numeris-settings-nav", { detail: "wardrobe" }))}>
+              Personalise → Wardrobe
+            </span>
           </div>
         </div>
       )}
@@ -2011,6 +1976,15 @@ export default function Settings() {
   const [activePanel, setActivePanel] = useState<NavItem>("appearance");
   const [density, setDensityState] = useState<Density>(() => loadDensity());
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const panel = (e as CustomEvent<NavItem>).detail;
+      if (panel) setActivePanel(panel);
+    };
+    window.addEventListener("numeris-settings-nav", handler);
+    return () => window.removeEventListener("numeris-settings-nav", handler);
+  }, []);
+
   const handleSetDensity = (d: Density) => {
     setDensityState(d);
     applyDensity(d);
@@ -2449,6 +2423,8 @@ export default function Settings() {
         {activePanel === "crypto-wallets" && <CryptoWalletsPanel />}
 
         {activePanel === "ai" && <AiSettingsPanel />}
+
+        {activePanel === "wardrobe" && <WardrobePanel />}
 
         {activePanel === "shortcuts" && (
           <div style={PANEL_STYLE}>
