@@ -765,8 +765,8 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
 
       {/* Nav items */}
       <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none" }}>
-        {sectionGroups.map((group) => (
-          <div key={group.label}>
+        {sectionGroups.map((group, gi) => (
+          <div key={`${group.label}-${gi}`}>
             <div style={{
               display: "flex",
               alignItems: "center",
