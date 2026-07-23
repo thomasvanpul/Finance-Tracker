@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2 } from "lucide-react";
+import { useGetOptionsChain } from "@workspace/api-client-react";
+import type { OptionsContract } from "@workspace/api-client-react";
 import {
   blackScholes,
   intrinsicValue,
@@ -956,11 +958,427 @@ function FuturesSection({ quoteMap }: { quoteMap: Map<string, QuoteData> }) {
   );
 }
 
+// ── Live Options Chain Viewer ─────────────────────────────────────────────────
+
+type ChainRow = { strike: number; call?: OptionsContract; put?: OptionsContract };
+
+function OptionsChainViewer() {
+  const [tickerInput, setTickerInput] = useState("");
+  const [activeTicker, setActiveTicker] = useState("");
+  const [selectedExpiry, setSelectedExpiry] = useState<string | undefined>(undefined);
+
+  const { data: chain, isLoading } = useGetOptionsChain(
+    { ticker: activeTicker, expiry: selectedExpiry },
+    { query: { enabled: !!activeTicker } },
+  );
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const t = tickerInput.trim().toUpperCase();
+    if (!t) return;
+    setSelectedExpiry(undefined);
+    setActiveTicker(t);
+  };
+
+  const fmtMoney = (v: number | null | undefined) =>
+    v != null ? `$${v.toFixed(2)}` : "—";
+  const fmtPct = (v: number | null | undefined) =>
+    v != null ? `${(v * 100).toFixed(1)}%` : "—";
+  const fmtInt = (v: number | null | undefined) =>
+    v != null ? v.toLocaleString() : "—";
+
+  const rows: ChainRow[] = [];
+  let atmStrike: number | undefined;
+  if (chain) {
+    const strikeSet = new Set<number>();
+    chain.calls.forEach((c) => strikeSet.add(c.strike));
+    chain.puts.forEach((p) => strikeSet.add(p.strike));
+    const strikes = Array.from(strikeSet).sort((a, b) => a - b);
+    const callMap = new Map(chain.calls.map((c) => [c.strike, c]));
+    const putMap = new Map(chain.puts.map((p) => [p.strike, p]));
+    strikes.forEach((s) => rows.push({ strike: s, call: callMap.get(s), put: putMap.get(s) }));
+    const underlying = chain.underlyingPrice;
+    atmStrike = strikes.reduce((prev, cur) =>
+      Math.abs(cur - underlying) < Math.abs(prev - underlying) ? cur : prev,
+      strikes[0]
+    );
+  }
+
+  const activeExpiry = selectedExpiry ?? chain?.selectedExpiry;
+
+  const CALL_BG = "rgba(63,185,80,0.06)";
+  const PUT_BG = "rgba(248,81,73,0.06)";
+  const ATM_BG = "rgba(34,211,238,0.07)";
+
+  const cellStyle = (itm: boolean, side: "call" | "put", isAtm: boolean): React.CSSProperties => ({
+    padding: "3px 8px",
+    fontFamily: "var(--font-mono)",
+    fontSize: 11,
+    textAlign: "right" as const,
+    background: isAtm ? ATM_BG : itm ? (side === "call" ? CALL_BG : PUT_BG) : undefined,
+  });
+
+  return (
+    <div
+      style={{
+        background: "var(--ft-surface)",
+        border: "1px solid var(--ft-border2)",
+        padding: 16,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          fontWeight: 700,
+          color: "var(--ft-cyan)",
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          marginBottom: 12,
+        }}
+      >
+        Live Options Chain
+      </div>
+
+      {/* Ticker search row */}
+      <form
+        onSubmit={handleSearch}
+        style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}
+      >
+        <Input
+          placeholder="Ticker (e.g. AAPL)"
+          value={tickerInput}
+          onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
+          style={{ width: 160, fontSize: 12, height: 30, fontFamily: "var(--font-mono)" }}
+        />
+        <Button
+          type="submit"
+          size="sm"
+          style={{
+            background: "var(--ft-cyan)",
+            color: "var(--ft-base)",
+            border: "none",
+            fontSize: 11,
+            fontWeight: 600,
+            height: 30,
+            borderRadius: 2,
+          }}
+        >
+          Load Chain
+        </Button>
+        {chain && (
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: 4 }}>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 14,
+                fontWeight: 700,
+                color: "var(--ft-text)",
+              }}
+            >
+              {chain.ticker}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>
+              Underlying: ${chain.underlyingPrice.toFixed(2)}
+            </span>
+          </div>
+        )}
+      </form>
+
+      {/* Expiry pills */}
+      {chain && chain.expiryDates.length > 0 && (
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 12 }}>
+          {chain.expiryDates.slice(0, 24).map((exp) => (
+            <button
+              key={exp}
+              onClick={() => setSelectedExpiry(exp)}
+              style={{
+                padding: "2px 8px",
+                fontSize: 10,
+                fontFamily: "var(--font-mono)",
+                background: activeExpiry === exp ? "var(--ft-cyan)" : "var(--ft-base)",
+                color: activeExpiry === exp ? "var(--ft-base)" : "var(--ft-dim)",
+                border: `1px solid ${activeExpiry === exp ? "var(--ft-cyan)" : "var(--ft-border)"}`,
+                cursor: "pointer",
+                borderRadius: 2,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {exp}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isLoading && activeTicker && (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "28px",
+            fontSize: 12,
+            color: "var(--ft-dim)",
+            fontFamily: "var(--font-mono)",
+          }}
+        >
+          Loading {activeTicker} options chain...
+        </div>
+      )}
+
+      {/* Empty prompt */}
+      {!activeTicker && (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "28px 0",
+            fontSize: 12,
+            color: "var(--ft-dim)",
+            fontFamily: "var(--font-mono)",
+          }}
+        >
+          Enter a ticker symbol above to load a live options chain.
+        </div>
+      )}
+
+      {/* Options chain table */}
+      {chain && rows.length > 0 && !isLoading && (
+        <div style={{ overflowX: "auto", border: "1px solid var(--ft-border)" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "4px 10px",
+              background: "var(--ft-raised)",
+              borderBottom: "1px solid var(--ft-border)",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                color: "var(--ft-dim)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Expiry: {activeExpiry} — {rows.length} strikes — cyan row = ATM
+            </span>
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
+            <thead>
+              <tr>
+                <th
+                  colSpan={5}
+                  style={{
+                    ...TH,
+                    textAlign: "center",
+                    background: "rgba(63,185,80,0.08)",
+                    color: "var(--ft-green)",
+                    borderRight: "1px solid var(--ft-border2)",
+                  }}
+                >
+                  CALLS
+                </th>
+                <th
+                  style={{
+                    ...TH,
+                    textAlign: "center",
+                    background: "var(--ft-raised)",
+                    borderLeft: "1px solid var(--ft-border2)",
+                    borderRight: "1px solid var(--ft-border2)",
+                    color: "var(--ft-text)",
+                  }}
+                >
+                  STRIKE
+                </th>
+                <th
+                  colSpan={5}
+                  style={{
+                    ...TH,
+                    textAlign: "center",
+                    background: "rgba(248,81,73,0.08)",
+                    color: "var(--ft-red)",
+                    borderLeft: "1px solid var(--ft-border2)",
+                  }}
+                >
+                  PUTS
+                </th>
+              </tr>
+              <tr>
+                {(["IV", "OI", "Vol", "Ask", "Bid"] as const).map((h) => (
+                  <th
+                    key={`ch-${h}`}
+                    style={{
+                      ...TH,
+                      textAlign: "right",
+                      background: "rgba(63,185,80,0.04)",
+                      color: "var(--ft-green)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+                <th
+                  style={{
+                    ...TH,
+                    textAlign: "center",
+                    background: "var(--ft-raised)",
+                    borderLeft: "1px solid var(--ft-border2)",
+                    borderRight: "1px solid var(--ft-border2)",
+                    color: "var(--ft-text)",
+                  }}
+                >
+                  Strike
+                </th>
+                {(["Bid", "Ask", "Vol", "OI", "IV"] as const).map((h) => (
+                  <th
+                    key={`ph-${h}`}
+                    style={{
+                      ...TH,
+                      textAlign: "right",
+                      background: "rgba(248,81,73,0.04)",
+                      color: "var(--ft-red)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ strike, call, put }) => {
+                const cItm = call?.inTheMoney === true;
+                const pItm = put?.inTheMoney === true;
+                const isAtm = strike === atmStrike;
+                return (
+                  <tr
+                    key={strike}
+                    style={{ borderBottom: "1px solid var(--ft-border)" }}
+                  >
+                    {/* Call: IV */}
+                    <td style={{ ...cellStyle(cItm, "call", isAtm), color: "var(--ft-muted)" }}>
+                      {fmtPct(call?.impliedVolatility)}
+                    </td>
+                    {/* Call: OI */}
+                    <td style={{ ...cellStyle(cItm, "call", isAtm), color: "var(--ft-muted)" }}>
+                      {fmtInt(call?.openInterest)}
+                    </td>
+                    {/* Call: Vol */}
+                    <td style={{ ...cellStyle(cItm, "call", isAtm), color: "var(--ft-text)" }}>
+                      {fmtInt(call?.volume)}
+                    </td>
+                    {/* Call: Ask */}
+                    <td style={{ ...cellStyle(cItm, "call", isAtm), color: "var(--ft-text)" }}>
+                      {fmtMoney(call?.ask)}
+                    </td>
+                    {/* Call: Bid */}
+                    <td
+                      style={{
+                        ...cellStyle(cItm, "call", isAtm),
+                        color: cItm ? "var(--ft-green)" : "var(--ft-text)",
+                        fontWeight: cItm ? 600 : 400,
+                        borderRight: "1px solid var(--ft-border2)",
+                      }}
+                    >
+                      {fmtMoney(call?.bid)}
+                    </td>
+
+                    {/* Strike */}
+                    <td
+                      style={{
+                        padding: "3px 10px",
+                        textAlign: "center",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: isAtm ? "var(--ft-cyan)" : "var(--ft-text)",
+                        background: isAtm ? ATM_BG : "var(--ft-raised)",
+                        borderLeft: "1px solid var(--ft-border2)",
+                        borderRight: "1px solid var(--ft-border2)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      ${strike % 1 === 0 ? strike : strike.toFixed(2)}
+                      {isAtm && (
+                        <span
+                          style={{
+                            fontSize: 8,
+                            marginLeft: 4,
+                            color: "var(--ft-cyan)",
+                            fontWeight: 400,
+                            verticalAlign: "super",
+                          }}
+                        >
+                          ATM
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Put: Bid */}
+                    <td
+                      style={{
+                        ...cellStyle(pItm, "put", isAtm),
+                        color: pItm ? "var(--ft-red)" : "var(--ft-text)",
+                        fontWeight: pItm ? 600 : 400,
+                        borderLeft: "1px solid var(--ft-border2)",
+                      }}
+                    >
+                      {fmtMoney(put?.bid)}
+                    </td>
+                    {/* Put: Ask */}
+                    <td style={{ ...cellStyle(pItm, "put", isAtm), color: "var(--ft-text)" }}>
+                      {fmtMoney(put?.ask)}
+                    </td>
+                    {/* Put: Vol */}
+                    <td style={{ ...cellStyle(pItm, "put", isAtm), color: "var(--ft-text)" }}>
+                      {fmtInt(put?.volume)}
+                    </td>
+                    {/* Put: OI */}
+                    <td style={{ ...cellStyle(pItm, "put", isAtm), color: "var(--ft-muted)" }}>
+                      {fmtInt(put?.openInterest)}
+                    </td>
+                    {/* Put: IV */}
+                    <td style={{ ...cellStyle(pItm, "put", isAtm), color: "var(--ft-muted)" }}>
+                      {fmtPct(put?.impliedVolatility)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function DerivativesTab({ quoteMap }: DerivativesTabProps) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* Live options chain from market data */}
+      <div style={{ border: "1px solid var(--ft-border)", padding: 16, background: "var(--ft-base)" }}>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--ft-cyan)",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            borderBottom: "1px solid var(--ft-border)",
+            paddingBottom: 8,
+            marginBottom: 16,
+          }}
+        >
+          ▼ Options Chain
+        </div>
+        <OptionsChainViewer />
+      </div>
       <BSCalculator quoteMap={quoteMap} />
       <div style={{ border: "1px solid var(--ft-border)", padding: 16, background: "var(--ft-base)" }}>
         <div

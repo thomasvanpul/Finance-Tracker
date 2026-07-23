@@ -259,7 +259,8 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20 }
 
 // ── Main AiAgent ──────────────────────────────────────────────────────────────
 
-export function AiAgent() {
+export function AiAgent({ sidebarW }: { sidebarW?: number }) {
+  const [location] = useLocation();
   const [open, setOpen] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [aiStyle, setAiStyle] = useState<AiStyle>(() => {
@@ -333,7 +334,7 @@ export function AiAgent() {
     <>
       {/* Wanderer style */}
       {aiStyle === "wanderer" && (
-        <AiWanderer onOpen={() => setOpen(true)} summoned={summoned} />
+        <AiWanderer onOpen={() => setOpen(true)} summoned={summoned} locationKey={location} sidebarW={sidebarW} />
       )}
 
       {/* Classic style — bottom-right button */}

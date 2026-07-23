@@ -133,22 +133,47 @@ export function GildedSprite({ phase, blinking, walking }: { phase: Phase; blink
     phase === "dancing" ? { animation: "ix-walk-leg-r 0.5s ease-in-out infinite" } :
     walking             ? { animation: "ix-walk-leg-r 0.42s ease-in-out infinite" } : {};
 
+  if (phase === "lying") return (
+    <svg width="110" height="57" viewBox="-10 8 120 62" fill="none" overflow="visible">
+      <rect x="0" y="12" width="9" height="56" rx="4.5" fill="#1a1000" stroke="#b8860b" strokeWidth="1.2"/>
+      <circle cx="4.5" cy="20" r="2.5" fill="#b8860b" opacity="0.8"/>
+      <rect x="3" y="28" width="3" height="30" rx="1.5" fill="#b8860b" opacity="0.5"/>
+      <circle cx="4.5" cy="62" r="2" fill="#b8860b" opacity="0.6"/>
+      <rect x="9" y="38" width="100" height="32" rx="3" fill="#0d0a00" stroke="#b8860b" strokeWidth="1"/>
+      <rect x="10" y="42" width="98" height="26" rx="2" fill="#120e00"/>
+      <line x1="10" y1="42" x2="108" y2="42" stroke="#b8860b" strokeWidth="0.8" opacity="0.5"/>
+      <line x1="10" y1="68" x2="108" y2="68" stroke="#b8860b" strokeWidth="0.8" opacity="0.5"/>
+      <ellipse cx="26" cy="50" rx="18" ry="11" fill="#3a2800" stroke="#b8860b" strokeWidth="0.8"/>
+      <ellipse cx="26" cy="50" rx="12" ry="7" fill="none" stroke="#fbbf24" strokeWidth="0.3" strokeDasharray="2 1" opacity="0.5"/>
+      <ellipse cx="65" cy="60" rx="28" ry="8" fill="#120e00" opacity="0.5"/>
+      <ellipse cx="26" cy="42" rx="14" ry="12" fill="#1a1000" stroke="#b8860b" strokeWidth="1.4"/>
+      <rect x="14" y="35" width="24" height="8" rx="2" fill="#251800" stroke="#b8860b" strokeWidth="0.7" opacity="0.9"/>
+      <circle cx="26" cy="38" r="3.5" fill="#b8860b" opacity="0.8"/>
+      <circle cx="26" cy="38" r="2" fill="#fcd34d" opacity="0.7"/>
+      <rect x="14" y="42" width="24" height="9" rx="2" fill="#040200" stroke="#b8860b" strokeWidth="0.6"/>
+      <path d="M17 46 Q20 44 23 46" stroke="#fbbf24" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.8"/>
+      <path d="M29 46 Q32 44 35 46" stroke="#fbbf24" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.8"/>
+      <rect x="10" y="50" width="98" height="18" rx="2" fill="#0d0a00" stroke="#b8860b" strokeWidth="1.2"/>
+      <rect x="11" y="51" width="96" height="16" rx="1.5" fill="none" stroke="#b8860b" strokeWidth="0.4" opacity="0.4"/>
+      <rect x="10" y="50" width="98" height="5.5" rx="2" fill="#1a1200" stroke="#b8860b" strokeWidth="0.8"/>
+      <line x1="10" y1="53" x2="108" y2="53" stroke="#b8860b" strokeWidth="0.5" opacity="0.5"/>
+      <path d="M30 57 L36 61 L30 65 L24 61 Z" fill="none" stroke="#b8860b" strokeWidth="0.4" opacity="0.25"/>
+      <path d="M65 57 L71 61 L65 65 L59 61 Z" fill="none" stroke="#b8860b" strokeWidth="0.4" opacity="0.25"/>
+      <rect x="102" y="58" width="5" height="8" rx="2.5" fill="#1a1200" stroke="#b8860b" strokeWidth="0.7" opacity="0.8"/>
+      <rect x="107" y="55" width="5" height="7" rx="2.5" fill="#1a1200" stroke="#b8860b" strokeWidth="0.7" opacity="0.7"/>
+      <circle cx="109" cy="56" r="1" fill="#b8860b" opacity="0.7"/>
+      <circle cx="109" cy="64" r="1" fill="#b8860b" opacity="0.6"/>
+      <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
+        <text x="20" y="26" fontFamily="monospace" fontSize="8" fill="#b8860b" opacity="0.85">z</text>
+        <text x="14" y="20" fontFamily="monospace" fontSize="6.5" fill="#b8860b" opacity="0.55">z</text>
+        <text x="9" y="14" fontFamily="monospace" fontSize="5" fill="#b8860b" opacity="0.3">z</text>
+      </g>
+    </svg>
+  );
+
   return (
     <svg width="36" height="66" viewBox="0 0 36 66" fill="none" overflow="visible">
       <>
-      {phase === "lying" && (
-        <>
-          <rect x="-9" y="-6" width="10" height="54" rx="4" fill="#1a1000" stroke="#b8860b" strokeWidth="1.2"/>
-          <circle cx="-4" cy="8" r="2.5" fill="#b8860b" opacity="0.7"/>
-          <rect x="-7" y="14" width="5" height="28" rx="1.5" fill="#b8860b" opacity="0.5"/>
-          <circle cx="-4" cy="44" r="2" fill="#b8860b" opacity="0.5"/>
-          <rect x="-1" y="11" width="101" height="52" rx="3" fill="#0d0a00" stroke="#b8860b" strokeWidth="1"/>
-          <rect x="0" y="15" width="99" height="48" rx="2" fill="#120e00"/>
-          <line x1="0" y1="15" x2="99" y2="15" stroke="#b8860b" strokeWidth="0.8" opacity="0.5"/>
-          <ellipse cx="17" cy="23" rx="18" ry="11" fill="#3a2800" stroke="#b8860b" strokeWidth="0.8"/>
-          <ellipse cx="17" cy="23" rx="14" ry="8" fill="none" stroke="#fbbf24" strokeWidth="0.3" strokeDasharray="2 1" opacity="0.5"/>
-        </>
-      )}
           <GildedHead phase={phase} blinking={blinking}/>
 
           {/* Left arm — chunky gold ingot bar */}
@@ -272,27 +297,6 @@ export function GildedSprite({ phase, blinking, walking }: { phase: Phase; blink
             <circle cx="18" cy="-12" r="4" fill="#fbbf24"/>
             <circle cx="18" cy="-12" r="2" fill="#fcd34d"/>
           </>}
-      {phase === "lying" && (
-        <>
-          <rect x="-1" y="26" width="98" height="50" rx="3" fill="#0d0a00" stroke="#b8860b" strokeWidth="1.2"/>
-          <rect x="-1" y="26" width="98" height="6" rx="3" fill="#1a1000" stroke="#fbbf24" strokeWidth="0.8"/>
-          <path d="M1 29 Q15 31 30 29 Q45 27 60 29 Q75 31 90 29 Q95 30 97 29" stroke="#fbbf24" strokeWidth="0.8" fill="none" opacity="0.55"/>
-          <path d="M25 36 L30 41 L25 46 L20 41 Z" fill="none" stroke="#b8860b" strokeWidth="0.5" opacity="0.4"/>
-          <path d="M45 36 L50 41 L45 46 L40 41 Z" fill="none" stroke="#b8860b" strokeWidth="0.5" opacity="0.4"/>
-          <path d="M65 36 L70 41 L65 46 L60 41 Z" fill="none" stroke="#b8860b" strokeWidth="0.5" opacity="0.35"/>
-          <rect x="85" y="34" width="13" height="8" rx="4" fill="#1a1200" stroke="#b8860b" strokeWidth="0.8"/>
-          <rect x="83" y="38" width="15" height="4" rx="2" fill="#1a1200" stroke="#b8860b" strokeWidth="0.6"/>
-          <rect x="85" y="46" width="13" height="8" rx="4" fill="#1a1200" stroke="#b8860b" strokeWidth="0.8"/>
-          <rect x="83" y="50" width="15" height="4" rx="2" fill="#1a1200" stroke="#b8860b" strokeWidth="0.6"/>
-          <circle cx="97" cy="38" r="1.5" fill="#b8860b" opacity="0.9"/>
-          <circle cx="97" cy="50" r="1.5" fill="#b8860b" opacity="0.9"/>
-          <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
-            <text x="28" y="-2" fontFamily="monospace" fontSize="9" fill="#b8860b" opacity="0.9">z</text>
-            <text x="35" y="-9" fontFamily="monospace" fontSize="7" fill="#b8860b" opacity="0.65">z</text>
-            <text x="41" y="-15" fontFamily="monospace" fontSize="5.5" fill="#b8860b" opacity="0.4">z</text>
-          </g>
-        </>
-      )}
       </>
     </svg>
   );
@@ -416,23 +420,56 @@ export function BloodlineSprite({ phase, blinking, walking }: { phase: Phase; bl
     phase === "dancing" ? { animation: "ix-walk-leg-r 0.5s ease-in-out infinite" } :
     walking             ? { animation: "ix-walk-leg-r 0.42s ease-in-out infinite" } : {};
 
+  if (phase === "lying") return (
+    <svg width="110" height="57" viewBox="-10 8 120 62" fill="none" overflow="visible">
+      <rect x="0" y="12" width="9" height="56" rx="1.5" fill="#0d0000" stroke="#7f1d1d" strokeWidth="1.2"/>
+      <rect x="1.5" y="14" width="6" height="52" rx="1" fill="#130000"/>
+      <path d="M1.5 22 Q4.5 17 7.5 22" fill="none" stroke="#7f1d1d" strokeWidth="0.8" opacity="0.8"/>
+      <path d="M1.5 44 Q4.5 39 7.5 44" fill="none" stroke="#7f1d1d" strokeWidth="0.8" opacity="0.8"/>
+      <path d="M4.5 30 Q4.8 35 4.5 38" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/>
+      <circle cx="4.5" cy="39" r="1.2" fill="#ef4444" opacity="0.6"/>
+      <rect x="9" y="38" width="100" height="32" rx="2" fill="#080000" stroke="#7f1d1d" strokeWidth="1.2"/>
+      <rect x="10" y="40" width="98" height="28" rx="1.5" fill="#0d0000"/>
+      <path d="M30 40 L28 68" stroke="#1a0000" strokeWidth="1" opacity="0.7"/>
+      <path d="M60 40 L63 68" stroke="#1a0000" strokeWidth="1" opacity="0.7"/>
+      <path d="M90 40 L88 68" stroke="#1a0000" strokeWidth="1" opacity="0.7"/>
+      <ellipse cx="26" cy="50" rx="18" ry="11" fill="#1c0000" stroke="#7f1d1d" strokeWidth="0.8"/>
+      <ellipse cx="26" cy="50" rx="12" ry="7" fill="none" stroke="#ef4444" strokeWidth="0.3" strokeDasharray="2 1" opacity="0.5"/>
+      <ellipse cx="65" cy="60" rx="28" ry="8" fill="#0d0000" opacity="0.5"/>
+      <ellipse cx="26" cy="43" rx="14" ry="12" fill="#0d0000" stroke="#991b1b" strokeWidth="1.4"/>
+      <ellipse cx="24" cy="41" rx="11" ry="9" fill="none" stroke="#1a0000" strokeWidth="2"/>
+      <path d="M26 32 L25 40 L27 48 L25 54" stroke="#ef4444" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.8"/>
+      <path d="M26 32 L25 40 L27 48 L25 54" stroke="rgba(220,38,38,0.3)" strokeWidth="4" fill="none" strokeLinecap="round"/>
+      <path d="M25 38 L19 36" stroke="#ef4444" strokeWidth="0.7" opacity="0.6"/>
+      <path d="M27 44 L33 42" stroke="#ef4444" strokeWidth="0.7" opacity="0.5"/>
+      <circle cx="15" cy="33" r="2.5" fill="#ef4444" opacity="0.7"/>
+      <path d="M15 35 L12 26 L18 35 Z" fill="#3d0000" stroke="#ef4444" strokeWidth="0.7"/>
+      <circle cx="37" cy="33" r="2.5" fill="#ef4444" opacity="0.7"/>
+      <path d="M37 35 L40 26 L34 35 Z" fill="#3d0000" stroke="#ef4444" strokeWidth="0.7"/>
+      <rect x="15" y="43" width="22" height="9" rx="2" fill="#040000" stroke="#991b1b" strokeWidth="0.7"/>
+      <path d="M18 47 Q21 44.5 24 47" stroke="#ef4444" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.8"/>
+      <path d="M28 47 Q31 44.5 34 47" stroke="#ef4444" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.8"/>
+      <path d="M12 50 Q0 46 -5 40 Q0 44 8 48 Q11 50 13 52 Z" fill="#1c0000" stroke="#7f1d1d" strokeWidth="0.7" opacity="0.9"/>
+      <path d="M40 50 Q52 46 57 40 Q52 44 44 48 Q41 50 39 52 Z" fill="#1c0000" stroke="#7f1d1d" strokeWidth="0.7" opacity="0.9"/>
+      <rect x="10" y="51" width="98" height="17" rx="2" fill="#0d0000" stroke="#7f1d1d" strokeWidth="1.2"/>
+      <rect x="10" y="51" width="98" height="5.5" rx="2" fill="#150000" stroke="#991b1b" strokeWidth="0.8"/>
+      <line x1="10" y1="54" x2="108" y2="54" stroke="#ef4444" strokeWidth="0.5" opacity="0.25"/>
+      <path d="M35 56 Q40 60 35 64 Q31 60 35 56 Z" fill="none" stroke="#7f1d1d" strokeWidth="0.6" opacity="0.7"/>
+      <path d="M65 55 Q70 59 67 65 Q63 60 65 55 Z" fill="none" stroke="#7f1d1d" strokeWidth="0.6" opacity="0.6"/>
+      <path d="M90 56 Q95 60 92 64 Q87 59 90 56 Z" fill="none" stroke="#7f1d1d" strokeWidth="0.6" opacity="0.6"/>
+      <path d="M103 58 Q100 62 102 67 Q100 69 103 71" stroke="#ef4444" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.6"/>
+      <path d="M108 55 Q106 59 108 64 Q106 67 108 70" stroke="#7f1d1d" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.7"/>
+      <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
+        <text x="20" y="26" fontFamily="monospace" fontSize="8" fill="#ef4444" opacity="0.85">z</text>
+        <text x="14" y="20" fontFamily="monospace" fontSize="6.5" fill="#ef4444" opacity="0.55">z</text>
+        <text x="9" y="14" fontFamily="monospace" fontSize="5" fill="#ef4444" opacity="0.3">z</text>
+      </g>
+    </svg>
+  );
+
   return (
     <svg width="36" height="66" viewBox="0 0 36 66" fill="none" overflow="visible">
       <>
-      {phase === "lying" && (
-        <>
-          <rect x="-9" y="-6" width="10" height="54" rx="4" fill="#0a0000" stroke="#7f1d1d" strokeWidth="1.2"/>
-          <path d="M-8 4 Q-4 -2 0 4" fill="none" stroke="#7f1d1d" strokeWidth="0.6" opacity="0.5"/>
-          <path d="M-8 16 Q-4 10 0 16" fill="none" stroke="#7f1d1d" strokeWidth="0.6" opacity="0.5"/>
-          <path d="M-8 28 Q-4 22 0 28" fill="none" stroke="#7f1d1d" strokeWidth="0.6" opacity="0.5"/>
-          <path d="M-4 -4 Q-3 4 -4 10 Q-5 16 -4 22" stroke="#ef4444" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.8"/>
-          <ellipse cx="-4" cy="23" rx="2" ry="2.5" fill="#ef4444" opacity="0.7"/>
-          <rect x="-1" y="11" width="101" height="52" rx="3" fill="#080000" stroke="#7f1d1d" strokeWidth="1"/>
-          <rect x="0" y="15" width="99" height="48" rx="2" fill="#0d0000"/>
-          <ellipse cx="17" cy="23" rx="18" ry="11" fill="#1c0000" stroke="#7f1d1d" strokeWidth="0.8"/>
-          <path d="M3 23 Q17 19 31 23" stroke="#ef4444" strokeWidth="0.4" strokeDasharray="2 1" fill="none" opacity="0.4"/>
-        </>
-      )}
           <BloodlineHead phase={phase} blinking={blinking}/>
 
           {/* BAT WINGS */}
@@ -579,26 +616,6 @@ export function BloodlineSprite({ phase, blinking, walking }: { phase: Phase; bl
             <circle cx="50" cy="49" r="1.2" fill={BV} opacity="0.5"/>
             <circle cx="45" cy="47" r="1.5" fill={BV} opacity="0.3"/>
           </>}
-      {phase === "lying" && (
-        <>
-          <rect x="-1" y="26" width="98" height="50" rx="3" fill="#0d0000" stroke="#7f1d1d" strokeWidth="1"/>
-          <rect x="-1" y="26" width="98" height="6" rx="3" fill="#1a0000" stroke="#ef4444" strokeWidth="0.8"/>
-          <path d="M1 29 Q15 31 30 29 Q45 27 60 29 Q75 31 90 29 Q95 30 97 29" stroke="#ef4444" strokeWidth="0.8" fill="none" opacity="0.4"/>
-          <path d="M20 33 Q25 37 22 43 Q19 48 24 53" stroke="#7f1d1d" strokeWidth="0.8" fill="none" opacity="0.55" strokeLinecap="round"/>
-          <path d="M50 35 Q55 40 52 47 Q49 52 54 57" stroke="#7f1d1d" strokeWidth="0.7" fill="none" opacity="0.5" strokeLinecap="round"/>
-          <path d="M35 34 Q38 39 35 45" stroke="#7f1d1d" strokeWidth="0.5" fill="none" opacity="0.4" strokeLinecap="round"/>
-          <path d="M75 32 Q73 38 76 44 Q74 48 77 52" stroke="#7f1d1d" strokeWidth="0.6" fill="none" opacity="0.4" strokeLinecap="round"/>
-          <ellipse cx="91" cy="38" rx="7" ry="5" fill="#0d0000" stroke="#7f1d1d" strokeWidth="0.8"/>
-          <ellipse cx="91" cy="50" rx="7" ry="5" fill="#0d0000" stroke="#7f1d1d" strokeWidth="0.8"/>
-          <path d="M86 36 L84 34 M89 35 L88 33 M92 35 L92 33 M95 36 L97 34" stroke="#ef4444" strokeWidth="0.9" strokeLinecap="round" opacity="0.8"/>
-          <path d="M86 48 L84 46 M89 47 L88 45 M92 47 L92 45 M95 48 L97 46" stroke="#ef4444" strokeWidth="0.9" strokeLinecap="round" opacity="0.8"/>
-          <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
-            <text x="28" y="-2" fontFamily="monospace" fontSize="9" fill="#ef4444" opacity="0.9">z</text>
-            <text x="35" y="-9" fontFamily="monospace" fontSize="7" fill="#ef4444" opacity="0.65">z</text>
-            <text x="41" y="-15" fontFamily="monospace" fontSize="5.5" fill="#ef4444" opacity="0.4">z</text>
-          </g>
-        </>
-      )}
       </>
     </svg>
   );

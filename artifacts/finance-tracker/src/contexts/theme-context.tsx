@@ -1,16 +1,19 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-export type FintrackTheme = "void" | "phosphor" | "arctic" | "amber" | "midnight" | "matrix" | "rose" | "ocean";
+export type FintrackTheme = "void" | "phosphor" | "arctic" | "amber" | "midnight" | "matrix" | "synthwave" | "deep-space" | "mario" | "gilded" | "bloodline";
 
 const THEMES: { id: FintrackTheme; label: string; accent: string; base: string; text: string }[] = [
-  { id: "void",     label: "Void",     accent: "#F4A21E", base: "#08090B", text: "#CDD6F4" },
-  { id: "phosphor", label: "Phosphor", accent: "#7FFF00", base: "#020802", text: "#39FF14" },
-  { id: "arctic",   label: "Arctic",   accent: "#0052CC", base: "#F0F4F8", text: "#1A2333" },
-  { id: "amber",    label: "Amber",    accent: "#FFD700", base: "#0A0600", text: "#FFB000" },
-  { id: "midnight", label: "Midnight", accent: "#4D9FFF", base: "#010817", text: "#E8F0FF" },
-  { id: "matrix",   label: "Matrix",   accent: "#00FF41", base: "#000300", text: "#00CC33" },
-  { id: "rose",     label: "Rose",     accent: "#FF2D78", base: "#0A0005", text: "#FFB3CB" },
-  { id: "ocean",    label: "Ocean",    accent: "#00D4FF", base: "#010A12", text: "#B0E8FF" },
+  { id: "void",       label: "Void",       accent: "#F4A21E", base: "#08090B", text: "#CDD6F4" },
+  { id: "phosphor",   label: "Phosphor",   accent: "#7FFF00", base: "#020802", text: "#39FF14" },
+  { id: "arctic",     label: "Arctic",     accent: "#0052CC", base: "#F0F4F8", text: "#1A2333" },
+  { id: "amber",      label: "Amber",      accent: "#FFD700", base: "#0A0600", text: "#FFB000" },
+  { id: "midnight",   label: "Midnight",   accent: "#4D9FFF", base: "#010817", text: "#E8F0FF" },
+  { id: "matrix",     label: "Matrix",     accent: "#00FF41", base: "#000300", text: "#00CC33" },
+  { id: "synthwave",  label: "Synthwave",  accent: "#FF007A", base: "#0D001A", text: "#E8D5FF" },
+  { id: "deep-space", label: "Deep Space", accent: "#7B5EA7", base: "#010108", text: "#C8D0E8" },
+  { id: "mario",      label: "Mario",      accent: "#F8C800", base: "#5C94FC", text: "#FCFCFC" },
+  { id: "gilded",     label: "Gilded",     accent: "#C8941E", base: "#080600", text: "#F0E6C8" },
+  { id: "bloodline",  label: "Bloodline",  accent: "#CC1A2F", base: "#0F0003", text: "#F5C2C7" },
 ];
 
 interface ThemeContextValue {

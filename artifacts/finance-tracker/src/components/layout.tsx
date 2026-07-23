@@ -63,8 +63,8 @@ const NAV_SECTIONS = [
   {
     label: "TOOLS",
     items: [
-      { href: "/whatif",   label: "Calculators", code: "G·F" },
-      { href: "/import",   label: "Import",      code: "G·J" },
+      { href: "/whatif",    label: "Calculators", code: "G·F" },
+      { href: "/import",    label: "Import",      code: "G·J" },
     ],
   },
 ];
@@ -85,7 +85,7 @@ const G_KEY_MAP: Record<string, string> = {
   m: "/mortgage", y: "/tax", h: "/health-score",
   f: "/whatif", k: "/calendar",
   s: "/settings", p: "/profile", q: "/learn",
-  v: "/cashflow", e: "/year-review", j: "/import",
+  v: "/cashflow", e: "/year-review", j: "/import", z: "/wardrobe",
 };
 
 
@@ -800,6 +800,16 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarConfig, setSidebarConfig] = useState<SidebarConfig>(() =>
     loadSidebarConfig(ALL_NAV_ITEMS)
   );
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    try {
+      const s = localStorage.getItem("ft-sidebar-width");
+      return s ? Math.max(160, Math.min(360, Number(s))) : 212;
+    } catch { return 212; }
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeHovered, setResizeHovered] = useState(false);
+  const sidebarWidthRef = useRef(sidebarWidth);
+  sidebarWidthRef.current = sidebarWidth;
   const { data: dashboardData } = useGetDashboard();
   const { data: currencyData } = useGetSettingsCurrency();
   useEffect(() => {
@@ -815,6 +825,31 @@ export function Layout({ children }: LayoutProps) {
       return next;
     });
   }, []);
+
+  const handleResizeStart = useCallback((e: React.PointerEvent) => {
+    if (collapsed) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = sidebarWidthRef.current;
+    setIsResizing(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    const onMove = (ev: PointerEvent) => {
+      const next = Math.max(160, Math.min(360, startW + ev.clientX - startX));
+      setSidebarWidth(next);
+      sidebarWidthRef.current = next;
+    };
+    const onUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      try { localStorage.setItem("ft-sidebar-width", String(sidebarWidthRef.current)); } catch {}
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }, [collapsed]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -872,7 +907,7 @@ export function Layout({ children }: LayoutProps) {
   const allItems = NAV_SECTIONS.flatMap(s => s.items).concat(BOTTOM_ITEMS);
   const activePage = allItems.find(i => isActive(i.href))?.label ?? "Dashboard";
 
-  const sidebarW = collapsed ? 54 : 212;
+  const sidebarW = collapsed ? 54 : sidebarWidth;
 
   return (
     <>
@@ -992,7 +1027,7 @@ export function Layout({ children }: LayoutProps) {
           flexDirection: "column",
           background: "var(--ft-surface)",
           borderRight: "1px solid var(--ft-border)",
-          transition: "width 0.2s cubic-bezier(0.4,0,0.2,1)",
+          transition: isResizing ? "none" : "width 0.2s cubic-bezier(0.4,0,0.2,1)",
           overflow: "hidden",
           position: "relative",
           zIndex: 10,
@@ -1009,12 +1044,38 @@ export function Layout({ children }: LayoutProps) {
           opacity: 0.7,
         }} />
 
+        {/* Resize handle — right edge drag zone */}
+        {!collapsed && (
+          <div
+            onPointerDown={handleResizeStart}
+            onMouseEnter={() => setResizeHovered(true)}
+            onMouseLeave={() => setResizeHovered(false)}
+            title="Drag to resize"
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 6,
+              cursor: "col-resize",
+              zIndex: 20,
+              background: isResizing
+                ? "var(--ft-accent)"
+                : resizeHovered
+                ? "var(--ft-accent)"
+                : "transparent",
+              opacity: isResizing ? 0.5 : resizeHovered ? 0.35 : 0,
+              transition: "opacity 0.12s",
+            }}
+          />
+        )}
+
         {/* Brand */}
         <div
           ref={logoRef}
           data-logo
           style={{
-            height: 52,
+            height: 48,
             display: "flex",
             alignItems: "center",
             paddingLeft: collapsed ? 0 : 16,
@@ -1486,7 +1547,7 @@ export function Layout({ children }: LayoutProps) {
       </div>
     </div>
     <EasterEggRenderer overlay={eggOverlay} clearOverlay={clearOverlay} />
-    <AiAgent />
+    <AiAgent sidebarW={sidebarW} />
     </>
   );
 }

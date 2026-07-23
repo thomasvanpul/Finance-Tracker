@@ -83,20 +83,42 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
     </>
   );
 
+  if (phase === "lying") return (
+    <svg width="110" height="57" viewBox="-10 8 120 62" fill="none" overflow="visible">
+      <rect x="0" y="12" width="9" height="56" rx="4.5" fill="#6b3a1f" stroke="#5c2f14" strokeWidth="1.2"/>
+      <rect x="3" y="28" width="3" height="30" rx="1.5" fill="#5c2f14"/>
+      <rect x="9" y="38" width="100" height="32" rx="3" fill="#5c2f14" stroke="#4a2510" strokeWidth="1"/>
+      <rect x="10" y="42" width="98" height="26" rx="2" fill="#6b3a1f"/>
+      <ellipse cx="26" cy="50" rx="18" ry="11" fill="#F8F4EC" stroke="#E0D8CC" strokeWidth="0.8"/>
+      <ellipse cx="26" cy="50" rx="14" ry="8" fill="none" stroke="#E8E0D4" strokeWidth="0.4" strokeDasharray="2 1" opacity="0.6"/>
+      <ellipse cx="65" cy="60" rx="28" ry="8" fill="#6b3a1f" opacity="0.5"/>
+      <ellipse cx="26" cy="40" rx="15" ry="8" fill="#CC2200"/>
+      <path d="M11 40 Q26 28 41 40" fill="#CC2200"/>
+      <path d="M13 40 Q26 30 39 40" fill="#CC2200"/>
+      <path d="M11 40 Q26 42 41 40" fill="none" stroke="#aa1800" strokeWidth="1.2"/>
+      <circle cx="26" cy="36" r="4.5" fill="#F0E8D0" stroke="#CC2200" strokeWidth="0.5"/>
+      <text x="26" y="39" fontFamily="Arial Black" fontSize="4.5" fill="#CC2200" textAnchor="middle" fontWeight="900">M</text>
+      <ellipse cx="26" cy="48" rx="12" ry="9" fill="#FFBE7D" stroke="#E8A060" strokeWidth="0.6"/>
+      <path d="M18 46.5 Q21 44 24 46.5" stroke="#3a1a10" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+      <path d="M28 46.5 Q31 44 34 46.5" stroke="#3a1a10" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+      <circle cx="26" cy="49" r="1.8" fill="#e08060" opacity="0.6"/>
+      <path d="M20 51 Q22 50 24 51 Q26 52 28 51 Q30 50 32 51" stroke="#3a1a10" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+      <rect x="10" y="52" width="98" height="16" rx="2" fill="#CC2200" stroke="#aa1800" strokeWidth="1"/>
+      <rect x="10" y="52" width="98" height="5.5" rx="2" fill="#e03010" stroke="#cc2000" strokeWidth="0.7"/>
+      <path d="M10 55 Q40 56.5 70 55 Q90 53.5 108 55" stroke="#aa1800" strokeWidth="0.7" fill="none" opacity="0.7"/>
+      <rect x="102" y="58" width="5" height="8" rx="2.5" fill="#4a2800" stroke="#3a1800" strokeWidth="0.6" opacity="0.8"/>
+      <rect x="107" y="55" width="5" height="7" rx="2.5" fill="#4a2800" stroke="#3a1800" strokeWidth="0.6" opacity="0.7"/>
+      <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
+        <text x="20" y="26" fontFamily="monospace" fontSize="8" fill="#CC2200" opacity="0.85">z</text>
+        <text x="14" y="20" fontFamily="monospace" fontSize="6.5" fill="#CC2200" opacity="0.55">z</text>
+        <text x="9" y="14" fontFamily="monospace" fontSize="5" fill="#CC2200" opacity="0.3">z</text>
+      </g>
+    </svg>
+  );
+
   return (
     <svg width="36" height="66" viewBox="0 0 36 66" fill="none" overflow="visible">
       <>
-      {phase === "lying" && (
-        <>
-          <rect x="-9" y="-6" width="10" height="54" rx="4.5" fill="#6b3a1f" stroke="#5c2f14" strokeWidth="1.2"/>
-          <rect x="-7" y="4" width="6" height="38" rx="1.5" fill="#7c4422"/>
-          <rect x="-6" y="14" width="4" height="26" rx="1.5" fill="#5c2f14"/>
-          <rect x="-1" y="11" width="101" height="52" rx="3" fill="#5c2f14" stroke="#4a2510" strokeWidth="1"/>
-          <rect x="0" y="15" width="99" height="48" rx="2" fill="#6b3a1f"/>
-          <ellipse cx="17" cy="23" rx="18" ry="11" fill="#F8F4EC" stroke="#E0D8CC" strokeWidth="0.8"/>
-          <ellipse cx="17" cy="23" rx="14" ry="8" fill="none" stroke="#E8E0D4" strokeWidth="0.4" strokeDasharray="2 1" opacity="0.6"/>
-        </>
-      )}
           {/* === HEAD === */}
           <ellipse cx="18" cy="6" rx="11" ry="7" fill={MH}/>
           <circle cx="18" cy="16" r="12" fill={MS}/>
@@ -241,23 +263,6 @@ export function MarioSprite({ phase, blinking, walking }: { phase: Phase; blinki
             <circle cx="-4" cy="30" r="1.5" fill={MY} opacity="0.5"/>
             <circle cx="-9" cy="28" r="1" fill={MY} opacity="0.3"/>
           </>}
-      {phase === "lying" && (
-        <>
-          <rect x="-1" y="26" width="98" height="50" rx="3" fill={MC} stroke="#9b0a0a" strokeWidth="1"/>
-          <rect x="-1" y="26" width="98" height="6" rx="3" fill="#cc1414" stroke="#ff3030" strokeWidth="0.8"/>
-          <path d="M1 29 Q15 31 30 29 Q45 27 60 29 Q75 31 90 29 Q95 30 97 29" stroke="#ff5555" strokeWidth="0.8" fill="none" opacity="0.45"/>
-          <path d="M2 34 Q20 36 40 34 Q60 32 80 34 Q90 35 97 34" stroke="#9b0a0a" strokeWidth="0.6" fill="none" opacity="0.35"/>
-          <rect x="85" y="34" width="13" height="8" rx="4" fill={MB} stroke="#3D1800" strokeWidth="0.8"/>
-          <rect x="83" y="38" width="15" height="4" rx="2" fill={MB}/>
-          <rect x="85" y="46" width="13" height="8" rx="4" fill={MB} stroke="#3D1800" strokeWidth="0.8"/>
-          <rect x="83" y="50" width="15" height="4" rx="2" fill={MB}/>
-          <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
-            <text x="28" y="-2" fontFamily="monospace" fontSize="9" fill="#CC2000" opacity="0.9">z</text>
-            <text x="35" y="-9" fontFamily="monospace" fontSize="7" fill="#CC2000" opacity="0.65">z</text>
-            <text x="41" y="-15" fontFamily="monospace" fontSize="5.5" fill="#CC2000" opacity="0.4">z</text>
-          </g>
-        </>
-      )}
       </>
     </svg>
   );

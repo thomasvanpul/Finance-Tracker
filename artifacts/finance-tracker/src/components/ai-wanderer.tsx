@@ -41,11 +41,11 @@ type IdlePhase = Exclude<Phase, "walking" | "jumping">;
 
 const SPRITE_FLOOR_H: Record<Phase, number> = {
   idle: 66, walking: 66, jumping: 66, sitting: 66, coffee: 66,
-  tired: 66, thinking: 66, lying: 51, complaining: 66, dancing: 66,
+  tired: 66, thinking: 66, lying: 57, complaining: 66, dancing: 66,
 };
 const SPRITE_W: Record<Phase, number> = {
   idle: 36, walking: 36, jumping: 36, sitting: 36, coffee: 36,
-  tired: 36, thinking: 36, lying: 36, complaining: 36, dancing: 36,
+  tired: 36, thinking: 36, lying: 110, complaining: 36, dancing: 36,
 };
 
 // ── Mood-driven phase pools ────────────────────────────────────────────────────
@@ -314,20 +314,42 @@ function BotSprite({ phase, blinking, walking, skinId }: { phase: Phase; blinkin
 
   const svgTransform: React.CSSProperties = {};
 
+  if (phase === "lying") return (
+    <svg width="110" height="57" viewBox="-10 8 120 62" fill="none" overflow="visible">
+      <rect x="0" y="12" width="9" height="56" rx="4.5" fill="#0c1628" stroke="#253b58" strokeWidth="1.2"/>
+      <rect x="3" y="28" width="3" height="30" rx="1.5" fill="#162032"/>
+      <rect x="9" y="38" width="100" height="32" rx="3" fill="#0a1520" stroke="#162032" strokeWidth="1"/>
+      <rect x="10" y="42" width="98" height="26" rx="2" fill="#0c1826"/>
+      <ellipse cx="26" cy="50" rx="18" ry="11" fill="#F0EBE0" stroke="#D8D2C4" strokeWidth="0.8"/>
+      <ellipse cx="26" cy="50" rx="14" ry="8" fill="none" stroke="#E0DAD0" strokeWidth="0.4" strokeDasharray="2 1" opacity="0.6"/>
+      <ellipse cx="65" cy="60" rx="28" ry="8" fill="#0e1c2e" opacity="0.5"/>
+      <ellipse cx="26" cy="44" rx="13" ry="12" fill="#0c1628" stroke="#7c3aed" strokeWidth="1.3"/>
+      <ellipse cx="24" cy="42" rx="10" ry="9" fill="none" stroke="#1a2a40" strokeWidth="2"/>
+      <ellipse cx="18" cy="36" rx="4" ry="2.5" fill="rgba(255,255,255,0.04)"/>
+      <rect x="15" y="39" width="22" height="10" rx="2.5" fill="#040c18" stroke="#7c3aed" strokeWidth="0.7"/>
+      <path d="M17 43.5 Q20 41 23 43.5" stroke="#475569" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+      <path d="M27 43.5 Q30 41 33 43.5" stroke="#475569" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+      <circle cx="22" cy="30" r="1.4" fill="#f472b6"/>
+      <rect x="21.2" y="31" width="1.6" height="5" rx="0.8" fill="#f472b6"/>
+      <circle cx="30" cy="30" r="1.4" fill="#f472b6"/>
+      <rect x="29.2" y="31" width="1.6" height="5" rx="0.8" fill="#f472b6"/>
+      <rect x="10" y="51" width="98" height="17" rx="2" fill="#162032" stroke="#1e3050" strokeWidth="1"/>
+      <rect x="10" y="51" width="98" height="6" rx="2" fill="#1f3456" stroke="#2a4a70" strokeWidth="0.8"/>
+      <path d="M10 54 Q30 55.5 50 54 Q70 52.5 90 54 Q100 54.5 108 54" stroke="#253b58" strokeWidth="0.7" fill="none" opacity="0.7"/>
+      <path d="M10 58 Q25 59 40 57.5 Q60 56 80 57.5 Q95 58.5 108 58" stroke="#162032" strokeWidth="0.7" fill="none" opacity="0.5"/>
+      <rect x="102" y="58" width="5" height="8" rx="2.5" fill="#0e1c2e" stroke="#162032" strokeWidth="0.6" opacity="0.8"/>
+      <rect x="107" y="55" width="5" height="7" rx="2.5" fill="#0e1c2e" stroke="#162032" strokeWidth="0.6" opacity="0.7"/>
+      <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
+        <text x="20" y="26" fontFamily="monospace" fontSize="8" fill="#06b6d4" opacity="0.85">z</text>
+        <text x="14" y="20" fontFamily="monospace" fontSize="6.5" fill="#06b6d4" opacity="0.55">z</text>
+        <text x="9" y="14" fontFamily="monospace" fontSize="5" fill="#06b6d4" opacity="0.3">z</text>
+      </g>
+    </svg>
+  );
+
   return (
     <svg width="36" height="66" viewBox="0 0 36 66" fill="none" overflow="visible" style={svgTransform}>
       <>
-      {phase === "lying" && (
-        <>
-          <rect x="-9" y="-6" width="10" height="54" rx="4" fill="#0c1628" stroke="#253b58" strokeWidth="1.2"/>
-          <rect x="-7" y="4" width="6" height="38" rx="1.5" fill="#0f1e35"/>
-          <rect x="-6" y="14" width="4" height="26" rx="1.5" fill="#162032"/>
-          <rect x="-1" y="11" width="101" height="52" rx="3" fill="#0a1520" stroke="#162032" strokeWidth="1"/>
-          <rect x="0" y="15" width="99" height="48" rx="2" fill="#0c1826"/>
-          <ellipse cx="17" cy="23" rx="18" ry="11" fill="#F0EBE0" stroke="#D8D2C4" strokeWidth="0.8"/>
-          <ellipse cx="17" cy="23" rx="14" ry="8" fill="none" stroke="#E0DAD0" strokeWidth="0.4" strokeDasharray="2 1" opacity="0.6"/>
-        </>
-      )}
       <FrontHead phase={phase} blinking={blinking} hStroke={hStroke}/>
 
       {/* Neck */}
@@ -481,23 +503,6 @@ function BotSprite({ phase, blinking, walking, skinId }: { phase: Phase; blinkin
         <path d="M36 32 L36.5 30 L37 32 L39 32.5 L37 33 L36.5 35 L36 33 L34 32.5 Z" fill="#fbbf24" opacity="0.85"/>
         <path d="M-3 33 L-2.5 31.5 L-2 33 L-0.5 33.5 L-2 34 L-2.5 35.5 L-3 34 L-4.5 33.5 Z" fill="#fbbf24" opacity="0.7"/>
       </>}
-      {phase === "lying" && (
-        <>
-          <rect x="-1" y="26" width="98" height="50" rx="3" fill="#0c1826" stroke="#162032" strokeWidth="1"/>
-          <rect x="-1" y="26" width="98" height="6" rx="3" fill="#172440" stroke="#1e3a8a" strokeWidth="0.8"/>
-          <path d="M1 29 Q15 31 30 29 Q45 27 60 29 Q75 31 90 29 Q95 30 97 29" stroke="#2563eb" strokeWidth="0.8" fill="none" opacity="0.45"/>
-          <path d="M2 34 Q20 36 40 34 Q60 32 80 34 Q90 35 97 34" stroke="#162032" strokeWidth="0.6" fill="none" opacity="0.35"/>
-          <ellipse cx="91" cy="38" rx="7" ry="4.5" fill="#0c1826" stroke="#162032" strokeWidth="0.8"/>
-          <ellipse cx="91" cy="50" rx="7" ry="4.5" fill="#0c1826" stroke="#162032" strokeWidth="0.8"/>
-          <circle cx="96" cy="37.5" r="1.1" fill="#06b6d4" opacity="0.7"/>
-          <circle cx="96" cy="50.5" r="1.1" fill="#06b6d4" opacity="0.7"/>
-          <g style={{ animation: "ix-bed-appear 0.4s ease-out 0.8s both" }}>
-            <text x="28" y="-2" fontFamily="monospace" fontSize="9" fill="#64748b" opacity="0.9">z</text>
-            <text x="35" y="-9" fontFamily="monospace" fontSize="7" fill="#64748b" opacity="0.65">z</text>
-            <text x="41" y="-15" fontFamily="monospace" fontSize="5.5" fill="#64748b" opacity="0.4">z</text>
-          </g>
-        </>
-      )}
       </>
     </svg>
   );

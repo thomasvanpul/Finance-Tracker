@@ -4,9 +4,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 
 type EggOverlay =
   | { kind: "matrix-access" }
-  | { kind: "rose-hearts" }
-  | { kind: "ocean-fish" }
-  | { kind: "ocean-swim" }
   | { kind: "generic-unlock" }
   | { kind: "void-null-pointer" }
   | { kind: "phosphor-boot" }
@@ -156,7 +153,7 @@ function MatrixAccessOverlay({ onDone }: { onDone: () => void }) {
   );
 }
 
-// ── Rose hearts burst ──────────────────────────────────────────────────────────
+// (rose and ocean overlay functions removed — those themes no longer exist)
 
 interface HeartParticle {
   id: number;
@@ -168,118 +165,7 @@ interface HeartParticle {
   opacity: number;
 }
 
-function RoseHeartsOverlay({ onDone }: { onDone: () => void }) {
-  const [hearts, setHearts] = useState<HeartParticle[]>([]);
-
-  useEffect(() => {
-    const initial: HeartParticle[] = Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      x: window.innerWidth / 2,
-      y: window.innerHeight / 2,
-      vx: (Math.random() - 0.5) * 8,
-      vy: -(Math.random() * 6 + 2),
-      size: 16 + Math.random() * 20,
-      opacity: 1,
-    }));
-    setHearts(initial);
-    const id = setTimeout(onDone, 3000);
-    return () => clearTimeout(id);
-  }, [onDone]);
-
-  useEffect(() => {
-    if (hearts.length === 0) return;
-    let rafId: number;
-    let ticks = 0;
-
-    function animate() {
-      ticks++;
-      setHearts((prev) =>
-        prev.map((h) => ({
-          ...h,
-          x: h.x + h.vx,
-          y: h.y + h.vy,
-          vy: h.vy + 0.15,
-          opacity: Math.max(0, h.opacity - 0.008),
-        }))
-      );
-      if (ticks < 180) rafId = requestAnimationFrame(animate);
-    }
-
-    rafId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(rafId);
-  }, [hearts.length]);
-
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none" }}>
-      {hearts.map((h) => (
-        <div
-          key={h.id}
-          style={{
-            position: "absolute",
-            left: h.x,
-            top: h.y,
-            fontSize: h.size,
-            opacity: h.opacity,
-            color: "#FF2D78",
-            transform: "translate(-50%, -50%)",
-            textShadow: "0 0 10px rgba(255,45,120,0.5)",
-            userSelect: "none",
-          }}
-        >
-          🌸
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Ocean fish message ─────────────────────────────────────────────────────────
-
-function OceanFishOverlay({ onDone }: { onDone: () => void }) {
-  useEffect(() => {
-    const id = setTimeout(onDone, 3000);
-    return () => clearTimeout(id);
-  }, [onDone]);
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        pointerEvents: "none",
-      }}
-    >
-      <div
-        style={{
-          background: "rgba(0, 20, 40, 0.9)",
-          border: "1px solid rgba(0, 212, 255, 0.5)",
-          borderRadius: 12,
-          padding: "20px 32px",
-          fontFamily: "monospace",
-          fontSize: 18,
-          color: "#00D4FF",
-          textShadow: "0 0 10px rgba(0,212,255,0.7)",
-          boxShadow: "0 0 30px rgba(0,212,255,0.2)",
-          animation: "ft-bubble-pop 0.3s ease-out",
-        }}
-      >
-        🐠 You found the fish!
-      </div>
-      <style>{`
-        @keyframes ft-bubble-pop {
-          from { transform: scale(0.5); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-// ── Ocean fish swimming across screen ─────────────────────────────────────────
+// ── (placeholder to maintain line structure) ──────────────────────────────────
 
 function OceanFishSwimOverlay({ onDone }: { onDone: () => void }) {
   useEffect(() => {
@@ -811,10 +697,6 @@ export function useEasterEggs(): {
             setOverlay({ kind: "midnight-shooting-star" });
           } else if (theme === "matrix") {
             setOverlay({ kind: "matrix-access" });
-          } else if (theme === "rose") {
-            setOverlay({ kind: "rose-hearts" });
-          } else if (theme === "ocean") {
-            setOverlay({ kind: "ocean-fish" });
           } else {
             setOverlay({ kind: "generic-unlock" });
           }
@@ -892,23 +774,11 @@ export function useEasterEggs(): {
         if (logoClickTimer.current) clearTimeout(logoClickTimer.current);
         setOverlay({ kind: "matrix-access" });
       }
-      // Rose: triple-click → hearts
-      if (theme === "rose" && logoClickCount.current >= 3) {
-        logoClickCount.current = 0;
-        if (logoClickTimer.current) clearTimeout(logoClickTimer.current);
-        setOverlay({ kind: "rose-hearts" });
-      }
       // Arctic: triple-click → frozen
       if (theme === "arctic" && logoClickCount.current >= 3) {
         logoClickCount.current = 0;
         if (logoClickTimer.current) clearTimeout(logoClickTimer.current);
         setOverlay({ kind: "arctic-frozen" });
-      }
-      // Ocean: 5 clicks
-      if (theme === "ocean" && logoClickCount.current >= 5) {
-        logoClickCount.current = 0;
-        if (logoClickTimer.current) clearTimeout(logoClickTimer.current);
-        setOverlay({ kind: "ocean-swim" });
       }
     }
 
@@ -969,9 +839,6 @@ export function EasterEggRenderer({ overlay, clearOverlay }: EasterEggRendererPr
   if (!overlay) return null;
 
   if (overlay.kind === "matrix-access")         return <MatrixAccessOverlay onDone={clearOverlay} />;
-  if (overlay.kind === "rose-hearts")           return <RoseHeartsOverlay onDone={clearOverlay} />;
-  if (overlay.kind === "ocean-fish")            return <OceanFishOverlay onDone={clearOverlay} />;
-  if (overlay.kind === "ocean-swim")            return <OceanFishSwimOverlay onDone={clearOverlay} />;
   if (overlay.kind === "generic-unlock")        return <GenericUnlockOverlay onDone={clearOverlay} />;
   if (overlay.kind === "void-null-pointer")     return <VoidNullPointerOverlay onDone={clearOverlay} />;
   if (overlay.kind === "phosphor-boot")         return <PhosphorBootOverlay onDone={clearOverlay} />;

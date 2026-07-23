@@ -21,6 +21,7 @@ import { authClient } from "@/lib/auth-client";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
 import { useWidgets, WIDGET_REGISTRY } from "@/contexts/widgets-context";
 import { THEME_REWARDS, ThemeRewardsPanel, getLearnXP } from "@/components/investments/learn-tab";
+import { getBotSkin, setBotSkin, SKINS, type BotSkinId } from "@/lib/bot-skins";
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 const ALERT_RULES_KEY = "ft-alert-rules";
@@ -62,14 +63,17 @@ const CATEGORIES = [
 ];
 
 const SWATCH_DATA: { id: FintrackTheme; label: string; tagline: string; base: string; surface: string; accent: string; text: string; muted: string }[] = [
-  { id: "void",     label: "Void",     tagline: "Terminal amber on void",       base: "#08090B", surface: "#0F1117", accent: "#F4A21E", text: "#CDD6F4", muted: "#6C7A96" },
-  { id: "phosphor", label: "Phosphor", tagline: "CRT phosphor green",           base: "#020802", surface: "#050F05", accent: "#7FFF00", text: "#39FF14", muted: "#1E8C0A" },
-  { id: "arctic",   label: "Arctic",   tagline: "Corporate daylight",           base: "#F0F4F8", surface: "#FFFFFF", accent: "#0052CC", text: "#1A2333", muted: "#5A6A84" },
-  { id: "amber",    label: "Amber",    tagline: "Warm trader console",          base: "#0A0600", surface: "#120C00", accent: "#FFD700", text: "#FFB000", muted: "#A07020" },
-  { id: "midnight", label: "Midnight", tagline: "Late-night deep blue",         base: "#010817", surface: "#05112A", accent: "#4D9FFF", text: "#E8F0FF", muted: "#7A99CC" },
-  { id: "matrix",   label: "Matrix",   tagline: "Decoded reality",              base: "#000300", surface: "#010601", accent: "#00FF41", text: "#00CC33", muted: "#007700" },
-  { id: "rose",     label: "Rose",     tagline: "Neon pink distortion",         base: "#0A0005", surface: "#0F0008", accent: "#FF2D78", text: "#FFB3CB", muted: "#CC5580" },
-  { id: "ocean",    label: "Ocean",    tagline: "Submerged signal",             base: "#010A12", surface: "#011520", accent: "#00D4FF", text: "#B0E8FF", muted: "#5599BB" },
+  { id: "void",       label: "Void",       tagline: "Terminal amber on void",       base: "#08090B", surface: "#0F1117", accent: "#F4A21E", text: "#CDD6F4", muted: "#6C7A96" },
+  { id: "phosphor",   label: "Phosphor",   tagline: "CRT phosphor green",           base: "#020802", surface: "#050F05", accent: "#7FFF00", text: "#39FF14", muted: "#1E8C0A" },
+  { id: "arctic",     label: "Arctic",     tagline: "Corporate daylight",           base: "#F0F4F8", surface: "#FFFFFF", accent: "#0052CC", text: "#1A2333", muted: "#5A6A84" },
+  { id: "amber",      label: "Amber",      tagline: "Warm trader console",          base: "#0A0600", surface: "#120C00", accent: "#FFD700", text: "#FFB000", muted: "#A07020" },
+  { id: "midnight",   label: "Midnight",   tagline: "Late-night deep blue",         base: "#010817", surface: "#05112A", accent: "#4D9FFF", text: "#E8F0FF", muted: "#7A99CC" },
+  { id: "matrix",     label: "Matrix",     tagline: "Decoded reality",              base: "#000300", surface: "#010601", accent: "#00FF41", text: "#00CC33", muted: "#007700" },
+  { id: "synthwave",  label: "Synthwave",  tagline: "Neon grids, 80s midnight",     base: "#0D001A", surface: "#170028", accent: "#FF007A", text: "#E8D5FF", muted: "#9966CC" },
+  { id: "deep-space", label: "Deep Space", tagline: "Cosmic observatory",           base: "#010108", surface: "#06060F", accent: "#7B5EA7", text: "#C8D0E8", muted: "#6870A0" },
+  { id: "mario",      label: "Mario",      tagline: "8-bit power-up",              base: "#5C94FC", surface: "#3A70DC", accent: "#F8C800", text: "#FCFCFC", muted: "#6888CC" },
+  { id: "gilded",     label: "Gilded",     tagline: "Black gold, no noise",         base: "#080600", surface: "#0E0C00", accent: "#C8941E", text: "#F0E6C8", muted: "#7A5E0A" },
+  { id: "bloodline",  label: "Bloodline",  tagline: "Dark market, red signals",     base: "#0F0003", surface: "#1A0008", accent: "#CC1A2F", text: "#F5C2C7", muted: "#883344" },
 ];
 
 const SHORTCUTS = [
@@ -264,6 +268,11 @@ function ActionBtn({ label, variant = "accent", onClick, disabled }: { label: st
   );
 }
 
+function useIsDevUser() {
+  const { data: session } = authClient.useSession();
+  return session?.user?.email === "dev@bypass.local";
+}
+
 // ── Sub-panels ────────────────────────────────────────────────────────────────
 const RARITY_COLOR: Record<string, string> = {
   COMMON:    "var(--ft-dim)",
@@ -278,11 +287,11 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
   density: Density; setDensity: (d: Density) => void;
 }) {
   const [hoveredTheme, setHoveredTheme] = useState<FintrackTheme | null>(null);
-  const learnXP = getLearnXP();
+  const isDevUser = useIsDevUser();
+  const learnXP = isDevUser ? Infinity : getLearnXP();
   const previewId = hoveredTheme ?? theme;
   const previewSwatch = SWATCH_DATA.find(x => x.id === previewId)!;
 
-  // Only show themes the user has unlocked (based on learn XP)
   const unlockedSwatchIds = new Set<string>(["void", ...THEME_REWARDS.filter(r => learnXP >= r.requiredXP).map(r => r.id)]);
   const visibleSwatches = SWATCH_DATA.filter(s => unlockedSwatchIds.has(s.id));
   const lockedSwatches = SWATCH_DATA.filter(s => !unlockedSwatchIds.has(s.id));
@@ -384,6 +393,27 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
             VOID is the default theme. Earn XP in <span style={{ color: "var(--ft-accent)" }}>Learn</span> to unlock more.
           </div>
           <ThemeRewardsPanel totalXP={learnXP} />
+        </div>
+      </div>
+
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => { window.location.href = "/wardrobe"; }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") window.location.href = "/wardrobe"; }}
+        style={{ ...PANEL_STYLE, cursor: "pointer" }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ft-accent)"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--ft-border)"; }}
+      >
+        <div style={{ ...HEADER_STYLE, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span><span style={{ color: "var(--ft-accent)" }}>·</span> Bot Wardrobe</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>G·Z →</span>
+        </div>
+        <div style={{ padding: "10px 16px", background: "var(--ft-surface)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>
+            Preview &amp; equip bot skins — common, epic, and legendary
+          </span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)" }}>→</span>
         </div>
       </div>
 
@@ -700,22 +730,31 @@ const AI_STYLES: { id: AiStyle; label: string; desc: string; preview: string }[]
     id: "wanderer",
     label: "Wanderer",
     desc: "A little AI mascot that roams around your screen. Click it or press G to chat.",
-    preview: "🤖  roaming mascot character",
+    preview: "·  roaming mascot character",
   },
   {
     id: "minimal",
     label: "Minimal",
     desc: "No persistent UI. Press G anywhere on the site to open the assistant.",
-    preview: "⌨  keyboard-only · press G",
+    preview: "→  keyboard-only · press G",
   },
 ];
 
 function AiSettingsPanel() {
   const [selected, setSelected] = useState<AiStyle>(getAiStyle);
+  const [skinId, setSkinId] = useState<BotSkinId>(getBotSkin);
+  const isDevUser = useIsDevUser();
+  const learnXP = isDevUser ? Infinity : getLearnXP();
 
   const pick = useCallback((s: AiStyle) => {
     setSelected(s);
     setAiStylePref(s);
+  }, []);
+
+  const pickSkin = useCallback((id: BotSkinId) => {
+    setBotSkin(id);
+    setSkinId(id);
+    window.dispatchEvent(new CustomEvent("numeris-skin-change"));
   }, []);
 
   return (
@@ -758,6 +797,73 @@ function AiSettingsPanel() {
           Hotkey: <kbd style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-accent)", padding: "1px 5px", fontSize: 9 }}>G</kbd> — summons the assistant from anywhere on the site (not when typing).
         </div>
       </div>
+
+      {selected === "wanderer" && (
+        <div style={PANEL_STYLE}>
+          <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Bot Skin</div>
+          <div style={{ padding: "4px 0" }}>
+            {SKINS.map((skin) => {
+              const themeReq = skin.requiredTheme ? THEME_REWARDS.find(t => t.id === skin.requiredTheme) : null;
+              const isOwned = !themeReq || learnXP >= themeReq.requiredXP;
+              const isActive = skinId === skin.id;
+              const rarityCol = RARITY_COLOR[skin.rarity] ?? "var(--ft-dim)";
+              return (
+                <div
+                  key={skin.id}
+                  onClick={() => isOwned && pickSkin(skin.id)}
+                  style={{
+                    ...ROW,
+                    cursor: isOwned ? "pointer" : "not-allowed",
+                    opacity: isOwned ? 1 : 0.5,
+                    background: isActive && isOwned ? "var(--ft-raised)" : "transparent",
+                    borderLeft: isActive && isOwned ? `2px solid ${rarityCol}` : "2px solid transparent",
+                    paddingLeft: 12,
+                    transition: "background 0.1s",
+                    alignItems: "flex-start",
+                    paddingTop: 10,
+                    paddingBottom: 10,
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive && isOwned ? rarityCol : "var(--ft-text)" }}>
+                        {skin.label}
+                      </span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>
+                        {skin.rarity}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, marginBottom: skin.perks.length > 0 ? 5 : 0 }}>{skin.desc}</div>
+                    {skin.perks.length > 0 && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 6px" }}>
+                        {skin.perks.map((perk) => (
+                          <span key={perk} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>
+                        ))}
+                      </div>
+                    )}
+                    {!isOwned && themeReq && (
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5, letterSpacing: "0.04em" }}>
+                        Requires {themeReq.requiredXP.toLocaleString()} XP to unlock
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginTop: 2 }}>
+                    {!isOwned && <Lock style={{ width: 10, height: 10, color: "var(--ft-dim)" }}/>}
+                    <div style={{
+                      width: 14, height: 14, borderRadius: "50%",
+                      border: `1.5px solid ${isActive && isOwned ? rarityCol : "var(--ft-border2)"}`,
+                      background: isActive && isOwned ? rarityCol : "transparent",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {isActive && isOwned && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Contextual Awareness</div>

@@ -54,13 +54,16 @@ export interface ThemeReward {
 }
 
 export const THEME_REWARDS: ThemeReward[] = [
-  { id: "phosphor", label: "Phosphor", requiredXP: 0,   rarity: "COMMON",    accent: "#7FFF00", base: "#020802", description: "CRT phosphor green" },
-  { id: "arctic",   label: "Arctic",   requiredXP: 0,   rarity: "COMMON",    accent: "#0052CC", base: "#F0F4F8", description: "Corporate daylight" },
-  { id: "amber",    label: "Amber",    requiredXP: 200, rarity: "UNCOMMON",  accent: "#FFD700", base: "#0A0600", description: "Warm trader console" },
-  { id: "midnight", label: "Midnight", requiredXP: 400, rarity: "UNCOMMON",  accent: "#4D9FFF", base: "#010817", description: "Late-night deep blue" },
-  { id: "matrix",   label: "Matrix",   requiredXP: 650, rarity: "RARE",      accent: "#00FF41", base: "#000300", description: "Decoded reality" },
-  { id: "ocean",    label: "Ocean",    requiredXP: 900, rarity: "EPIC",      accent: "#00D4FF", base: "#010A12", description: "Submerged signal" },
-  { id: "rose",     label: "Rose",     requiredXP: 1200, rarity: "LEGENDARY", accent: "#FF2D78", base: "#0A0005", description: "Neon pink distortion" },
+  { id: "phosphor",   label: "Phosphor",   requiredXP: 0,    rarity: "COMMON",    accent: "#7FFF00", base: "#020802", description: "CRT phosphor green" },
+  { id: "arctic",     label: "Arctic",     requiredXP: 0,    rarity: "COMMON",    accent: "#0052CC", base: "#F0F4F8", description: "Corporate daylight" },
+  { id: "amber",      label: "Amber",      requiredXP: 200,  rarity: "UNCOMMON",  accent: "#FFD700", base: "#0A0600", description: "Warm trader console" },
+  { id: "midnight",   label: "Midnight",   requiredXP: 400,  rarity: "UNCOMMON",  accent: "#4D9FFF", base: "#010817", description: "Late-night deep blue" },
+  { id: "matrix",     label: "Matrix",     requiredXP: 650,  rarity: "RARE",      accent: "#00FF41", base: "#000300", description: "Decoded reality" },
+  { id: "synthwave",  label: "Synthwave",  requiredXP: 750,  rarity: "RARE",      accent: "#FF007A", base: "#0D001A", description: "Neon grids, 80s midnight" },
+  { id: "deep-space", label: "Deep Space", requiredXP: 800,  rarity: "RARE",      accent: "#7B5EA7", base: "#010108", description: "Cosmic observatory" },
+  { id: "mario",      label: "Mario",      requiredXP: 950,  rarity: "EPIC",      accent: "#E31212", base: "#0A0F1F", description: "8-bit power-up" },
+  { id: "gilded",     label: "Gilded",     requiredXP: 1100, rarity: "EPIC",      accent: "#C8941E", base: "#080600", description: "Black gold, no noise" },
+  { id: "bloodline",  label: "Bloodline",  requiredXP: 1300, rarity: "LEGENDARY", accent: "#CC1A2F", base: "#0F0003", description: "Dark market, red signals" },
 ];
 
 const RARITY_COLOR: Record<ThemeRarity, string> = {

@@ -35,6 +35,7 @@ import YearReview from "@/pages/year-review";
 import Import from "@/pages/import";
 import Recurring from "@/pages/recurring";
 import Learn from "@/pages/learn";
+import Wardrobe from "@/pages/wardrobe";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ function Router() {
         <Route path="/recurring" component={Recurring} />
         <Route path="/settings" component={Settings} />
         <Route path="/profile" component={Profile} />
+        <Route path="/wardrobe" component={Wardrobe} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
