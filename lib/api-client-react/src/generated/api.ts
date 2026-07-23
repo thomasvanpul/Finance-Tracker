@@ -48,6 +48,9 @@ import type {
   OkResult,
   StockPrice,
   StockQuote,
+  StockHistoryPoint,
+  StockDetail,
+  OptionsChain,
   Transaction,
   TransactionInput,
   TransactionSummary,
@@ -3265,4 +3268,89 @@ export const useRejectDebt = <TError = ErrorType<unknown>, TContext = unknown>(
 ): UseMutationResult<Awaited<ReturnType<typeof rejectDebt>>, TError, { id: number }, TContext> => {
   return useMutation(getRejectDebtMutationOptions(options));
 };
+
+// ── Market History ─────────────────────────────────────────────────────────────
+
+export type GetMarketHistoryParams = { ticker: string; period?: string };
+
+export const getGetMarketHistoryUrl = (params: GetMarketHistoryParams) => {
+  const searchParams = new URLSearchParams();
+  searchParams.set('ticker', params.ticker);
+  if (params.period) searchParams.set('period', params.period);
+  return `/api/market/history?${searchParams}`;
+};
+
+export const getMarketHistory = async (params: GetMarketHistoryParams, options?: RequestInit): Promise<StockHistoryPoint[]> => {
+  return customFetch<StockHistoryPoint[]>(getGetMarketHistoryUrl(params), { ...options });
+};
+
+export const getGetMarketHistoryQueryKey = (params: GetMarketHistoryParams) =>
+  ['getMarketHistory', params] as const;
+
+export function useGetMarketHistory<TData = Awaited<ReturnType<typeof getMarketHistory>>, TError = ErrorType<unknown>>(
+  params: GetMarketHistoryParams,
+  options?: { query?: Omit<UseQueryOptions<Awaited<ReturnType<typeof getMarketHistory>>, TError, TData>, 'queryKey'> & { queryKey?: QueryKey }; request?: SecondParameter<typeof customFetch> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetMarketHistoryQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketHistory>>> = ({ signal }) =>
+    getMarketHistory(params, { signal, ...requestOptions });
+  const query = useQuery({ queryKey, queryFn, enabled: !!params.ticker, ...queryOptions }) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  query.queryKey = queryKey;
+  return query;
+}
+
+// ── Market Detail ──────────────────────────────────────────────────────────────
+
+export const getGetMarketDetailUrl = (ticker: string) => `/api/market/detail?ticker=${encodeURIComponent(ticker)}`;
+
+export const getMarketDetail = async (ticker: string, options?: RequestInit): Promise<StockDetail> => {
+  return customFetch<StockDetail>(getGetMarketDetailUrl(ticker), { ...options });
+};
+
+export const getGetMarketDetailQueryKey = (ticker: string) => ['getMarketDetail', ticker] as const;
+
+export function useGetMarketDetail<TData = Awaited<ReturnType<typeof getMarketDetail>>, TError = ErrorType<unknown>>(
+  ticker: string,
+  options?: { query?: Omit<UseQueryOptions<Awaited<ReturnType<typeof getMarketDetail>>, TError, TData>, 'queryKey'> & { queryKey?: QueryKey }; request?: SecondParameter<typeof customFetch> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetMarketDetailQueryKey(ticker);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketDetail>>> = ({ signal }) =>
+    getMarketDetail(ticker, { signal, ...requestOptions });
+  const query = useQuery({ queryKey, queryFn, enabled: !!ticker, ...queryOptions }) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  query.queryKey = queryKey;
+  return query;
+}
+
+// ── Options Chain ──────────────────────────────────────────────────────────────
+
+export type GetOptionsChainParams = { ticker: string; expiry?: string };
+
+export const getGetOptionsChainUrl = (params: GetOptionsChainParams) => {
+  const searchParams = new URLSearchParams();
+  searchParams.set('ticker', params.ticker);
+  if (params.expiry) searchParams.set('expiry', params.expiry);
+  return `/api/market/options?${searchParams}`;
+};
+
+export const getOptionsChain = async (params: GetOptionsChainParams, options?: RequestInit): Promise<OptionsChain> => {
+  return customFetch<OptionsChain>(getGetOptionsChainUrl(params), { ...options });
+};
+
+export const getGetOptionsChainQueryKey = (params: GetOptionsChainParams) =>
+  ['getOptionsChain', params] as const;
+
+export function useGetOptionsChain<TData = Awaited<ReturnType<typeof getOptionsChain>>, TError = ErrorType<unknown>>(
+  params: GetOptionsChainParams,
+  options?: { query?: Omit<UseQueryOptions<Awaited<ReturnType<typeof getOptionsChain>>, TError, TData>, 'queryKey'> & { queryKey?: QueryKey }; request?: SecondParameter<typeof customFetch> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetOptionsChainQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getOptionsChain>>> = ({ signal }) =>
+    getOptionsChain(params, { signal, ...requestOptions });
+  const query = useQuery({ queryKey, queryFn, enabled: !!params.ticker, ...queryOptions }) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  query.queryKey = queryKey;
+  return query;
+}
 

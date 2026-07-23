@@ -606,6 +606,157 @@ export interface StockQuote {
   analystTargetPrice?: number | null;
   /** @nullable */
   displayName?: string | null;
+  /** @nullable */
+  changePercent?: number | null;
+  /** @nullable */
+  dayHigh?: number | null;
+  /** @nullable */
+  dayLow?: number | null;
+  /** @nullable */
+  volume?: number | null;
+  /** @nullable */
+  previousClose?: number | null;
+}
+
+export interface StockHistoryPoint {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface EarningsEntry {
+  date: string;
+  /** @nullable */
+  epsActual?: number | null;
+  /** @nullable */
+  epsEstimate?: number | null;
+  /** @nullable */
+  surprise?: number | null;
+}
+
+export interface RecTrend {
+  period: string;
+  strongBuy: number;
+  buy: number;
+  hold: number;
+  sell: number;
+  strongSell: number;
+}
+
+export interface StockDetail {
+  ticker: string;
+  /** @nullable */
+  sector?: string | null;
+  /** @nullable */
+  industry?: string | null;
+  /** @nullable */
+  country?: string | null;
+  /** @nullable */
+  employees?: number | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  website?: string | null;
+  /** @nullable */
+  totalRevenue?: number | null;
+  /** @nullable */
+  grossMargins?: number | null;
+  /** @nullable */
+  operatingMargins?: number | null;
+  /** @nullable */
+  netMargins?: number | null;
+  /** @nullable */
+  revenueGrowth?: number | null;
+  /** @nullable */
+  earningsGrowth?: number | null;
+  /** @nullable */
+  freeCashflow?: number | null;
+  /** @nullable */
+  operatingCashflow?: number | null;
+  /** @nullable */
+  totalDebt?: number | null;
+  /** @nullable */
+  totalCash?: number | null;
+  /** @nullable */
+  debtToEquity?: number | null;
+  /** @nullable */
+  currentRatio?: number | null;
+  /** @nullable */
+  quickRatio?: number | null;
+  /** @nullable */
+  sharesOutstanding?: number | null;
+  /** @nullable */
+  bookValue?: number | null;
+  /** @nullable */
+  priceToBook?: number | null;
+  /** @nullable */
+  priceToSales?: number | null;
+  /** @nullable */
+  enterpriseValue?: number | null;
+  /** @nullable */
+  pegRatio?: number | null;
+  /** @nullable */
+  forwardEps?: number | null;
+  /** @nullable */
+  returnOnEquity?: number | null;
+  /** @nullable */
+  returnOnAssets?: number | null;
+  /** @nullable */
+  institutionalOwnership?: number | null;
+  /** @nullable */
+  insiderOwnership?: number | null;
+  /** @nullable */
+  shortRatio?: number | null;
+  /** @nullable */
+  shortPercentFloat?: number | null;
+  /** @nullable */
+  targetHigh?: number | null;
+  /** @nullable */
+  targetLow?: number | null;
+  /** @nullable */
+  targetMedian?: number | null;
+  /** @nullable */
+  fiftyTwoWeekChange?: number | null;
+  earningsHistory: EarningsEntry[];
+  recommendationTrend: RecTrend[];
+  /** @nullable */
+  nextEarningsDate?: string | null;
+  /** @nullable */
+  analystCount?: number | null;
+  /** @nullable */
+  recommendationKey?: string | null;
+}
+
+export interface OptionsContract {
+  strike: number;
+  expiry: string;
+  type: 'call' | 'put';
+  /** @nullable */
+  bid?: number | null;
+  /** @nullable */
+  ask?: number | null;
+  /** @nullable */
+  lastPrice?: number | null;
+  /** @nullable */
+  volume?: number | null;
+  /** @nullable */
+  openInterest?: number | null;
+  /** @nullable */
+  impliedVolatility?: number | null;
+  /** @nullable */
+  inTheMoney?: boolean | null;
+}
+
+export interface OptionsChain {
+  ticker: string;
+  underlyingPrice: number;
+  expiryDates: string[];
+  selectedExpiry: string;
+  calls: OptionsContract[];
+  puts: OptionsContract[];
 }
 
 export type CurrencySettingsBaseCurrency = typeof CurrencySettingsBaseCurrency[keyof typeof CurrencySettingsBaseCurrency];

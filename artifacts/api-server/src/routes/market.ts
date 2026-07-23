@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { getFxRates, getStockPrices, getStockQuotes } from "../lib/market";
+import { getFxRates, getStockPrices, getStockQuotes, getStockHistory, getStockDetail, getOptionsChain } from "../lib/market";
 import {
   GetFxRatesResponse,
   GetMarketPricesQueryParams,
@@ -37,6 +37,29 @@ router.get("/market/quotes", async (req, res): Promise<void> => {
   if (tickers.length === 0) { res.json([]); return; }
   const quotes = await getStockQuotes(tickers);
   res.json(GetMarketQuotesResponse.parse(quotes));
+});
+
+router.get("/market/history", async (req, res): Promise<void> => {
+  const ticker = typeof req.query.ticker === "string" ? req.query.ticker.trim().toUpperCase() : "";
+  const period = typeof req.query.period === "string" ? req.query.period.trim() : "1y";
+  if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
+  const data = await getStockHistory(ticker, period);
+  res.json(data);
+});
+
+router.get("/market/detail", async (req, res): Promise<void> => {
+  const ticker = typeof req.query.ticker === "string" ? req.query.ticker.trim().toUpperCase() : "";
+  if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
+  const data = await getStockDetail(ticker);
+  res.json(data);
+});
+
+router.get("/market/options", async (req, res): Promise<void> => {
+  const ticker = typeof req.query.ticker === "string" ? req.query.ticker.trim().toUpperCase() : "";
+  const expiry = typeof req.query.expiry === "string" ? req.query.expiry.trim() : undefined;
+  if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
+  const data = await getOptionsChain(ticker, expiry);
+  res.json(data);
 });
 
 export default router;

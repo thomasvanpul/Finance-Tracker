@@ -596,7 +596,12 @@ export const GetMarketQuotesResponseItem = zod.object({
   "beta": zod.number().nullish(),
   "dividendYield": zod.number().nullish(),
   "analystTargetPrice": zod.number().nullish(),
-  "displayName": zod.string().nullish()
+  "displayName": zod.string().nullish(),
+  "changePercent": zod.number().nullish(),
+  "dayHigh": zod.number().nullish(),
+  "dayLow": zod.number().nullish(),
+  "volume": zod.number().nullish(),
+  "previousClose": zod.number().nullish()
 })
 export const GetMarketQuotesResponse = zod.array(GetMarketQuotesResponseItem)
 

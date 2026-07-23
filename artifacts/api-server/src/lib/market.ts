@@ -322,6 +322,22 @@ export async function getStockPrices(tickers: string[]): Promise<StockPriceData[
 const historyCache = new Map<string, { data: HistoryPoint[]; ts: number }>();
 const HISTORY_TTL_MS = 30 * 60 * 1000;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseHistoryRows(rows: any[]): HistoryPoint[] {
+  return rows
+    .filter((r) => r.close != null && typeof r.close === "number")
+    .map((r) => ({
+      date: r.date instanceof Date
+        ? r.date.toISOString().slice(0, 10)
+        : new Date(r.date as string | number).toISOString().slice(0, 10),
+      open: typeof r.open === "number" ? r.open : r.close,
+      high: typeof r.high === "number" ? r.high : r.close,
+      low: typeof r.low === "number" ? r.low : r.close,
+      close: r.close as number,
+      volume: typeof r.volume === "number" ? r.volume : 0,
+    }));
+}
+
 export async function getStockHistory(ticker: string, period: string): Promise<HistoryPoint[]> {
   const key = `${ticker}:${period}`;
   const now = Date.now();
@@ -334,32 +350,33 @@ export async function getStockHistory(ticker: string, period: string): Promise<H
   const days = periodMap[period] ?? 365;
   const period1 = new Date(now - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const interval: "1d" | "1wk" | "1mo" =
-    days <= 30 ? "1d" : days <= 365 ? "1wk" : "1mo";
+    days <= 30 ? "1d" : days < 730 ? "1wk" : "1mo";
+
+  // Try chart() first, fall back to historical() if it fails
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let data: HistoryPoint[] = [];
 
   try {
-    // Use chart() — historical() was removed by Yahoo Finance
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await yahooFinance.chart(ticker, { period1, interval });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows: any[] = result?.quotes ?? [];
-    const data: HistoryPoint[] = rows
-      .filter((r: { close?: unknown }) => r.close != null && typeof r.close === "number")
-      .map((r: { date?: unknown; open?: unknown; high?: unknown; low?: unknown; close: number; volume?: unknown }) => ({
-        date: r.date instanceof Date
-          ? r.date.toISOString().slice(0, 10)
-          : new Date(r.date as string | number).toISOString().slice(0, 10),
-        open: typeof r.open === "number" ? r.open : r.close,
-        high: typeof r.high === "number" ? r.high : r.close,
-        low: typeof r.low === "number" ? r.low : r.close,
-        close: r.close,
-        volume: typeof r.volume === "number" ? r.volume : 0,
-      }));
-    historyCache.set(key, { data, ts: now });
-    return data;
-  } catch (err) {
-    logger.warn({ err, ticker, period }, "Stock history fetch failed");
-    return [];
+    data = parseHistoryRows(rows);
+  } catch (chartErr) {
+    logger.warn({ chartErr, ticker, period }, "chart() failed, trying historical()");
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rows: any[] = await yahooFinance.historical(ticker, { period1, interval });
+      data = parseHistoryRows(rows);
+    } catch (histErr) {
+      logger.warn({ histErr, ticker, period }, "historical() also failed");
+    }
   }
+
+  if (data.length > 0) {
+    historyCache.set(key, { data, ts: now });
+  }
+  return data;
 }
 
 // ── Detail ────────────────────────────────────────────────────────────────────

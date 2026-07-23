@@ -517,3 +517,11 @@ button:not(:disabled):active,
   80%  { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* Stat info tooltip hover */
+.stat-info-wrap:hover .stat-info-tip {
+  display: block !important;
+}
+.stat-info-wrap .stat-info-tip {
+  pointer-events: none;
+}
