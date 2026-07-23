@@ -81,7 +81,11 @@ function SavingsRateKpi() {
 
   const savingsRate = dashData?.thisMonth?.savingsRate ?? null;
 
-  if (savingsRate === null) return null;
+  if (savingsRate === null) return (
+    <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+      No data yet
+    </div>
+  );
 
   const rate = Math.round(savingsRate);
   const pct = Math.min(100, (rate / target) * 100);
@@ -94,49 +98,34 @@ function SavingsRateKpi() {
       ? "var(--ft-amber)"
       : "var(--ft-red)";
 
-  const labelColor = barColor;
-
   return (
-    <div style={{
-      background: "var(--ft-surface)",
-      border: "1px solid var(--ft-border)",
-      borderLeft: `2px solid ${barColor}`,
-      padding: "8px 14px",
-      marginBottom: 10,
-      display: "flex",
-      alignItems: "center",
-      gap: 14,
-      flexWrap: "wrap" as const,
-    }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-dim)", flexShrink: 0 }}>
-        Savings Rate
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)" }}>SAVINGS RATE</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{target}% TARGET</span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200 }}>
-        {/* Bar */}
-        <div style={{ flex: 1, height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
-          <div style={{
-            height: "100%",
-            width: `${pct}%`,
-            background: barColor,
-            transition: "width 0.4s ease",
-          }} />
-        </div>
-        {/* Label */}
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: labelColor, whiteSpace: "nowrap" as const }}>
+
+      {/* Big number */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 32, fontWeight: 700, color: barColor, letterSpacing: "-0.02em", lineHeight: 1 }}>
           {rate}%
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" as const }}>
-          / {target}% target
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: diff >= 0 ? "var(--ft-green)" : barColor, fontWeight: 600 }}>
+          {diff >= 0 ? `+${diff}pp` : `${diff}pp`}
         </span>
-        {diff >= 0 ? (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", whiteSpace: "nowrap" as const }}>
-            +{diff}pp
-          </span>
-        ) : (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: barColor, whiteSpace: "nowrap" as const }}>
-            {diff}pp
-          </span>
-        )}
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6 }}>
+        <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.4s ease" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+          <span>0%</span>
+          <span>{target}% goal</span>
+          <span>100%</span>
+        </div>
       </div>
     </div>
   );
@@ -185,51 +174,45 @@ function EmergencyFundWidget() {
 
   const barColor = valueColor;
 
-  if (accounts === undefined) return null;
+  if (accounts === undefined) return (
+    <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+      Loading…
+    </div>
+  );
 
   return (
-    <div style={{
-      background: "var(--ft-surface)",
-      border: "1px solid var(--ft-border)",
-      borderLeft: `2px solid ${barColor}`,
-      padding: "8px 14px",
-      marginBottom: 10,
-      display: "flex",
-      alignItems: "center",
-      gap: 14,
-      flexWrap: "wrap" as const,
-    }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-dim)", flexShrink: 0 }}>
-        Emergency Fund
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)" }}>EMERGENCY FUND</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{TARGET_MONTHS}MO TARGET</span>
       </div>
-      <div style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: 18,
-        fontWeight: 700,
-        color: valueColor,
-        lineHeight: 1,
-        flexShrink: 0,
-        letterSpacing: "-0.02em",
-      }}>
-        {monthsCovered > 0 ? `${monthsCovered.toFixed(1)}mo` : "—"}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 180 }}>
-        {/* Progress bar toward 6-month target */}
-        <div style={{ flex: 1, height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
-          <div style={{
-            height: "100%",
-            width: `${pct}%`,
-            background: barColor,
-            transition: "width 0.4s ease",
-          }} />
-        </div>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" as const }}>
-          / {TARGET_MONTHS}mo target
+
+      {/* Big number */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 32, fontWeight: 700, color: valueColor, letterSpacing: "-0.02em", lineHeight: 1 }}>
+          {monthsCovered > 0 ? `${monthsCovered.toFixed(1)}` : "—"}
         </span>
+        {monthsCovered > 0 && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ft-muted)", fontWeight: 600 }}>months</span>
+        )}
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" as const }}>
+
+      {/* Meta */}
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
         {formatGbp(liquidSavings)} liquid
         {avgMonthlyExpenses > 0 && ` · ${formatGbp(avgMonthlyExpenses)}/mo avg`}
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6 }}>
+        <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.4s ease" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+          <span>0 mo</span>
+          <span>{TARGET_MONTHS} mo goal</span>
+        </div>
       </div>
     </div>
   );
@@ -255,6 +238,8 @@ const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<{ isExpanded?: boolean }
   "top-merchants": TopMerchantsWidget,
   "cash-flow-preview": CashFlowPreviewWidgetProxy,
   "spending-velocity": SpendingVelocityWidgetProxy,
+  "savings-rate": SavingsRateKpi,
+  "emergency-fund": EmergencyFundWidget,
 };
 
 const WIDGET_DEF_MAP = Object.fromEntries(WIDGET_REGISTRY.map(w => [w.id, w]));
@@ -954,12 +939,6 @@ export default function Dashboard() {
         </span>
         <span style={{ color: "var(--ft-border2)", fontSize: 9 }}>· drag to reorder · hover for controls</span>
       </div>
-
-      {/* Savings rate KPI */}
-      <SavingsRateKpi />
-
-      {/* Emergency fund widget */}
-      <EmergencyFundWidget />
 
       {enabledIds.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "60px 0" }}>

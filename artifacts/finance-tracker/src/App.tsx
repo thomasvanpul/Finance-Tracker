@@ -41,6 +41,7 @@ import AiCoach from "@/pages/ai-coach";
 import Fire from "@/pages/fire";
 import Pension from "@/pages/pension";
 import Calculators from "@/pages/calculators";
+import Wardrobe from "@/pages/wardrobe";
 import { PageTransitionOverlay } from "@/components/page-transition";
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ function Router() {
         <Route path="/fire" component={Fire} />
         <Route path="/pension" component={Pension} />
         <Route path="/calculators" component={Calculators} />
+        <Route path="/wardrobe" component={Wardrobe} />
         <Route path="/subscriptions" component={Subscriptions} />
         <Route path="/tax" component={Tax} />
         <Route path="/mortgage" component={Mortgage} />
