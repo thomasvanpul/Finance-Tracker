@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useFintrackTheme } from "@/contexts/theme-context";
 import { authClient } from "@/lib/auth-client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,7 +10,7 @@ import { usePrivacy, PrivNum } from "@/contexts/privacy-context";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import { QuickAddTransaction, useQuickAdd } from "@/components/quick-add-transaction";
 import { GlobalSearch, useGlobalSearch } from "@/components/global-search";
-import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff } from "lucide-react";
+import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight } from "lucide-react";
 import { Logo, LogoMark } from "@/components/logo";
 import { formatGbp } from "@/lib/utils";
 import { setBaseCurrency } from "@/lib/currency-store";
@@ -23,6 +24,7 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+// Primary nav — always visible in sidebar
 const NAV_SECTIONS = [
   {
     label: "CORE",
@@ -30,15 +32,36 @@ const NAV_SECTIONS = [
       { href: "/",             label: "Dashboard",    code: "G·D" },
       { href: "/accounts",     label: "Accounts",     code: "G·A" },
       { href: "/transactions", label: "Transactions", code: "G·T" },
-      { href: "/learn",        label: "Learn",        code: "G·Q" },
+    ],
+  },
+  {
+    label: "INVEST",
+    items: [
+      { href: "/investments",   label: "Portfolio",    code: "G·I" },
+      { href: "/net-worth",     label: "Net Worth",    code: "G·W" },
     ],
   },
   {
     label: "PLAN",
     items: [
+      { href: "/budget",   label: "Budget",  code: "G·B" },
+      { href: "/goals",    label: "Goals",   code: "G·L" },
+    ],
+  },
+  {
+    label: "INSIGHTS",
+    items: [
+      { href: "/analytics",    label: "Analytics",    code: "G·N" },
+    ],
+  },
+];
+
+// Secondary nav — hidden behind "More" toggle by default
+const SECONDARY_NAV_SECTIONS = [
+  {
+    label: "PLAN",
+    items: [
       { href: "/owing",         label: "Debts",         code: "G·O" },
-      { href: "/goals",         label: "Goals",         code: "G·L" },
-      { href: "/budget",        label: "Budget",        code: "G·B" },
       { href: "/subscriptions", label: "Subscriptions", code: "G·C" },
       { href: "/calendar",      label: "Calendar",      code: "G·K" },
     ],
@@ -46,18 +69,15 @@ const NAV_SECTIONS = [
   {
     label: "INVEST",
     items: [
-      { href: "/investments",   label: "Investments",   code: "G·I" },
-      { href: "/net-worth",     label: "Net Worth",     code: "G·W" },
       { href: "/tax",           label: "Tax",           code: "G·Y" },
     ],
   },
   {
     label: "INSIGHTS",
     items: [
-      { href: "/analytics",    label: "Analytics",     code: "G·N" },
-      { href: "/health-score", label: "Health Score",  code: "G·H" },
-      { href: "/cashflow",     label: "Cash Flow",     code: "G·V" },
-      { href: "/year-review",  label: "Year Review",   code: "G·E" },
+      { href: "/health-score",  label: "Health Score",  code: "G·H" },
+      { href: "/cashflow",      label: "Cash Flow",     code: "G·V" },
+      { href: "/year-review",   label: "Year Review",   code: "G·E" },
     ],
   },
   {
@@ -65,6 +85,7 @@ const NAV_SECTIONS = [
     items: [
       { href: "/whatif",    label: "Calculators", code: "G·F" },
       { href: "/import",    label: "Import",      code: "G·J" },
+      { href: "/learn",     label: "Learn",       code: "G·Q" },
     ],
   },
 ];
@@ -74,8 +95,15 @@ const BOTTOM_ITEMS = [
 ];
 
 // Flat list of all configurable nav items (sections only, not bottom items)
-const ALL_NAV_ITEMS: { href: string; label: string; code: string; section: string }[] =
-  NAV_SECTIONS.flatMap((s) => s.items.map((item) => ({ ...item, section: s.label })));
+const ALL_NAV_ITEMS: { href: string; label: string; code: string; section: string }[] = [
+  ...NAV_SECTIONS.flatMap((s) => s.items.map((item) => ({ ...item, section: s.label }))),
+  ...SECONDARY_NAV_SECTIONS.flatMap((s) => s.items.map((item) => ({ ...item, section: s.label }))),
+];
+
+// Which hrefs are secondary (shown behind "More" toggle)
+const SECONDARY_HREFS = new Set(
+  SECONDARY_NAV_SECTIONS.flatMap((s) => s.items.map((i) => i.href))
+);
 
 const G_KEY_MAP: Record<string, string> = {
   d: "/", a: "/accounts", t: "/transactions", r: "/reports",
@@ -89,17 +117,107 @@ const G_KEY_MAP: Record<string, string> = {
 };
 
 
+// ── World clock ─────────────────────────────────────────────────────────────
+
+interface WorldCity {
+  label: string;
+  flag: string;
+  tz: string;
+  exchange: string;
+  marketOpen: string;   // "HH:MM" local time (24h)
+  marketClose: string;
+}
+
+const WORLD_CITIES: WorldCity[] = [
+  { label: "London",    flag: "🇬🇧", tz: "Europe/London",      exchange: "LSE",     marketOpen: "08:00", marketClose: "16:30" },
+  { label: "New York",  flag: "🇺🇸", tz: "America/New_York",   exchange: "NYSE",    marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Tokyo",     flag: "🇯🇵", tz: "Asia/Tokyo",          exchange: "TSE",     marketOpen: "09:00", marketClose: "15:30" },
+  { label: "Hong Kong", flag: "🇨🇳", tz: "Asia/Hong_Kong",      exchange: "HKEX",   marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Sydney",    flag: "🇦🇺", tz: "Australia/Sydney",    exchange: "ASX",     marketOpen: "10:00", marketClose: "16:00" },
+  { label: "Frankfurt", flag: "🇩🇪", tz: "Europe/Berlin",       exchange: "XETRA",  marketOpen: "09:00", marketClose: "17:30" },
+];
+
+function tzTime(tz: string, now: Date): string {
+  return now.toLocaleTimeString("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function isMarketOpen(city: WorldCity, now: Date): boolean {
+  const localStr = now.toLocaleString("en-GB", { timeZone: city.tz, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+  const parts = localStr.match(/(\w+), (\d+):(\d+)/);
+  if (!parts) return false;
+  const [, day, hh, mm] = parts;
+  if (["Sat", "Sun"].includes(day)) return false;
+  const t = parseInt(hh) * 60 + parseInt(mm);
+  const [oh, om] = city.marketOpen.split(":").map(Number);
+  const [ch, cm] = city.marketClose.split(":").map(Number);
+  return t >= oh * 60 + om && t < ch * 60 + cm;
+}
+
 function useClock() {
-  const [t, setT] = useState(() =>
-    new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-  );
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const id = setInterval(() =>
-      setT(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }))
-    , 1000);
+    const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-  return t;
+  return {
+    local: now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    now,
+  };
+}
+
+// ── World Clock hover component ──────────────────────────────────────────────
+
+function ClockDisplay({ clock }: { clock: string; }) {
+  const [hover, setHover] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const now = new Date();
+
+  return (
+    <>
+      <span
+        style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", letterSpacing: "0.08em", paddingRight: 16, borderRight: "1px solid var(--ft-border)", marginRight: 16, cursor: "default", userSelect: "none" }}
+        onMouseEnter={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setPos({ x: rect.right, y: rect.bottom });
+          setHover(true);
+        }}
+        onMouseLeave={() => setHover(false)}
+      >
+        {clock}
+      </span>
+
+      {hover && createPortal(
+        <div
+          style={{ position: "fixed", right: window.innerWidth - pos.x, top: pos.y + 6, zIndex: 9999, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", minWidth: 280 }}
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+        >
+          <div style={{ padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em" }}>WORLD CLOCK — MAJOR EXCHANGES</div>
+          {WORLD_CITIES.map((city) => {
+            const open = isMarketOpen(city, now);
+            const t = tzTime(city.tz, now);
+            return (
+              <div key={city.tz} style={{ display: "flex", alignItems: "center", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", gap: 10 }}>
+                <span style={{ fontSize: 13, flexShrink: 0 }}>{city.flag}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-text)" }}>{city.label}</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>{city.exchange}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", letterSpacing: "0.04em" }}>{t}</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, padding: "1px 6px", background: open ? "rgba(63,185,80,0.15)" : "rgba(255,255,255,0.05)", color: open ? "var(--ft-green)" : "var(--ft-dim)", border: `1px solid ${open ? "rgba(63,185,80,0.3)" : "var(--ft-border)"}` }}>
+                    {open ? "OPEN" : "CLOSED"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ padding: "5px 12px", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>Market hours exclude public holidays</div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
 }
 
 function NavRow({
@@ -224,11 +342,20 @@ function formatTickerPrice(ticker: string, price: number): string {
   return new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price);
 }
 
+function fmtLargeNum(n: number): string {
+  if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
+  return n.toLocaleString();
+}
+
 function LiveTickerBar() {
   const { tickers, update, add, remove, reset } = useTickers();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<{ ticker: string; label: string }[]>([]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [tipTicker, setTipTicker] = useState<{ ticker: string; label: string; x: number; y: number } | null>(null);
+  const tipTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const tickerStr = tickers.map(t => t.ticker).filter(Boolean).join(",");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -251,19 +378,80 @@ function LiveTickerBar() {
     setEditing(false);
   }
 
+  function showTip(slot: { ticker: string; label: string }, rect: DOMRect) {
+    if (tipTimeout.current) clearTimeout(tipTimeout.current);
+    setTipTicker({ ticker: slot.ticker, label: slot.label || slot.ticker, x: rect.left + rect.width / 2, y: rect.bottom });
+  }
+
+  function hideTip() {
+    tipTimeout.current = setTimeout(() => setTipTicker(null), 120);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tipQ: any = tipTicker ? quoteMap[tipTicker.ticker] : null;
+  const tipChg = tipQ?.changePercent as number | undefined;
+
   return (
+    <>
+    {/* Ticker hover card portal */}
+    {tipTicker && tipQ && createPortal(
+      <div
+        style={{ position: "fixed", left: tipTicker.x, top: tipTicker.y + 6, transform: "translateX(-50%)", zIndex: 9999, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", boxShadow: "0 8px 28px rgba(0,0,0,0.6)", minWidth: 220 }}
+        onMouseEnter={() => { if (tipTimeout.current) clearTimeout(tipTimeout.current); setTipTicker(tipTicker); }}
+        onMouseLeave={() => setTipTicker(null)}
+      >
+        {/* Header */}
+        <div style={{ padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.04em" }}>{tipTicker.ticker}</div>
+            {tipQ.displayName && <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>{tipQ.displayName}</div>}
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)" }}>{formatTickerPrice(tipTicker.ticker, tipQ.price)}</div>
+            {tipChg != null && (
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: tipChg >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600 }}>
+                {tipChg >= 0 ? "▲" : "▼"} {Math.abs(tipChg).toFixed(2)}%
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Detail rows */}
+        <div style={{ padding: "6px 0" }}>
+          {[
+            ["PREV CLOSE", tipQ.previousClose != null ? formatTickerPrice(tipTicker.ticker, tipQ.previousClose) : null],
+            ["DAY RANGE", tipQ.dayLow != null && tipQ.dayHigh != null ? `${formatTickerPrice(tipTicker.ticker, tipQ.dayLow)} – ${formatTickerPrice(tipTicker.ticker, tipQ.dayHigh)}` : null],
+            ["52W RANGE", tipQ.low52w != null && tipQ.high52w != null ? `${formatTickerPrice(tipTicker.ticker, tipQ.low52w)} – ${formatTickerPrice(tipTicker.ticker, tipQ.high52w)}` : null],
+            ["VOLUME", tipQ.volume != null ? fmtLargeNum(tipQ.volume) : null],
+            ["MKT CAP", tipQ.marketCap != null ? fmtLargeNum(tipQ.marketCap) : null],
+            ["P/E", tipQ.pe != null ? `${tipQ.pe.toFixed(1)}×` : null],
+          ].map(([label, val]) => val == null ? null : (
+            <div key={label as string} style={{ display: "flex", justifyContent: "space-between", padding: "3px 12px", gap: 16 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>{label}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", fontWeight: 600 }}>{val}</span>
+            </div>
+          ))}
+        </div>
+      </div>,
+      document.body,
+    )}
+
     <div className="hidden lg:flex items-center" style={{ gap: 0, borderRight: "1px solid var(--ft-border)", paddingRight: 12, marginRight: 12, position: "relative" }}>
       {!editing ? (
         <>
           {tickers.map((slot, i) => {
             const q = quoteMap[slot.ticker];
             return (
-              <div key={slot.ticker + i} style={{
-                display: "flex", alignItems: "center", gap: 4,
-                padding: "4px 10px",
-                borderRight: i < tickers.length - 1 ? "1px solid var(--ft-border)" : "none",
-                fontFamily: "var(--font-mono)", fontSize: 10,
-              }}>
+              <div
+                key={slot.ticker + i}
+                onMouseEnter={(e) => showTip(slot, e.currentTarget.getBoundingClientRect())}
+                onMouseLeave={hideTip}
+                style={{
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "4px 10px",
+                  borderRight: i < tickers.length - 1 ? "1px solid var(--ft-border)" : "none",
+                  fontFamily: "var(--font-mono)", fontSize: 10,
+                  cursor: "default",
+                }}>
                 <span style={{ color: "var(--ft-dim)", letterSpacing: "0.04em" }}>{slot.label || slot.ticker}</span>
                 {q ? (
                   <>
@@ -365,6 +553,7 @@ function LiveTickerBar() {
         </div>
       )}
     </div>
+  </>
   );
 }
 
@@ -785,7 +974,7 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
 export function Layout({ children }: LayoutProps) {
   const [location, navigate] = useLocation();
   const { theme } = useFintrackTheme();
-  const clock = useClock();
+  const { local: clock } = useClock();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const { open: cmdOpen, closePalette } = useCommandPalette();
@@ -793,6 +982,9 @@ export function Layout({ children }: LayoutProps) {
   const { open: searchOpen, openSearch, closeSearch } = useGlobalSearch();
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("ft-sidebar") === "collapsed"; } catch { return false; }
+  });
+  const [moreOpen, setMoreOpen] = useState(() => {
+    try { return localStorage.getItem("nr-sidebar-more") === "1"; } catch { return false; }
   });
   const [showHelp, setShowHelp] = useState(false);
   const [configuring, setConfiguring] = useState(false);
@@ -1122,6 +1314,7 @@ export function Layout({ children }: LayoutProps) {
                 .filter(c => {
                   if (c.visible === false) return false;
                   if (sidebarConfig.pinnedFirst && c.pinned) return false;
+                  if (!moreOpen && SECONDARY_HREFS.has(c.href)) return false;
                   return true;
                 })
                 .map(c => allNavLookup.get(c.href))
@@ -1193,6 +1386,46 @@ export function Layout({ children }: LayoutProps) {
                       </div>
                     </div>
                   ))}
+
+                  {/* More / Less toggle */}
+                  <div style={{ margin: collapsed ? "8px 10px 4px" : "6px 12px 4px" }}>
+                    <button
+                      onClick={() => {
+                        const next = !moreOpen;
+                        setMoreOpen(next);
+                        try { localStorage.setItem("nr-sidebar-more", next ? "1" : "0"); } catch {}
+                      }}
+                      style={{
+                        width: "100%",
+                        background: "none",
+                        border: `1px dashed ${moreOpen ? "var(--ft-border2)" : "var(--ft-border)"}`,
+                        borderRadius: 4,
+                        cursor: "pointer",
+                        color: moreOpen ? "var(--ft-muted)" : "var(--ft-dim)",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: collapsed ? 8 : 9,
+                        letterSpacing: "0.08em",
+                        padding: collapsed ? "4px 0" : "3px 8px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: collapsed ? "center" : "space-between",
+                        gap: 4,
+                        transition: "all 0.1s",
+                      }}
+                      title={moreOpen ? "Show less" : "Show more"}
+                      onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = moreOpen ? "var(--ft-muted)" : "var(--ft-dim)"; e.currentTarget.style.borderColor = moreOpen ? "var(--ft-border2)" : "var(--ft-border)"; }}
+                    >
+                      {collapsed ? (
+                        moreOpen ? <ChevronUp size={9} /> : <ChevronDown size={9} />
+                      ) : (
+                        <>
+                          <span>{moreOpen ? "LESS" : "MORE"}</span>
+                          {moreOpen ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </>
               );
             })()}
@@ -1418,18 +1651,8 @@ export function Layout({ children }: LayoutProps) {
             {/* Live market ticker bar */}
             <LiveTickerBar />
 
-            {/* Clock */}
-            <span style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--ft-muted)",
-              letterSpacing: "0.08em",
-              paddingRight: 16,
-              borderRight: "1px solid var(--ft-border)",
-              marginRight: 16,
-            }}>
-              {clock}
-            </span>
+            {/* Clock with world timezone hover */}
+            <ClockDisplay clock={clock} />
 
             {/* Global search button */}
             <button
