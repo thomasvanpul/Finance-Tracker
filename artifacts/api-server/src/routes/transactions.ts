@@ -79,12 +79,14 @@ router.post("/transactions", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [tx] = await db
-    .insert(transactionsTable)
-    .values({ ...parsed.data, nativeAmount: String(parsed.data.nativeAmount), userId })
-    .returning();
-
-  await adjustAccountBalance(parsed.data.accountId, parsed.data.nativeAmount, parsed.data.currency, parsed.data.type);
+  const [tx] = await db.transaction(async (dbTx) => {
+    const rows = await dbTx
+      .insert(transactionsTable)
+      .values({ ...parsed.data, nativeAmount: String(parsed.data.nativeAmount), userId })
+      .returning();
+    await adjustAccountBalance(parsed.data.accountId, parsed.data.nativeAmount, parsed.data.currency, parsed.data.type, false, dbTx);
+    return rows;
+  });
 
   const accounts = await db
     .select({ id: accountsTable.id, name: accountsTable.name })
@@ -176,15 +178,19 @@ router.delete("/transactions/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const [tx] = await db
-    .delete(transactionsTable)
-    .where(and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId)))
-    .returning();
-  if (!tx) {
+  const txRow = await db.transaction(async (dbTx) => {
+    const [row] = await dbTx
+      .delete(transactionsTable)
+      .where(and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId)))
+      .returning();
+    if (!row) return null;
+    await adjustAccountBalance(row.accountId, parseFloat(row.nativeAmount), row.currency, row.type, true, dbTx);
+    return row;
+  });
+  if (!txRow) {
     res.status(404).json({ error: "Transaction not found" });
     return;
   }
-  await adjustAccountBalance(tx.accountId, parseFloat(tx.nativeAmount), tx.currency, tx.type, true);
   res.sendStatus(204);
 });
 

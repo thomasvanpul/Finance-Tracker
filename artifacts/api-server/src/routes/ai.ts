@@ -2,6 +2,10 @@ import { Router, type IRouter } from "express";
 
 const router: IRouter = Router();
 
+const MAX_MESSAGES = 20;
+const MAX_MESSAGE_LEN = 4000;
+const MAX_CONTEXT_LEN = 2000;
+
 const SYSTEM_PROMPT = `You are a smart financial assistant built into Finance Tracker, a personal finance application.
 You help users with: budgeting, expense tracking, investment analysis, tax planning, savings goals, debt management, and general financial questions.
 Keep responses concise and actionable. Use numbers and specifics when helpful. When the user shares financial details, provide tailored advice.
@@ -25,9 +29,29 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
     return;
   }
 
-  const fullSystemPrompt = context
-    ? `${SYSTEM_PROMPT}\n\n--- CURRENT CONTEXT ---\n${context}`
-    : SYSTEM_PROMPT;
+  if (messages.length > MAX_MESSAGES) {
+    res.status(400).json({ error: `Too many messages (max ${MAX_MESSAGES})` });
+    return;
+  }
+
+  for (const m of messages) {
+    if (!["user", "model"].includes(m.role)) {
+      res.status(400).json({ error: "Invalid message role" });
+      return;
+    }
+    if (typeof m.text !== "string" || m.text.length === 0 || m.text.length > MAX_MESSAGE_LEN) {
+      res.status(400).json({ error: `Message text must be 1–${MAX_MESSAGE_LEN} characters` });
+      return;
+    }
+  }
+
+  // Context is passed as a separate user-data section, not appended to the system prompt,
+  // to reduce prompt injection surface area.
+  let systemPrompt = SYSTEM_PROMPT;
+  if (context && typeof context === "string") {
+    const safeContext = context.slice(0, MAX_CONTEXT_LEN);
+    systemPrompt += `\n\n--- USER PORTFOLIO CONTEXT (read-only data) ---\n${safeContext}\n--- END CONTEXT ---`;
+  }
 
   const contents = messages.map((m) => ({
     role: m.role,
@@ -42,7 +66,7 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents,
-          systemInstruction: { parts: [{ text: fullSystemPrompt }] },
+          systemInstruction: { parts: [{ text: systemPrompt }] },
           generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
         }),
       },
@@ -66,7 +90,7 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     res.json({ text });
-  } catch (err) {
+  } catch {
     res.status(502).json({ error: "Failed to reach AI service" });
   }
 });

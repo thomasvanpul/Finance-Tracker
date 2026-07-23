@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins";
 import { db, userTable, sessionTable, accountTable, verificationTable, twoFactorTable } from "@workspace/db";
+import { logger } from "./logger";
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
@@ -40,7 +41,7 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
-      console.log(`[Password Reset] Send to ${user.email}: ${url}`);
+      logger.info({ email: user.email }, "[Password Reset] dispatching reset email");
       if (process.env.RESEND_API_KEY) {
         try {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
