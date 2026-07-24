@@ -8,7 +8,9 @@ import {
   useGetWiseStatus,
   useSyncWiseTransactions,
   useListAccounts,
+  useListTransactions,
 } from "@workspace/api-client-react";
+import { useCategoryMeta } from "@/contexts/category-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,7 +45,8 @@ type NavItem =
   | "currency" | "alerts" | "rules" | "dashboard" | "tx-defaults"
   | "widgets" | "data" | "advanced"
   | "shortcuts" | "ai"
-  | "wise" | "crypto-wallets" | "digest";
+  | "wise" | "crypto-wallets" | "digest"
+  | "categories";
 
 interface AlertRules {
   largeTxThreshold: number;
@@ -126,10 +129,11 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
   {
     label: "Personalise",
     items: [
-      { id: "appearance", label: "Appearance" },
-      { id: "animations", label: "Animations" },
-      { id: "display",    label: "Display" },
-      { id: "wardrobe",   label: "Wardrobe" },
+      { id: "appearance",  label: "Appearance" },
+      { id: "animations",  label: "Animations" },
+      { id: "display",     label: "Display" },
+      { id: "wardrobe",    label: "Wardrobe" },
+      { id: "categories",  label: "Categories" },
     ],
   },
   {
@@ -2048,6 +2052,115 @@ function CryptoWalletsPanel() {
   );
 }
 
+// ── Categories panel ──────────────────────────────────────────────────────────
+function CategoriesPanel() {
+  const { meta, setCategoryMeta, removeCategoryMeta, getEmoji, getColor } = useCategoryMeta();
+  const { data: allTxs } = useListTransactions({});
+
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    for (const tx of allTxs ?? []) {
+      if (tx.category) cats.add(tx.category);
+    }
+    return [...cats].sort();
+  }, [allTxs]);
+
+  const [editingCat, setEditingCat] = useState<string | null>(null);
+  const [emojiInput, setEmojiInput] = useState("");
+  const [colorInput, setColorInput] = useState("#ffffff");
+
+  const openEdit = (cat: string) => {
+    setEditingCat(cat);
+    setEmojiInput(getEmoji(cat));
+    setColorInput(getColor(cat).startsWith("#") ? getColor(cat) : "#aaaaaa");
+  };
+
+  const saveEdit = () => {
+    if (!editingCat) return;
+    setCategoryMeta(editingCat, { emoji: emojiInput, color: colorInput });
+    setEditingCat(null);
+  };
+
+  const COMMON_COLORS = ["#00ff88","#f59e0b","#3b82f6","#ef4444","#8b5cf6","#ec4899","#10b981","#06b6d4","#f97316","#6b7280"];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Category Colours &amp; Icons</div>
+        <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+          Customise the colour and emoji for each spending category. Changes apply across the app.
+        </div>
+        <div style={{ padding: "4px 0" }}>
+          {categories.length === 0 && (
+            <div style={{ padding: "16px 14px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+              No categories yet — add some transactions first.
+            </div>
+          )}
+          {categories.map(cat => (
+            <div key={cat} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 14px", borderBottom: "1px solid var(--ft-border)" }}>
+              <span style={{ fontSize: 14, width: 22, textAlign: "center" }}>{getEmoji(cat)}</span>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: getColor(cat), flexShrink: 0 }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{cat}</span>
+              {meta[cat.toLowerCase()] && (
+                <button
+                  onClick={() => removeCategoryMeta(cat)}
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
+                >
+                  RESET
+                </button>
+              )}
+              <button
+                onClick={() => openEdit(cat)}
+                style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-border)", padding: "2px 8px", cursor: "pointer" }}
+              >
+                Edit
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {editingCat && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setEditingCat(null)}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 20, width: 300, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>EDIT: {editingCat.toUpperCase()}</div>
+
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 6, letterSpacing: "0.08em" }}>EMOJI</div>
+              <input
+                value={emojiInput}
+                onChange={e => setEmojiInput(e.target.value)}
+                placeholder="🎯"
+                style={{ fontFamily: "var(--font-mono)", fontSize: 18, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "6px 10px", width: "100%", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 6, letterSpacing: "0.08em" }}>COLOUR</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                {COMMON_COLORS.map(c => (
+                  <div key={c} onClick={() => setColorInput(c)}
+                    style={{ width: 20, height: 20, borderRadius: "50%", background: c, cursor: "pointer", border: colorInput === c ? "2px solid var(--ft-text)" : "2px solid transparent" }} />
+                ))}
+              </div>
+              <input type="color" value={colorInput} onChange={e => setColorInput(e.target.value)}
+                style={{ width: "100%", height: 32, background: "transparent", border: "1px solid var(--ft-border)", cursor: "pointer" }} />
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveEdit} style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px", cursor: "pointer", letterSpacing: "0.06em" }}>SAVE</button>
+              <button onClick={() => setEditingCat(null)} style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 10, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "8px", cursor: "pointer" }}>CANCEL</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Settings() {
@@ -2508,6 +2621,8 @@ export default function Settings() {
         {activePanel === "ai" && <AiSettingsPanel />}
 
         {activePanel === "wardrobe" && <WardrobePanel />}
+
+        {activePanel === "categories" && <CategoriesPanel />}
 
         {activePanel === "shortcuts" && (
           <div style={PANEL_STYLE}>

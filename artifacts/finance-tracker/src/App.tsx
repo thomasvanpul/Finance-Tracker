@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/contexts/theme-context";
 import { WidgetsProvider } from "@/contexts/widgets-context";
 import { TickersProvider } from "@/contexts/tickers-context";
 import { PrivacyProvider } from "@/contexts/privacy-context";
+import { CategoryProvider } from "@/contexts/category-context";
 import NotFound from "@/pages/not-found";
 
 import Dashboard from "@/pages/dashboard";
@@ -42,6 +43,7 @@ import Fire from "@/pages/fire";
 import Pension from "@/pages/pension";
 import Calculators from "@/pages/calculators";
 import Wardrobe from "@/pages/wardrobe";
+import Projection from "@/pages/projection";
 import { PageTransitionOverlay } from "@/components/page-transition";
 const queryClient = new QueryClient();
 
@@ -91,6 +93,7 @@ function Router() {
         <Route path="/pension" component={Pension} />
         <Route path="/calculators" component={Calculators} />
         <Route path="/wardrobe" component={Wardrobe} />
+        <Route path="/projection" component={Projection} />
         <Route path="/subscriptions" component={Subscriptions} />
         <Route path="/tax" component={Tax} />
         <Route path="/mortgage" component={Mortgage} />
@@ -121,6 +124,7 @@ function App() {
     <ThemeProvider>
       <BootEffects />
       <PrivacyProvider>
+      <CategoryProvider>
       <TickersProvider>
       <WidgetsProvider>
         <QueryClientProvider client={queryClient}>
@@ -137,6 +141,7 @@ function App() {
         </QueryClientProvider>
       </WidgetsProvider>
       </TickersProvider>
+      </CategoryProvider>
       </PrivacyProvider>
     </ThemeProvider>
   );

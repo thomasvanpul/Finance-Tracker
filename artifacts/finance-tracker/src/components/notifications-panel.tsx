@@ -6,8 +6,33 @@ import {
   useListDebts,
   useListGoals,
   useListBudgets,
+  useListAccounts,
 } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
+
+const BALANCE_ALERTS_KEY = "ft-balance-alerts";
+
+interface BalanceAlertRule {
+  accountId: number;
+  accountName: string;
+  threshold: number; // GBP
+  level: "warn" | "critical";
+}
+
+export function loadBalanceAlertRules(): BalanceAlertRule[] {
+  try {
+    const raw = localStorage.getItem(BALANCE_ALERTS_KEY);
+    return raw ? (JSON.parse(raw) as BalanceAlertRule[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveBalanceAlertRules(rules: BalanceAlertRule[]): void {
+  try {
+    localStorage.setItem(BALANCE_ALERTS_KEY, JSON.stringify(rules));
+  } catch {}
+}
 
 export interface Alert {
   id: string;
@@ -81,6 +106,7 @@ export function useAlerts() {
   const { data: debts } = useListDebts();
   const { data: goals = [] } = useListGoals();
   const { data: budgets = [] } = useListBudgets();
+  const { data: accounts } = useListAccounts();
 
   const alerts = useMemo<Alert[]>(() => {
     const result: Alert[] = [];
@@ -230,8 +256,26 @@ export function useAlerts() {
       }
     }
 
+    // Account balance alerts
+    const balanceRules = loadBalanceAlertRules();
+    if (balanceRules.length > 0 && accounts) {
+      for (const rule of balanceRules) {
+        const acct = accounts.find((a) => a.id === rule.accountId);
+        if (!acct) continue;
+        const balance = acct.gbpEquivalent ?? 0;
+        if (balance < rule.threshold) {
+          result.push({
+            id: `balance-alert-${rule.accountId}`,
+            level: rule.level,
+            title: `Low balance: ${rule.accountName}`,
+            detail: `${formatGbp(balance)} — below your ${formatGbp(rule.threshold)} threshold`,
+          });
+        }
+      }
+    }
+
     return result;
-  }, [dashboard, monthTxs, recentTxs, allTxs, upcoming, debts, goals, budgets, alertRules]);
+  }, [dashboard, monthTxs, recentTxs, allTxs, upcoming, debts, goals, budgets, alertRules, accounts]);
 
   return alerts;
 }
@@ -244,6 +288,42 @@ interface NotificationsPanelProps {
 export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
   const [dismissed, setDismissed] = useState<string[]>(() => loadDismissed());
   const alerts = useAlerts();
+  const { data: accounts } = useListAccounts();
+
+  // Balance alerts config state
+  const [balanceRules, setBalanceRules] = useState<BalanceAlertRule[]>(() =>
+    loadBalanceAlertRules()
+  );
+  const [configOpen, setConfigOpen] = useState(false);
+  const [newAccountId, setNewAccountId] = useState<string>("");
+  const [newThreshold, setNewThreshold] = useState<string>("");
+  const [newLevel, setNewLevel] = useState<"warn" | "critical">("warn");
+
+  const addBalanceRule = useCallback(() => {
+    const accountId = parseInt(newAccountId, 10);
+    const threshold = parseFloat(newThreshold);
+    if (!accountId || isNaN(threshold) || threshold <= 0 || !accounts) return;
+    const acct = accounts.find((a) => a.id === accountId);
+    if (!acct) return;
+    const updated = [
+      ...balanceRules.filter((r) => r.accountId !== accountId),
+      { accountId, accountName: acct.name, threshold, level: newLevel },
+    ];
+    setBalanceRules(updated);
+    saveBalanceAlertRules(updated);
+    setNewAccountId("");
+    setNewThreshold("");
+    setNewLevel("warn");
+  }, [newAccountId, newThreshold, newLevel, accounts, balanceRules]);
+
+  const deleteBalanceRule = useCallback(
+    (accountId: number) => {
+      const updated = balanceRules.filter((r) => r.accountId !== accountId);
+      setBalanceRules(updated);
+      saveBalanceAlertRules(updated);
+    },
+    [balanceRules]
+  );
 
   // Sync dismissed state with sessionStorage when it changes
   useEffect(() => {
@@ -499,6 +579,266 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                 </div>
               );
             })
+          )}
+        </div>
+
+        {/* Balance Alerts Configuration */}
+        <div
+          style={{
+            borderTop: "1px solid var(--ft-border)",
+            flexShrink: 0,
+          }}
+        >
+          {/* Toggle header */}
+          <button
+            type="button"
+            onClick={() => setConfigOpen((v) => !v)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              padding: "8px 14px",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              color: "var(--ft-dim)",
+              letterSpacing: "0.1em",
+              fontWeight: 700,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--ft-muted)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--ft-dim)";
+            }}
+          >
+            <span>BALANCE ALERTS</span>
+            <span style={{ fontSize: 11, fontWeight: 400 }}>
+              {configOpen ? "▲" : "▼"}
+            </span>
+          </button>
+
+          {configOpen && (
+            <div
+              style={{
+                borderTop: "1px solid var(--ft-border)",
+                background: "var(--ft-raised)",
+              }}
+            >
+              {/* Existing rules */}
+              {balanceRules.length === 0 ? (
+                <div
+                  style={{
+                    padding: "8px 14px",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9,
+                    color: "var(--ft-dim)",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  NO RULES CONFIGURED
+                </div>
+              ) : (
+                balanceRules.map((rule) => (
+                  <div
+                    key={rule.accountId}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "6px 12px",
+                      borderBottom: "1px solid var(--ft-border)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        minWidth: 0,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 8,
+                          color:
+                            rule.level === "critical"
+                              ? "var(--ft-red)"
+                              : "var(--ft-amber)",
+                          letterSpacing: "0.08em",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {rule.level === "critical" ? "CRIT" : "WARN"}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          color: "var(--ft-text)",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {rule.accountName} &lt; {formatGbp(rule.threshold)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => deleteBalanceRule(rule.accountId)}
+                      aria-label={`Remove balance alert for ${rule.accountName}`}
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 13,
+                        color: "var(--ft-dim)",
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "0 2px",
+                        lineHeight: 1,
+                        flexShrink: 0,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = "var(--ft-red)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = "var(--ft-dim)";
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
+
+              {/* Add rule form */}
+              <div
+                style={{
+                  padding: "8px 12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 8,
+                    color: "var(--ft-dim)",
+                    letterSpacing: "0.1em",
+                    marginBottom: 2,
+                  }}
+                >
+                  ADD RULE
+                </div>
+                {/* Account selector */}
+                <select
+                  value={newAccountId}
+                  onChange={(e) => setNewAccountId(e.target.value)}
+                  aria-label="Select account"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--ft-text)",
+                    background: "var(--ft-surface)",
+                    border: "1px solid var(--ft-border)",
+                    borderRadius: 3,
+                    padding: "4px 6px",
+                    width: "100%",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">— select account —</option>
+                  {(accounts ?? []).map((a) => (
+                    <option key={a.id} value={String(a.id)}>
+                      {a.name} ({formatGbp(a.gbpEquivalent)})
+                    </option>
+                  ))}
+                </select>
+
+                {/* Threshold + level row */}
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    type="number"
+                    value={newThreshold}
+                    onChange={(e) => setNewThreshold(e.target.value)}
+                    placeholder="Min £"
+                    aria-label="Minimum balance threshold in GBP"
+                    min="0"
+                    step="1"
+                    style={{
+                      flex: 1,
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      color: "var(--ft-text)",
+                      background: "var(--ft-surface)",
+                      border: "1px solid var(--ft-border)",
+                      borderRadius: 3,
+                      padding: "4px 6px",
+                    }}
+                  />
+                  <select
+                    value={newLevel}
+                    onChange={(e) =>
+                      setNewLevel(e.target.value as "warn" | "critical")
+                    }
+                    aria-label="Alert severity"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      color: "var(--ft-text)",
+                      background: "var(--ft-surface)",
+                      border: "1px solid var(--ft-border)",
+                      borderRadius: 3,
+                      padding: "4px 6px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="warn">WARN</option>
+                    <option value="critical">CRIT</option>
+                  </select>
+                </div>
+
+                {/* Add button */}
+                <button
+                  type="button"
+                  onClick={addBalanceRule}
+                  disabled={!newAccountId || !newThreshold}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 9,
+                    color:
+                      !newAccountId || !newThreshold
+                        ? "var(--ft-dim)"
+                        : "var(--ft-accent)",
+                    background: "transparent",
+                    border: "1px solid var(--ft-border)",
+                    borderRadius: 3,
+                    padding: "5px 10px",
+                    cursor:
+                      !newAccountId || !newThreshold
+                        ? "not-allowed"
+                        : "pointer",
+                    letterSpacing: "0.08em",
+                    transition: "all 0.1s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!newAccountId || !newThreshold) return;
+                    e.currentTarget.style.borderColor = "var(--ft-accent)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--ft-border)";
+                  }}
+                >
+                  + ADD
+                </button>
+              </div>
+            </div>
           )}
         </div>
 

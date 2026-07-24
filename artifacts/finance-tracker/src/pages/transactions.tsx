@@ -98,6 +98,27 @@ interface SplitLine {
   amount: string;
 }
 
+// ── localStorage split entries ────────────────────────────────────────────────
+
+interface SplitEntry {
+  category: string;
+  amount: number; // in GBP, positive
+  note?: string;
+}
+
+const SPLITS_KEY = "ft-tx-splits";
+
+function loadSplits(): Record<string, SplitEntry[]> {
+  try {
+    const raw = localStorage.getItem(SPLITS_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, SplitEntry[]>) : {};
+  } catch { return {}; }
+}
+
+function saveSplits(splits: Record<string, SplitEntry[]>): void {
+  try { localStorage.setItem(SPLITS_KEY, JSON.stringify(splits)); } catch {}
+}
+
 interface MerchantGroup {
   description: string;
   count: number;
@@ -221,6 +242,311 @@ function exportJson(rows: Array<{ date: string; description: string; category: s
   URL.revokeObjectURL(url);
 }
 
+// ── SplitModal (localStorage-backed split view) ───────────────────────────────
+
+type SplitModalTx = {
+  id: number;
+  description: string;
+  date: string;
+  gbpValue: number;
+};
+
+function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) {
+  const existingSplits = loadSplits()[String(tx.id)] ?? [];
+  const total = Math.abs(tx.gbpValue);
+
+  const [entries, setEntries] = useState<Array<{ id: string; category: string; amount: string; note: string }>>(
+    () =>
+      existingSplits.length > 0
+        ? existingSplits.map((e) => ({ id: crypto.randomUUID(), category: e.category, amount: String(e.amount), note: e.note ?? "" }))
+        : [
+            { id: crypto.randomUUID(), category: "", amount: total.toFixed(2), note: "" },
+          ]
+  );
+
+  const allocatedSum = entries.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
+  const remaining = parseFloat((total - allocatedSum).toFixed(2));
+
+  const addRow = () => {
+    setEntries((prev) => [...prev, { id: crypto.randomUUID(), category: "", amount: "", note: "" }]);
+  };
+
+  const removeRow = (id: string) => {
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+  };
+
+  const updateEntry = (id: string, field: "category" | "amount" | "note", value: string) => {
+    setEntries((prev) => prev.map((e) => e.id === id ? { ...e, [field]: value } : e));
+  };
+
+  const handleSave = () => {
+    if (Math.abs(remaining) > 0.005) return;
+    const splits = loadSplits();
+    const newSplits: SplitEntry[] = entries.map((e) => ({
+      category: e.category,
+      amount: parseFloat(e.amount) || 0,
+      ...(e.note ? { note: e.note } : {}),
+    }));
+    splits[String(tx.id)] = newSplits;
+    saveSplits(splits);
+    onClose();
+  };
+
+  const handleClear = () => {
+    const splits = loadSplits();
+    delete splits[String(tx.id)];
+    saveSplits(splits);
+    onClose();
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 200,
+        background: "rgba(0,0,0,0.75)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          background: "var(--ft-surface)",
+          border: "1px solid var(--ft-border)",
+          borderRadius: 4,
+          width: "min(540px, 95vw)",
+          maxHeight: "85vh",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "0 16px 64px rgba(0,0,0,0.8)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-accent)" }}>⊕ SPLIT</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{tx.description}</div>
+            <div style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
+              {tx.date} · GBP {total.toFixed(2)}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-dim)", fontSize: 16, lineHeight: 1, padding: "0 4px" }}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Entries */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 1fr 28px", gap: 6, marginBottom: 2 }}>
+            {["CATEGORY", "AMOUNT", "NOTE", ""].map((h) => (
+              <div key={h} style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>{h}</div>
+            ))}
+          </div>
+          {entries.map((entry) => (
+            <div key={entry.id} style={{ display: "grid", gridTemplateColumns: "1fr 90px 1fr 28px", gap: 6, alignItems: "center" }}>
+              <input
+                type="text"
+                list="tx-categories"
+                placeholder="Category"
+                value={entry.category}
+                onChange={(e) => updateEntry(entry.id, "category", e.target.value)}
+                style={{
+                  background: "var(--ft-base)",
+                  border: "1px solid var(--ft-border)",
+                  borderRadius: 2,
+                  color: "var(--ft-text)",
+                  fontSize: 12,
+                  fontFamily: "var(--font-mono)",
+                  padding: "5px 8px",
+                  outline: "none",
+                  width: "100%",
+                  boxSizing: "border-box" as const,
+                }}
+              />
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={entry.amount}
+                onChange={(e) => updateEntry(entry.id, "amount", e.target.value)}
+                style={{
+                  background: "var(--ft-base)",
+                  border: "1px solid var(--ft-border)",
+                  borderRadius: 2,
+                  color: "var(--ft-text)",
+                  fontSize: 12,
+                  fontFamily: "var(--font-mono)",
+                  padding: "5px 8px",
+                  outline: "none",
+                  width: "100%",
+                  textAlign: "right" as const,
+                  boxSizing: "border-box" as const,
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Note (optional)"
+                value={entry.note}
+                onChange={(e) => updateEntry(entry.id, "note", e.target.value)}
+                style={{
+                  background: "var(--ft-base)",
+                  border: "1px solid var(--ft-border)",
+                  borderRadius: 2,
+                  color: "var(--ft-text)",
+                  fontSize: 12,
+                  fontFamily: "var(--font-mono)",
+                  padding: "5px 8px",
+                  outline: "none",
+                  width: "100%",
+                  boxSizing: "border-box" as const,
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => removeRow(entry.id)}
+                disabled={entries.length <= 1}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: entries.length <= 1 ? "not-allowed" : "pointer",
+                  color: entries.length <= 1 ? "var(--ft-border)" : "var(--ft-red)",
+                  fontSize: 15,
+                  lineHeight: 1,
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                aria-label="Remove row"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addRow}
+            style={{
+              marginTop: 4,
+              background: "none",
+              border: "1px dashed var(--ft-border)",
+              borderRadius: 2,
+              color: "var(--ft-muted)",
+              fontSize: 11,
+              fontFamily: "var(--font-mono)",
+              cursor: "pointer",
+              padding: "5px 0",
+              width: "100%",
+              textAlign: "center" as const,
+              letterSpacing: "0.04em",
+            }}
+          >
+            + Add Row
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "12px 18px", borderTop: "1px solid var(--ft-border)" }}>
+          {/* Running total */}
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "8px 10px",
+            background: "var(--ft-base)",
+            border: `1px solid ${Math.abs(remaining) <= 0.005 ? "var(--ft-green)" : remaining < 0 ? "var(--ft-red)" : "var(--ft-border)"}`,
+            borderRadius: 2,
+            marginBottom: 12,
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+          }}>
+            <span style={{ color: "var(--ft-muted)" }}>
+              Allocated: <span style={{ color: "var(--ft-text)", fontWeight: 700 }}>£{allocatedSum.toFixed(2)}</span>
+              {" "}of{" "}
+              <span style={{ color: "var(--ft-text)" }}>£{total.toFixed(2)}</span>
+            </span>
+            <span style={{ color: Math.abs(remaining) <= 0.005 ? "var(--ft-green)" : remaining < 0 ? "var(--ft-red)" : "var(--ft-amber)", fontWeight: 700 }}>
+              {Math.abs(remaining) <= 0.005
+                ? "✓ Balanced"
+                : remaining > 0
+                ? `Remaining: £${remaining.toFixed(2)}`
+                : `Over by: £${Math.abs(remaining).toFixed(2)}`}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
+            <button
+              type="button"
+              onClick={handleClear}
+              style={{
+                fontSize: 11,
+                padding: "5px 14px",
+                background: "none",
+                border: "1px solid var(--ft-border)",
+                borderRadius: 2,
+                color: "var(--ft-muted)",
+                cursor: "pointer",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              Clear Split
+            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  fontSize: 11,
+                  padding: "5px 14px",
+                  background: "none",
+                  border: "1px solid var(--ft-border)",
+                  borderRadius: 2,
+                  color: "var(--ft-dim)",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={Math.abs(remaining) > 0.005}
+                title={Math.abs(remaining) > 0.005 ? "Allocated amounts must equal total" : undefined}
+                style={{
+                  fontSize: 11,
+                  padding: "5px 16px",
+                  background: Math.abs(remaining) <= 0.005 ? "var(--ft-accent)" : "var(--ft-raised)",
+                  border: "1px solid var(--ft-accent)",
+                  borderRadius: 2,
+                  color: Math.abs(remaining) <= 0.005 ? "#000" : "var(--ft-dim)",
+                  cursor: Math.abs(remaining) > 0.005 ? "not-allowed" : "pointer",
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 700,
+                  letterSpacing: "0.04em",
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function Transactions() {
@@ -294,10 +620,14 @@ export default function Transactions() {
   const PAGE_SIZE = 75;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  // ── split transaction ─────────────────────────────────────────────────────
+  // ── split transaction (server-side) ─────────────────────────────────────────
   const [splitTxId, setSplitTxId] = useState<number | null>(null);
   const [splitLines, setSplitLines] = useState<SplitLine[]>([]);
   const [splitSubmitting, setSplitSubmitting] = useState(false);
+
+  // ── localStorage split modal ──────────────────────────────────────────────
+  const [splits, setSplits] = useState<Record<string, SplitEntry[]>>(() => loadSplits());
+  const [splitModalTx, setSplitModalTx] = useState<SplitModalTx | null>(null);
 
   // ── templates ─────────────────────────────────────────────────────────────
   const [templates, setTemplates] = useState<TxTemplate[]>(() => loadTemplates());
@@ -1310,10 +1640,25 @@ export default function Transactions() {
             </span>
           )}
         </div>
-        <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
+        <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
             {tx.category}
           </span>
+          {splits[String(tx.id)] && (
+            <span style={{
+              fontSize: 8,
+              padding: "1px 5px",
+              borderRadius: 2,
+              background: "rgba(6,182,212,0.12)",
+              color: "var(--ft-accent)",
+              border: "1px solid var(--ft-accent)",
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.04em",
+              whiteSpace: "nowrap" as const,
+            }}>
+              ⊕ split
+            </span>
+          )}
         </div>
         <div style={{ width: 150, minWidth: 150, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {tx.accountName}
@@ -1367,9 +1712,19 @@ export default function Transactions() {
             )}
           </button>
         </div>
-        <div style={{ width: 100, minWidth: 100, padding: "4px 4px", display: "flex", justifyContent: "flex-end", gap: 2 }}>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSplit(tx.id)} title="Split transaction">
+        <div style={{ width: 128, minWidth: 128, padding: "4px 4px", display: "flex", justifyContent: "flex-end", gap: 2 }}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSplit(tx.id)} title="Split transaction (creates new transactions)">
             <span style={{ color: "var(--ft-muted)", fontSize: 13 }}>⊕</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setSplitModalTx({ id: tx.id, description: tx.description, date: tx.date, gbpValue: tx.gbpValue })}
+            title="Split view (local annotation)"
+            style={{ color: splits[String(tx.id)] ? "var(--ft-accent)" : undefined }}
+          >
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, color: splits[String(tx.id)] ? "var(--ft-accent)" : "var(--ft-dim)" }}>SL</span>
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tx.id)}>
             <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} />
@@ -2145,7 +2500,7 @@ export default function Transactions() {
                 aria-label="Select all"
               />
             </div>
-            {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["NOTE", "36px"], ["TAG", "36px"], ["", "100px"]].map(([h, w]) => (
+            {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["NOTE", "36px"], ["TAG", "36px"], ["", "128px"]].map(([h, w]) => (
               <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["AMOUNT", "GBP"].includes(h as string) ? "right" : "center", padding: h === "NOTE" || h === "TAG" ? "6px 0" : undefined }}>
                 {h}
               </div>
@@ -2258,7 +2613,7 @@ export default function Transactions() {
                       </div>
                       <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-raised)" }} />
                       <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-raised)" }} />
-                      <div style={{ width: 100, minWidth: 100 }} />
+                      <div style={{ width: 128, minWidth: 128 }} />
                     </div>
 
                     {group.expanded && groupTxs.map((tx) => <TxRow key={tx.id} tx={tx} indented />)}
@@ -2277,6 +2632,17 @@ export default function Transactions() {
           )}
         </div>
       </div>
+
+      {/* ── localStorage SplitModal ── */}
+      {splitModalTx && (
+        <SplitModal
+          tx={splitModalTx}
+          onClose={() => {
+            setSplits(loadSplits());
+            setSplitModalTx(null);
+          }}
+        />
+      )}
     </div>
   );
 }

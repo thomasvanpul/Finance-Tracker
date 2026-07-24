@@ -117,17 +117,11 @@ export function QuickAddTransaction({ open, onClose }: Props) {
     return () => window.removeEventListener("keydown", handler);
   });
 
-  const handleFileChange = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Reset input so the same file can be re-selected if needed
-    e.target.value = "";
-
+  const handleImageFile = useCallback(async (file: File) => {
     setScanState("scanning");
     try {
       const imageBase64 = await readFileAsBase64(file);
-      const response = await fetch(`${API_BASE}/api/ai/receipt-scan`, {
+      const response = await fetch(`${API_BASE}/api/receipt/parse`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64, mimeType: file.type }),
@@ -139,26 +133,53 @@ export function QuickAddTransaction({ open, onClose }: Props) {
       }
 
       const data = (await response.json()) as {
-        merchant?: string;
+        description?: string;
         amount?: number;
         date?: string;
+        type?: string;
         category?: string;
-        currency?: string;
       };
 
       setForm((f) => ({
         ...f,
-        description: data.merchant ?? f.description,
+        description: data.description ?? f.description,
         amount: data.amount != null ? String(data.amount) : f.amount,
         date: data.date ?? f.date,
+        type: (data.type as TransactionType | undefined) ?? f.type,
         category: data.category ?? f.category,
-        currency: data.currency ?? f.currency,
       }));
       setScanState("idle");
     } catch {
       setScanState("error");
     }
   }, []);
+
+  // Listen for paste events when the modal is open — handles clipboard image drops
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: ClipboardEvent) => {
+      const file = e.clipboardData?.files[0];
+      if (file && file.type.startsWith("image/")) {
+        e.preventDefault();
+        void handleImageFile(file);
+      }
+    };
+    window.addEventListener("paste", handler);
+    return () => window.removeEventListener("paste", handler);
+  }, [open, handleImageFile]);
+
+  const handleFileChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Reset input so the same file can be re-selected if needed
+      e.target.value = "";
+
+      await handleImageFile(file);
+    },
+    [handleImageFile],
+  );
 
   const handleSubmit = async () => {
     if (!form.amount || !form.accountId) {

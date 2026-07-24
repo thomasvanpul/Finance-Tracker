@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-import { useWidgets, WIDGET_REGISTRY, type WidgetId } from "@/contexts/widgets-context";
+import { useWidgets, WIDGET_REGISTRY, type WidgetId, type WidgetSpan } from "@/contexts/widgets-context";
 import { NetWorthWidget } from "@/components/widgets/net-worth";
 import { AccountsSummaryWidget } from "@/components/widgets/accounts-summary";
 import { RecentTransactionsWidget } from "@/components/widgets/recent-transactions";
@@ -42,6 +42,30 @@ import type { ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
+
+// ── Saved Views ───────────────────────────────────────────────────────────────
+
+interface DashboardView {
+  id: string;
+  name: string;
+  enabled: string[];
+  order: string[];
+  spans: Record<string, string>;
+  createdAt: string;
+}
+
+const VIEWS_KEY = "ft-dashboard-views";
+
+function loadViews(): DashboardView[] {
+  try {
+    const raw = localStorage.getItem(VIEWS_KEY);
+    return raw ? (JSON.parse(raw) as DashboardView[]) : [];
+  } catch { return []; }
+}
+
+function saveViews(views: DashboardView[]): void {
+  try { localStorage.setItem(VIEWS_KEY, JSON.stringify(views)); } catch {}
+}
 
 function AnimatedNet({ value }: { value: number }) {
   const animated = useCountUp(value);
@@ -1014,9 +1038,12 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
 // ── Dashboard page ─────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { order, isEnabled, setOrder, toggle, toggleSpan, getSpan } = useWidgets();
+  const { order, enabled, spans, isEnabled, setOrder, toggle, toggleSpan, getSpan, restoreView } = useWidgets();
   const [activeId, setActiveId] = useState<WidgetId | null>(null);
   const [expandedWidgetId, setExpandedWidgetId] = useState<WidgetId | null>(null);
+  const [views, setViews] = useState<DashboardView[]>(() => loadViews());
+  const [viewNameInput, setViewNameInput] = useState("");
+  const [showViewSave, setShowViewSave] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(
     () =>
       localStorage.getItem("nr-onboarding-complete") === "1" ||
@@ -1053,6 +1080,33 @@ export default function Dashboard() {
     setOrder([...newEnabled, ...disabledIds]);
   }
 
+  function handleSaveView() {
+    if (!viewNameInput.trim()) return;
+    const newView: DashboardView = {
+      id: Date.now().toString(),
+      name: viewNameInput.trim(),
+      enabled: [...enabled],
+      order: [...order],
+      spans: { ...spans } as Record<string, string>,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...views, newView];
+    setViews(updated);
+    saveViews(updated);
+    setViewNameInput("");
+    setShowViewSave(false);
+  }
+
+  function handleLoadView(view: DashboardView) {
+    restoreView(view.enabled as WidgetId[], view.order as WidgetId[], view.spans as Partial<Record<WidgetId, WidgetSpan>>);
+  }
+
+  function handleDeleteView(id: string) {
+    const updated = views.filter(v => v.id !== id);
+    setViews(updated);
+    saveViews(updated);
+  }
+
   return (
     <div>
       {/* Expanded widget modal */}
@@ -1079,6 +1133,71 @@ export default function Dashboard() {
           {enabledIds.length} widget{enabledIds.length !== 1 ? "s" : ""}
         </span>
         <span style={{ color: "var(--ft-border2)", fontSize: 9 }}>· drag to reorder · hover for controls</span>
+      </div>
+
+      {/* Saved Views */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        marginBottom: 12, flexWrap: "wrap",
+      }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginRight: 4 }}>
+          VIEWS:
+        </span>
+        {views.map(v => (
+          <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 0 }}>
+            <button
+              onClick={() => handleLoadView(v)}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em",
+                color: "var(--ft-accent)", background: "transparent",
+                border: "1px solid var(--ft-border)", padding: "3px 9px",
+                cursor: "pointer", borderRight: "none",
+              }}
+            >
+              {v.name}
+            </button>
+            <button
+              onClick={() => handleDeleteView(v.id)}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: 9,
+                color: "var(--ft-red)", background: "transparent",
+                border: "1px solid var(--ft-border)", padding: "3px 6px",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        {showViewSave ? (
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            <input
+              value={viewNameInput}
+              onChange={e => setViewNameInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleSaveView(); if (e.key === "Escape") setShowViewSave(false); }}
+              placeholder="View name…"
+              autoFocus
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: 10,
+                background: "var(--ft-raised)", border: "1px solid var(--ft-accent)",
+                color: "var(--ft-text)", padding: "3px 8px", outline: "none", width: 120,
+              }}
+            />
+            <button onClick={handleSaveView} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "3px 9px", cursor: "pointer" }}>Save</button>
+            <button onClick={() => setShowViewSave(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "transparent", border: "1px solid var(--ft-border)", padding: "3px 9px", cursor: "pointer" }}>Cancel</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowViewSave(true)}
+            style={{
+              fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em",
+              color: "var(--ft-dim)", background: "transparent",
+              border: "1px dashed var(--ft-border)", padding: "3px 9px", cursor: "pointer",
+            }}
+          >
+            + Save current
+          </button>
+        )}
       </div>
 
       {enabledIds.length === 0 ? (

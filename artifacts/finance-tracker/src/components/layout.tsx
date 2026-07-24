@@ -10,6 +10,7 @@ import { usePrivacy, PrivNum } from "@/contexts/privacy-context";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import { QuickAddTransaction, useQuickAdd } from "@/components/quick-add-transaction";
 import { GlobalSearch, useGlobalSearch } from "@/components/global-search";
+import { KeyboardShortcuts, useKeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Menu } from "lucide-react";
 import { Logo, LogoMark } from "@/components/logo";
 import { formatGbp } from "@/lib/utils";
@@ -83,6 +84,7 @@ const SECONDARY_NAV_SECTIONS = [
       { href: "/cashflow",      label: "Cash Flow",     code: "G·V" },
       { href: "/year-review",   label: "Year Review",   code: "G·E" },
       { href: "/reports",       label: "Reports",       code: "G·R" },
+      { href: "/projection",    label: "Projection",    code: "G·5" },
     ],
   },
   {
@@ -123,6 +125,7 @@ const G_KEY_MAP: Record<string, string> = {
   g: "/ai-coach", z: "/wardrobe",
   // Power-user shortcuts not shown in sidebar
   m: "/mortgage", p: "/pension", "0": "/fire",
+  "5": "/projection",
 };
 
 
@@ -1002,6 +1005,7 @@ export function Layout({ children }: LayoutProps) {
   const { open: cmdOpen, closePalette } = useCommandPalette();
   const { open: qaOpen, openQuickAdd, close: qaClose } = useQuickAdd();
   const { open: searchOpen, openSearch, closeSearch } = useGlobalSearch();
+  const { open: shortcutsOpen, openShortcuts, closeShortcuts } = useKeyboardShortcuts();
   const [collapsed, setCollapsed] = useState(() => {
     try {
       const current = localStorage.getItem("ft-sidebar");
@@ -1015,7 +1019,6 @@ export function Layout({ children }: LayoutProps) {
   const [showNwStrip] = useState(() => {
     try { return localStorage.getItem("nr-show-nw-strip") !== "false"; } catch { return true; }
   });
-  const [showHelp, setShowHelp] = useState(false);
   const [configuring, setConfiguring] = useState(false);
   const { privacy, togglePrivacy } = usePrivacy();
   const [sidebarConfig, setSidebarConfig] = useState<SidebarConfig>(() =>
@@ -1111,11 +1114,11 @@ export function Layout({ children }: LayoutProps) {
 
       if (e.key === "?" && !e.metaKey && !e.ctrlKey && !pendingGRef.current) {
         e.preventDefault();
-        setShowHelp(h => !h);
+        openShortcuts();
         return;
       }
 
-      if (e.key === "Escape") { setShowHelp(false); return; }
+      if (e.key === "Escape") { closeShortcuts(); return; }
 
       // G+key navigation: press G, then D/A/T/U/O/I/S/P within 1.5s
       if (e.key.toLowerCase() === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
@@ -1135,7 +1138,7 @@ export function Layout({ children }: LayoutProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toggleSidebar, navigate]);
+  }, [toggleSidebar, navigate, openShortcuts, closeShortcuts]);
 
   useEffect(() => {
     document.body.classList.toggle("dark", theme !== "arctic");
@@ -1163,103 +1166,7 @@ export function Layout({ children }: LayoutProps) {
     <CommandPalette open={cmdOpen} onClose={closePalette} onNewTransaction={openQuickAdd} />
     <QuickAddTransaction open={qaOpen} onClose={qaClose} />
     <GlobalSearch open={searchOpen} onClose={closeSearch} />
-
-    {showHelp && (
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Keyboard shortcuts"
-        onClick={() => setShowHelp(false)}
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9998,
-          background: "rgba(0,0,0,0.75)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          onClick={e => e.stopPropagation()}
-          style={{
-            width: 520,
-            background: "var(--ft-surface)",
-            border: "1px solid var(--ft-border)",
-            padding: "24px 28px",
-          }}
-        >
-          <div style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--ft-accent)",
-            letterSpacing: "0.18em",
-            marginBottom: 20,
-            fontWeight: 700,
-          }}>
-            KEYBOARD SHORTCUTS
-          </div>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "8px 24px",
-          }}>
-            {[
-              ["G·D", "Dashboard"],
-              ["G·A", "Accounts"],
-              ["G·T", "Transactions"],
-              ["G·R", "Reports"],
-              ["G·U", "Upcoming"],
-              ["G·O", "Owing"],
-              ["G·L", "Goals"],
-              ["G·I", "Investments"],
-              ["G·N", "Analytics"],
-              ["G·S", "Settings"],
-              ["⌘[", "Toggle sidebar"],
-              ["⌘K", "Global search"],
-              ["/", "Focus search"],
-              ["N", "Quick add transaction"],
-              ["?", "This help"],
-            ].map(([key, label]) => (
-              <div key={key} style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-              }}>
-                <span style={{
-                  background: "var(--ft-raised)",
-                  border: "1px solid var(--ft-border2)",
-                  color: "var(--ft-accent)",
-                  padding: "2px 6px",
-                  fontSize: 10,
-                  letterSpacing: "0.04em",
-                  fontWeight: 700,
-                  flexShrink: 0,
-                  minWidth: 52,
-                  textAlign: "center",
-                }}>
-                  {key}
-                </span>
-                <span style={{ color: "var(--ft-muted)", fontSize: 11 }}>{label}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{
-            marginTop: 20,
-            paddingTop: 14,
-            borderTop: "1px solid var(--ft-border)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--ft-dim)",
-            letterSpacing: "0.08em",
-          }}>
-            PRESS ESC OR CLICK OUTSIDE TO CLOSE
-          </div>
-        </div>
-      </div>
-    )}
+    <KeyboardShortcuts open={shortcutsOpen} onClose={closeShortcuts} />
     <div
       className="flex h-[100dvh] overflow-hidden"
       style={{ background: "var(--ft-base)", color: "var(--ft-text)", fontFamily: "var(--font-body, var(--font-sans))" }}

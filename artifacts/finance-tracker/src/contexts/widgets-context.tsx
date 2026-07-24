@@ -76,6 +76,7 @@ interface WidgetsCtx {
   setOrder: (order: WidgetId[]) => void;
   toggleSpan: (id: WidgetId) => void;
   getSpan: (id: WidgetId) => WidgetSpan;
+  restoreView: (newEnabled: WidgetId[], newOrder: WidgetId[], newSpans: Partial<Record<WidgetId, WidgetSpan>>) => void;
 }
 
 const WidgetsContext = createContext<WidgetsCtx | null>(null);
@@ -153,6 +154,14 @@ export function WidgetsProvider({ children }: { children: ReactNode }) {
     return spans[id] ?? DEFAULT_DEF_MAP[id]?.defaultSpan ?? "half";
   }, [spans]);
 
+  const restoreView = useCallback((newEnabled: WidgetId[], newOrder: WidgetId[], newSpans: Partial<Record<WidgetId, WidgetSpan>>) => {
+    const enabledSet = new Set<WidgetId>(newEnabled);
+    setEnabled(enabledSet);
+    setOrderState(newOrder);
+    setSpans(newSpans);
+    persist(newEnabled, newOrder, newSpans);
+  }, []);
+
   return (
     <WidgetsContext.Provider value={{
       enabled,
@@ -163,6 +172,7 @@ export function WidgetsProvider({ children }: { children: ReactNode }) {
       setOrder,
       toggleSpan,
       getSpan,
+      restoreView,
     }}>
       {children}
     </WidgetsContext.Provider>
