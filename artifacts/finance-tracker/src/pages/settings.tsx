@@ -43,7 +43,7 @@ type NavItem =
   | "currency" | "alerts" | "rules" | "dashboard" | "tx-defaults"
   | "widgets" | "data" | "advanced"
   | "shortcuts" | "ai"
-  | "wise" | "crypto-wallets";
+  | "wise" | "crypto-wallets" | "digest";
 
 interface AlertRules {
   largeTxThreshold: number;
@@ -163,6 +163,7 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
     items: [
       { id: "wise", label: "Wise" },
       { id: "crypto-wallets", label: "Crypto Wallets" },
+      { id: "digest", label: "Weekly Digest" },
     ],
   },
   {
@@ -1542,6 +1543,86 @@ function WiseIntegrationPanel() {
 const CRYPTO_WALLETS_KEY = "ft-crypto-wallets";
 const CRYPTO_PRICES_KEY = "ft-crypto-prices";
 
+function DigestPanel() {
+  const { toast } = useToast();
+  const [sending, setSending] = useState(false);
+  const [enabled, setEnabled] = useState(() => {
+    try { return localStorage.getItem("ft-digest-enabled") === "true"; } catch { return false; }
+  });
+
+  const toggleEnabled = () => {
+    const next = !enabled;
+    setEnabled(next);
+    try { localStorage.setItem("ft-digest-enabled", next ? "true" : "false"); } catch {}
+  };
+
+  const sendNow = async () => {
+    setSending(true);
+    try {
+      const res = await fetch("/api/digest/send", { method: "POST", credentials: "include" });
+      const data = await res.json();
+      if (data.ok) {
+        toast({ title: "Digest sent!", description: "Check your inbox for this week's summary." });
+      } else {
+        toast({ title: "Failed to send", description: data.error ?? "Unknown error", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Could not reach server", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Weekly Email Digest</div>
+        <div style={{ padding: "12px 14px" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7, marginBottom: 12 }}>
+            Receive a weekly summary of your income, expenses, and top spending categories by email every Monday morning.
+            Requires <code style={{ color: "var(--ft-accent)" }}>RESEND_API_KEY</code> to be configured on the server.
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>Enable weekly digest</div>
+            <Toggle on={enabled} onChange={toggleEnabled} />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={sendNow}
+              disabled={sending}
+              style={{
+                fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em",
+                color: "var(--ft-accent)", background: "transparent",
+                border: "1px solid var(--ft-accent)", padding: "6px 16px", cursor: sending ? "not-allowed" : "pointer",
+                opacity: sending ? 0.6 : 1,
+              }}
+            >
+              {sending ? "Sending…" : "Send Test Digest Now"}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> What's included</div>
+        <div style={{ padding: "8px 0" }}>
+          {[
+            ["Weekly income", "Total income received in the past 7 days"],
+            ["Weekly expenses", "Total spending across all accounts"],
+            ["Net cashflow", "Income minus expenses for the week"],
+            ["Top categories", "Your 5 highest spending categories"],
+            ["Transaction count", "Number of transactions processed"],
+          ].map(([label, desc]) => (
+            <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 14px", borderBottom: "1px solid var(--ft-border)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)" }}>{label}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>{desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface CryptoWallet {
   id: string;
   label: string;
@@ -2421,6 +2502,8 @@ export default function Settings() {
         {activePanel === "wise" && <WiseIntegrationPanel />}
 
         {activePanel === "crypto-wallets" && <CryptoWalletsPanel />}
+
+        {activePanel === "digest" && <DigestPanel />}
 
         {activePanel === "ai" && <AiSettingsPanel />}
 

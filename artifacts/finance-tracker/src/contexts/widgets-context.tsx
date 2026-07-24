@@ -21,7 +21,8 @@ export type WidgetId =
   | "cash-flow-preview"
   | "spending-velocity"
   | "savings-rate"
-  | "emergency-fund";
+  | "emergency-fund"
+  | "nw-milestones";
 
 export type WidgetSpan = "half" | "full";
 
@@ -55,6 +56,7 @@ export const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "spending-velocity",   label: "Spend Rate",          description: "Daily spend vs last month",                                             defaultEnabled: true,  defaultSpan: "half" },
   { id: "savings-rate",        label: "Savings Rate",        description: "This month's savings rate vs target",                                   defaultEnabled: true,  defaultSpan: "half" },
   { id: "emergency-fund",      label: "Emergency Fund",      description: "Months of expenses covered vs 6-month target",                          defaultEnabled: true,  defaultSpan: "half" },
+  { id: "nw-milestones",      label: "Milestones",          description: "Net worth milestones reached over time",                                     defaultEnabled: false, defaultSpan: "half" },
 ];
 
 const DEFAULT_DEF_MAP = Object.fromEntries(WIDGET_REGISTRY.map(w => [w.id, w]));

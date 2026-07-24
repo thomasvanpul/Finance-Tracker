@@ -14,6 +14,7 @@ import budgetsRouter from "./budgets";
 import goalsRouter from "./goals";
 import subscriptionsRouter from "./subscriptions";
 import exportRouter from "./export";
+import digestRouter from "./digest";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(importRouter);
 router.use(debtsRouter);
 router.use(settingsRouter);
 router.use(aiRouter);
+router.use("/api/digest", digestRouter);
 
 export default router;

@@ -76,6 +76,7 @@ export function useAlerts() {
   const { data: dashboard } = useGetDashboard();
   const { data: monthTxs } = useListTransactions({ type: "expense", dateFrom });
   const { data: recentTxs } = useListTransactions({ dateFrom: sevenDaysAgo });
+  const { data: allTxs } = useListTransactions({});
   const { data: upcoming } = useListUpcoming();
   const { data: debts } = useListDebts();
   const { data: goals = [] } = useListGoals();
@@ -185,8 +186,52 @@ export function useAlerts() {
       });
     }
 
+    // Anomaly detection: merchants charging more than their historical average
+    if (allTxs && allTxs.length > 10) {
+      const now = new Date();
+      const thisMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+      // Group expense transactions by merchant (description)
+      const byMerchant: Record<string, { amounts: number[]; thisMonthAmt: number | null }> = {};
+
+      for (const tx of allTxs) {
+        if (tx.type !== "expense") continue;
+        const txMonth = tx.date.slice(0, 7);
+        const key = tx.description.toLowerCase().trim();
+        if (!byMerchant[key]) byMerchant[key] = { amounts: [], thisMonthAmt: null };
+
+        if (txMonth === thisMonthStr) {
+          byMerchant[key].thisMonthAmt = (byMerchant[key].thisMonthAmt ?? 0) + tx.gbpValue;
+        } else {
+          byMerchant[key].amounts.push(tx.gbpValue);
+        }
+      }
+
+      let anomalyCount = 0;
+      for (const [merchant, data] of Object.entries(byMerchant)) {
+        if (anomalyCount >= 3) break;
+        const { amounts, thisMonthAmt } = data;
+        if (thisMonthAmt === null || amounts.length < 2) continue; // need history
+
+        const avg = amounts.reduce((s, a) => s + a, 0) / amounts.length;
+        const diff = thisMonthAmt - avg;
+
+        // Flag if current month is > 50% more than average AND difference > £10
+        if (diff > 10 && thisMonthAmt > avg * 1.5) {
+          const displayName = merchant.length > 30 ? merchant.slice(0, 30) + "…" : merchant;
+          result.push({
+            id: `anomaly-${merchant}`,
+            level: "warn" as const,
+            title: `Unusual charge: ${displayName}`,
+            detail: `${formatGbp(thisMonthAmt)} this month vs avg ${formatGbp(avg)} (${Math.round((diff / avg) * 100)}% higher)`,
+          });
+          anomalyCount++;
+        }
+      }
+    }
+
     return result;
-  }, [dashboard, monthTxs, recentTxs, upcoming, debts, goals, budgets, alertRules]);
+  }, [dashboard, monthTxs, recentTxs, allTxs, upcoming, debts, goals, budgets, alertRules]);
 
   return alerts;
 }

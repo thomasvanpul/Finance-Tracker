@@ -145,6 +145,152 @@ function parseCSV(text: string): { headers: string[]; rows: string[][] } {
   return { headers, rows };
 }
 
+function parseOFX(text: string): ParsedRow[] {
+  // Strip OFX header (everything before <OFX>)
+  const body = text.replace(/^[\s\S]*?(?=<OFX>)/i, "");
+
+  const rows: ParsedRow[] = [];
+  // Match each STMTTRN block
+  const trnRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = trnRegex.exec(body)) !== null) {
+    const block = match[1];
+    const get = (tag: string): string => {
+      const m = new RegExp(`<${tag}>([^<\\r\\n]+)`, "i").exec(block);
+      return m ? m[1].trim() : "";
+    };
+
+    const rawDate = get("DTPOSTED").slice(0, 8); // YYYYMMDD
+    const amtStr = get("TRNAMT") || get("TRNAMT>");
+    const amount = parseFloat(amtStr.replace(",", "."));
+    const description = get("NAME") || get("MEMO") || "Unknown";
+
+    if (!rawDate || isNaN(amount)) continue;
+
+    // Format date YYYYMMDD → YYYY-MM-DD
+    const formattedDate = rawDate.length === 8
+      ? `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
+      : rawDate;
+
+    const type = amount < 0 ? "expense" : "income";
+    const absAmount = Math.abs(amount);
+
+    rows.push({
+      id: `ofx-${rows.length}-${rawDate}`,
+      rawDate: formattedDate,
+      description,
+      amount: absAmount,
+      type,
+      category: applyAutoCategory(description) ?? guessCategory(description),
+      selected: true,
+    });
+  }
+
+  // Fallback: try SGML-style (no closing tags)
+  if (rows.length === 0) {
+    const lines = body.split(/\r?\n/);
+    let cur: Partial<ParsedRow> & { rawDateStr?: string; amountStr?: string } = {};
+
+    for (const line of lines) {
+      const l = line.trim();
+      if (l.startsWith("<STMTTRN>")) { cur = {}; continue; }
+      if (l.startsWith("</STMTTRN>") || (l.startsWith("<") && l.includes("TRNUID") && cur.rawDate)) {
+        if (cur.rawDate && cur.amount !== undefined) {
+          const desc = cur.description ?? "Unknown";
+          const rowType = cur.type ?? "expense";
+          rows.push({
+            id: `ofx-${rows.length}`,
+            rawDate: cur.rawDate,
+            description: desc,
+            amount: cur.amount,
+            type: rowType,
+            category: applyAutoCategory(desc) ?? guessCategory(desc),
+            selected: true,
+          });
+        }
+        cur = {};
+        continue;
+      }
+
+      if (l.startsWith("<DTPOSTED>")) {
+        const d = l.replace(/<DTPOSTED>/i, "").replace(/\[.*/, "").trim().slice(0, 8);
+        cur.rawDate = d.length === 8 ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : d;
+      } else if (l.startsWith("<TRNAMT>")) {
+        const a = parseFloat(l.replace(/<TRNAMT>/i, "").trim());
+        cur.amount = Math.abs(a);
+        cur.type = a < 0 ? "expense" : "income";
+      } else if (l.startsWith("<NAME>")) {
+        cur.description = l.replace(/<NAME>/i, "").trim();
+      } else if (l.startsWith("<MEMO>") && !cur.description) {
+        cur.description = l.replace(/<MEMO>/i, "").trim();
+      }
+    }
+  }
+
+  return rows;
+}
+
+function parseQIF(text: string): ParsedRow[] {
+  const rows: ParsedRow[] = [];
+  const entries = text.split(/\^/);
+
+  for (const entry of entries) {
+    const lines = entry.trim().split(/\r?\n/);
+    let date = "";
+    let amount: number | null = null;
+    let payee = "";
+    let memo = "";
+
+    for (const line of lines) {
+      const code = line[0];
+      const value = line.slice(1).trim();
+
+      if (code === "D") {
+        // Date: M/D/Y or D/M/Y or YYYY-MM-DD
+        const parts = value.replace(/-/g, "/").split("/");
+        if (parts.length === 3) {
+          // Try to detect format
+          const [a, b, c] = parts.map(p => parseInt(p, 10));
+          if (c > 31) {
+            // MM/DD/YYYY
+            date = `${c}-${String(a).padStart(2,"0")}-${String(b).padStart(2,"0")}`;
+          } else if (a > 31) {
+            // YYYY/MM/DD
+            date = `${a}-${String(b).padStart(2,"0")}-${String(c).padStart(2,"0")}`;
+          } else {
+            // DD/MM/YYYY (UK)
+            date = `${c}-${String(b).padStart(2,"0")}-${String(a).padStart(2,"0")}`;
+          }
+        }
+      } else if (code === "T" || code === "U") {
+        amount = parseFloat(value.replace(/,/g, ""));
+      } else if (code === "P") {
+        payee = value;
+      } else if (code === "M" && !payee) {
+        memo = value;
+      }
+    }
+
+    if (!date || amount === null) continue;
+
+    const description = payee || memo || "Unknown";
+    const type = amount < 0 ? "expense" : "income";
+
+    rows.push({
+      id: `qif-${rows.length}-${date}`,
+      rawDate: date,
+      description,
+      amount: Math.abs(amount),
+      type,
+      category: applyAutoCategory(description) ?? guessCategory(description),
+      selected: true,
+    });
+  }
+
+  return rows;
+}
+
 function guessCategory(description: string): string {
   const desc = description.toLowerCase();
   const rules: [string[], string][] = [
@@ -254,12 +400,14 @@ function StepIndicator({ current }: { current: ImportStep }) {
 function Step1({
   csvText,
   onCsvChange,
+  onFileUpload,
   onProceed,
   onShowExample,
   showExample,
 }: {
   csvText: string;
   onCsvChange: (v: string) => void;
+  onFileUpload: (text: string, ext: string) => void;
   onProceed: () => void;
   onShowExample: () => void;
   showExample: boolean;
@@ -269,10 +417,11 @@ function Step1({
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result;
-      if (typeof text === "string") onCsvChange(text);
+      if (typeof text === "string") onFileUpload(text, ext);
     };
     reader.readAsText(file);
   };
@@ -280,10 +429,10 @@ function Step1({
   return (
     <div style={card}>
       <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>
-        STEP 1 — PASTE OR UPLOAD CSV
+        STEP 1 — PASTE OR UPLOAD FILE
       </div>
       <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
-        Paste your bank export below, or upload a .csv file
+        Paste your bank export below, or upload a .csv, .ofx, or .qif file
       </div>
 
       <textarea
@@ -309,12 +458,12 @@ function Step1({
         <input
           ref={fileRef}
           type="file"
-          accept=".csv"
+          accept=".csv,.ofx,.qif,text/csv,application/x-ofx,text/x-qif"
           onChange={handleFile}
           style={{ display: "none" }}
         />
         <button onClick={() => fileRef.current?.click()} style={BTN_GHOST}>
-          Upload .csv file
+          Upload CSV, OFX, or QIF
         </button>
         <button onClick={onShowExample} style={BTN_GHOST}>
           {showExample ? "Hide" : "Show"} example CSV
@@ -742,6 +891,42 @@ export default function ImportPage() {
     });
   };
 
+  const handleFileUpload = (text: string, ext: string) => {
+    if (ext === "ofx") {
+      const parsed = parseOFX(text);
+      if (parsed.length > 0) {
+        const withDups = parsed.map((r) => {
+          const isDuplicate = (existingTxs ?? []).some(
+            (tx) => tx.date === r.rawDate && Math.abs(Math.abs(tx.nativeAmount) - r.amount) < 0.01
+          );
+          return isDuplicate ? { ...r, isDuplicate: true, selected: false } : r;
+        });
+        setParsedRows(withDups);
+        setImportErrors({});
+        setImportDone(false);
+        setStep(3);
+        return;
+      }
+    } else if (ext === "qif") {
+      const parsed = parseQIF(text);
+      if (parsed.length > 0) {
+        const withDups = parsed.map((r) => {
+          const isDuplicate = (existingTxs ?? []).some(
+            (tx) => tx.date === r.rawDate && Math.abs(Math.abs(tx.nativeAmount) - r.amount) < 0.01
+          );
+          return isDuplicate ? { ...r, isDuplicate: true, selected: false } : r;
+        });
+        setParsedRows(withDups);
+        setImportErrors({});
+        setImportDone(false);
+        setStep(3);
+        return;
+      }
+    }
+    // Fall back to CSV flow
+    setCsvText(text);
+  };
+
   const handleParseCsv = () => {
     const { headers: hdrs, rows } = parseCSV(csvText);
     if (hdrs.length === 0) return;
@@ -881,10 +1066,10 @@ export default function ImportPage() {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1 }}>
-            CSV IMPORT
+            IMPORT
           </div>
           <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", marginTop: 4 }}>
-            bulk-create transactions from a bank export
+            bulk-create transactions from a bank export (CSV, OFX, QIF)
           </div>
         </div>
         {/* Import history */}
@@ -931,6 +1116,7 @@ export default function ImportPage() {
         <Step1
           csvText={csvText}
           onCsvChange={setCsvText}
+          onFileUpload={handleFileUpload}
           onProceed={handleParseCsv}
           onShowExample={() => setShowExample((v) => !v)}
           showExample={showExample}
@@ -959,7 +1145,7 @@ export default function ImportPage() {
           onToggleRow={handleToggleRow}
           onToggleAll={handleToggleAll}
           onImport={handleImport}
-          onBack={() => setStep(2)}
+          onBack={() => setStep(headers.length > 0 ? 2 : 1)}
           onDeselectDuplicates={handleDeselectDuplicates}
           importing={importing}
           progress={importProgress}

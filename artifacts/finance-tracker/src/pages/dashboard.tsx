@@ -41,6 +41,7 @@ import { useState, useMemo, useEffect } from "react";
 import type { ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
+import { useToast } from "@/hooks/use-toast";
 
 function AnimatedNet({ value }: { value: number }) {
   const animated = useCountUp(value);
@@ -218,6 +219,94 @@ function EmergencyFundWidget() {
   );
 }
 
+// ── Net Worth Milestones widget ────────────────────────────────────────────────
+
+const MILESTONES_GBP = [1_000, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000];
+
+function formatMilestone(n: number): string {
+  if (n >= 1_000_000) return `£${n / 1_000_000}M`;
+  if (n >= 1_000) return `£${n / 1_000}K`;
+  return `£${n}`;
+}
+
+function loadReachedMilestones(): number[] {
+  try {
+    const raw = localStorage.getItem("ft-nw-milestones");
+    if (raw) return JSON.parse(raw) as number[];
+  } catch {}
+  return [];
+}
+
+function saveReachedMilestones(ms: number[]): void {
+  try { localStorage.setItem("ft-nw-milestones", JSON.stringify(ms)); } catch {}
+}
+
+export function NetWorthMilestonesWidget() {
+  const { data: dash } = useGetDashboard();
+  const { toast } = useToast();
+  const netWorth = dash?.netWorth ?? 0;
+
+  const reached = useMemo(() => MILESTONES_GBP.filter(m => netWorth >= m), [netWorth]);
+
+  useEffect(() => {
+    if (!dash) return;
+    const stored = loadReachedMilestones();
+    const storedSet = new Set(stored);
+    const newlyReached = reached.filter(m => !storedSet.has(m));
+    if (newlyReached.length > 0) {
+      const top = newlyReached[newlyReached.length - 1];
+      toast({
+        title: `🏆 Milestone reached!`,
+        description: `Net worth has crossed ${formatMilestone(top)}`,
+      });
+      saveReachedMilestones([...stored, ...newlyReached]);
+    }
+  }, [dash, reached, toast]);
+
+  const next = MILESTONES_GBP.find(m => netWorth < m);
+  const progress = next ? Math.min((netWorth / next) * 100, 100) : 100;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 140 }}>
+      <div style={{ padding: "10px 14px 6px", borderBottom: "1px solid var(--ft-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: "var(--ft-dim)", textTransform: "uppercase" }}>NET WORTH MILESTONES</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>{reached.length} / {MILESTONES_GBP.length}</span>
+      </div>
+      <div style={{ flex: 1, padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {MILESTONES_GBP.map(m => {
+            const done = netWorth >= m;
+            return (
+              <div key={m} style={{
+                fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 7px",
+                border: `1px solid ${done ? "var(--ft-green)" : "var(--ft-border)"}`,
+                color: done ? "var(--ft-green)" : "var(--ft-dim)",
+                background: done ? "rgba(0,255,136,0.06)" : "transparent",
+                letterSpacing: "0.04em",
+              }}>
+                {done ? "✓ " : ""}{formatMilestone(m)}
+              </div>
+            );
+          })}
+        </div>
+        {next && (
+          <>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+              Next: {formatMilestone(next)} · {formatMilestone(Math.round(next - netWorth))} to go
+            </div>
+            <div style={{ height: 4, background: "var(--ft-border)", marginTop: 2 }}>
+              <div style={{ height: "100%", width: `${progress}%`, background: "var(--ft-green)", transition: "width 0.4s" }} />
+            </div>
+          </>
+        )}
+        {!next && (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)" }}>All milestones reached! 🏆</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<{ isExpanded?: boolean }>> = {
   "net-worth": NetWorthWidget,
   "accounts-summary": AccountsSummaryWidget,
@@ -240,6 +329,7 @@ const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<{ isExpanded?: boolean }
   "spending-velocity": SpendingVelocityWidgetProxy,
   "savings-rate": SavingsRateKpi,
   "emergency-fund": EmergencyFundWidget,
+  "nw-milestones": NetWorthMilestonesWidget,
 };
 
 const WIDGET_DEF_MAP = Object.fromEntries(WIDGET_REGISTRY.map(w => [w.id, w]));

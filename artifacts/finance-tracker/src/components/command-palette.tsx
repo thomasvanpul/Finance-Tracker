@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
+import { useListTransactions, useListAccounts } from "@workspace/api-client-react";
+import { formatGbp } from "@/lib/utils";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -8,7 +10,7 @@ interface CommandPaletteProps {
   onNewTransaction?: () => void;
 }
 
-type CommandSection = "navigation" | "actions";
+type CommandSection = "navigation" | "actions" | "accounts" | "transactions";
 
 interface Command {
   id: string;
@@ -132,9 +134,11 @@ function buildCommands(
 const SECTION_LABELS: Record<CommandSection, string> = {
   navigation: "NAVIGATION",
   actions: "ACTIONS",
+  accounts: "ACCOUNTS",
+  transactions: "TRANSACTIONS",
 };
 
-const SECTION_ORDER: CommandSection[] = ["navigation", "actions"];
+const SECTION_ORDER: CommandSection[] = ["navigation", "actions", "accounts", "transactions"];
 
 export function CommandPalette({ open, onClose, onNewTransaction }: CommandPaletteProps) {
   const [, navigate] = useLocation();
@@ -145,7 +149,38 @@ export function CommandPalette({ open, onClose, onNewTransaction }: CommandPalet
   const prevFocusRef = useRef<Element | null>(null);
   const { togglePrivacy } = usePrivacy();
 
+  const { data: allAccounts } = useListAccounts({});
+  const { data: allTxs } = useListTransactions();
+
   const commands = buildCommands(navigate, onClose, onNewTransaction, togglePrivacy);
+
+  const navTo = (path: string) => () => { navigate(path); onClose(); };
+
+  const q = query.trim().toLowerCase();
+
+  const liveCommands: Command[] = [];
+  if (q.length >= 3) {
+    for (const acct of (allAccounts ?? []).filter((a) => a.name.toLowerCase().includes(q)).slice(0, 3)) {
+      liveCommands.push({
+        id: `acct-${acct.id}`,
+        section: "accounts" as CommandSection,
+        icon: "▣",
+        title: acct.name,
+        shortcut: formatGbp(acct.gbpEquivalent ?? 0),
+        action: navTo("/accounts"),
+      });
+    }
+    for (const tx of (allTxs ?? []).filter((t) => t.description.toLowerCase().includes(q) || t.category.toLowerCase().includes(q)).slice(0, 5)) {
+      liveCommands.push({
+        id: `tx-${tx.id}`,
+        section: "transactions" as CommandSection,
+        icon: tx.type === "income" ? "↑" : "↓",
+        title: tx.description,
+        shortcut: (tx.type === "income" ? "+" : "-") + formatGbp(tx.gbpValue) + " · " + tx.date.slice(0, 10),
+        action: navTo("/transactions"),
+      });
+    }
+  }
 
   const filtered = query.trim() === ""
     ? commands
@@ -155,10 +190,14 @@ export function CommandPalette({ open, onClose, onNewTransaction }: CommandPalet
 
   const grouped = SECTION_ORDER.reduce<Record<CommandSection, Command[]>>(
     (acc, section) => {
-      acc[section] = filtered.filter((cmd) => cmd.section === section);
+      if (section === "accounts" || section === "transactions") {
+        acc[section] = liveCommands.filter((cmd) => cmd.section === section);
+      } else {
+        acc[section] = filtered.filter((cmd) => cmd.section === section);
+      }
       return acc;
     },
-    { navigation: [], actions: [] }
+    { navigation: [], actions: [], accounts: [], transactions: [] }
   );
 
   const flatFiltered = SECTION_ORDER.flatMap((s) => grouped[s]);
