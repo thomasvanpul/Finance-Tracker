@@ -1220,7 +1220,7 @@ export default function Dashboard() {
         /* Drag-and-drop grid */
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveId(null)}>
           <SortableContext items={enabledIds} strategy={rectSortingStrategy}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
               {enabledIds.map((id, idx) => (
                 <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
               ))}
