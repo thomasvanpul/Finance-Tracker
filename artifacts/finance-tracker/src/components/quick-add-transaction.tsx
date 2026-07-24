@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { applyAutoCategory } from "@/lib/auto-cat";
 
 interface Props {
   open: boolean;
@@ -78,6 +79,7 @@ function readFileAsBase64(file: File): Promise<string> {
 
 export function QuickAddTransaction({ open, onClose }: Props) {
   const [form, setForm] = useState(buildInitialState);
+  const [autoCatFilled, setAutoCatFilled] = useState(false);
   const [scanState, setScanState] = useState<"idle" | "scanning" | "error">("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
@@ -91,6 +93,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
 
   const reset = useCallback(() => {
     setForm(buildInitialState());
+    setAutoCatFilled(false);
   }, []);
 
   const handleClose = useCallback(() => {
@@ -463,7 +466,18 @@ export function QuickAddTransaction({ open, onClose }: Props) {
               type="text"
               placeholder="e.g. Tesco weekly shop"
               value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              onChange={(e) => {
+                const desc = e.target.value;
+                setForm((f) => {
+                  const suggested = applyAutoCategory(desc);
+                  if (suggested && !f.category) {
+                    setAutoCatFilled(true);
+                    return { ...f, description: desc, category: suggested };
+                  }
+                  if (autoCatFilled && !desc) setAutoCatFilled(false);
+                  return { ...f, description: desc };
+                });
+              }}
               style={{
                 width: "100%",
                 boxSizing: "border-box",
@@ -480,23 +494,26 @@ export function QuickAddTransaction({ open, onClose }: Props) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             <div>
-              <div
-                style={{
-                  fontSize: 9,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "var(--ft-dim)",
-                  marginBottom: 6,
-                }}
-              >
-                Category
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+                <div style={{ fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
+                  Category
+                </div>
+                {autoCatFilled && (
+                  <span
+                    onClick={() => { setForm((f) => ({ ...f, category: "" })); setAutoCatFilled(false); }}
+                    title="Auto-filled — click to clear"
+                    style={{ fontSize: 8, padding: "1px 5px", background: "rgba(6,182,212,0.12)", border: "1px solid var(--ft-cyan, #06b6d4)", borderRadius: 2, color: "var(--ft-cyan, #06b6d4)", fontFamily: "var(--font-mono)", letterSpacing: "0.06em", cursor: "pointer" }}
+                  >
+                    auto ×
+                  </span>
+                )}
               </div>
               <input
                 type="text"
                 list="qa-categories"
                 placeholder="Select or type"
                 value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                onChange={(e) => { setForm((f) => ({ ...f, category: e.target.value })); setAutoCatFilled(false); }}
                 style={{
                   width: "100%",
                   boxSizing: "border-box",

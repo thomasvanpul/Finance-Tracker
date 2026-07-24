@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine, Line, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Skeleton as FtSkeleton } from "@/components/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { Target, Trophy, Check, AlertTriangle, X as XIcon, ChevronDown, ChevronRight } from "lucide-react";
@@ -1040,29 +1041,112 @@ export default function Goals() {
                         )}
                       </div>
 
-                      {/* Savings History Sparkline */}
-                      {recentHistory.length >= 2 && (
-                        <div style={{ marginBottom: 8 }}>
-                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>History</div>
-                          <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 30, width: 80 }}>
-                            {recentHistory.map((h, i) => {
-                              const barH = maxHistory > 0 ? Math.max((h.amount / maxHistory) * 28, 2) : 2;
-                              return (
-                                <div
-                                  key={i}
-                                  title={`${h.date}: ${formatGbp(h.amount)}`}
-                                  style={{
-                                    flex: 1,
-                                    height: barH,
-                                    background: i === recentHistory.length - 1 ? color : `${color}66`,
-                                    borderRadius: 1,
-                                  }}
-                                />
-                              );
-                            })}
+                      {/* Savings History Chart */}
+                      {history.length >= 2 && (() => {
+                        // Build projected path from last history entry
+                        const lastEntry = history[history.length - 1];
+                        const projectedPoints: { date: string; amount?: number; projected?: number }[] = [];
+                        if (goalMonthlyRate > 0 && lastEntry.amount < goal.target) {
+                          let current = lastEntry.amount;
+                          const lastDate = new Date(lastEntry.date);
+                          for (let m = 1; m <= 36 && current < goal.target; m++) {
+                            current = Math.min(current + goalMonthlyRate, goal.target);
+                            const d = new Date(lastDate.getFullYear(), lastDate.getMonth() + m, 1);
+                            const label = d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" }).replace(" ", " '");
+                            projectedPoints.push({ date: label, projected: Math.round(current) });
+                          }
+                        }
+
+                        const chartData: { date: string; amount?: number; projected?: number }[] = [
+                          ...history.map((h) => {
+                            const d = new Date(h.date);
+                            const label = d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" }).replace(" ", " '");
+                            return { date: label, amount: h.amount };
+                          }),
+                          ...projectedPoints,
+                        ];
+
+                        const yTickFormatter = (v: number) =>
+                          v >= 1000 ? `£${(v / 1000).toFixed(1)}k` : `£${v}`;
+
+                        return (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
+                              History
+                            </div>
+                            <div style={{ width: "100%", height: 120 }}>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                                  <CartesianGrid strokeDasharray="2 4" stroke="var(--ft-border)" vertical={false} />
+                                  <XAxis
+                                    dataKey="date"
+                                    interval="preserveStartEnd"
+                                    tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }}
+                                    tickLine={false}
+                                    axisLine={{ stroke: "var(--ft-border)" }}
+                                  />
+                                  <YAxis
+                                    width={44}
+                                    tickFormatter={yTickFormatter}
+                                    tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                  />
+                                  <Tooltip
+                                    contentStyle={{
+                                      background: "var(--ft-surface)",
+                                      border: "1px solid var(--ft-border)",
+                                      borderRadius: 0,
+                                      fontFamily: "var(--font-mono)",
+                                      fontSize: 9,
+                                      color: "var(--ft-text)",
+                                      padding: "4px 8px",
+                                    }}
+                                    labelStyle={{ color: "var(--ft-muted)", marginBottom: 2, fontSize: 8 }}
+                                    formatter={(value: number, name: string) => [
+                                      formatGbp(value),
+                                      name === "amount" ? "Saved" : "Projected",
+                                    ]}
+                                  />
+                                  <ReferenceLine
+                                    y={goal.target}
+                                    stroke="var(--ft-dim)"
+                                    strokeDasharray="4 3"
+                                    strokeWidth={1}
+                                    label={{
+                                      value: "TARGET",
+                                      position: "insideTopRight",
+                                      fontFamily: "var(--font-mono)",
+                                      fontSize: 7,
+                                      fill: "var(--ft-dim)",
+                                    }}
+                                  />
+                                  <Area
+                                    type="monotone"
+                                    dataKey="amount"
+                                    stroke={color}
+                                    strokeWidth={1.5}
+                                    fill={`${color}22`}
+                                    dot={false}
+                                    activeDot={{ r: 3, fill: color, strokeWidth: 0 }}
+                                    connectNulls={false}
+                                  />
+                                  <Line
+                                    type="monotone"
+                                    dataKey="projected"
+                                    stroke="var(--ft-amber)"
+                                    strokeWidth={1.5}
+                                    strokeDasharray="4 3"
+                                    dot={false}
+                                    activeDot={{ r: 3, fill: "var(--ft-amber)", strokeWidth: 0 }}
+                                    connectNulls={false}
+                                  />
+                                </AreaChart>
+                              </ResponsiveContainer>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

@@ -67,6 +67,10 @@ function saveViews(views: DashboardView[]): void {
   try { localStorage.setItem(VIEWS_KEY, JSON.stringify(views)); } catch {}
 }
 
+function layoutFingerprint(enabled: string[], order: string[], spans: Record<string, string>): string {
+  return JSON.stringify({ e: [...enabled].sort(), o: order, s: spans });
+}
+
 function AnimatedNet({ value }: { value: number }) {
   const animated = useCountUp(value);
   return <>{animated >= 0 ? "+" : ""}{formatGbp(animated)}</>;
@@ -831,6 +835,7 @@ function SortableWidget({ id, span, index, onToggleSpan, onRemove, onExpand }: S
     transition: isDragging ? undefined : transition,
     opacity: isDragging ? 0 : 1,
     position: "relative" as const,
+    gridColumn: span === "full" ? "1 / -1" : undefined,
     "--widget-stagger": `${index * 40}ms`,
   } as React.CSSProperties;
 
@@ -1060,6 +1065,11 @@ export default function Dashboard() {
   const enabledIds = order.filter(id => isEnabled(id as WidgetId)) as WidgetId[];
   const disabledIds = order.filter(id => !isEnabled(id as WidgetId)) as WidgetId[];
 
+  const isCurrentLayoutSaved = views.some(v =>
+    layoutFingerprint(v.enabled, v.order, v.spans as Record<string, string>) ===
+    layoutFingerprint([...enabled], order, spans as Record<string, string>)
+  );
+
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as WidgetId);
   }
@@ -1169,7 +1179,7 @@ export default function Dashboard() {
             </button>
           </div>
         ))}
-        {showViewSave ? (
+        {!isCurrentLayoutSaved && (showViewSave ? (
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
             <input
               value={viewNameInput}
@@ -1197,7 +1207,7 @@ export default function Dashboard() {
           >
             + Save current
           </button>
-        )}
+        ))}
       </div>
 
       {enabledIds.length === 0 ? (
@@ -1210,31 +1220,11 @@ export default function Dashboard() {
         /* Drag-and-drop grid */
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveId(null)}>
           <SortableContext items={enabledIds} strategy={rectSortingStrategy}>
-            {(() => {
-              const fullIds = enabledIds.filter(id => getSpan(id) === "full");
-              const halfIds = enabledIds.filter(id => getSpan(id) !== "full");
-              const leftIds = halfIds.filter((_, i) => i % 2 === 0);
-              const rightIds = halfIds.filter((_, i) => i % 2 === 1);
-              return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {fullIds.map((id, idx) => (
-                    <SortableWidget key={id} id={id} span="full" index={idx} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
-                  ))}
-                  <div className="ft-dashboard-two-col">
-                    <div>
-                      {leftIds.map((id, idx) => (
-                        <SortableWidget key={id} id={id} span="half" index={fullIds.length + idx * 2} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
-                      ))}
-                    </div>
-                    <div>
-                      {rightIds.map((id, idx) => (
-                        <SortableWidget key={id} id={id} span="half" index={fullIds.length + idx * 2 + 1} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {enabledIds.map((id, idx) => (
+                <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
+              ))}
+            </div>
           </SortableContext>
           <DragOverlay dropAnimation={{ duration: 150, easing: "ease" }}>
             {activeId ? (

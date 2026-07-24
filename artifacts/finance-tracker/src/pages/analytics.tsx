@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useListTransactions } from "@workspace/api-client-react";
 import { Skeleton as FtSkeleton } from "@/components/skeleton";
@@ -10,6 +10,22 @@ import {
   PieChart, Pie, Cell, XAxis, YAxis, Tooltip,
   ReferenceLine, ResponsiveContainer,
 } from "recharts";
+
+// ─── annotation storage ──────────────────────────────────────────────────────
+
+interface SpendingAnnotation {
+  id: string;
+  month: string; // "YYYY-MM"
+  label: string;
+}
+const ANNOT_KEY = "ft-analytics-annotations";
+function loadAnnotations(): SpendingAnnotation[] {
+  try { return JSON.parse(localStorage.getItem(ANNOT_KEY) ?? "[]") as SpendingAnnotation[]; }
+  catch { return []; }
+}
+function saveAnnotations(a: SpendingAnnotation[]): void {
+  localStorage.setItem(ANNOT_KEY, JSON.stringify(a));
+}
 
 // ─── shared tooltip style ────────────────────────────────────────────────────
 
@@ -486,14 +502,23 @@ function SpendingVelocity({ allExpenses }: { allExpenses: Tx[] }) {
 }
 
 // Section 3: Income vs Expense split
-function IncomeExpenseSplit({ allTxs }: { allTxs: Tx[] }) {
+interface IncomeExpenseSplitProps {
+  allTxs: Tx[];
+  annotations: SpendingAnnotation[];
+  onAnnotationsChange: (a: SpendingAnnotation[]) => void;
+}
+
+function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: IncomeExpenseSplitProps) {
+  const [addingMonth, setAddingMonth] = useState<string | null>(null);
+  const [labelInput, setLabelInput] = useState("");
+
   const bars = useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
       const ym = monthsAgoStr(5 - i);
       const [, m] = ym.split("-");
       const income = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
       const expense = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
-      return { month: MONTH_SHORT[parseInt(m) - 1], income: Math.round(income), expense: Math.round(expense), net: Math.round(income - expense) };
+      return { month: MONTH_SHORT[parseInt(m) - 1], ym, income: Math.round(income), expense: Math.round(expense), net: Math.round(income - expense) };
     });
   }, [allTxs]);
 
@@ -506,6 +531,22 @@ function IncomeExpenseSplit({ allTxs }: { allTxs: Tx[] }) {
     { name: "Income", value: Math.max(curIncome, 0) },
     { name: "Expense", value: Math.max(curExpense, 0) },
   ];
+
+  function handleSaveAnnotation() {
+    if (!addingMonth || !labelInput.trim()) return;
+    const next = [...annotations, { id: crypto.randomUUID(), month: addingMonth, label: labelInput.trim() }];
+    onAnnotationsChange(next);
+    setAddingMonth(null);
+    setLabelInput("");
+  }
+
+  function handleDeleteAnnotation(id: string) {
+    onAnnotationsChange(annotations.filter(a => a.id !== id));
+  }
+
+  const visibleAnnotations = annotations
+    .filter(a => bars.some(b => b.ym === a.month))
+    .slice(-4);
 
   return (
     <div className="ft-chart-sidebar" style={{ display: "grid", gridTemplateColumns: "1fr 260px", gap: 16, marginBottom: 16 }}>
@@ -520,8 +561,93 @@ function IncomeExpenseSplit({ allTxs }: { allTxs: Tx[] }) {
             <Bar dataKey="income" fill="var(--ft-green)" opacity={0.8} radius={[2, 2, 0, 0]} maxBarSize={24} />
             <Bar dataKey="expense" fill="var(--ft-red)" opacity={0.8} radius={[2, 2, 0, 0]} maxBarSize={24} />
             <Line type="monotone" dataKey="net" stroke="var(--ft-accent)" strokeWidth={1.5} dot={<LineDot stroke="var(--ft-accent)" />} activeDot={{ r: 4, fill: "var(--ft-accent)", strokeWidth: 0 }} />
+            {annotations
+              .filter(a => bars.some(b => b.ym === a.month))
+              .map(a => (
+                <ReferenceLine
+                  key={a.id}
+                  x={MONTH_SHORT[parseInt(a.month.split("-")[1]) - 1]}
+                  stroke="var(--ft-amber)"
+                  strokeDasharray="3 3"
+                  label={{ value: a.label, position: "top", fill: "var(--ft-amber)", fontSize: 8, fontFamily: "var(--font-mono)" }}
+                />
+              ))
+            }
           </ComposedChart>
         </ResponsiveContainer>
+
+        {/* Annotation management */}
+        <div style={{ marginTop: 12, borderTop: "1px solid var(--ft-border)", paddingTop: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ ...label, fontSize: 9, letterSpacing: "0.08em" }}>ANNOTATIONS</span>
+            {addingMonth === null && (
+              <button
+                onClick={() => { setAddingMonth(thisM); setLabelInput(""); }}
+                style={{ ...mono, fontSize: 9, padding: "2px 7px", background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", cursor: "pointer", letterSpacing: "0.04em" }}
+                onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
+                onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-muted)"; e.currentTarget.style.borderColor = "var(--ft-border)"; }}
+              >
+                + Add
+              </button>
+            )}
+          </div>
+
+          {addingMonth !== null && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+              <input
+                type="month"
+                value={addingMonth}
+                onChange={e => setAddingMonth(e.target.value)}
+                style={{ ...mono, fontSize: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "3px 6px", outline: "none" }}
+              />
+              <input
+                type="text"
+                value={labelInput}
+                onChange={e => setLabelInput(e.target.value)}
+                placeholder="Label…"
+                maxLength={32}
+                onKeyDown={e => { if (e.key === "Enter") handleSaveAnnotation(); if (e.key === "Escape") { setAddingMonth(null); setLabelInput(""); } }}
+                style={{ ...mono, fontSize: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "3px 8px", outline: "none", flex: "1 1 100px", minWidth: 80 }}
+              />
+              <button
+                onClick={handleSaveAnnotation}
+                disabled={!labelInput.trim()}
+                style={{ ...mono, fontSize: 9, padding: "3px 8px", background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", cursor: "pointer", letterSpacing: "0.04em", opacity: labelInput.trim() ? 1 : 0.4 }}
+              >
+                Save
+              </button>
+              <button
+                onClick={() => { setAddingMonth(null); setLabelInput(""); }}
+                style={{ ...mono, fontSize: 9, padding: "3px 6px", background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {visibleAnnotations.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {visibleAnnotations.map(a => (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>
+                  <div style={{ width: 2, height: 12, background: "var(--ft-amber)", flexShrink: 0 }} />
+                  <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", flexShrink: 0 }}>{a.month}</span>
+                  <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.label}</span>
+                  <button
+                    onClick={() => handleDeleteAnnotation(a.id)}
+                    style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 13, lineHeight: 1, padding: "0 2px", flexShrink: 0 }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-red)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+                    aria-label="Delete annotation"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ ...label, fontSize: 9, color: "var(--ft-dim)", fontStyle: "italic" }}>No annotations for visible months</div>
+          )}
+        </div>
       </div>
       <div style={{ ...card, marginBottom: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         <div style={secTitle}>THIS MONTH SPLIT</div>
@@ -1175,6 +1301,11 @@ export default function Analytics() {
   const { data: txs, isLoading, isError, error } = useListTransactions({});
   const [range, setRange] = useState<Range>("3m");
   const [drillCategory, setDrillCategory] = useState<string | null>(null);
+  const [annotations, setAnnotations] = useState<SpendingAnnotation[]>(() => loadAnnotations());
+  const handleAnnotationsChange = useCallback((next: SpendingAnnotation[]) => {
+    setAnnotations(next);
+    saveAnnotations(next);
+  }, []);
 
   const allTxs = (txs ?? []) as Tx[];
   const expenses = useMemo(() => allTxs.filter(t => t.type === "expense"), [allTxs]);
@@ -1266,7 +1397,7 @@ export default function Analytics() {
       <SpendingVelocity allExpenses={expenses} />
 
       {/* Section 3 */}
-      <IncomeExpenseSplit allTxs={allTxs} />
+      <IncomeExpenseSplit allTxs={allTxs} annotations={annotations} onAnnotationsChange={handleAnnotationsChange} />
 
       {/* Section 4 — clickable category rows */}
       <CategoryIntelligence
