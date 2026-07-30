@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Lock } from "lucide-react";
-import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
+import { useFintrackTheme } from "@/contexts/theme-context";
+import { Level, LEVELS, getLevel, ThemeRarity, ThemeReward, THEME_REWARDS, RARITY_COLOR } from "@/lib/learn-xp";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -25,68 +26,6 @@ interface TopicCard {
   category: string;
 }
 
-// ── Level system ──────────────────────────────────────────────────────────────
-
-interface Level {
-  name: string;
-  minXP: number;
-  color: string;
-}
-
-const LEVELS: Level[] = [
-  { name: "NOVICE",   minXP: 0,   color: "var(--ft-dim)" },
-  { name: "STUDENT",  minXP: 100, color: "var(--ft-green)" },
-  { name: "ANALYST",  minXP: 300, color: "var(--ft-blue)" },
-  { name: "SCHOLAR",  minXP: 600, color: "var(--ft-amber)" },
-  { name: "MASTER",   minXP: 900, color: "var(--ft-accent)" },
-];
-
-type ThemeRarity = "COMMON" | "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY";
-
-export interface ThemeReward {
-  id: FintrackTheme;
-  label: string;
-  requiredXP: number;
-  rarity: ThemeRarity;
-  accent: string;
-  base: string;
-  description: string;
-}
-
-export const THEME_REWARDS: ThemeReward[] = [
-  { id: "phosphor",   label: "Phosphor",   requiredXP: 0,    rarity: "COMMON",    accent: "#7FFF00", base: "#020802", description: "CRT phosphor green" },
-  { id: "arctic",     label: "Arctic",     requiredXP: 0,    rarity: "COMMON",    accent: "#0052CC", base: "#F0F4F8", description: "Corporate daylight" },
-  { id: "amber",      label: "Amber",      requiredXP: 200,  rarity: "UNCOMMON",  accent: "#FFD700", base: "#0A0600", description: "Warm trader console" },
-  { id: "midnight",   label: "Midnight",   requiredXP: 400,  rarity: "UNCOMMON",  accent: "#4D9FFF", base: "#010817", description: "Late-night deep blue" },
-  { id: "matrix",     label: "Matrix",     requiredXP: 650,  rarity: "RARE",      accent: "#00FF41", base: "#000300", description: "Decoded reality" },
-  { id: "synthwave",  label: "Synthwave",  requiredXP: 750,  rarity: "RARE",      accent: "#FF007A", base: "#0D001A", description: "Neon grids, 80s midnight" },
-  { id: "deep-space", label: "Deep Space", requiredXP: 800,  rarity: "RARE",      accent: "#7B5EA7", base: "#010108", description: "Cosmic observatory" },
-  { id: "mario",      label: "Mario",      requiredXP: 950,  rarity: "EPIC",      accent: "#E31212", base: "#0A0F1F", description: "8-bit power-up" },
-  { id: "gilded",     label: "Gilded",     requiredXP: 1100, rarity: "EPIC",      accent: "#C8941E", base: "#080600", description: "Black gold, no noise" },
-  { id: "bloodline",  label: "Bloodline",  requiredXP: 1300, rarity: "LEGENDARY", accent: "#CC1A2F", base: "#0F0003", description: "Dark market, red signals" },
-];
-
-const RARITY_COLOR: Record<ThemeRarity, string> = {
-  COMMON:    "var(--ft-dim)",
-  UNCOMMON:  "var(--ft-green)",
-  RARE:      "var(--ft-blue)",
-  EPIC:      "#a855f7",
-  LEGENDARY: "var(--ft-amber)",
-};
-
-
-export function getLevel(xp: number): Level & { next: Level | null; progress: number } {
-  let current = LEVELS[0];
-  for (const lvl of LEVELS) {
-    if (xp >= lvl.minXP) current = lvl;
-  }
-  const idx = LEVELS.indexOf(current);
-  const next = LEVELS[idx + 1] ?? null;
-  const progress = next
-    ? ((xp - current.minXP) / (next.minXP - current.minXP)) * 100
-    : 100;
-  return { ...current, next, progress };
-}
 
 const CATEGORIES = ["All", "Investing", "Budgeting", "Tax & Retirement", "Personal Finance", "Economics", "Crypto"] as const;
 type Category = typeof CATEGORIES[number];
@@ -579,15 +518,6 @@ function loadProgress(): string[] {
   } catch { return []; }
 }
 
-export function getLearnXP(): number {
-  try {
-    const ids = loadProgress();
-    return ids.reduce((sum, id) => {
-      const topic = TOPICS.find((t) => t.id === id);
-      return sum + (topic?.xp ?? 0);
-    }, 0);
-  } catch { return 0; }
-}
 
 function saveProgress(ids: string[]): void {
   localStorage.setItem(PROGRESS_KEY, JSON.stringify(ids));

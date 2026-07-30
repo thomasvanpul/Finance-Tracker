@@ -1,5 +1,5 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { loadFxOverrides } from "@/lib/currency-store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -16,45 +16,51 @@ import { isOnboardingComplete } from "@/lib/persona";
 import NotFound from "@/pages/not-found";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileApp } from "@/components/mobile/MobileApp";
-
-import Dashboard from "@/pages/dashboard";
-import Accounts from "@/pages/accounts";
-import Transactions from "@/pages/transactions";
-import Upcoming from "@/pages/upcoming";
-import Investments from "@/pages/investments";
-import Portfolio from "@/pages/portfolio";
-import Owing from "@/pages/owing";
-import Settings from "@/pages/settings";
-import Profile from "@/pages/profile";
-import Reports from "@/pages/reports";
-import Goals from "@/pages/goals";
-import Analytics from "@/pages/analytics";
-import Budget from "@/pages/budget";
-import HealthScore from "@/pages/health-score";
-import NetWorthHistory from "@/pages/net-worth-history";
-import WhatIf from "@/pages/whatif";
-import Subscriptions from "@/pages/subscriptions";
-import Tax from "@/pages/tax";
-import Mortgage from "@/pages/mortgage";
-import Calendar from "@/pages/calendar";
-import Split from "@/pages/split";
-import CashFlow from "@/pages/cashflow";
-import YearReview from "@/pages/year-review";
-import Import from "@/pages/import";
-import Recurring from "@/pages/recurring";
-import Learn from "@/pages/learn";
-import AiCoach from "@/pages/ai-coach";
-import Decisions from "@/pages/decisions";
-import Fire from "@/pages/fire";
-import Pension from "@/pages/pension";
-import Calculators from "@/pages/calculators";
-import Wardrobe from "@/pages/wardrobe";
-import Projection from "@/pages/projection";
-import Briefing from "@/pages/briefing";
-import Business from "@/pages/business";
-import FamilyFinance from "@/pages/family-finance";
-import TradingJournal from "@/pages/trading-journal";
 import { PageTransitionOverlay } from "@/components/page-transition";
+
+// Dashboard is eager — it is the landing route; a lazy round-trip here buys nothing.
+import Dashboard from "@/pages/dashboard";
+
+// All other pages are split into their own chunks and fetched on first navigation.
+const Accounts       = lazy(() => import("@/pages/accounts"));
+const Transactions   = lazy(() => import("@/pages/transactions"));
+const Upcoming       = lazy(() => import("@/pages/upcoming"));
+const Investments    = lazy(() => import("@/pages/investments"));
+const Portfolio      = lazy(() => import("@/pages/portfolio"));
+const Owing          = lazy(() => import("@/pages/owing"));
+const Settings       = lazy(() => import("@/pages/settings"));
+const Profile        = lazy(() => import("@/pages/profile"));
+const Reports        = lazy(() => import("@/pages/reports"));
+const Goals          = lazy(() => import("@/pages/goals"));
+const Analytics      = lazy(() => import("@/pages/analytics"));
+const Budget         = lazy(() => import("@/pages/budget"));
+const HealthScore    = lazy(() => import("@/pages/health-score"));
+const NetWorthHistory = lazy(() => import("@/pages/net-worth-history"));
+const WhatIf         = lazy(() => import("@/pages/whatif"));
+const Subscriptions  = lazy(() => import("@/pages/subscriptions"));
+const Tax            = lazy(() => import("@/pages/tax"));
+const Mortgage       = lazy(() => import("@/pages/mortgage"));
+const Calendar       = lazy(() => import("@/pages/calendar"));
+const Split          = lazy(() => import("@/pages/split"));
+const CashFlow       = lazy(() => import("@/pages/cashflow"));
+const YearReview     = lazy(() => import("@/pages/year-review"));
+const Import         = lazy(() => import("@/pages/import"));
+const Recurring      = lazy(() => import("@/pages/recurring"));
+const Learn          = lazy(() => import("@/pages/learn"));
+const AiCoach        = lazy(() => import("@/pages/ai-coach"));
+const Decisions      = lazy(() => import("@/pages/decisions"));
+const Fire           = lazy(() => import("@/pages/fire"));
+const Pension        = lazy(() => import("@/pages/pension"));
+const Calculators    = lazy(() => import("@/pages/calculators"));
+const Wardrobe       = lazy(() => import("@/pages/wardrobe"));
+const Projection     = lazy(() => import("@/pages/projection"));
+const Briefing       = lazy(() => import("@/pages/briefing"));
+const Business       = lazy(() => import("@/pages/business"));
+const FamilyFinance  = lazy(() => import("@/pages/family-finance"));
+const TradingJournal = lazy(() => import("@/pages/trading-journal"));
+
+// Matches the blank shell in auth-gate.tsx: still, no animation, no layout shift.
+const PageFallback = <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
 const queryClient = new QueryClient();
 
 function DefaultPageRedirector() {
@@ -136,6 +142,7 @@ function Router() {
 
   return (
     <Layout>
+      <Suspense fallback={PageFallback}>
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/accounts" component={Accounts} />
@@ -176,6 +183,7 @@ function Router() {
         <Route path="/trading" component={TradingJournal} />
         <Route component={NotFound} />
       </Switch>
+      </Suspense>
     </Layout>
   );
 }

@@ -14,7 +14,7 @@ import {
   useListGoals,
 } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
-import { getLevel, getLearnXP } from "@/components/investments/learn-tab";
+import { getLevel, getLearnXP } from "@/lib/learn-xp";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
 
 const PANEL: React.CSSProperties = {

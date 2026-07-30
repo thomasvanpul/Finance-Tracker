@@ -1,0 +1,113 @@
+import type { FintrackTheme } from "@/contexts/theme-context";
+
+// ── Level system ──────────────────────────────────────────────────────────────
+
+export interface Level {
+  name: string;
+  minXP: number;
+  color: string;
+}
+
+export const LEVELS: Level[] = [
+  { name: "NOVICE",   minXP: 0,   color: "var(--ft-dim)" },
+  { name: "STUDENT",  minXP: 100, color: "var(--ft-green)" },
+  { name: "ANALYST",  minXP: 300, color: "var(--ft-blue)" },
+  { name: "SCHOLAR",  minXP: 600, color: "var(--ft-amber)" },
+  { name: "MASTER",   minXP: 900, color: "var(--ft-accent)" },
+];
+
+export function getLevel(xp: number): Level & { next: Level | null; progress: number } {
+  let current = LEVELS[0];
+  for (const lvl of LEVELS) {
+    if (xp >= lvl.minXP) current = lvl;
+  }
+  const idx = LEVELS.indexOf(current);
+  const next = LEVELS[idx + 1] ?? null;
+  const progress = next
+    ? ((xp - current.minXP) / (next.minXP - current.minXP)) * 100
+    : 100;
+  return { ...current, next, progress };
+}
+
+// ── Theme rewards ─────────────────────────────────────────────────────────────
+
+export type ThemeRarity = "COMMON" | "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY";
+
+export interface ThemeReward {
+  id: FintrackTheme;
+  label: string;
+  requiredXP: number;
+  rarity: ThemeRarity;
+  accent: string;
+  base: string;
+  description: string;
+}
+
+export const THEME_REWARDS: ThemeReward[] = [
+  { id: "phosphor",   label: "Phosphor",   requiredXP: 0,    rarity: "COMMON",    accent: "#7FFF00", base: "#020802", description: "CRT phosphor green" },
+  { id: "arctic",     label: "Arctic",     requiredXP: 0,    rarity: "COMMON",    accent: "#0052CC", base: "#F0F4F8", description: "Corporate daylight" },
+  { id: "amber",      label: "Amber",      requiredXP: 200,  rarity: "UNCOMMON",  accent: "#FFD700", base: "#0A0600", description: "Warm trader console" },
+  { id: "midnight",   label: "Midnight",   requiredXP: 400,  rarity: "UNCOMMON",  accent: "#4D9FFF", base: "#010817", description: "Late-night deep blue" },
+  { id: "matrix",     label: "Matrix",     requiredXP: 650,  rarity: "RARE",      accent: "#00FF41", base: "#000300", description: "Decoded reality" },
+  { id: "synthwave",  label: "Synthwave",  requiredXP: 750,  rarity: "RARE",      accent: "#FF007A", base: "#0D001A", description: "Neon grids, 80s midnight" },
+  { id: "deep-space", label: "Deep Space", requiredXP: 800,  rarity: "RARE",      accent: "#7B5EA7", base: "#010108", description: "Cosmic observatory" },
+  { id: "mario",      label: "Mario",      requiredXP: 950,  rarity: "EPIC",      accent: "#E31212", base: "#0A0F1F", description: "8-bit power-up" },
+  { id: "gilded",     label: "Gilded",     requiredXP: 1100, rarity: "EPIC",      accent: "#C8941E", base: "#080600", description: "Black gold, no noise" },
+  { id: "bloodline",  label: "Bloodline",  requiredXP: 1300, rarity: "LEGENDARY", accent: "#CC1A2F", base: "#0F0003", description: "Dark market, red signals" },
+];
+
+export const RARITY_COLOR: Record<ThemeRarity, string> = {
+  COMMON:    "var(--ft-dim)",
+  UNCOMMON:  "var(--ft-green)",
+  RARE:      "var(--ft-blue)",
+  EPIC:      "#a855f7",
+  LEGENDARY: "var(--ft-amber)",
+};
+
+// ── XP accounting ─────────────────────────────────────────────────────────────
+
+// Mirrors the xp field from each TopicCard in learn-tab.tsx.
+// Update here whenever a topic's XP value changes there.
+const TOPIC_XP: Record<string, number> = {
+  "compound-interest":    60,
+  "diversification":      50,
+  "dca":                  50,
+  "four-percent-rule":    60,
+  "pe-ratio":             75,
+  "dcf-valuation":        100,
+  "options-101":          120,
+  "short-selling":        120,
+  "emergency-fund":       45,
+  "fifty-thirty-twenty":  45,
+  "zero-based-budgeting": 65,
+  "debt-avalanche":       55,
+  "index-funds":          60,
+  "bonds-basics":         55,
+  "reits":                75,
+  "factor-investing":     100,
+  "isa-strategy":         60,
+  "pension-basics":       55,
+  "capital-gains-tax":    75,
+  "tax-loss-harvesting":  90,
+  "credit-scores":        50,
+  "mortgage-basics":      70,
+  "insurance-basics":     50,
+  "inflation":            55,
+  "interest-rates":       70,
+  "yield-curve":          85,
+  "gdp-basics":           50,
+  "bitcoin-basics":       60,
+  "blockchain-basics":    55,
+  "defi-basics":          80,
+  "stablecoins":          70,
+};
+
+const PROGRESS_KEY = "nr-learn-progress";
+
+export function getLearnXP(): number {
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    const ids: string[] = raw ? (JSON.parse(raw) as string[]) : [];
+    return ids.reduce((sum, id) => sum + (TOPIC_XP[id] ?? 0), 0);
+  } catch { return 0; }
+}

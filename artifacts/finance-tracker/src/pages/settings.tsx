@@ -28,7 +28,8 @@ import { Check, Lock } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
 import { useWidgets, WIDGET_REGISTRY } from "@/contexts/widgets-context";
-import { THEME_REWARDS, ThemeRewardsPanel, getLearnXP } from "@/components/investments/learn-tab";
+import { THEME_REWARDS, getLearnXP } from "@/lib/learn-xp";
+import { ThemeRewardsPanel } from "@/components/investments/learn-tab";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId } from "@/lib/bot-skins";
 import { BotPreview, type Phase } from "@/components/ai-wanderer";
 
