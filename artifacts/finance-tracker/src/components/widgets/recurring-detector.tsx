@@ -151,6 +151,134 @@ function detectCandidates(
 
 const ACCENT = "var(--ft-cyan)";
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+type StatsKpiCellProps = {
+  label: string;
+  value: React.ReactNode;
+};
+
+function StatsKpiCell({ label, value }: StatsKpiCellProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "8px 12px",
+        background: hov ? "color-mix(in srgb, var(--ft-cyan) 4%, var(--ft-raised))" : "var(--ft-raised)",
+        transition: "background 0.1s",
+        borderTop: `2px solid ${ACCENT}`,
+      }}
+    >
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3 }}>{label}</div>
+      <div>{value}</div>
+    </div>
+  );
+}
+
+function CandidateRow({
+  candidate,
+  isAdding,
+  maxCost,
+  rank,
+  onAdd,
+}: {
+  candidate: RecurringCandidate;
+  isAdding: boolean;
+  maxCost: number;
+  rank: number;
+  onAdd: () => void;
+}) {
+  const [hov, setHov] = useState(false);
+  const barW = maxCost > 0 ? (candidate.avgGbpValue / maxCost) * 100 : 0;
+  const annualCost = candidate.avgGbpValue * 12;
+
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "8px 12px",
+        borderBottom: "1px solid var(--ft-border)",
+        background: hov ? "color-mix(in srgb, var(--ft-cyan) 4%, var(--ft-raised))" : "transparent",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-border2)", fontWeight: 700, flexShrink: 0, minWidth: 12, textAlign: "right" }}>
+          {rank}
+        </span>
+        <div style={{ width: 5, height: 5, borderRadius: "50%", background: ACCENT, flexShrink: 0 }} />
+
+        <span style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 10,
+          color: "var(--ft-text)",
+          flex: 1,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          minWidth: 0,
+        }}>
+          {candidate.description}
+        </span>
+
+        <span style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 8,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          padding: "1px 4px",
+          border: "1px solid var(--ft-border2)",
+          color: "var(--ft-dim)",
+          flexShrink: 0,
+          whiteSpace: "nowrap",
+        }}>
+          {candidate.category}
+        </span>
+
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>
+            −{formatGbp(candidate.avgGbpValue)}
+          </div>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", lineHeight: 1.4 }}>
+            {formatGbp(annualCost)}/yr
+          </div>
+        </div>
+
+        <button
+          type="button"
+          disabled={isAdding}
+          onClick={onAdd}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            letterSpacing: "0.06em",
+            padding: "3px 8px",
+            border: `1px solid ${isAdding ? "var(--ft-border2)" : "var(--ft-cyan)"}`,
+            background: isAdding ? "transparent" : "color-mix(in srgb, var(--ft-cyan) 10%, transparent)",
+            color: isAdding ? "var(--ft-dim)" : ACCENT,
+            cursor: isAdding ? "default" : "pointer",
+            flexShrink: 0,
+            transition: "all 0.15s",
+            opacity: isAdding ? 0.5 : 1,
+            minWidth: 46,
+          }}
+        >
+          {isAdding ? "…" : "+ Track"}
+        </button>
+      </div>
+
+      <div style={{ marginLeft: 25, height: 3, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${barW}%`, background: "var(--ft-cyan)", opacity: 0.5, borderRadius: 2, transition: "width 0.12s ease" }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Widget ───────────────────────────────────────────────────────────────────
+
 export function RecurringDetectorWidget() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -165,6 +293,9 @@ export function RecurringDetectorWidget() {
   const candidates = isLoading
     ? []
     : detectCandidates(allTransactions, existingDescriptions);
+
+  const totalMonthly = candidates.reduce((s, c) => s + c.avgGbpValue, 0);
+  const maxCost = candidates[0]?.avgGbpValue ?? 0;
 
   async function handleAdd(candidate: RecurringCandidate) {
     setAdding((prev) => new Set(prev).add(candidate.key));
@@ -185,16 +316,9 @@ export function RecurringDetectorWidget() {
         queryClient.invalidateQueries({ queryKey: getListUpcomingQueryKey() }),
         queryClient.invalidateQueries({ queryKey: getGetUpcomingSummaryQueryKey() }),
       ]);
-      toast({
-        title: "Added to upcoming",
-        description: candidate.description,
-      });
+      toast({ title: "Added to upcoming", description: candidate.description });
     } catch {
-      toast({
-        title: "Failed to add",
-        description: "Could not add recurring item.",
-        variant: "destructive",
-      });
+      toast({ title: "Failed to add", description: "Could not add recurring item.", variant: "destructive" });
       setAdding((prev) => {
         const next = new Set(prev);
         next.delete(candidate.key);
@@ -208,125 +332,40 @@ export function RecurringDetectorWidget() {
       {!isLoading && (
         <>
           {candidates.length === 0 ? (
-            <div
-              style={{
-                padding: "20px 12px",
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--ft-dim)",
-                textAlign: "center",
-                lineHeight: 1.6,
-              }}
-            >
-              No recurring patterns detected — add more transactions to analyse
+            <div style={{ padding: "28px 16px", textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--ft-border2)", marginBottom: 8 }}>◎</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 4 }}>No patterns detected yet</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Add more transactions to surface recurring charges</div>
             </div>
           ) : (
-            candidates.map((candidate) => {
-              const isAdding = adding.has(candidate.key);
-              return (
-                <div
+            <>
+              {/* Border-as-gap KPI strip */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+                <StatsKpiCell
+                  label="Found"
+                  value={<div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: ACCENT, lineHeight: 1 }}>{candidates.length}</div>}
+                />
+                <StatsKpiCell
+                  label="Monthly"
+                  value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>{formatGbp(totalMonthly)}</div>}
+                />
+                <StatsKpiCell
+                  label="Annual"
+                  value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>{formatGbp(totalMonthly * 12)}</div>}
+                />
+              </div>
+
+              {candidates.map((candidate, i) => (
+                <CandidateRow
                   key={candidate.key}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "8px 12px",
-                    borderBottom: "1px solid var(--ft-border)",
-                    gap: 8,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: ACCENT,
-                      flexShrink: 0,
-                    }}
-                  />
-
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      color: "var(--ft-text)",
-                      flex: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      minWidth: 0,
-                    }}
-                  >
-                    {candidate.description}
-                  </span>
-
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 8,
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      padding: "1px 5px",
-                      border: "1px solid var(--ft-border2)",
-                      color: "var(--ft-muted)",
-                      flexShrink: 0,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {candidate.category}
-                  </span>
-
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 8,
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      padding: "1px 5px",
-                      border: `1px solid ${ACCENT}40`,
-                      color: ACCENT,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {candidate.frequency}
-                  </span>
-
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: "var(--ft-red)",
-                      flexShrink: 0,
-                      width: 64,
-                      textAlign: "right",
-                    }}
-                  >
-                    −{formatGbp(candidate.avgGbpValue)}
-                  </span>
-
-                  <button
-                    type="button"
-                    disabled={isAdding}
-                    onClick={() => handleAdd(candidate)}
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 9,
-                      letterSpacing: "0.06em",
-                      padding: "3px 8px",
-                      border: `1px solid ${ACCENT}60`,
-                      background: "transparent",
-                      color: isAdding ? "var(--ft-dim)" : ACCENT,
-                      cursor: isAdding ? "default" : "pointer",
-                      flexShrink: 0,
-                      transition: "opacity 150ms",
-                      opacity: isAdding ? 0.5 : 1,
-                    }}
-                  >
-                    {isAdding ? "…" : "+ Add"}
-                  </button>
-                </div>
-              );
-            })
+                  candidate={candidate}
+                  isAdding={adding.has(candidate.key)}
+                  maxCost={maxCost}
+                  rank={i + 1}
+                  onAdd={() => handleAdd(candidate)}
+                />
+              ))}
+            </>
           )}
         </>
       )}

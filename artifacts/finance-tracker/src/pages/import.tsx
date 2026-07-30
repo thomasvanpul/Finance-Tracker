@@ -2,6 +2,17 @@ import { useState, useRef, useMemo } from "react";
 import { useListAccounts, useCreateTransaction, useListTransactions } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { applyAutoCategory } from "@/lib/auto-cat";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
+import { PageHeader } from "@/components/page-header";
+import {
+  FileInput,
+  Upload,
+  ChevronRight,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  X,
+} from "lucide-react";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -36,39 +47,82 @@ interface ImportHistoryEntry {
 
 type AmountFormat = "signed" | "separate";
 
+// ─── Bank/broker format presets ───────────────────────────────────────────────
+
+interface FormatPreset {
+  label: string;
+  amountFormat: AmountFormat;
+  colHints: { date: string[]; description: string[]; amount: string[]; credit: string[]; debit: string[] };
+}
+
+const FORMAT_PRESETS: FormatPreset[] = [
+  { label: "Monzo",     amountFormat: "signed",   colHints: { date: ["date"], description: ["name","description","memo"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "Revolut",   amountFormat: "signed",   colHints: { date: ["date completed","date"], description: ["description"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "Starling",  amountFormat: "signed",   colHints: { date: ["date"], description: ["counter party","reference","description"], amount: ["amount (gbp)","amount"], credit: [], debit: [] } },
+  { label: "Barclays",  amountFormat: "signed",   colHints: { date: ["date"], description: ["memo","description"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "HSBC",      amountFormat: "separate", colHints: { date: ["date"], description: ["description","details"], amount: [], credit: ["credit","in"], debit: ["debit","out"] } },
+  { label: "NatWest",   amountFormat: "separate", colHints: { date: ["date"], description: ["description","reference"], amount: [], credit: ["credit"], debit: ["debit"] } },
+  { label: "Schwab",    amountFormat: "signed",   colHints: { date: ["date"], description: ["description","action"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "Robinhood", amountFormat: "signed",   colHints: { date: ["activity date","process date"], description: ["description","instrument"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "IBKR",      amountFormat: "signed",   colHints: { date: ["date/time","date"], description: ["description","symbol"], amount: ["amount","proceeds"], credit: [], debit: [] } },
+];
+
+function applyPreset(preset: FormatPreset, headers: string[]): { colMap: Partial<ColumnMap>; amountFormat: AmountFormat } {
+  const lc = headers.map((h) => h.toLowerCase().trim());
+  const match = (hints: string[]) => headers.find((_, i) => hints.some((h) => lc[i].includes(h))) ?? "";
+  return {
+    amountFormat: preset.amountFormat,
+    colMap: {
+      date: match(preset.colHints.date),
+      description: match(preset.colHints.description),
+      amount: preset.amountFormat === "signed" ? match(preset.colHints.amount) : "",
+      credit: preset.amountFormat === "separate" ? match(preset.colHints.credit) : "",
+      debit: preset.amountFormat === "separate" ? match(preset.colHints.debit) : "",
+    },
+  };
+}
+
 // ─── style atoms ─────────────────────────────────────────────────────────────
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+
 const labelStyle: React.CSSProperties = {
   ...mono,
   fontSize: 9,
   color: "var(--ft-dim)",
   letterSpacing: "0.08em",
   textTransform: "uppercase",
+  fontWeight: 700,
 };
+
 const card: React.CSSProperties = {
   background: "var(--ft-surface)",
   border: "1px solid var(--ft-border)",
   padding: 20,
   marginBottom: 16,
+  boxSizing: "border-box",
+  width: "100%",
 };
+
 const th: React.CSSProperties = {
   ...mono,
   fontSize: 9,
   color: "var(--ft-dim)",
-  letterSpacing: "0.06em",
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
   textAlign: "left",
-  padding: "4px 10px",
-  fontWeight: 400,
-  borderBottom: "1px solid var(--ft-border)",
+  padding: "6px 10px",
+  fontWeight: 700,
+  background: "var(--ft-base)",
+  borderBottom: "1px solid var(--ft-border2)",
   whiteSpace: "nowrap",
 };
+
 const td: React.CSSProperties = {
   ...mono,
   fontSize: 11,
   color: "var(--ft-text)",
-  padding: "6px 10px",
+  padding: "7px 10px",
   borderBottom: "1px solid var(--ft-border)",
   whiteSpace: "nowrap",
 };
@@ -84,6 +138,9 @@ const BTN_PRIMARY: React.CSSProperties = {
   background: "var(--ft-accent)",
   color: "var(--ft-base)",
   cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
 };
 
 const BTN_GHOST: React.CSSProperties = {
@@ -146,11 +203,9 @@ function parseCSV(text: string): { headers: string[]; rows: string[][] } {
 }
 
 function parseOFX(text: string): ParsedRow[] {
-  // Strip OFX header (everything before <OFX>)
   const body = text.replace(/^[\s\S]*?(?=<OFX>)/i, "");
 
   const rows: ParsedRow[] = [];
-  // Match each STMTTRN block
   const trnRegex = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
   let match: RegExpExecArray | null;
 
@@ -161,14 +216,13 @@ function parseOFX(text: string): ParsedRow[] {
       return m ? m[1].trim() : "";
     };
 
-    const rawDate = get("DTPOSTED").slice(0, 8); // YYYYMMDD
+    const rawDate = get("DTPOSTED").slice(0, 8);
     const amtStr = get("TRNAMT") || get("TRNAMT>");
     const amount = parseFloat(amtStr.replace(",", "."));
     const description = get("NAME") || get("MEMO") || "Unknown";
 
     if (!rawDate || isNaN(amount)) continue;
 
-    // Format date YYYYMMDD → YYYY-MM-DD
     const formattedDate = rawDate.length === 8
       ? `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`
       : rawDate;
@@ -187,7 +241,6 @@ function parseOFX(text: string): ParsedRow[] {
     });
   }
 
-  // Fallback: try SGML-style (no closing tags)
   if (rows.length === 0) {
     const lines = body.split(/\r?\n/);
     let cur: Partial<ParsedRow> & { rawDateStr?: string; amountStr?: string } = {};
@@ -247,19 +300,14 @@ function parseQIF(text: string): ParsedRow[] {
       const value = line.slice(1).trim();
 
       if (code === "D") {
-        // Date: M/D/Y or D/M/Y or YYYY-MM-DD
         const parts = value.replace(/-/g, "/").split("/");
         if (parts.length === 3) {
-          // Try to detect format
           const [a, b, c] = parts.map(p => parseInt(p, 10));
           if (c > 31) {
-            // MM/DD/YYYY
             date = `${c}-${String(a).padStart(2,"0")}-${String(b).padStart(2,"0")}`;
           } else if (a > 31) {
-            // YYYY/MM/DD
             date = `${a}-${String(b).padStart(2,"0")}-${String(c).padStart(2,"0")}`;
           } else {
-            // DD/MM/YYYY (UK)
             date = `${c}-${String(b).padStart(2,"0")}-${String(a).padStart(2,"0")}`;
           }
         }
@@ -312,14 +360,10 @@ function guessCategory(description: string): string {
 }
 
 function parseDate(raw: string): string {
-  // Try common date formats
   const clean = raw.trim().replace(/['"]/g, "");
-  // ISO
   if (/^\d{4}-\d{2}-\d{2}/.test(clean)) return clean.slice(0, 10);
-  // DD/MM/YYYY
   const dmy = clean.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
-  // MM/DD/YYYY
   const mdy = clean.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
   if (mdy) return `${mdy[3]}-${mdy[1].padStart(2, "0")}-${mdy[2].padStart(2, "0")}`;
   return clean;
@@ -332,65 +376,238 @@ const EXAMPLE_CSV = `Date,Description,Amount,Type
 2025-01-20,Amazon Purchase,-29.99,expense
 2025-01-25,Freelance Payment,500.00,income`;
 
+// ─── History entry item (module-level) ───────────────────────────────────────
+
+interface HistoryEntryItemProps {
+  entry: ImportHistoryEntry;
+}
+
+function HistoryEntryItem({ entry }: HistoryEntryItemProps) {
+  return (
+    <div style={{
+      fontFamily: "var(--font-mono)",
+      fontSize: 9,
+      color: "var(--ft-dim)",
+      marginBottom: 2,
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      justifyContent: "flex-end",
+    }}>
+      <span style={{ color: "var(--ft-green)" }}>·</span>
+      {new Date(entry.date).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "2-digit",
+      })}
+      <span style={{ color: "var(--ft-border2)" }}>·</span>
+      <span className="pnum">{entry.count}</span> tx
+    </div>
+  );
+}
+
+// ─── Amount format option button (module-level) ────────────────────────────────
+
+interface AmountFormatOptionProps {
+  value: AmountFormat;
+  label: string;
+  selected: boolean;
+  onSelect: (v: AmountFormat) => void;
+}
+
+function AmountFormatOption({ value, label, selected, onSelect }: AmountFormatOptionProps) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      key={value}
+      onClick={() => onSelect(value)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        ...mono,
+        fontSize: 9,
+        padding: "5px 10px",
+        border: `1px solid ${selected ? "var(--ft-accent)" : hovered ? "var(--ft-border2)" : "var(--ft-border)"}`,
+        background: selected
+          ? "color-mix(in srgb, var(--ft-accent) 12%, var(--ft-surface))"
+          : hovered
+          ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-surface))"
+          : "transparent",
+        color: selected ? "var(--ft-accent)" : hovered ? "var(--ft-text)" : "var(--ft-muted)",
+        cursor: "pointer",
+        transition: "background 0.1s, border-color 0.1s, color 0.1s",
+        fontWeight: selected ? 700 : 400,
+      }}
+    >
+      {selected && "✓ "}{label}
+    </button>
+  );
+}
+
 // ─── step indicator ───────────────────────────────────────────────────────────
 
 function StepIndicator({ current }: { current: ImportStep }) {
-  const steps = [
-    { n: 1 as ImportStep, label: "PASTE / UPLOAD" },
-    { n: 2 as ImportStep, label: "MAP COLUMNS" },
-    { n: 3 as ImportStep, label: "REVIEW & IMPORT" },
+  const steps: { n: ImportStep; label: string }[] = [
+    { n: 1, label: "PASTE / UPLOAD" },
+    { n: 2, label: "MAP COLUMNS" },
+    { n: 3, label: "REVIEW & IMPORT" },
   ];
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 24 }}>
-      {steps.map((step, i) => (
-        <div key={step.n} style={{ display: "flex", alignItems: "center" }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 16px",
-            background: current === step.n ? "var(--ft-accent)" :
-                         current > step.n ? "var(--ft-surface)" : "var(--ft-base)",
-            border: `1px solid ${current === step.n ? "var(--ft-accent)" :
-                                  current > step.n ? "var(--ft-green)" : "var(--ft-border)"}`,
-          }}>
-            <div style={{
-              ...mono,
-              fontSize: 10,
-              fontWeight: 700,
-              width: 18,
-              height: 18,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: current === step.n ? "var(--ft-base)" :
-                           current > step.n ? "var(--ft-green)" : "var(--ft-border)",
-              color: current === step.n ? "var(--ft-accent)" :
-                      current > step.n ? "var(--ft-base)" : "var(--ft-dim)",
-            }}>
-              {current > step.n ? "✓" : step.n}
+    <div
+      className="ft-scroll-x"
+      style={{ display: "flex", alignItems: "stretch", gap: 0, marginBottom: 24 }}
+    >
+      {steps.map((step, i) => {
+        const done = current > step.n;
+        const active = current === step.n;
+        return (
+          <div key={step.n} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "9px 18px",
+                background: active
+                  ? "var(--ft-accent)"
+                  : done
+                  ? "var(--ft-surface)"
+                  : "var(--ft-base)",
+                border: `1px solid ${
+                  active ? "var(--ft-accent)" : done ? "var(--ft-green)" : "var(--ft-border)"
+                }`,
+                borderLeft: i === 0 ? undefined : "none",
+              }}
+            >
+              <div
+                style={{
+                  ...mono,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  background: active
+                    ? "var(--ft-base)"
+                    : done
+                    ? "var(--ft-green)"
+                    : "var(--ft-border)",
+                  color: active
+                    ? "var(--ft-accent)"
+                    : done
+                    ? "var(--ft-base)"
+                    : "var(--ft-dim)",
+                }}
+              >
+                {done ? "✓" : step.n}
+              </div>
+              <span
+                style={{
+                  ...mono,
+                  fontSize: 9,
+                  letterSpacing: "0.10em",
+                  color: active
+                    ? "var(--ft-base)"
+                    : done
+                    ? "var(--ft-green)"
+                    : "var(--ft-dim)",
+                  fontWeight: active ? 700 : done ? 600 : 400,
+                }}
+              >
+                {step.label}
+              </span>
             </div>
-            <span style={{
-              ...mono,
-              fontSize: 9,
-              letterSpacing: "0.08em",
-              color: current === step.n ? "var(--ft-base)" :
-                      current > step.n ? "var(--ft-green)" : "var(--ft-dim)",
-              fontWeight: current === step.n ? 700 : 400,
-            }}>
-              {step.label}
-            </span>
+            {i < steps.length - 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 2px",
+                  background: done ? "var(--ft-green)" : "var(--ft-border)",
+                  height: "100%",
+                  alignSelf: "stretch",
+                }}
+              >
+                <ChevronRight
+                  size={12}
+                  color={done ? "var(--ft-base)" : "var(--ft-dim)"}
+                />
+              </div>
+            )}
           </div>
-          {i < steps.length - 1 && (
-            <div style={{
-              width: 24,
-              height: 1,
-              background: current > step.n ? "var(--ft-green)" : "var(--ft-border)",
-            }} />
-          )}
-        </div>
-      ))}
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── drop zone component ───────────────────────────────────────────────────────
+
+function DropZone({
+  onFileUpload,
+  fileRef,
+}: {
+  onFileUpload: (text: string, ext: string) => void;
+  fileRef: React.RefObject<HTMLInputElement | null>;
+}) {
+  const [dragging, setDragging] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result;
+      if (typeof text === "string") onFileUpload(text, ext);
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <div
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={handleDrop}
+      onClick={() => fileRef.current?.click()}
+      style={{
+        border: `1px dashed ${dragging ? "var(--ft-accent)" : "var(--ft-border2)"}`,
+        background: dragging
+          ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
+          : "var(--ft-base)",
+        padding: "28px 20px",
+        cursor: "pointer",
+        textAlign: "center",
+        transition: "background 0.15s, border-color 0.15s",
+        marginBottom: 12,
+      }}
+    >
+      <Upload
+        size={20}
+        color={dragging ? "var(--ft-accent)" : "var(--ft-dim)"}
+        style={{ marginBottom: 8 }}
+      />
+      <div
+        style={{
+          ...mono,
+          fontSize: 10,
+          color: dragging ? "var(--ft-accent)" : "var(--ft-muted)",
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          marginBottom: 4,
+        }}
+      >
+        {dragging ? "DROP TO UPLOAD" : "DRAG & DROP OR CLICK TO UPLOAD"}
+      </div>
+      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+        .csv · .ofx · .qif
+      </div>
     </div>
   );
 }
@@ -426,47 +643,101 @@ function Step1({
     reader.readAsText(file);
   };
 
+  const lineCount = csvText.trim() ? csvText.trim().split("\n").length : 0;
+
   return (
     <div style={card}>
-      <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>
-        STEP 1 — PASTE OR UPLOAD FILE
-      </div>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
-        Paste your bank export below, or upload a .csv, .ofx, or .qif file
+      {/* Step header */}
+      <div style={{ marginBottom: 16, borderBottom: "1px solid var(--ft-border)", paddingBottom: 12 }}>
+        <div
+          style={{
+            ...mono,
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--ft-accent)",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            marginBottom: 2,
+            borderLeft: "3px solid var(--ft-accent)",
+            paddingLeft: 8,
+          }}
+        >
+          Step 1 — Paste or Upload File
+        </div>
+        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", paddingLeft: 11 }}>
+          Paste your bank export below, or upload a .csv, .ofx, or .qif file
+        </div>
       </div>
 
-      <textarea
-        value={csvText}
-        onChange={(e) => onCsvChange(e.target.value)}
-        placeholder={"Paste your bank export CSV here...\n\nExample:\nDate,Description,Amount,Type\n2025-01-15,Salary,2800.00,income\n2025-01-17,Tesco,-45.30,expense"}
-        style={{
-          width: "100%",
-          minHeight: 200,
-          background: "var(--ft-base)",
-          border: "1px solid var(--ft-border)",
-          color: "var(--ft-text)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          padding: 12,
-          resize: "vertical",
-          boxSizing: "border-box",
-          outline: "none",
-        }}
+      {/* Drop zone */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".csv,.ofx,.qif,text/csv,application/x-ofx,text/x-qif"
+        onChange={handleFile}
+        style={{ display: "none" }}
       />
+      <DropZone onFileUpload={onFileUpload} fileRef={fileRef} />
 
-      <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv,.ofx,.qif,text/csv,application/x-ofx,text/x-qif"
-          onChange={handleFile}
-          style={{ display: "none" }}
+      {/* Divider */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 12,
+          marginTop: 4,
+        }}
+      >
+        <div style={{ flex: 1, height: 1, background: "var(--ft-border)" }} />
+        <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
+          OR PASTE BELOW
+        </span>
+        <div style={{ flex: 1, height: 1, background: "var(--ft-border)" }} />
+      </div>
+
+      {/* Textarea */}
+      <div style={{ position: "relative" }}>
+        <textarea
+          value={csvText}
+          onChange={(e) => onCsvChange(e.target.value)}
+          placeholder={"Date,Description,Amount,Type\n2025-01-15,Salary,2800.00,income\n2025-01-17,Tesco,-45.30,expense\n..."}
+          style={{
+            width: "100%",
+            minHeight: 160,
+            background: "var(--ft-base)",
+            border: "1px solid var(--ft-border)",
+            color: "var(--ft-text)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            padding: 12,
+            resize: "vertical",
+            boxSizing: "border-box",
+            outline: "none",
+            lineHeight: 1.6,
+          }}
         />
-        <button onClick={() => fileRef.current?.click()} style={BTN_GHOST}>
-          Upload CSV, OFX, or QIF
-        </button>
+        {lineCount > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: 8,
+              right: 10,
+              ...mono,
+              fontSize: 9,
+              color: "var(--ft-dim)",
+              pointerEvents: "none",
+            }}
+          >
+            <span className="pnum">{lineCount}</span> line{lineCount !== 1 ? "s" : ""}
+          </div>
+        )}
+      </div>
+
+      {/* Footer actions */}
+      <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center", flexWrap: "wrap" }}>
         <button onClick={onShowExample} style={BTN_GHOST}>
-          {showExample ? "Hide" : "Show"} example CSV
+          {showExample ? "Hide example" : "Show example CSV"}
         </button>
         <div style={{ flex: 1 }} />
         <button
@@ -478,26 +749,31 @@ function Step1({
             cursor: !csvText.trim() ? "not-allowed" : "pointer",
           }}
         >
-          Parse CSV →
+          Parse CSV
+          <ChevronRight size={12} />
         </button>
       </div>
 
+      {/* Example panel */}
       {showExample && (
-        <div style={{
-          marginTop: 12,
-          background: "var(--ft-base)",
-          border: "1px solid var(--ft-border)",
-          padding: 12,
-        }}>
+        <div
+          style={{
+            marginTop: 14,
+            background: "var(--ft-base)",
+            border: "1px solid var(--ft-border)",
+            borderLeft: "2px solid var(--ft-accent)",
+            padding: 12,
+          }}
+        >
           <div style={{ ...labelStyle, marginBottom: 8 }}>Example Barclays/Monzo-style CSV</div>
-          <pre style={{ ...mono, fontSize: 10, color: "var(--ft-muted)", margin: 0, whiteSpace: "pre-wrap" }}>
+          <pre style={{ ...mono, fontSize: 10, color: "var(--ft-muted)", margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>
             {EXAMPLE_CSV}
           </pre>
           <button
             onClick={() => onCsvChange(EXAMPLE_CSV)}
-            style={{ ...BTN_GHOST, marginTop: 8, fontSize: 9 }}
+            style={{ ...BTN_GHOST, marginTop: 10, fontSize: 9, padding: "4px 10px" }}
           >
-            Use this example
+            Use this example →
           </button>
         </div>
       )}
@@ -516,6 +792,7 @@ function Step2({
   onAmountFormatChange,
   onProceed,
   onBack,
+  onApplyPreset,
 }: {
   headers: string[];
   previewRows: string[][];
@@ -525,9 +802,10 @@ function Step2({
   onAmountFormatChange: (v: AmountFormat) => void;
   onProceed: () => void;
   onBack: () => void;
+  onApplyPreset: (preset: FormatPreset) => void;
 }) {
   const ColSelect = ({ field, label }: { field: keyof ColumnMap; label: string }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 140 }}>
       <div style={labelStyle}>{label}</div>
       <select
         value={colMap[field]}
@@ -536,10 +814,12 @@ function Step2({
           ...mono,
           fontSize: 10,
           background: "var(--ft-base)",
-          border: "1px solid var(--ft-border)",
-          color: "var(--ft-text)",
+          border: `1px solid ${colMap[field] ? "var(--ft-green)" : "var(--ft-border)"}`,
+          color: colMap[field] ? "var(--ft-text)" : "var(--ft-dim)",
           padding: "6px 8px",
           cursor: "pointer",
+          outline: "none",
+          transition: "border-color 0.15s",
         }}
       >
         <option value="">— none —</option>
@@ -552,42 +832,65 @@ function Step2({
 
   return (
     <div style={card}>
-      <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>
-        STEP 2 — MAP COLUMNS
-      </div>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
-        Tell Numeris which CSV column maps to each field
+      {/* Step header */}
+      <div style={{ marginBottom: 16, borderBottom: "1px solid var(--ft-border)", paddingBottom: 12 }}>
+        <div
+          style={{
+            ...mono,
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--ft-accent)",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            marginBottom: 2,
+            borderLeft: "3px solid var(--ft-accent)",
+            paddingLeft: 8,
+          }}
+        >
+          Step 2 — Map Columns
+        </div>
+        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", paddingLeft: 11 }}>
+          Tell Numeris which CSV column maps to each field · <span className="pnum">{headers.length}</span> columns detected
+        </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-        <ColSelect field="date" label="Date column" />
-        <ColSelect field="description" label="Description column" />
-        <ColSelect field="type" label="Type column (income/expense)" />
+      {/* Quick Format Presets */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ ...labelStyle, marginBottom: 8 }}>Quick presets — auto-fill for known banks</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          {FORMAT_PRESETS.map((p) => (
+            <PresetButton key={p.label} preset={p} onApply={onApplyPreset} />
+          ))}
+        </div>
+      </div>
+
+      {/* Column mapping */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ ...labelStyle, marginBottom: 8, borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 8 }}>Column mapping</div>
+        <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+          <ColSelect field="date" label="Date" />
+          <ColSelect field="description" label="Description" />
+          <ColSelect field="type" label="Type (income/expense)" />
+        </div>
       </div>
 
       {/* Amount format selector */}
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
-        <div style={labelStyle}>Amount format:</div>
-        {[
-          { v: "signed" as AmountFormat, label: "Single column (+ income, − expense)" },
-          { v: "separate" as AmountFormat, label: "Separate debit / credit columns" },
-        ].map((opt) => (
-          <button
-            key={opt.v}
-            onClick={() => onAmountFormatChange(opt.v)}
-            style={{
-              ...mono,
-              fontSize: 9,
-              padding: "4px 8px",
-              border: `1px solid ${amountFormat === opt.v ? "var(--ft-accent)" : "var(--ft-border)"}`,
-              background: amountFormat === opt.v ? "var(--ft-accent)22" : "transparent",
-              color: amountFormat === opt.v ? "var(--ft-accent)" : "var(--ft-muted)",
-              cursor: "pointer",
-            }}
-          >
-            {opt.label}
-          </button>
-        ))}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ ...labelStyle, marginBottom: 8, borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 8 }}>Amount format</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {[
+            { v: "signed" as AmountFormat, label: "Single column (+ income, − expense)" },
+            { v: "separate" as AmountFormat, label: "Separate debit / credit columns" },
+          ].map((opt) => (
+            <AmountFormatOption
+              key={opt.v}
+              value={opt.v}
+              label={opt.label}
+              selected={amountFormat === opt.v}
+              onSelect={onAmountFormatChange}
+            />
+          ))}
+        </div>
       </div>
 
       {amountFormat === "signed" ? (
@@ -601,11 +904,19 @@ function Step2({
         </div>
       )}
 
-      {/* Preview */}
+      {/* Preview table */}
       {previewRows.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ ...labelStyle, marginBottom: 8 }}>PREVIEW (first 5 rows)</div>
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ ...labelStyle, marginBottom: 8, borderLeft: "3px solid var(--ft-border2)", paddingLeft: 8 }}>
+            Preview — first {Math.min(5, previewRows.length)} of <span className="pnum">{previewRows.length}</span> rows
+          </div>
+          <div
+            style={{
+              overflowX: "auto",
+              border: "1px solid var(--ft-border)",
+              background: "var(--ft-surface)",
+            }}
+          >
             <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 10 }}>
               <thead>
                 <tr>
@@ -616,7 +927,10 @@ function Step2({
               </thead>
               <tbody>
                 {previewRows.slice(0, 5).map((row, i) => (
-                  <tr key={i}>
+                  <tr
+                    key={i}
+                    style={{ background: i % 2 === 1 ? "var(--ft-base)" : "transparent" }}
+                  >
                     {row.map((cell, j) => (
                       <td key={j} style={{ ...td, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>
                         {cell}
@@ -630,7 +944,7 @@ function Step2({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
         <button onClick={onBack} style={BTN_GHOST}>← Back</button>
         <div style={{ flex: 1 }} />
         <button
@@ -642,10 +956,47 @@ function Step2({
             cursor: (!colMap.date || !colMap.description) ? "not-allowed" : "pointer",
           }}
         >
-          Build Preview →
+          Build Preview
+          <ChevronRight size={12} />
         </button>
       </div>
     </div>
+  );
+}
+
+// ─── preset button with hover ──────────────────────────────────────────────────
+
+function PresetButton({
+  preset,
+  onApply,
+}: {
+  preset: FormatPreset;
+  onApply: (preset: FormatPreset) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => onApply(preset)}
+      style={{
+        ...mono,
+        fontSize: 9,
+        fontWeight: 600,
+        padding: "4px 10px",
+        background: hovered
+          ? "color-mix(in srgb, var(--ft-accent) 8%, var(--ft-surface))"
+          : "var(--ft-raised)",
+        border: `1px solid ${hovered ? "var(--ft-accent)" : "var(--ft-border2)"}`,
+        color: hovered ? "var(--ft-accent)" : "var(--ft-muted)",
+        cursor: "pointer",
+        letterSpacing: "0.06em",
+        transition: "background 0.1s, border-color 0.1s, color 0.1s",
+      }}
+    >
+      {preset.label}
+    </button>
   );
 }
 
@@ -681,18 +1032,66 @@ function Step3({
   const selectedCount = rows.filter((r) => r.selected).length;
   const allSelected = rows.length > 0 && rows.every((r) => r.selected);
   const dupCount = rows.filter((r) => r.isDuplicate).length;
+  const incomeCount = rows.filter((r) => r.selected && r.type === "income").length;
+  const expenseCount = rows.filter((r) => r.selected && r.type === "expense").length;
 
   return (
     <div style={card}>
-      <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>
-        STEP 3 — REVIEW &amp; IMPORT
+      {/* Step header */}
+      <div style={{ marginBottom: 16, borderBottom: "1px solid var(--ft-border)", paddingBottom: 12 }}>
+        <div
+          style={{
+            ...mono,
+            fontSize: 10,
+            fontWeight: 700,
+            color: "var(--ft-accent)",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            marginBottom: 2,
+            borderLeft: "3px solid var(--ft-accent)",
+            paddingLeft: 8,
+          }}
+        >
+          Step 3 — Review &amp; Import
+        </div>
+        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", paddingLeft: 11 }}>
+          <span className="pnum">{selectedCount}</span> of <span className="pnum">{rows.length}</span> transactions selected · <span className="pnum">{incomeCount}</span> income · <span className="pnum">{expenseCount}</span> expenses
+        </div>
       </div>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
-        Select transactions to import · {selectedCount} of {rows.length} selected
+
+      {/* KPI strip (border-as-gap) */}
+      <div style={{ display: "grid", gap: 1, background: "var(--ft-border)", marginBottom: 14 }} className="ft-four-col">
+        {[
+          { label: "Total Rows", value: String(rows.length), color: "var(--ft-muted)" },
+          { label: "Selected", value: String(selectedCount), color: "var(--ft-accent)" },
+          { label: "Income", value: String(incomeCount), color: "var(--ft-green)" },
+          { label: "Expenses", value: String(expenseCount), color: "var(--ft-red)" },
+        ].map(k => (
+          <div key={k.label} style={{ background: "var(--ft-surface)", borderTop: `2px solid ${k.color}`, padding: "7px 12px" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 3 }}>
+              {k.label}
+            </div>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: k.color, lineHeight: 1 }}>
+              {k.value}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Account selector */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, padding: "10px 14px", background: "var(--ft-base)", border: "1px solid var(--ft-border)" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 14,
+          padding: "10px 14px",
+          background: "var(--ft-base)",
+          border: `1px solid ${accountId ? "var(--ft-border)" : "var(--ft-amber)"}`,
+          flexWrap: "wrap",
+          transition: "border-color 0.15s",
+        }}
+      >
         <div style={labelStyle}>Import into account:</div>
         <select
           value={accountId}
@@ -706,6 +1105,8 @@ function Step3({
             padding: "6px 8px",
             cursor: "pointer",
             minWidth: 180,
+            flex: "1 1 auto",
+            outline: "none",
           }}
         >
           <option value="">— select account —</option>
@@ -714,41 +1115,77 @@ function Step3({
           ))}
         </select>
         {!accountId && (
-          <span style={{ ...mono, fontSize: 9, color: "var(--ft-amber)" }}>
-            Account required to import
+          <span style={{ ...mono, fontSize: 9, color: "var(--ft-amber)", display: "flex", alignItems: "center", gap: 4 }}>
+            <AlertTriangle size={10} />
+            Required to import
           </span>
         )}
       </div>
 
-      {/* Duplicate warning */}
+      {/* Duplicate warning banner */}
       {dupCount > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "var(--ft-amber)15", border: "1px solid var(--ft-amber)44", marginBottom: 12 }}>
-          <span style={{ ...mono, fontSize: 10, color: "var(--ft-amber)" }}>⚠ {dupCount} potential duplicate{dupCount !== 1 ? "s" : ""} detected</span>
-          <button onClick={onDeselectDuplicates} style={{ ...BTN_GHOST, fontSize: 9, padding: "4px 10px" }}>Deselect duplicates</button>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "8px 12px",
+            background: "rgba(244,162,30,0.08)",
+            border: "1px solid rgba(244,162,30,0.28)",
+            marginBottom: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <AlertTriangle size={12} color="var(--ft-amber)" style={{ flexShrink: 0 }} />
+          <span style={{ ...mono, fontSize: 10, color: "var(--ft-amber)", flex: 1 }}>
+            <span className="pnum">{dupCount}</span> potential duplicate{dupCount !== 1 ? "s" : ""} detected — these are pre-deselected
+          </span>
+          <button
+            onClick={onDeselectDuplicates}
+            style={{ ...BTN_GHOST, fontSize: 9, padding: "3px 10px" }}
+          >
+            Deselect all duplicates
+          </button>
         </div>
       )}
 
-      {/* Progress bar */}
+      {/* Import progress bar */}
       {importing && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ ...labelStyle, marginBottom: 6 }}>IMPORTING… {progress} / {selectedCount}</div>
-          <div style={{ height: 4, background: "var(--ft-border)" }}>
-            <div style={{
-              height: "100%",
-              width: `${(progress / selectedCount) * 100}%`,
-              background: "var(--ft-green)",
-              transition: "width 0.2s ease",
-            }} />
+        <div style={{ marginBottom: 14 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 6,
+            }}
+          >
+            <div style={{ ...labelStyle }}>
+              Importing…
+            </div>
+            <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+              <span className="pnum">{progress}</span> / <span className="pnum">{selectedCount}</span>
+            </span>
+          </div>
+          <div style={{ height: 3, background: "var(--ft-border)", overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                width: `${selectedCount > 0 ? (progress / selectedCount) * 100 : 0}%`,
+                background: "var(--ft-green)",
+                transition: "width 0.12s ease",
+              }}
+            />
           </div>
         </div>
       )}
 
-      {/* Table */}
-      <div style={{ overflowX: "auto", maxHeight: 480, overflowY: "auto" }}>
+      {/* Transaction table */}
+      <div style={{ overflowX: "auto", maxHeight: 440, overflowY: "auto", border: "1px solid var(--ft-border)" }}>
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
             <tr>
-              <th style={{ ...th, width: 32 }}>
+              <th style={{ ...th, width: 36, textAlign: "center" }}>
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -756,75 +1193,32 @@ function Step3({
                   style={{ cursor: "pointer", accentColor: "var(--ft-accent)" }}
                 />
               </th>
-              {["Date","Description","Amount","Type","Category","Status"].map((h, i) => (
-                <th key={h} style={{ ...th, textAlign: i >= 2 ? "right" : "left" }}>{h}</th>
-              ))}
+              <th style={th}>Date</th>
+              <th style={th}>Description</th>
+              <th style={{ ...th, textAlign: "right" }}>Amount</th>
+              <th style={{ ...th, textAlign: "center" }}>Type</th>
+              <th style={th}>Category</th>
+              <th style={{ ...th, textAlign: "center" }}>Status</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => {
-              const hasError = !!errors[row.id];
-              return (
-                <tr
-                  key={row.id}
-                  style={{
-                    opacity: row.selected ? 1 : 0.45,
-                    background: hasError ? "var(--ft-red)10" : "transparent",
-                  }}
-                >
-                  <td style={{ ...td, width: 32 }}>
-                    <input
-                      type="checkbox"
-                      checked={row.selected}
-                      onChange={() => onToggleRow(row.id)}
-                      style={{ cursor: "pointer", accentColor: "var(--ft-accent)" }}
-                    />
-                  </td>
-                  <td style={{ ...td, color: "var(--ft-dim)" }}>{row.rawDate}</td>
-                  <td style={{ ...td, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {row.description}
-                  </td>
-                  <td style={{
-                    ...td,
-                    textAlign: "right",
-                    color: row.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
-                    fontWeight: 600,
-                  }}>
-                    {row.type === "income" ? "+" : "-"}{formatGbp(Math.abs(row.amount))}
-                  </td>
-                  <td style={{
-                    ...td,
-                    textAlign: "right",
-                  }}>
-                    <span style={{
-                      fontSize: 9,
-                      padding: "1px 6px",
-                      background: row.type === "income" ? "var(--ft-green)22" : "var(--ft-red)22",
-                      color: row.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
-                    }}>
-                      {row.type.toUpperCase()}
-                    </span>
-                  </td>
-                  <td style={{ ...td, textAlign: "right", color: "var(--ft-muted)" }}>{row.category}</td>
-                  <td style={{ ...td, textAlign: "right", fontSize: 9 }}>
-                    {hasError ? (
-                      <span style={{ color: "var(--ft-red)" }}>ERROR: {errors[row.id]}</span>
-                    ) : importing && row.selected ? (
-                      <span style={{ color: "var(--ft-dim)" }}>…</span>
-                    ) : row.isDuplicate ? (
-                      <span style={{ color: "var(--ft-amber)", background: "var(--ft-amber)22", padding: "1px 5px", fontSize: 9 }}>DUP</span>
-                    ) : (
-                      <span style={{ color: "var(--ft-green)" }}>READY</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+            {rows.map((row) => (
+              <ImportRow
+                key={row.id}
+                row={row}
+                td={td}
+                hasError={!!errors[row.id]}
+                errorMsg={errors[row.id]}
+                importing={importing}
+                onToggle={onToggleRow}
+              />
+            ))}
           </tbody>
         </table>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 16, alignItems: "center" }}>
+      {/* Footer */}
+      <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center", flexWrap: "wrap" }}>
         <button onClick={onBack} style={BTN_GHOST} disabled={importing}>← Back</button>
         <div style={{ flex: 1 }} />
         <button
@@ -833,14 +1227,165 @@ function Step3({
           style={{
             ...BTN_PRIMARY,
             background: importing ? "var(--ft-muted)" : "var(--ft-green)",
-            opacity: (importing || selectedCount === 0 || !accountId) ? 0.6 : 1,
+            color: "var(--ft-base)",
+            opacity: (importing || selectedCount === 0 || !accountId) ? 0.55 : 1,
             cursor: (importing || selectedCount === 0 || !accountId) ? "not-allowed" : "pointer",
+            border: "none",
           }}
         >
-          {importing ? `Importing ${progress}/${selectedCount}…` : `Import ${selectedCount} Transaction${selectedCount !== 1 ? "s" : ""}`}
+          {importing ? (
+            <>
+              <Clock size={12} />
+              Importing <span className="pnum">{progress}</span>/<span className="pnum">{selectedCount}</span>…
+            </>
+          ) : (
+            <>
+              <CheckCircle2 size={12} />
+              Import <span className="pnum">{selectedCount}</span> Transaction{selectedCount !== 1 ? "s" : ""}
+            </>
+          )}
         </button>
       </div>
     </div>
+  );
+}
+
+// ─── import row with hover ─────────────────────────────────────────────────────
+
+function ImportRow({
+  row,
+  td: tdStyle,
+  hasError,
+  errorMsg,
+  importing,
+  onToggle,
+}: {
+  row: ParsedRow;
+  td: React.CSSProperties;
+  hasError: boolean;
+  errorMsg?: string;
+  importing: boolean;
+  onToggle: (id: string) => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <tr
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        opacity: row.selected ? 1 : 0.4,
+        background: hasError
+          ? "rgba(255,123,114,0.08)"
+          : hovered
+          ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
+          : row.isDuplicate
+          ? "rgba(244,162,30,0.04)"
+          : "transparent",
+        transition: "background 0.1s",
+        cursor: "pointer",
+      }}
+      onClick={() => onToggle(row.id)}
+    >
+      <td style={{ ...tdStyle, width: 36, textAlign: "center" }}>
+        <input
+          type="checkbox"
+          checked={row.selected}
+          onChange={() => onToggle(row.id)}
+          style={{ cursor: "pointer", accentColor: "var(--ft-accent)" }}
+          onClick={(e) => e.stopPropagation()}
+        />
+      </td>
+      <td style={{ ...tdStyle, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>
+        {row.rawDate}
+      </td>
+      <td
+        style={{
+          ...tdStyle,
+          maxWidth: 220,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          color: "var(--ft-text)",
+        }}
+      >
+        {row.description}
+      </td>
+      <td
+        className="pnum"
+        style={{
+          ...tdStyle,
+          textAlign: "right",
+          color: row.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
+          fontWeight: 600,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {row.type === "income" ? "+" : "−"}{formatGbp(Math.abs(row.amount))}
+      </td>
+      <td style={{ ...tdStyle, textAlign: "center" }}>
+        <span
+          style={{
+            fontSize: 9,
+            fontFamily: "var(--font-mono)",
+            padding: "1px 7px",
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            background: row.type === "income" ? "rgba(86,211,100,0.12)" : "rgba(255,123,114,0.12)",
+            color: row.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
+          }}
+        >
+          {row.type.toUpperCase()}
+        </span>
+      </td>
+      <td style={{ ...tdStyle, color: "var(--ft-muted)" }}>
+        {row.category}
+      </td>
+      <td style={{ ...tdStyle, textAlign: "center", fontSize: 9 }}>
+        {hasError ? (
+          <span
+            title={errorMsg}
+            style={{
+              color: "var(--ft-red)",
+              display: "flex",
+              alignItems: "center",
+              gap: 3,
+              justifyContent: "center",
+            }}
+          >
+            <X size={10} />
+            ERROR
+          </span>
+        ) : importing && row.selected ? (
+          <span style={{ color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>…</span>
+        ) : row.isDuplicate ? (
+          <span
+            style={{
+              color: "var(--ft-amber)",
+              background: "rgba(244,162,30,0.15)",
+              padding: "1px 6px",
+              fontSize: 9,
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+            }}
+          >
+            DUP
+          </span>
+        ) : (
+          <span
+            style={{
+              color: "var(--ft-green)",
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 9,
+              letterSpacing: "0.06em",
+            }}
+          >
+            READY
+          </span>
+        )}
+      </td>
+    </tr>
   );
 }
 
@@ -874,7 +1419,6 @@ export default function ImportPage() {
   const accounts = (rawAccounts ?? []) as { id: number; name: string }[];
   const createTransaction = useCreateTransaction();
 
-  // Auto-detect: try to find likely columns
   const autoDetect = (hdrs: string[]) => {
     const find = (...candidates: string[]) =>
       hdrs.find((h) =>
@@ -923,7 +1467,6 @@ export default function ImportPage() {
         return;
       }
     }
-    // Fall back to CSV flow
     setCsvText(text);
   };
 
@@ -967,7 +1510,6 @@ export default function ImportPage() {
           else { amount = debitVal; type = "expense"; }
         }
 
-        // Try to get type from column
         if (typeIdx >= 0) {
           const typeStr = (row[typeIdx] ?? "").toLowerCase();
           if (typeStr.includes("income") || typeStr.includes("credit") || typeStr.includes("deposit")) {
@@ -1060,52 +1602,113 @@ export default function ImportPage() {
     [parsedRows, importErrors]
   );
 
+  const errorCount = Object.keys(importErrors).length;
+
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1 }}>
-            IMPORT
+      <PageHeader
+        icon={FileInput}
+        title="Import"
+        subtitle="Bulk-create transactions from a bank export (CSV, OFX, QIF)"
+        actions={
+          history.length > 0 ? (
+            <div style={{ textAlign: "right" }}>
+              <div style={{ ...labelStyle, marginBottom: 6 }}>Recent imports</div>
+              {history.map((h, i) => (
+                <HistoryEntryItem key={i} entry={h} />
+              ))}
+            </div>
+          ) : undefined
+        }
+      />
+
+      {/* Persona tip */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid) return null;
+        const msgs: Record<string, string | null> = {
+          market:  "Import broker trade confirmations and investment account CSVs to populate your Portfolio page with real cost-basis data.",
+          budget:  "Export a CSV from your bank's online portal (typically under Statements or Download). Most UK banks support this natively.",
+          wealth:  "Import both bank and investment account exports — complete transaction history unlocks accurate net worth history and FIRE projections.",
+          social:  "Import your full bank statement to capture all shared expenses. The AI Categorize tool will auto-tag group-related transactions.",
+          full:    null,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: "var(--ft-muted)",
+              border: "1px solid var(--ft-border)",
+              borderLeft: `2px solid ${color}`,
+              background: "var(--ft-surface)",
+              padding: "8px 14px 8px 12px",
+              marginBottom: 16,
+              display: "flex",
+              gap: 8,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+              lineHeight: 1.6,
+            }}
+          >
+            <span style={{ color, fontWeight: 700, flexShrink: 0 }}>TIP</span>
+            <span>{msg}</span>
           </div>
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", marginTop: 4 }}>
-            bulk-create transactions from a bank export (CSV, OFX, QIF)
-          </div>
-        </div>
-        {/* Import history */}
-        {history.length > 0 && (
-          <div style={{ textAlign: "right" }}>
-            <div style={{ ...labelStyle, marginBottom: 4 }}>Recent imports</div>
-            {history.map((h, i) => (
-              <div key={i} style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
-                {new Date(h.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} · {h.count} transactions
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        );
+      })()}
 
       <StepIndicator current={step} />
 
       {/* Import complete banner */}
       {importDone && (
-        <div style={{
-          background: Object.keys(importErrors).length === 0 ? "var(--ft-green)15" : "var(--ft-amber)15",
-          border: `1px solid ${Object.keys(importErrors).length === 0 ? "var(--ft-green)" : "var(--ft-amber)"}44`,
-          padding: "12px 16px",
-          marginBottom: 16,
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-        }}>
-          <div style={{ ...mono, fontSize: 14, fontWeight: 700, color: Object.keys(importErrors).length === 0 ? "var(--ft-green)" : "var(--ft-amber)" }}>
-            {Object.keys(importErrors).length === 0
-              ? `✓ Import complete — ${successCount} transaction${successCount !== 1 ? "s" : ""} created`
-              : `⚠ ${successCount} imported · ${Object.keys(importErrors).length} failed`}
+        <div
+          style={{
+            background: errorCount === 0 ? "rgba(86,211,100,0.08)" : "rgba(244,162,30,0.08)",
+            border: `1px solid ${errorCount === 0 ? "rgba(86,211,100,0.35)" : "rgba(244,162,30,0.35)"}`,
+            borderLeft: `3px solid ${errorCount === 0 ? "var(--ft-green)" : "var(--ft-amber)"}`,
+            padding: "12px 16px",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          {errorCount === 0 ? (
+            <CheckCircle2 size={16} color="var(--ft-green)" style={{ flexShrink: 0 }} />
+          ) : (
+            <AlertTriangle size={16} color="var(--ft-amber)" style={{ flexShrink: 0 }} />
+          )}
+          <div
+            style={{
+              ...mono,
+              fontSize: 13,
+              fontWeight: 700,
+              color: errorCount === 0 ? "var(--ft-green)" : "var(--ft-amber)",
+              flex: 1,
+            }}
+          >
+            {errorCount === 0
+              ? `Import complete — `
+              : ""}
+            {errorCount === 0 ? (
+              <><span className="pnum">{successCount}</span> transaction{successCount !== 1 ? "s" : ""} created</>
+            ) : (
+              <><span className="pnum">{successCount}</span> imported · <span className="pnum">{errorCount}</span> failed</>
+            )}
           </div>
           <button
-            onClick={() => { setCsvText(""); setStep(1); setImportDone(false); setImportErrors({}); setParsedRows([]); }}
-            style={{ ...BTN_GHOST, marginLeft: "auto", fontSize: 9 }}
+            onClick={() => {
+              setCsvText("");
+              setStep(1);
+              setImportDone(false);
+              setImportErrors({});
+              setParsedRows([]);
+            }}
+            style={{ ...BTN_GHOST, fontSize: 9, padding: "5px 12px" }}
           >
             Start New Import
           </button>
@@ -1133,6 +1736,11 @@ export default function ImportPage() {
           onAmountFormatChange={setAmountFormat}
           onProceed={handleBuildPreview}
           onBack={() => setStep(1)}
+          onApplyPreset={(preset) => {
+            const { colMap: newMap, amountFormat: newFmt } = applyPreset(preset, headers);
+            setColMap((m) => ({ ...m, ...newMap }));
+            setAmountFormat(newFmt);
+          }}
         />
       )}
 

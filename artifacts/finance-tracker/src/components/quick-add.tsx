@@ -138,8 +138,7 @@ export function QuickAdd() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: open ? "none" : "0 0 16px rgba(244,162,30,0.35), 0 4px 16px rgba(0,0,0,0.5)",
-          transition: "all 0.18s",
+          transition: "background 0.1s, border-color 0.1s",
           fontFamily: "var(--font-mono)",
           fontWeight: 700,
         }}
@@ -162,7 +161,6 @@ export function QuickAdd() {
           transform: open ? "translateY(0)" : "translateY(16px)",
           transition: "opacity 0.18s, transform 0.18s",
           pointerEvents: open ? "auto" : "none",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
         }}
         aria-hidden={!open}
       >

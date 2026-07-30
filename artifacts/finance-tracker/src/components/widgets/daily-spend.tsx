@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -24,6 +25,48 @@ function getMonthBounds(): { dateFrom: string; dateTo: string } {
   const lastDay = getDaysInMonth(year, month);
   const dateTo = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
   return { dateFrom, dateTo };
+}
+
+// ── Today's transaction row sub-component ─────────────────────────────────────
+
+type TodayTxRowProps = {
+  description: string | undefined;
+  category: string;
+  gbpValue: number;
+};
+
+function TodayTxRow({ description, category, gbpValue }: TodayTxRowProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 4,
+        padding: "2px 4px",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+        borderRadius: 1,
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ minWidth: 0, flex: 1, marginRight: 8 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+          {description || category || "Expense"}
+        </span>
+        {category && description && (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+            {category}
+          </span>
+        )}
+      </div>
+      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", flexShrink: 0 }}>
+        −{formatGbp(gbpValue)}
+      </span>
+    </div>
+  );
 }
 
 export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
@@ -57,7 +100,6 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
     ? "var(--ft-green)"
     : "var(--ft-accent)";
 
-  const barFillPct = dailyAvg > 0 ? Math.min((todayTotal / dailyAvg) * 100, 100) : 0;
   const barOverflow = dailyAvg > 0 && todayTotal > dailyAvg;
 
   const todayDateLabel = now.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short" });
@@ -71,65 +113,131 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
     return { day: d, total };
   });
 
+  // Today's transactions for the mini list
+  const todayTxs = allExpenses
+    .filter(tx => tx.date === today)
+    .sort((a, b) => b.gbpValue - a.gbpValue)
+    .slice(0, 4);
+
+  // Month pacing: days elapsed / total days
+  const monthPacePct = (dayOfMonth / daysInMonth) * 100;
+  const spendPacePct = thisMonthExpenses > 0 && runRate > 0 ? (thisMonthExpenses / runRate) * 100 : 0;
+  const daysRemaining = daysInMonth - dayOfMonth;
+  const projectedMonthEnd = thisMonthExpenses + (dailyAvg * daysRemaining);
+
+  // Count all today expenses for "+N more" display
+  const todayExpenseCount = allExpenses.filter(tx => tx.date === today).length;
+
   const compactView = (
     <div style={{ padding: "12px 14px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+      {/* Header row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
-          TODAY
+          TODAY · {todayDateLabel}
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-          {todayDateLabel}
-        </span>
+        {dailyAvg > 0 && (
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 8,
+            letterSpacing: "0.06em",
+            padding: "1px 5px",
+            background: barOverflow ? "color-mix(in srgb, var(--ft-red) 12%, transparent)" : "color-mix(in srgb, var(--ft-green) 12%, transparent)",
+            color: barOverflow ? "var(--ft-red)" : "var(--ft-green)",
+            border: `1px solid ${barOverflow ? "color-mix(in srgb, var(--ft-red) 30%, transparent)" : "color-mix(in srgb, var(--ft-green) 30%, transparent)"}`,
+          }}>
+            {barOverflow ? "OVER" : "UNDER"} AVG
+          </span>
+        )}
       </div>
 
+      {/* Big hero number */}
       {todayTotal === 0 ? (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-green)", marginBottom: 8, letterSpacing: "-0.01em" }}>
-          £0.00 · clear day
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-green)", marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          £0.00
+          <span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)", marginLeft: 8 }}>clear day</span>
         </div>
       ) : (
-        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 700, color: totalColor, marginBottom: 8, letterSpacing: "-0.01em" }}>
+        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: totalColor, marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {formatGbp(todayTotal)}
         </div>
       )}
 
       {dailyAvg > 0 && (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
-              vs <span className="pnum">{formatGbp(dailyAvg)}</span> daily avg
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+              avg <span className="pnum">{formatGbp(dailyAvg)}</span>
             </span>
+            <span style={{ color: "var(--ft-border2)" }}>·</span>
             <span className="pnum" style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.06em",
-              padding: "1px 5px",
-              background: vsAvg > 0 ? "rgba(239,68,68,0.12)" : "rgba(34,197,94,0.12)",
+              fontFamily: "var(--font-mono)", fontSize: 9,
               color: vsAvg > 0 ? "var(--ft-red)" : "var(--ft-green)",
-              border: `1px solid ${vsAvg > 0 ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`,
             }}>
-              {vsAvg > 0 ? "▲" : "▼"} {formatGbp(Math.abs(vsAvg))}
+              {vsAvg > 0 ? "+" : ""}{formatGbp(vsAvg)} today
             </span>
           </div>
 
-          <div style={{ height: 4, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden", marginBottom: 8 }}>
-            <div style={{
-              height: "100%",
-              width: `${barFillPct}%`,
-              background: barOverflow ? "var(--ft-red)" : "var(--ft-accent)",
-              borderRadius: 2,
-              transition: "width 0.4s ease",
-            }} />
+          {/* Dual progress bar: time elapsed + spend pace */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+                Day {dayOfMonth}/{daysInMonth}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+                {daysRemaining}d left
+              </span>
+            </div>
+            {/* Time bar */}
+            <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden", marginBottom: 3 }}>
+              <div style={{ height: "100%", width: `${monthPacePct}%`, background: "var(--ft-border2)", borderRadius: 1 }} />
+            </div>
+            {/* Spend pace bar */}
+            <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden" }}>
+              <div style={{
+                height: "100%",
+                width: `${Math.min(100, spendPacePct)}%`,
+                background: spendPacePct > monthPacePct + 10 ? "var(--ft-red)" : "var(--ft-accent)",
+                borderRadius: 1,
+                transition: "width 0.12s ease",
+              }} />
+            </div>
           </div>
 
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-            run-rate <span className="pnum">{formatGbp(runRate)}</span> / mo
+          <div style={{ display: "flex", gap: 14, minWidth: 0 }}>
+            <div style={{ minWidth: 0, overflow: "hidden" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>MTD SPEND</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{formatGbp(thisMonthExpenses)}</div>
+            </div>
+            <div style={{ minWidth: 0, overflow: "hidden" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>PROJECTED</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: projectedMonthEnd > runRate * 1.1 ? "var(--ft-red)" : "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{formatGbp(projectedMonthEnd)}</div>
+            </div>
           </div>
         </>
       )}
 
       {dailyAvg === 0 && todayTotal === 0 && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
           No expenses recorded this month yet
+        </div>
+      )}
+
+      {/* Today's transactions mini list */}
+      {todayTxs.length > 0 && (
+        <div style={{ marginTop: 10, borderTop: "1px solid var(--ft-border)", paddingTop: 8 }}>
+          {todayTxs.map(tx => (
+            <TodayTxRow
+              key={tx.id}
+              description={tx.description ?? undefined}
+              category={tx.category}
+              gbpValue={tx.gbpValue}
+            />
+          ))}
+          {todayExpenseCount > 4 && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
+              +{todayExpenseCount - 4} more
+            </div>
+          )}
         </div>
       )}
     </div>

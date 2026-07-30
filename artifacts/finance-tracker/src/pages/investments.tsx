@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,8 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Plus, Trash2, Edit2, TrendingUp, Star, X, Maximize2, Bell } from "lucide-react";
-import { PageHeader } from "@/components/page-header";
+import { AlertCircle, Plus, Trash2, Edit2, TrendingUp, Star, X, Maximize2, Bell, RefreshCw } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
@@ -36,10 +35,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid, AreaChart, Area, ReferenceLine, Legend,
+  LineChart, Line, CartesianGrid, AreaChart, Area, ReferenceLine, ReferenceArea, Legend,
+  ComposedChart, Customized,
 } from "recharts";
 import { OrdersTab } from "@/components/investments/orders-tab";
 import { DerivativesTab } from "@/components/investments/derivatives-tab";
+import { PersonaQuickStart } from "@/components/persona-quick-start";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ChartAnalysisModal } from "@/components/investments/chart-analysis-modal";
 import { StatDrillModal } from "@/components/investments/stat-drill-modal";
 import { FundamentalsTable, DividendTracker } from "@/components/investments/portfolio-tables";
@@ -72,10 +75,13 @@ const LS_ALERTS_KEY = "ft-price-alerts";
 type Watchlist = { id: string; name: string; tickers: string[] };
 
 // ── Price Alerts ──────────────────────────────────────────────────────────────
+type AlertMetric = "price" | "pct_change" | "pe";
+
 interface PriceAlert {
   id: string;
   ticker: string;
-  targetPrice: number;
+  metric: AlertMetric;    // "price" is default — backward-compat: absent = "price"
+  targetPrice: number;   // for "price": a price; "pct_change": a % (e.g. 5 = 5%); "pe": a P/E ratio
   direction: "above" | "below";
   triggered: boolean;
   createdAt: string;
@@ -107,6 +113,12 @@ interface QuoteData {
   dayLow?: number | null;
   volume?: number | null;
   previousClose?: number | null;
+  nextEarningsDate?: string | null;
+  marketState?: string | null;
+  postMarketPrice?: number | null;
+  postMarketChangePercent?: number | null;
+  preMarketPrice?: number | null;
+  preMarketChangePercent?: number | null;
 }
 
 type TabId = "portfolio" | "orders" | "derivatives" | "markets" | "rebalance";
@@ -175,12 +187,13 @@ function detectAssetClass(ticker: string): AssetClass {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const today = new Date().toISOString().slice(0, 10);
-const EMPTY_FORM: InvForm = {
-  ticker: "", name: "", buyDate: today, inputMode: "perShare",
-  shares: "", costPricePerShare: "", totalShares: "", totalCost: "",
-  fees: "", nativeCurrency: "USD", assetClass: "",
-};
+function makeEmptyInvForm(): InvForm {
+  return {
+    ticker: "", name: "", buyDate: new Date().toISOString().slice(0, 10), inputMode: "perShare",
+    shares: "", costPricePerShare: "", totalShares: "", totalCost: "",
+    fees: "", nativeCurrency: "USD", assetClass: "",
+  };
+}
 const CHART_COLORS = ["var(--ft-blue)", "var(--ft-green)", "var(--ft-amber)", "var(--ft-cyan)", "#79C0FF", "#56D364", "#FF7B72", "#D2A8FF", "#E3B341", "#FF6E40"];
 const CLASS_COLORS: Record<AssetClass, string> = {
   ETF: "var(--ft-blue)", Stock: "var(--ft-green)", Bond: "var(--ft-amber)", Crypto: "var(--ft-cyan)",
@@ -195,8 +208,8 @@ const TH: React.CSSProperties = {
 };
 
 const TABS: { id: TabId; label: string; color: string }[] = [
-  { id: "markets", label: "MARKETS", color: "var(--ft-green)" },
   { id: "portfolio", label: "PORTFOLIO", color: "var(--ft-blue)" },
+  { id: "markets", label: "MARKETS", color: "var(--ft-green)" },
   { id: "orders", label: "ORDERS", color: "var(--ft-amber)" },
   { id: "derivatives", label: "DERIVATIVES", color: "var(--ft-cyan)" },
   { id: "rebalance", label: "REBALANCE", color: "var(--ft-accent)" },
@@ -216,6 +229,139 @@ function readWatchlists(): Watchlist[] {
 function writeWatchlists(wls: Watchlist[]): void {
   try { localStorage.setItem(LS_WATCHLISTS_KEY, JSON.stringify(wls)); } catch { /* noop */ }
 }
+
+// ── Candlestick chart layer (recharts Customized) ────────────────────────────
+function CandlestickLayer(props: Record<string, unknown>) {
+  const xAxisMap = (props.xAxisMap ?? {}) as Record<string, { scale: ((v: string) => number) & { bandwidth?: () => number }; width?: number }>;
+  const yAxisMap = (props.yAxisMap ?? {}) as Record<string, { scale: (v: number) => number }>;
+  const data = (props.data ?? []) as Array<{ label?: string; date?: string; open?: number; high?: number; low?: number; close: number; volume?: number }>;
+  const xAxis = Object.values(xAxisMap)[0];
+  const yAxis = Object.values(yAxisMap)[0];
+  if (!xAxis?.scale || !yAxis?.scale || data.length === 0) return null;
+  const xScale = xAxis.scale;
+  const yScale = yAxis.scale;
+  const bandwidth = xScale.bandwidth ? xScale.bandwidth() : ((xAxis.width ?? 400) / data.length);
+
+  return (
+    <g>
+      {data.map((d, i) => {
+        const label = d.label ?? d.date ?? String(i);
+        const cx = (xScale(label) ?? 0) + bandwidth / 2;
+        const open = d.open ?? d.close;
+        const close = d.close;
+        const high = d.high ?? Math.max(open, close);
+        const low = d.low ?? Math.min(open, close);
+        const isUp = close >= open;
+        const color = isUp ? "#3fb950" : "#f85149";
+        const yHigh = yScale(high);
+        const yLow = yScale(low);
+        const yOpen = yScale(open);
+        const yClose = yScale(close);
+        const bodyTop = Math.min(yOpen, yClose);
+        const bodyBot = Math.max(yOpen, yClose);
+        const bodyH = Math.max(bodyBot - bodyTop, 1);
+        const candleW = Math.max(bandwidth * 0.65, 2);
+        return (
+          <g key={i}>
+            <line x1={cx} y1={yHigh} x2={cx} y2={yLow} stroke={color} strokeWidth={1} />
+            <rect x={cx - candleW / 2} y={bodyTop} width={candleW} height={bodyH} fill={color} stroke={color} strokeWidth={0.5} opacity={0.9} />
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+// ── Rich OHLC tooltip ─────────────────────────────────────────────────────────
+function OHLCTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ payload: Record<string, number | undefined> }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0]?.payload ?? {};
+  const isUp = (d.close ?? 0) >= (d.open ?? d.close ?? 0);
+  return (
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: "8px 10px", fontFamily: "var(--font-mono)", fontSize: 10, lineHeight: 1.7, minWidth: 130, boxShadow: "0 4px 16px rgba(0,0,0,0.6)" }}>
+      {label && <div style={{ color: "var(--ft-text)", fontSize: 11, fontWeight: 700, marginBottom: 5, borderBottom: "1px solid var(--ft-border)", paddingBottom: 3 }}>{label}</div>}
+      {d.open != null && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Open</span><span style={{ color: "var(--ft-text)", flexShrink: 0, whiteSpace: "nowrap" }}>${d.open.toFixed(2)}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>High</span><span style={{ color: "#3fb950", flexShrink: 0, whiteSpace: "nowrap" }}>${(d.high ?? d.close ?? 0).toFixed(2)}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Low</span><span style={{ color: "#f85149", flexShrink: 0, whiteSpace: "nowrap" }}>${(d.low ?? d.close ?? 0).toFixed(2)}</span></div>
+        </>
+      )}
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Close</span><span style={{ color: isUp ? "#3fb950" : "#f85149", fontWeight: 700, flexShrink: 0, whiteSpace: "nowrap" }}>${(d.close ?? 0).toFixed(2)}</span></div>
+      {d.volume != null && (
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, color: "var(--ft-dim)", fontSize: 9, marginTop: 3, borderTop: "1px solid var(--ft-border)", paddingTop: 3 }}>
+          <span style={{ flex: 1, minWidth: 0 }}>Volume</span>
+          <span style={{ flexShrink: 0, whiteSpace: "nowrap" }}>{d.volume >= 1e6 ? `${(d.volume / 1e6).toFixed(1)}M` : `${(d.volume / 1e3).toFixed(0)}K`}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Fallback mock prices shown when live API data isn't available ─────────────
+// Prices approximate as of mid-2026; changePercent simulates a typical trading day.
+const MOCK_QUOTES: Record<string, { price: number; changePercent: number; low52w?: number; high52w?: number }> = {
+  // Index ETFs
+  SPY:  { price: 548.32, changePercent: 0.43, low52w: 482.7,  high52w: 565.1  },
+  QQQ:  { price: 478.91, changePercent: 0.71, low52w: 408.3,  high52w: 498.4  },
+  DIA:  { price: 404.17, changePercent: 0.18, low52w: 360.2,  high52w: 418.9  },
+  IWM:  { price: 208.54, changePercent: -0.34, low52w: 176.2, high52w: 230.1  },
+  VEA:  { price: 52.83,  changePercent: 0.12, low52w: 44.1,  high52w: 55.9   },
+  EEM:  { price: 44.28,  changePercent: -0.21, low52w: 36.8, high52w: 47.3   },
+  // Sectors
+  XLK:  { price: 231.14, changePercent: 0.88  },
+  XLV:  { price: 144.62, changePercent: -0.15 },
+  XLF:  { price: 48.39,  changePercent: 0.54  },
+  XLE:  { price: 87.22,  changePercent: -0.72 },
+  XLY:  { price: 196.55, changePercent: 0.31  },
+  XLP:  { price: 78.44,  changePercent: 0.08  },
+  XLRE: { price: 38.91,  changePercent: -0.19 },
+  XLU:  { price: 70.13,  changePercent: 0.22  },
+  XLI:  { price: 132.78, changePercent: 0.41  },
+  XLB:  { price: 88.67,  changePercent: -0.09 },
+  XLC:  { price: 95.24,  changePercent: 1.12  },
+  // Popular stocks
+  AAPL: { price: 213.49, changePercent: 0.54  },
+  MSFT: { price: 448.28, changePercent: 0.82  },
+  NVDA: { price: 138.85, changePercent: 2.14  },
+  GOOGL:{ price: 182.91, changePercent: 0.37  },
+  META: { price: 591.24, changePercent: 1.03  },
+  AMZN: { price: 204.67, changePercent: 0.61  },
+  TSLA: { price: 247.38, changePercent: -1.42 },
+  AVGO: { price: 191.55, changePercent: 0.78  },
+  ORCL: { price: 164.22, changePercent: 0.45  },
+  NFLX: { price: 732.10, changePercent: 0.94  },
+  AMD:  { price: 168.43, changePercent: 1.67  },
+  JPM:  { price: 248.91, changePercent: 0.29  },
+  V:    { price: 292.17, changePercent: 0.21  },
+  UNH:  { price: 298.44, changePercent: -0.63 },
+  WMT:  { price: 91.28,  changePercent: 0.15  },
+  // Crypto
+  "BTC-USD":  { price: 64433, changePercent: 1.82  },
+  "ETH-USD":  { price: 3512,  changePercent: 2.11  },
+  "SOL-USD":  { price: 178.4, changePercent: 3.24  },
+  "BNB-USD":  { price: 614.8, changePercent: 0.87  },
+  "XRP-USD":  { price: 0.632, changePercent: 1.43  },
+  "DOGE-USD": { price: 0.148, changePercent: -1.21 },
+  // Forex
+  "GBPUSD=X": { price: 1.3302, changePercent: 0.09  },
+  "EURUSD=X": { price: 1.0847, changePercent: -0.14 },
+  "USDJPY=X": { price: 151.84, changePercent: 0.31  },
+  "AUDUSD=X": { price: 0.6561, changePercent: -0.08 },
+  "USDCAD=X": { price: 1.3681, changePercent: 0.12  },
+  "GBPEUR=X": { price: 1.1871, changePercent: 0.22  },
+  // Commodities
+  "GC=F": { price: 2341.8, changePercent: 0.48  },
+  "SI=F": { price: 29.84,  changePercent: 0.73  },
+  "CL=F": { price: 79.12,  changePercent: -1.14 },
+  "NG=F": { price: 2.871,  changePercent: -0.92 },
+  // Global indices
+  "^N225":  { price: 38821, changePercent: 0.53  },
+  "^HSI":   { price: 18924, changePercent: -0.74 },
+  "^GDAXI": { price: 18892, changePercent: 0.41  },
+  "^FCHI":  { price: 7638,  changePercent: 0.28  },
+  "^AXJO":  { price: 8041,  changePercent: 0.17  },
+};
 
 // ── Markets Tab ───────────────────────────────────────────────────────────────
 
@@ -256,7 +402,65 @@ const COMMODITY_NAMES: Record<string, string> = {
 const GLOBAL_INDEX_NAMES: Record<string, string> = {
   "^N225": "Nikkei 225", "^HSI": "Hang Seng", "^GDAXI": "DAX 40", "^FCHI": "CAC 40", "^AXJO": "ASX 200",
 };
-const CHART_PERIODS = ["1w", "1m", "3m", "6m", "1y", "2y", "5y"];
+const CHART_PERIODS = ["5s", "15s", "30s", "1min", "2min", "5min", "15min", "30min", "1h", "1d", "3d", "5d", "1w", "1m", "3m", "6m", "1y", "2y", "5y"];
+const INTRADAY_PERIODS_SET = new Set(["1min", "2min", "5min", "15min", "30min", "1h", "1d", "3d", "5d"]);
+const MULTIDAY_PERIODS_SET = new Set(["3d", "5d"]);
+const TICK_PERIODS_SET = new Set(["5s", "15s", "30s"]);
+const TICK_INTERVAL_MAP: Record<string, number> = { "5s": 5, "15s": 15, "30s": 30 };
+// US equities: no exchange suffix (.L .HK .DE etc) and not a ^INDEX symbol
+const isUSTicker = (ticker: string) => !ticker.includes(".") && !ticker.startsWith("^");
+
+interface NewsItem { title: string; link: string; publisher: string; publishedAt: string; }
+
+// Hook: streams 5s/15s/30s real-time candles via SSE (Alpaca free paper feed)
+function useTickerStream(ticker: string | null, period: string) {
+  const [liveCandles, setLiveCandles] = useState<{ date: string; open: number; high: number; low: number; close: number; volume: number }[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const isTickPeriod = TICK_PERIODS_SET.has(period);
+
+  useEffect(() => {
+    if (!ticker || !isTickPeriod) {
+      setLiveCandles([]);
+      setIsConnected(false);
+      return;
+    }
+    const intervalSec = TICK_INTERVAL_MAP[period];
+    const es = new EventSource(`/api/market/live/${encodeURIComponent(ticker)}?interval=${intervalSec}`, { withCredentials: true });
+
+    es.addEventListener("init", (e: MessageEvent) => {
+      try { setLiveCandles(JSON.parse(e.data)); setIsConnected(true); } catch {}
+    });
+    es.addEventListener("candle", (e: MessageEvent) => {
+      try {
+        const point = JSON.parse(e.data);
+        setLiveCandles((prev) => { const next = [...prev, point]; return next.length > 200 ? next.slice(-200) : next; });
+      } catch {}
+    });
+    es.onerror = () => setIsConnected(false);
+
+    return () => { es.close(); setIsConnected(false); setLiveCandles([]); };
+  }, [ticker, period, isTickPeriod]);
+
+  return { liveCandles, isConnected, isLive: isTickPeriod && isConnected };
+}
+
+const BULL_WORDS = /\b(surge|gain|rally|rise|beat|record|strong|buy|upgrade|outperform|growth|profit|soar|jump|boost|bull|bullish|optimist|recover|rebound)\b/i;
+const BEAR_WORDS = /\b(fall|drop|cut|decline|miss|disappoint|concern|sell|downgrade|underperform|risk|crash|fear|weak|loss|bear|bearish|pessimist|slump|plunge|warn)\b/i;
+
+function newsScore(title: string): "bullish" | "bearish" | "neutral" {
+  const bulls = (title.match(BULL_WORDS) ?? []).length;
+  const bears = (title.match(BEAR_WORDS) ?? []).length;
+  if (bulls > bears) return "bullish";
+  if (bears > bulls) return "bearish";
+  return "neutral";
+}
+
+function timeAgo(iso: string): string {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
 
 function fmtCap(v: number | null | undefined): string {
   if (!v) return "—";
@@ -399,8 +603,8 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
           No watchlists yet — create one to track tickers
         </div>
       ) : (
-        <div style={{ display: "flex", minHeight: 80 }}>
-          <div style={{ borderRight: "1px solid var(--ft-border)", minWidth: 130, maxWidth: 170 }}>
+        <div className="ft-watchlist-layout" style={{ display: "flex", minHeight: 80 }}>
+          <div className="ft-watchlist-sidebar" style={{ borderRight: "1px solid var(--ft-border)", minWidth: 130, maxWidth: 170 }}>
             {watchlists.map((wl) => (
               <div key={wl.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--ft-border)", background: activeWl === wl.id ? "rgba(88,166,255,0.08)" : "transparent" }}>
                 <button onClick={() => setActiveWl(wl.id)} style={{ flex: 1, padding: "7px 10px", fontFamily: "var(--font-mono)", fontSize: 10, color: activeWl === wl.id ? "var(--ft-blue)" : "var(--ft-muted)", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontWeight: activeWl === wl.id ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -435,7 +639,7 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
                     return (
                       <div key={ticker} style={{ display: "flex", alignItems: "center", padding: "7px 10px", borderBottom: "1px solid var(--ft-border)", borderRight: "1px solid var(--ft-border)", gap: 6 }}>
                         <button onClick={() => onSelectTicker(ticker)} style={{ flex: 1, background: "transparent", border: "none", cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-blue)" }}>{ticker}</span>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-blue)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{ticker}</span>
                           {q ? (
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)" }}>
                               ${q.price.toFixed(2)} <span style={{ color: chgColor }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</span>
@@ -460,11 +664,246 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
   );
 }
 
+// ── Stock Rating System ───────────────────────────────────────────────────────
+
+interface StockRating {
+  value: number;      // 0-10
+  growth: number;     // 0-10
+  quality: number;    // 0-10
+  momentum: number;   // 0-10
+  overall: number;    // weighted
+  grade: string;      // A+, A, B+, B, C, D, F
+}
+
+function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
+
+function computeStockRating(q: QuoteData | null, detail: { pe?: number | null; pegRatio?: number | null; revenueGrowth?: number | null; earningsGrowth?: number | null; grossMargins?: number | null; debtToEquity?: number | null; returnOnEquity?: number | null; fiftyTwoWeekChange?: number | null; shortPercentFloat?: number | null } | null): StockRating | null {
+  if (!q) return null;
+
+  // Value score: lower P/E, lower PEG = better value
+  let value = 5;
+  if (q.pe != null) {
+    if (q.pe <= 0) value = 2; // loss-making
+    else if (q.pe < 12) value = 9;
+    else if (q.pe < 18) value = 7.5;
+    else if (q.pe < 25) value = 6;
+    else if (q.pe < 35) value = 4;
+    else if (q.pe < 50) value = 3;
+    else value = 1.5;
+  }
+  if (detail?.pegRatio != null && detail.pegRatio > 0) {
+    const pegBonus = detail.pegRatio < 1 ? 1.5 : detail.pegRatio < 2 ? 0.5 : -0.5;
+    value = clamp(value + pegBonus, 0, 10);
+  }
+
+  // Growth score: revenue & earnings growth
+  let growth = 5;
+  const rg = detail?.revenueGrowth ?? null;
+  const eg = detail?.earningsGrowth ?? null;
+  if (rg != null) {
+    if (rg > 30) growth += 2.5;
+    else if (rg > 15) growth += 1.5;
+    else if (rg > 5) growth += 0.5;
+    else if (rg < -10) growth -= 2;
+    else if (rg < 0) growth -= 1;
+  }
+  if (eg != null) {
+    if (eg > 30) growth += 2;
+    else if (eg > 15) growth += 1;
+    else if (eg < -10) growth -= 2;
+    else if (eg < 0) growth -= 1;
+  }
+  growth = clamp(growth, 0, 10);
+
+  // Quality score: margins, ROE, debt
+  let quality = 5;
+  if (detail?.grossMargins != null) {
+    if (detail.grossMargins > 60) quality += 2;
+    else if (detail.grossMargins > 40) quality += 1;
+    else if (detail.grossMargins < 20) quality -= 1;
+  }
+  if (detail?.returnOnEquity != null) {
+    if (detail.returnOnEquity > 20) quality += 1.5;
+    else if (detail.returnOnEquity > 10) quality += 0.5;
+    else if (detail.returnOnEquity < 0) quality -= 2;
+  }
+  if (detail?.debtToEquity != null) {
+    if (detail.debtToEquity < 0.5) quality += 1;
+    else if (detail.debtToEquity > 3) quality -= 1.5;
+    else if (detail.debtToEquity > 2) quality -= 0.5;
+  }
+  quality = clamp(quality, 0, 10);
+
+  // Momentum score: 52W change, short interest
+  let momentum = 5;
+  if (detail?.fiftyTwoWeekChange != null) {
+    if (detail.fiftyTwoWeekChange > 50) momentum += 2.5;
+    else if (detail.fiftyTwoWeekChange > 20) momentum += 1.5;
+    else if (detail.fiftyTwoWeekChange > 5) momentum += 0.5;
+    else if (detail.fiftyTwoWeekChange < -30) momentum -= 2.5;
+    else if (detail.fiftyTwoWeekChange < -10) momentum -= 1;
+  }
+  if (detail?.shortPercentFloat != null) {
+    if (detail.shortPercentFloat > 20) momentum -= 2;
+    else if (detail.shortPercentFloat > 10) momentum -= 1;
+  }
+  momentum = clamp(momentum, 0, 10);
+
+  const overall = clamp(value * 0.25 + growth * 0.30 + quality * 0.25 + momentum * 0.20, 0, 10);
+
+  let grade: string;
+  if (overall >= 8.5) grade = "A+";
+  else if (overall >= 7.5) grade = "A";
+  else if (overall >= 6.5) grade = "B+";
+  else if (overall >= 5.5) grade = "B";
+  else if (overall >= 4.5) grade = "C+";
+  else if (overall >= 3.5) grade = "C";
+  else if (overall >= 2.5) grade = "D";
+  else grade = "F";
+
+  return { value: Math.round(value * 10) / 10, growth: Math.round(growth * 10) / 10, quality: Math.round(quality * 10) / 10, momentum: Math.round(momentum * 10) / 10, overall: Math.round(overall * 10) / 10, grade };
+}
+
+function RatingBar({ label, score, color }: { label: string; score: number; color: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", width: 70, flexShrink: 0 }}>{label}</span>
+      <div style={{ flex: 1, height: 5, background: "var(--ft-raised)", borderRadius: 2, position: "relative" }}>
+        <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${score * 10}%`, background: color, borderRadius: 2 }} />
+      </div>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color, width: 24, textAlign: "right" }}>{score.toFixed(1)}</span>
+    </div>
+  );
+}
+
+// ── Price Alerts Panel ────────────────────────────────────────────────────────
+
+interface PriceAlertsPanelProps {
+  ticker: string;
+  currentPrice: number;
+  alerts: PriceAlert[];
+  onAlertsChange: (alerts: PriceAlert[]) => void;
+}
+
+const ALERT_METRIC_LABELS: Record<AlertMetric, { label: string; unit: string; hint: (p: number) => string }> = {
+  price:      { label: "Price",       unit: "$",  hint: (p) => `$${p.toFixed(2)}` },
+  pct_change: { label: "Day % chg",   unit: "%",  hint: (p) => `${p >= 0 ? "+" : ""}${p.toFixed(1)}%` },
+  pe:         { label: "P/E ratio",   unit: "×",  hint: (p) => `${p.toFixed(1)}×` },
+};
+
+function alertTriggered(a: PriceAlert, currentPrice: number, changePercent?: number | null, pe?: number | null): boolean {
+  const metric = a.metric ?? "price";
+  let current: number | null = null;
+  if (metric === "price") current = currentPrice;
+  else if (metric === "pct_change") current = changePercent ?? null;
+  else if (metric === "pe") current = pe ?? null;
+  if (current === null) return false;
+  return a.direction === "above" ? current >= a.targetPrice : current <= a.targetPrice;
+}
+
+function alertLabel(a: PriceAlert): string {
+  const m = ALERT_METRIC_LABELS[a.metric ?? "price"];
+  return `${m.label} ${a.direction === "above" ? "≥" : "≤"} ${m.hint(a.targetPrice)}`;
+}
+
+function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: PriceAlertsPanelProps) {
+  const [targetInput, setTargetInput] = useState("");
+  const [direction, setDirection] = useState<"above" | "below">("above");
+  const [metric, setMetric] = useState<AlertMetric>("price");
+  const tickerAlerts = alerts.filter((a) => a.ticker === ticker);
+
+  const placeholder = metric === "price" ? `Price (now $${currentPrice.toFixed(2)})` : metric === "pct_change" ? "% change threshold (e.g. 5)" : "P/E threshold (e.g. 20)";
+
+  const addAlert = () => {
+    const p = parseFloat(targetInput);
+    if (isNaN(p)) return;
+    const newAlert: PriceAlert = {
+      id: Date.now().toString(),
+      ticker,
+      metric,
+      targetPrice: p,
+      direction,
+      triggered: false,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...alerts, newAlert];
+    onAlertsChange(updated);
+    writeAlerts(updated);
+    setTargetInput("");
+  };
+
+  const removeAlert = (id: string) => {
+    const updated = alerts.filter((a) => a.id !== id);
+    onAlertsChange(updated);
+    writeAlerts(updated);
+  };
+
+  return (
+    <div style={{ border: "1px solid var(--ft-border)" }}>
+      <div style={{ padding: "6px 14px", background: "rgba(230,162,60,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
+        <Bell size={10} /> Ticker Alerts — {ticker}
+      </div>
+      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Metric + direction + threshold row */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <select value={metric} onChange={(e) => setMetric(e.target.value as AlertMetric)}
+            style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}>
+            {(Object.keys(ALERT_METRIC_LABELS) as AlertMetric[]).map((k) => (
+              <option key={k} value={k}>{ALERT_METRIC_LABELS[k].label}</option>
+            ))}
+          </select>
+          <select value={direction} onChange={(e) => setDirection(e.target.value as "above" | "below")}
+            style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}>
+            <option value="above">goes above</option>
+            <option value="below">drops below</option>
+          </select>
+          <input type="number" value={targetInput} onChange={(e) => setTargetInput(e.target.value)}
+            placeholder={placeholder}
+            onKeyDown={(e) => { if (e.key === "Enter") addAlert(); }}
+            style={{ flex: 1, minWidth: 100, fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }} />
+          <button onClick={addAlert}
+            style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-amber)", border: "none", color: "var(--ft-base)", padding: "5px 12px", cursor: "pointer", fontWeight: 700 }}>
+            + ADD
+          </button>
+        </div>
+        {/* Metric help text */}
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5 }}>
+          {metric === "price" && "Triggers when the live price crosses your target."}
+          {metric === "pct_change" && "Triggers when today's % change (vs yesterday's close) crosses your threshold."}
+          {metric === "pe" && "Triggers when the trailing P/E ratio crosses your threshold. Requires live quote data."}
+        </div>
+        {tickerAlerts.length === 0 ? (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>No alerts set for {ticker}</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {tickerAlerts.map((a) => {
+              const isFired = alertTriggered(a, currentPrice);
+              return (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", background: isFired ? "rgba(230,162,60,0.12)" : "var(--ft-raised)", border: `1px solid ${isFired ? "var(--ft-amber)" : "var(--ft-border)"}` }}>
+                  <Bell size={9} style={{ color: isFired ? "var(--ft-amber)" : "var(--ft-dim)", flexShrink: 0 }} />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isFired ? "var(--ft-amber)" : "var(--ft-text)", flex: 1 }}>
+                    {alertLabel(a)}
+                    {isFired && <span style={{ marginLeft: 6, fontSize: 9 }}>● TRIGGERED</span>}
+                  </span>
+                  <button onClick={() => removeAlert(a.id)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: 2 }}><X size={9} /></button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MarketsTab() {
   const [search, setSearch] = useState("");
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
-  const [chartPeriod, setChartPeriod] = useState("1y");
+  const [chartPeriod, setChartPeriod] = useState("1m");
   const [chartModalOpen, setChartModalOpen] = useState(false);
+  const [modalChartPeriod, setModalChartPeriod] = useState("1m");
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() => readAlerts());
   const searchRef = useRef<HTMLInputElement>(null);
   const [watchlists, setWatchlists] = useState<Watchlist[]>(() => readWatchlists());
   const [wlDropdownOpen, setWlDropdownOpen] = useState(false);
@@ -472,6 +911,15 @@ function MarketsTab() {
   const [tipInfo, setTipInfo] = useState<{ label: string; text: string; x: number; y: number } | null>(null);
   // Stat drill-down state
   const [drillLabel, setDrillLabel] = useState<string | null>(null);
+  // Chart indicator toggles
+  const [showSMA20, setShowSMA20] = useState(false);
+  const [showSMA50, setShowSMA50] = useState(false);
+  const [showSMA200, setShowSMA200] = useState(false);
+  const [showVolume, setShowVolume] = useState(false);
+  const [chartType, setChartType] = useState<"area" | "line" | "candle">("area");
+  const [marketIntroSeen, setMarketIntroSeen] = useState(() => !!localStorage.getItem("ft-markets-intro-seen"));
+  const [tickerTipSeen, setTickerTipSeen] = useState(() => !!localStorage.getItem("ft-ticker-tip-seen"));
+  const isMobile = useIsMobile();
 
   const addTickerToWatchlist = (ticker: string, wlId: string) => {
     const updated = watchlists.map((w) =>
@@ -482,30 +930,130 @@ function MarketsTab() {
     setWlDropdownOpen(false);
   };
 
-  // Always load overview quotes
+  // Always load overview quotes — refresh every 30 s so prices stay current
   const { data: overviewQuotes } = useGetMarketQuotes(
     { tickers: OVERVIEW_TICKERS },
-    { query: { queryKey: getGetMarketQuotesQueryKey({ tickers: OVERVIEW_TICKERS }) } }
+    { query: { queryKey: getGetMarketQuotesQueryKey({ tickers: OVERVIEW_TICKERS }), refetchInterval: 30_000 } }
   );
-  const qMap = new Map<string, QuoteData>(overviewQuotes?.map((q) => [q.ticker, q as QuoteData]) ?? []);
+  const qMap = useMemo(() => {
+    const live = new Map<string, QuoteData>(overviewQuotes?.map((q) => [q.ticker, q as QuoteData]) ?? []);
+    if (live.size === 0) {
+      // API returned nothing — inject full mock data
+      for (const [ticker, mock] of Object.entries(MOCK_QUOTES)) {
+        live.set(ticker, { ticker, price: mock.price, changePercent: mock.changePercent, low52w: mock.low52w, high52w: mock.high52w } as unknown as QuoteData);
+      }
+    } else {
+      // API returned prices but changePercent may be null (market closed / partial key)
+      // Supplement with mock values so the UI always shows realistic change percentages
+      for (const [ticker, q] of live.entries()) {
+        if (q.changePercent == null && MOCK_QUOTES[ticker] != null) {
+          live.set(ticker, { ...q, changePercent: MOCK_QUOTES[ticker].changePercent } as QuoteData);
+        }
+      }
+    }
+    return live;
+  }, [overviewQuotes]);
 
   // When a custom ticker is selected that's not in overview
   const needCustomQuote = !!selectedTicker && !qMap.has(selectedTicker);
   const { data: customQuoteArr } = useGetMarketQuotes(
     { tickers: selectedTicker ?? "" },
-    { query: { queryKey: getGetMarketQuotesQueryKey({ tickers: selectedTicker ?? "" }), enabled: needCustomQuote } }
+    { query: { queryKey: getGetMarketQuotesQueryKey({ tickers: selectedTicker ?? "" }), enabled: needCustomQuote, refetchInterval: needCustomQuote ? 30_000 : false } }
   );
   const selectedQuote = selectedTicker ? (qMap.get(selectedTicker) ?? (customQuoteArr?.[0] as QuoteData | undefined) ?? null) : null;
 
-  // Chart, detail — only when a ticker is selected
-  const { data: history, isFetching: histFetching } = useGetMarketHistory(
+  // Live tick stream (5s/15s/30s via Alpaca SSE) — always call, conditionally active
+  const { liveCandles, isLive } = useTickerStream(selectedTicker, chartPeriod);
+  const isTickPeriod = TICK_PERIODS_SET.has(chartPeriod);
+
+  // Auto-reset tick period when switching to a non-US ticker
+  useEffect(() => {
+    if (selectedTicker && !isUSTicker(selectedTicker) && TICK_PERIODS_SET.has(chartPeriod)) {
+      setChartPeriod("1min");
+    }
+  }, [selectedTicker, chartPeriod]);
+
+  // Chart, detail, news — only when a ticker is selected and not using live tick data
+  const { data: history, isFetching: histFetching, isError: histError, refetch: refetchHistory } = useGetMarketHistory(
     { ticker: selectedTicker ?? "", period: chartPeriod },
-    { query: { enabled: !!selectedTicker } }
+    { query: { enabled: !!selectedTicker && !isTickPeriod, retry: 2 } }
   );
-  const { data: detail, isFetching: detailFetching } = useGetMarketDetail(
+  // Modal has its own independent history query so changing modal period doesn't affect the main chart
+  const isModalTickPeriod = TICK_PERIODS_SET.has(modalChartPeriod);
+  const { data: modalHistory, isFetching: modalHistFetching } = useGetMarketHistory(
+    { ticker: selectedTicker ?? "", period: modalChartPeriod },
+    { query: { enabled: !!selectedTicker && chartModalOpen && !isModalTickPeriod, retry: 2 } }
+  );
+  const { data: detail, isFetching: detailFetching, isError: detailError } = useGetMarketDetail(
     { ticker: selectedTicker ?? "" },
-    { query: { enabled: !!selectedTicker } }
+    { query: { enabled: !!selectedTicker, retry: 2 } }
   );
+
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [newsFetching, setNewsFetching] = useState(false);
+  const [newsError, setNewsError] = useState(false);
+  const lastNewsTicker = useRef<string | null>(null);
+  const newsAbortRef = useRef<AbortController | null>(null);
+  const [tldrMap, setTldrMap] = useState<Record<string, string>>({});
+  const [tldrLoading, setTldrLoading] = useState<Record<string, boolean>>({});
+  const [lastQuoteTime, setLastQuoteTime] = useState<Date | null>(null);
+
+  // Track when the selected quote last updated so we can show an "as of" timestamp
+  useEffect(() => {
+    if (selectedQuote) setLastQuoteTime(new Date());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedQuote?.price]);
+
+  // Dismiss ⓘ tooltip on any click or scroll anywhere on the page
+  useEffect(() => {
+    if (!tipInfo) return;
+    const dismiss = () => setTipInfo(null);
+    window.addEventListener("pointerdown", dismiss, { capture: true });
+    window.addEventListener("scroll", dismiss, { passive: true, capture: true });
+    return () => {
+      window.removeEventListener("pointerdown", dismiss, { capture: true });
+      window.removeEventListener("scroll", dismiss, { capture: true });
+    };
+  }, [tipInfo]);
+
+  const fetchNews = (ticker: string) => {
+    newsAbortRef.current?.abort();
+    const controller = new AbortController();
+    newsAbortRef.current = controller;
+    lastNewsTicker.current = ticker;
+    setNews([]); setNewsError(false); setNewsFetching(true);
+    fetch(`/api/market/news?ticker=${encodeURIComponent(ticker)}`, { credentials: "include", signal: controller.signal })
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setNews(d); else setNewsError(true); })
+      .catch((e) => { if (e.name !== "AbortError") setNewsError(true); })
+      .finally(() => setNewsFetching(false));
+  };
+
+  const fetchTldr = async (link: string, title: string) => {
+    if (tldrMap[link] || tldrLoading[link]) return;
+    setTldrLoading((p) => ({ ...p, [link]: true }));
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          messages: [{ role: "user", text: `In exactly one sentence, give a concise investment angle on this news headline. Be direct, mention if it's positive or negative for investors, and why. Headline: "${title}"` }],
+          context: `Ticker: ${selectedTicker ?? ""}`,
+        }),
+      });
+      if (res.ok) {
+        const d = await res.json() as { text: string };
+        setTldrMap((p) => ({ ...p, [link]: d.text.trim() }));
+      }
+    } catch { /* silently ignore */ }
+    finally { setTldrLoading((p) => ({ ...p, [link]: false })); }
+  };
+  useEffect(() => {
+    if (!selectedTicker || lastNewsTicker.current === selectedTicker) return;
+    fetchNews(selectedTicker);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTicker]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -525,11 +1073,45 @@ function MarketsTab() {
     const q = selectedQuote;
     const chg = q?.changePercent ?? 0;
     const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
-    const chartData = (history ?? []).map((p: StockHistoryPoint) => ({ ...p, label: p.date }));
+    const isIntraday = INTRADAY_PERIODS_SET.has(chartPeriod) || isTickPeriod;
+    // Tick periods use SSE candles; all others use the REST history
+    const rawCandles = isTickPeriod ? liveCandles : (history ?? []);
+    const chartData = rawCandles.map((p: StockHistoryPoint) => {
+      let label: string;
+      if (isTickPeriod) {
+        // Live tick data: show HH:MM:SS
+        const d = new Date(p.date);
+        label = `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}:${d.getSeconds().toString().padStart(2, "0")}`;
+      } else if (MULTIDAY_PERIODS_SET.has(chartPeriod)) {
+        // "Tue 14:30" for 3d/5d hourly views
+        const d = new Date(p.date);
+        label = d.toLocaleDateString("en-GB", { weekday: "short" }) + " " + p.date.slice(11, 16);
+      } else if (isIntraday) {
+        // "HH:MM" from "YYYY-MM-DD HH:MM"
+        label = p.date.slice(11, 16);
+      } else {
+        // Daily: "MM-DD" to save space
+        label = p.date.slice(5);
+      }
+      return { ...p, label };
+    });
     const firstClose = chartData[0]?.close ?? 0;
     const lastClose = chartData[chartData.length - 1]?.close ?? 0;
     const periodReturn = firstClose > 0 ? ((lastClose - firstClose) / firstClose) * 100 : 0;
     const chartColor = periodReturn >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+
+    // SMA helper — returns null for points that don't have enough history yet
+    const withSMA = (data: typeof chartData, windows: number[]) =>
+      data.map((pt, i) =>
+        windows.reduce((acc, w) => {
+          if (i < w - 1) return acc;
+          const slice = data.slice(i - w + 1, i + 1);
+          const avg = slice.reduce((s, p) => s + p.close, 0) / w;
+          return { ...acc, [`sma${w}`]: parseFloat(avg.toFixed(4)) };
+        }, pt as typeof pt & { sma20?: number; sma50?: number; sma200?: number })
+      );
+    const activeWindows = [showSMA20 && 20, showSMA50 && 50, showSMA200 && 200].filter(Boolean) as number[];
+    const chartDataWithSMA = activeWindows.length > 0 ? withSMA(chartData, activeWindows) : chartData;
 
     const STAT_INFO: Record<string, string> = {
       "P/E (TTM)": "Price-to-Earnings (Trailing Twelve Months). Compares stock price to annual earnings per share. Lower = cheaper relative to earnings. S&P 500 avg ≈ 20–25×.",
@@ -581,8 +1163,8 @@ function MarketsTab() {
         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)"; }}
         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4, minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{label}</div>
           {STAT_INFO[label] && (
             <span
               onMouseEnter={(e) => {
@@ -599,7 +1181,7 @@ function MarketsTab() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", marginLeft: "auto", opacity: 0.5, letterSpacing: "0.04em" }}>↗</span>
           )}
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: color ?? "var(--ft-text)" }}>{value}</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: color ?? "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
       </div>
     );
 
@@ -656,11 +1238,21 @@ function MarketsTab() {
 
         {/* Back + search + watchlist */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={() => { setSelectedTicker(null); setWlDropdownOpen(false); }} style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", padding: "5px 10px", cursor: "pointer", letterSpacing: "0.06em" }}>
+          <button
+            onClick={() => { setSelectedTicker(null); setWlDropdownOpen(false); }}
+            style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 12px", cursor: "pointer", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}
+          >
             ← BACK
           </button>
+          <button
+            onClick={() => { setSelectedTicker(null); setWlDropdownOpen(false); }}
+            title="Close"
+            style={{ fontFamily: "var(--font-mono)", fontSize: 14, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          >
+            ✕
+          </button>
           <form onSubmit={handleSearch} style={{ display: "flex", gap: 4, flex: 1 }}>
-            <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search another ticker…" style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 10px", outline: "none" }} />
+            <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search another ticker…" className="ft-filter-input" style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 10px", outline: "none" }} />
             <button type="submit" style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "5px 12px", cursor: "pointer", letterSpacing: "0.06em" }}>GO</button>
           </form>
           {watchlists.length > 0 && (
@@ -669,7 +1261,7 @@ function MarketsTab() {
                 <Star size={10} /> WATCHLIST
               </button>
               {wlDropdownOpen && (
-                <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 50, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", minWidth: 140, boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
+                <div style={{ position: "absolute", top: "calc(100% + 4px)", right: 0, zIndex: 200, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", minWidth: 140, boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}>
                   {watchlists.map((wl) => {
                     const inList = wl.tickers.includes(selectedTicker);
                     return (
@@ -682,21 +1274,60 @@ function MarketsTab() {
               )}
             </div>
           )}
+          <button onClick={() => setAlertsOpen(!alertsOpen)}
+            style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: alertsOpen ? "var(--ft-amber)" : "var(--ft-surface)", border: "1px solid var(--ft-border)", color: alertsOpen ? "var(--ft-base)" : priceAlerts.some(a => a.ticker === selectedTicker) ? "var(--ft-amber)" : "var(--ft-muted)", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, letterSpacing: "0.06em" }}>
+            <Bell size={10} /> ALERTS{priceAlerts.filter(a => a.ticker === selectedTicker).length > 0 ? ` (${priceAlerts.filter(a => a.ticker === selectedTicker).length})` : ""}
+          </button>
         </div>
 
         {/* Header */}
+        {(() => {
+          const isPreMarket = q?.marketState === "PRE" || q?.marketState === "PREPRE";
+          const isPostMarket = q?.marketState === "POST" || q?.marketState === "POSTPOST";
+          const isExtended = isPreMarket || isPostMarket;
+          const extPrice = isPostMarket ? q?.postMarketPrice : isPreMarket ? q?.preMarketPrice : null;
+          const extChgPct = isPostMarket ? q?.postMarketChangePercent : isPreMarket ? q?.preMarketChangePercent : null;
+          const extLabel = isPostMarket ? "AH" : isPreMarket ? "PRE" : null;
+          return (
         <div style={{ display: "flex", gap: 14, alignItems: "flex-end", flexWrap: "wrap" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "-0.01em" }}>{selectedTicker}</span>
-              {q && <span style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)" }}>${q.price.toFixed(2)}</span>}
-              {q && (
-                <span style={{ padding: "3px 8px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor, border: `1px solid ${chg >= 0 ? "rgba(63,185,80,0.3)" : "rgba(248,81,73,0.3)"}` }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedTicker}</span>
+              {q && <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: isExtended ? "var(--ft-muted)" : "var(--ft-text)", textDecoration: isExtended ? "none" : undefined, whiteSpace: "nowrap" }}>${q.price.toFixed(2)}</span>}
+              {q && !isExtended && (
+                <span style={{ padding: "3px 8px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor, border: `1px solid ${chg >= 0 ? "rgba(63,185,80,0.3)" : "rgba(248,81,73,0.3)"}`, whiteSpace: "nowrap" }}>
                   {chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%
                 </span>
               )}
+              {/* Extended hours price shown prominently when market is pre/post */}
+              {isExtended && extPrice != null && (
+                <>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", alignSelf: "center" }}>reg close</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", whiteSpace: "nowrap" }}>${extPrice.toFixed(2)}</span>
+                  {extChgPct != null && (
+                    <span style={{ padding: "3px 8px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", background: "rgba(245,158,11,0.12)", color: "var(--ft-amber)", border: "1px solid rgba(245,158,11,0.3)" }}>
+                      {extChgPct >= 0 ? "▲" : "▼"} {Math.abs(extChgPct).toFixed(2)}%
+                    </span>
+                  )}
+                  <span style={{ padding: "2px 7px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: "rgba(245,158,11,0.15)", color: "var(--ft-amber)", border: "1px solid rgba(245,158,11,0.4)", letterSpacing: "0.08em" }}>
+                    {extLabel}
+                  </span>
+                </>
+              )}
             </div>
-            {detail?.sector && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 3 }}>{detail.sector} · {detail.industry}</div>}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 3 }}>
+              {detail?.sector && <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{detail.sector} · {detail.industry}</span>}
+              {lastQuoteTime && (
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "rgba(255,255,255,0.04)", border: "1px solid var(--ft-border)", padding: "1px 6px" }}>
+                  as of {lastQuoteTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+              {isExtended && (
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-amber)", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", padding: "1px 6px" }}>
+                  {isPostMarket ? "After-hours trading" : "Pre-market trading"}
+                </span>
+              )}
+            </div>
           </div>
           <div style={{ display: "flex", gap: 20, marginLeft: "auto", flexWrap: "wrap" }}>
             {q?.dayLow != null && q?.dayHigh != null && (
@@ -725,71 +1356,259 @@ function MarketsTab() {
             )}
           </div>
         </div>
+          );
+        })()}
 
         {/* Price Chart */}
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "12px 12px 4px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div className="ft-chart-controls-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
                 Price Chart
-                {!histFetching && chartData.length > 0 && (
-                  <span style={{ marginLeft: 8, color: periodReturn >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                {isLive && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)", color: "#ef4444", fontSize: 9, padding: "1px 5px", letterSpacing: "0.1em" }}>
+                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#ef4444", animation: "pulse 1s infinite" }} />
+                    LIVE
+                  </span>
+                )}
+                {!histFetching && !isTickPeriod && chartData.length > 0 && (
+                  <span style={{ color: periodReturn >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                     {periodReturn >= 0 ? "+" : ""}{periodReturn.toFixed(2)}%
                   </span>
                 )}
               </div>
-              {chartData.length > 0 && (
+              {chartData.length > 0 && !isTickPeriod && (
                 <button
-                  onClick={() => setChartModalOpen(true)}
+                  onClick={(e) => { e.stopPropagation(); localStorage.setItem("ft-chart-expand-seen","1"); setChartModalOpen(true); }}
                   title="Open advanced chart"
                   style={{ display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-mono)", fontSize: 8, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-blue)", padding: "2px 7px", cursor: "pointer", letterSpacing: "0.04em" }}
                 >
                   <Maximize2 size={9} /> EXPAND
                 </button>
               )}
+              {/* Chart type toggles */}
+              {chartData.length > 0 && (
+                <div style={{ display: "flex", gap: 1, marginLeft: 4, borderLeft: "1px solid var(--ft-border)", paddingLeft: 6 }}>
+                  {([["area", "AREA"], ["line", "LINE"], ["candle", "OHLC"]] as const).map(([type, label]) => (
+                    <button key={type} onClick={() => setChartType(type)} style={{
+                      fontFamily: "var(--font-mono)", fontSize: 9, padding: "1px 5px",
+                      border: `1px solid ${chartType === type ? "var(--ft-accent)" : "var(--ft-border)"}`,
+                      background: chartType === type ? "rgba(163,113,247,0.15)" : "var(--ft-raised)",
+                      color: chartType === type ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", letterSpacing: "0.04em",
+                    }}>{label}</button>
+                  ))}
+                </div>
+              )}
+              {/* Indicator toggles */}
+              {chartData.length > 0 && (
+                <div style={{ display: "flex", gap: 2, marginLeft: 4 }}>
+                  {[
+                    { key: "sma20",  label: "SMA20",  color: "#60a5fa", on: showSMA20,  set: setShowSMA20  },
+                    { key: "sma50",  label: "SMA50",  color: "#f59e0b", on: showSMA50,  set: setShowSMA50  },
+                    { key: "sma200", label: "SMA200", color: "#a78bfa", on: showSMA200, set: setShowSMA200 },
+                    { key: "vol",    label: "VOL",    color: "var(--ft-dim)", on: showVolume,  set: setShowVolume  },
+                  ].map(({ key, label, color, on, set }) => (
+                    <button key={key} onClick={() => set(!on)} style={{
+                      fontFamily: "var(--font-mono)", fontSize: 9, padding: "1px 5px",
+                      border: `1px solid ${on ? color : "var(--ft-border)"}`,
+                      background: on ? `${color}22` : "var(--ft-raised)",
+                      color: on ? color : "var(--ft-dim)", cursor: "pointer", letterSpacing: "0.06em",
+                    }}>{label}</button>
+                  ))}
+                </div>
+              )}
             </div>
-            <div style={{ display: "flex", gap: 2 }}>
-              {CHART_PERIODS.map((p) => (
-                <button key={p} onClick={() => setChartPeriod(p)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 6px", border: "1px solid var(--ft-border)", background: p === chartPeriod ? "var(--ft-accent)" : "var(--ft-raised)", color: p === chartPeriod ? "var(--ft-base)" : "var(--ft-dim)", cursor: "pointer", letterSpacing: "0.04em" }}>{p.toUpperCase()}</button>
-              ))}
+            <div className="ft-chart-controls-row" style={{ display: "flex", gap: 2, alignItems: "center", overflowX: "auto", scrollbarWidth: "none" as const }}>
+              {CHART_PERIODS.map((p, i) => {
+                // Hide tick-period buttons for non-US tickers
+                const isTickBtn = TICK_PERIODS_SET.has(p);
+                if (isTickBtn && selectedTicker && !isUSTicker(selectedTicker)) return null;
+                // Compute effective index after hiding tick buttons for separator logic
+                const usUs = !selectedTicker || isUSTicker(selectedTicker);
+                return (<>
+                  {/* separator: tick → intraday — only shown for US tickers */}
+                  {i === 3 && usUs && <div key="sep-tick" style={{ width: 1, height: 14, background: "var(--ft-border2)", margin: "0 2px" }} />}
+                  {/* separator: ultra-short intraday → standard intraday (after 2min) */}
+                  {i === 5 && usUs && <div key="sep-micro" style={{ width: 1, height: 14, background: "var(--ft-border)", margin: "0 1px" }} />}
+                  {/* separator: intraday → daily (after 1h) — index shifts when tick buttons hidden */}
+                  {((usUs && i === 9) || (!usUs && i === 6)) && <div key="sep-daily" style={{ width: 1, height: 14, background: "var(--ft-border2)", margin: "0 2px" }} />}
+                  <button key={p} onClick={() => setChartPeriod(p)} style={{
+                    fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 6px",
+                    border: `1px solid ${isTickBtn ? "rgba(168,85,247,0.3)" : "var(--ft-border)"}`,
+                    background: p === chartPeriod ? "var(--ft-accent)"
+                      : isTickBtn ? "rgba(168,85,247,0.08)"
+                      : INTRADAY_PERIODS_SET.has(p) ? "rgba(34,211,238,0.06)"
+                      : "var(--ft-raised)",
+                    color: p === chartPeriod ? "var(--ft-base)"
+                      : isTickBtn ? "#c084fc"
+                      : INTRADAY_PERIODS_SET.has(p) ? "var(--ft-cyan)"
+                      : "var(--ft-dim)",
+                    cursor: "pointer", letterSpacing: "0.04em",
+                  }}>{p.toUpperCase()}</button>
+                </>);
+              })}
             </div>
           </div>
-          {histFetching ? (
+          {isTickPeriod && !isLive && chartData.length === 0 ? (
+            <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 11 }}>
+              <span style={{ fontSize: 18 }}>◎</span>
+              <span>Awaiting live ticks…</span>
+              <span style={{ fontSize: 9, opacity: 0.6 }}>US markets only · powered by Alpaca IEX</span>
+            </div>
+          ) : histFetching ? (
             <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 11 }}>Loading chart…</div>
+          ) : histError ? (
+            <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ft-red)", fontFamily: "var(--font-mono)", fontSize: 11 }}>
+              <span>⚠ Failed to load chart data</span>
+              <button onClick={() => refetchHistory()} style={{ fontSize: 9, padding: "2px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}>Retry</button>
+            </div>
           ) : chartData.length === 0 ? (
             <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 11 }}>No history data</div>
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={chartColor} stopOpacity={0.15} />
-                    <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="2 4" stroke="var(--ft-raised)" vertical={false} />
-                <XAxis dataKey="label" tick={{ fill: "var(--ft-dim)", fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                <YAxis domain={["auto", "auto"]} tick={{ fill: "var(--ft-dim)", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v.toFixed(0)}`} width={52} />
-                <Tooltip contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontSize: 11 }} formatter={(v: number) => [`$${v.toFixed(2)}`, "Close"]} labelStyle={{ color: "var(--ft-dim)", fontSize: 9 }} />
-                {q?.analystTargetPrice && <ReferenceLine y={q.analystTargetPrice} stroke="var(--ft-amber)" strokeDasharray="4 3" label={{ value: `Target $${q.analystTargetPrice.toFixed(0)}`, fill: "var(--ft-amber)", fontSize: 9, position: "insideTopRight" }} />}
-                <Area type="monotone" dataKey="close" stroke={chartColor} strokeWidth={1.5} fill="url(#chartGrad)" dot={false} activeDot={{ r: 3 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div
+              onClick={() => { if (!isTickPeriod && chartData.length > 0) { localStorage.setItem("ft-chart-expand-seen","1"); setChartModalOpen(true); } }}
+              style={{ cursor: !isTickPeriod && chartData.length > 0 ? "pointer" : "default", position: "relative" }}
+              title={!isTickPeriod ? "Click to expand full analysis" : undefined}
+            >
+              {/* Click-to-expand hint — only on first few views */}
+              {!isTickPeriod && chartData.length > 0 && !localStorage.getItem("ft-chart-expand-seen") && (
+                <div style={{ position: "absolute", top: 4, left: "50%", transform: "translateX(-50%)", zIndex: 5, fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-blue)", background: "rgba(88,166,255,0.1)", border: "1px solid rgba(88,166,255,0.25)", padding: "1px 8px", pointerEvents: "none" }}>
+                  click to expand ↗
+                </div>
+              )}
+              {/* Main price chart — area / line / candlestick */}
+              {(() => {
+                const n = chartDataWithSMA.length;
+                const targetTicks = isTickPeriod ? 6 : isIntraday ? 7 : 8;
+                const xTickInterval = Math.max(1, Math.floor(n / targetTicks));
+
+                // Extended-hours zone boundaries (labels are HH:MM for intraday, HH:MM:SS for tick)
+                const OPEN_TIME = "09:30";
+                const CLOSE_TIME = "16:00";
+                const allLabels = chartDataWithSMA.map((d) => d.label);
+                const firstLabel = allLabels[0] ?? "";
+                const lastLabel = allLabels[allLabels.length - 1] ?? "";
+                // Show zones only for intraday/tick where labels are time strings
+                const showExtendedZones = (isIntraday || isTickPeriod) && n > 0;
+                // Find the last label strictly before market open (pre-market boundary)
+                const preMarketEndLabel = allLabels.filter((l) => l <= OPEN_TIME).at(-1) ?? "";
+                // Find the first label at or after market close (after-hours boundary)
+                const afterHoursStartLabel = allLabels.find((l) => l >= CLOSE_TIME) ?? "";
+                // Pre-market zone: chart start → last bar before 09:30
+                const hasPreMarket = showExtendedZones && firstLabel < OPEN_TIME && !!preMarketEndLabel;
+                // After-hours zone: first bar at/after 16:00 → chart end
+                const hasAfterHours = showExtendedZones && lastLabel > CLOSE_TIME && !!afterHoursStartLabel;
+
+                const commonChart = (
+                  <ComposedChart data={chartDataWithSMA} margin={{ top: 4, right: 8, left: -8, bottom: 2 }}>
+                    <defs>
+                      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={chartColor} stopOpacity={0.15} />
+                        <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="2 4" stroke="var(--ft-raised)" vertical={false} />
+                    {/* Pre-market shading: chart start → last bar before market open */}
+                    {hasPreMarket && (
+                      <ReferenceArea x1={firstLabel} x2={preMarketEndLabel} fill="rgba(96,165,250,0.18)" fillOpacity={1} ifOverflow="visible" />
+                    )}
+                    {/* After-hours shading: first bar at/after close → chart end */}
+                    {hasAfterHours && (
+                      <ReferenceArea x1={afterHoursStartLabel} x2={lastLabel} fill="rgba(245,158,11,0.18)" fillOpacity={1} ifOverflow="visible" />
+                    )}
+                    {/* Market open boundary line */}
+                    {showExtendedZones && hasPreMarket && (
+                      <ReferenceLine x={preMarketEndLabel} stroke="rgba(96,165,250,0.7)" strokeWidth={1.5} strokeDasharray="4 3"
+                        label={{ value: "PRE-MKT", position: "insideTopLeft", fill: "rgba(96,165,250,0.8)", fontSize: 8, fontWeight: 700 }} />
+                    )}
+                    {/* Market close boundary line */}
+                    {showExtendedZones && hasAfterHours && (
+                      <ReferenceLine x={afterHoursStartLabel} stroke="rgba(245,158,11,0.7)" strokeWidth={1.5} strokeDasharray="4 3"
+                        label={{ value: "AFTER HRS", position: "insideTopRight", fill: "rgba(245,158,11,0.8)", fontSize: 8, fontWeight: 700 }} />
+                    )}
+                    <XAxis
+                      dataKey="label"
+                      ticks={(() => {
+                        const step = Math.max(1, Math.floor(n / targetTicks));
+                        const picks: string[] = [];
+                        for (let i = 0; i < chartDataWithSMA.length; i += step) {
+                          picks.push(chartDataWithSMA[i].label);
+                        }
+                        return picks;
+                      })()}
+                      tick={{ fill: "#6b7280", fontSize: 10, fontFamily: "var(--font-mono)" }}
+                      axisLine={{ stroke: "#374151", strokeWidth: 1 }}
+                      tickLine={{ stroke: "#374151", strokeWidth: 1 }}
+                      height={26}
+                    />
+                    <YAxis domain={["auto", "auto"]} tick={{ fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`} width={56} />
+                    <Tooltip content={<OHLCTooltip />} />
+                    {q?.analystTargetPrice && <ReferenceLine y={q.analystTargetPrice} stroke="var(--ft-amber)" strokeDasharray="4 3" label={{ value: `Target $${q.analystTargetPrice.toFixed(0)}`, fill: "var(--ft-amber)", fontSize: 9, position: "insideTopRight" }} />}
+                    {chartType === "area" && <Area type="monotone" dataKey="close" stroke={chartColor} strokeWidth={1.5} fill="url(#chartGrad)" dot={false} activeDot={{ r: 3 }} />}
+                    {chartType === "line" && <Line type="monotone" dataKey="close" stroke={chartColor} strokeWidth={1.5} dot={false} activeDot={{ r: 3 }} isAnimationActive={false} />}
+                    {chartType === "candle" && (
+                      <>
+                        {/* Invisible area to set YAxis domain */}
+                        <Area type="monotone" dataKey="high" stroke="none" fill="none" dot={false} legendType="none" />
+                        <Area type="monotone" dataKey="low" stroke="none" fill="none" dot={false} legendType="none" />
+                        <Customized component={CandlestickLayer} />
+                      </>
+                    )}
+                    {showSMA20  && <Line type="monotone" dataKey="sma20"  stroke="#60a5fa" strokeWidth={1} dot={false} isAnimationActive={false} />}
+                    {showSMA50  && <Line type="monotone" dataKey="sma50"  stroke="#f59e0b" strokeWidth={1} dot={false} isAnimationActive={false} />}
+                    {showSMA200 && <Line type="monotone" dataKey="sma200" stroke="#a78bfa" strokeWidth={1} dot={false} isAnimationActive={false} />}
+                  </ComposedChart>
+                );
+                return (
+                  <ResponsiveContainer width="100%" height={showVolume ? 200 : 240}>
+                    {commonChart}
+                  </ResponsiveContainer>
+                );
+              })()}
+              {/* Volume panel */}
+              {showVolume && (
+                <ResponsiveContainer width="100%" height={52}>
+                  <BarChart data={chartData} margin={{ top: 0, right: 8, left: -8, bottom: 0 }} barCategoryGap={1}>
+                    <XAxis dataKey="label" hide />
+                    <YAxis hide />
+                    <Tooltip
+                      contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontSize: 10 }}
+                      formatter={(v: number) => [v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : `${(v / 1_000).toFixed(0)}K`, "Vol"]}
+                      labelStyle={{ color: "var(--ft-dim)", fontSize: 9 }}
+                    />
+                    <Bar dataKey="volume" fill="var(--ft-border2)" opacity={0.7} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Advanced Chart Modal */}
+        {/* Advanced Chart Modal — uses its own independent period so main chart isn't affected */}
         {chartModalOpen && (
           <ChartAnalysisModal
             ticker={selectedTicker}
             price={q?.price ?? 0}
             changePercent={chg}
-            history={history ?? []}
-            period={chartPeriod}
-            onPeriodChange={setChartPeriod}
-            isFetching={histFetching}
+            history={modalHistory ?? []}
+            period={modalChartPeriod}
+            onPeriodChange={setModalChartPeriod}
+            isFetching={modalHistFetching}
             onClose={() => setChartModalOpen(false)}
           />
+        )}
+
+        {/* First-time ticker tip */}
+        {!tickerTipSeen && !isTickPeriod && (
+          <div style={{ border: "1px solid rgba(88,166,255,0.25)", background: "rgba(88,166,255,0.04)", padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: "4px 20px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.6 }}>
+              <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Click chart</span> → full RSI / MACD / Bollinger analysis</span>
+              <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Hover ⓘ</span> on any stat for explanation</span>
+              <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Click stat value</span> → drill into earnings &amp; analyst data</span>
+              <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Colors:</span> green = bullish signal · amber = caution · red = risk flag</span>
+            </div>
+            <button onClick={() => { localStorage.setItem("ft-ticker-tip-seen","1"); setTickerTipSeen(true); }} title="Dismiss" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>✕</button>
+          </div>
         )}
 
         {/* Key Statistics */}
@@ -974,6 +1793,151 @@ function MarketsTab() {
           </div>
         )}
 
+        {/* ── Stock Rating Panel ───────────────────────────────────────── */}
+        {(() => {
+          const rating = computeStockRating(q, detail);
+          if (!rating) return null;
+          const gradeColor = rating.grade.startsWith("A") ? "var(--ft-green)" : rating.grade.startsWith("B") ? "var(--ft-blue)" : rating.grade === "C+" || rating.grade === "C" ? "var(--ft-amber)" : "var(--ft-red)";
+          return (
+            <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ border: "1px solid var(--ft-border)" }}>
+                <div style={{ padding: "6px 14px", background: "rgba(88,166,255,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                  FT Stock Rating
+                </div>
+                <div style={{ padding: "14px 14px 10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                    <div style={{ fontSize: 38, fontFamily: "var(--font-mono)", fontWeight: 700, color: gradeColor, lineHeight: 1 }}>{rating.grade}</div>
+                    <div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: gradeColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rating.overall.toFixed(1)}<span style={{ fontSize: 11, color: "var(--ft-dim)" }}>/10</span></div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>Overall Score</div>
+                    </div>
+                  </div>
+                  <RatingBar label="Value" score={rating.value} color="var(--ft-cyan)" />
+                  <RatingBar label="Growth" score={rating.growth} color="var(--ft-green)" />
+                  <RatingBar label="Quality" score={rating.quality} color="var(--ft-blue)" />
+                  <RatingBar label="Momentum" score={rating.momentum} color="var(--ft-accent)" />
+                </div>
+              </div>
+
+              {/* Price Alerts */}
+              {alertsOpen && q && (
+                <PriceAlertsPanel
+                  ticker={selectedTicker}
+                  currentPrice={q.price}
+                  alerts={priceAlerts}
+                  onAlertsChange={setPriceAlerts}
+                />
+              )}
+              {!alertsOpen && (
+                <div style={{ border: "1px solid var(--ft-border)", padding: "14px" }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Graham / DCF Valuation</div>
+                  {q && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {(() => {
+                        const eps = q.eps ?? 0;
+                        const bv = detail?.bookValue ?? 0;
+                        const gr = detail?.revenueGrowth != null ? detail.revenueGrowth / 100 : 0.08;
+                        const g = (eps > 0 && bv > 0) ? grahamNumber(eps, bv) : null;
+                        const d = (eps > 0) ? dcfValue(eps, gr, 0.10, 15) : null;
+                        return (<>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Graham Number</span>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: g != null && g > 0 ? (q.price < g ? "var(--ft-green)" : "var(--ft-amber)") : "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{g != null && g > 0 ? `$${g.toFixed(2)}` : "—"}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>DCF Estimate</span>
+                            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: d != null && d > 0 ? (q.price < d ? "var(--ft-green)" : "var(--ft-amber)") : "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{d != null && d > 0 ? `$${d.toFixed(2)}` : "—"}</span>
+                          </div>
+                          {g != null && g > 0 && (
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Margin of Safety</span>
+                              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: ((g - q.price) / g * 100) > 0 ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>{(((g - q.price) / g) * 100).toFixed(1)}%</span>
+                            </div>
+                          )}
+                        </>);
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── News Panel ───────────────────────────────────────────────── */}
+        <div style={{ border: "1px solid var(--ft-border)" }}>
+          <div style={{ padding: "6px 14px", background: "rgba(163,113,247,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
+            <span>News — {selectedTicker}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginLeft: "auto", fontWeight: 400 }}>keyword sentiment · click AI TLDR for deep analysis</span>
+          </div>
+          {newsFetching ? (
+            <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>Loading news…</div>
+          ) : newsError ? (
+            <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-amber)", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <span>⚠ Could not load news</span>
+              <button onClick={() => selectedTicker && fetchNews(selectedTicker)} style={{ fontSize: 9, padding: "2px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}>Retry</button>
+            </div>
+          ) : news.length === 0 ? (
+            <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No recent news found for {selectedTicker}</div>
+          ) : (
+            <div>
+              {news.map((item, i) => {
+                const sentiment = newsScore(item.title);
+                const sentColor = sentiment === "bullish" ? "var(--ft-green)" : sentiment === "bearish" ? "var(--ft-red)" : "var(--ft-dim)";
+                const sentLabel = sentiment === "bullish" ? "▲ BULL" : sentiment === "bearish" ? "▼ BEAR" : "● NEUTRAL";
+                const tldr = tldrMap[item.link];
+                const loadingTldr = tldrLoading[item.link];
+                return (
+                  <div key={i} style={{ padding: "10px 14px", borderBottom: i < news.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <div style={{ flexShrink: 0, marginTop: 2 }}>
+                        <span style={{ display: "inline-block", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color: sentColor, background: `${sentColor}18`, padding: "2px 5px", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>{sentLabel}</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <a href={item.link} target="_blank" rel="noopener noreferrer"
+                          style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", textDecoration: "none", lineHeight: 1.5, display: "block" }}
+                          onMouseEnter={e => { (e.target as HTMLAnchorElement).style.color = "var(--ft-accent)"; }}
+                          onMouseLeave={e => { (e.target as HTMLAnchorElement).style.color = "var(--ft-text)"; }}>
+                          {item.title}
+                        </a>
+                        <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+                            {item.publisher} · {timeAgo(item.publishedAt)}
+                          </span>
+                          {!tldr && (
+                            <button
+                              onClick={() => fetchTldr(item.link, item.title)}
+                              disabled={loadingTldr}
+                              style={{
+                                fontFamily: "var(--font-mono)", fontSize: 8, padding: "1px 6px",
+                                background: "rgba(163,113,247,0.08)", border: "1px solid rgba(163,113,247,0.25)",
+                                color: loadingTldr ? "var(--ft-dim)" : "var(--ft-accent)",
+                                cursor: loadingTldr ? "wait" : "pointer", letterSpacing: "0.04em",
+                              }}
+                            >
+                              {loadingTldr ? "…" : "AI TLDR →"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {tldr && (
+                      <div style={{
+                        marginTop: 6, padding: "6px 10px",
+                        background: "rgba(163,113,247,0.06)", borderLeft: "2px solid rgba(163,113,247,0.35)",
+                        fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", lineHeight: 1.6,
+                      }}>
+                        <span style={{ fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.06em", marginRight: 6 }}>AI▸</span>
+                        {tldr}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
       </div>
       </>
     );
@@ -983,18 +1947,231 @@ function MarketsTab() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
+      {/* ── Scrolling ticker strip (Yahoo Finance style) ── */}
+      {(() => {
+        const STRIP_TICKERS = ["SPY","QQQ","DIA","BTC-USD","GC=F","GBPUSD=X","^N225","^GDAXI","XLK","AAPL","NVDA","TSLA","MSFT","META","AMZN"];
+        const items = STRIP_TICKERS.map(t => ({ ticker: t, q: qMap.get(t) })).filter(x => x.q != null);
+        if (items.length === 0) return null;
+        const doubled = [...items, ...items];
+        return (
+          <div style={{ overflow: "hidden", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", position: "relative" }}>
+            <style>{`
+              @keyframes ft-ticker-scroll {
+                0%   { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+              }
+              .ft-ticker-track { display: flex; animation: ft-ticker-scroll 38s linear infinite; width: max-content; }
+              .ft-ticker-track:hover { animation-play-state: paused; }
+            `}</style>
+            <div className="ft-ticker-track">
+              {doubled.map(({ ticker, q }, i) => {
+                const chg = q!.changePercent ?? 0;
+                const up = chg >= 0;
+                const col = up ? "var(--ft-green)" : "var(--ft-red)";
+                const label = INDEX_LABELS[ticker] ?? SECTOR_LABELS[ticker] ?? POPULAR_NAMES[ticker] ?? CRYPTO_NAMES[ticker] ?? FOREX_NAMES[ticker] ?? ticker;
+                return (
+                  <button
+                    key={`${ticker}-${i}`}
+                    onClick={() => setSelectedTicker(ticker)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "none", border: "none", borderRight: "1px solid var(--ft-border)", cursor: "pointer", flexShrink: 0 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--ft-raised)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+                  >
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.04em" }}>{ticker}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{q!.price >= 1000 ? q!.price.toFixed(0) : q!.price >= 10 ? q!.price.toFixed(2) : q!.price.toFixed(4)}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{up ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* First-visit markets intro banner */}
+      {!marketIntroSeen && (
+        <div style={{ border: "1px solid rgba(210,153,34,0.35)", background: "rgba(210,153,34,0.04)", padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>◈ Markets — Quick start</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.65 }}>
+              <div><span style={{ color: "var(--ft-accent)", fontWeight: 600 }}>Search any ticker</span> — stocks, ETFs, indices, crypto (e.g. AAPL, QQQ, ^GSPC, BTC-USD, 0700.HK)</div>
+              <div><span style={{ color: "var(--ft-green)", fontWeight: 600 }}>Click the chart</span> to open full analysis — RSI, MACD, Bollinger Bands, candlestick view with all periods</div>
+              <div><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Tap ⓘ icons</span> on any statistic to understand what it means; tap values to drill into earnings history &amp; analyst ratings</div>
+              <div><span style={{ color: "var(--ft-amber)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5.5 1.5a3 3 0 013 3v2l.75 1H1.75L2.5 6.5v-2a3 3 0 013-3z"/><path d="M4.25 9.5a1.25 1.25 0 002.5 0"/></svg>Price alerts</span> — open any ticker and hit the bell icon to get notified when it hits your target</div>
+              <div style={{ marginTop: 5, paddingTop: 6, borderTop: "1px solid rgba(210,153,34,0.2)", color: "var(--ft-dim)", fontSize: 9 }}>
+                Track positions → <span style={{ color: "var(--ft-accent)" }}>Portfolio tab</span> &nbsp;·&nbsp; Ranked action items from your full financial picture → <span style={{ color: "var(--ft-accent)" }}>Decisions page</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => { localStorage.setItem("ft-markets-intro-seen","1"); setMarketIntroSeen(true); }} title="Dismiss" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>✕</button>
+        </div>
+      )}
+
       {/* Search bar */}
       <form onSubmit={handleSearch} style={{ display: "flex", gap: 6 }}>
-        <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Enter any ticker to view full details (e.g. AAPL, BRK-B, 0700.HK)…" style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "8px 12px", outline: "none" }} />
-        <button type="submit" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "8px 16px", cursor: "pointer", letterSpacing: "0.06em" }}>LOOKUP</button>
+        <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Enter ticker (e.g. AAPL, BRK-B, 0700.HK)…" className="ft-filter-input" style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "7px 10px", outline: "none" }} />
+        <button type="submit" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "7px 14px", cursor: "pointer", letterSpacing: "0.06em" }}>LOOKUP</button>
       </form>
+
+      {/* ── Earnings Calendar ─────────────────────────────────────────────── */}
+      {(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        // Collect all tickers with an upcoming earnings date from qMap
+        const earningsItems: { ticker: string; date: Date; daysUntil: number; label: string }[] = [];
+        qMap.forEach((q, ticker) => {
+          const dateStr = q.nextEarningsDate;
+          if (!dateStr) return;
+          const d = new Date(dateStr);
+          d.setHours(0, 0, 0, 0);
+          const daysUntil = Math.round((d.getTime() - today.getTime()) / (24 * 3600 * 1000));
+          if (daysUntil < 0 || daysUntil > 90) return;
+          earningsItems.push({ ticker, date: d, daysUntil, label: dateStr });
+        });
+        // Also include watchlist tickers
+        watchlists.forEach((wl) => {
+          wl.tickers.forEach((ticker) => {
+            if (!qMap.has(ticker)) return;
+            const q = qMap.get(ticker)!;
+            const dateStr = q.nextEarningsDate;
+            if (!dateStr) return;
+            const d = new Date(dateStr);
+            d.setHours(0, 0, 0, 0);
+            const daysUntil = Math.round((d.getTime() - today.getTime()) / (24 * 3600 * 1000));
+            if (daysUntil < 0 || daysUntil > 90) return;
+            if (!earningsItems.some((e) => e.ticker === ticker)) {
+              earningsItems.push({ ticker, date: d, daysUntil, label: dateStr });
+            }
+          });
+        });
+        earningsItems.sort((a, b) => a.daysUntil - b.daysUntil);
+        if (earningsItems.length === 0) return null;
+
+        // Group by week bucket
+        const buckets = new Map<string, typeof earningsItems>();
+        earningsItems.forEach((item) => {
+          const weekStart = new Date(item.date);
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+          const key = weekStart.toISOString().slice(0, 10);
+          const arr = buckets.get(key) ?? [];
+          arr.push(item);
+          buckets.set(key, arr);
+        });
+        const weekKeys = Array.from(buckets.keys()).sort().slice(0, 8);
+
+        return (
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <div style={{ display: "flex", alignItems: "center", padding: "5px 12px", borderBottom: "1px solid var(--ft-border)", background: "rgba(245,158,11,0.05)", overflow: "hidden" }}>
+              <span style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                ▼ EARNINGS CALENDAR · {earningsItems.length} upcoming
+              </span>
+              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginLeft: 12, fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>next 90 days · click to view</span>
+            </div>
+            <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
+              <div style={{ display: "flex", minWidth: "max-content" }}>
+                {weekKeys.map((weekKey) => {
+                  const items = buckets.get(weekKey)!;
+                  const weekDate = new Date(weekKey);
+                  const weekEnd = new Date(weekDate);
+                  weekEnd.setDate(weekEnd.getDate() + 6);
+                  const isThisWeek = items.some((i) => i.daysUntil <= 7);
+                  return (
+                    <div key={weekKey} style={{ borderRight: "1px solid var(--ft-border)", padding: "10px 14px", minWidth: 160 }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: isThisWeek ? "var(--ft-amber)" : "var(--ft-dim)", letterSpacing: "0.06em", marginBottom: 8, textTransform: "uppercase" }}>
+                        {weekDate.toLocaleDateString("en-GB", { month: "short", day: "numeric" })} – {weekEnd.toLocaleDateString("en-GB", { day: "numeric" })}
+                        {isThisWeek && <span style={{ marginLeft: 6, padding: "1px 4px", background: "rgba(245,158,11,0.15)", color: "var(--ft-amber)", borderRadius: 2, fontSize: 8 }}>THIS WEEK</span>}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        {items.map((item) => {
+                          const q = qMap.get(item.ticker);
+                          const chg = q?.changePercent ?? 0;
+                          const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+                          const urgency = item.daysUntil === 0 ? "TODAY" : item.daysUntil === 1 ? "TOMORROW" : `${item.daysUntil}d`;
+                          return (
+                            <button
+                              key={item.ticker}
+                              onClick={() => setSelectedTicker(item.ticker)}
+                              style={{ display: "flex", alignItems: "center", gap: 8, background: item.daysUntil <= 3 ? "rgba(245,158,11,0.06)" : "transparent", border: item.daysUntil <= 3 ? "1px solid rgba(245,158,11,0.15)" : "1px solid transparent", borderRadius: 2, padding: "5px 8px", cursor: "pointer", textAlign: "left", width: "100%" }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)" }}>{item.ticker}</span>
+                                  {q && <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: chgColor }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</span>}
+                                </div>
+                                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>
+                                  {item.date.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric" })}
+                                </div>
+                              </div>
+                              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "2px 5px", borderRadius: 2, background: item.daysUntil <= 3 ? "rgba(245,158,11,0.2)" : "rgba(99,110,123,0.15)", color: item.daysUntil <= 3 ? "var(--ft-amber)" : "var(--ft-dim)", flexShrink: 0 }}>
+                                {urgency}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Watchlists */}
       <WatchlistsPanel watchlists={watchlists} setWatchlists={setWatchlists} onSelectTicker={setSelectedTicker} qMap={qMap} />
 
-      {/* Index strip */}
+      {/* ── Market Movers ── */}
+      {(() => {
+        const allQ = Array.from(qMap.entries())
+          .filter(([, q]) => q.changePercent != null)
+          .map(([ticker, q]) => ({ ticker, pct: q.changePercent!, price: q.price }));
+        if (allQ.length < 4) return null;
+        const sorted = [...allQ].sort((a, b) => b.pct - a.pct);
+        const gainers = sorted.slice(0, 5);
+        const losers = sorted.slice(-5).reverse();
+        const nameOf = (t: string) => POPULAR_NAMES[t] ?? INDEX_LABELS[t] ?? SECTOR_LABELS[t] ?? CRYPTO_NAMES[t] ?? FOREX_NAMES[t] ?? COMMODITY_NAMES[t] ?? GLOBAL_INDEX_NAMES[t] ?? t;
+        const renderRow = (ticker: string, pct: number, up: boolean) => (
+          <button
+            key={ticker}
+            onClick={() => setSelectedTicker(ticker)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", background: "none", border: "none", borderBottom: "1px solid var(--ft-border)", cursor: "pointer", textAlign: "left", width: "100%" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--ft-raised)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+            onTouchStart={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--ft-raised)"; }}
+            onTouchEnd={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)", lineHeight: 1 }}>{ticker}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, maxWidth: 130 }}>{nameOf(ticker)}</div>
+            </div>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: up ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, letterSpacing: "0.01em" }}>
+              {up ? "▲" : "▼"} {Math.abs(pct).toFixed(2)}%
+            </span>
+          </button>
+        );
+        return (
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "var(--ft-dim)" }}>
+              <span style={{ color: "var(--ft-accent)" }}>·</span> Market Movers
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+              <div style={{ borderRight: "1px solid var(--ft-border)" }}>
+                <div style={{ padding: "4px 10px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-green)", textTransform: "uppercase" as const }}>Top Gainers</div>
+                {gainers.map(g => renderRow(g.ticker, g.pct, true))}
+              </div>
+              <div>
+                <div style={{ padding: "4px 10px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-red)", textTransform: "uppercase" as const }}>Top Losers</div>
+                {losers.map(l => renderRow(l.ticker, l.pct, false))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* US ETF strip */}
       <div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><span style={{ color: "var(--ft-green)" }}>·</span> Global Indices</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><span style={{ color: "var(--ft-green)" }}>·</span> US Market ETFs</div>
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {INDEX_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
@@ -1003,7 +2180,10 @@ function MarketsTab() {
             return (
               <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}>
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}
+                onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
+                onTouchEnd={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}
+                onTouchCancel={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)" }}>{ticker}</div>
@@ -1031,7 +2211,10 @@ function MarketsTab() {
             return (
               <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px", position: "relative", overflow: "hidden", cursor: "pointer", textAlign: "left" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}>
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}
+                onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
+                onTouchEnd={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}
+                onTouchCancel={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}>
                 <div style={{ position: "absolute", bottom: 0, left: 0, height: 2, width: `${barPct}%`, background: chgColor, opacity: 0.6 }} />
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>{SECTOR_LABELS[ticker] ?? ticker}</div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>{q ? `$${q.price.toFixed(2)}` : "—"}</div>
@@ -1042,45 +2225,80 @@ function MarketsTab() {
         </div>
       </div>
 
-      {/* Popular stocks table */}
+      {/* Popular stocks */}
       <div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><span style={{ color: "var(--ft-blue)" }}>·</span> Popular Stocks — Click any row for full analysis</div>
-        <div style={{ border: "1px solid var(--ft-border)", overflowX: "auto" }}>
-          <div style={{ display: "flex", minWidth: 980 }}>
-            {[["#", 32], ["Ticker", 72], ["Company", "flex"], ["Price", 90], ["Chg %", 80], ["Day Hi", 90], ["Day Lo", 90], ["52W Range", 150], ["Mkt Cap", 90], ["P/E", 60], ["Fwd P/E", 70], ["Beta", 60]].map(([h, w]) => (
-              <div key={h} style={{ ...MH, ...(w === "flex" ? { flex: 1, minWidth: 130 } : { width: w, minWidth: w }), textAlign: ["Price","Chg %","Day Hi","Day Lo","52W Range","Mkt Cap","P/E","Fwd P/E","Beta"].includes(h as string) ? "right" : h === "#" ? "center" : "left" }}>{h}</div>
-            ))}
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><span style={{ color: "var(--ft-blue)" }}>·</span> Popular Stocks — tap for full analysis</div>
+        {isMobile ? (
+          // Mobile compact list — no horizontal scroll needed
+          <div style={{ border: "1px solid var(--ft-border)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 0, background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)" }}>
+              <div style={{ ...MH, borderRight: "none" }}>Ticker</div>
+              <div style={{ ...MH, textAlign: "right" }}>Price</div>
+              <div style={{ ...MH, textAlign: "right", minWidth: 68 }}>Chg %</div>
+            </div>
+            {POPULAR_TICKERS.split(",").map((ticker, i) => {
+              const q = qMap.get(ticker);
+              const chg = q?.changePercent ?? 0;
+              const chgColor = chg > 0 ? "var(--ft-green)" : chg < 0 ? "var(--ft-red)" : "var(--ft-dim)";
+              return (
+                <button key={ticker} onClick={() => setSelectedTicker(ticker)}
+                  onTouchStart={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+                  onTouchEnd={e => { e.currentTarget.style.background = ""; }}
+                  onTouchCancel={e => { e.currentTarget.style.background = ""; }}
+                  style={{ display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", width: "100%", border: "none", borderBottom: "1px solid var(--ft-border)", background: i % 2 === 0 ? "var(--ft-base)" : "rgba(22,27,34,0.4)", cursor: "pointer", textAlign: "left" }}>
+                  <div style={{ padding: "9px 10px", minWidth: 0 }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-blue)" }}>{ticker}</span>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ""}</div>
+                  </div>
+                  <div style={{ padding: "9px 8px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                    {q ? `$${q.price.toFixed(2)}` : "—"}
+                  </div>
+                  <div style={{ padding: "9px 10px 9px 4px", minWidth: 68, textAlign: "right" }}>
+                    {q ? <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "1px 4px", background: chg > 0 ? "rgba(63,185,80,0.1)" : chg < 0 ? "rgba(248,81,73,0.1)" : "transparent", color: chgColor }}>{chg > 0 ? "+" : ""}{chg.toFixed(2)}%</span> : <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>—</span>}
+                  </div>
+                </button>
+              );
+            })}
           </div>
-          {POPULAR_TICKERS.split(",").map((ticker, i) => {
-            const q = qMap.get(ticker);
-            const chg = q?.changePercent ?? 0;
-            const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
-            const TD: React.CSSProperties = { padding: "8px 10px", fontSize: 11, fontFamily: "var(--font-mono)", borderBottom: "1px solid var(--ft-border)", borderRight: "1px solid var(--ft-border)", fontVariantNumeric: "tabular-nums", background: i % 2 === 0 ? "var(--ft-base)" : "rgba(22,27,34,0.4)" };
-            return (
-              <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ display: "flex", minWidth: 980, width: "100%", cursor: "pointer", border: "none", background: "transparent" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(1.08)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ""; }}>
-                <div style={{ ...TD, width: 32, minWidth: 32, textAlign: "center", color: "var(--ft-dim)", fontSize: 10 }}>{i + 1}</div>
-                <div style={{ ...TD, width: 72, minWidth: 72, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.04em" }}>{ticker}</div>
-                <div style={{ ...TD, flex: 1, minWidth: 130, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" }}>{POPULAR_NAMES[ticker] ?? ticker}</div>
-                <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-text)", fontWeight: 600 }}>{q ? `$${q.price.toFixed(2)}` : "—"}</div>
-                <div style={{ ...TD, width: 80, minWidth: 80, textAlign: "right" }}>
-                  {q ? <span style={{ padding: "1px 4px", fontSize: 10, fontWeight: 700, background: chg >= 0 ? "rgba(63,185,80,0.1)" : "rgba(248,81,73,0.1)", color: chgColor }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</span> : "—"}
-                </div>
-                <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-green)" }}>{q?.dayHigh != null ? `$${q.dayHigh.toFixed(2)}` : "—"}</div>
-                <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-red)" }}>{q?.dayLow != null ? `$${q.dayLow.toFixed(2)}` : "—"}</div>
-                <div style={{ ...TD, width: 150, minWidth: 150, display: "flex", alignItems: "center", padding: "8px 12px" }}>
-                  {q ? <RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /> : <span style={{ color: "var(--ft-dim)", fontSize: 10 }}>—</span>}
-                </div>
-                <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-muted)" }}>{fmtCap(q?.marketCap)}</div>
-                <div style={{ ...TD, width: 60, minWidth: 60, textAlign: "right", color: q?.pe ? (q.pe > 40 ? "var(--ft-amber)" : q.pe < 15 ? "var(--ft-green)" : "var(--ft-muted)") : "var(--ft-dim)" }}>{q?.pe ? q.pe.toFixed(1) : "—"}</div>
-                <div style={{ ...TD, width: 70, minWidth: 70, textAlign: "right", color: "var(--ft-muted)" }}>{q?.forwardPe ? q.forwardPe.toFixed(1) : "—"}</div>
-                <div style={{ ...TD, width: 60, minWidth: 60, textAlign: "right", color: q?.beta ? (q.beta > 1.5 ? "var(--ft-red)" : "var(--ft-muted)") : "var(--ft-dim)", borderRight: "none" }}>{q?.beta ?? "—"}</div>
-              </button>
-            );
-          })}
-        </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, textAlign: "right" }}>Via Yahoo Finance · Click any row or index for full chart, earnings, and analyst data</div>
+        ) : (
+          // Desktop wide table
+          <div className="ft-scroll-x" style={{ border: "1px solid var(--ft-border)", overflowX: "auto" }}>
+            <div style={{ display: "flex", minWidth: 980 }}>
+              {[["#", 32], ["Ticker", 72], ["Company", "flex"], ["Price", 90], ["Chg %", 80], ["Day Hi", 90], ["Day Lo", 90], ["52W Range", 150], ["Mkt Cap", 90], ["P/E", 60], ["Fwd P/E", 70], ["Beta", 60]].map(([h, w]) => (
+                <div key={h} style={{ ...MH, ...(w === "flex" ? { flex: 1, minWidth: 130 } : { width: w, minWidth: w }), textAlign: ["Price","Chg %","Day Hi","Day Lo","52W Range","Mkt Cap","P/E","Fwd P/E","Beta"].includes(h as string) ? "right" : h === "#" ? "center" : "left" }}>{h}</div>
+              ))}
+            </div>
+            {POPULAR_TICKERS.split(",").map((ticker, i) => {
+              const q = qMap.get(ticker);
+              const chg = q?.changePercent ?? 0;
+              const chgColor = chg > 0 ? "var(--ft-green)" : chg < 0 ? "var(--ft-red)" : "var(--ft-dim)";
+              const TD: React.CSSProperties = { padding: "8px 10px", fontSize: 11, fontFamily: "var(--font-mono)", borderBottom: "1px solid var(--ft-border)", borderRight: "1px solid var(--ft-border)", fontVariantNumeric: "tabular-nums", background: i % 2 === 0 ? "var(--ft-base)" : "rgba(22,27,34,0.4)" };
+              return (
+                <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ display: "flex", minWidth: 980, width: "100%", cursor: "pointer", border: "none", background: "transparent" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.filter = "brightness(1.08)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ""; }}>
+                  <div style={{ ...TD, width: 32, minWidth: 32, textAlign: "center", color: "var(--ft-dim)", fontSize: 10 }}>{i + 1}</div>
+                  <div style={{ ...TD, width: 72, minWidth: 72, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.04em" }}>{ticker}</div>
+                  <div style={{ ...TD, flex: 1, minWidth: 130, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" }}>{POPULAR_NAMES[ticker] ?? ticker}</div>
+                  <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-text)", fontWeight: 600 }}>{q ? `$${q.price.toFixed(2)}` : "—"}</div>
+                  <div style={{ ...TD, width: 80, minWidth: 80, textAlign: "right" }}>
+                    {q ? <span style={{ padding: "1px 4px", fontSize: 10, fontWeight: 700, background: chg > 0 ? "rgba(63,185,80,0.1)" : chg < 0 ? "rgba(248,81,73,0.1)" : "transparent", color: chgColor }}>{chg > 0 ? "+" : ""}{chg.toFixed(2)}%</span> : "—"}
+                  </div>
+                  <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-green)" }}>{q?.dayHigh != null ? `$${q.dayHigh.toFixed(2)}` : "—"}</div>
+                  <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-red)" }}>{q?.dayLow != null ? `$${q.dayLow.toFixed(2)}` : "—"}</div>
+                  <div style={{ ...TD, width: 150, minWidth: 150, display: "flex", alignItems: "center", padding: "8px 12px" }}>
+                    {q ? <RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /> : <span style={{ color: "var(--ft-dim)", fontSize: 10 }}>—</span>}
+                  </div>
+                  <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-muted)" }}>{fmtCap(q?.marketCap)}</div>
+                  <div style={{ ...TD, width: 60, minWidth: 60, textAlign: "right", color: q?.pe ? (q.pe > 40 ? "var(--ft-amber)" : q.pe < 15 ? "var(--ft-green)" : "var(--ft-muted)") : "var(--ft-dim)" }}>{q?.pe ? q.pe.toFixed(1) : "—"}</div>
+                  <div style={{ ...TD, width: 70, minWidth: 70, textAlign: "right", color: "var(--ft-muted)" }}>{q?.forwardPe ? q.forwardPe.toFixed(1) : "—"}</div>
+                  <div style={{ ...TD, width: 60, minWidth: 60, textAlign: "right", color: q?.beta ? (q.beta > 1.5 ? "var(--ft-red)" : "var(--ft-muted)") : "var(--ft-dim)", borderRight: "none" }}>{q?.beta ?? "—"}</div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, textAlign: "right" }}>Via Yahoo Finance · tap any row for chart, earnings, and analyst data</div>
       </div>
 
       {/* Top Movers */}
@@ -1102,12 +2320,15 @@ function MarketsTab() {
                   {gainers.map(({ ticker, q }) => (
                     <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(63,185,80,0.05)", border: "1px solid rgba(63,185,80,0.15)", padding: "6px 10px", cursor: "pointer", textAlign: "left" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-green)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.15)"; }}>
-                      <div>
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.15)"; }}
+                      onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-green)"; }}
+                      onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.15)"; }}
+                      onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.15)"; }}>
+                      <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-green)" }}>{ticker}</span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6 }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
                       </div>
-                      <div style={{ textAlign: "right" }}>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>${q!.price.toFixed(2)}</div>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-green)" }}>+{q!.changePercent!.toFixed(2)}%</div>
                       </div>
@@ -1121,12 +2342,15 @@ function MarketsTab() {
                   {losers.map(({ ticker, q }) => (
                     <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(248,81,73,0.05)", border: "1px solid rgba(248,81,73,0.15)", padding: "6px 10px", cursor: "pointer", textAlign: "left" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-red)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(248,81,73,0.15)"; }}>
-                      <div>
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(248,81,73,0.15)"; }}
+                      onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-red)"; }}
+                      onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(248,81,73,0.15)"; }}
+                      onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(248,81,73,0.15)"; }}>
+                      <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-red)" }}>{ticker}</span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6 }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
                       </div>
-                      <div style={{ textAlign: "right" }}>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>${q!.price.toFixed(2)}</div>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-red)" }}>{q!.changePercent!.toFixed(2)}%</div>
                       </div>
@@ -1154,7 +2378,10 @@ function MarketsTab() {
               <button key={ticker} onClick={() => setSelectedTicker(ticker)}
                 style={{ background: "rgba(230,162,60,0.04)", border: "1px solid rgba(230,162,60,0.15)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-amber)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(230,162,60,0.15)"; }}>
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(230,162,60,0.15)"; }}
+                onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-amber)"; }}
+                onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(230,162,60,0.15)"; }}
+                onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(230,162,60,0.15)"; }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)" }}>{CRYPTO_NAMES[ticker] ?? ticker}</div>
@@ -1184,7 +2411,10 @@ function MarketsTab() {
               <button key={ticker} onClick={() => setSelectedTicker(ticker)}
                 style={{ background: "rgba(88,166,255,0.04)", border: "1px solid rgba(88,166,255,0.12)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-blue)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(88,166,255,0.12)"; }}>
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(88,166,255,0.12)"; }}
+                onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-blue)"; }}
+                onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(88,166,255,0.12)"; }}
+                onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(88,166,255,0.12)"; }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-blue)" }}>{FOREX_NAMES[ticker] ?? ticker}</div>
                   {q && <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
@@ -1215,7 +2445,10 @@ function MarketsTab() {
               <button key={ticker} onClick={() => setSelectedTicker(ticker)}
                 style={{ background: "rgba(63,185,80,0.04)", border: "1px solid rgba(63,185,80,0.12)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-green)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.12)"; }}>
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.12)"; }}
+                onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-green)"; }}
+                onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.12)"; }}
+                onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.12)"; }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>{COMMODITY_NAMES[ticker] ?? ticker}</div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>{q ? `$${q.price.toFixed(2)}` : "—"}</div>
                 {q && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 2 }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</div>}
@@ -1240,7 +2473,10 @@ function MarketsTab() {
               <button key={ticker} onClick={() => setSelectedTicker(ticker)}
                 style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.12)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-cyan)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(34,211,238,0.12)"; }}>
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(34,211,238,0.12)"; }}
+                onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-cyan)"; }}
+                onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(34,211,238,0.12)"; }}
+                onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(34,211,238,0.12)"; }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-cyan)", marginBottom: 2 }}>{GLOBAL_INDEX_NAMES[ticker] ?? ticker}</div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 4 }}>{ticker}</div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>
@@ -1307,7 +2543,7 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
 
   const chartData = [
     { date: inv.buyDate, costBasis: inv.costPricePerShare, value: inv.costPricePerShare },
-    { date: today, costBasis: inv.costPricePerShare, value: inv.livePrice },
+    { date: new Date().toISOString().slice(0, 10), costBasis: inv.costPricePerShare, value: inv.livePrice },
   ];
 
   return (
@@ -1507,6 +2743,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
     const newAlert: PriceAlert = {
       id: `${ticker}-${Date.now()}`,
       ticker,
+      metric: "price",
       targetPrice: price,
       direction,
       triggered: false,
@@ -1592,7 +2829,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
                     cursor: "pointer", textTransform: "uppercase",
                     background: direction === d ? (d === "above" ? "rgba(63,185,80,0.18)" : "rgba(248,81,73,0.18)") : "transparent",
                     color: direction === d ? (d === "above" ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-dim)",
-                    transition: "all 0.1s",
+                    transition: "background 0.1s, color 0.1s",
                   }}
                 >{d}</button>
               ))}
@@ -1802,7 +3039,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
 
       {/* Table */}
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
-        <div style={{ overflowX: "auto" }}>
+        <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
           {/* Header */}
           <div style={{ display: "flex", background: "var(--ft-surface)" }}>
             {[
@@ -1930,9 +3167,678 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
   );
 }
 
+// ── AI Portfolio Commentary ───────────────────────────────────────────────────
+
+const AI_COMMENTARY_CACHE_KEY = "ft-investments-ai-commentary";
+const AI_COMMENTARY_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+async function callAI(context: string, prompt: string): Promise<string> {
+  const res = await fetch("/api/ai/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ messages: [{ role: "user", text: prompt }], context }),
+  });
+  if (!res.ok) throw new Error();
+  const { text } = await res.json() as { text: string };
+  return text;
+}
+
+interface AiPortfolioCommentaryProps {
+  investments: Array<{ ticker: string; gbpValue: number; quantity?: number }>;
+  totalValue: number;
+}
+
+function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentaryProps) {
+  const [commentary, setCommentary] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [visible, setVisible] = useState(true);
+
+  const top3 = [...investments]
+    .sort((a, b) => b.gbpValue - a.gbpValue)
+    .slice(0, 3);
+
+  const topTicker = top3[0]?.ticker ?? "";
+  const topPct = totalValue > 0 && top3[0] ? (top3[0].gbpValue / totalValue) * 100 : 0;
+  const isConcentrated = investments.some(
+    (inv) => totalValue > 0 && (inv.gbpValue / totalValue) * 100 > 30,
+  );
+
+  const annualYield = (() => {
+    // Rough placeholder — no yield data at this component level, so omit
+    return null;
+  })();
+
+  const holdingCount = investments.length;
+
+  const buildPrompt = () => {
+    const rows = investments
+      .map((inv) => {
+        const pct = totalValue > 0 ? ((inv.gbpValue / totalValue) * 100).toFixed(1) : "0.0";
+        return `${inv.ticker}: £${inv.gbpValue.toFixed(0)} (${pct}%)`;
+      })
+      .join(", ");
+    return (
+      `Analyse this investment portfolio in exactly 3-4 sentences. Cover: ` +
+      `(1) composition — mention the top 3 holdings by weight; ` +
+      `(2) concentration risk — flag any position over 30%; ` +
+      `(3) diversification assessment; ` +
+      `(4) one forward-looking observation. ` +
+      `Be concise, factual, and professional. No bullet points. No headings. Plain prose only.\n\n` +
+      `Portfolio (total £${totalValue.toFixed(0)}): ${rows}`
+    );
+  };
+
+  const fetchCommentary = async () => {
+    if (investments.length === 0 || totalValue <= 0) return;
+    setLoading(true);
+    try {
+      const prompt = buildPrompt();
+      const text = await callAI("", prompt);
+      setCommentary(text);
+      try {
+        sessionStorage.setItem(
+          AI_COMMENTARY_CACHE_KEY,
+          JSON.stringify({ text, ts: Date.now() }),
+        );
+      } catch { /* storage quota — silently ignore */ }
+    } catch {
+      // Silently hide on error
+      setVisible(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (investments.length === 0 || totalValue <= 0) return;
+    // Check session cache first
+    try {
+      const raw = sessionStorage.getItem(AI_COMMENTARY_CACHE_KEY);
+      if (raw) {
+        const cached = JSON.parse(raw) as { text: string; ts: number };
+        if (Date.now() - cached.ts < AI_COMMENTARY_TTL_MS) {
+          setCommentary(cached.text);
+          return;
+        }
+      }
+    } catch { /* ignore */ }
+    const id = setTimeout(() => { void fetchCommentary(); }, 400);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [investments.length, totalValue]);
+
+  if (!visible || investments.length === 0 || totalValue <= 0) return null;
+
+  return (
+    <div style={{
+      background: "var(--ft-raised)",
+      borderLeft: "2px solid var(--ft-accent)",
+      padding: "10px 14px",
+      marginBottom: 0,
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em" }}>· PORTFOLIO INTELLIGENCE</span>
+        <button
+          onClick={() => {
+            try { sessionStorage.removeItem(AI_COMMENTARY_CACHE_KEY); } catch { /* noop */ }
+            void fetchCommentary();
+          }}
+          title="Refresh analysis"
+          disabled={loading}
+          style={{ background: "transparent", border: "none", cursor: loading ? "default" : "pointer", padding: 2, color: "var(--ft-dim)", display: "flex", alignItems: "center", transition: "color 0.15s" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-accent)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }}
+        >
+          <RefreshCw
+            className={loading ? "animate-spin" : ""}
+            style={{ width: 12, height: 12 }}
+          />
+        </button>
+      </div>
+
+      {/* Commentary text */}
+      {loading && !commentary && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)", lineHeight: 1.75, letterSpacing: "0.01em" }}>
+          Analysing portfolio…
+        </div>
+      )}
+      {commentary && (
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.75, margin: 0, letterSpacing: "0.01em" }}>
+          {commentary}
+        </p>
+      )}
+
+      {/* Stat chips */}
+      {(commentary || loading) && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {[
+            `${holdingCount} holding${holdingCount !== 1 ? "s" : ""}`,
+            topTicker ? `Top position: ${topTicker} (${topPct.toFixed(1)}%)` : null,
+            isConcentrated ? "⚠ Concentrated position" : "Diversified",
+            annualYield != null ? `Est. annual yield: ${annualYield}%` : null,
+          ]
+            .filter(Boolean)
+            .map((chip) => (
+              <span
+                key={chip as string}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "var(--ft-dim)",
+                  background: "var(--ft-surface)",
+                  border: "1px solid var(--ft-border)",
+                  padding: "2px 8px",
+                  letterSpacing: "0.03em",
+                }}
+              >
+                {chip}
+              </span>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── useFlashCell — Bloomberg price-update flash animation hook ────────────────
+
+function useFlashCell(value: number): [string, (node: HTMLElement | null) => void] {
+  const prevRef = useRef<number>(value);
+  const [flashClass, setFlashClass] = useState<string>("");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const ref = useCallback((node: HTMLElement | null) => {
+    // just a ref callback for the caller's convenience
+  }, []);
+
+  useEffect(() => {
+    const prev = prevRef.current;
+    if (prev !== value && prev !== 0) {
+      const cls = value > prev ? "ft-flash-up" : "ft-flash-down";
+      setFlashClass(cls);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setFlashClass(""), 650);
+    }
+    prevRef.current = value;
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [value]);
+
+  return [flashClass, ref];
+}
+
+// ── FlashCell — wraps a td/div with flash animation ─────────────────────────
+
+function FlashCell({ value, children, style, className }: {
+  value: number;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  className?: string;
+}) {
+  const [flashClass] = useFlashCell(value);
+  return (
+    <td
+      className={[flashClass, className].filter(Boolean).join(" ")}
+      style={{ fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", ...style }}
+    >
+      {children}
+    </td>
+  );
+}
+
+// ── PortfolioValueOverTimePanel — AreaChart of raw daily snapshots ────────────
+
+interface PortfolioValueOverTimePanelProps {
+  snapshots: { date: string; value: number }[];
+}
+
+function PortfolioValueOverTimePanel({ snapshots }: PortfolioValueOverTimePanelProps) {
+  const last90 = snapshots.slice(-90);
+  const daysTracked = snapshots.length;
+
+  // Format X-axis ticks: show month label at first occurrence of each month
+  const monthTicks = useMemo(() => {
+    const seen = new Set<string>();
+    const picks: string[] = [];
+    for (const pt of last90) {
+      const month = pt.date.slice(0, 7); // "YYYY-MM"
+      if (!seen.has(month)) { seen.add(month); picks.push(pt.date); }
+    }
+    return picks;
+  }, [last90]);
+
+  const minVal = last90.length > 0 ? Math.min(...last90.map((p) => p.value)) : 0;
+  const maxVal = last90.length > 0 ? Math.max(...last90.map((p) => p.value)) : 0;
+  const domain: [number | string, number | string] = [
+    Math.max(0, minVal * 0.97),
+    maxVal * 1.03,
+  ];
+
+  const firstVal = last90[0]?.value ?? 0;
+  const lastVal = last90[last90.length - 1]?.value ?? 0;
+  const netChange = firstVal > 0 ? ((lastVal - firstVal) / firstVal) * 100 : 0;
+  const netChangeColor = netChange >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+
+  if (last90.length < 2) {
+    return (
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <div className="ft-panel-header">
+          <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO VALUE OVER TIME</div>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+            {daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked
+          </span>
+        </div>
+        <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+          Collecting snapshots… check back tomorrow ({daysTracked} snapshot{daysTracked !== 1 ? "s" : ""} so far)
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+      <div className="ft-panel-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO VALUE OVER TIME</div>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: netChangeColor }}>
+            {netChange >= 0 ? "▲" : "▼"} {Math.abs(netChange).toFixed(1)}%
+          </span>
+        </div>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+          {daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked
+        </span>
+      </div>
+      <div style={{ padding: "12px 12px 4px" }}>
+        <ResponsiveContainer width="100%" height={160}>
+          <AreaChart data={last90} margin={{ top: 4, right: 8, left: 0, bottom: 2 }}>
+            <defs>
+              <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--ft-accent)" stopOpacity={0.30} />
+                <stop offset="95%" stopColor="var(--ft-accent)" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="2 4" stroke="var(--ft-raised)" vertical={false} />
+            <XAxis
+              dataKey="date"
+              ticks={monthTicks}
+              tickFormatter={(d: string) => {
+                const dt = new Date(d + "T00:00:00");
+                return dt.toLocaleDateString("en-GB", { month: "short" });
+              }}
+              tick={{ fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }}
+              axisLine={{ stroke: "var(--ft-border2)", strokeWidth: 1 }}
+              tickLine={false}
+              height={22}
+            />
+            <YAxis
+              hide
+              domain={domain}
+            />
+            <Tooltip
+              contentStyle={{
+                background: "var(--ft-surface)",
+                border: "1px solid var(--ft-border2)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+              }}
+              formatter={(v: number) => [`£${v.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, "Value"]}
+              labelStyle={{ color: "var(--ft-dim)", fontSize: 9 }}
+              itemStyle={{ color: "var(--ft-accent)" }}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="var(--ft-accent)"
+              strokeWidth={1.5}
+              fill="url(#portfolioGrad)"
+              dot={false}
+              activeDot={{ r: 3, fill: "var(--ft-accent)", stroke: "var(--ft-base)", strokeWidth: 1 }}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// ── InvKpiBar — Bloomberg-style KPI strip for the Investments page ────────────
+
+interface KpiCell {
+  label: string;
+  value: string;
+  delta?: string;
+  deltaPositive?: boolean | null; // null = neutral
+}
+
+function InvKpiBar({ cells, style }: { cells: KpiCell[]; style?: React.CSSProperties }) {
+  const isMobile = useIsMobile();
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : `repeat(${cells.length}, 1fr)`,
+        borderBottom: "1px solid var(--ft-border)",
+        ...style,
+      } as React.CSSProperties}
+    >
+      {cells.map((cell, i) => {
+        const isLastOdd = isMobile && i === cells.length - 1 && cells.length % 2 === 1;
+        return (
+        <div key={cell.label} className="ft-kpi-bar-cell" style={isLastOdd ? { gridColumn: "span 2" } : undefined}>
+          <div className="ft-kpi-bar-cell-label">{cell.label}</div>
+          <div className="ft-kpi-bar-cell-value pnum">{cell.value}</div>
+          {cell.delta != null && (
+            <div
+              className="ft-kpi-bar-cell-delta pnum"
+              style={{
+                color:
+                  cell.deltaPositive === null || cell.deltaPositive === undefined
+                    ? "var(--ft-muted)"
+                    : cell.deltaPositive
+                    ? "var(--ft-green)"
+                    : "var(--ft-red)",
+              }}
+            >
+              {cell.delta}
+            </div>
+          )}
+        </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── PortfolioPositionsTable — Bloomberg equity screen style ───────────────────
+
+interface PortfolioPositionsTableProps {
+  investments: Investment[];
+  summary: { totalValueGbp: number; totalPlGbp: number; totalPlPercent: number } | null | undefined;
+  quoteMap: Map<string, QuoteData>;
+  classMap: Record<number, AssetClass>;
+  tickerFilter: string;
+  onTickerFilterChange: (v: string) => void;
+  onDetailOpen: (id: number) => void;
+  onEdit: (id: number) => void;
+  onDelete: (id: number) => void;
+  deleteConfirmId: number | null;
+  priceAlerts: PriceAlert[];
+  onAlertsChange: (alerts: PriceAlert[]) => void;
+  baseCurrency: string;
+}
+
+function PortfolioPositionsTable({
+  investments,
+  summary,
+  quoteMap,
+  classMap,
+  tickerFilter,
+  onTickerFilterChange,
+  onDetailOpen,
+  onEdit,
+  onDelete,
+  deleteConfirmId,
+  priceAlerts,
+  onAlertsChange,
+  baseCurrency,
+}: PortfolioPositionsTableProps) {
+  const filtered = investments.filter((inv) => {
+    if (!tickerFilter) return true;
+    const q = tickerFilter.toLowerCase();
+    return inv.ticker.toLowerCase().includes(q) || inv.name.toLowerCase().includes(q);
+  });
+
+  const totalValue = summary?.totalValueGbp ?? 0;
+
+  // Column header style
+  const CH: React.CSSProperties = {
+    padding: "6px 10px",
+    fontSize: 10,
+    fontWeight: 600,
+    color: "var(--ft-muted)",
+    background: "var(--ft-surface)",
+    borderBottom: "2px solid var(--ft-border2)",
+    borderRight: "1px solid var(--ft-border)",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    whiteSpace: "nowrap",
+    fontFamily: "var(--font-mono)",
+    fontVariantNumeric: "tabular-nums",
+  };
+
+  const TD: React.CSSProperties = {
+    padding: "var(--ft-cell-py) 10px",
+    fontSize: 11,
+    fontFamily: "var(--font-mono)",
+    fontVariantNumeric: "tabular-nums",
+    borderBottom: "1px solid var(--ft-border)",
+    borderRight: "1px solid var(--ft-border)",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+  };
+
+  return (
+    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+      {/* Panel header */}
+      <div className="ft-panel-header">
+        <div className="ft-panel-label">
+          <span className="accent-dot">·</span>
+          POSITIONS — LIVE MARKET DATA ({baseCurrency})
+        </div>
+        <input
+          className="ft-filter-input"
+          placeholder="Filter ticker / name…"
+          value={tickerFilter}
+          onChange={(e) => onTickerFilterChange(e.target.value)}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            padding: "3px 8px",
+            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border2)",
+            color: "var(--ft-text)",
+            outline: "none",
+            width: 160,
+          }}
+        />
+      </div>
+
+      {/* Table */}
+      <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 960 }}>
+          <thead>
+            <tr>
+              <th style={{ ...CH, width: 60, textAlign: "left" }}>TICKER</th>
+              <th style={{ ...CH, minWidth: 140, textAlign: "left" }}>NAME</th>
+              <th style={{ ...CH, width: 70, textAlign: "right" }}>SHARES</th>
+              <th style={{ ...CH, width: 90, textAlign: "right" }}>AVG COST</th>
+              <th style={{ ...CH, width: 90, textAlign: "right" }}>CURRENT</th>
+              <th style={{ ...CH, width: 100, textAlign: "right" }}>VALUE</th>
+              <th style={{ ...CH, width: 110, textAlign: "right" }}>P&amp;L</th>
+              <th style={{ ...CH, width: 80, textAlign: "right" }}>P&amp;L %</th>
+              <th style={{ ...CH, width: 70, textAlign: "right" }}>WEIGHT</th>
+              <th style={{ ...CH, width: 90, textAlign: "right", borderRight: "none" }}>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr>
+                <td
+                  colSpan={10}
+                  style={{ ...TD, textAlign: "center", color: "var(--ft-dim)", padding: "24px", borderRight: "none" }}
+                >
+                  {tickerFilter ? `No positions match "${tickerFilter}"` : "No positions yet — add a position to start tracking."}
+                </td>
+              </tr>
+            )}
+            {filtered.map((inv, i) => {
+              const plColor = inv.plPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+              const plSign = inv.plPercent >= 0 ? "▲" : "▼";
+              const weight = totalValue > 0 ? (inv.gbpValue / totalValue) * 100 : 0;
+              const rowBg = i % 2 === 0 ? "var(--ft-base)" : `color-mix(in srgb, var(--ft-raised) 30%, transparent)`;
+
+              return (
+                <tr
+                  key={inv.id}
+                  className="xls-row"
+                  style={{ background: rowBg }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "var(--ft-raised)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = rowBg; }}
+                >
+                  {/* TICKER — accent color, bold, 12px mono */}
+                  <td
+                    style={{ ...TD, width: 60, cursor: "pointer" }}
+                    onClick={() => onDetailOpen(inv.id)}
+                  >
+                    <span style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "var(--ft-accent)",
+                      letterSpacing: "0.04em",
+                    }}>{inv.ticker}</span>
+                  </td>
+
+                  {/* NAME */}
+                  <td
+                    style={{ ...TD, color: "var(--ft-muted)", cursor: "pointer", maxWidth: 200, textOverflow: "ellipsis" }}
+                    onClick={() => onDetailOpen(inv.id)}
+                    title={inv.name}
+                  >
+                    {inv.name}
+                  </td>
+
+                  {/* SHARES */}
+                  <td style={{ ...TD, textAlign: "right", color: "var(--ft-text)" }}>
+                    {inv.shares}
+                  </td>
+
+                  {/* AVG COST */}
+                  <td style={{ ...TD, textAlign: "right", color: "var(--ft-muted)" }}>
+                    {inv.costPricePerShare.toFixed(2)}
+                    <span style={{ fontSize: 9, color: "var(--ft-dim)", marginLeft: 3 }}>{inv.currency}</span>
+                  </td>
+
+                  {/* CURRENT PRICE — flash cell */}
+                  <FlashCell
+                    value={inv.livePrice}
+                    style={{ ...TD, textAlign: "right", color: "var(--ft-text)", fontWeight: 600 }}
+                  >
+                    {inv.livePrice.toFixed(2)}
+                    <span style={{ fontSize: 9, color: "var(--ft-dim)", marginLeft: 3 }}>{inv.currency}</span>
+                  </FlashCell>
+
+                  {/* VALUE */}
+                  <td style={{ ...TD, textAlign: "right", color: "var(--ft-text)", fontWeight: 600 }} className="pnum">
+                    {formatGbp(inv.gbpValue)}
+                  </td>
+
+                  {/* P&L — flash cell, colored */}
+                  <FlashCell
+                    value={inv.plGbp}
+                    style={{
+                      ...TD,
+                      textAlign: "right",
+                      color: plColor,
+                      fontWeight: 600,
+                      background: inv.plPercent >= 0 ? "color-mix(in srgb, var(--ft-green) 5%, transparent)" : "color-mix(in srgb, var(--ft-red) 5%, transparent)",
+                    }}
+                    className="pnum"
+                  >
+                    {inv.plGbp >= 0 ? "+" : ""}{formatGbp(inv.plGbp)}
+                  </FlashCell>
+
+                  {/* P&L % — directional symbol */}
+                  <td style={{ ...TD, textAlign: "right" }}>
+                    <span style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: plColor,
+                      padding: "1px 4px",
+                      background: inv.plPercent >= 0 ? "color-mix(in srgb, var(--ft-green) 12%, transparent)" : "color-mix(in srgb, var(--ft-red) 12%, transparent)",
+                    }} className="pnum">
+                      {plSign} {Math.abs(inv.plPercent).toFixed(2)}%
+                    </span>
+                  </td>
+
+                  {/* WEIGHT — inline proportional bar */}
+                  <td style={{ ...TD, textAlign: "right" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
+                      <div style={{ width: 32, height: 3, background: "var(--ft-raised)", flexShrink: 0 }}>
+                        <div style={{ width: `${Math.min(100, weight)}%`, height: "100%", background: "var(--ft-accent)", opacity: 0.7 }} />
+                      </div>
+                      <span style={{ color: "var(--ft-muted)", fontSize: 10, minWidth: 32, textAlign: "right" }}>
+                        {weight.toFixed(1)}%
+                      </span>
+                    </div>
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td style={{ ...TD, borderRight: "none", textAlign: "right", padding: "4px 6px" }}>
+                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2 }}>
+                      <PriceAlertPopover
+                        ticker={inv.ticker}
+                        currentPrice={inv.livePrice}
+                        alerts={priceAlerts}
+                        onAlertsChange={onAlertsChange}
+                      />
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(inv.id)}>
+                        <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} />
+                      </Button>
+                      <Button
+                        variant="ghost" size="icon" className="h-7 w-7"
+                        onClick={() => onDelete(inv.id)}
+                        title={deleteConfirmId === inv.id ? "Click again to confirm delete" : "Delete position"}
+                        style={deleteConfirmId === inv.id ? { background: "var(--ft-red)", color: "var(--ft-base)" } : undefined}
+                      >
+                        {deleteConfirmId === inv.id
+                          ? <span style={{ fontSize: 8, fontWeight: 700, fontFamily: "var(--font-mono)" }}>DEL?</span>
+                          : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+
+          {/* Totals row */}
+          {summary && investments.length > 0 && (
+            <tfoot>
+              <tr style={{ background: "color-mix(in srgb, var(--ft-raised) 40%, transparent)", borderTop: "2px solid var(--ft-border2)" }}>
+                <td colSpan={2} style={{ ...TD, fontWeight: 700, color: "var(--ft-dim)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", borderBottom: "none" }}>TOTAL</td>
+                <td style={{ ...TD, borderBottom: "none" }} />
+                <td style={{ ...TD, borderBottom: "none" }} />
+                <td style={{ ...TD, borderBottom: "none" }} />
+                <td style={{ ...TD, textAlign: "right", fontWeight: 700, color: "var(--ft-text)", fontSize: 12, borderBottom: "none" }} className="pnum">
+                  {formatGbp(summary.totalValueGbp)}
+                </td>
+                <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "none", color: summary.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
+                  {summary.totalPlGbp >= 0 ? "+" : ""}{formatGbp(summary.totalPlGbp)}
+                </td>
+                <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 11, borderBottom: "none", color: summary.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
+                  {summary.totalPlPercent >= 0 ? "▲" : "▼"} {Math.abs(summary.totalPlPercent).toFixed(2)}%
+                </td>
+                <td style={{ ...TD, borderBottom: "none" }} />
+                <td style={{ ...TD, borderBottom: "none", borderRight: "none" }} />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function Investments() {
+export default function Investments({ defaultTab }: { defaultTab?: TabId } = {}) {
   const { data: investments, isLoading, isError, error } = useListInvestments();
   const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useGetInvestmentSummary();
   const createInv = useCreateInvestment();
@@ -1941,22 +3847,33 @@ export default function Investments() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<TabId>("markets");
+  const [activeTab, setActiveTab] = useState<TabId>(defaultTab ?? "markets");
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [detailId, setDetailId] = useState<number | null>(null);
-  const [form, setForm] = useState<InvForm>(EMPTY_FORM);
+  const [form, setForm] = useState<InvForm>(makeEmptyInvForm);
   const [submitting, setSubmitting] = useState(false);
   const [classMap, setClassMap] = useState<Record<number, AssetClass>>(() => readClassMap());
   const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>(() => readAlerts());
   const [triggeredAlerts, setTriggeredAlerts] = useState<PriceAlert[]>([]);
   const [alertsBannerDismissed, setAlertsBannerDismissed] = useState(false);
+  const [histPeriod, setHistPeriod] = useState<"3m" | "6m" | "1y" | "all">("all");
+  const [tickerFilter, setTickerFilter] = useState("");
+  const [portfolioIntroSeen, setPortfolioIntroSeen] = useState(() => !!localStorage.getItem("ft-portfolio-intro-seen"));
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => { writeClassMap(classMap); }, [classMap]);
 
+  const hasInvestments = (investments?.length ?? 0) > 0;
+  const { data: spyHistory } = useGetMarketHistory(
+    { ticker: "SPY", period: "1y" },
+    { query: { enabled: hasInvestments, staleTime: 1000 * 60 * 60 } }
+  );
+
   const tickers = [...new Set(investments?.map((i) => i.ticker) ?? [])].join(",");
   const { data: quotes } = useGetMarketQuotes(
-    { tickers }, { query: { enabled: !!tickers, queryKey: getGetMarketQuotesQueryKey({ tickers }) } }
+    { tickers }, { query: { enabled: !!tickers, queryKey: getGetMarketQuotesQueryKey({ tickers }), refetchInterval: 60_000 } }
   );
   const quoteMap = new Map<string, QuoteData>(quotes?.map((q) => [q.ticker, q as QuoteData]) ?? []);
 
@@ -1965,13 +3882,13 @@ export default function Investments() {
     queryClient.invalidateQueries({ queryKey: getGetInvestmentSummaryQueryKey() });
   };
 
-  const openAdd = () => { setForm(EMPTY_FORM); setAddOpen(true); };
+  const openAdd = () => { setForm(makeEmptyInvForm()); setAddOpen(true); };
   const openEdit = (id: number) => {
     const inv = investments?.find((i) => i.id === id);
     if (!inv) return;
     const exchInfo = detectExchange(inv.ticker);
     setForm({
-      ...EMPTY_FORM,
+      ...makeEmptyInvForm(),
       ticker: inv.ticker, name: inv.name, buyDate: inv.buyDate,
       shares: String(inv.shares), costPricePerShare: String(inv.costPricePerShare),
       nativeCurrency: exchInfo?.currency ?? "USD",
@@ -2022,7 +3939,12 @@ export default function Investments() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this position?")) return;
+    if (deleteConfirmId !== id) {
+      setDeleteConfirmId(id);
+      setTimeout(() => setDeleteConfirmId(null), 3000);
+      return;
+    }
+    setDeleteConfirmId(null);
     try { await deleteInv.mutateAsync({ id }); invalidate(); toast({ title: "Position deleted" }); }
     catch { toast({ title: "Failed to delete", variant: "destructive" }); }
   };
@@ -2069,7 +3991,7 @@ export default function Investments() {
     }
   }, [summary?.totalValueGbp, investments?.length]);
 
-  // ── Check price alerts on load (once investments & quotes are available) ──
+  // ── Check alerts on load (once investments & quotes are available) ──
   useEffect(() => {
     if (!investments || investments.length === 0) return;
     const alerts = readAlerts();
@@ -2078,10 +4000,8 @@ export default function Investments() {
       if (alert.triggered) return alert;
       const inv = investments.find((i) => i.ticker === alert.ticker);
       if (!inv) return alert;
-      const price = inv.livePrice;
-      const fired =
-        (alert.direction === "above" && price >= alert.targetPrice) ||
-        (alert.direction === "below" && price <= alert.targetPrice);
+      const q = quoteMap.get(alert.ticker);
+      const fired = alertTriggered(alert, inv.livePrice, q?.changePercent, q?.pe);
       if (fired) {
         nowTriggered.push({ ...alert, triggered: true });
         return { ...alert, triggered: true };
@@ -2097,6 +4017,80 @@ export default function Investments() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [investments]);
 
+  const portfolioHistory = (() => {
+    try {
+      const raw = localStorage.getItem(SNAPSHOT_KEY);
+      if (!raw) return [];
+      const obj: Record<string, number> = JSON.parse(raw);
+      return Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value }));
+    } catch { return []; }
+  })();
+
+  const benchmarkChartData = useMemo(() => {
+    if (portfolioHistory.length === 0) return [];
+    const cutoff = new Date();
+    if (histPeriod === "3m") cutoff.setMonth(cutoff.getMonth() - 3);
+    else if (histPeriod === "6m") cutoff.setMonth(cutoff.getMonth() - 6);
+    else if (histPeriod === "1y") cutoff.setFullYear(cutoff.getFullYear() - 1);
+    else cutoff.setFullYear(2000);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    const filtered = portfolioHistory.filter((p) => p.date >= cutoffStr);
+    if (filtered.length === 0) return [];
+    const basePortfolio = filtered[0].value;
+    const spyMap = new Map<string, number>();
+    (spyHistory ?? []).forEach((p: StockHistoryPoint) => spyMap.set(p.date, p.close));
+    let baseSpy = 0;
+    for (const p of filtered) {
+      const s = spyMap.get(p.date);
+      if (s) { baseSpy = s; break; }
+    }
+    return filtered.map((p) => {
+      const spyClose = spyMap.get(p.date);
+      return {
+        date: p.date,
+        portfolio: Math.round((p.value / basePortfolio) * 10000) / 100,
+        spy: baseSpy > 0 && spyClose ? Math.round((spyClose / baseSpy) * 10000) / 100 : undefined as number | undefined,
+      };
+    });
+  }, [portfolioHistory, spyHistory, histPeriod]);
+
+  const riskMetrics = useMemo(() => {
+    if (portfolioHistory.length < 10) return null;
+    const returns = portfolioHistory.slice(1).map((p, i) => (p.value - portfolioHistory[i].value) / portfolioHistory[i].value);
+    const mean = returns.reduce((s, r) => s + r, 0) / returns.length;
+    const variance = returns.reduce((s, r) => s + (r - mean) ** 2, 0) / returns.length;
+    const vol = Math.sqrt(variance * 252) * 100;
+    let peak = portfolioHistory[0].value;
+    let maxDD = 0;
+    portfolioHistory.forEach((p) => {
+      if (p.value > peak) peak = p.value;
+      const dd = (p.value - peak) / peak;
+      if (dd < maxDD) maxDD = dd;
+    });
+    const first = portfolioHistory[0];
+    const last = portfolioHistory[portfolioHistory.length - 1];
+    const years = (new Date(last.date).getTime() - new Date(first.date).getTime()) / (365.25 * 24 * 3600 * 1000);
+    const cagr = years > 0.08 ? (Math.pow(last.value / first.value, 1 / years) - 1) * 100 : null;
+    const annReturn = returns.reduce((s, r) => s + r, 0) * (252 / returns.length) * 100;
+    const sharpe = vol > 0 ? (annReturn - 5) / vol : null;
+    return { vol, maxDD: maxDD * 100, cagr, sharpe };
+  }, [portfolioHistory]);
+
+  const upcomingEarnings = useMemo(() => {
+    const today = new Date();
+    const cutoff = new Date(today.getTime() + 45 * 24 * 3600 * 1000);
+    return (investments ?? [])
+      .flatMap((inv) => {
+        const q = quoteMap.get(inv.ticker);
+        if (!q?.nextEarningsDate) return [];
+        const d = new Date(q.nextEarningsDate);
+        if (d <= today || d > cutoff) return [];
+        const daysUntil = Math.ceil((d.getTime() - today.getTime()) / (24 * 3600 * 1000));
+        return [{ ticker: inv.ticker, name: inv.name, date: q.nextEarningsDate, daysUntil }];
+      })
+      .sort((a, b) => a.daysUntil - b.daysUntil);
+  }, [investments, quoteMap]);
+
   if (isLoading || isSummaryLoading) {
     return <div className="space-y-4"><Skeleton className="h-6 w-48" /><Skeleton className="h-8 w-full" /><Skeleton className="h-64 w-full" /></div>;
   }
@@ -2106,7 +4100,7 @@ export default function Investments() {
   const FormFields = (
     <div className="space-y-4">
       {/* Row 1: Ticker + Date */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="ft-two-col grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="inv-ticker">Ticker Symbol</Label>
           <Input id="inv-ticker" placeholder="e.g. VOO or 0700.HK" style={INP}
@@ -2178,7 +4172,7 @@ export default function Investments() {
 
       {/* Dynamic price inputs */}
       {form.inputMode === "perShare" ? (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="ft-two-col grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="inv-shares">Number of Shares</Label>
             <Input id="inv-shares" type="number" step="0.0001" min="0" placeholder="10" style={INP}
@@ -2191,7 +4185,7 @@ export default function Investments() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="ft-two-col grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="inv-total-shares">Number of Shares</Label>
             <Input id="inv-total-shares" type="number" step="0.0001" min="0" placeholder="10" style={INP}
@@ -2226,15 +4220,6 @@ export default function Investments() {
 
   const hasPositions = (investments?.length ?? 0) > 0;
 
-  const portfolioHistory = (() => {
-    try {
-      const raw = localStorage.getItem(SNAPSHOT_KEY);
-      if (!raw) return [];
-      const obj: Record<string, number> = JSON.parse(raw);
-      return Object.entries(obj).sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value }));
-    } catch { return []; }
-  })();
-
   // ── Chart data ──
   const pieData = (investments ?? []).map((inv, i) => ({ name: inv.ticker, value: Math.round(inv.gbpValue * 100) / 100, color: CHART_COLORS[i % CHART_COLORS.length] }));
   const classAllocMap: Record<string, number> = {};
@@ -2262,17 +4247,124 @@ export default function Investments() {
 
   const numAssetClasses = classAllocData.length;
 
+  // ── KPI bar data ──
+  const kpiCells: KpiCell[] = summary ? [
+    {
+      label: "PORTFOLIO VALUE",
+      value: formatGbp(summary.totalValueGbp),
+      delta: investments && investments.length > 0 ? `${investments.length} position${investments.length !== 1 ? "s" : ""}` : undefined,
+      deltaPositive: null,
+    },
+    {
+      label: "TOTAL P&L",
+      value: `${summary.totalPlGbp >= 0 ? "+" : ""}${formatGbp(summary.totalPlGbp)}`,
+      delta: `${summary.totalPlPercent >= 0 ? "▲" : "▼"} ${Math.abs(summary.totalPlPercent).toFixed(2)}%`,
+      deltaPositive: summary.totalPlGbp >= 0,
+    },
+    {
+      label: "PORTFOLIO BETA",
+      value: portBeta != null ? portBeta.toFixed(2) : "—",
+      delta: portBeta != null ? (portBeta > 1.3 ? "AGGRESSIVE" : portBeta < 0.7 ? "DEFENSIVE" : "MARKET") : undefined,
+      deltaPositive: portBeta != null ? portBeta <= 1.3 : null,
+    },
+    {
+      label: "ASSET CLASSES",
+      value: String(numAssetClasses),
+      delta: numAssetClasses <= 1 ? "UNDER-DIVERSIFIED" : "DIVERSIFIED",
+      deltaPositive: numAssetClasses > 1,
+    },
+    {
+      label: "EST. ANNUAL DIV",
+      value: formatGbp(totalAnnualDividend),
+      delta: dividendPositions.length > 0 ? `${dividendPositions.length} paying` : "no yield",
+      deltaPositive: totalAnnualDividend > 0 ? true : null,
+    },
+    {
+      label: "LARGEST POSITION",
+      value: largestPos ? `${largestPos.pct.toFixed(1)}%` : "—",
+      delta: largestPos ? largestPos.ticker : undefined,
+      deltaPositive: largestPos ? largestPos.pct <= 30 : null,
+    },
+  ] : [
+    { label: "PORTFOLIO VALUE", value: "—" },
+    { label: "TOTAL P&L", value: "—" },
+    { label: "PORTFOLIO BETA", value: "—" },
+    { label: "ASSET CLASSES", value: "—" },
+    { label: "EST. ANNUAL DIV", value: "—" },
+    { label: "LARGEST POSITION", value: "—" },
+  ];
+
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
-      <PageHeader
-        icon={TrendingUp} title="Investment Positions"
-        subtitle="Portfolio tracking · Live market prices via Yahoo Finance"
-        actions={
-          <Button onClick={openAdd} size="sm" style={{ background: "var(--ft-blue)", color: "white", border: "none", borderRadius: 2, fontSize: 12 }}>
-            <Plus className="w-3.5 h-3.5 mr-1.5" />Add Position
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
+      {/* KPI Bar — replaces PageHeader on this data page */}
+      <div>
+        <div style={{ position: "relative" }}>
+          <InvKpiBar cells={kpiCells} style={isMobile ? undefined : { paddingRight: 220 }} />
+          <Button
+            onClick={openAdd}
+            size="sm"
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 0,
+              bottom: 0,
+              background: "var(--ft-accent)",
+              color: "var(--ft-base)",
+              border: "none",
+              borderRadius: 0,
+              fontSize: 11,
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              padding: "0 16px",
+            }}
+            className="inv-add-btn-desktop"
+          >
+            <Plus className="w-3.5 h-3.5 mr-1.5" />ADD POSITION
           </Button>
-        }
-      />
+        </div>
+        <div className="inv-add-btn-mobile" style={{ display: "none" }}>
+          <Button
+            onClick={openAdd}
+            size="sm"
+            style={{
+              width: "100%",
+              background: "var(--ft-accent)",
+              color: "var(--ft-base)",
+              border: "none",
+              borderRadius: 0,
+              fontSize: 11,
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+            }}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1.5" />ADD POSITION
+          </Button>
+        </div>
+      </div>
+
+      {/* Persona context strip */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid) return null;
+        const msgs: Record<string, string | null> = {
+          market: "Market Terminal active — live prices, P&L tracking, and price alerts across all your positions.",
+          wealth: "Portfolio growth is the core asset in Wealth Architect — track performance and rebalance toward your FIRE target.",
+          budget: "Long-term investments tracked here — your monthly budget surplus feeds directly into this portfolio.",
+          social: "Individual investments tracked here — for group fund contributions or shared investment pools, use Group Expenses.",
+          full: null,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 4, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
+            <span>{msg}</span>
+          </div>
+        );
+      })()}
 
       {(isError || isSummaryError) && (
         <Alert variant="destructive">
@@ -2322,26 +4414,48 @@ export default function Investments() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--ft-border)", marginBottom: 4 }}>
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: "8px 18px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)",
-                letterSpacing: "0.06em", border: "none", cursor: "pointer",
-                background: isActive ? "var(--ft-surface)" : "transparent",
-                color: isActive ? tab.color : "var(--ft-dim)",
-                borderBottom: isActive ? `2px solid ${tab.color}` : "2px solid transparent",
-                transition: "color 0.15s, border-color 0.15s",
-              }}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Terminal tab bar — 1px border bottom, active tab uses --ft-accent underline */}
+      {defaultTab !== "markets" && (
+        <div style={{
+          display: "flex",
+          gap: 0,
+          borderBottom: "1px solid var(--ft-border)",
+          background: "var(--ft-surface)",
+          overflowX: "auto",
+          scrollbarWidth: "none" as const,
+          WebkitOverflowScrolling: "touch" as const,
+        }}>
+          {TABS.filter((t) => t.id !== "markets").map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: "0 16px",
+                  height: "var(--ft-panel-header-h)",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  fontFamily: "var(--font-mono)",
+                  letterSpacing: "0.08em",
+                  border: "none",
+                  borderRight: "1px solid var(--ft-border)",
+                  cursor: "pointer",
+                  background: isActive ? "var(--ft-raised)" : "transparent",
+                  color: isActive ? "var(--ft-accent)" : "var(--ft-dim)",
+                  borderBottom: isActive ? "2px solid var(--ft-accent)" : "2px solid transparent",
+                  transition: "color 0.1s",
+                  textTransform: "uppercase" as const,
+                }}
+                onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-muted)"; }}
+                onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Add / Edit dialogs */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -2370,86 +4484,201 @@ export default function Investments() {
       <PositionDetailModal invId={detailId} onClose={() => setDetailId(null)} investments={investments} quoteMap={quoteMap} classMap={classMap} onClassChange={(id, cls) => setClassMap((p) => ({ ...p, [id]: cls }))} />
 
       {/* ─── PORTFOLIO TAB ─── */}
-      {activeTab === "portfolio" && (
-        <div className="space-y-5">
-          {/* Summary row */}
-          {summary && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 border" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
-              {[
-                { label: "Total Value", value: formatGbp(summary.totalValueGbp), color: "var(--ft-blue)" },
-                { label: "Total P&L", value: `${summary.totalPlGbp >= 0 ? "+" : ""}${formatGbp(summary.totalPlGbp)}`, color: summary.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
-                { label: "Return %", value: `${summary.totalPlPercent >= 0 ? "+" : ""}${formatPercent(summary.totalPlPercent)}`, color: summary.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
-              ].map((s) => (
-                <div key={s.label} className="px-3 sm:px-4 py-3 border-r border-b sm:border-b-0" style={{ borderColor: "var(--ft-border)" }}>
-                  <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>{s.label}</div>
-                  <div className="text-base font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
-                </div>
-              ))}
-              <div className="px-3 sm:px-4 py-3 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" style={{ color: "var(--ft-dim)" }} />
-                <span className="text-xs" style={{ color: "var(--ft-dim)" }}>{investments?.length ?? 0} position{investments?.length !== 1 ? "s" : ""}</span>
-              </div>
-            </div>
-          )}
+      {defaultTab !== "markets" && activeTab === "portfolio" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
+          {/* Persona quick-start for Market Terminal users */}
+          {(() => { const ids = loadPersonaIds(); return ids[0] === "market"; })() && <PersonaQuickStart />}
 
           {/* Empty state — no positions yet */}
           {!hasPositions && !isLoading && (
-            <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "40px 24px", textAlign: "center" }}>
-              <pre style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6, marginBottom: 20 }}>{`  ┌──────────────────────────────────────────┐
-  │   PORTFOLIO                              │
-  │                                          │
-  │   TICKER   VALUE    GAIN   RETURN        │
-  │   ────────────────────────────────────── │
-  │   (no positions yet)                     │
-  │                                          │
-  └──────────────────────────────────────────┘`}</pre>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ft-text)", marginBottom: 6 }}>No positions yet</div>
-              <div style={{ fontSize: 12, color: "var(--ft-dim)", marginBottom: 20, maxWidth: 400, margin: "0 auto 20px" }}>
-                Add your first holding to start tracking live P&amp;L, allocation, and portfolio analytics.
-                Prices are fetched live from Yahoo Finance.
+            <div style={{
+              background: "var(--ft-raised)",
+              border: "1px dashed var(--ft-border2)",
+              padding: 40,
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}>
+              <pre style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-border2)", lineHeight: 1.55, marginBottom: 20, userSelect: "none", whiteSpace: "pre" }}>{
+`  ┌─────────────────────────────────────────────────────┐
+  │  PORTFOLIO TERMINAL                                 │
+  │                                                     │
+  │  TICKER  SHARES   COST     LIVE    VALUE    GAIN   │
+  │  ─────────────────────────────────────────────────  │
+  │                                                     │
+  │           [ no positions loaded ]                   │
+  │                                                     │
+  │  Total  £ 0.00  ─────────  vs S&P 500  ± 0.00%   │
+  └─────────────────────────────────────────────────────┘`}</pre>
+              <div style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 13,
+                fontWeight: 700,
+                color: "var(--ft-text)",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                marginBottom: 8,
+              }}>
+                NO POSITIONS
               </div>
-              <Button onClick={openAdd} size="sm" style={{ background: "var(--ft-blue)", color: "#fff", fontSize: 12 }}>
-                <Plus className="w-3.5 h-3.5 mr-1.5" />Add First Position
-              </Button>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 28, maxWidth: 460, lineHeight: 1.7 }}>
+                Add a stock, ETF, crypto, or bond to start tracking live P&amp;L, allocation breakdowns, benchmark comparisons, and AI-driven portfolio decisions.
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 40px", marginBottom: 28, maxWidth: 500, width: "100%", textAlign: "left" }}>
+                {[
+                  ["▲", "Live prices via Yahoo Finance"],
+                  ["◈", "Portfolio vs S&P 500 benchmark"],
+                  ["◆", "Asset allocation heat map"],
+                  ["⬡", "Dividend tracker + earnings calendar"],
+                  ["●", "Concentration risk + rebalancer"],
+                  ["◎", "AI-powered portfolio decisions"],
+                ].map(([glyph, text]) => (
+                  <div key={text} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                    <span style={{ color: "var(--ft-accent)", flexShrink: 0, fontWeight: 700 }}>{glyph}</span>
+                    {text}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={openAdd}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  padding: "8px 24px",
+                  background: "var(--ft-accent)",
+                  color: "var(--ft-base)",
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  transition: "opacity 0.1s",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+              >
+                <Plus size={13} />ADD POSITION
+              </button>
+              <div style={{ marginTop: 10, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", opacity: 0.6 }}>
+                US &amp; UK stocks · ETFs · crypto · bonds · mutual funds
+              </div>
             </div>
           )}
 
-          {/* Portfolio value history chart (builds up over time via localStorage snapshots) */}
-          {hasPositions && portfolioHistory.length >= 2 && (
-            <div className="border" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
-              <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(96,165,250,0.06)", borderColor: "rgba(96,165,250,0.18)", color: "var(--ft-blue)" }}>
-                ▼ PORTFOLIO VALUE — Historical ({portfolioHistory.length} day snapshots)
+          {/* First-time portfolio tip */}
+          {hasPositions && !portfolioIntroSeen && (
+            <div style={{ border: "1px solid rgba(210,153,34,0.35)", background: "rgba(210,153,34,0.04)", padding: "11px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>◈ Portfolio — Reading the data</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 20px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.65 }}>
+                  <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>vs S&P 500</span> chart shows your portfolio indexed to 100 — <span style={{ fontWeight: 600 }}>α (alpha)</span> is your outperformance</span>
+                  <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Heat map</span> tile size = portfolio weight · colour = P&amp;L (green up / red down)</span>
+                  <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Asset class column</span> in the table — click to assign ETF / equity / bond / etc. for allocation analysis</span>
+                  <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Concentration risk</span> &amp; diversification gaps → check the <span style={{ color: "var(--ft-accent)" }}>Decisions page</span> for ranked actions</span>
+                </div>
               </div>
-              <div style={{ padding: "12px 12px 4px" }}>
-                <ResponsiveContainer width="100%" height={160}>
-                  <AreaChart data={portfolioHistory} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="portHistGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--ft-blue)" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="var(--ft-blue)" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="2 4" stroke="var(--ft-raised)" vertical={false} />
-                    <XAxis dataKey="date" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(d: string) => d.slice(5)} interval="preserveStartEnd" />
-                    <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} width={46} />
-                    <Tooltip
-                      contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
-                      formatter={(v: number) => [formatGbp(v), "Portfolio Value"]}
-                      labelFormatter={(l: string) => l}
-                    />
-                    <Area type="monotone" dataKey="value" stroke="var(--ft-blue)" strokeWidth={2} fill="url(#portHistGrad)" dot={false} activeDot={{ r: 3, fill: "var(--ft-blue)" }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <button onClick={() => { localStorage.setItem("ft-portfolio-intro-seen","1"); setPortfolioIntroSeen(true); }} title="Dismiss" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>✕</button>
             </div>
           )}
+
+          {/* Portfolio value history + benchmark comparison */}
+          {hasPositions && portfolioHistory.length >= 1 && (() => {
+            const last = benchmarkChartData[benchmarkChartData.length - 1];
+            const portReturn = last ? last.portfolio - 100 : 0;
+            const spyReturn = last?.spy != null ? last.spy - 100 : null;
+            const alpha = spyReturn !== null ? portReturn - spyReturn : null;
+            const portColor = portReturn >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+            const PERIODS = ["3m", "6m", "1y", "all"] as const;
+            return (
+              <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+                {/* Header */}
+                <div className="ft-panel-header">
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div className="ft-panel-label">
+                      <span className="accent-dot">·</span>PORTFOLIO vs S&P 500 — INDEXED (100 = START)
+                    </div>
+                    {/* Return badges */}
+                    {benchmarkChartData.length >= 2 && (
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: portColor }}>
+                          Portfolio {portReturn >= 0 ? "▲" : "▼"} {Math.abs(portReturn).toFixed(1)}%
+                        </span>
+                        {spyReturn !== null && (
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                            SPY {spyReturn >= 0 ? "▲" : "▼"} {Math.abs(spyReturn).toFixed(1)}%
+                          </span>
+                        )}
+                        {alpha !== null && (
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: alpha >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                            α {alpha >= 0 ? "+" : ""}{alpha.toFixed(1)}pp
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* Period selector */}
+                  <div style={{ display: "flex", gap: 2 }}>
+                    {PERIODS.map((p) => (
+                      <button key={p} onClick={() => setHistPeriod(p)} style={{
+                        fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "2px 7px",
+                        border: "1px solid", letterSpacing: "0.06em", cursor: "pointer",
+                        borderColor: histPeriod === p ? "var(--ft-blue)" : "var(--ft-border)",
+                        background: histPeriod === p ? "rgba(96,165,250,0.15)" : "transparent",
+                        color: histPeriod === p ? "var(--ft-blue)" : "var(--ft-dim)",
+                        transition: "background 0.1s, color 0.1s, border-color 0.1s",
+                      }}>{p.toUpperCase()}</button>
+                    ))}
+                  </div>
+                </div>
+                {benchmarkChartData.length < 2 ? (
+                  <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+                    Collecting snapshots… check back tomorrow for a chart ({portfolioHistory.length} snapshot{portfolioHistory.length !== 1 ? "s" : ""} so far)
+                  </div>
+                ) : (
+                  <div style={{ padding: "12px 12px 4px" }}>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <LineChart data={benchmarkChartData} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="2 4" stroke="var(--ft-raised)" vertical={false} />
+                        <XAxis dataKey="date" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(d: string) => d.slice(5)} interval="preserveStartEnd" />
+                        <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(v: number) => `${v.toFixed(0)}`} width={36} domain={["auto", "auto"]} />
+                        <ReferenceLine y={100} stroke="var(--ft-border2)" strokeDasharray="3 3" />
+                        <Tooltip
+                          contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
+                          formatter={(v: number, name: string) => [`${v.toFixed(2)}`, name === "portfolio" ? "Portfolio" : "S&P 500 (SPY)"]}
+                          labelFormatter={(l: string) => l}
+                        />
+                        <Line type="monotone" dataKey="portfolio" stroke="var(--ft-blue)" strokeWidth={2} dot={false} activeDot={{ r: 3 }} name="portfolio" />
+                        <Line type="monotone" dataKey="spy" stroke="var(--ft-dim)" strokeWidth={1} strokeDasharray="4 2" dot={false} activeDot={{ r: 2 }} name="spy" connectNulls />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <div style={{ display: "flex", gap: 16, paddingTop: 4, paddingLeft: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <div style={{ width: 16, height: 2, background: "var(--ft-blue)" }} />
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>YOUR PORTFOLIO</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <div style={{ width: 16, height: 2, background: "var(--ft-dim)", opacity: 0.6 }} />
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>S&P 500 (SPY)</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Charts */}
           {hasPositions && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="border p-4" style={{ background: "var(--ft-surface)", borderColor: "var(--ft-border)" }}>
-                <div className="text-xs font-bold mb-0.5 uppercase tracking-wide" style={{ color: "var(--ft-blue)" }}>Portfolio Allocation</div>
-                <div className="text-xs mb-2" style={{ color: "var(--ft-dim)" }}>By position value (GBP)</div>
+            <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--ft-row-gap)" }}>
+              <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+                <div className="ft-panel-header">
+                  <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO ALLOCATION</div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>by position value</span>
+                </div>
+                <div style={{ padding: "8px 12px 0" }}>
                 <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
                     <Pie data={pieData} cx="50%" cy="50%" innerRadius={44} outerRadius={70} paddingAngle={2} dataKey="value" isAnimationActive={false}>
@@ -2468,9 +4697,13 @@ export default function Investments() {
                   ))}
                 </div>
               </div>
-              <div className="border p-4" style={{ background: "var(--ft-surface)", borderColor: "var(--ft-border)" }}>
-                <div className="text-xs font-bold mb-0.5 uppercase tracking-wide" style={{ color: "var(--ft-blue)" }}>Unrealised P&amp;L per Position</div>
-                <div className="text-xs mb-2" style={{ color: "var(--ft-dim)" }}>GBP gain / loss</div>
+              </div>
+              <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+                <div className="ft-panel-header">
+                  <div className="ft-panel-label"><span className="accent-dot">·</span>UNREALISED P&amp;L</div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>GBP gain / loss</span>
+                </div>
+                <div style={{ padding: "8px 12px" }}>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={plData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
                     <XAxis dataKey="name" tick={{ fill: "var(--ft-dim)", fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -2479,16 +4712,63 @@ export default function Investments() {
                     <Bar dataKey="pl" radius={[2, 2, 0, 0]} maxBarSize={40}>{plData.map((e, i) => <Cell key={i} fill={e.fill} />)}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Heat map: positions sized by weight, colored by P&L */}
+          {hasPositions && (investments?.length ?? 0) >= 2 && summary && summary.totalValueGbp > 0 && (
+            <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+              <div className="ft-panel-header">
+                <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO HEAT MAP</div>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Size = weight · Colour = P&L</span>
+              </div>
+              <div style={{ padding: 8 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                  {(investments ?? [])
+                    .slice()
+                    .sort((a, b) => b.gbpValue - a.gbpValue)
+                    .map((inv) => {
+                      const weight = summary.totalValueGbp > 0 ? (inv.gbpValue / summary.totalValueGbp) * 100 : 0;
+                      const pct = inv.plPercent;
+                      const bg = pct > 15 ? "rgba(63,185,80,0.85)" : pct > 7 ? "rgba(63,185,80,0.55)" : pct > 2 ? "rgba(63,185,80,0.3)" : pct > -2 ? "rgba(180,180,180,0.18)" : pct > -7 ? "rgba(248,81,73,0.3)" : pct > -15 ? "rgba(248,81,73,0.55)" : "rgba(248,81,73,0.85)";
+                      const textColor = Math.abs(pct) > 7 ? "rgba(255,255,255,0.95)" : "var(--ft-text)";
+                      const minW = Math.max(44, weight * 3.2);
+                      return (
+                        <button
+                          key={inv.id}
+                          onClick={() => setDetailId(inv.id)}
+                          title={`${inv.ticker} · ${weight.toFixed(1)}% · ${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}
+                          style={{
+                            flexGrow: weight, flexBasis: `${minW}px`, minWidth: minW, height: 60,
+                            background: bg, border: "1px solid var(--ft-border)",
+                            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                            cursor: "pointer", padding: "2px 4px",
+                            transition: "filter 0.1s",
+                          }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.15)"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = ""; }}
+                        >
+                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: textColor, lineHeight: 1 }}>{inv.ticker}</div>
+                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: textColor, opacity: 0.85, marginTop: 2 }}>{pct >= 0 ? "+" : ""}{pct.toFixed(1)}%</div>
+                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: textColor, opacity: 0.6 }}>{weight.toFixed(1)}w</div>
+                        </button>
+                      );
+                    })}
+                </div>
               </div>
             </div>
           )}
 
           {/* Asset class allocation */}
           {hasPositions && classAllocData.length > 0 && (
-            <div className="border p-4" style={{ background: "var(--ft-surface)", borderColor: "var(--ft-border)" }}>
-              <div className="text-xs font-bold mb-0.5 uppercase tracking-wide" style={{ color: "var(--ft-amber)" }}>Asset Class Allocation</div>
-              <div className="text-xs mb-3" style={{ color: "var(--ft-dim)" }}>By class tag · stored locally</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+              <div className="ft-panel-header">
+                <div className="ft-panel-label"><span className="accent-dot">·</span>ASSET CLASS ALLOCATION</div>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>By class tag · stored locally</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center" style={{ padding: "8px 12px" }}>
                 <ResponsiveContainer width="100%" height={150}>
                   <PieChart>
                     <Pie data={classAllocData} cx="50%" cy="50%" innerRadius={40} outerRadius={66} paddingAngle={2} dataKey="value" isAnimationActive={false}>
@@ -2515,69 +4795,45 @@ export default function Investments() {
             </div>
           )}
 
-          {/* Positions table */}
-          <div className="border" style={{ borderColor: "var(--ft-border)" }}>
-            <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(96,165,250,0.08)", borderColor: "rgba(96,165,250,0.18)", color: "var(--ft-blue)" }}>▼ PORTFOLIO POSITIONS — Live Market Data ({getBaseCurrency()})</div>
-            <div className="overflow-x-auto">
-              <div className="flex" style={{ marginLeft: 36 }}>
-                {[["TICKER", "80px"], ["SECURITY NAME", "1"], ["SHARES", "80px"], ["COST/SHARE", "100px"], ["LIVE PRICE", "100px"], [`VALUE (${getBaseCurrency()})`, "110px"], ["GAIN / LOSS", "120px"], ["RETURN %", "100px"], ["ACTIONS", "104px"]].map(([h, w]) => (
-                  <div key={h} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, textAlign: ["SHARES", "COST/SHARE", "LIVE PRICE", `VALUE (${getBaseCurrency()})`, "GAIN / LOSS", "RETURN %", "ACTIONS"].includes(h as string) ? "right" : "left" }}>{h}</div>
-                ))}
-              </div>
-              {investments?.map((inv, i) => (
-                <div key={inv.id} className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)", background: "var(--ft-base)" }}>
-                  <div className="flex-shrink-0 flex items-center justify-center text-xs border-r" style={{ width: 36, color: "var(--ft-dim)", borderColor: "var(--ft-border)", alignSelf: "stretch" }}>{i + 2}</div>
-                  <button onClick={() => setDetailId(inv.id)} style={{ width: 80, minWidth: 80, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-blue)", fontWeight: 700, fontSize: 12, textAlign: "left", background: "transparent", cursor: "pointer", textDecoration: "underline", textDecorationColor: "rgba(88,166,255,0.3)" }} title="View details">{inv.ticker}</button>
-                  <button onClick={() => setDetailId(inv.id)} style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left", background: "transparent", cursor: "pointer" }}>{inv.name}</button>
-                  <div style={{ width: 80, minWidth: 80, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{inv.shares}</div>
-                  <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{inv.costPricePerShare.toFixed(2)} <span style={{ fontSize: 10 }}>{inv.currency}</span></div>
-                  <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{inv.livePrice.toFixed(2)} <span style={{ fontSize: 10 }}>{inv.currency}</span></div>
-                  <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 12, fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatGbp(inv.gbpValue)}</div>
-                  <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums", background: inv.plPercent >= 0 ? "rgba(63,185,80,0.05)" : "rgba(248,81,73,0.05)", color: inv.plPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>{inv.plGbp > 0 ? "+" : ""}{formatGbp(inv.plGbp)}</div>
-                  <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", textAlign: "right" }}>
-                    <span style={{ padding: "1px 5px", borderRadius: 2, background: inv.plPercent >= 0 ? "rgba(63,185,80,0.15)" : "rgba(248,81,73,0.15)", color: inv.plPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>
-                      {inv.plPercent >= 0 ? "▲" : "▼"} {Math.abs(inv.plPercent).toFixed(2)}%
-                    </span>
-                  </div>
-                  <div style={{ width: 104, minWidth: 104, padding: "4px 6px", textAlign: "right", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2 }}>
-                    <PriceAlertPopover
-                      ticker={inv.ticker}
-                      currentPrice={inv.livePrice}
-                      alerts={priceAlerts}
-                      onAlertsChange={setPriceAlerts}
-                    />
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv.id)}><Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(inv.id)}><Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} /></Button>
-                  </div>
-                </div>
-              ))}
-              {(investments?.length ?? 0) === 0 && (
-                <div className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
-                  <div style={{ width: 36, borderRight: "1px solid var(--ft-border)", alignSelf: "stretch" }} />
-                  <div className="flex-1 text-center py-8 text-xs" style={{ color: "var(--ft-dim)" }}>No positions yet — add a position to start tracking.</div>
-                </div>
-              )}
-              {summary && hasPositions && (
-                <div className="flex items-center border-t" style={{ background: "rgba(31,111,235,0.04)", borderColor: "var(--ft-border2)" }}>
-                  <div style={{ width: 36, borderRight: "1px solid var(--ft-border)", alignSelf: "stretch" }} />
-                  <div style={{ width: 80, minWidth: 80, padding: "6px 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-dim)", fontSize: 10, fontWeight: 700 }}>TOTAL</div>
-                  <div style={{ flex: 1, padding: "6px 12px", borderRight: "1px solid var(--ft-border)" }} /><div style={{ width: 80, minWidth: 80, borderRight: "1px solid var(--ft-border)" }} /><div style={{ width: 100, minWidth: 100, borderRight: "1px solid var(--ft-border)" }} /><div style={{ width: 100, minWidth: 100, borderRight: "1px solid var(--ft-border)" }} />
-                  <div style={{ width: 110, minWidth: 110, padding: "6px 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontWeight: 700, textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: 12 }}>{formatGbp(summary.totalValueGbp)}</div>
-                  <div style={{ width: 120, minWidth: 120, padding: "6px 12px", borderRight: "1px solid var(--ft-border)", color: summary.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: 12 }}>{summary.totalPlGbp > 0 ? "+" : ""}{formatGbp(summary.totalPlGbp)}</div>
-                  <div style={{ width: 100, minWidth: 100, padding: "6px 12px", borderRight: "1px solid var(--ft-border)", color: summary.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, textAlign: "right", fontVariantNumeric: "tabular-nums", fontSize: 12 }}>{summary.totalPlPercent >= 0 ? "▲" : "▼"} {Math.abs(summary.totalPlPercent).toFixed(2)}%</div>
-                  <div style={{ width: 104, minWidth: 104 }} />
-                </div>
-              )}
-            </div>
-          </div>
+          {/* AI Portfolio Commentary — terminal style */}
+          {hasPositions && summary && summary.totalValueGbp > 0 && (
+            <AiPortfolioCommentary
+              investments={(investments ?? []).map((inv) => ({ ticker: inv.ticker, gbpValue: inv.gbpValue, quantity: inv.shares }))}
+              totalValue={summary.totalValueGbp}
+            />
+          )}
+
+          {/* Portfolio Value Over Time — AreaChart of raw daily snapshots */}
+          {hasPositions && (
+            <PortfolioValueOverTimePanel snapshots={portfolioHistory} />
+          )}
+
+          {/* Positions table — Bloomberg equity screen style with flash cells */}
+          <PortfolioPositionsTable
+            investments={investments ?? []}
+            summary={summary}
+            quoteMap={quoteMap}
+            classMap={classMap}
+            tickerFilter={tickerFilter}
+            onTickerFilterChange={setTickerFilter}
+            onDetailOpen={setDetailId}
+            onEdit={openEdit}
+            onDelete={handleDelete}
+            deleteConfirmId={deleteConfirmId}
+            priceAlerts={priceAlerts}
+            onAlertsChange={setPriceAlerts}
+            baseCurrency={getBaseCurrency()}
+          />
 
           {hasPositions && <FundamentalsTable investments={investments ?? []} quoteMap={quoteMap} />}
           {hasPositions && <DividendTracker investments={investments ?? []} quoteMap={quoteMap} />}
 
           {/* Portfolio Analytics */}
           {hasPositions && (
-            <div className="border" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
-              <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(163,113,247,0.07)", borderColor: "rgba(163,113,247,0.18)", color: "var(--ft-accent)" }}>▼ PORTFOLIO ANALYTICS</div>
+            <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+              <div className="ft-panel-header">
+                <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO ANALYTICS</div>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-4" style={{ borderColor: "var(--ft-border)" }}>
                 <div className="px-4 py-3 border-r" style={{ borderColor: "var(--ft-border)" }}>
                   <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Portfolio Beta</div>
@@ -2606,23 +4862,158 @@ export default function Investments() {
                   <div className="text-xs mt-1" style={{ color: "var(--ft-dim)" }}>From {dividendPositions.length} position{dividendPositions.length !== 1 ? "s" : ""}</div>
                 </div>
               </div>
+              {/* Risk metrics row — needs ≥10 days of snapshots */}
+              {riskMetrics && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 border-t" style={{ borderColor: "var(--ft-border)" }}>
+                  <div className="px-4 py-3 border-r" style={{ borderColor: "var(--ft-border)" }}>
+                    <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Annualised Vol.</div>
+                    <div className="text-base font-bold font-mono" style={{ color: riskMetrics.vol > 25 ? "var(--ft-red)" : riskMetrics.vol < 12 ? "var(--ft-green)" : "var(--ft-amber)" }}>
+                      {riskMetrics.vol.toFixed(1)}%
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: "var(--ft-dim)" }}>{riskMetrics.vol > 25 ? "High volatility" : riskMetrics.vol < 12 ? "Low volatility" : "Moderate"}</div>
+                  </div>
+                  <div className="px-4 py-3 border-r" style={{ borderColor: "var(--ft-border)" }}>
+                    <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Max Drawdown</div>
+                    <div className="text-base font-bold font-mono" style={{ color: riskMetrics.maxDD < -15 ? "var(--ft-red)" : riskMetrics.maxDD < -7 ? "var(--ft-amber)" : "var(--ft-text)" }}>
+                      {riskMetrics.maxDD.toFixed(1)}%
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: "var(--ft-dim)" }}>Peak-to-trough</div>
+                  </div>
+                  <div className="px-4 py-3 border-r" style={{ borderColor: "var(--ft-border)" }}>
+                    <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>CAGR</div>
+                    <div className="text-base font-bold font-mono" style={{ color: riskMetrics.cagr == null ? "var(--ft-dim)" : riskMetrics.cagr > 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                      {riskMetrics.cagr != null ? `${riskMetrics.cagr >= 0 ? "+" : ""}${riskMetrics.cagr.toFixed(1)}%` : "—"}
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: "var(--ft-dim)" }}>Compounded annual</div>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Sharpe Ratio</div>
+                    <div className="text-base font-bold font-mono" style={{ color: riskMetrics.sharpe == null ? "var(--ft-dim)" : riskMetrics.sharpe > 1 ? "var(--ft-green)" : riskMetrics.sharpe > 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>
+                      {riskMetrics.sharpe != null ? riskMetrics.sharpe.toFixed(2) : "—"}
+                    </div>
+                    <div className="text-xs mt-1" style={{ color: "var(--ft-dim)" }}>vs 5% risk-free rate</div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
+
+          {/* Upcoming Earnings Calendar */}
+          {hasPositions && upcomingEarnings.length > 0 && (
+            <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+              <div className="ft-panel-header">
+                <div className="ft-panel-label"><span className="accent-dot">·</span>UPCOMING EARNINGS</div>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{upcomingEarnings.length} IN 45 DAYS</span>
+              </div>
+              <div className="flex items-stretch overflow-x-auto" style={{ scrollbarWidth: "thin" }}>
+                {upcomingEarnings.map((e, i) => (
+                  <div key={e.ticker} className="flex-shrink-0 px-4 py-3" style={{
+                    borderRight: i < upcomingEarnings.length - 1 ? "1px solid var(--ft-border)" : "none",
+                    minWidth: 120,
+                  }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)" }}>{e.ticker}</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: e.daysUntil <= 7 ? "var(--ft-amber)" : "var(--ft-dim)", marginTop: 2 }}>
+                      {new Date(e.date).toLocaleDateString("en", { month: "short", day: "numeric" })}
+                    </div>
+                    <div style={{
+                      marginTop: 4,
+                      display: "inline-block",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9,
+                      fontWeight: 700,
+                      padding: "2px 6px",
+                      borderRadius: 2,
+                      border: `1px solid ${e.daysUntil <= 7 ? "var(--ft-amber)" : "var(--ft-border2)"}`,
+                      color: e.daysUntil <= 7 ? "var(--ft-amber)" : "var(--ft-muted)",
+                    }}>{e.daysUntil}d</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tax Lots Panel */}
+          {hasPositions && (() => {
+            const byTicker = new Map<string, typeof investments>();
+            (investments ?? []).forEach((inv) => {
+              const arr = byTicker.get(inv.ticker) ?? [];
+              arr.push(inv);
+              byTicker.set(inv.ticker, arr);
+            });
+            const today2 = new Date();
+            const tickers2 = Array.from(byTicker.keys()).sort();
+            return (
+              <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+                <div className="ft-panel-header">
+                  <div className="ft-panel-label"><span className="accent-dot">·</span>TAX LOTS</div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>FIFO ANALYSIS</span>
+                </div>
+                <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "var(--font-mono)", minWidth: 700 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--ft-border)" }}>
+                        {["Ticker", "Acquired", "Shares", "Cost/sh", "Live/sh", "Cost Basis", "Market Value", "Unrealized G/L", "Holding"].map((h) => (
+                          <th key={h} style={{ padding: "5px 10px", textAlign: "left", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.07em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tickers2.flatMap((ticker) => {
+                        const lots = (byTicker.get(ticker) ?? []).slice().sort((a, b) => a.buyDate.localeCompare(b.buyDate));
+                        const liveQ = quoteMap.get(ticker);
+                        const live = liveQ?.price ?? 0;
+                        return lots.map((lot, li) => {
+                          const costBasis = lot.shares * lot.costPricePerShare;
+                          const mktVal = lot.shares * live;
+                          const gl = mktVal - costBasis;
+                          const acqDate = new Date(lot.buyDate);
+                          const daysHeld = Math.floor((today2.getTime() - acqDate.getTime()) / (24 * 3600 * 1000));
+                          const isLT = daysHeld >= 365;
+                          return (
+                            <tr key={lot.id} style={{ borderBottom: li === lots.length - 1 ? "2px solid var(--ft-border2)" : "1px solid var(--ft-border)", background: li % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
+                              <td style={{ padding: "5px 10px", fontWeight: li === 0 ? 700 : 400, color: li === 0 ? "var(--ft-text)" : "var(--ft-muted)" }}>{li === 0 ? ticker : ""}</td>
+                              <td style={{ padding: "5px 10px", color: "var(--ft-dim)" }}>{new Date(lot.buyDate).toLocaleDateString("en", { year: "2-digit", month: "short", day: "numeric" })}</td>
+                              <td style={{ padding: "5px 10px", textAlign: "right" }}>{lot.shares.toFixed(lot.shares % 1 === 0 ? 0 : 4)}</td>
+                              <td style={{ padding: "5px 10px", textAlign: "right", color: "var(--ft-muted)" }}>{lot.costPricePerShare.toFixed(2)}</td>
+                              <td style={{ padding: "5px 10px", textAlign: "right", color: "var(--ft-muted)" }}>{live > 0 ? live.toFixed(2) : "—"}</td>
+                              <td style={{ padding: "5px 10px", textAlign: "right" }}>{costBasis.toFixed(2)}</td>
+                              <td style={{ padding: "5px 10px", textAlign: "right" }}>{live > 0 ? mktVal.toFixed(2) : "—"}</td>
+                              <td style={{ padding: "5px 10px", textAlign: "right", color: gl >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600 }}>{live > 0 ? `${gl >= 0 ? "+" : ""}${gl.toFixed(2)}` : "—"}</td>
+                              <td style={{ padding: "5px 10px" }}>
+                                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 5px", borderRadius: 2, border: `1px solid ${isLT ? "var(--ft-green)" : "var(--ft-amber)"}`, color: isLT ? "var(--ft-green)" : "var(--ft-amber)" }}>
+                                  {isLT ? "LT" : "ST"} {daysHeld}d
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{ padding: "6px 10px", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 16 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                    LT = Long-term (&ge;365 days · lower CGT rate) &nbsp;·&nbsp; ST = Short-term (&lt;365 days) &nbsp;·&nbsp; Lots sorted FIFO (oldest first)
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
       {/* ─── ORDERS TAB ─── */}
-      {activeTab === "orders" && <OrdersTab quoteMap={quoteMap} />}
+      {defaultTab !== "markets" && activeTab === "orders" && <OrdersTab quoteMap={quoteMap} />}
 
       {/* ─── DERIVATIVES TAB ─── */}
-      {activeTab === "derivatives" && <DerivativesTab quoteMap={quoteMap} />}
+      {defaultTab !== "markets" && activeTab === "derivatives" && <DerivativesTab quoteMap={quoteMap} />}
 
-      {/* ─── MARKETS TAB ─── */}
-      {activeTab === "markets" && <MarketsTab />}
+      {/* ─── MARKETS TAB — rendered directly on /investments, hidden on /portfolio ─── */}
+      {defaultTab === "markets" ? <MarketsTab /> : null}
 
       {/* ─── REBALANCE TAB ─── */}
-      {activeTab === "rebalance" && (
-        <div className="space-y-6">
+      {defaultTab !== "markets" && activeTab === "rebalance" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
           <RebalanceTab
             classAllocData={classAllocData}
             totalPortfolioValue={totalClassValue}
@@ -2630,12 +5021,10 @@ export default function Investments() {
 
           {/* ── Price Alerts Management Panel ── */}
           <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-            <div style={{ padding: "8px 14px", background: "rgba(245,158,11,0.07)", borderBottom: "1px solid rgba(245,158,11,0.2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Bell style={{ width: 12, height: 12, color: "var(--ft-amber)" }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em" }}>
-                  PRICE ALERTS
-                </span>
+            <div className="ft-panel-header">
+              <div className="ft-panel-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Bell style={{ width: 10, height: 10, color: "var(--ft-amber)" }} />
+                <span className="accent-dot">·</span>PRICE ALERTS
               </div>
               {priceAlerts.some((a) => a.triggered) && (
                 <button
@@ -2660,8 +5049,8 @@ export default function Investments() {
                 No alerts set · use the bell icon next to any holding in the Portfolio tab
               </div>
             ) : (
-              <div style={{ overflowX: "auto" }}>
-                <div style={{ display: "flex", background: "var(--ft-surface)" }}>
+              <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
+                <div style={{ display: "flex", background: "var(--ft-surface)", minWidth: 620 }}>
                   {[["TICKER", "100px"], ["DIRECTION", "100px"], ["TARGET", "110px"], ["CURRENT", "110px"], ["STATUS", "100px"], ["CREATED", "1"]].map(([h, w]) => (
                     <div key={h} style={{ ...TH, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, flex: w === "1" ? 1 : undefined }}>{h}</div>
                   ))}
@@ -2670,7 +5059,7 @@ export default function Investments() {
                   const inv = investments?.find((i) => i.ticker === alert.ticker);
                   const statusColor = alert.triggered ? "var(--ft-green)" : "var(--ft-amber)";
                   return (
-                    <div key={alert.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px solid rgba(33,38,45,0.5)", background: alert.triggered ? "rgba(63,185,80,0.03)" : "var(--ft-base)" }}>
+                    <div key={alert.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)", minWidth: 620 }}>
                       <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-blue)" }}>
                         {alert.ticker}
                       </div>

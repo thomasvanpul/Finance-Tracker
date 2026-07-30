@@ -2648,7 +2648,7 @@ function LessonView({
                 : i === currentStep
                 ? (i === topic.steps.length - 1 ? "var(--ft-amber)" : "var(--ft-accent)")
                 : "var(--ft-border)",
-              transition: "background 0.2s",
+              transition: "background 0.12s",
               padding: 0,
             }}
           />
@@ -2743,7 +2743,7 @@ function LevelBadge({ xp }: { xp: number }) {
       </span>
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <div style={{ width: 80, height: 3, background: "var(--ft-border)" }}>
-          <div style={{ height: "100%", width: `${lvl.progress}%`, background: lvl.color, transition: "width 400ms ease" }} />
+          <div style={{ height: "100%", width: `${lvl.progress}%`, background: lvl.color, transition: "none" }} />
         </div>
         {lvl.next && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
@@ -2782,7 +2782,7 @@ export function ThemeRewardsPanel({ totalXP }: { totalXP: number }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: unlocked ? reward.accent : "var(--ft-dim)" }}>{reward.label}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", color: rarityColor, background: `${rarityColor}18`, border: `1px solid ${rarityColor}44`, padding: "1px 5px" }}>{reward.rarity}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: rarityColor, background: `${rarityColor}18`, border: `1px solid ${rarityColor}44`, padding: "1px 5px" }}>{reward.rarity}</span>
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>{reward.description}</div>
             </div>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,8 +14,11 @@ import {
   getListTransactionsQueryKey,
   useGetSettingsCurrency,
   useGetDashboard,
+  useGetFxRates,
+  useGetTransactionSummary,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,12 +50,17 @@ import {
   ArrowLeftRight,
   ChevronDown,
   ChevronRight,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Activity,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton as FtSkeleton } from "@/components/skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   AreaChart,
   Area,
@@ -60,6 +68,11 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  BarChart,
+  Bar,
+  ComposedChart,
+  Line,
+  ReferenceLine,
 } from "recharts";
 
 type Currency =
@@ -98,8 +111,27 @@ const TH: React.CSSProperties = {
 };
 
 const HISTORY_KEY = "ft-nw-history";
+const ACCT_META_KEY = "ft-acct-meta";
 
 type NwHistoryEntry = { date: string; netWorth: number };
+
+interface AccountMeta {
+  notes: string;
+  targetBalance: number | null;
+  apy: number | null;
+  lowBalanceThreshold: number | null;
+}
+
+function loadAccountMeta(): Record<string, AccountMeta> {
+  try {
+    const raw = localStorage.getItem(ACCT_META_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveAccountMeta(meta: Record<string, AccountMeta>) {
+  try { localStorage.setItem(ACCT_META_KEY, JSON.stringify(meta)); } catch { /* noop */ }
+}
 
 function loadNwHistory(): NwHistoryEntry[] {
   try {
@@ -180,15 +212,16 @@ interface TransferForm {
   description: string;
 }
 
-const todayStr = new Date().toISOString().slice(0, 10);
-const EMPTY_TRANSFER: TransferForm = {
-  fromAccountId: "",
-  toAccountId: "",
-  amount: "",
-  currency: "GBP",
-  date: todayStr,
-  description: "",
-};
+function makeEmptyTransfer(): TransferForm {
+  return {
+    fromAccountId: "",
+    toAccountId: "",
+    amount: "",
+    currency: "GBP",
+    date: new Date().toISOString().slice(0, 10),
+    description: "",
+  };
+}
 
 function TransferModal({
   open,
@@ -201,12 +234,12 @@ function TransferModal({
   const queryClient = useQueryClient();
   const { data: accounts } = useListAccounts();
   const createTx = useCreateTransaction();
-  const [form, setForm] = useState<TransferForm>(EMPTY_TRANSFER);
+  const [form, setForm] = useState<TransferForm>(makeEmptyTransfer);
   const [submitting, setSubmitting] = useState(false);
 
   const handleOpenChange = (v: boolean) => {
     onOpenChange(v);
-    if (!v) setForm(EMPTY_TRANSFER);
+    if (!v) setForm(makeEmptyTransfer());
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -459,9 +492,11 @@ interface DetailPanelProps {
   balance: number;
   currency: string;
   nwHistory: { date: string; netWorth: number }[];
+  meta: AccountMeta;
+  onMetaChange: (patch: Partial<AccountMeta>) => void;
 }
 
-function AccountDetailPanel({ accountName, balance, currency, nwHistory }: DetailPanelProps) {
+function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, onMetaChange }: DetailPanelProps) {
   const now = new Date();
   const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     .toISOString()
@@ -557,21 +592,24 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory }: Detai
         </span>
       </div>
 
-      <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+      <div className="ft-four-col" style={{ display: "grid", gap: 20 }}>
         {/* Col 1: Balance history */}
         <div>
           <div style={sectionLabel}>Net Worth History</div>
           {nwHistory.length === 0 ? (
             <div
               style={{
-                fontSize: 10,
+                fontSize: 9,
                 color: "var(--ft-dim)",
                 padding: "20px 0",
                 textAlign: "center",
-                border: "1px dashed var(--ft-raised)",
+                border: "1px solid var(--ft-raised)",
+                fontFamily: "var(--font-mono)",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase" as const,
               }}
             >
-              History builds up daily — check back tomorrow
+              NO HISTORY — BUILDS DAILY
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={100}>
@@ -642,47 +680,12 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory }: Detai
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
               {categorySpend.map(({ category, total }) => (
-                <div key={category}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: 2,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: "var(--ft-muted)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {category}
-                    </span>
-                    <span style={{ fontSize: 10, color: "var(--ft-text)" }}>
-                      {formatGbp(total)}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      height: 3,
-                      background: "var(--ft-raised)",
-                      borderRadius: 1,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: "100%",
-                        width: `${(total / maxSpend) * 100}%`,
-                        background: "var(--ft-red)",
-                        borderRadius: 1,
-                      }}
-                    />
-                  </div>
-                </div>
+                <MonthSpendingRow
+                  key={category}
+                  category={category}
+                  total={total}
+                  maxSpend={maxSpend}
+                />
               ))}
             </div>
           )}
@@ -706,61 +709,411 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory }: Detai
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {recentTxs.map((tx) => {
-                const typeColor =
-                  tx.type === "income"
-                    ? "var(--ft-green)"
-                    : tx.type === "transfer"
-                    ? "var(--ft-blue)"
-                    : "var(--ft-red)";
-                return (
-                  <div
-                    key={tx.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "3px 0",
-                      borderBottom: "1px solid var(--ft-surface)",
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: "var(--ft-text)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {tx.description}
-                      </div>
-                      <div style={{ fontSize: 9, color: "var(--ft-dim)" }}>
-                        {formatDate(tx.date)}
-                        {tx.category ? ` · ${tx.category}` : ""}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: typeColor,
-                        fontWeight: 600,
-                        marginLeft: 8,
-                        whiteSpace: "nowrap",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {tx.type === "expense" ? "-" : "+"}
-                      {formatNative(Math.abs(tx.nativeAmount), tx.currency)}
-                    </div>
-                  </div>
-                );
-              })}
+              {recentTxs.map((tx) => (
+                <RecentTxRow key={tx.id} tx={tx} />
+              ))}
             </div>
           )}
         </div>
+
+        {/* Col 4: Notes, target balance, APY */}
+        {(() => {
+          const targetPct =
+            meta.targetBalance && meta.targetBalance > 0
+              ? Math.min(100, (balance / meta.targetBalance) * 100)
+              : null;
+          const monthlyInterest =
+            meta.apy && meta.apy > 0 && balance > 0
+              ? (balance * (meta.apy / 100)) / 12
+              : null;
+          const annualInterest =
+            meta.apy && meta.apy > 0 && balance > 0
+              ? balance * (meta.apy / 100)
+              : null;
+
+          const inputStyle: React.CSSProperties = {
+            width: "100%",
+            background: "var(--ft-surface)",
+            border: "1px solid var(--ft-raised)",
+            borderRadius: 2,
+            color: "var(--ft-text)",
+            fontSize: 10,
+            fontFamily: "var(--font-mono)",
+            padding: "4px 6px",
+            outline: "none",
+            boxSizing: "border-box",
+          };
+
+          return (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Notes */}
+              <div>
+                <div style={sectionLabel}>Notes</div>
+                <textarea
+                  value={meta.notes}
+                  onChange={(e) => onMetaChange({ notes: e.target.value })}
+                  placeholder="Add notes about this account…"
+                  rows={3}
+                  style={{
+                    ...inputStyle,
+                    resize: "vertical",
+                    lineHeight: 1.5,
+                  }}
+                />
+              </div>
+
+              {/* Target balance */}
+              <div>
+                <div style={sectionLabel}>Target Balance</div>
+                <input
+                  type="number"
+                  value={meta.targetBalance ?? ""}
+                  onChange={(e) =>
+                    onMetaChange({
+                      targetBalance: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                  placeholder={`e.g. 5000 ${currency}`}
+                  style={inputStyle}
+                />
+                {targetPct !== null && (
+                  <div style={{ marginTop: 6 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: 3,
+                      }}
+                    >
+                      <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>
+                        {formatNative(balance, currency)} /&nbsp;
+                        {formatNative(meta.targetBalance!, currency)}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 9,
+                          color:
+                            targetPct >= 100
+                              ? "var(--ft-green)"
+                              : targetPct >= 60
+                              ? "var(--ft-amber)"
+                              : "var(--ft-red)",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {targetPct.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        height: 4,
+                        background: "var(--ft-raised)",
+                        borderRadius: 0,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${targetPct}%`,
+                          background:
+                            targetPct >= 100
+                              ? "var(--ft-green)"
+                              : targetPct >= 60
+                              ? "var(--ft-amber)"
+                              : "var(--ft-red)",
+                          borderRadius: 0,
+                          transition: "none",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Low balance threshold */}
+              <div>
+                <div style={sectionLabel}>Low Balance Alert</div>
+                <input
+                  type="number"
+                  value={meta.lowBalanceThreshold ?? ""}
+                  onChange={(e) =>
+                    onMetaChange({
+                      lowBalanceThreshold: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                  placeholder={`Alert below e.g. 500 ${currency}`}
+                  style={inputStyle}
+                />
+                {meta.lowBalanceThreshold !== null && (
+                  <div style={{ marginTop: 4, fontSize: 9, color: balance < meta.lowBalanceThreshold ? "var(--ft-red)" : "var(--ft-green)" }}>
+                    {balance < meta.lowBalanceThreshold
+                      ? `⚠ Below threshold by ${formatNative(meta.lowBalanceThreshold - balance, currency)}`
+                      : `✓ ${formatNative(balance - meta.lowBalanceThreshold, currency)} above threshold`}
+                  </div>
+                )}
+              </div>
+
+              {/* APY */}
+              <div>
+                <div style={sectionLabel}>APY (%)</div>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={meta.apy ?? ""}
+                  onChange={(e) =>
+                    onMetaChange({
+                      apy: e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                  placeholder="e.g. 4.5"
+                  style={inputStyle}
+                />
+                {monthlyInterest !== null && annualInterest !== null && (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Monthly</span>
+                      <span style={{ fontSize: 9, color: "var(--ft-green)", fontWeight: 700 }}>
+                        +{formatNative(monthlyInterest, currency)}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Annual</span>
+                      <span style={{ fontSize: 9, color: "var(--ft-green)", fontWeight: 700 }}>
+                        +{formatNative(annualInterest, currency)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
+    </div>
+  );
+}
+
+// ─── Recent transaction row (account detail panel) ───────────────────────────
+
+interface RecentTxRowProps {
+  tx: {
+    id: number;
+    date: string;
+    description: string;
+    type: string;
+    category: string;
+    nativeAmount: number;
+    currency: string;
+    gbpValue: number;
+  };
+}
+
+function RecentTxRow({ tx }: RecentTxRowProps) {
+  const [hov, setHov] = React.useState(false);
+  const typeColor =
+    tx.type === "income"
+      ? "var(--ft-green)"
+      : tx.type === "transfer"
+      ? "var(--ft-blue)"
+      : "var(--ft-red)";
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "3px 0",
+        borderBottom: "1px solid var(--ft-surface)",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {tx.description}
+        </div>
+        <div style={{ fontSize: 9, color: "var(--ft-dim)" }}>
+          {formatDate(tx.date)}
+          {tx.category ? ` · ${tx.category}` : ""}
+        </div>
+      </div>
+      <div
+        className="pnum"
+        style={{
+          fontSize: 10,
+          color: typeColor,
+          fontWeight: 600,
+          marginLeft: 8,
+          whiteSpace: "nowrap",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {tx.type === "expense" ? "-" : "+"}
+        {formatNative(Math.abs(tx.nativeAmount), tx.currency)}
+      </div>
+    </div>
+  );
+}
+
+// ─── Month spending category row sub-component ────────────────────────────────
+
+interface MonthSpendingRowProps {
+  category: string;
+  total: number;
+  maxSpend: number;
+}
+
+function MonthSpendingRow({ category, total, maxSpend }: MonthSpendingRowProps) {
+  const [hov, setHov] = React.useState(false);
+  const pct = maxSpend > 0 ? (total / maxSpend) * 100 : 0;
+  return (
+    <div
+      key={category}
+      style={{
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+        padding: "3px 0",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+        <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{category}</span>
+        <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", flexShrink: 0, whiteSpace: "nowrap", marginLeft: 4 }}>{formatGbp(total)}</span>
+      </div>
+      <div style={{ height: 3, background: "var(--ft-raised)", borderRadius: 1 }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: "var(--ft-red)", borderRadius: 1 }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Currency exposure row sub-component ──────────────────────────────────────
+
+interface CurrencyExposureRowProps {
+  currency: string;
+  total: number;
+  totalCash: number;
+  acctCount: number;
+  colorIndex: number;
+}
+
+const ACCT_COLORS = ["var(--ft-blue)", "var(--ft-green)", "var(--ft-amber)", "var(--ft-cyan)", "var(--ft-red)", "var(--ft-muted)"];
+const ACCT_EXPOSURE_COLORS = ACCT_COLORS;
+
+function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex }: CurrencyExposureRowProps) {
+  const [hov, setHov] = React.useState(false);
+  const pct = totalCash > 0 ? (total / totalCash) * 100 : 0;
+  const color = ACCT_EXPOSURE_COLORS[colorIndex % ACCT_EXPOSURE_COLORS.length];
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+        padding: "1px 0",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ width: 8, height: 8, background: color, flexShrink: 0 }} />
+      <span style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "var(--font-mono)", width: 32, flexShrink: 0 }}>
+        {currency}
+      </span>
+      <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+        {formatGbp(total)}
+      </span>
+      <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", marginLeft: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>
+        {pct.toFixed(0)}% · {acctCount}a
+      </span>
+    </div>
+  );
+}
+
+// ─── Account allocation legend row sub-component ──────────────────────────────
+
+interface AccountAllocationRowProps {
+  name: string;
+  pct: number;
+  colorIndex: number;
+}
+
+const ACCT_ALLOC_COLORS = ["var(--ft-blue)", "var(--ft-green)", "var(--ft-amber)", "var(--ft-cyan)", "var(--ft-red)", "var(--ft-muted)"];
+
+function AccountAllocationRow({ name, pct, colorIndex }: AccountAllocationRowProps) {
+  const [hov, setHov] = React.useState(false);
+  const color = ACCT_ALLOC_COLORS[colorIndex % ACCT_ALLOC_COLORS.length];
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+        padding: "1px 0",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ width: 6, height: 6, borderRadius: 1, background: color, flexShrink: 0 }} />
+      <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>
+        {name}
+      </span>
+      <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", marginLeft: "auto" }}>
+        {pct.toFixed(0)}%
+      </span>
+    </div>
+  );
+}
+
+// ─── Onboarding step card sub-component ──────────────────────────────────────
+
+interface OnboardingStepProps {
+  step: string;
+  title: string;
+  desc: string;
+  action: string;
+  onClick: () => void;
+  color: string;
+}
+
+function OnboardingStep({ step, title, desc, action, onClick, color }: OnboardingStepProps) {
+  const [hov, setHov] = React.useState(false);
+  return (
+    <div
+      style={{
+        border: `1px solid ${color}33`,
+        borderRadius: 3,
+        padding: "16px 18px",
+        background: hov ? `${color}12` : `${color}08`,
+        transition: "background 0.1s",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color, fontWeight: 700, marginBottom: 6, letterSpacing: "0.1em" }}>STEP {step}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)", marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5, marginBottom: 14 }}>{desc}</div>
+      <button
+        onClick={onClick}
+        style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "4px 10px", border: `1px solid ${color}66`, background: `${color}22`, color, cursor: "pointer", borderRadius: 2, fontWeight: 600 }}
+      >
+        {action} →
+      </button>
     </div>
   );
 }
@@ -771,10 +1124,12 @@ interface HealthBadgesProps {
   accountName: string;
   balance: number;
   stats: AccountStats;
+  lowBalanceThreshold?: number | null;
 }
 
-function HealthBadges({ accountName: _accountName, balance, stats }: HealthBadgesProps) {
+function HealthBadges({ accountName: _accountName, balance, stats, lowBalanceThreshold }: HealthBadgesProps) {
   const isOverdraft = balance < 0;
+  const isLowBalance = lowBalanceThreshold != null && balance >= 0 && balance < lowBalanceThreshold;
 
   return (
     <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
@@ -793,6 +1148,24 @@ function HealthBadges({ accountName: _accountName, balance, stats }: HealthBadge
           }}
         >
           OVERDRAFT
+        </span>
+      )}
+
+      {/* Low balance warning */}
+      {isLowBalance && (
+        <span
+          style={{
+            fontSize: 9,
+            padding: "1px 5px",
+            borderRadius: 2,
+            background: "var(--ft-amber)22",
+            color: "var(--ft-amber)",
+            border: "1px solid var(--ft-amber)55",
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+          }}
+        >
+          LOW
         </span>
       )}
 
@@ -850,12 +1223,410 @@ function HealthBadges({ accountName: _accountName, balance, stats }: HealthBadge
   );
 }
 
+// ─── KPI cell sub-component ──────────────────────────────────────────────────
+
+interface KpiCellProps {
+  label: string;
+  value: React.ReactNode;
+  sub: React.ReactNode;
+  accent: string;
+  icon: React.ReactNode;
+  isFinancial?: boolean;
+}
+
+function KpiCell({ label, value, sub, accent, icon, isFinancial = false }: KpiCellProps) {
+  const [hov, setHov] = React.useState(false);
+  return (
+    <div
+      className="ft-kpi-cell"
+      style={{
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+        flex: 1,
+        padding: "10px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        minWidth: 0,
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ color: accent, display: "flex" }}>{icon}</span>
+        <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>{label}</span>
+      </div>
+      <div
+        className={isFinancial ? "pnum" : undefined}
+        style={{ fontSize: 18, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}
+      >
+        {value}
+      </div>
+      <div style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>
+    </div>
+  );
+}
+
+// ─── Account table row sub-component ─────────────────────────────────────────
+
+interface AccountRowProps {
+  account: {
+    id: number;
+    name: string;
+    currency: string;
+    balance: number;
+    gbpEquivalent: number;
+    isWiseLinked: boolean;
+    lastSyncedAt?: string | null;
+  };
+  rowIndex: number;
+  isExpanded: boolean;
+  isHighlighted: boolean;
+  stats: AccountStats;
+  deleteConfirmId: number | null;
+  baseCurrency: string;
+  privacyStyle: React.CSSProperties;
+  accountMeta: Record<string, AccountMeta>;
+  healthTxs: { accountName: string; date: string; type: string; gbpValue: number; nativeAmount: number; currency: string; category: string; description: string; id: number }[] | undefined;
+  onToggleExpand: (id: number) => void;
+  onHighlightRef: (el: HTMLDivElement | null) => void;
+  onOpenEdit: (id: number) => void;
+  onDelete: (id: number) => void;
+}
+
+function AccountTableRow({
+  account,
+  rowIndex,
+  isExpanded,
+  isHighlighted,
+  stats,
+  deleteConfirmId,
+  baseCurrency,
+  privacyStyle,
+  accountMeta,
+  healthTxs,
+  onToggleExpand,
+  onHighlightRef,
+  onOpenEdit,
+  onDelete,
+}: AccountRowProps) {
+  const [hov, setHov] = React.useState(false);
+  const isMobile = useIsMobile();
+
+  const syncLabel = account.lastSyncedAt
+    ? (() => {
+        const diff = Date.now() - new Date(account.lastSyncedAt!).getTime();
+        if (diff < 60_000) return "Synced just now";
+        if (diff < 3_600_000) return `Synced ${Math.floor(diff / 60_000)}m ago`;
+        if (diff < 86_400_000) return `Synced ${Math.floor(diff / 3_600_000)}h ago`;
+        return `Synced ${Math.floor(diff / 86_400_000)}d ago`;
+      })()
+    : null;
+
+  // Mini trend sparkbars
+  const sparkBars = React.useMemo(() => {
+    const acctTxs = (healthTxs ?? []).filter((t) => t.accountName === account.name);
+    if (acctTxs.length < 2) return null;
+    const monthMap = new Map<string, number>();
+    acctTxs.forEach((t) => {
+      const m = t.date.slice(0, 7);
+      const sign = t.type === "income" ? 1 : t.type === "expense" ? -1 : 0;
+      monthMap.set(m, (monthMap.get(m) ?? 0) + sign * Math.abs(t.gbpValue));
+    });
+    const bars = Array.from(monthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-4)
+      .map(([, v]) => v);
+    if (bars.length === 0) return null;
+    const maxAbs = Math.max(...bars.map(Math.abs), 1);
+    return { bars, maxAbs };
+  }, [healthTxs, account.name]);
+
+  return (
+    <div key={account.id}>
+      <div
+        className="flex items-center border-b xls-row ft-acct-table-row"
+        style={{
+          borderColor: "rgba(33,38,45,0.5)",
+          background: hov
+            ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
+            : isExpanded
+            ? "var(--ft-surface)"
+            : "var(--ft-base)",
+          transition: "background 0.1s",
+          cursor: "pointer",
+          outline: isHighlighted ? "1.5px solid var(--ft-accent)" : undefined,
+          outlineOffset: isHighlighted ? "-1px" : undefined,
+        }}
+        ref={isHighlighted ? onHighlightRef : undefined}
+        onClick={() => onToggleExpand(account.id)}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        onTouchStart={() => setHov(true)}
+        onTouchEnd={() => setHov(false)}
+        onTouchCancel={() => setHov(false)}
+      >
+        {/* Row number */}
+        <div
+          className="flex-shrink-0 flex items-center justify-center text-xs border-r ft-hide-mobile"
+          style={{ width: 36, color: "var(--ft-dim)", borderColor: "var(--ft-border)", alignSelf: "stretch" }}
+          onClick={(e) => { e.stopPropagation(); onToggleExpand(account.id); }}
+        >
+          {rowIndex + 2}
+        </div>
+        {/* Chevron */}
+        <div
+          className="flex-shrink-0 flex items-center justify-center border-r"
+          style={{ width: 16, color: "var(--ft-dim)", borderColor: "var(--ft-border)", alignSelf: "stretch" }}
+        >
+          {isExpanded ? (
+            <ChevronDown className="w-3 h-3" style={{ color: "var(--ft-amber)" }} />
+          ) : (
+            <ChevronRight className="w-3 h-3" />
+          )}
+        </div>
+
+        {/* Name */}
+        <div
+          style={{
+            flex: 1,
+            padding: isMobile ? "10px 12px" : "7px 12px",
+            borderRight: "1px solid var(--ft-raised)",
+            borderLeft: account.isWiseLinked ? "3px solid var(--ft-blue)" : "3px solid var(--ft-accent)",
+          }}
+        >
+          {isMobile ? (
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: "var(--ft-text)", fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {account.name}
+              </div>
+              <div style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 3 }}>
+                <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-blue)", letterSpacing: "0.04em", fontWeight: 700 }}>{account.currency}</span>
+                <span style={{ fontSize: 10, color: "var(--ft-border2)" }}>·</span>
+                <span style={{ fontSize: 9, padding: "1px 4px", borderRadius: 2, background: "var(--ft-raised)", color: account.isWiseLinked ? "var(--ft-blue)" : "var(--ft-dim)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em" }}>
+                  {account.isWiseLinked ? "WISE" : "MANUAL"}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2" style={{ minWidth: 0 }}>
+              <Landmark className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--ft-dim)" }} />
+              <span style={{ color: "var(--ft-text)", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                {account.name}
+              </span>
+              {account.isWiseLinked && (
+                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, flexShrink: 0 }}>
+                  WISE
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Type */}
+        <div
+          className="ft-hide-mobile"
+          style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const }}
+        >
+          <span style={{ padding: "1px 5px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-dim)" }}>
+            {account.isWiseLinked ? "WISE-LINKED" : "MANUAL"}
+          </span>
+        </div>
+
+        {/* Currency */}
+        <div
+          className="ft-hide-mobile"
+          style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-blue)", fontSize: 12, fontWeight: 700 }}
+        >
+          {account.currency}
+        </div>
+
+        {/* Native balance */}
+        <div
+          className="pnum ft-hide-mobile"
+          style={{ width: 160, minWidth: 160, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", fontFamily: "var(--font-mono)", textAlign: "right" }}
+        >
+          <div style={{ color: account.balance < 0 ? "var(--ft-red)" : "var(--ft-text)", fontSize: 13, fontWeight: 700, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", ...privacyStyle }}>
+            {formatNative(account.balance, account.currency)}
+          </div>
+          {sparkBars && (
+            <div style={{ display: "flex", gap: 1, alignItems: "flex-end", height: 14, marginTop: 3, justifyContent: "flex-end" }}>
+              {sparkBars.bars.map((v, bi) => {
+                const h = Math.max(2, (Math.abs(v) / sparkBars.maxAbs) * 12);
+                return (
+                  <div key={bi} title={`${v >= 0 ? "+" : ""}${formatGbp(v)}`} style={{ width: 4, height: h, background: v >= 0 ? "var(--ft-green)" : "var(--ft-red)", opacity: 0.75 }} />
+                );
+              })}
+            </div>
+          )}
+          {stats.daysSinceLast !== null && (
+            <div style={{ fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>
+              {stats.daysSinceLast === 0 ? "txn today" : `${stats.daysSinceLast}d ago`}
+            </div>
+          )}
+        </div>
+
+        {/* Base currency balance */}
+        <div
+          className="pnum"
+          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.gbpEquivalent < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...privacyStyle }}
+        >
+          {formatGbp(account.gbpEquivalent)}
+        </div>
+
+        {/* Health */}
+        <div
+          className="ft-hide-mobile"
+          style={{ width: 200, minWidth: 200, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <HealthBadges
+            accountName={account.name}
+            balance={account.balance}
+            stats={stats}
+            lowBalanceThreshold={accountMeta[account.name]?.lowBalanceThreshold ?? null}
+          />
+        </div>
+
+        {/* Last sync */}
+        <div
+          className="ft-hide-mobile"
+          style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 8, fontFamily: "var(--font-mono)" }}
+        >
+          {syncLabel ?? <span style={{ color: "var(--ft-dim)" }}>manual</span>}
+        </div>
+
+        {/* Actions */}
+        <div
+          style={{ width: isMobile ? 44 : 90, minWidth: isMobile ? 44 : 90, padding: "4px 6px", display: "flex", justifyContent: "flex-end", gap: 2 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onOpenEdit(account.id)}>
+            <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} />
+          </Button>
+          {!isMobile && <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => onDelete(account.id)}
+            title={deleteConfirmId === account.id ? "Click again to confirm delete" : "Delete account"}
+            style={deleteConfirmId === account.id ? { background: "var(--ft-red)", color: "#fff" } : {}}
+          >
+            {deleteConfirmId === account.id
+              ? <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em" }}>DEL?</span>
+              : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
+            }
+          </Button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── FX Rate cell sub-component ───────────────────────────────────────────────
+
+interface FxRateCellProps {
+  ccy: string;
+  rate: number;
+}
+
+function FxRateCell({ ccy, rate }: FxRateCellProps) {
+  const [hov, setHov] = React.useState(false);
+  const isHighValue = rate >= 100;
+  const precision = isHighValue ? 2 : 4;
+  return (
+    <div
+      style={{
+        padding: "10px 14px",
+        borderRight: "1px solid var(--ft-border)",
+        borderBottom: "1px solid var(--ft-border)",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+        <span style={{ fontSize: 9, color: "var(--ft-cyan)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em" }}>GBP/{ccy}</span>
+      </div>
+      <div className="pnum" style={{ fontSize: 16, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontWeight: 700, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>
+        {rate.toFixed(precision)}
+      </div>
+      <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 4, fontFamily: "var(--font-mono)", display: "flex", justifyContent: "space-between" }}>
+        <span>1 {ccy}</span>
+        <span className="pnum" style={{ color: "var(--ft-muted)" }}>{(1 / rate).toFixed(4)} GBP</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Monthly summary KPI cell ──────────────────────────────────────────────────
+
+interface MonthlySummaryCellProps {
+  label: string;
+  value: string;
+  color: string;
+}
+
+function MonthlySummaryCell({ label, value, color }: MonthlySummaryCellProps) {
+  const [hov, setHov] = React.useState(false);
+  return (
+    <div
+      style={{
+        padding: "8px 10px",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-base))" : "var(--ft-base)",
+        border: "1px solid var(--ft-raised)",
+        transition: "background 0.1s",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.06em", marginBottom: 4 }}>{label}</div>
+      <div className="pnum" style={{ fontSize: 14, fontFamily: "var(--font-mono)", fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+    </div>
+  );
+}
+
+// ─── CSV export ──────────────────────────────────────────────────────────────
+
+function exportAccountsCSV(
+  accounts: { name: string; currency: string; balance: number; gbpEquivalent: number; isWiseLinked: boolean }[],
+  meta: Record<string, AccountMeta>
+) {
+  const rows = [
+    ["Name", "Currency", "Balance", "GBP Equivalent", "Source", "Target Balance", "APY (%)", "Low Balance Alert", "Notes"],
+    ...accounts.map((a) => {
+      const m = meta[a.name];
+      return [
+        a.name,
+        a.currency,
+        a.balance.toFixed(2),
+        a.gbpEquivalent.toFixed(2),
+        a.isWiseLinked ? "Wise" : "Manual",
+        m?.targetBalance != null ? m.targetBalance.toFixed(2) : "",
+        m?.apy != null ? m.apy.toFixed(2) : "",
+        m?.lowBalanceThreshold != null ? m.lowBalanceThreshold.toFixed(2) : "",
+        (m?.notes ?? "").replace(/"/g, '""'),
+      ];
+    }),
+  ];
+  const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `accounts-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Main Accounts page ───────────────────────────────────────────────────────
 
 export default function Accounts() {
   const { data: accounts, isLoading, isError, error } = useListAccounts();
   const { data: currencySettings } = useGetSettingsCurrency();
   const baseCurrency = currencySettings?.baseCurrency ?? "GBP";
+  const isMobile = useIsMobile();
   const { privacy } = usePrivacy();
   const privacyStyle = privacy ? { filter: "blur(5px)", userSelect: "none" as const, pointerEvents: "none" as const } : {};
   const { toast } = useToast();
@@ -877,6 +1648,17 @@ export default function Accounts() {
   const { data: dashData } = useGetDashboard();
 
   const [nwHistory, setNwHistory] = useState<{ date: string; netWorth: number }[]>(() => loadNwHistory());
+  const [accountMeta, setAccountMeta] = useState<Record<string, AccountMeta>>(() => loadAccountMeta());
+  const [onboardingDismissed, setOnboardingDismissed] = useState(() => !!localStorage.getItem("ft-acct-onboarding-dismissed"));
+
+  const updateAccountMeta = useCallback((accountName: string, patch: Partial<AccountMeta>) => {
+    setAccountMeta((prev) => {
+      const defaults: AccountMeta = { notes: "", targetBalance: null, apy: null, lowBalanceThreshold: null };
+      const next = { ...prev, [accountName]: { ...defaults, ...prev[accountName], ...patch } };
+      saveAccountMeta(next);
+      return next;
+    });
+  }, []);
 
   // Write daily net-worth snapshot and keep nwHistory state in sync
   useEffect(() => {
@@ -907,6 +1689,72 @@ export default function Accounts() {
     return map;
   }, [accounts, healthTxs]);
 
+  // Monthly cash flow: last 6 months from healthTxs
+  const monthlyFlow = useMemo(() => {
+    const monthMap = new Map<string, { income: number; expense: number }>();
+    (healthTxs ?? []).forEach((tx) => {
+      const month = tx.date.slice(0, 7);
+      const cur = monthMap.get(month) ?? { income: 0, expense: 0 };
+      if (tx.type === "income") cur.income += tx.gbpValue;
+      else if (tx.type === "expense") cur.expense += Math.abs(tx.gbpValue);
+      monthMap.set(month, cur);
+    });
+    return Array.from(monthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([month, { income, expense }]) => ({
+        month: month.slice(5), // "MM"
+        income,
+        expense,
+        net: income - expense,
+      }));
+  }, [healthTxs]);
+
+  // Category spending this month
+  const monthSpending = useMemo(() => {
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    const map = new Map<string, number>();
+    (healthTxs ?? [])
+      .filter((tx) => tx.type === "expense" && tx.date.startsWith(thisMonth))
+      .forEach((tx) => {
+        const cat = tx.category || "Other";
+        map.set(cat, (map.get(cat) ?? 0) + Math.abs(tx.gbpValue));
+      });
+    return Array.from(map.entries())
+      .map(([category, total]) => ({ category, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
+  }, [healthTxs]);
+
+  // FX rates
+  const { data: fxRates } = useGetFxRates();
+
+  // This month's summary
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const { data: monthlySummary } = useGetTransactionSummary({ month: thisMonth });
+
+  // Account filter / search / sort state
+  const [accountFilter, setAccountFilter] = useState<"all" | "wise" | "manual">("all");
+  const [accountSearch, setAccountSearch] = useState("");
+  const [accountSort, setAccountSort] = useState<"default" | "balance-high" | "balance-low" | "name-az" | "name-za" | "currency">("default");
+
+  const filteredAccounts = useMemo(() => {
+    if (!accounts) return [];
+    let list = accounts;
+    if (accountFilter === "wise") list = list.filter((a) => a.isWiseLinked);
+    else if (accountFilter === "manual") list = list.filter((a) => !a.isWiseLinked);
+    if (accountSearch.trim()) {
+      const q = accountSearch.toLowerCase();
+      list = list.filter((a) => a.name.toLowerCase().includes(q) || a.currency.toLowerCase().includes(q));
+    }
+    if (accountSort === "balance-high") list = [...list].sort((a, b) => b.gbpEquivalent - a.gbpEquivalent);
+    else if (accountSort === "balance-low") list = [...list].sort((a, b) => a.gbpEquivalent - b.gbpEquivalent);
+    else if (accountSort === "name-az") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    else if (accountSort === "name-za") list = [...list].sort((a, b) => b.name.localeCompare(a.name));
+    else if (accountSort === "currency") list = [...list].sort((a, b) => a.currency.localeCompare(b.currency));
+    return list;
+  }, [accounts, accountFilter, accountSearch, accountSort]);
+
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<AccountForm>(EMPTY_FORM);
@@ -919,6 +1767,11 @@ export default function Accounts() {
       return v ? parseInt(v, 10) : null;
     } catch { return null; }
   });
+
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [qaOpen, setQaOpen] = useState(false);
+  const [qaForm, setQaForm] = useState({ name: "", currency: "GBP" as Currency, balance: "" });
+  const [qaSubmitting, setQaSubmitting] = useState(false);
 
   const invalidate = useCallback(
     () => queryClient.invalidateQueries({ queryKey: getListAccountsQueryKey() }),
@@ -988,7 +1841,12 @@ export default function Accounts() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this account?")) return;
+    if (deleteConfirmId !== id) {
+      setDeleteConfirmId(id);
+      setTimeout(() => setDeleteConfirmId(null), 3000);
+      return;
+    }
+    setDeleteConfirmId(null);
     try {
       await deleteAccount.mutateAsync({ id });
       await invalidate();
@@ -1016,13 +1874,36 @@ export default function Accounts() {
     setExpandedAccountId((prev) => (prev === id ? null : id));
   };
 
+  const handleQuickAdd = async () => {
+    if (!qaForm.name.trim() || !qaForm.balance) return;
+    setQaSubmitting(true);
+    try {
+      await createAccount.mutateAsync({
+        data: {
+          name: qaForm.name.trim(),
+          currency: qaForm.currency,
+          balance: parseFloat(qaForm.balance),
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: getListAccountsQueryKey() });
+      toast({ title: "Account added" });
+      setQaForm({ name: "", currency: "GBP", balance: "" });
+      setQaOpen(false);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Failed to add account", description: message, variant: "destructive" });
+    } finally {
+      setQaSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {/* Header skeleton */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
           <FtSkeleton width={160} height={16} />
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <FtSkeleton width={90} height={28} />
             <FtSkeleton width={90} height={28} />
             <FtSkeleton width={100} height={28} />
@@ -1120,6 +2001,38 @@ export default function Accounts() {
         icon={Wallet}
         title="Accounts"
         subtitle="Manage your cash and linked bank accounts"
+        mobileActions={
+          <>
+            <Button
+              size="sm"
+              onClick={() => setTransferOpen(true)}
+              style={{
+                background: "var(--ft-raised)",
+                color: "var(--ft-blue)",
+                border: "1px solid var(--ft-blue)44",
+                borderRadius: 2,
+                fontSize: 12,
+              }}
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5 mr-1.5" />
+              Transfer
+            </Button>
+            <Button
+              size="sm"
+              onClick={openAdd}
+              style={{
+                background: "var(--ft-blue)",
+                color: "var(--ft-base)",
+                border: "none",
+                borderRadius: 2,
+                fontSize: 12,
+              }}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+              Add
+            </Button>
+          </>
+        }
         actions={
           <>
             <WiseStatusBadge />
@@ -1141,6 +2054,21 @@ export default function Accounts() {
               Sync Wise
             </Button>
             <ImportCsvButton />
+            {accounts && accounts.length > 0 && (
+              <Button
+                size="sm"
+                onClick={() => exportAccountsCSV(accounts, accountMeta)}
+                style={{
+                  background: "var(--ft-raised)",
+                  color: "var(--ft-dim)",
+                  border: "1px solid var(--ft-border2)",
+                  borderRadius: 2,
+                  fontSize: 12,
+                }}
+              >
+                ↓ CSV
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={() => setTransferOpen(true)}
@@ -1160,7 +2088,7 @@ export default function Accounts() {
               onClick={openAdd}
               style={{
                 background: "var(--ft-blue)",
-                color: "white",
+                color: "var(--ft-base)",
                 border: "none",
                 borderRadius: 2,
                 fontSize: 12,
@@ -1173,6 +2101,28 @@ export default function Accounts() {
         }
       />
 
+      {/* ── Persona context strip ─────────────────────────────────────────── */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid || pid === "full") return null;
+        const totalCash = (accounts ?? []).reduce((s, a) => s + a.gbpEquivalent, 0);
+        const portfolio = (dashData as { portfolio?: { totalValueGbp?: number } } | undefined)?.portfolio?.totalValueGbp ?? 0;
+        const msgs: Record<string, string | null> = {
+          market:  totalCash > 0 ? `${formatGbp(totalCash)} cash available — allocate surplus to investment positions via Portfolio.` : null,
+          budget:  `Your accounts are the source of truth for your budget — reconcile against your budget limits monthly.`,
+          wealth:  `Cash + portfolio = ${formatGbp(totalCash + portfolio)}. Ensure cash earns yield (HYSA/money market) while idle.`,
+          social:  totalCash > 0 ? `${formatGbp(totalCash)} liquid — keep enough buffer for group trip deposits and shared expenses.` : null,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ color: "var(--ft-accent)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>·</span>
+            <span>{msg}</span>
+          </div>
+        );
+      })()}
 
       {/* Add Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -1221,44 +2171,486 @@ export default function Accounts() {
       {/* Transfer Modal */}
       <TransferModal open={transferOpen} onOpenChange={setTransferOpen} />
 
+      {/* ── KPI Bar ─────────────────────────────────────────────── */}
+      {(accounts?.length ?? 0) > 0 && (() => {
+        const totalCash = accounts!.reduce((s, a) => s + a.gbpEquivalent, 0);
+        const currencies = [...new Set(accounts!.map(a => a.currency))] as string[];
+        const lastSync = accounts!
+          .map(a => a.lastSyncedAt)
+          .filter(Boolean)
+          .sort()
+          .at(-1);
+        const lastSyncLabel = lastSync
+          ? (() => {
+              const diff = Date.now() - new Date(lastSync).getTime();
+              if (diff < 60_000) return "just now";
+              if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+              if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+              return `${Math.floor(diff / 86_400_000)}d ago`;
+            })()
+          : "never";
+
+        // Net-worth delta from nwHistory
+        const prevNw = nwHistory.length > 1 ? nwHistory[nwHistory.length - 2].netWorth : null;
+        const currNw = nwHistory.length > 0 ? nwHistory[nwHistory.length - 1].netWorth : null;
+        const nwDelta = prevNw !== null && currNw !== null ? currNw - prevNw : null;
+
+        // Portfolio from dash data
+        const portfolioVal = (dashData as { portfolio?: { totalValueGbp?: number } } | undefined)?.portfolio?.totalValueGbp ?? 0;
+        const netWorth = totalCash + portfolioVal;
+
+        // Most recently active account
+        const mostRecentAccount = (() => {
+          const withTx = accounts!
+            .map(a => {
+              const txs = (healthTxs ?? []).filter(t => t.accountName === a.name);
+              if (txs.length === 0) return null;
+              const sorted = [...txs].sort((x, y) => y.date.localeCompare(x.date));
+              return { account: a, lastTxDate: sorted[0].date };
+            })
+            .filter((x): x is NonNullable<typeof x> => x !== null);
+          if (withTx.length === 0) return null;
+          return withTx.sort((a, b) => b.lastTxDate.localeCompare(a.lastTxDate))[0];
+        })();
+
+        // Currency breakdown for allocation bar
+        const currencyTotals = currencies.map(c => ({
+          currency: c,
+          total: accounts!.filter(a => a.currency === c).reduce((s, a) => s + a.gbpEquivalent, 0),
+        })).sort((a, b) => b.total - a.total);
+
+        return (
+          <div style={{ border: "1px solid var(--ft-border)" }}>
+            {/* KPI row — border-as-gap grid */}
+            <div className="ft-scroll-x" style={{ borderBottom: "1px solid var(--ft-border)", minWidth: 0 }}>
+              <div
+                className="ft-acct-metrics-row"
+                style={{ display: "grid", gap: 1, background: "var(--ft-border)", gridTemplateColumns: "repeat(4, 1fr)" }}
+              >
+              <KpiCell
+                label="Total Cash"
+                value={<span className="pnum" style={{ color: totalCash < 0 ? "var(--ft-red)" : "var(--ft-green)" }}>{formatGbp(totalCash)}</span>}
+                sub={
+                  nwDelta !== null
+                    ? <span style={{ color: nwDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                        {nwDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        {nwDelta >= 0 ? "+" : ""}{formatGbp(nwDelta)} vs yesterday
+                      </span>
+                    : <span style={{ color: "var(--ft-dim)" }}>{accounts!.length} account{accounts!.length !== 1 ? "s" : ""}</span>
+                }
+                accent="var(--ft-green)"
+                icon={<DollarSign className="w-3.5 h-3.5" />}
+                isFinancial
+              />
+              <KpiCell
+                label="Total Portfolio"
+                value={<span className="pnum" style={{ color: "var(--ft-cyan)" }}>{formatGbp(portfolioVal)}</span>}
+                sub="investments (GBP)"
+                accent="var(--ft-cyan)"
+                icon={<TrendingUp className="w-3.5 h-3.5" />}
+                isFinancial
+              />
+              <KpiCell
+                label="Net Worth"
+                value={<span className="pnum" style={{ color: netWorth >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>{formatGbp(netWorth)}</span>}
+                sub="cash + portfolio"
+                accent="var(--ft-amber)"
+                icon={<Activity className="w-3.5 h-3.5" />}
+                isFinancial
+              />
+              <KpiCell
+                label="Most Active"
+                value={<span style={{ fontSize: 13, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", minWidth: 0 }}>{mostRecentAccount ? mostRecentAccount.account.name.split(" ").slice(0, 2).join(" ") : "—"}</span>}
+                sub={mostRecentAccount ? `last txn ${mostRecentAccount.lastTxDate}` : "no transactions"}
+                accent="var(--ft-blue)"
+                icon={<Landmark className="w-3.5 h-3.5" />}
+              />
+              </div>
+            </div>
+
+            {/* Currency exposure section */}
+            {currencies.length > 1 && (
+              <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--ft-border)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>
+                    CURRENCY EXPOSURE — {currencies.length} currencies
+                  </span>
+                  <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                    {baseCurrency} base · {formatGbp(totalCash)} total
+                  </span>
+                </div>
+                {/* Stacked bar */}
+                <div style={{ display: "flex", height: 6, overflow: "hidden", gap: 1, marginBottom: 8 }}>
+                  {currencyTotals.map(({ currency, total }, i) => {
+                    const pct = totalCash > 0 ? (total / totalCash) * 100 : 0;
+                    return (
+                      <div
+                        key={currency}
+                        style={{ width: `${pct}%`, background: ACCT_COLORS[i % ACCT_COLORS.length], minWidth: pct > 1 ? 3 : 0 }}
+                        title={`${currency}: ${pct.toFixed(1)}% · ${formatGbp(total)}`}
+                      />
+                    );
+                  })}
+                </div>
+                {/* Currency rows */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "4px 16px" }}>
+                  {currencyTotals.map(({ currency, total }, i) => (
+                    <CurrencyExposureRow
+                      key={currency}
+                      currency={currency}
+                      total={total}
+                      totalCash={totalCash}
+                      acctCount={accounts!.filter(a => a.currency === currency).length}
+                      colorIndex={i}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Accounts KPI second row */}
+            <div className="ft-scroll-x" style={{ borderBottom: "1px solid var(--ft-border)", minWidth: 0 }}>
+              <div
+                className="ft-acct-metrics-row"
+                style={{ display: "grid", gap: 1, background: "var(--ft-border)", gridTemplateColumns: "repeat(3, 1fr)" }}
+              >
+              <KpiCell
+                label="Accounts"
+                value={<span style={{ color: "var(--ft-text)" }}>{accounts!.length}</span>}
+                sub={accounts!.filter((a) => a.isWiseLinked).length > 0 ? `${accounts!.filter((a) => a.isWiseLinked).length} Wise-linked` : "all manual"}
+                accent="var(--ft-blue)"
+                icon={<Landmark className="w-3.5 h-3.5" />}
+              />
+              <KpiCell
+                label="Currencies"
+                value={<span style={{ color: "var(--ft-cyan)" }}>{currencies.length}</span>}
+                sub={currencies.join(" · ")}
+                accent="var(--ft-cyan)"
+                icon={<Activity className="w-3.5 h-3.5" />}
+              />
+              <KpiCell
+                label="Last Sync"
+                value={<span style={{ color: "var(--ft-text)" }}>{lastSyncLabel}</span>}
+                sub={accounts!.filter((a) => !a.lastSyncedAt).length > 0 ? `${accounts!.filter((a) => !a.lastSyncedAt).length} manual` : "all synced"}
+                accent="var(--ft-amber)"
+                icon={<RefreshCw className="w-3.5 h-3.5" />}
+              />
+              </div>
+            </div>
+
+            {/* Account allocation bar + interest projection */}
+            {accounts!.length > 1 && (
+              <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--ft-border)" }}>
+                {/* Two-panel row */}
+                <div className="ft-acct-allocation" style={{ display: "flex", gap: 32 }}>
+                  {/* Account allocation */}
+                  <div style={{ flex: 2, minWidth: 0 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", marginBottom: 6 }}>
+                      Account Allocation
+                    </div>
+                    <div style={{ display: "flex", height: 4, borderRadius: 0, overflow: "hidden", gap: 1, marginBottom: 5 }}>
+                      {[...accounts!]
+                        .sort((a, b) => b.gbpEquivalent - a.gbpEquivalent)
+                        .map((a, i) => {
+                          const pct = totalCash > 0 ? (a.gbpEquivalent / totalCash) * 100 : 0;
+                          return (
+                            <div key={a.id} style={{ width: `${pct}%`, background: ACCT_ALLOC_COLORS[i % ACCT_ALLOC_COLORS.length], minWidth: pct > 0.5 ? 2 : 0 }} title={`${a.name}: ${pct.toFixed(1)}%`} />
+                          );
+                        })}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      {[...accounts!]
+                        .sort((a, b) => b.gbpEquivalent - a.gbpEquivalent)
+                        .slice(0, 5)
+                        .map((a, i) => {
+                          const pct = totalCash > 0 ? (a.gbpEquivalent / totalCash) * 100 : 0;
+                          return (
+                            <AccountAllocationRow
+                              key={a.id}
+                              name={a.name}
+                              pct={pct}
+                              colorIndex={i}
+                            />
+                          );
+                        })}
+                      {accounts!.length > 5 && (
+                        <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                          +{accounts!.length - 5} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Interest projection */}
+                  {(() => {
+                    const apyAccounts = accounts!.filter((a) => {
+                      const m = accountMeta[a.name];
+                      return m?.apy && m.apy > 0 && a.gbpEquivalent > 0;
+                    });
+                    if (apyAccounts.length === 0) return null;
+                    const totalMonthly = apyAccounts.reduce((s, a) => {
+                      const apy = accountMeta[a.name]?.apy ?? 0;
+                      return s + (a.gbpEquivalent * (apy / 100)) / 12;
+                    }, 0);
+                    const totalAnnual = totalMonthly * 12;
+                    return (
+                      <div style={{ flex: 1, minWidth: 100, borderLeft: "1px solid var(--ft-raised)", paddingLeft: 16 }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", marginBottom: 6 }}>
+                          Interest Projection
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          <div>
+                            <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>Monthly</div>
+                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatGbp(totalMonthly)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>Annual</div>
+                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatGbp(totalAnnual)}</div>
+                          </div>
+                          <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                            {apyAccounts.length} account{apyAccounts.length !== 1 ? "s" : ""} with APY
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* NW trend sparkline */}
+            {nwHistory.length > 2 && (
+              <div style={{ padding: "8px 14px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>Net Worth Trend</span>
+                  <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>
+                    {nwHistory.length} days · {nwHistory[0]?.date?.slice(0, 7)} → {nwHistory.at(-1)?.date?.slice(0, 7)}
+                  </span>
+                </div>
+                <ResponsiveContainer width="100%" height={52}>
+                  <AreaChart data={nwHistory} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+                    <defs>
+                      <linearGradient id="acctNwGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--ft-green)" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="var(--ft-green)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" hide />
+                    <YAxis hide domain={["auto", "auto"]} />
+                    <Tooltip
+                      contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", borderRadius: 2 }}
+                      formatter={(v: number) => [`${baseCurrency === "GBP" ? "£" : "$"}${v.toFixed(0)}`, "Net Worth"]}
+                      labelFormatter={(l: string) => new Date(l).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    />
+                    <Area type="monotone" dataKey="netWorth" stroke="var(--ft-green)" strokeWidth={1.5} fill="url(#acctNwGrad)" dot={false} activeDot={{ r: 3, fill: "var(--ft-green)" }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── Onboarding panel (shown only when no accounts, unless dismissed) ─── */}
+      {(accounts?.length ?? 0) === 0 && !onboardingDismissed && (
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: isMobile ? "14px 16px" : "20px 24px", position: "relative" }}>
+          <button
+            onClick={() => { localStorage.setItem("ft-acct-onboarding-dismissed", "1"); setOnboardingDismissed(true); }}
+            title="Dismiss"
+            style={{ position: "absolute", top: 10, right: 12, background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", fontSize: 14, lineHeight: 1, padding: "2px 4px" }}
+          >
+            ✕
+          </button>
+          <div style={{ fontSize: 11, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: isMobile ? 12 : 16 }}>
+            Get started — connect your accounts
+          </div>
+          {isMobile ? (
+            /* Mobile: compact row of action buttons */
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { title: "Add manually", action: "Add Account", onClick: openAdd, color: "var(--ft-blue)" },
+                { title: "Sync Wise", action: "Configure", onClick: handleSync, color: "var(--ft-green)" },
+                { title: "Import CSV", action: "Import", onClick: () => {}, color: "var(--ft-amber)" },
+              ].map(({ title, action, onClick, color }) => (
+                <button
+                  key={title}
+                  onClick={onClick}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: `${color}0A`, border: `1px solid ${color}33`, cursor: "pointer", fontFamily: "var(--font-mono)" }}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ft-text)" }}>{title}</span>
+                  <span style={{ fontSize: 10, color, fontWeight: 700, letterSpacing: "0.04em" }}>{action} →</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="ft-three-col" style={{ display: "grid", gap: 12 }}>
+              {[
+                { step: "01", title: "Add manually", desc: "Enter account name, currency and opening balance. Balance updates manually each time.", action: "Add Account", onClick: openAdd, color: "var(--ft-blue)" },
+                { step: "02", title: "Sync Wise", desc: "Connect your Wise account API key to auto-import all your Wise currency balances.", action: "Configure Wise", onClick: handleSync, color: "var(--ft-green)" },
+                { step: "03", title: "Import CSV", desc: "Import a bank CSV export to bulk-create transactions and set account balance.", action: "Import CSV", onClick: () => {}, color: "var(--ft-amber)" },
+              ].map(({ step, title, desc, action, onClick, color }) => (
+                <OnboardingStep key={step} step={step} title={title} desc={desc} action={action} onClick={onClick} color={color} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Accounts spreadsheet table */}
       <div className="border" style={{ borderColor: "var(--ft-border)" }}>
+        {/* Section title — no controls, never wraps */}
         <div
-          className="flex items-center px-3 py-1.5 text-xs font-bold border-b"
+          className="px-3 py-1.5 text-xs font-bold border-b"
           style={{
             background: "var(--ft-green)22",
             borderColor: "var(--ft-green)44",
+            borderLeft: "3px solid var(--ft-green)",
             color: "var(--ft-green)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           ▼ CASH ACCOUNTS — Multi-Currency ({baseCurrency} Base)
         </div>
+        {/* Filter bar — separate row, wraps fine */}
+        <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", flexWrap: "wrap" }}>
+          <input
+            type="text"
+            placeholder="Search…"
+            value={accountSearch}
+            onChange={(e) => setAccountSearch(e.target.value)}
+            className="ft-filter-input"
+            style={{
+              fontSize: 10, fontFamily: "var(--font-mono)", padding: "3px 8px",
+              background: "var(--ft-base)", border: "1px solid var(--ft-border2)",
+              color: "var(--ft-text)", outline: "none", width: 130, borderRadius: 2,
+            }}
+          />
+          <select
+            value={accountSort}
+            onChange={(e) => setAccountSort(e.target.value as typeof accountSort)}
+            className="ft-filter-input"
+            style={{
+              fontSize: 10, fontFamily: "var(--font-mono)", padding: "3px 6px",
+              background: "var(--ft-base)", border: "1px solid var(--ft-border2)",
+              color: "var(--ft-dim)", outline: "none", cursor: "pointer", borderRadius: 2,
+            }}
+          >
+            <option value="default">Sort: Default</option>
+            <option value="balance-high">Balance ↓</option>
+            <option value="balance-low">Balance ↑</option>
+            <option value="name-az">Name A→Z</option>
+            <option value="name-za">Name Z→A</option>
+            <option value="currency">Currency</option>
+          </select>
+          <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+            {(["all", "wise", "manual"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setAccountFilter(f)}
+                style={{
+                  fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700,
+                  letterSpacing: "0.06em", textTransform: "uppercase",
+                  padding: "3px 8px", borderRadius: 2, cursor: "pointer",
+                  border: accountFilter === f ? "1px solid var(--ft-green)88" : "1px solid var(--ft-border2)",
+                  background: accountFilter === f ? "var(--ft-green)22" : "transparent",
+                  color: accountFilter === f ? "var(--ft-green)" : "var(--ft-dim)",
+                }}
+              >
+                {f === "all" ? `All (${accounts?.length ?? 0})` : f === "wise" ? `Wise (${accounts?.filter(a => a.isWiseLinked).length ?? 0})` : `Manual (${accounts?.filter(a => !a.isWiseLinked).length ?? 0})`}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        <div className="overflow-x-auto">
+        {/* ── Inline quick-add row ─────────────────────────────── */}
+        {qaOpen ? (
+          <div style={{
+            display: "flex", gap: 6, alignItems: "center", padding: "6px 10px",
+            borderBottom: "1px solid var(--ft-border)", background: "var(--ft-accent)06",
+            borderTop: "1px solid var(--ft-accent)33", flexWrap: "wrap",
+          }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
+              + Quick Add
+            </span>
+            <input
+              autoFocus
+              value={qaForm.name}
+              onChange={(e) => setQaForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Account name"
+              style={{ flex: 2, minWidth: 120, fontSize: 11, fontFamily: "var(--font-mono)", padding: "4px 8px", background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", outline: "none" }}
+            />
+            <select
+              value={qaForm.currency}
+              onChange={(e) => setQaForm(f => ({ ...f, currency: e.target.value as Currency }))}
+              style={{ fontSize: 11, fontFamily: "var(--font-mono)", padding: "4px 6px", background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", outline: "none", width: 70 }}
+            >
+              {(["GBP","USD","EUR","MYR","CNY","JPY","AUD","CAD","SGD","HKD","THB","INR"] as Currency[]).map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={qaForm.balance}
+              onChange={(e) => setQaForm(f => ({ ...f, balance: e.target.value }))}
+              placeholder="Balance"
+              step="0.01"
+              style={{ width: 110, fontSize: 11, fontFamily: "var(--font-mono)", padding: "4px 8px", background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", outline: "none" }}
+              onKeyDown={(e) => { if (e.key === "Enter") void handleQuickAdd(); if (e.key === "Escape") setQaOpen(false); }}
+            />
+            <button
+              onClick={() => void handleQuickAdd()}
+              disabled={!qaForm.name.trim() || !qaForm.balance || qaSubmitting}
+              style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, textTransform: "uppercase", padding: "4px 10px", background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", cursor: "pointer", opacity: (!qaForm.name.trim() || !qaForm.balance) ? 0.5 : 1 }}
+            >
+              {qaSubmitting ? "Adding…" : "Add"}
+            </button>
+            <button
+              onClick={() => setQaOpen(false)}
+              style={{ fontSize: 9, fontFamily: "var(--font-mono)", padding: "4px 8px", background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div style={{ borderBottom: "1px solid var(--ft-border)", padding: "4px 10px" }}>
+            <button
+              onClick={() => setQaOpen(true)}
+              style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", padding: "3px 10px", background: "var(--ft-accent)18", border: "1px solid var(--ft-accent)44", color: "var(--ft-accent)", cursor: "pointer" }}
+            >
+              + Quick Add Account
+            </button>
+          </div>
+        )}
+
+        <div className="ft-scroll-x">
           {/* Column headers */}
-          <div className="flex" style={{ marginLeft: 52 }}>
-            {[
-              ["ACCOUNT NAME", "1"],
-              ["TYPE", "100px"],
-              ["CURRENCY", "90px"],
-              ["BALANCE (NATIVE)", "160px"],
-              [`BALANCE (${baseCurrency})`, "130px"],
-              ["HEALTH", "200px"],
-              ["LAST SYNC", "120px"],
-              ["ACTIONS", "90px"],
-            ].map(([h, w]) => (
+          <div className="flex ft-acct-table-row">
+            {/* Placeholder for row-number (36px) + chevron (16px) to match data rows */}
+            <div className="ft-hide-mobile" style={{ ...TH, width: 36, minWidth: 36, flexShrink: 0, padding: "6px 0" }} />
+            <div style={{ ...TH, width: 16, minWidth: 16, flexShrink: 0, padding: "6px 0" }} />
+            {([
+              ["ACCOUNT NAME", "1", ""],
+              ["TYPE", "100px", "ft-hide-mobile"],
+              ["CURRENCY", "90px", "ft-hide-mobile"],
+              ["BALANCE (NATIVE)", "160px", "ft-hide-mobile"],
+              [`BALANCE (${baseCurrency})`, "130px", ""],
+              ["HEALTH", "200px", "ft-hide-mobile"],
+              ["LAST SYNC", "120px", "ft-hide-mobile"],
+              ["ACTIONS", "90px", ""],
+            ] as [string, string, string][]).map(([h, w, extraClass]) => (
               <div
-                key={h as string}
+                key={h}
+                className={extraClass || undefined}
                 style={{
                   ...TH,
                   flex: w === "1" ? 1 : undefined,
-                  width: w !== "1" ? (w as string) : undefined,
-                  minWidth: w !== "1" ? (w as string) : undefined,
-                  textAlign: ["BALANCE (NATIVE)", `BALANCE (${baseCurrency})`, "ACTIONS"].includes(
-                    h as string
-                  )
-                    ? "right"
-                    : "left",
+                  width: w !== "1" ? w : undefined,
+                  minWidth: w !== "1" ? w : undefined,
+                  textAlign: ["BALANCE (NATIVE)", `BALANCE (${baseCurrency})`, "ACTIONS"].includes(h)
+                    ? "right" as const
+                    : "left" as const,
                 }}
               >
                 {h}
@@ -1267,7 +2659,7 @@ export default function Accounts() {
           </div>
 
           {/* Account rows + detail panels */}
-          {accounts?.map((account, i) => {
+          {filteredAccounts.map((account, i) => {
             const isExpanded = expandedAccountId === account.id;
             const stats = accountStatsMap.get(account.name) ?? {
               daysSinceLast: null,
@@ -1275,218 +2667,26 @@ export default function Accounts() {
               isDormant: true,
               isActive: false,
             };
-
             const isHighlighted = highlightId === account.id;
+
             return (
-              <div key={account.id}>
-                {/* Main row */}
-                <div
-                  className="flex items-center border-b xls-row"
-                  style={{
-                    borderColor: "rgba(33,38,45,0.5)",
-                    background: isExpanded ? "var(--ft-surface)" : "var(--ft-base)",
-                    cursor: "pointer",
-                    outline: isHighlighted ? "1.5px solid var(--ft-accent)" : undefined,
-                    outlineOffset: isHighlighted ? "-1px" : undefined,
-                  }}
-                  ref={isHighlighted ? (el) => { if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(() => setHighlightId(null), 2000); } } : undefined}
-                  onClick={() => toggleExpand(account.id)}
-                >
-                  {/* Row number + expand toggle */}
-                  <div
-                    className="flex-shrink-0 flex items-center justify-center text-xs border-r"
-                    style={{
-                      width: 36,
-                      color: "var(--ft-dim)",
-                      borderColor: "var(--ft-border)",
-                      alignSelf: "stretch",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleExpand(account.id);
-                    }}
-                  >
-                    {i + 2}
-                  </div>
-                  {/* Chevron */}
-                  <div
-                    className="flex-shrink-0 flex items-center justify-center border-r"
-                    style={{
-                      width: 16,
-                      color: "var(--ft-dim)",
-                      borderColor: "var(--ft-border)",
-                      alignSelf: "stretch",
-                    }}
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="w-3 h-3" style={{ color: "var(--ft-amber)" }} />
-                    ) : (
-                      <ChevronRight className="w-3 h-3" />
-                    )}
-                  </div>
-
-                  {/* Name */}
-                  <div
-                    style={{
-                      flex: 1,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Landmark
-                        className="w-3.5 h-3.5 flex-shrink-0"
-                        style={{ color: "var(--ft-dim)" }}
-                      />
-                      <span style={{ color: "var(--ft-text)", fontSize: 12 }}>
-                        {account.name}
-                      </span>
-                      {account.isWiseLinked && (
-                        <span
-                          style={{
-                            fontSize: 9,
-                            padding: "1px 5px",
-                            borderRadius: 2,
-                            background: "rgba(96,165,250,0.08)",
-                            color: "var(--ft-blue)",
-                          }}
-                        >
-                          <Link2 className="w-2.5 h-2.5 inline mr-0.5" />
-                          WISE
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Type */}
-                  <div
-                    style={{
-                      width: 100,
-                      minWidth: 100,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                      color: "var(--ft-muted)",
-                      fontSize: 11,
-                    }}
-                  >
-                    {account.isWiseLinked ? "Wise-linked" : "Manual"}
-                  </div>
-
-                  {/* Currency */}
-                  <div
-                    style={{
-                      width: 90,
-                      minWidth: 90,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                      color: "var(--ft-blue)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {account.currency}
-                  </div>
-
-                  {/* Native balance */}
-                  <div
-                    className="pnum"
-                    style={{
-                      width: 160,
-                      minWidth: 160,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                      color: account.balance < 0 ? "var(--ft-red)" : "var(--ft-text)",
-                      fontSize: 12,
-                      textAlign: "right",
-                      fontVariantNumeric: "tabular-nums",
-                      ...privacyStyle,
-                    }}
-                  >
-                    {formatNative(account.balance, account.currency)}
-                  </div>
-
-                  {/* Base currency balance */}
-                  <div
-                    className="pnum"
-                    style={{
-                      width: 130,
-                      minWidth: 130,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                      color: account.gbpEquivalent < 0 ? "var(--ft-red)" : "var(--ft-green)",
-                      fontSize: 12,
-                      fontWeight: 600,
-                      textAlign: "right",
-                      fontVariantNumeric: "tabular-nums",
-                      ...privacyStyle,
-                    }}
-                  >
-                    {formatGbp(account.gbpEquivalent)}
-                  </div>
-
-                  {/* Health column */}
-                  <div
-                    style={{
-                      width: 200,
-                      minWidth: 200,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <HealthBadges
-                      accountName={account.name}
-                      balance={account.balance}
-                      stats={stats}
-                    />
-                  </div>
-
-                  {/* Last sync */}
-                  <div
-                    style={{
-                      width: 120,
-                      minWidth: 120,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                      color: "var(--ft-dim)",
-                      fontSize: 11,
-                    }}
-                  >
-                    {account.lastSyncedAt ? formatDate(account.lastSyncedAt) : "—"}
-                  </div>
-
-                  {/* Actions */}
-                  <div
-                    style={{
-                      width: 90,
-                      minWidth: 90,
-                      padding: "4px 6px",
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      gap: 2,
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => openEdit(account.id)}
-                    >
-                      <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => handleDelete(account.id)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Detail panel — rendered inline below the row */}
+              <React.Fragment key={account.id}>
+                <AccountTableRow
+                  account={account}
+                  rowIndex={i}
+                  isExpanded={isExpanded}
+                  isHighlighted={isHighlighted}
+                  stats={stats}
+                  deleteConfirmId={deleteConfirmId}
+                  baseCurrency={baseCurrency}
+                  privacyStyle={privacyStyle}
+                  accountMeta={accountMeta}
+                  healthTxs={healthTxs as AccountRowProps["healthTxs"]}
+                  onToggleExpand={toggleExpand}
+                  onHighlightRef={(el) => { if (el) { el.scrollIntoView({ block: "center", behavior: "smooth" }); setTimeout(() => setHighlightId(null), 2000); } }}
+                  onOpenEdit={openEdit}
+                  onDelete={handleDelete}
+                />
                 {isExpanded && (
                   <AccountDetailPanel
                     accountName={account.name}
@@ -1494,9 +2694,11 @@ export default function Accounts() {
                     balance={account.balance}
                     currency={account.currency}
                     nwHistory={nwHistory}
+                    meta={accountMeta[account.name] ?? { notes: "", targetBalance: null, apy: null, lowBalanceThreshold: null }}
+                    onMetaChange={(patch) => updateAccountMeta(account.name, patch)}
                   />
                 )}
-              </div>
+              </React.Fragment>
             );
           })}
 
@@ -1508,8 +2710,14 @@ export default function Accounts() {
             />
           )}
 
+          {accounts && accounts.length > 0 && filteredAccounts.length === 0 && (
+            <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
+              NO {accountFilter.toUpperCase()} ACCOUNTS MATCH — <span style={{ color: "var(--ft-accent)" }}>clear filter to show all</span>
+            </div>
+          )}
+
           {/* Total row */}
-          {(accounts?.length ?? 0) > 0 && (
+          {filteredAccounts.length > 0 && (
             <div
               className="flex items-center border-t"
               style={{ background: "rgba(63,185,80,0.04)", borderColor: "var(--ft-border2)" }}
@@ -1528,6 +2736,7 @@ export default function Accounts() {
                 TOTAL CASH
               </div>
               <div
+                className="ft-hide-mobile"
                 style={{
                   width: 100,
                   minWidth: 100,
@@ -1535,6 +2744,7 @@ export default function Accounts() {
                 }}
               />
               <div
+                className="ft-hide-mobile"
                 style={{
                   width: 90,
                   minWidth: 90,
@@ -1546,7 +2756,7 @@ export default function Accounts() {
               >
                 {baseCurrency}
               </div>
-              <div style={{ width: 160, minWidth: 160, borderRight: "1px solid var(--ft-raised)" }} />
+              <div className="ft-hide-mobile" style={{ width: 160, minWidth: 160, borderRight: "1px solid var(--ft-raised)" }} />
               <div
                 className="pnum"
                 style={{
@@ -1563,10 +2773,11 @@ export default function Accounts() {
                 }}
               >
                 {formatGbp(
-                  accounts?.reduce((sum, a) => sum + a.gbpEquivalent, 0) ?? 0
+                  filteredAccounts.reduce((sum, a) => sum + a.gbpEquivalent, 0)
                 )}
               </div>
               <div
+                className="ft-hide-mobile"
                 style={{
                   width: 200,
                   minWidth: 200,
@@ -1574,12 +2785,278 @@ export default function Accounts() {
                 }}
               />
               <div
+                className="ft-hide-mobile"
                 style={{ width: 120, minWidth: 120, borderRight: "1px solid var(--ft-raised)" }}
               />
               <div style={{ width: 90, minWidth: 90 }} />
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Net Owing Strip ─────────────────────────────────────── */}
+      {(accounts?.length ?? 0) > 0 && (() => {
+        const overdraftAccounts = accounts!.filter(a => a.gbpEquivalent < 0);
+        const positiveAccounts = accounts!.filter(a => a.gbpEquivalent >= 0);
+        const totalOwed = overdraftAccounts.reduce((s, a) => s + Math.abs(a.gbpEquivalent), 0);
+        const totalAssets = positiveAccounts.reduce((s, a) => s + a.gbpEquivalent, 0);
+        return (
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "8px 16px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
+              Balance Sheet
+            </span>
+            <div style={{ display: "flex", gap: 4, flex: 1, height: 6, minWidth: 100 }}>
+              <div style={{ flex: totalAssets, background: "var(--ft-green)", opacity: 0.8 }} title={`Assets: ${formatGbp(totalAssets)}`} />
+              {totalOwed > 0 && <div style={{ flex: totalOwed, background: "var(--ft-red)", opacity: 0.8 }} title={`Liabilities: ${formatGbp(totalOwed)}`} />}
+            </div>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                <div style={{ width: 8, height: 8, background: "var(--ft-green)" }} />
+                <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>
+                  {formatGbp(totalAssets)}
+                </span>
+                <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>assets</span>
+              </div>
+              {totalOwed > 0 && (
+                <>
+                  <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                    <div style={{ width: 8, height: 8, background: "var(--ft-red)" }} />
+                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>
+                      -{formatGbp(totalOwed)}
+                    </span>
+                    <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                      {overdraftAccounts.length} overdraft acct{overdraftAccounts.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                    <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>net</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: (totalAssets - totalOwed) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                      {formatGbp(totalAssets - totalOwed)}
+                    </span>
+                  </div>
+                </>
+              )}
+              {totalOwed === 0 && (
+                <span style={{ fontSize: 9, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>
+                  no overdrafts — all accounts positive
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── FX Rates Strip ───────────────────────────────────────── */}
+      {fxRates && (
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(34,211,238,0.05)", borderColor: "rgba(34,211,238,0.18)", borderLeft: "3px solid var(--ft-cyan)", color: "var(--ft-cyan)", overflow: "hidden" }}>
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>▼ FX RATES — Live · GBP Base</span>
+            <span style={{ marginLeft: 8, flexShrink: 0, fontSize: 9, fontWeight: 400, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+              {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 1, background: "var(--ft-border)" }}>
+            {Object.entries(fxRates.rates ?? {})
+              .filter(([ccy]) => ["USD", "EUR", "MYR", "JPY", "CNY", "AUD", "SGD", "HKD", "CAD", "CHF", "INR", "THB"].includes(ccy))
+              .sort(([a], [b]) => {
+                const priority = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "HKD", "MYR", "SGD", "THB", "INR"];
+                return priority.indexOf(a) - priority.indexOf(b);
+              })
+              .filter(([, rate]) => typeof rate === "number")
+              .map(([ccy, rate]) => (
+                <FxRateCell key={ccy} ccy={ccy} rate={rate as number} />
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Cash Flow + Category Grid ─────────────────────────────── */}
+      <div className="ft-two-col" style={{ display: "grid", gap: 0, border: "1px solid var(--ft-border)" }}>
+        {/* Monthly Cash Flow Chart */}
+        <div style={{ borderRight: "1px solid var(--ft-border)", minWidth: 0 }}>
+          <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(34,197,94,0.05)", borderColor: "rgba(34,197,94,0.2)", borderLeft: "3px solid var(--ft-green)", color: "var(--ft-green)", overflow: "hidden", whiteSpace: "nowrap" }}>
+            ▼ MONTHLY CASH FLOW — Last 6 Months
+          </div>
+          {monthlyFlow.length === 0 ? (
+            <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+              NO TRANSACTION HISTORY — <span style={{ color: "var(--ft-accent)", fontSize: 10 }}>import or add transactions to begin</span>
+            </div>
+          ) : (
+            <div style={{ padding: "12px 0 0" }}>
+              <ResponsiveContainer width="100%" height={140}>
+                <ComposedChart data={monthlyFlow} margin={{ top: 4, right: 16, left: 0, bottom: 0 }} barGap={4}>
+                  <XAxis dataKey="month" tick={{ fill: "#6b7280", fontSize: 10, fontFamily: "var(--font-mono)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#6b7280", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `£${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toFixed(0)}`} width={44} />
+                  <Tooltip
+                    contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", borderRadius: 2 }}
+                    formatter={(v: number, name: string) => [formatGbp(v), name === "income" ? "Income" : name === "expense" ? "Expenses" : "Net"]}
+                  />
+                  <ReferenceLine y={0} stroke="var(--ft-border2)" />
+                  <Bar dataKey="income" fill="var(--ft-green)" opacity={0.8} radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="expense" fill="var(--ft-red)" opacity={0.7} radius={[2, 2, 0, 0]} />
+                  <Line type="monotone" dataKey="net" stroke="var(--ft-amber)" strokeWidth={1.5} dot={{ r: 2, fill: "var(--ft-amber)" }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <div style={{ display: "flex", gap: 16, padding: "4px 16px 10px", justifyContent: "center" }}>
+                {[["var(--ft-green)", "Income"], ["var(--ft-red)", "Expenses"], ["var(--ft-amber)", "Net"]].map(([color, label]) => (
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ width: 10, height: 10, background: color, borderRadius: 2 }} />
+                    <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* This Month Summary */}
+        <div style={{ minWidth: 0 }}>
+          <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(245,158,11,0.05)", borderColor: "rgba(245,158,11,0.2)", borderLeft: "3px solid var(--ft-amber)", color: "var(--ft-amber)", overflow: "hidden", whiteSpace: "nowrap" }}>
+            ▼ THIS MONTH — {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase()}
+          </div>
+          {monthlySummary ? (
+            <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <MonthlySummaryCell label="INCOME" value={formatGbp(monthlySummary.totalIncome)} color="var(--ft-green)" />
+                <MonthlySummaryCell label="EXPENSES" value={formatGbp(monthlySummary.totalExpenses)} color="var(--ft-red)" />
+                <MonthlySummaryCell label="NET SAVINGS" value={formatGbp(monthlySummary.netSavings)} color={monthlySummary.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)"} />
+                <MonthlySummaryCell label="SAVINGS RATE" value={`${monthlySummary.savingsRate.toFixed(1)}%`} color={monthlySummary.savingsRate >= 20 ? "var(--ft-green)" : monthlySummary.savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)"} />
+              </div>
+              {monthSpending.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.06em", marginBottom: 6, textTransform: "uppercase" }}>Top Spending Categories</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {monthSpending.slice(0, 5).map(({ category, total }) => (
+                      <MonthSpendingRow
+                        key={category}
+                        category={category}
+                        total={total}
+                        maxSpend={monthSpending[0].total}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+              NO DATA FOR THIS MONTH — <span style={{ color: "var(--ft-accent)", fontSize: 10 }}>transactions will appear here when recorded</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Currency Converter ─────────────────────────────────────── */}
+      {fxRates && <CurrencyConverter fxRates={fxRates.rates ?? {}} baseCurrency={baseCurrency} />}
+
+    </div>
+  );
+}
+
+// ─── Currency Converter Widget ────────────────────────────────────────────────
+
+function CurrencyConverter({ fxRates, baseCurrency }: { fxRates: Record<string, number>; baseCurrency: string }) {
+  const allCurrencies = ["GBP", ...Object.keys(fxRates).sort()];
+  const [amount, setAmount] = useState("1000");
+  const [from, setFrom] = useState(baseCurrency);
+  const [to, setTo] = useState(baseCurrency === "GBP" ? "USD" : "GBP");
+  const [fromInput, setFromInput] = useState(baseCurrency);
+  const [toInput, setToInput] = useState(baseCurrency === "GBP" ? "USD" : "GBP");
+
+  const rates: Record<string, number> = { GBP: 1, ...fxRates };
+  const fromValid = !!rates[from];
+  const toValid = !!rates[to];
+
+  const convert = (amt: number, fromCcy: string, toCcy: string): number => {
+    const gbpAmt = amt / (rates[fromCcy] ?? 1);
+    return gbpAmt * (rates[toCcy] ?? 1);
+  };
+
+  const result = fromValid && toValid ? convert(parseFloat(amount) || 0, from, to) : null;
+  const unitRate = fromValid && toValid ? convert(1, from, to) : null;
+
+  const ccyInputStyle: React.CSSProperties = {
+    width: 68, padding: "6px 8px", background: "var(--ft-base)", border: "1px solid var(--ft-border2)",
+    color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 13, outline: "none",
+    textTransform: "uppercase" as const, fontWeight: 700, letterSpacing: "0.05em",
+  };
+
+  const handleFromBlur = () => {
+    const v = fromInput.toUpperCase().trim();
+    if (rates[v]) setFrom(v);
+    setFromInput(from);
+  };
+  const handleToBlur = () => {
+    const v = toInput.toUpperCase().trim();
+    if (rates[v]) setTo(v);
+    setToInput(to);
+  };
+
+  return (
+    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+      <datalist id="ft-ccy-list">
+        {allCurrencies.map((c) => <option key={c} value={c} />)}
+      </datalist>
+      <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(96,165,250,0.05)", borderColor: "rgba(96,165,250,0.2)", borderLeft: "3px solid var(--ft-blue)", color: "var(--ft-blue)", overflow: "hidden", whiteSpace: "nowrap" }}>
+        ▼ CURRENCY CONVERTER
+        <span style={{ marginLeft: 8, flexShrink: 0, fontSize: 9, fontWeight: 400, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+          — type any currency code
+        </span>
+      </div>
+      <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          style={{ width: 130, padding: "6px 10px", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, outline: "none", fontVariantNumeric: "tabular-nums" }}
+        />
+        <input
+          list="ft-ccy-list"
+          value={fromInput}
+          onChange={(e) => setFromInput(e.target.value.toUpperCase())}
+          onBlur={handleFromBlur}
+          onKeyDown={(e) => e.key === "Enter" && handleFromBlur()}
+          maxLength={6}
+          style={{ ...ccyInputStyle, borderColor: fromValid ? "var(--ft-border2)" : "var(--ft-red)" }}
+        />
+        <button
+          onClick={() => { setFrom(to); setTo(from); setFromInput(to); setToInput(from); }}
+          style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", fontSize: 16, padding: "0 2px" }}
+          title="Swap currencies"
+        >
+          ⇄
+        </button>
+        <input
+          list="ft-ccy-list"
+          value={toInput}
+          onChange={(e) => setToInput(e.target.value.toUpperCase())}
+          onBlur={handleToBlur}
+          onKeyDown={(e) => e.key === "Enter" && handleToBlur()}
+          maxLength={6}
+          style={{ ...ccyInputStyle, borderColor: toValid ? "var(--ft-border2)" : "var(--ft-red)" }}
+        />
+        <span style={{ fontSize: 18, color: "var(--ft-dim)", fontWeight: 300 }}>=</span>
+        <span style={{ fontSize: 18, fontFamily: "var(--font-mono)", fontWeight: 700, color: result !== null ? "var(--ft-green)" : "var(--ft-dim)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {result !== null
+            ? result.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+            : "—"}
+          <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 6, color: "var(--ft-muted)" }}>{to}</span>
+        </span>
+        {unitRate !== null && (
+          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+              1 {from} = {unitRate.toFixed(4)} {to}
+            </span>
+            <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+              1 {to} = {(1 / unitRate).toFixed(4)} {from}
+            </span>
+          </div>
+        )}
+        {(!fromValid || !toValid) && (
+          <span style={{ fontSize: 10, color: "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
+            {!fromValid ? `Unknown: ${from}` : `Unknown: ${to}`}
+          </span>
+        )}
       </div>
     </div>
   );

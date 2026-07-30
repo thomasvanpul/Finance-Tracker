@@ -143,6 +143,30 @@ body.density-comfortable {
   }
 }
 
+/* ── Mobile scroll: momentum + hide scrollbar on touch devices ── */
+.mobile-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+}
+.mobile-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Safe-area-aware bottom padding for mobile screens ── */
+.mobile-pb {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 16px);
+}
+
+/* ── Minimum touch target for interactive elements on mobile ── */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ── Privacy mode: blur sensitive numbers ── */
 body.privacy-mode .pnum {
   filter: blur(5px);
@@ -160,6 +184,8 @@ select,
 [type="reset"],
 [type="button"] {
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 button:disabled,
@@ -208,22 +234,22 @@ input[type="checkbox"]:checked {
   padding-bottom: var(--ft-cell-py);
 }
 
-/* ── Bloomberg Terminal Design Tokens ── */
+/* ── Bloomberg Terminal Design Tokens — Terminal Theme ── */
 :root {
-  --ft-base:    #08090B;
-  --ft-surface: #0F1117;
-  --ft-raised:  #161B24;
-  --ft-border:  #1E2532;
-  --ft-border2: #252D3D;
-  --ft-text:    #CDD6F4;
-  --ft-muted:   #6C7A96;
-  --ft-dim:     #3A4258;
-  --ft-accent:  #F4A21E;
-  --ft-amber:   #F0883E;
-  --ft-green:   #4ADE80;
-  --ft-red:     #F87171;
-  --ft-blue:    #60A5FA;
-  --ft-cyan:    #22D3EE;
+  --ft-base:    #0A0D12;
+  --ft-surface: #0F1318;
+  --ft-raised:  #141A22;
+  --ft-border:  #1C2530;
+  --ft-border2: #243040;
+  --ft-text:    #E8EDF2;
+  --ft-muted:   #6A8098;
+  --ft-dim:     #506070;
+  --ft-accent:  #E8C14A;
+  --ft-amber:   #FFB300;
+  --ft-green:   #00E5A0;
+  --ft-red:     #FF4757;
+  --ft-blue:    #4A9EFF;
+  --ft-cyan:    #00D4FF;
 }
 
 [data-theme="phosphor"] {
@@ -233,8 +259,8 @@ input[type="checkbox"]:checked {
   --ft-border:  #0D2A0D;
   --ft-border2: #1A3D1A;
   --ft-text:    #39FF14;
-  --ft-muted:   #1E8C0A;
-  --ft-dim:     #0D4406;
+  --ft-muted:   #2A9918;
+  --ft-dim:     #1E7010;
   --ft-accent:  #7FFF00;
   --ft-amber:   #FF8C00;
   --ft-green:   #00FF88;
@@ -250,8 +276,8 @@ input[type="checkbox"]:checked {
   --ft-border:  #C9D4E0;
   --ft-border2: #B0BDD0;
   --ft-text:    #1A2333;
-  --ft-muted:   #5A6A84;
-  --ft-dim:     #8A9AB4;
+  --ft-muted:   #4A5A74;
+  --ft-dim:     #637088;
   --ft-accent:  #0052CC;
   --ft-amber:   #FF6600;
   --ft-green:   #006644;
@@ -267,8 +293,8 @@ input[type="checkbox"]:checked {
   --ft-border:  #2A1E00;
   --ft-border2: #3D2B00;
   --ft-text:    #FFB000;
-  --ft-muted:   #A07020;
-  --ft-dim:     #5A3E0A;
+  --ft-muted:   #AA7828;
+  --ft-dim:     #7A5510;
   --ft-accent:  #FFD700;
   --ft-amber:   #FFA500;
   --ft-green:   #AAFF44;
@@ -285,7 +311,7 @@ input[type="checkbox"]:checked {
   --ft-border2: #163070;
   --ft-text:    #E8F0FF;
   --ft-muted:   #7A99CC;
-  --ft-dim:     #3A5080;
+  --ft-dim:     #4A6AA0;
   --ft-accent:  #4D9FFF;
   --ft-amber:   #FF9500;
   --ft-green:   #2EFF9F;
@@ -301,8 +327,8 @@ input[type="checkbox"]:checked {
   --ft-border:  #003300;
   --ft-border2: #004400;
   --ft-text:    #00CC33;
-  --ft-muted:   #007700;
-  --ft-dim:     #004400;
+  --ft-muted:   #009944;
+  --ft-dim:     #006622;
   --ft-accent:  #00FF41;
   --ft-green:   #00FF41;
   --ft-red:     #FF3300;
@@ -318,8 +344,8 @@ input[type="checkbox"]:checked {
   --ft-border:  #2D0050;
   --ft-border2: #440077;
   --ft-text:    #E8D5FF;
-  --ft-muted:   #9966CC;
-  --ft-dim:     #55007A;
+  --ft-muted:   #AA66DD;
+  --ft-dim:     #8800AA;
   --ft-accent:  #FF007A;
   --ft-amber:   #FF6B00;
   --ft-green:   #39FF4E;
@@ -335,8 +361,8 @@ input[type="checkbox"]:checked {
   --ft-border:  #0F0F20;
   --ft-border2: #1A1A38;
   --ft-text:    #C8D0E8;
-  --ft-muted:   #6870A0;
-  --ft-dim:     #30305A;
+  --ft-muted:   #7880B0;
+  --ft-dim:     #505090;
   --ft-accent:  #7B5EA7;
   --ft-amber:   #FFD166;
   --ft-green:   #2ECC71;
@@ -352,8 +378,8 @@ input[type="checkbox"]:checked {
   --ft-border:  #1A38A0;
   --ft-border2: #102890;
   --ft-text:    #FCFCFC;
-  --ft-muted:   #B8CCFC;
-  --ft-dim:     #A8C0F0;
+  --ft-muted:   #D4E4FF;
+  --ft-dim:     #C0D4FF;
   --ft-accent:  #F8C800;
   --ft-amber:   #D07010;
   --ft-green:   #3ABB3A;
@@ -369,8 +395,8 @@ input[type="checkbox"]:checked {
   --ft-border:  #1E1800;
   --ft-border2: #2E2400;
   --ft-text:    #F0E6C8;
-  --ft-muted:   #7A5E0A;
-  --ft-dim:     #3C2E04;
+  --ft-muted:   #8A6A18;
+  --ft-dim:     #62480A;
   --ft-accent:  #C8941E;
   --ft-amber:   #D4A017;
   --ft-green:   #4ECCA3;
@@ -386,8 +412,8 @@ input[type="checkbox"]:checked {
   --ft-border:  #2D0009;
   --ft-border2: #440015;
   --ft-text:    #F5C2C7;
-  --ft-muted:   #883344;
-  --ft-dim:     #4D0018;
+  --ft-muted:   #9A3A4E;
+  --ft-dim:     #7A1A2A;
   --ft-accent:  #CC1A2F;
   --ft-amber:   #FF6600;
   --ft-green:   #1A8C3A;
@@ -480,6 +506,35 @@ input[type="checkbox"]:checked {
 
 /* Dashboard widget left rail — controlled via React state, no CSS needed */
 
+/* ── Horizontal scroll wrapper for dense tables ── */
+.ft-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Scroll fade hint: right-edge gradient signals "more content →" ── */
+/* Usage: wrap the .ft-scroll-x element in a .ft-scroll-hint-x parent */
+.ft-scroll-hint-x {
+  position: relative;
+}
+.ft-scroll-hint-x::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  background: linear-gradient(to right, transparent, var(--ft-surface));
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Responsive grid utilities — base (desktop) values ── */
+.ft-two-col   { display: grid; grid-template-columns: 1fr 1fr; }
+.ft-three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.ft-four-col  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
+.ft-five-col  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; }
+
 /* ── Dashboard responsive grid ── */
 .ft-dashboard-two-col {
   display: flex;
@@ -505,26 +560,194 @@ input[type="checkbox"]:checked {
   display: none;
 }
 
-/* ── Mobile breakpoint: ≤ 640px ── */
-@media (max-width: 640px) {
-  /* Hide sidebar on mobile */
-  aside.ft-sidebar {
+/* ── Mobile breakpoint: ≤ 767px (matches JS isMobile threshold of < 768) ── */
+@media (max-width: 767px) {
+  /* Sidebar is a JS-driven drawer (transform-based); do NOT use display:none here
+     as it would prevent the overlay drawer from opening. JS handles visibility. */
+
+  /* Prevent any horizontal overflow/scroll at page level */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Tighten main content padding — extra bottom space for nav + FAB + safe area */
+  .ft-main-inner {
+    padding: 8px 10px calc(128px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── Header compact ── */
+  .ft-header {
+    padding: 0 8px !important;
+    gap: 6px !important;
+  }
+  /* Hide "NUMERIS ›" prefix — just show the page name */
+  .ft-header-brand {
+    display: none !important;
+  }
+  /* Hide search + sign-out — too wide for mobile */
+  .ft-header-search-btn,
+  .ft-header-sign-out {
     display: none !important;
   }
 
-  /* Tighten main content padding */
-  .ft-main-inner {
-    padding: 14px 14px 80px !important;
+  /* ── Dashboard two-col: prevent column overflow ── */
+  .ft-dashboard-two-col {
+    gap: 6px !important;
+  }
+  .ft-dashboard-two-col > div {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    gap: 6px !important;
   }
 
-  /* Dashboard two-col → single col */
-  .ft-dashboard-two-col {
+  /* ── Widget containers: clip overflowing content ── */
+  .widget-container {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    max-width: 100% !important;
+  }
+  .widget-container > * > * {
+    max-width: 100%;
+  }
+
+  /* ── Mobile widget grid: CSS grid stretches cells; tiles have fixed height ── */
+  /* Tiles use height: 90px internally so rows always align perfectly.        */
+  /* min-width: 0 prevents flex children from overflowing their cell.         */
+  .ft-mobile-widget-grid > div {
+    min-width: 0;
+    display: flex;
     flex-direction: column;
+  }
+  /* The Link (<a>) inside the grid cell should fill it */
+  .ft-mobile-widget-grid > div > a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Accounts table: remove fixed min-width on mobile (columns are hidden) ── */
+  .ft-acct-table-row {
+    min-width: 0 !important;
+  }
+
+  /* ── Accounts metric card strip: responsive on mobile ──
+     auto-fit + minmax(100px): 4-cell rows wrap to 2×2, 3-cell rows stay 1×3 */
+  .ft-acct-metrics-row {
+    min-width: 0 !important;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
+  }
+
+  /* ── Investments watchlist: stack sidebar above content on mobile ── */
+  .ft-watchlist-layout {
+    flex-direction: column !important;
+  }
+  .ft-watchlist-sidebar {
+    border-right: none !important;
+    border-bottom: 1px solid var(--ft-border) !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex-direction: row !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* ── Global: enforce minimum readable font size ── */
+  /* Inline font-size: 7px is too small — bump to 9px via explicit overrides below */
+
+  /* ── Sidebar: hide collapse toggle (drawer is controlled by hamburger) ── */
+  .ft-sidebar-collapse-btn {
+    display: none !important;
+  }
+
+  /* ── Page header: title+actions on separate rows, actions never wrap ── */
+  .ft-page-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  .ft-page-header > div:last-child {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 4px;
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .ft-page-header > div:last-child::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Table cells inside scroll wrappers: prevent wrapping, keep rows compact ── */
+  .ft-scroll-x td,
+  .ft-scroll-x th {
+    white-space: nowrap;
+  }
+
+  /* ── Filter bars with many controls: allow wrapping at 2 per row ── */
+  .ft-filter-bar {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .ft-filter-bar > * {
+    min-width: 0 !important;
+    flex: 1 1 calc(50% - 3px) !important;
+    max-width: 100%;
+  }
+
+  /* ── Panel headers: compact padding, never wrap to second line ── */
+  .ft-panel-header,
+  [class*="panel-header"] {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 6px !important;
+    padding: 8px 12px !important;
+    height: auto !important;
+  }
+  .ft-panel-header::-webkit-scrollbar,
+  [class*="panel-header"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── KPI number cells inside any panel: tighten font size ── */
+  .ft-kpi-cell {
+    padding: 6px 10px !important;
+  }
+
+  /* ── KPI bar cells: uniform compact padding on mobile ── */
+  .ft-kpi-bar > div,
+  .ft-kpi-bar > a {
+    padding: 8px 10px !important;
+  }
+
+  /* ── KPI bar value text: cap at 13px in compact 3-col layout ── */
+  .ft-kpi-bar > div [style*="font-size: 16px"],
+  .ft-kpi-bar > a [style*="font-size: 16px"] {
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* ── Scroll fade hint: show on mobile inside tables/panels ── */
+  .ft-scroll-hint-x::after {
+    background: linear-gradient(to right, transparent, var(--ft-base));
   }
 
   /* Insights grid → single col */
   .ft-dashboard-insights {
     grid-template-columns: 1fr !important;
+  }
+  /* Clamp insight text to 2 lines — prevents tall cards from long sentences */
+  .ft-dashboard-insights > div > :last-child {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   /* Show mobile bottom nav */
@@ -534,12 +757,22 @@ input[type="checkbox"]:checked {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 58px;
     background: var(--ft-surface);
     border-top: 1px solid var(--ft-border);
     z-index: 50;
     align-items: stretch;
     justify-content: space-around;
+    /* safe area for iPhone home indicator */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Nav items: large enough tap targets (≥ 44px) */
+  .ft-mobile-nav > * {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
   }
 
   /* Mobile: hide status strip footer */
@@ -547,17 +780,31 @@ input[type="checkbox"]:checked {
     display: none !important;
   }
 
-  /* ── Responsive grid utilities ── */
-
-  /* 5-col KPI strips → 2-col */
-  .ft-kpi-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 6px !important;
+  /* Header: hide live ticker strip — too dense for small screens */
+  .ft-header-ticker-strip {
+    display: none !important;
   }
 
-  /* 4-col cards → 2-col */
-  .ft-four-col {
+  /* ── KPI bars: 3-col wrapping on mobile (no horizontal scroll) ── */
+  .ft-kpi-bar,
+  .ft-kpi-bar.ft-kpi-grid {
+    overflow-x: hidden !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0 !important;
+  }
+
+  /* Add top border on row-2 cells (cells 4+) in 3-col KPI bar */
+  .ft-kpi-bar > div:nth-child(n+4),
+  .ft-kpi-bar > a:nth-child(n+4) {
+    border-top: 1px solid var(--ft-border) !important;
+  }
+
+  /* ── Responsive grid utilities ── */
+
+  /* 5-col KPI strips → 2-col (non-kpi-bar contexts) */
+  .ft-kpi-grid:not(.ft-kpi-bar) {
     grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
   }
 
   /* 5-col cards → 2-col */
@@ -580,6 +827,21 @@ input[type="checkbox"]:checked {
     grid-template-columns: 1fr !important;
   }
 
+  /* Auto-sizing 2-col → single col on mobile */
+  .ft-two-col-auto {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 4-col grids → single col */
+  .ft-four-col {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Hide verbose/non-essential columns on mobile */
+  .ft-hide-mobile {
+    display: none !important;
+  }
+
   /* Wardrobe: preview 340px + list → stacked */
   .ft-wardrobe-layout {
     grid-template-columns: 1fr !important;
@@ -598,10 +860,234 @@ input[type="checkbox"]:checked {
     flex-wrap: wrap;
     gap: 8px;
   }
+
+  /* Settings: feature matrix → horizontal scroll */
+  .ft-persona-matrix {
+    overflow-x: auto !important;
+  }
+  .ft-persona-matrix-inner {
+    min-width: 480px;
+  }
+
+  /* Horizontal scroll wrapper for dense tables/panels */
+  .ft-scroll-x {
+    overflow-x: auto !important;
+    /* No fade mask on mobile — it makes column content look cut off */
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+
+  /* ── Settings page: mobile handles its own nav via React; just stack the layout ── */
+  .ft-settings-layout {
+    flex-direction: column !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .ft-settings-content {
+    flex: none !important;
+    overflow-y: visible !important;
+    padding: 12px 14px !important;
+  }
+
+  /* Persona profile cards: 2-col on mobile */
+  .ft-persona-cards {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Profile page: account tab 2-col grid → single col */
+  .ft-profile-account-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Investments: ADD POSITION button swap — desktop uses absolute, mobile full-width */
+  .inv-add-btn-desktop {
+    display: none !important;
+  }
+  .inv-add-btn-mobile {
+    display: block !important;
+  }
+
+  /* Chart period / indicator rows: allow horizontal scroll on mobile */
+  .ft-chart-controls-row {
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    flex-wrap: nowrap !important;
+  }
+  .ft-chart-controls-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Account allocation panel: stack vertically on narrow screens ── */
+  .ft-acct-allocation {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+  .ft-acct-allocation > * {
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+
+  /* ── Nuclear overflow protection: last resort catch-all ──────────── */
+  /* Any flex row that doesn't already wrap MUST clip rather than overflow viewport */
+  .ft-main-inner > * {
+    max-width: 100%;
+    min-width: 0;
+  }
+  /* Inline flex rows with nowrap that are NOT inside an explicit scroll container */
+  .ft-main-inner *:not(.ft-scroll-x):not(.ft-scroll-x *):not(.ft-chart-controls-row) {
+    max-width: 100%;
+  }
+
+  /* ── Widget picker on mobile: 2-col grid already applied via inline style ── */
+  /* Ensure no overflow from button text */
+  .ft-widget-picker-btn {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Mobile type scale — 5-tier hierarchy:
+     9-10px labels · 12-13px body · 15-16px section numbers · 20-22px hero · 34px premium hero (net worth)
+     Override inline style="font-size: Xpx" via CSS attribute selectors.
+     !important overrides inline styles per CSS spec.
+     NOTE: React renders fontSize:N as font-size: Npx in HTML attributes.
+     The [style*="fontSize:"] form is dead code — only [style*="font-size:"] matches.
+     34px is intentionally NOT capped — it is the premium hero tier used for net worth on mobile. */
+
+  /* Giant heading → 22px (preserves hero hierarchy vs body text) */
+  [style*="font-size: 36px"], [style*="font-size: 40px"],
+  [style*="font-size: 32px"], [style*="font-size: 30px"] {
+    font-size: 22px !important;
+  }
+
+  /* Large → 20px */
+  [style*="font-size: 28px"], [style*="font-size: 26px"] {
+    font-size: 20px !important;
+  }
+
+  /* Medium-large → 17px */
+  [style*="font-size: 24px"], [style*="font-size: 22px"],
+  [style*="font-size: 20px"] {
+    font-size: 17px !important;
+  }
+
+  /* Slightly large → 15px (covers KPI numbers, balance amounts) */
+  [style*="font-size: 18px"] {
+    font-size: 15px !important;
+  }
+
+  /* KPI cells: tighter cap since they stack densely in grids */
+  .ft-kpi-cell [style*="font-size: 18px"],
+  .ft-kpi-cell [style*="font-size: 20px"] {
+    font-size: 13px !important;
+  }
+
+  /* Page header title */
+  .ft-page-header h1,
+  .ft-page-header [class*="title"] {
+    font-size: 13px !important;
+  }
+
+  /* ── Section headers: consistent height ── */
+  .ft-section-header {
+    padding: 6px 10px !important;
+    font-size: 10px !important;
+  }
+
+  /* ── Panel/card padding tightening ── */
+  .ft-panel-body {
+    padding: 10px !important;
+  }
+
+  /* ── Consistent row padding ── */
+  .ft-tx-row {
+    padding: 8px 10px !important;
+  }
 }
 
-/* ── Tablet breakpoint: 641px – 900px ── */
-@media (min-width: 641px) and (max-width: 900px) {
+/* ═══════════════════════════════════════════════════════════════════════════
+   iOS / iPhone NATIVE FIXES
+   Prevents keyboard zoom, adds safe-area padding, improves touch targets.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Prevent iOS auto-zoom on input focus (requires font-size >= 16px).
+   All inputs/selects get a flat 16px so parent font-size inheritance never
+   inflates them beyond 16px. .ft-filter-input stays at 13px for compact bars. */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  .ft-filter-bar input,
+  .ft-filter-bar select,
+  .ft-panel-header input,
+  .ft-panel-header select,
+  .ft-filter-input {
+    font-size: 13px !important;
+  }
+}
+
+/* Remove tap highlight on interactive elements */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth momentum scrolling on iOS */
+.ft-scroll-x,
+[style*="overflow-x: auto"],
+[style*="overflowX: auto"] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* iOS safe area for bottom sheet / drawer content */
+.vaul-drawer-content {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* FAB: filter inputs inside the quick-add sheet need at least 44px tap area */
+.ft-fab-sheet input,
+.ft-fab-sheet select {
+  min-height: 44px;
+}
+
+/* Swipe-to-delete action button reveal */
+.ft-swipe-delete-action {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ft-red);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  z-index: 0;
+}
+
+/* Row sliding container for swipe-delete */
+.ft-swipe-row {
+  position: relative;
+  overflow: hidden;
+}
+
+.ft-swipe-row-content {
+  position: relative;
+  z-index: 1;
+  transition: transform 0.15s ease;
+  will-change: transform;
+  touch-action: pan-y;
+}
+
+/* Tablet breakpoint: 768px – 900px ── */
+@media (min-width: 768px) and (max-width: 900px) {
   /* Compact main padding */
   .ft-main-inner {
     padding: 16px 18px 28px !important;
@@ -612,13 +1098,29 @@ input[type="checkbox"]:checked {
     grid-template-columns: 1fr 1fr !important;
   }
 
-  /* 5-col KPI strips → 3-col on tablet */
-  .ft-kpi-grid {
+  /* KPI bars on tablet: allow horizontal scroll for dense bars */
+  .ft-kpi-bar,
+  .ft-kpi-bar.ft-kpi-grid {
+    overflow-x: auto;
+    scrollbar-width: none;
+    grid-template-columns: repeat(var(--kpi-cols, 6), minmax(88px, auto)) !important;
+  }
+  .ft-kpi-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 5-col KPI strips → 3-col on tablet (non-bar contexts) */
+  .ft-kpi-grid:not(.ft-kpi-bar) {
     grid-template-columns: 1fr 1fr 1fr !important;
   }
 
   .ft-five-col {
     grid-template-columns: 1fr 1fr 1fr !important;
+  }
+
+  /* 4-col grids → 2-col on tablet */
+  .ft-four-col {
+    grid-template-columns: 1fr 1fr !important;
   }
 
   .ft-stat-grid {
@@ -629,6 +1131,11 @@ input[type="checkbox"]:checked {
   .ft-wardrobe-layout {
     grid-template-columns: 260px 1fr !important;
   }
+}
+
+/* ── Global: mobile-only elements hidden by default at desktop ── */
+.inv-add-btn-mobile {
+  display: none;
 }
 
 /* ── Print / PDF export ── */
@@ -718,4 +1225,115 @@ input[type="checkbox"]:checked {
 .ft-value    { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
 .ft-headline { font-family: var(--font-mono); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
 .ft-caption  { font-family: var(--font-mono); font-size: 8px; color: var(--ft-dim); letter-spacing: 0.06em; }
+
+/* ── Overflow protection — prevents text/numbers bleeding out of containers ── */
+
+/* Single-line clipping with ellipsis */
+.ft-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* All flex/grid children: never overflow their cell */
+.ft-panel > *,
+.ft-panel-header > *,
+[style*="display: flex"] > *,
+[style*="display: grid"] > * {
+  min-width: 0;
+}
+
+/* pnum (financial numbers): allow wrapping shrink but never clip mid-digit */
+.pnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+/* Panel body: clip content that exceeds bounds */
+.ft-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Any description/label inside a row: must not push amount column out */
+.ft-row-label,
+.ft-row-desc,
+.ft-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+/* Amount column: never shrink below content, never wrap */
+.ft-row-amount {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ── Flash cell animations (Bloomberg Terminal price update effect) ── */
+/* Note: 600ms duration on color property only — explicitly permitted by spec */
+@keyframes ft-flash-up {
+  0%   { background-color: color-mix(in srgb, var(--ft-green) 22%, transparent); }
+  100% { background-color: transparent; }
+}
+@keyframes ft-flash-down {
+  0%   { background-color: color-mix(in srgb, var(--ft-red) 22%, transparent); }
+  100% { background-color: transparent; }
+}
+.ft-flash-up   { animation: ft-flash-up   600ms ease-out forwards; }
+.ft-flash-down { animation: ft-flash-down 600ms ease-out forwards; }
+
+/* ── KPI bar grid — responsive strip of page-level metrics ── */
+.ft-kpi-bar {
+  display: grid;
+  grid-template-columns: repeat(var(--kpi-cols, 6), 1fr);
+  border: 1px solid var(--ft-border);
+  background: var(--ft-surface);
+}
+.ft-kpi-bar-cell {
+  padding: var(--ft-metric-py) var(--ft-cell-px);
+  border-right: 1px solid var(--ft-border);
+}
+.ft-kpi-bar-cell:last-child { border-right: none; }
+.ft-kpi-bar-cell-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ft-dim);
+  margin-bottom: 3px;
+}
+.ft-kpi-bar-cell-value {
+  font-family: var(--font-mono);
+  font-size: clamp(13px, 1.4vw, 18px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ft-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.ft-kpi-bar-cell-delta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
 

@@ -1,5 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import {
+  useListAccounts,
+  useGetInvestmentSummary,
+  useListDebts,
+} from "@workspace/api-client-react";
+import { PersonaQuickStart } from "@/components/persona-quick-start";
+import { loadPersonaIds, PERSONAS, PERSONA_COLORS } from "@/lib/persona";
+import { PageHeader } from "@/components/page-header";
+import { TrendingUp } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
   AreaChart,
   Area,
   XAxis,
@@ -8,6 +18,9 @@ import {
   Tooltip,
   ReferenceLine,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { formatGbp } from "@/lib/utils";
 
@@ -73,7 +86,6 @@ function linearProject(entries: NWEntry[]): { date: string; projected: number }[
   const last3 = entries.slice(-3);
   if (last3.length < 2) return [];
 
-  // Fit linear regression: y = a + bx
   const n = last3.length;
   const xs = last3.map((_, i) => i);
   const ys = last3.map((e) => e.netWorth);
@@ -86,13 +98,12 @@ function linearProject(entries: NWEntry[]): { date: string; projected: number }[
   const b = (n * sumXY - sumX * sumY) / denom;
   const a = (sumY - b * sumX) / n;
 
-  // Project 12 months forward from today
   const lastDate = new Date(entries[entries.length - 1].date);
   const projectionPoints: { date: string; projected: number }[] = [];
   for (let m = 1; m <= 12; m++) {
     const d = new Date(lastDate);
     d.setMonth(d.getMonth() + m);
-    const x = n - 1 + m; // extrapolate past the last known point
+    const x = n - 1 + m;
     projectionPoints.push({
       date: d.toISOString().slice(0, 10),
       projected: Math.round(a + b * x),
@@ -103,15 +114,78 @@ function linearProject(entries: NWEntry[]): { date: string; projected: number }[
 
 // ── Period filter ──────────────────────────────────────────────────────────
 
-type Period = "3M" | "6M" | "1Y" | "2Y" | "All";
+type Period = "1M" | "3M" | "6M" | "1Y" | "All";
 
 function filterByPeriod(entries: NWEntry[], period: Period): NWEntry[] {
   if (period === "All" || entries.length === 0) return entries;
   const now = new Date();
-  const months: Record<Exclude<Period, "All">, number> = { "3M": 3, "6M": 6, "1Y": 12, "2Y": 24 };
+  const months: Record<Exclude<Period, "All">, number> = { "1M": 1, "3M": 3, "6M": 6, "1Y": 12 };
   const cutoff = new Date(now);
   cutoff.setMonth(cutoff.getMonth() - months[period]);
   return entries.filter((e) => new Date(e.date) >= cutoff);
+}
+
+// ── Auto milestones (round number crossings) ────────────────────────────────
+
+function computeAutoMilestones(history: NWEntry[]): { value: number; date: string }[] {
+  if (history.length < 2) return [];
+  const result: { value: number; date: string }[] = [];
+  const STEP = 10000;
+  for (let i = 1; i < history.length; i++) {
+    const prev = history[i - 1].netWorth;
+    const curr = history[i].netWorth;
+    const lo = Math.min(prev, curr);
+    const hi = Math.max(prev, curr);
+    const firstLevel = Math.ceil(lo / STEP) * STEP;
+    for (let level = firstLevel; level <= hi; level += STEP) {
+      if (level > lo && level !== 0) {
+        if (!result.some((r) => r.value === level)) {
+          result.push({ value: level, date: history[i].date });
+        }
+      }
+    }
+  }
+  return result.sort((a, b) => a.value - b.value);
+}
+
+// ── Monthly stats ─────────────────────────────────────────────────────────
+
+interface MonthlyRow {
+  monthKey: string; // YYYY-MM
+  label: string;
+  endNW: number;
+  momDelta: number | null;
+  momPct: number | null;
+}
+
+function buildMonthlyStats(history: NWEntry[]): MonthlyRow[] {
+  if (history.length === 0) return [];
+  const byMonth = new Map<string, NWEntry>();
+  for (const e of history) {
+    const mk = e.date.slice(0, 7);
+    const existing = byMonth.get(mk);
+    if (!existing || e.date > existing.date) byMonth.set(mk, e);
+  }
+  const sorted = Array.from(byMonth.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-18); // last 18 months
+
+  const rows: MonthlyRow[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const [mk, entry] = sorted[i];
+    const [year, month] = mk.split("-");
+    const label = new Date(Number(year), Number(month) - 1, 1).toLocaleDateString("en-GB", {
+      month: "short",
+      year: "numeric",
+    });
+    const prev = i > 0 ? sorted[i - 1][1].netWorth : null;
+    const momDelta = prev !== null ? entry.netWorth - prev : null;
+    const momPct = momDelta !== null && prev !== 0 && prev !== null
+      ? (momDelta / Math.abs(prev)) * 100
+      : null;
+    rows.push({ monthKey: mk, label, endNW: entry.netWorth, momDelta, momPct });
+  }
+  return rows.reverse();
 }
 
 // ── Custom Tooltip ─────────────────────────────────────────────────────────
@@ -161,71 +235,331 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Toolti
   );
 }
 
-// ── Empty State ────────────────────────────────────────────────────────────
+// ── Panel Header ───────────────────────────────────────────────────────────
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+function PanelHeader({ children, color = "var(--ft-accent)" }: { children: React.ReactNode; color?: string }) {
   return (
     <div style={{
+      background: "var(--ft-raised)",
+      borderBottom: "1px solid var(--ft-border)",
+      borderLeft: `3px solid ${color}`,
+      padding: "0 16px 0 13px",
+      height: 34,
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      fontFamily: "var(--font-mono)",
+      fontSize: 10,
+      fontWeight: 600,
+      letterSpacing: "0.08em",
+      textTransform: "uppercase" as const,
+      color: "var(--ft-muted)",
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Empty State ────────────────────────────────────────────────────────────
+
+function EmptyState({ onAdd, isMobile }: { onAdd: () => void; isMobile: boolean }) {
+  return (
+    <div style={{
+      border: "1px solid var(--ft-border)",
+      background: "var(--ft-surface)",
+      overflow: "hidden",
+      minHeight: "calc(100vh - 160px)",
       display: "flex",
       flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "80px 40px",
-      border: "1px dashed var(--ft-border)",
-      background: "var(--ft-surface)",
-      textAlign: "center",
     }}>
+      <PanelHeader color="var(--ft-dim)">No snapshots yet</PanelHeader>
       <div style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: 28,
-        color: "var(--ft-border2)",
-        lineHeight: 1.4,
-        marginBottom: 20,
-        userSelect: "none",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: isMobile ? "24px 16px 20px" : "48px 40px 40px",
+        textAlign: "center",
+        flex: 1,
       }}>
-        {"┌──────────────────┐"}<br />
-        {"│  NET WORTH  ─────│"}<br />
-        {"│  £ 0.00    ↗    │"}<br />
-        {"│  ▁▂▃▄▅▆▇█  ·    │"}<br />
-        {"└──────────────────┘"}
+        {!isMobile && (
+          <div style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 22,
+            color: "var(--ft-border2)",
+            lineHeight: 1.5,
+            marginBottom: 24,
+            userSelect: "none" as const,
+            letterSpacing: "0.04em",
+          }}>
+            {"┌──────────────────┐"}<br />
+            {"│  NET WORTH  ─────│"}<br />
+            {"│  £ 0.00    ↗    │"}<br />
+            {"│  ▁▂▃▄▅▆▇█  ·    │"}<br />
+            {"└──────────────────┘"}
+          </div>
+        )}
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-muted)", marginBottom: 10, fontWeight: 600 }}>
+          Start tracking your net worth over time
+        </div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 6, maxWidth: 380, lineHeight: 1.7 }}>
+          Recording your net worth periodically is one of the most important habits in personal finance. It shows you whether your wealth is actually growing — not just your income.
+        </div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: isMobile ? 16 : 28, maxWidth: 380, lineHeight: 1.7 }}>
+          Add your first snapshot to begin. Log assets (cash, investments, property) and liabilities (mortgage, loans, cards) — the difference is your net worth.
+        </div>
+        <button
+          onClick={onAdd}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase" as const,
+            background: "var(--ft-accent)",
+            color: "var(--ft-base)",
+            border: "none",
+            padding: "9px 28px",
+            cursor: "pointer",
+          }}
+        >
+          + Record First Snapshot
+        </button>
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ft-muted)", marginBottom: 8 }}>
-        Start tracking your net worth over time
-      </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 6, maxWidth: 360 }}>
-        Recording your net worth periodically is one of the most important habits in personal finance. It shows you whether your wealth is actually growing — not just your income.
-      </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 24, maxWidth: 360 }}>
-        Add your first snapshot to begin. You can log assets (cash, investments, property) and liabilities (mortgage, loans, cards) — the difference is your net worth.
-      </div>
-      <button
-        onClick={onAdd}
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase" as const,
-          background: "var(--ft-accent)",
-          color: "var(--ft-base)",
-          border: "none",
-          padding: "8px 24px",
-          cursor: "pointer",
-        }}
-      >
-        + Record First Snapshot
-      </button>
     </div>
+  );
+}
+
+// ── Allocation Donut ───────────────────────────────────────────────────────
+
+interface AllocationSlice {
+  name: string;
+  value: number;
+  color: string;
+}
+
+function AllocationDonut({ slices }: { slices: AllocationSlice[] }) {
+  const total = slices.reduce((s, sl) => s + sl.value, 0);
+  if (total <= 0) return null;
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+      <PieChart width={120} height={120}>
+        <Pie
+          data={slices}
+          cx={55}
+          cy={55}
+          innerRadius={34}
+          outerRadius={55}
+          dataKey="value"
+          strokeWidth={0}
+        >
+          {slices.map((sl, i) => (
+            <Cell key={`cell-${i}`} fill={sl.color} />
+          ))}
+        </Pie>
+      </PieChart>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+        {slices.map((sl) => {
+          const pct = ((sl.value / total) * 100).toFixed(1);
+          return (
+            <div key={sl.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 8, height: 8, background: sl.color, flexShrink: 0 }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", minWidth: 70 }}>
+                {sl.name}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", fontWeight: 600 }}>
+                {formatGbp(sl.value)}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+                {pct}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Hoverable sub-rows ─────────────────────────────────────────────────────
+
+function MilestoneRow({ m, isHit, currentNW }: { m: { value: number; date: string }; isHit: boolean; currentNW: number }) {
+  const [hovered, setHovered] = useState<boolean>(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "7px 0",
+        borderBottom: "1px solid var(--ft-border)",
+        opacity: isHit ? 1 : 0.45,
+        background: hovered ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+        marginLeft: -16,
+        marginRight: -16,
+        paddingLeft: 16,
+        paddingRight: 16,
+      }}
+    >
+      <div style={{
+        width: 8, height: 8,
+        background: isHit ? "var(--ft-green)" : "var(--ft-border2)",
+        flexShrink: 0,
+      }} />
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: isHit ? "var(--ft-text)" : "var(--ft-muted)", minWidth: 80, flexShrink: 0, whiteSpace: "nowrap" }}>
+        {formatGbp(m.value)}
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+        {isHit ? `Reached ${shortDate(m.date)}` : "Not yet reached"}
+      </div>
+      {isHit && (
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>✓</span>
+      )}
+    </div>
+  );
+}
+
+function SnapshotRow({ e, prev, onDelete, deleteConfirmDate }: {
+  e: { date: string; totalAssets: number; totalLiabilities: number; netWorth: number; note?: string };
+  prev?: { netWorth: number };
+  onDelete: (date: string) => void;
+  deleteConfirmDate: string | null;
+}) {
+  const [hovered, setHovered] = useState<boolean>(false);
+  const delta = prev ? e.netWorth - prev.netWorth : null;
+  const deltaPct = (delta !== null && prev && prev.netWorth !== 0)
+    ? (delta / Math.abs(prev.netWorth)) * 100
+    : null;
+  const isConfirming = deleteConfirmDate === e.date;
+  const rowBg = isConfirming
+    ? "color-mix(in srgb, var(--ft-red) 8%, var(--ft-surface))"
+    : hovered
+    ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
+    : "transparent";
+
+  return (
+    <tr
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ borderBottom: "1px solid var(--ft-border)", background: rowBg, transition: "background 0.1s" }}
+    >
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "7px 8px", whiteSpace: "nowrap" }}>
+        {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+      </td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)", padding: "7px 8px" }}>{formatGbp(e.totalAssets)}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: e.totalLiabilities > 0 ? "var(--ft-red)" : "var(--ft-dim)", padding: "7px 8px" }}>{e.totalLiabilities > 0 ? formatGbp(e.totalLiabilities) : "—"}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: e.netWorth >= 0 ? "var(--ft-text)" : "var(--ft-red)", padding: "7px 8px" }}>{formatGbp(e.netWorth)}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: delta === null ? "var(--ft-dim)" : delta >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 8px" }}>
+        {delta === null ? "—" : `${delta >= 0 ? "+" : ""}${formatGbp(delta)}`}
+      </td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: deltaPct === null ? "var(--ft-dim)" : deltaPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 8px" }}>
+        {deltaPct === null ? "—" : `${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%`}
+      </td>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "7px 8px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.note ?? ""}</td>
+      <td style={{ padding: "7px 8px" }}>
+        <button
+          onClick={() => onDelete(e.date)}
+          style={{
+            background: isConfirming ? "var(--ft-red)" : "none",
+            border: "none",
+            color: isConfirming ? "#fff" : "var(--ft-dim)",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: isConfirming ? 8 : 12,
+            fontWeight: isConfirming ? 700 : undefined,
+            lineHeight: 1,
+            padding: isConfirming ? "2px 5px" : "0 4px",
+            borderRadius: 2,
+          }}
+          title={isConfirming ? "Click again to confirm delete" : "Delete entry"}
+        >
+          {isConfirming ? "DEL?" : "×"}
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function MonthlyStatsRow({ row, isLatest, athDiff }: {
+  row: MonthlyRow;
+  isLatest: boolean;
+  athDiff: number | null;
+}) {
+  const [hovered, setHovered] = useState<boolean>(false);
+  const rowBg = isLatest
+    ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
+    : hovered
+    ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
+    : "transparent";
+  return (
+    <tr
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ borderBottom: "1px solid var(--ft-border)", background: rowBg, transition: "background 0.1s" }}
+    >
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isLatest ? "var(--ft-text)" : "var(--ft-muted)", padding: "7px 12px", fontWeight: isLatest ? 700 : 400, whiteSpace: "nowrap" }}>
+        {row.label}{isLatest ? " ←" : ""}
+      </td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: row.endNW >= 0 ? "var(--ft-text)" : "var(--ft-red)", padding: "7px 12px" }}>
+        {formatGbp(row.endNW)}
+      </td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: row.momDelta === null ? "var(--ft-dim)" : row.momDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 12px" }}>
+        {row.momDelta === null ? "—" : `${row.momDelta >= 0 ? "+" : ""}${formatGbp(row.momDelta)}`}
+      </td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: row.momPct === null ? "var(--ft-dim)" : row.momPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 12px" }}>
+        {row.momPct === null ? "—" : `${row.momPct >= 0 ? "+" : ""}${row.momPct.toFixed(1)}%`}
+      </td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: athDiff === null ? "var(--ft-dim)" : athDiff >= 0 ? "var(--ft-cyan)" : "var(--ft-red)", padding: "7px 12px" }}>
+        {athDiff === null ? "—" : athDiff >= 0 ? "ATH" : formatGbp(athDiff)}
+      </td>
+    </tr>
+  );
+}
+
+function TargetRateRow({ r, yrs, nw10, nw20, isCagr, currentNW, targetNw, arrivalYear }: {
+  r: number; yrs: number | null; nw10: number; nw20: number;
+  isCagr: boolean; currentNW: number; targetNw: number;
+  arrivalYear: (r: number) => string;
+}) {
+  const [hovered, setHovered] = useState<boolean>(false);
+  const rowBg = isCagr
+    ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
+    : hovered
+    ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
+    : "transparent";
+  return (
+    <tr
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ borderLeft: isCagr ? "2px solid var(--ft-accent)" : "2px solid transparent", background: rowBg, transition: "background 0.1s" }}
+    >
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isCagr ? "var(--ft-accent)" : "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{r}%{isCagr ? " ←" : ""}</td>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{yrs !== null ? `${yrs.toFixed(1)} yrs` : currentNW >= targetNw ? "Already reached" : "—"}</td>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{arrivalYear(r)}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{formatGbp(Math.round(nw10))}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{formatGbp(Math.round(nw20))}</td>
+    </tr>
   );
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function NetWorthHistory() {
+  const isMobile = useIsMobile();
   const [history, setHistory] = useState<NWEntry[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
   const [period, setPeriod] = useState<Period>("All");
+  const [targetNw, setTargetNw] = useState<number>(() => {
+    try { const r = localStorage.getItem("ft-nw-target"); return r ? parseFloat(r) : 0; } catch { return 0; }
+  });
+  const [targetInput, setTargetInput] = useState<string>(() => {
+    try { const r = localStorage.getItem("ft-nw-target"); return r && parseFloat(r) > 0 ? String(parseFloat(r)) : ""; } catch { return ""; }
+  });
 
   // Form state
   const [formAssets, setFormAssets] = useState("");
@@ -236,17 +570,62 @@ export default function NetWorthHistory() {
   const [msDate, setMsDate] = useState(todayStr());
   const [msLabel, setMsLabel] = useState("");
   const [msColor, setMsColor] = useState("var(--ft-accent)");
+  const [deleteConfirmDate, setDeleteConfirmDate] = useState<string | null>(null);
+
+  // Live data for auto-fill
+  const { data: rawAccounts = [] } = useListAccounts();
+  const { data: invSummary } = useGetInvestmentSummary();
+  const { data: rawDebts = [] } = useListDebts();
+
+  const liveAssets = useMemo(() => {
+    const accountTotal = (rawAccounts as Array<{ gbpEquivalent?: number }>)
+      .reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+    const investTotal = (invSummary as { totalValueGbp?: number } | undefined)?.totalValueGbp ?? 0;
+    return Math.round((accountTotal + investTotal) * 100) / 100;
+  }, [rawAccounts, invSummary]);
+
+  const liveLiabilities = useMemo(() => {
+    return Math.round(
+      (rawDebts as Array<{ direction?: string; gbpEquivalent?: number; status?: string }>)
+        .filter((d) => d.direction === "i_owe_them" && d.status === "pending")
+        .reduce((s, d) => s + (d.gbpEquivalent ?? 0), 0)
+      * 100
+    ) / 100;
+  }, [rawDebts]);
+
+  function autoFillFromLiveData() {
+    setFormAssets(liveAssets > 0 ? String(liveAssets) : "");
+    setFormLiabilities(liveLiabilities > 0 ? String(liveLiabilities) : "");
+    if (!showForm) setShowForm(true);
+  }
 
   useEffect(() => {
     setHistory(loadHistory());
     setMilestones(loadMilestones());
   }, []);
 
+  // Auto-snapshot: save today's NW from live data if no entry exists for today
+  useEffect(() => {
+    if (liveAssets <= 0) return;
+    const today = todayStr();
+    const existing = loadHistory();
+    if (existing.some((e) => e.date === today)) return;
+    const entry: NWEntry = {
+      date: today,
+      totalAssets: liveAssets,
+      totalLiabilities: liveLiabilities,
+      netWorth: liveAssets - liveLiabilities,
+      note: "auto",
+    };
+    const updated = [...existing, entry].sort((a, b) => a.date.localeCompare(b.date));
+    saveHistory(updated);
+    setHistory(updated);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveAssets, liveLiabilities]);
+
   // Derived
   const filtered = useMemo(() => filterByPeriod(history, period), [history, period]);
-
   const chartData = useMemo(() => filtered.map((e) => ({ ...e })), [filtered]);
-
   const projectionPoints = useMemo(() => linearProject(history), [history]);
 
   const projectedIn12Months = projectionPoints.length > 0
@@ -255,13 +634,11 @@ export default function NetWorthHistory() {
 
   // Combined chart data: history entries + projected points
   const fullChartData = useMemo(() => {
-    if (period !== "All" && period !== "1Y" && period !== "2Y") {
+    if (period !== "All" && period !== "1Y") {
       return chartData.map((d) => ({ ...d, projected: undefined as number | undefined }));
     }
     const histWithNull = chartData.map((d) => ({ ...d, projected: undefined as number | undefined }));
     if (projectionPoints.length === 0) return histWithNull;
-    // Anchor: last real point gets a projected value equal to its netWorth
-    const lastEntry = history[history.length - 1];
     const combined = [
       ...histWithNull.map((d, i) =>
         i === histWithNull.length - 1 ? { ...d, projected: d.netWorth } : d
@@ -275,9 +652,8 @@ export default function NetWorthHistory() {
         note: undefined,
       })),
     ];
-    void lastEntry;
     return combined;
-  }, [chartData, projectionPoints, history, period]);
+  }, [chartData, projectionPoints, period]);
 
   const currentNW = history.length > 0 ? history[history.length - 1].netWorth : 0;
   const firstNW = history.length > 0 ? history[0].netWorth : 0;
@@ -287,7 +663,47 @@ export default function NetWorthHistory() {
   const isPositiveTrend = history.length < 2 || currentNW >= firstNW;
   const trendColor = isPositiveTrend ? "var(--ft-green)" : "var(--ft-red)";
 
-  // Best single-month increase
+  // All-time high and low
+  const allTimeHigh = useMemo(() => {
+    if (history.length === 0) return null;
+    return history.reduce((max, e) => e.netWorth > max.netWorth ? e : max, history[0]);
+  }, [history]);
+
+  const allTimeLow = useMemo(() => {
+    if (history.length === 0) return null;
+    return history.reduce((min, e) => e.netWorth < min.netWorth ? e : min, history[0]);
+  }, [history]);
+
+  // MTD change
+  const mtdChange = useMemo(() => {
+    if (history.length === 0) return null;
+    const now = new Date();
+    const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+    const monthStart = [...history].reverse().find((e) => e.date < firstOfMonth);
+    if (!monthStart) return null;
+    return currentNW - monthStart.netWorth;
+  }, [history, currentNW]);
+
+  // YTD change
+  const ytdChange = useMemo(() => {
+    if (history.length === 0) return null;
+    const firstOfYear = `${new Date().getFullYear()}-01-01`;
+    const yearStart = [...history].reverse().find((e) => e.date < firstOfYear);
+    if (!yearStart) return null;
+    return currentNW - yearStart.netWorth;
+  }, [history, currentNW]);
+
+  // CAGR
+  const cagr = useMemo(() => {
+    if (history.length < 2 || firstNW <= 0 || currentNW <= 0) return null;
+    const firstDate = new Date(history[0].date).getTime();
+    const lastDate = new Date(history[history.length - 1].date).getTime();
+    const years = (lastDate - firstDate) / (365.25 * 24 * 3600 * 1000);
+    if (years < 0.08) return null;
+    return (Math.pow(currentNW / firstNW, 1 / years) - 1) * 100;
+  }, [history, firstNW, currentNW]);
+
+  // Best single-period increase
   const bestMonthIncrease = useMemo(() => {
     if (history.length < 2) return 0;
     let best = 0;
@@ -297,6 +713,25 @@ export default function NetWorthHistory() {
     }
     return best;
   }, [history]);
+
+  // Auto milestones
+  const autoMilestones = useMemo(() => computeAutoMilestones(history), [history]);
+
+  // Monthly stats table
+  const monthlyStats = useMemo(() => buildMonthlyStats(history), [history]);
+
+  // Allocation donut: assets vs liabilities
+  const latestEntry = history.length > 0 ? history[history.length - 1] : null;
+  const allocationSlices: AllocationSlice[] = useMemo(() => {
+    if (!latestEntry || latestEntry.totalAssets <= 0) return [];
+    const slices: AllocationSlice[] = [
+      { name: "Net Worth", value: Math.max(0, latestEntry.netWorth), color: "var(--ft-green)" },
+    ];
+    if (latestEntry.totalLiabilities > 0) {
+      slices.push({ name: "Liabilities", value: latestEntry.totalLiabilities, color: "var(--ft-red)" });
+    }
+    return slices;
+  }, [latestEntry]);
 
   // Handlers
   function handleSnapshot() {
@@ -331,6 +766,12 @@ export default function NetWorthHistory() {
   }
 
   function handleDeleteEntry(date: string) {
+    if (deleteConfirmDate !== date) {
+      setDeleteConfirmDate(date);
+      setTimeout(() => setDeleteConfirmDate(null), 3000);
+      return;
+    }
+    setDeleteConfirmDate(null);
     const updated = history.filter((e) => e.date !== date);
     setHistory(updated);
     saveHistory(updated);
@@ -362,248 +803,274 @@ export default function NetWorthHistory() {
     marginBottom: 4,
   };
 
-  const PERIODS: Period[] = ["3M", "6M", "1Y", "2Y", "All"];
+  const PERIODS: Period[] = ["1M", "3M", "6M", "1Y", "All"];
 
   return (
     <div>
-      {/* ── Page header ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>
-            <span style={{ color: "var(--ft-accent)" }}>·</span> Net Worth History
+      {/* Persona quick-start */}
+      {(() => { const ids = loadPersonaIds(); return ids[0] === "wealth"; })() && <PersonaQuickStart />}
+
+      {/* Persona context strip */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid) return null;
+        const msgs: Record<string, string | null> = {
+          wealth: "Net worth history is the foundation of Wealth Architect — log snapshots regularly to track your trajectory and model future milestones.",
+          market: "Track total net worth alongside your portfolio value to see how investment gains compound relative to your broader balance sheet.",
+          budget: "Your net worth = assets − liabilities. Even small monthly surpluses compound significantly over time — this chart shows that in action.",
+          social: null,
+          full: null,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const persona = PERSONAS.find(p => p.id === pid);
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
+            {persona && <span style={{ color: "var(--ft-dim)", flexShrink: 0, fontSize: 9 }}>{persona.code}</span>}
+            <span>{msg}</span>
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-            Track wealth over time · spot trends · project the future
+        );
+      })()}
+
+      <PageHeader
+        icon={TrendingUp}
+        title="Net Worth History"
+        subtitle="track wealth over time · spot trends · project the future"
+        actions={
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => setShowMilestoneForm((s) => !s)}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase" as const,
+                background: "transparent",
+                color: showMilestoneForm ? "var(--ft-accent)" : "var(--ft-muted)",
+                border: "1px solid var(--ft-border2)",
+                padding: "5px 12px",
+                cursor: "pointer",
+              }}
+            >
+              {showMilestoneForm ? "Cancel" : "+ Milestone"}
+            </button>
+            <button
+              onClick={() => setShowForm((s) => !s)}
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase" as const,
+                background: showForm ? "var(--ft-raised)" : "var(--ft-accent)",
+                color: showForm ? "var(--ft-text)" : "var(--ft-base)",
+                border: showForm ? "1px solid var(--ft-border2)" : "none",
+                padding: "6px 16px",
+                cursor: "pointer",
+              }}
+            >
+              {showForm ? "Cancel" : "+ Record Snapshot"}
+            </button>
+          </div>
+        }
+      />
+
+      {/* ── KPI Bar ── */}
+      {history.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
+          {/* Current Net Worth — hero number */}
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Net Worth</div>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {formatGbp(currentNW)}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+              {cagr !== null ? <span style={{ color: "var(--ft-cyan)" }}>{cagr >= 0 ? "+" : ""}{cagr.toFixed(1)}% CAGR</span> : "as of today"}
+            </div>
+          </div>
+
+          {/* MTD */}
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${mtdChange === null ? "var(--ft-border)" : mtdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>MTD Change</div>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: mtdChange === null ? "var(--ft-muted)" : mtdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
+              {mtdChange === null ? "—" : `${mtdChange >= 0 ? "+" : ""}${formatGbp(mtdChange)}`}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>month to date</div>
+          </div>
+
+          {/* YTD */}
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${ytdChange === null ? "var(--ft-border)" : ytdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>YTD Change</div>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: ytdChange === null ? "var(--ft-muted)" : ytdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
+              {ytdChange === null ? "—" : `${ytdChange >= 0 ? "+" : ""}${formatGbp(ytdChange)}`}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>year to date</div>
+          </div>
+
+          {/* All-time high */}
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-cyan)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>All-Time High</div>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-cyan)", lineHeight: 1 }}>
+              {allTimeHigh ? formatGbp(allTimeHigh.netWorth) : "—"}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+              {allTimeHigh ? shortDate(allTimeHigh.date) : ""}
+            </div>
+          </div>
+
+          {/* All-time low */}
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-amber)", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Best Single Month</div>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>
+              {bestMonthIncrease > 0 ? `+${formatGbp(bestMonthIncrease)}` : (allTimeLow ? formatGbp(allTimeLow.netWorth) : "—")}
+            </div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+              {bestMonthIncrease > 0 ? "largest single gain" : (allTimeLow ? shortDate(allTimeLow.date) : "")}
+            </div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => setShowMilestoneForm((s) => !s)}
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase" as const,
-              background: "transparent",
-              color: showMilestoneForm ? "var(--ft-accent)" : "var(--ft-muted)",
-              border: "1px solid var(--ft-border2)",
-              padding: "5px 12px",
-              cursor: "pointer",
-            }}
-          >
-            {showMilestoneForm ? "Cancel" : "+ Milestone"}
-          </button>
-          <button
-            onClick={() => setShowForm((s) => !s)}
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase" as const,
-              background: showForm ? "var(--ft-raised)" : "var(--ft-accent)",
-              color: showForm ? "var(--ft-text)" : "var(--ft-base)",
-              border: showForm ? "1px solid var(--ft-border2)" : "none",
-              padding: "6px 16px",
-              cursor: "pointer",
-            }}
-          >
-            {showForm ? "Cancel" : "+ Record Snapshot"}
-          </button>
+      )}
+
+      {/* ── Live data mini strip (only if no history yet) ── */}
+      {liveAssets > 0 && history.length === 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
+          {[
+            { label: "Live Assets", value: formatGbp(liveAssets), color: "var(--ft-green)" },
+            { label: "Live Liabilities", value: formatGbp(liveLiabilities), color: "var(--ft-red)" },
+            { label: "Current Net Worth", value: formatGbp(liveAssets - liveLiabilities), color: (liveAssets - liveLiabilities) >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
+          ].map((cell, i) => (
+            <div key={cell.label} style={{ padding: "12px 16px", background: "var(--ft-surface)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{cell.label}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: i === 2 ? 18 : 14, fontWeight: 700, color: cell.color, lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cell.value}</div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
       {/* ── Snapshot form ── */}
       {showForm && (
-        <div style={{
-          background: "var(--ft-surface)",
-          border: "1px solid var(--ft-border)",
-          padding: 20,
-          marginBottom: 16,
-        }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>
-            Record Today's Net Worth
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+          <div style={{
+            background: "var(--ft-raised)",
+            borderBottom: "1px solid var(--ft-border)",
+            borderLeft: "3px solid var(--ft-green)",
+            padding: "0 16px 0 13px",
+            height: 34,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-muted)" }}>
+              Record Today&apos;s Net Worth
+            </span>
+            {liveAssets > 0 && (
+              <button
+                onClick={autoFillFromLiveData}
+                style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "3px 10px", border: "1px solid color-mix(in srgb, var(--ft-blue) 40%, transparent)", background: "color-mix(in srgb, var(--ft-blue) 8%, transparent)", color: "var(--ft-blue)", cursor: "pointer" }}
+                title={`Auto-fill: Assets £${liveAssets.toLocaleString()} · Liabilities £${liveLiabilities.toLocaleString()}`}
+              >
+                ↻ Auto-fill ({formatGbp(liveAssets - liveLiabilities)} net)
+              </button>
+            )}
           </div>
-          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={labelSt}>Total Assets (£)</label>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>
-                Cash + investments + property + other
+          <div style={{ padding: "16px 20px" }}>
+            <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div>
+                <label style={labelSt}>Total Assets (£)</label>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>Cash + investments + property + other</div>
+                <input type="number" placeholder="e.g. 85000" value={formAssets} onChange={(e) => setFormAssets(e.target.value)} style={inputSt} />
               </div>
-              <input
-                type="number"
-                placeholder="e.g. 85000"
-                value={formAssets}
-                onChange={(e) => setFormAssets(e.target.value)}
-                style={inputSt}
-              />
-            </div>
-            <div>
-              <label style={labelSt}>Total Liabilities (£)</label>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>
-                Mortgage + loans + cards + other debts
+              <div>
+                <label style={labelSt}>Total Liabilities (£)</label>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>Mortgage + loans + cards + other debts</div>
+                <input type="number" placeholder="e.g. 12000" value={formLiabilities} onChange={(e) => setFormLiabilities(e.target.value)} style={inputSt} />
               </div>
-              <input
-                type="number"
-                placeholder="e.g. 12000"
-                value={formLiabilities}
-                onChange={(e) => setFormLiabilities(e.target.value)}
-                style={inputSt}
-              />
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={labelSt}>Note (optional)</label>
+                <input type="text" placeholder='e.g. Got a raise, paid off car' value={formNote} onChange={(e) => setFormNote(e.target.value)} style={inputSt} />
+              </div>
             </div>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <label style={labelSt}>Note (optional)</label>
-              <input
-                type="text"
-                placeholder="e.g. Got a raise, paid off car"
-                value={formNote}
-                onChange={(e) => setFormNote(e.target.value)}
-                style={inputSt}
-              />
+            {formAssets && (
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 12 }}>
+                Net worth:{" "}
+                <span className="pnum" style={{ fontWeight: 700, color: (parseFloat(formAssets) - (parseFloat(formLiabilities) || 0)) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                  {formatGbp(parseFloat(formAssets) - (parseFloat(formLiabilities) || 0))}
+                </span>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={handleSnapshot} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "var(--ft-green)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}>
+                Save Snapshot
+              </button>
+              <button onClick={() => setShowForm(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}>
+                Cancel
+              </button>
             </div>
-          </div>
-          {formAssets && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 12 }}>
-              Net worth:{" "}
-              <span style={{ fontWeight: 700, color: (parseFloat(formAssets) - (parseFloat(formLiabilities) || 0)) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-                {formatGbp(parseFloat(formAssets) - (parseFloat(formLiabilities) || 0))}
-              </span>
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={handleSnapshot}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "var(--ft-green)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}
-            >
-              Save Snapshot
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}
-            >
-              Cancel
-            </button>
           </div>
         </div>
       )}
 
       {/* ── Milestone form ── */}
       {showMilestoneForm && (
-        <div style={{
-          background: "var(--ft-surface)",
-          border: "1px solid var(--ft-border)",
-          padding: 20,
-          marginBottom: 16,
-        }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>
-            Add Milestone
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={labelSt}>Date</label>
-              <input type="date" value={msDate} onChange={(e) => setMsDate(e.target.value)} style={inputSt} />
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+          <PanelHeader color="var(--ft-blue)">Add Milestone</PanelHeader>
+          <div style={{ padding: "16px 20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12, marginBottom: 12 }}>
+              <div>
+                <label style={labelSt}>Date</label>
+                <input type="date" value={msDate} onChange={(e) => setMsDate(e.target.value)} style={inputSt} />
+              </div>
+              <div>
+                <label style={labelSt}>Label</label>
+                <input type="text" placeholder='"Paid off car loan"' value={msLabel} onChange={(e) => setMsLabel(e.target.value)} style={inputSt} />
+              </div>
             </div>
-            <div>
-              <label style={labelSt}>Label</label>
-              <input
-                type="text"
-                placeholder='e.g. "Paid off car loan"'
-                value={msLabel}
-                onChange={(e) => setMsLabel(e.target.value)}
-                style={inputSt}
-              />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={handleAddMilestone} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}>
+                Add
+              </button>
+              <button onClick={() => setShowMilestoneForm(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}>
+                Cancel
+              </button>
             </div>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={handleAddMilestone}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}
-            >
-              Add
-            </button>
-            <button
-              onClick={() => setShowMilestoneForm(false)}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}
-            >
-              Cancel
-            </button>
           </div>
         </div>
       )}
 
       {/* ── Empty state ── */}
-      {history.length === 0 && !showForm && <EmptyState onAdd={() => setShowForm(true)} />}
-
-      {/* ── Stats panel ── */}
-      {history.length > 0 && (
-        <div className="ft-four-col" style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 8,
-          marginBottom: 16,
-        }}>
-          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "14px 16px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Current Net Worth</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-              {formatGbp(currentNW)}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
-              as of {new Date(history[history.length - 1].date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-            </div>
-          </div>
-
-          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "14px 16px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Since First Entry</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: nwChange >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-              {nwChange >= 0 ? "+" : ""}{formatGbp(nwChange)}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: nwChange >= 0 ? "var(--ft-green)" : "var(--ft-red)", marginTop: 3 }}>
-              {nwChangePct >= 0 ? "+" : ""}{nwChangePct.toFixed(1)}%
-            </div>
-          </div>
-
-          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "14px 16px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Best Period Increase</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-green)" }}>
-              {bestMonthIncrease > 0 ? `+${formatGbp(bestMonthIncrease)}` : "—"}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
-              single period
-            </div>
-          </div>
-
-          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "14px 16px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Snapshots Recorded</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)" }}>
-              {history.length}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
-              {projectedIn12Months !== null
-                ? `Proj. 12m: ${formatGbp(projectedIn12Months)}`
-                : "Add more to project"}
-            </div>
-          </div>
-        </div>
-      )}
+      {history.length === 0 && !showForm && <EmptyState onAdd={() => setShowForm(true)} isMobile={isMobile} />}
 
       {/* ── Main chart ── */}
       {history.length > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "20px 20px 16px", marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+          <div style={{
+            background: "var(--ft-raised)",
+            borderBottom: "1px solid var(--ft-border)",
+            borderLeft: `3px solid ${trendColor}`,
+            padding: "0 16px 0 13px",
+            height: 36,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-muted)" }}>
                 Net Worth Timeline
-              </div>
+              </span>
               {projectedIn12Months !== null && (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
-                  Projected in 12 months:{" "}
-                  <span style={{ color: projectedIn12Months >= currentNW ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600 }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                  Projected 12m:{" "}
+                  <span className="pnum" style={{ color: projectedIn12Months >= currentNW ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600 }}>
                     {formatGbp(projectedIn12Months)}
                   </span>
-                </div>
+                  {" "}
+                  <span style={{ color: "var(--ft-dim)", fontSize: 8 }}>(linear trend)</span>
+                </span>
               )}
             </div>
             {/* Period selector */}
-            <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ display: "flex", gap: 0, border: "1px solid var(--ft-border)", flexShrink: 0 }}>
               {PERIODS.map((p) => (
                 <button
                   key={p}
@@ -612,11 +1079,12 @@ export default function NetWorthHistory() {
                     fontFamily: "var(--font-mono)",
                     fontSize: 9,
                     letterSpacing: "0.06em",
-                    padding: "4px 10px",
+                    padding: "5px 11px",
                     cursor: "pointer",
                     background: period === p ? "var(--ft-accent)" : "transparent",
                     color: period === p ? "var(--ft-base)" : "var(--ft-dim)",
-                    border: period === p ? "none" : "1px solid var(--ft-border2)",
+                    border: "none",
+                    borderRight: p !== "All" ? "1px solid var(--ft-border)" : "none",
                     textTransform: "uppercase" as const,
                   }}
                 >
@@ -625,8 +1093,9 @@ export default function NetWorthHistory() {
               ))}
             </div>
           </div>
+          <div style={{ padding: "16px 20px 12px" }}>
 
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={fullChartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="nwGradient" x1="0" y1="0" x2="0" y2="1">
@@ -657,7 +1126,7 @@ export default function NetWorthHistory() {
               <Tooltip content={<CustomTooltip />} />
               <ReferenceLine y={0} stroke="var(--ft-border2)" strokeDasharray="4 4" label={{ value: "£0", fill: "var(--ft-dim)", fontSize: 8, fontFamily: "var(--font-mono)" }} />
 
-              {/* Milestone vertical lines */}
+              {/* User milestones */}
               {visibleMilestones.map((m) => (
                 <ReferenceLine
                   key={`${m.date}-${m.label}`}
@@ -668,34 +1137,13 @@ export default function NetWorthHistory() {
                 />
               ))}
 
-              {/* Net worth area */}
-              <Area
-                type="monotone"
-                dataKey="netWorth"
-                stroke={trendColor}
-                strokeWidth={2}
-                fill="url(#nwGradient)"
-                dot={false}
-                connectNulls={false}
-              />
-
-              {/* Projection dashed line */}
+              <Area type="monotone" dataKey="netWorth" stroke={trendColor} strokeWidth={2} fill="url(#nwGradient)" dot={false} connectNulls={false} />
               {projectionPoints.length > 0 && (
-                <Area
-                  type="monotone"
-                  dataKey="projected"
-                  stroke="var(--ft-cyan)"
-                  strokeWidth={1.5}
-                  strokeDasharray="5 4"
-                  fill="url(#projGradient)"
-                  dot={false}
-                  connectNulls={true}
-                />
+                <Area type="monotone" dataKey="projected" stroke="var(--ft-cyan)" strokeWidth={1.5} strokeDasharray="5 4" fill="url(#projGradient)" dot={false} connectNulls={true} />
               )}
             </AreaChart>
           </ResponsiveContainer>
 
-          {/* Legend */}
           <div style={{ display: "flex", gap: 16, marginTop: 8, paddingLeft: 52 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 16, height: 2, background: trendColor }} />
@@ -704,19 +1152,19 @@ export default function NetWorthHistory() {
             {projectionPoints.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 16, height: 1, background: "var(--ft-cyan)", borderTop: "1px dashed var(--ft-cyan)" }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Projected (linear trend)</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Projected</span>
               </div>
             )}
+          </div>
           </div>
         </div>
       )}
 
-      {/* ── Stacked assets/liabilities chart (only if 2+ entries) ── */}
+      {/* ── Stacked assets/liabilities chart ── */}
       {history.length >= 2 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "20px 20px 16px", marginBottom: 16 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 16 }}>
-            Assets vs Liabilities Breakdown
-          </div>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+          <PanelHeader color="var(--ft-green)">Assets vs Liabilities</PanelHeader>
+          <div style={{ padding: "16px 20px 12px" }}>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={filtered} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
               <defs>
@@ -730,32 +1178,11 @@ export default function NetWorthHistory() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" vertical={false} />
-              <XAxis
-                dataKey="date"
-                tickFormatter={shortDate}
-                tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }}
-                tickLine={false}
-                axisLine={{ stroke: "var(--ft-border)" }}
-                minTickGap={40}
-              />
-              <YAxis
-                tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
-                tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }}
-                tickLine={false}
-                axisLine={false}
-                width={52}
-              />
+              <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickLine={false} axisLine={{ stroke: "var(--ft-border)" }} minTickGap={40} />
+              <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickLine={false} axisLine={false} width={52} />
               <Tooltip
-                formatter={(value: number, name: string) => [
-                  formatGbp(value),
-                  name === "totalAssets" ? "Assets" : "Liabilities",
-                ]}
-                contentStyle={{
-                  background: "var(--ft-raised)",
-                  border: "1px solid var(--ft-border2)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                }}
+                formatter={(value: number, name: string) => [formatGbp(value), name === "totalAssets" ? "Assets" : "Liabilities"]}
+                contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
               />
               <Area type="monotone" dataKey="totalAssets" stroke="var(--ft-green)" strokeWidth={1.5} fill="url(#assetsGrad)" dot={false} />
               <Area type="monotone" dataKey="totalLiabilities" stroke="var(--ft-red)" strokeWidth={1.5} fill="url(#liabGrad)" dot={false} />
@@ -771,30 +1198,296 @@ export default function NetWorthHistory() {
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Liabilities</span>
             </div>
           </div>
+          </div>
         </div>
       )}
 
-      {/* ── Milestones list ── */}
-      {milestones.length > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "16px 20px", marginBottom: 16 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
-            Milestones
+      {/* ── Auto Milestones + Allocation split ── */}
+      {history.length > 0 && (autoMilestones.length > 0 || allocationSlices.length > 0) && (
+        <div style={{ display: "grid", gridTemplateColumns: allocationSlices.length > 0 ? "1fr 1fr" : "1fr", gap: 12, marginBottom: 16 }}>
+
+          {/* Auto milestones */}
+          {autoMilestones.length > 0 && (
+            <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
+              <PanelHeader color="var(--ft-green)">Wealth Milestones</PanelHeader>
+              <div style={{ padding: "0 16px 12px" }}>
+                {autoMilestones.slice(0, 10).map((m) => {
+                  const isHit = currentNW >= m.value;
+                  return (
+                    <MilestoneRow key={m.value} m={m} isHit={isHit} currentNW={currentNW} />
+                  );
+                })}
+                {currentNW > 0 && (() => {
+                  const nextLevel = Math.ceil(currentNW / 10000) * 10000;
+                  const remaining = nextLevel - currentNW;
+                  const pct = ((currentNW % 10000) / 10000) * 100;
+                  return (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 5 }}>
+                        Next: <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{formatGbp(nextLevel)}</span>
+                        {" — "}<span className="pnum" style={{ color: "var(--ft-cyan)" }}>{formatGbp(remaining)} to go</span>
+                      </div>
+                      <div style={{ height: 4, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: "var(--ft-accent)" }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* Allocation donut */}
+          {allocationSlices.length > 0 && latestEntry && (
+            <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
+              <PanelHeader color="var(--ft-cyan)">Allocation Breakdown</PanelHeader>
+              <div style={{ padding: "16px 16px 12px" }}>
+                <AllocationDonut slices={allocationSlices} />
+                <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
+                  <div style={{ padding: "8px 12px", background: "var(--ft-raised)" }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Total Assets</div>
+                    <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatGbp(latestEntry.totalAssets)}</div>
+                  </div>
+                  <div style={{ padding: "8px 12px", background: "var(--ft-raised)" }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Total Liabilities</div>
+                    <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: latestEntry.totalLiabilities > 0 ? "var(--ft-red)" : "var(--ft-dim)" }}>
+                      {latestEntry.totalLiabilities > 0 ? formatGbp(latestEntry.totalLiabilities) : "£0"}
+                    </div>
+                  </div>
+                </div>
+                {latestEntry.totalAssets > 0 && (
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 8 }}>
+                    Leverage ratio: <span style={{ color: "var(--ft-text)" }}>
+                      {latestEntry.totalLiabilities > 0
+                        ? `${((latestEntry.totalLiabilities / latestEntry.totalAssets) * 100).toFixed(1)}% of assets are financed`
+                        : "Debt-free"}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Monthly stats table ── */}
+      {monthlyStats.length > 0 && (
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+          <div style={{
+            background: "var(--ft-raised)",
+            borderBottom: "1px solid var(--ft-border)",
+            borderLeft: "3px solid var(--ft-accent)",
+            padding: "0 16px 0 13px",
+            height: 34,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-muted)" }}>
+              Monthly Breakdown
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+              End-of-month · last {monthlyStats.length} months
+            </span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {isMobile ? (
+            <div>
+              {monthlyStats.map((row, idx) => {
+                const isLatest = idx === 0;
+                return (
+                  <div
+                    key={row.monthKey}
+                    style={{
+                      borderBottom: "1px solid var(--ft-border)",
+                      padding: "8px 14px",
+                      background: isLatest ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isLatest ? "var(--ft-text)" : "var(--ft-muted)", fontWeight: isLatest ? 700 : 400 }}>
+                        {row.label}{isLatest ? " ←" : ""}
+                      </span>
+                      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: row.endNW >= 0 ? "var(--ft-text)" : "var(--ft-red)" }}>
+                        {formatGbp(row.endNW)}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: row.momDelta === null ? "var(--ft-dim)" : row.momDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                        {row.momDelta === null ? "—" : `${row.momDelta >= 0 ? "+" : ""}${formatGbp(row.momDelta)}`}
+                      </span>
+                      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: row.momPct === null ? "var(--ft-dim)" : row.momPct >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                        {row.momPct === null ? "—" : `${row.momPct >= 0 ? "+" : ""}${row.momPct.toFixed(1)}%`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", minWidth: 460, borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    {["Month", "Net Worth", "MoM Change", "MoM %", "vs ATH"].map((h) => (
+                      <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", textAlign: "left", padding: "4px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)" }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyStats.map((row, idx) => {
+                    const athDiff = allTimeHigh ? row.endNW - allTimeHigh.netWorth : null;
+                    const isLatest = idx === 0;
+                    return (
+                      <MonthlyStatsRow
+                        key={row.monthKey}
+                        row={row}
+                        isLatest={isLatest}
+                        athDiff={athDiff}
+                      />
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Target Net Worth Calculator ── */}
+      {history.length > 0 && (
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+          <div style={{
+            background: "var(--ft-raised)",
+            borderBottom: "1px solid var(--ft-border)",
+            borderLeft: "3px solid var(--ft-blue)",
+            padding: isMobile ? "8px 14px 8px 11px" : "0 16px 0 13px",
+            minHeight: 34,
+            display: "flex",
+            flexWrap: isMobile ? "wrap" : "nowrap",
+            alignItems: isMobile ? "flex-start" : "center",
+            justifyContent: "space-between",
+            gap: isMobile ? 6 : 0,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-muted)" }}>
+                Target Net Worth
+              </span>
+              {targetNw > 0 && currentNW > 0 && (
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                  — {Math.min(100, (currentNW / targetNw) * 100).toFixed(1)}% reached
+                </span>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="number"
+                value={targetInput}
+                onChange={(e) => setTargetInput(e.target.value)}
+                onBlur={() => {
+                  const v = parseFloat(targetInput);
+                  if (!isNaN(v) && v > 0) {
+                    setTargetNw(v);
+                    try { localStorage.setItem("ft-nw-target", String(v)); } catch { /* noop */ }
+                  } else {
+                    setTargetNw(0);
+                    try { localStorage.removeItem("ft-nw-target"); } catch { /* noop */ }
+                  }
+                }}
+                placeholder="e.g. 500000"
+                className="ft-filter-input"
+                style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 10px", width: isMobile ? "100%" : 140, outline: "none" }}
+              />
+            </div>
+          </div>
+          {targetNw > 0 && (() => {
+            const pct = Math.min(100, (currentNW / targetNw) * 100);
+            const remaining = Math.max(0, targetNw - currentNW);
+            const RATES = [5, 8, 10, 12];
+            const yearsToReach = (r: number) => {
+              if (r <= 0 || currentNW <= 0) return null;
+              const yrs = Math.log(targetNw / currentNW) / Math.log(1 + r / 100);
+              return yrs > 0 && yrs < 200 ? yrs : null;
+            };
+            const arrivalYear = (r: number) => {
+              const yrs = yearsToReach(r);
+              if (yrs === null) return "—";
+              const yr = new Date().getFullYear() + Math.ceil(yrs);
+              return String(yr);
+            };
+            const cagrYears = cagr !== null ? yearsToReach(cagr) : null;
+            return (
+              <div>
+                <div style={{ padding: "12px 16px 0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, gap: 4, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Current: <span className="pnum">{formatGbp(currentNW)}</span></span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Remaining: <span className="pnum">{formatGbp(remaining)}</span></span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Target: <span className="pnum">{formatGbp(targetNw)}</span></span>
+                  </div>
+                  <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", position: "relative" }}>
+                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: pct >= 100 ? "var(--ft-green)" : "var(--ft-accent)", transition: "width 0.25s ease" }} />
+                  </div>
+                  {cagr !== null && cagrYears !== null && (
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>
+                      At your historical CAGR of {cagr.toFixed(1)}% → target in <span style={{ color: "var(--ft-text)" }}>{cagrYears.toFixed(1)} yrs</span> ({arrivalYear(cagr)})
+                    </div>
+                  )}
+                </div>
+                <div className="ft-scroll-x" style={{ overflowX: "auto", padding: "12px 16px 14px" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        {["Growth Rate", "Years to Target", "Arrival Year", "NW in 10 yrs", "NW in 20 yrs"].map((h) => (
+                          <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", textAlign: "left", padding: "3px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)" }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {RATES.map((r) => {
+                        const yrs = yearsToReach(r);
+                        const nw10 = currentNW * Math.pow(1 + r / 100, 10);
+                        const nw20 = currentNW * Math.pow(1 + r / 100, 20);
+                        const isCagr = cagr !== null && Math.abs(r - cagr) < 0.5;
+                        return (
+                          <TargetRateRow
+                            key={r}
+                            r={r}
+                            yrs={yrs}
+                            nw10={nw10}
+                            nw20={nw20}
+                            isCagr={isCagr}
+                            currentNW={currentNW}
+                            targetNw={targetNw}
+                            arrivalYear={arrivalYear}
+                          />
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+          {targetNw === 0 && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", padding: "12px 16px", textAlign: "center" }}>
+              Enter a target net worth to see projections and time-to-reach scenarios.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── User Milestones list ── */}
+      {milestones.length > 0 && (
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+          <PanelHeader color="var(--ft-blue)">Custom Milestones</PanelHeader>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0, padding: "8px 16px 12px" }}>
             {milestones.map((m, i) => (
-              <div key={i} style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                borderLeft: `3px solid ${m.color ?? "var(--ft-accent)"}`,
-                paddingLeft: 10,
-              }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", minWidth: 60 }}>
-                  {shortDate(m.date)}
-                </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1 }}>
-                  {m.label}
-                </div>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, borderLeft: `3px solid ${m.color ?? "var(--ft-accent)"}`, paddingLeft: 10, padding: "6px 0 6px 10px", borderBottom: "1px solid var(--ft-border)" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", minWidth: 60, flexShrink: 0, whiteSpace: "nowrap" }}>{shortDate(m.date)}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{m.label}</div>
                 <button
                   onClick={() => {
                     const updated = milestones.filter((_, j) => j !== i);
@@ -815,61 +1508,107 @@ export default function NetWorthHistory() {
 
       {/* ── Snapshot log ── */}
       {history.length > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "16px 20px" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
-            Snapshot Log
-          </div>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr>
-                  {["Date", "Assets", "Liabilities", "Net Worth", "Change", "Note", ""].map((h) => (
-                    <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", textAlign: "left", padding: "4px 8px", borderBottom: "1px solid var(--ft-border)" }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[...history].reverse().map((e, idx, arr) => {
-                  const prev = arr[idx + 1];
-                  const delta = prev ? e.netWorth - prev.netWorth : null;
-                  return (
-                    <tr key={e.date} style={{ borderBottom: "1px solid var(--ft-border)" }}>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "7px 8px", whiteSpace: "nowrap" }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
+          <PanelHeader color="var(--ft-dim)">Snapshot Log — {history.length} entries</PanelHeader>
+          {isMobile ? (
+            <div>
+              {[...history].reverse().map((e, idx, arr) => {
+                const prev = arr[idx + 1];
+                const delta = prev ? e.netWorth - prev.netWorth : null;
+                const deltaPct = (delta !== null && prev && prev.netWorth !== 0)
+                  ? (delta / Math.abs(prev.netWorth)) * 100
+                  : null;
+                const isConfirming = deleteConfirmDate === e.date;
+                return (
+                  <div
+                    key={e.date}
+                    style={{
+                      borderBottom: "1px solid var(--ft-border)",
+                      padding: "8px 14px",
+                      background: isConfirming ? "color-mix(in srgb, var(--ft-red) 8%, var(--ft-surface))" : "transparent",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
                         {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                      </td>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)", padding: "7px 8px" }}>
-                        {formatGbp(e.totalAssets)}
-                      </td>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: e.totalLiabilities > 0 ? "var(--ft-red)" : "var(--ft-dim)", padding: "7px 8px" }}>
-                        {e.totalLiabilities > 0 ? formatGbp(e.totalLiabilities) : "—"}
-                      </td>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: e.netWorth >= 0 ? "var(--ft-text)" : "var(--ft-red)", padding: "7px 8px" }}>
-                        {formatGbp(e.netWorth)}
-                      </td>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: delta === null ? "var(--ft-dim)" : delta >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 8px" }}>
-                        {delta === null ? "—" : `${delta >= 0 ? "+" : ""}${formatGbp(delta)}`}
-                      </td>
-                      <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "7px 8px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {e.note ?? ""}
-                      </td>
-                      <td style={{ padding: "7px 8px" }}>
+                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: e.netWorth >= 0 ? "var(--ft-text)" : "var(--ft-red)" }}>
+                          {formatGbp(e.netWorth)}
+                        </span>
                         <button
                           onClick={() => handleDeleteEntry(e.date)}
-                          style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1, padding: "0 4px" }}
-                          onMouseEnter={(ev) => { ev.currentTarget.style.color = "var(--ft-red)"; }}
-                          onMouseLeave={(ev) => { ev.currentTarget.style.color = "var(--ft-dim)"; }}
+                          style={{
+                            background: isConfirming ? "var(--ft-red)" : "none",
+                            border: "none",
+                            color: isConfirming ? "#fff" : "var(--ft-dim)",
+                            cursor: "pointer",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: isConfirming ? 8 : 12,
+                            fontWeight: isConfirming ? 700 : undefined,
+                            lineHeight: 1,
+                            padding: isConfirming ? "2px 5px" : "0 4px",
+                            borderRadius: 2,
+                          }}
                         >
-                          ×
+                          {isConfirming ? "DEL?" : "×"}
                         </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>
+                        A: {formatGbp(e.totalAssets)}
+                      </span>
+                      {e.totalLiabilities > 0 && (
+                        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)" }}>
+                          L: {formatGbp(e.totalLiabilities)}
+                        </span>
+                      )}
+                      {delta !== null && (
+                        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: delta >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                          {delta >= 0 ? "+" : ""}{formatGbp(delta)}
+                          {deltaPct !== null && ` (${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%)`}
+                        </span>
+                      )}
+                      {e.note && (
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>
+                          {e.note}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", minWidth: 600, borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    {["Date", "Assets", "Liabilities", "Net Worth", "Change", "% Chg", "Note", ""].map((h) => (
+                      <th key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", textAlign: "left", padding: "4px 8px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)" }}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...history].reverse().map((e, idx, arr) => {
+                    const prev = arr[idx + 1];
+                    return (
+                      <SnapshotRow
+                        key={e.date}
+                        e={e}
+                        prev={prev}
+                        onDelete={handleDeleteEntry}
+                        deleteConfirmDate={deleteConfirmDate}
+                      />
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
-import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
-import { useEffect } from "react";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import { loadFxOverrides } from "@/lib/currency-store";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,13 +11,18 @@ import { WidgetsProvider } from "@/contexts/widgets-context";
 import { TickersProvider } from "@/contexts/tickers-context";
 import { PrivacyProvider } from "@/contexts/privacy-context";
 import { CategoryProvider } from "@/contexts/category-context";
+import { Onboarding } from "@/components/onboarding";
+import { isOnboardingComplete } from "@/lib/persona";
 import NotFound from "@/pages/not-found";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileApp } from "@/components/mobile/MobileApp";
 
 import Dashboard from "@/pages/dashboard";
 import Accounts from "@/pages/accounts";
 import Transactions from "@/pages/transactions";
 import Upcoming from "@/pages/upcoming";
 import Investments from "@/pages/investments";
+import Portfolio from "@/pages/portfolio";
 import Owing from "@/pages/owing";
 import Settings from "@/pages/settings";
 import Profile from "@/pages/profile";
@@ -39,11 +44,16 @@ import Import from "@/pages/import";
 import Recurring from "@/pages/recurring";
 import Learn from "@/pages/learn";
 import AiCoach from "@/pages/ai-coach";
+import Decisions from "@/pages/decisions";
 import Fire from "@/pages/fire";
 import Pension from "@/pages/pension";
 import Calculators from "@/pages/calculators";
 import Wardrobe from "@/pages/wardrobe";
 import Projection from "@/pages/projection";
+import Briefing from "@/pages/briefing";
+import Business from "@/pages/business";
+import FamilyFinance from "@/pages/family-finance";
+import TradingJournal from "@/pages/trading-journal";
 import { PageTransitionOverlay } from "@/components/page-transition";
 const queryClient = new QueryClient();
 
@@ -72,7 +82,58 @@ function BootEffects() {
   return null;
 }
 
+const PAGE_TITLES: Record<string, string> = {
+  "/": "Dashboard · Numeris",
+  "/accounts": "Accounts · Numeris",
+  "/transactions": "Transactions · Numeris",
+  "/upcoming": "Upcoming · Numeris",
+  "/investments": "Investments · Numeris",
+  "/portfolio": "Portfolio · Numeris",
+  "/owing": "Owing · Numeris",
+  "/reports": "Reports · Numeris",
+  "/goals": "Goals · Numeris",
+  "/analytics": "Analytics · Numeris",
+  "/budget": "Budget · Numeris",
+  "/health-score": "Health Score · Numeris",
+  "/net-worth": "Net Worth · Numeris",
+  "/whatif": "What If · Numeris",
+  "/fire": "FIRE · Numeris",
+  "/pension": "Pension · Numeris",
+  "/calculators": "Calculators · Numeris",
+  "/wardrobe": "Wardrobe · Numeris",
+  "/projection": "Projection · Numeris",
+  "/subscriptions": "Subscriptions · Numeris",
+  "/tax": "Tax · Numeris",
+  "/mortgage": "Mortgage · Numeris",
+  "/calendar": "Calendar · Numeris",
+  "/split": "Split · Numeris",
+  "/recurring": "Recurring · Numeris",
+  "/learn": "Learn · Numeris",
+  "/cashflow": "Cash Flow · Numeris",
+  "/year-review": "Year Review · Numeris",
+  "/import": "Import · Numeris",
+  "/settings": "Settings · Numeris",
+  "/profile": "Profile · Numeris",
+  "/decisions": "Decisions · Numeris",
+  "/ai-coach": "AI Coach · Numeris",
+  "/briefing": "Briefing · Numeris",
+  "/business": "Business · Numeris",
+  "/family": "Family Finance · Numeris",
+  "/trading": "Trading Journal · Numeris",
+};
+
 function Router() {
+  const isMobile = useIsMobile();
+  const [location] = useLocation();
+
+  useEffect(() => {
+    document.title = PAGE_TITLES[location] ?? "Numeris";
+  }, [location]);
+
+  // Mobile shell only at root — all other paths fall through to desktop layout
+  // so that More links to /fire, /reports etc. actually render something
+  if (isMobile && (location === "/" || location === "")) return <MobileApp />;
+
   return (
     <Layout>
       <Switch>
@@ -80,7 +141,8 @@ function Router() {
         <Route path="/accounts" component={Accounts} />
         <Route path="/transactions" component={Transactions} />
         <Route path="/upcoming" component={Upcoming} />
-        <Route path="/investments" component={Investments} />
+        <Route path="/investments">{() => <Investments defaultTab="markets" />}</Route>
+        <Route path="/portfolio">{() => <Portfolio />}</Route>
         <Route path="/owing" component={Owing} />
         <Route path="/reports" component={Reports} />
         <Route path="/goals" component={Goals} />
@@ -99,24 +161,31 @@ function Router() {
         <Route path="/mortgage" component={Mortgage} />
         <Route path="/calendar" component={Calendar} />
         <Route path="/split" component={Split} />
-        {/* Redirects for consolidated routes */}
-        <Route path="/reports"><Redirect to="/analytics" /></Route>
-        <Route path="/upcoming"><Redirect to="/calendar" /></Route>
-        <Route path="/split"><Redirect to="/owing" /></Route>
-        <Route path="/recurring"><Redirect to="/subscriptions" /></Route>
-        <Route path="/mortgage"><Redirect to="/whatif" /></Route>
+        <Route path="/recurring" component={Recurring} />
         <Route path="/learn" component={Learn} />
         <Route path="/cashflow" component={CashFlow} />
         <Route path="/year-review" component={YearReview} />
         <Route path="/import" component={Import} />
-        <Route path="/recurring" component={Recurring} />
         <Route path="/settings" component={Settings} />
         <Route path="/profile" component={Profile} />
+        <Route path="/decisions" component={Decisions} />
         <Route path="/ai-coach" component={AiCoach} />
+        <Route path="/briefing" component={Briefing} />
+        <Route path="/business" component={Business} />
+        <Route path="/family" component={FamilyFinance} />
+        <Route path="/trading" component={TradingJournal} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
   );
+}
+
+function OnboardingGate({ children }: { children: React.ReactNode }) {
+  const [done, setDone] = useState(() => isOnboardingComplete());
+  if (!done) {
+    return <Onboarding onComplete={() => setDone(true)} />;
+  }
+  return <>{children}</>;
 }
 
 function App() {
@@ -130,12 +199,14 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <AuthGate>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <DefaultPageRedirector />
-                <PageTransitionOverlay />
-                <Router />
-              </WouterRouter>
-              <Toaster />
+              <OnboardingGate>
+                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                  <DefaultPageRedirector />
+                  <PageTransitionOverlay />
+                  <Router />
+                </WouterRouter>
+                <Toaster />
+              </OnboardingGate>
             </AuthGate>
           </TooltipProvider>
         </QueryClientProvider>

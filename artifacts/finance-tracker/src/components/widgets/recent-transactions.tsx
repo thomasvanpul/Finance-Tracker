@@ -34,6 +34,93 @@ function categoryColor(cat: string): string {
 type TxType = "all" | "income" | "expense" | "transfer";
 const TYPE_FILTERS: TxType[] = ["all", "income", "expense", "transfer"];
 
+type TxRecord = { id: number; type: string; date: string; description: string; category: string; gbpValue: number; accountName: string };
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", padding: "7px 12px",
+        borderBottom: "1px solid var(--ft-border)", gap: 10,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-raised))" : "transparent",
+        transition: "background 0.1s",
+        minWidth: 0,
+        overflow: "hidden",
+      }}
+    >
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", width: 14, flexShrink: 0, textAlign: "center" }}>
+        {TYPE_PREFIX[tx.type] ?? "·"}
+      </span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", flexShrink: 0, width: 68 }}>
+        {formatDate(tx.date)}
+      </span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {tx.description}
+      </span>
+      {isExpanded && (
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", flexShrink: 0, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {tx.accountName}
+        </span>
+      )}
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "1px 5px", border: `1px solid ${categoryColor(tx.category)}40`, color: categoryColor(tx.category), flexShrink: 0, maxWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {tx.category}
+      </span>
+      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", flexShrink: 0, width: 72, textAlign: "right" }}>
+        {TYPE_PREFIX[tx.type]}{formatGbp(tx.gbpValue)}
+      </span>
+    </div>
+  );
+}
+
+type TxSummaryCardProps = {
+  type: "income" | "expense" | "transfer";
+  count: number;
+  total: number;
+};
+
+function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
+  const [hov, setHov] = useState(false);
+  const color = type === "income" ? "var(--ft-green)" : type === "expense" ? "var(--ft-red)" : "var(--ft-amber)";
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 10px",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
+        border: "1px solid var(--ft-border)",
+        borderTop: `2px solid ${color}`,
+        transition: "background 0.1s",
+      }}
+    >
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color, width: 16, flexShrink: 0, textAlign: "center" }}>
+        {TYPE_PREFIX[type]}
+      </span>
+      <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {type}
+        </div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {count} transaction{count !== 1 ? "s" : ""}
+        </div>
+      </div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color, flexShrink: 0, whiteSpace: "nowrap" }}>
+        {TYPE_PREFIX[type]}{formatGbp(total)}
+      </div>
+    </div>
+  );
+}
+
+// ─── Widget ───────────────────────────────────────────────────────────────────
+
 export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean }) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TxType>("all");
@@ -125,28 +212,7 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
         </div>
       )}
       {filtered.map(tx => (
-        <div key={tx.id} style={{ display: "flex", alignItems: "center", padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", gap: 10 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", width: 14, flexShrink: 0, textAlign: "center" }}>
-            {TYPE_PREFIX[tx.type] ?? "·"}
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", flexShrink: 0, width: 68 }}>
-            {formatDate(tx.date)}
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {tx.description}
-          </span>
-          {isExpanded && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", flexShrink: 0, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {tx.accountName}
-            </span>
-          )}
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "1px 5px", border: `1px solid ${categoryColor(tx.category)}40`, color: categoryColor(tx.category), flexShrink: 0, maxWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {tx.category}
-          </span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", flexShrink: 0, width: 72, textAlign: "right" }}>
-            {TYPE_PREFIX[tx.type]}{formatGbp(tx.gbpValue)}
-          </span>
-        </div>
+        <TxRow key={tx.id} tx={tx} isExpanded={isExpanded} />
       ))}
     </div>
   );
@@ -160,31 +226,24 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
             {txRows}
           </div>
           <div style={{ padding: "14px 12px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 12 }}>
+            <div style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--ft-dim)",
+              marginBottom: 12,
+              borderLeft: "3px solid var(--ft-accent)",
+              paddingLeft: 8,
+            }}>
               Transaction Summary
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
               {(["income", "expense", "transfer"] as const).map(type => {
                 const count = typeCounts[type] ?? 0;
-                const color = type === "income" ? "var(--ft-green)" : type === "expense" ? "var(--ft-red)" : "var(--ft-amber)";
                 const total = allTransactions.filter(t => t.type === type).reduce((s, t) => s + t.gbpValue, 0);
                 return (
-                  <div key={type} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)" }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color, width: 16, flexShrink: 0, textAlign: "center" }}>
-                      {TYPE_PREFIX[type]}
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ft-dim)" }}>
-                        {type}
-                      </div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginTop: 1 }}>
-                        {count} transaction{count !== 1 ? "s" : ""}
-                      </div>
-                    </div>
-                    <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color }}>
-                      {TYPE_PREFIX[type]}{formatGbp(total)}
-                    </div>
-                  </div>
+                  <TxSummaryCard key={type} type={type} count={count} total={total} />
                 );
               })}
             </div>

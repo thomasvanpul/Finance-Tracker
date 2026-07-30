@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 
 export type WidgetId =
   | "net-worth"
@@ -22,7 +22,9 @@ export type WidgetId =
   | "spending-velocity"
   | "savings-rate"
   | "emergency-fund"
-  | "nw-milestones";
+  | "nw-milestones"
+  | "decision-engine"
+  | "cash-runway";
 
 export type WidgetSpan = "half" | "full";
 
@@ -35,7 +37,7 @@ export interface WidgetDef {
 }
 
 export const WIDGET_REGISTRY: WidgetDef[] = [
-  { id: "net-worth",            label: "Net Worth",           description: "Total assets minus liabilities over time", defaultEnabled: true,  defaultSpan: "full" },
+  { id: "net-worth",            label: "Net Worth",           description: "Total assets minus liabilities over time", defaultEnabled: false, defaultSpan: "full" },
   { id: "accounts-summary",     label: "Accounts",            description: "Balance across all linked accounts",       defaultEnabled: true,  defaultSpan: "half" },
   { id: "recent-transactions",  label: "Recent Transactions", description: "Last 10 transactions across all accounts", defaultEnabled: true,  defaultSpan: "half" },
   { id: "spending-breakdown",   label: "Spending Breakdown",  description: "Category donut chart for the current month", defaultEnabled: true,  defaultSpan: "half" },
@@ -57,6 +59,8 @@ export const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "savings-rate",        label: "Savings Rate",        description: "This month's savings rate vs target",                                   defaultEnabled: true,  defaultSpan: "half" },
   { id: "emergency-fund",      label: "Emergency Fund",      description: "Months of expenses covered vs 6-month target",                          defaultEnabled: true,  defaultSpan: "half" },
   { id: "nw-milestones",      label: "Milestones",          description: "Net worth milestones reached over time",                                     defaultEnabled: false, defaultSpan: "half" },
+  { id: "decision-engine",   label: "Decision Engine",     description: "Ranked financial actions derived from your data",                            defaultEnabled: true,  defaultSpan: "half" },
+  { id: "cash-runway",       label: "Cash Runway",         description: "Months of runway at current burn rate vs 6-month target",                     defaultEnabled: false, defaultSpan: "half" },
 ];
 
 const DEFAULT_DEF_MAP = Object.fromEntries(WIDGET_REGISTRY.map(w => [w.id, w]));
@@ -161,6 +165,15 @@ export function WidgetsProvider({ children }: { children: ReactNode }) {
     setSpans(newSpans);
     persist(newEnabled, newOrder, newSpans);
   }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      const s = load();
+      restoreView(s.enabled, s.order, s.spans);
+    };
+    window.addEventListener("ft-widgets-update", handler);
+    return () => window.removeEventListener("ft-widgets-update", handler);
+  }, [restoreView]);
 
   return (
     <WidgetsContext.Provider value={{

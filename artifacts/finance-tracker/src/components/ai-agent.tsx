@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageSquare, X, Send, Loader2, BotMessageSquare, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 import { AiWanderer } from "@/components/ai-wanderer";
+import { getBotSkin, type BotSkinId } from "@/lib/bot-skins";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,43 @@ async function sendChat(messages: Message[], context: string): Promise<string> {
   return data.text;
 }
 
+// ── Skin-specific sling box themes ────────────────────────────────────────────
+
+const SLING_SKIN: Record<BotSkinId, {
+  border: string; bg: string; headerBg: string; headerBorder: string;
+  titleText: string; titleColor: string; iconColor: string;
+  shadow: string; tailColor: string; tag: string;
+}> = {
+  ix: {
+    border: "1px solid var(--ft-border2)", bg: "var(--ft-surface)",
+    headerBg: "var(--ft-raised)", headerBorder: "var(--ft-border)",
+    titleText: "AI Financial Assistant", titleColor: "var(--ft-text)",
+    iconColor: "var(--ft-accent)", shadow: "0 12px 48px rgba(0,0,0,0.7)",
+    tailColor: "var(--ft-border2)", tag: "Powered by Gemini",
+  },
+  mario: {
+    border: "3px solid #e3170a", bg: "#0d0400",
+    headerBg: "#1f0800", headerBorder: "#e3170a",
+    titleText: "IT'S-A ME! Finance AI", titleColor: "#f7c948",
+    iconColor: "#f7c948", shadow: "0 12px 48px rgba(0,0,0,0.85), 0 0 0 1px #f7c94822",
+    tailColor: "#e3170a", tag: "Let's-a go!",
+  },
+  gilded: {
+    border: "2px solid #c9922a", bg: "#0e0a02",
+    headerBg: "#1c1205", headerBorder: "#c9922a",
+    titleText: "Gilded Financial Oracle", titleColor: "#d4a017",
+    iconColor: "#d4a017", shadow: "0 12px 48px rgba(0,0,0,0.8), 0 0 24px rgba(201,146,42,0.2)",
+    tailColor: "#c9922a", tag: "Wealth Management",
+  },
+  bloodline: {
+    border: "2px solid #8b0000", bg: "#060101",
+    headerBg: "#120000", headerBorder: "#8b0000",
+    titleText: "Bloodline Oracle", titleColor: "#c0392b",
+    iconColor: "#c0392b", shadow: "0 12px 48px rgba(0,0,0,0.92), 0 0 24px rgba(139,0,0,0.35)",
+    tailColor: "#8b0000", tag: "Dark Market Intelligence",
+  },
+};
+
 // ── Chat panel (shared across all styles) ────────────────────────────────────
 
 interface ChatPanelProps {
@@ -67,9 +105,10 @@ interface ChatPanelProps {
   style: AiStyle;
   anchorBottom?: number;
   anchorRight?: number;
+  wandererPos?: { x: number; y: number } | null;
 }
 
-function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20 }: ChatPanelProps) {
+function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, wandererPos }: ChatPanelProps) {
   const [location] = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -109,13 +148,44 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20 }
 
   if (!open) return null;
 
-  const isCenter = style === "minimal" || style === "wanderer";
+  const isCenter = style === "minimal";
+  const isWandererSling = style === "wanderer" && wandererPos != null;
+  const skin = isWandererSling ? getBotSkin() : "ix";
+  const sk = SLING_SKIN[skin];
+
+  // Compute sling box position — bubble slings out above+left of character
+  let slingStyle: React.CSSProperties = {};
+  let tailStyle: React.CSSProperties = {};
+  if (isWandererSling && wandererPos) {
+    const panelW = Math.min(400, window.innerWidth * 0.88);
+    const panelH = Math.min(460, window.innerHeight * 0.62);
+    // Position bubble above and to the left of the character
+    let left = wandererPos.x - panelW - 16;
+    if (left < 8) left = Math.min(wandererPos.x + 48, window.innerWidth - panelW - 8);
+    let top = wandererPos.y - panelH - 8;
+    if (top < 8) top = 8;
+    slingStyle = { left, top, width: panelW, maxHeight: panelH };
+    // Position the tail at the bottom of the bubble pointing to character
+    tailStyle = {
+      position: "absolute",
+      bottom: -10, right: left < wandererPos.x - panelW - 10 ? 16 : "auto",
+      left: left >= wandererPos.x + 48 ? 24 : "auto",
+      width: 0, height: 0,
+      borderLeft: "10px solid transparent",
+      borderRight: "10px solid transparent",
+      borderTop: `10px solid ${sk.tailColor}`,
+      zIndex: 1,
+    };
+  }
 
   return (
     <div style={{
       position: "fixed",
       zIndex: 9998,
-      ...(isCenter ? {
+      ...(isWandererSling ? {
+        ...slingStyle,
+        animation: "sling-in 0.22s cubic-bezier(0.34,1.56,0.64,1) forwards",
+      } : isCenter ? {
         left: "50%",
         top: "50%",
         transform: "translate(-50%, -50%)",
@@ -127,29 +197,30 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20 }
         width: 360,
         maxHeight: 520,
       }),
-      background: "var(--ft-surface)",
-      border: "1px solid var(--ft-border2)",
+      background: isWandererSling ? sk.bg : "var(--ft-surface)",
+      border: isWandererSling ? sk.border : "1px solid var(--ft-border2)",
       display: "flex",
       flexDirection: "column",
-      boxShadow: "0 12px 48px rgba(0,0,0,0.6)",
+      boxShadow: isWandererSling ? sk.shadow : "0 12px 48px rgba(0,0,0,0.7)",
       overflow: "hidden",
     }}>
+      {isWandererSling && <div style={tailStyle} />}
       {/* Header */}
       <div style={{
-        background: "var(--ft-raised)",
-        borderBottom: "1px solid var(--ft-border)",
+        background: isWandererSling ? sk.headerBg : "var(--ft-raised)",
+        borderBottom: `1px solid ${isWandererSling ? sk.headerBorder : "var(--ft-border)"}`,
         padding: "8px 12px",
         display: "flex",
         alignItems: "center",
         gap: 8,
         flexShrink: 0,
       }}>
-        <Sparkles style={{ width: 13, height: 13, color: "var(--ft-accent)", flexShrink: 0 }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-text)" }}>
-          AI Financial Assistant
+        <Sparkles style={{ width: 13, height: 13, color: isWandererSling ? sk.iconColor : "var(--ft-accent)", flexShrink: 0 }} />
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: isWandererSling ? sk.titleColor : "var(--ft-text)" }}>
+          {isWandererSling ? sk.titleText : "AI Financial Assistant"}
         </span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", marginLeft: 4 }}>
-          Powered by Gemini
+          {isWandererSling ? sk.tag : "Powered by Gemini"}
         </span>
         <button
           onClick={onClose}
@@ -252,7 +323,10 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20 }
         </button>
       </div>
 
-      <style>{`@keyframes ai-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes ai-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes sling-in { 0%{opacity:0;transform:scale(0.7) translateY(12px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+      `}</style>
     </div>
   );
 }
@@ -263,6 +337,7 @@ export function AiAgent({ sidebarW }: { sidebarW?: number }) {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
+  const [wandererPos, setWandererPos] = useState<{ x: number; y: number } | null>(null);
   const [aiStyle, setAiStyle] = useState<AiStyle>(() => {
     try {
       const v = localStorage.getItem(STYLE_KEY);
@@ -334,7 +409,15 @@ export function AiAgent({ sidebarW }: { sidebarW?: number }) {
     <>
       {/* Wanderer style */}
       {aiStyle === "wanderer" && (
-        <AiWanderer onOpen={() => setOpen(true)} summoned={summoned} locationKey={location} sidebarW={sidebarW} />
+        <AiWanderer
+          onOpen={(bx?: number, by?: number) => {
+            if (bx != null && by != null) setWandererPos({ x: bx, y: by });
+            setOpen(true);
+          }}
+          summoned={summoned}
+          locationKey={location}
+          sidebarW={sidebarW}
+        />
       )}
 
       {/* Classic style — bottom-right button */}
@@ -376,6 +459,7 @@ export function AiAgent({ sidebarW }: { sidebarW?: number }) {
         style={aiStyle}
         anchorBottom={aiStyle === "classic" ? 72 : undefined}
         anchorRight={aiStyle === "classic" ? 20 : undefined}
+        wandererPos={aiStyle === "wanderer" ? wandererPos : null}
       />
     </>
   );

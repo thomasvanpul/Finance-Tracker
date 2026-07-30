@@ -1,16 +1,19 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { useListTransactions, useListAccounts } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
+import { applyPersonas, loadPersonaIds, PERSONAS, PERSONA_GLYPHS, type PersonaId } from "@/lib/persona";
 
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
   onNewTransaction?: () => void;
+  onToggleAlerts?: () => void;
+  onToggleSidebar?: () => void;
 }
 
-type CommandSection = "navigation" | "actions" | "accounts" | "transactions";
+type CommandSection = "navigation" | "actions" | "persona" | "accounts" | "transactions";
 
 interface Command {
   id: string;
@@ -26,6 +29,9 @@ function buildCommands(
   onClose: () => void,
   onNewTransaction?: () => void,
   togglePrivacy?: () => void,
+  activePersonaId?: string,
+  onToggleAlerts?: () => void,
+  onToggleSidebar?: () => void,
 ): Command[] {
   const nav = (path: string) => () => {
     navigate(path);
@@ -36,6 +42,24 @@ function buildCommands(
     fn();
     onClose();
   };
+
+  const personaCommands: Command[] = PERSONAS.map((p) => ({
+    id: `persona-${p.id}`,
+    section: "persona" as CommandSection,
+    icon: PERSONA_GLYPHS[p.id],
+    title: p.id === activePersonaId ? `${p.label} ✓` : `Switch to ${p.label}`,
+    action: act(() => {
+      applyPersonas([p.id]);
+      navigate(p.defaultPage);
+    }),
+  }));
+  personaCommands.push({
+    id: "persona-settings",
+    section: "persona",
+    icon: "◎",
+    title: "Manage Terminal Profile",
+    action: nav("/settings?panel=terminal-profile"),
+  });
 
   return [
     { id: "go-dashboard",     section: "navigation", icon: "◈", title: "Go to Dashboard",     shortcut: "G D", action: nav("/") },
@@ -100,6 +124,22 @@ function buildCommands(
       action: togglePrivacy ? act(togglePrivacy) : onClose,
     },
     {
+      id: "open-alerts",
+      section: "actions",
+      icon: "◎",
+      title: "Toggle Alerts Panel",
+      shortcut: "A",
+      action: onToggleAlerts ? act(onToggleAlerts) : onClose,
+    },
+    {
+      id: "toggle-sidebar",
+      section: "actions",
+      icon: "⊟",
+      title: "Toggle Sidebar",
+      shortcut: "⌘[",
+      action: onToggleSidebar ? act(onToggleSidebar) : onClose,
+    },
+    {
       id: "add-new-goal",
       section: "actions",
       icon: "◎",
@@ -120,27 +160,21 @@ function buildCommands(
       title: "Import CSV",
       action: nav("/import"),
     },
-    {
-      id: "toggle-sidebar",
-      section: "actions",
-      icon: "⊟",
-      title: "Toggle Sidebar",
-      shortcut: "⌘[",
-      action: onClose,
-    },
+    ...personaCommands,
   ];
 }
 
 const SECTION_LABELS: Record<CommandSection, string> = {
   navigation: "NAVIGATION",
   actions: "ACTIONS",
+  persona: "TERMINAL PROFILE",
   accounts: "ACCOUNTS",
   transactions: "TRANSACTIONS",
 };
 
-const SECTION_ORDER: CommandSection[] = ["navigation", "actions", "accounts", "transactions"];
+const SECTION_ORDER: CommandSection[] = ["navigation", "actions", "persona", "accounts", "transactions"];
 
-export function CommandPalette({ open, onClose, onNewTransaction }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts, onToggleSidebar }: CommandPaletteProps) {
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -152,7 +186,8 @@ export function CommandPalette({ open, onClose, onNewTransaction }: CommandPalet
   const { data: allAccounts } = useListAccounts({});
   const { data: allTxs } = useListTransactions();
 
-  const commands = buildCommands(navigate, onClose, onNewTransaction, togglePrivacy);
+  const activePersonaId = useMemo(() => loadPersonaIds()[0], []);
+  const commands = buildCommands(navigate, onClose, onNewTransaction, togglePrivacy, activePersonaId, onToggleAlerts, onToggleSidebar);
 
   const navTo = (path: string) => () => { navigate(path); onClose(); };
 
@@ -197,7 +232,7 @@ export function CommandPalette({ open, onClose, onNewTransaction }: CommandPalet
       }
       return acc;
     },
-    { navigation: [], actions: [], accounts: [], transactions: [] }
+    { navigation: [], actions: [], persona: [], accounts: [], transactions: [] } as Record<CommandSection, Command[]>
   );
 
   const flatFiltered = SECTION_ORDER.flatMap((s) => grouped[s]);

@@ -85,12 +85,10 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
 
   const debouncedQuery = useDebounce(query.trim().toLowerCase(), 200);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: transactions } = useListTransactions({} as any);
+  const { data: transactions } = useListTransactions();
   const { data: accounts } = useListAccounts();
   const { data: investments } = useListInvestments();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: debts } = useListDebts({} as any);
+  const { data: debts } = useListDebts();
   const { data: goals } = useListGoals();
 
   const results: SearchResult[] = debouncedQuery

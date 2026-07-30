@@ -1,7 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { loadPersonaIds, PERSONAS, PERSONA_GLYPHS, PERSONA_COLORS } from "@/lib/persona";
 
-const SECTIONS = [
+interface ShortcutSection {
+  label: string;
+  rows: [string, string][];
+  accent?: string;
+}
+
+const STATIC_SECTIONS: ShortcutSection[] = [
   {
     label: "NAVIGATION",
     rows: [
@@ -22,6 +29,7 @@ const SECTIONS = [
     rows: [
       ["⌘ K / Ctrl K", "Command palette"],
       ["N", "New transaction (dashboard)"],
+      ["A", "Toggle alerts panel"],
       ["P", "Toggle privacy mode"],
       ["?", "This shortcut reference"],
       ["Esc", "Close any overlay"],
@@ -35,6 +43,15 @@ const SECTIONS = [
       ["3+ chars", "Search transactions & accounts"],
     ],
   },
+  {
+    label: "POWER USER",
+    rows: [
+      ["G X", "Bill Split"],     ["G Z", "Wardrobe"],
+      ["G 8", "Decisions"],      ["G M", "Mortgage"],
+      ["G P", "Pension"],        ["G 0", "FIRE Calc"],
+      ["G 5", "Projection"],
+    ],
+  },
 ];
 
 interface Props {
@@ -43,6 +60,42 @@ interface Props {
 }
 
 export function KeyboardShortcuts({ open, onClose }: Props) {
+  const activePersonaIds = useMemo(() => loadPersonaIds(), [open]);
+  const primaryPersona = useMemo(
+    () => PERSONAS.find((p) => p.id === activePersonaIds[0]) ?? null,
+    [activePersonaIds]
+  );
+
+  const personaSection = useMemo((): ShortcutSection => {
+    if (!primaryPersona) {
+      return {
+        label: "TERMINAL PROFILE",
+        accent: "var(--ft-dim)",
+        rows: [
+          ["—", "No profile active"],
+          ["⌘K", "Switch via command palette"],
+          ["G S", "Settings → Terminal Profile"],
+        ],
+      };
+    }
+    const color = PERSONA_COLORS[primaryPersona.id];
+    const glyph = PERSONA_GLYPHS[primaryPersona.id];
+    const secondary = activePersonaIds
+      .slice(1)
+      .map((id) => PERSONAS.find((p) => p.id === id)?.code ?? id)
+      .join(" + ");
+    return {
+      label: "TERMINAL PROFILE",
+      accent: color,
+      rows: [
+        [`${glyph} ${primaryPersona.code}`, primaryPersona.label + (secondary ? ` + ${secondary}` : "")],
+        ["⌘K", "Switch profile (palette)"],
+        ["G S", "Settings → Terminal Profile"],
+        ["— —", primaryPersona.tagline],
+      ],
+    };
+  }, [primaryPersona, activePersonaIds]);
+
   useEffect(() => {
     if (!open) return;
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -51,6 +104,8 @@ export function KeyboardShortcuts({ open, onClose }: Props) {
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const allSections = [...STATIC_SECTIONS, personaSection];
 
   return createPortal(
     <div
@@ -87,32 +142,42 @@ export function KeyboardShortcuts({ open, onClose }: Props) {
           </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-          {SECTIONS.map(sec => (
-            <div key={sec.label} style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-              <div style={{
-                fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700,
-                letterSpacing: "0.12em", color: "var(--ft-dim)",
-                padding: "8px 14px", background: "var(--ft-raised)",
-                borderBottom: "1px solid var(--ft-border)",
-              }}>
-                {sec.label}
-              </div>
-              {sec.rows.map(([key, label]) => (
-                <div key={key} style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "5px 14px", borderBottom: "1px solid var(--ft-border)",
+          {allSections.map((sec) => {
+            const accent = "accent" in sec ? sec.accent : undefined;
+            return (
+              <div
+                key={sec.label}
+                style={{
+                  borderRight: "1px solid var(--ft-border)",
+                  borderBottom: "1px solid var(--ft-border)",
+                  borderLeft: accent ? `3px solid ${accent}` : undefined,
+                }}
+              >
+                <div style={{
+                  fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700,
+                  letterSpacing: "0.12em", color: accent ?? "var(--ft-dim)",
+                  padding: "8px 14px", background: "var(--ft-raised)",
+                  borderBottom: "1px solid var(--ft-border)",
                 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{label}</span>
-                  <kbd style={{
-                    fontFamily: "var(--font-mono)", fontSize: 9,
-                    color: "var(--ft-accent)", background: "var(--ft-raised)",
-                    border: "1px solid var(--ft-border)", padding: "2px 6px",
-                    letterSpacing: "0.06em", whiteSpace: "nowrap",
-                  }}>{key}</kbd>
+                  {sec.label}
                 </div>
-              ))}
-            </div>
-          ))}
+                {sec.rows.map(([key, label]) => (
+                  <div key={key} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "5px 14px", borderBottom: "1px solid var(--ft-border)",
+                  }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{label}</span>
+                    <kbd style={{
+                      fontFamily: "var(--font-mono)", fontSize: 9,
+                      color: accent ?? "var(--ft-accent)", background: "var(--ft-raised)",
+                      border: "1px solid var(--ft-border)", padding: "2px 6px",
+                      letterSpacing: "0.06em", whiteSpace: "nowrap",
+                    }}>{key}</kbd>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>,

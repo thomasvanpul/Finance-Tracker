@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { BotPreview, type Phase } from "@/components/ai-wanderer";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId, type SkinRarity } from "@/lib/bot-skins";
+import { PageHeader } from "@/components/page-header";
+import { Shirt, Lock } from "lucide-react";
 
 const RARITY_COLOR: Record<SkinRarity, string> = {
   COMMON: "var(--ft-dim)",
@@ -16,12 +19,49 @@ const RARITY_BG: Record<SkinRarity, string> = {
 
 const PHASE_CYCLE: Phase[] = ["idle", "sitting", "coffee", "thinking", "dancing", "complaining", "tired", "jumping", "lying"];
 
+// Rarity glyph badge
+function RarityBadge({ rarity }: { rarity: SkinRarity }) {
+  const col = RARITY_COLOR[rarity];
+  return (
+    <span
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 8,
+        letterSpacing: "0.12em",
+        fontWeight: 700,
+        color: col,
+        border: `1px solid ${col}`,
+        padding: "1px 5px",
+        background: `${col}14`,
+        flexShrink: 0,
+      }}
+    >
+      {rarity}
+    </span>
+  );
+}
+
+// Compact perk dot row
+function PerkList({ perks, color }: { perks: string[]; color: string }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 12px" }}>
+      {perks.map(p => (
+        <div key={p} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ width: 3, height: 3, borderRadius: "50%", background: color, flexShrink: 0 }} />
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>{p}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Wardrobe() {
   const [activeSkin, setActiveSkin] = useState<BotSkinId>(getBotSkin);
   const [previewPhase, setPreviewPhase] = useState<Phase>("idle");
   const [blinking, setBlinking] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
   const phaseIdxRef = useRef(0);
+  const [hoveredSkin, setHoveredSkin] = useState<BotSkinId | null>(null);
 
   // Blink loop
   useEffect(() => {
@@ -43,13 +83,7 @@ export default function Wardrobe() {
     return () => clearInterval(id);
   }, [autoPlay]);
 
-  // ── Unlock criteria (localStorage-based) ─────────────────────────────────────
-  // COMMON  : always unlocked
-  // EPIC    : unlock when the user has done basic setup (onboarding complete)
-  //           or has connected a crypto wallet / set a savings target
-  // LEGENDARY: unlock when the user has evidence of real ongoing usage
-  //           (rebalance targets set + savings target + budget rollover configured)
-
+  // Unlock criteria (localStorage-based)
   const achievements = (() => {
     try {
       const raw = localStorage.getItem("ft-achievements");
@@ -78,7 +112,7 @@ export default function Wardrobe() {
   const hasBudgetRollover = !!localStorage.getItem("ft-budget-rollover");
 
   const epicUnlocked = isOnboardingComplete || hasSavingsTarget || hasCryptoWallet || achievements["epic_unlock"] === true;
-  const legendaryUnlocked = epicUnlocked && hasRebalanceTargets && hasBudgetRollover || achievements["legendary_unlock"] === true;
+  const legendaryUnlocked = (epicUnlocked && hasRebalanceTargets && hasBudgetRollover) || achievements["legendary_unlock"] === true;
 
   function isUnlocked(skin: typeof SKINS[0]): boolean {
     if (skin.rarity === "COMMON") return true;
@@ -93,6 +127,12 @@ export default function Wardrobe() {
     setBotSkin(skin.id);
     window.dispatchEvent(new CustomEvent("bot-skin-change", { detail: skin.id }));
   }
+
+  const activeSkinDef = SKINS.find(s => s.id === activeSkin)!;
+
+  // Determine how many skins are unlocked vs locked
+  const unlockedCount = SKINS.filter(s => isUnlocked(s)).length;
+  const totalCount = SKINS.length;
 
   return (
     <>
@@ -120,30 +160,75 @@ export default function Wardrobe() {
         @keyframes steam-rise{0%{opacity:0.6;transform:translateY(0) scaleX(1)}100%{opacity:0;transform:translateY(-10px) scaleX(1.4)}}
         @keyframes wardrobe-scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
         @keyframes wardrobe-pulse{0%,100%{opacity:0.4}50%{opacity:0.9}}
-        @keyframes wardrobe-card-in{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes wardrobe-card-in{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
       `}</style>
 
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--ft-accent)", fontWeight: 700 }}>
-              NUMERIS
-            </span>
-            <span style={{ color: "var(--ft-border2)" }}>›</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ft-dim)" }}>
-              WARDROBE
-            </span>
-          </div>
-          <h1 style={{ fontSize: 22, fontFamily: "var(--font-head)", fontWeight: 700, color: "var(--ft-text)", margin: 0, letterSpacing: "-0.01em" }}>
-            Bot Wardrobe
-          </h1>
-          <p style={{ fontSize: 12, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", marginTop: 4, letterSpacing: "0.04em" }}>
-            Equip any skin · pair with matching theme for full visual effects
-          </p>
+        <PageHeader
+          icon={Shirt}
+          title="Bot Wardrobe"
+          subtitle="equip any skin · pair with matching theme for full visual effects"
+        />
+
+        {/* Unlock progress strip */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 1,
+            background: "var(--ft-border)",
+            border: "1px solid var(--ft-border)",
+            marginBottom: 16,
+          }}
+        >
+          {[
+            { label: "Total Skins", value: String(totalCount) },
+            { label: "Unlocked", value: String(unlockedCount), accent: unlockedCount === totalCount ? "var(--ft-green)" : "var(--ft-text)" },
+            { label: "Equipped", value: activeSkinDef.label },
+            { label: "Rarity", value: activeSkinDef.rarity, accent: RARITY_COLOR[activeSkinDef.rarity] },
+          ].map(({ label, value, accent }) => (
+            <div key={label} style={{ background: "var(--ft-surface)", padding: "7px 12px" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{label}</div>
+              <div
+                className="pnum"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: accent ?? "var(--ft-text)",
+                  marginTop: 2,
+                }}
+              >
+                {value}
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="ft-wardrobe-layout" style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 24, alignItems: "start" }}>
+        {/* Persona context strip */}
+        {(() => {
+          const pid = loadPersonaIds()[0];
+          if (!pid) return null;
+          const msgs: Record<string, string | null> = {
+            social:  "Your bot companion reflects your Social Finance profile. The Social skin pairs naturally with the theme — equip it for a cohesive terminal aesthetic.",
+            budget:  "Bot skins are cosmetic only and entirely free to unlock — no spending required here.",
+            wealth:  null,
+            market:  null,
+            full:    null,
+          };
+          const msg = msgs[pid];
+          if (!msg) return null;
+          const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+          return (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
+              <span>{msg}</span>
+            </div>
+          );
+        })()}
+
+        <div className="ft-wardrobe-layout" style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, alignItems: "start" }}>
+
           {/* ── Left: Preview panel ── */}
           <div style={{
             background: "var(--ft-surface)",
@@ -153,13 +238,15 @@ export default function Wardrobe() {
           }}>
             {/* Preview header */}
             <div style={{
+              background: "var(--ft-raised)",
               borderBottom: "1px solid var(--ft-border)",
-              padding: "10px 16px",
+              padding: "0 12px",
+              height: 34,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
             }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ft-dim)", fontWeight: 600 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ft-muted)", fontWeight: 600, textTransform: "uppercase" }}>
                 PREVIEW
               </span>
               <button
@@ -173,7 +260,7 @@ export default function Wardrobe() {
                   border: `1px solid ${autoPlay ? "rgba(244,162,30,0.3)" : "var(--ft-border)"}`,
                   padding: "2px 8px",
                   cursor: "pointer",
-                  transition: "all 0.1s",
+                  transition: "background 0.1s, color 0.1s, border-color 0.1s",
                 }}
               >
                 {autoPlay ? "AUTO ●" : "AUTO ○"}
@@ -183,7 +270,7 @@ export default function Wardrobe() {
             {/* Stage */}
             <div style={{
               position: "relative",
-              height: 260,
+              height: 240,
               display: "flex",
               alignItems: "flex-end",
               justifyContent: "center",
@@ -205,10 +292,24 @@ export default function Wardrobe() {
                 left: "10%",
                 right: "10%",
                 height: 1,
-                background: "linear-gradient(90deg,transparent,var(--ft-border2),transparent)",
+                background: "var(--ft-border)",
               }} />
+              {/* Phase label overlay */}
+              <div style={{
+                position: "absolute",
+                top: 8,
+                left: 10,
+                fontFamily: "var(--font-mono)",
+                fontSize: 8,
+                color: "var(--ft-dim)",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                opacity: 0.7,
+              }}>
+                {previewPhase}
+              </div>
 
-              {/* Bot — render at 2.0× scale */}
+              {/* Bot */}
               <div style={{
                 transform: "scale(2.0)",
                 transformOrigin: "center bottom",
@@ -228,12 +329,12 @@ export default function Wardrobe() {
             {/* Phase selector */}
             <div style={{
               borderTop: "1px solid var(--ft-border)",
-              padding: "10px 14px",
+              padding: "8px 12px",
             }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.12em", color: "var(--ft-dim)", marginBottom: 8 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.12em", color: "var(--ft-dim)", marginBottom: 6, textTransform: "uppercase" }}>
                 PHASE
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                 {PHASE_CYCLE.map(p => (
                   <button
                     key={p}
@@ -242,14 +343,16 @@ export default function Wardrobe() {
                       fontFamily: "var(--font-mono)",
                       fontSize: 8,
                       letterSpacing: "0.06em",
-                      padding: "3px 7px",
+                      padding: "3px 6px",
                       border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`,
                       background: previewPhase === p ? "rgba(244,162,30,0.12)" : "transparent",
                       color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)",
                       cursor: "pointer",
-                      transition: "all 0.1s",
+                      transition: "background 0.1s, color 0.1s, border-color 0.1s",
                       textTransform: "uppercase",
                     }}
+                    onMouseEnter={e => { if (previewPhase !== p) e.currentTarget.style.borderColor = "var(--ft-border2)"; }}
+                    onMouseLeave={e => { if (previewPhase !== p) e.currentTarget.style.borderColor = "var(--ft-border)"; }}
                   >
                     {p}
                   </button>
@@ -258,238 +361,227 @@ export default function Wardrobe() {
             </div>
 
             {/* Active skin info */}
-            {(() => {
-              const skin = SKINS.find(s => s.id === activeSkin)!;
-              return (
-                <div style={{
-                  borderTop: "1px solid var(--ft-border)",
-                  padding: "12px 16px",
-                  background: RARITY_BG[skin.rarity],
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-head)" }}>
-                      {skin.label}
-                    </span>
-                    <span style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 7,
-                      letterSpacing: "0.12em",
-                      fontWeight: 700,
-                      color: RARITY_COLOR[skin.rarity],
-                      border: `1px solid ${RARITY_COLOR[skin.rarity]}`,
-                      padding: "1px 5px",
-                    }}>
-                      {skin.rarity}
-                    </span>
-                  </div>
-                  <p style={{ fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, margin: "0 0 8px", fontFamily: "var(--font-body)" }}>
-                    {skin.desc}
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                    {skin.perks.map(p => (
-                      <div key={p} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ width: 4, height: 4, borderRadius: "50%", background: RARITY_COLOR[skin.rarity], flexShrink: 0 }} />
-                        <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>{p}</span>
-                      </div>
-                    ))}
-                  </div>
+            <div style={{
+              borderTop: "1px solid var(--ft-border)",
+              padding: "10px 14px",
+              background: RARITY_BG[activeSkinDef.rarity],
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
+                  {activeSkinDef.label}
+                </span>
+                <RarityBadge rarity={activeSkinDef.rarity} />
+              </div>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, margin: "0 0 8px" }}>
+                {activeSkinDef.desc}
+              </p>
+              <PerkList perks={activeSkinDef.perks} color={RARITY_COLOR[activeSkinDef.rarity]} />
+              {activeSkinDef.requiredTheme && (
+                <div style={{ marginTop: 8, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", borderTop: "1px solid var(--ft-border)", paddingTop: 8 }}>
+                  ↳ Pairs with <strong style={{ color: RARITY_COLOR[activeSkinDef.rarity] }}>{activeSkinDef.requiredTheme.toUpperCase()}</strong> theme
                 </div>
-              );
-            })()}
+              )}
+            </div>
           </div>
 
-          {/* ── Right: Skin grid ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ft-dim)", fontWeight: 600, marginBottom: 4 }}>
-              SELECT SKIN
+          {/* ── Right: Skin list ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {/* Header row */}
+            <div style={{
+              background: "var(--ft-raised)",
+              border: "1px solid var(--ft-border)",
+              borderBottom: "none",
+              padding: "0 14px",
+              height: 34,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ft-muted)", fontWeight: 600, textTransform: "uppercase" }}>
+                SELECT SKIN
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                {unlockedCount} / {totalCount} unlocked
+              </span>
             </div>
-            {SKINS.map((skin, i) => {
-              const unlocked = isUnlocked(skin);
-              const isActive = activeSkin === skin.id;
-              const rarityCol = RARITY_COLOR[skin.rarity];
 
-              return (
-                <button
-                  key={skin.id}
-                  onClick={() => selectSkin(skin)}
-                  disabled={!unlocked}
-                  style={{
-                    background: isActive ? RARITY_BG[skin.rarity] : "var(--ft-surface)",
-                    border: `1px solid ${isActive ? rarityCol : "var(--ft-border)"}`,
-                    borderLeft: `3px solid ${isActive ? rarityCol : "var(--ft-border)"}`,
-                    padding: "16px 20px",
-                    cursor: unlocked ? "pointer" : "not-allowed",
-                    textAlign: "left",
-                    opacity: unlocked ? 1 : 0.5,
-                    transition: "all 0.15s",
-                    animation: `wardrobe-card-in 0.2s ease ${i * 0.05}s both`,
-                  }}
-                  onMouseEnter={e => {
-                    if (!unlocked) return;
-                    if (!isActive) e.currentTarget.style.borderColor = "var(--ft-border2)";
-                  }}
-                  onMouseLeave={e => {
-                    if (!isActive) e.currentTarget.style.borderColor = "var(--ft-border)";
-                    e.currentTarget.style.borderLeftColor = isActive ? rarityCol : "var(--ft-border)";
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-                    {/* Mini bot preview */}
-                    <div style={{
-                      width: 52,
-                      height: 74,
-                      display: "flex",
-                      alignItems: "flex-end",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      background: "var(--ft-base)",
-                      border: "1px solid var(--ft-border)",
-                      position: "relative",
-                      overflow: "hidden",
-                    }}>
-                      <div style={{ transform: "scale(1.0)", transformOrigin: "center bottom", marginBottom: 4 }}>
-                        <BotPreview skinId={skin.id} phase="idle" blinking={false} />
-                      </div>
-                      {!unlocked && (
-                        <div style={{
-                          position: "absolute",
-                          inset: 0,
-                          background: "rgba(0,0,0,0.55)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: 14,
-                        }}>🔒</div>
-                      )}
-                    </div>
+            {/* Skin cards */}
+            <div style={{ border: "1px solid var(--ft-border)", display: "flex", flexDirection: "column" }}>
+              {SKINS.map((skin, i) => {
+                const unlocked = isUnlocked(skin);
+                const isActive = activeSkin === skin.id;
+                const isHovered = hoveredSkin === skin.id;
+                const rarityCol = RARITY_COLOR[skin.rarity];
 
-                    {/* Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-head)" }}>
-                          {skin.label}
-                        </span>
-                        <span style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 7,
-                          letterSpacing: "0.12em",
-                          fontWeight: 700,
-                          color: rarityCol,
-                          border: `1px solid ${rarityCol}`,
-                          padding: "1px 5px",
-                        }}>
-                          {skin.rarity}
-                        </span>
-                        {isActive && (
-                          <span style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 7,
-                            letterSpacing: "0.1em",
-                            color: "var(--ft-green)",
-                            border: "1px solid var(--ft-green)",
-                            padding: "1px 5px",
-                          }}>
-                            EQUIPPED
-                          </span>
-                        )}
+                return (
+                  <div
+                    key={skin.id}
+                    onClick={() => selectSkin(skin)}
+                    onMouseEnter={() => setHoveredSkin(skin.id)}
+                    onMouseLeave={() => setHoveredSkin(null)}
+                    style={{
+                      background: isActive
+                        ? `color-mix(in srgb, ${rarityCol} 8%, var(--ft-surface))`
+                        : isHovered && unlocked
+                        ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
+                        : "var(--ft-surface)",
+                      borderTop: i > 0 ? "1px solid var(--ft-border)" : undefined,
+                      borderLeft: `3px solid ${isActive ? rarityCol : "transparent"}`,
+                      padding: "14px 16px",
+                      cursor: unlocked ? "pointer" : "not-allowed",
+                      opacity: unlocked ? 1 : 0.55,
+                      transition: "background 0.12s, border-color 0.12s, opacity 0.12s",
+                      animation: `wardrobe-card-in 0.18s ease ${i * 0.04}s both`,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                      {/* Mini bot preview */}
+                      <div style={{
+                        width: 50,
+                        height: 70,
+                        display: "flex",
+                        alignItems: "flex-end",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        background: "var(--ft-base)",
+                        border: `1px solid ${isActive ? rarityCol : "var(--ft-border)"}`,
+                        position: "relative",
+                        overflow: "hidden",
+                        transition: "border-color 0.12s",
+                      }}>
+                        <div style={{ transform: "scale(1.0)", transformOrigin: "center bottom", marginBottom: 3 }}>
+                          <BotPreview skinId={skin.id} phase="idle" blinking={false} />
+                        </div>
                         {!unlocked && (
-                          <span style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 7,
-                            letterSpacing: "0.1em",
-                            color: "var(--ft-dim)",
-                            border: "1px solid var(--ft-border)",
-                            padding: "1px 5px",
+                          <div style={{
+                            position: "absolute",
+                            inset: 0,
+                            background: "rgba(0,0,0,0.6)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                           }}>
-                            LOCKED
-                          </span>
+                            <Lock size={14} color="var(--ft-dim)" />
+                          </div>
                         )}
                       </div>
 
-                      <p style={{ fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5, margin: "0 0 10px", fontFamily: "var(--font-body)" }}>
-                        {skin.desc}
-                      </p>
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {/* Title row */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5, flexWrap: "wrap" }}>
+                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
+                            {skin.label}
+                          </span>
+                          <RarityBadge rarity={skin.rarity} />
+                          {isActive && (
+                            <span style={{
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 8,
+                              letterSpacing: "0.1em",
+                              color: "var(--ft-green)",
+                              border: "1px solid var(--ft-green)",
+                              padding: "1px 5px",
+                              background: "rgba(63,185,80,0.1)",
+                            }}>
+                              EQUIPPED
+                            </span>
+                          )}
+                          {!unlocked && (
+                            <span style={{
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 8,
+                              letterSpacing: "0.1em",
+                              color: "var(--ft-dim)",
+                              border: "1px solid var(--ft-border)",
+                              padding: "1px 5px",
+                            }}>
+                              LOCKED
+                            </span>
+                          )}
+                        </div>
 
-                      {/* Perks */}
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px" }}>
-                        {skin.perks.map(p => (
-                          <div key={p} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                            <span style={{ width: 3, height: 3, borderRadius: "50%", background: rarityCol, flexShrink: 0 }} />
-                            <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>{p}</span>
+                        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, margin: "0 0 8px" }}>
+                          {skin.desc}
+                        </p>
+
+                        <PerkList perks={skin.perks} color={rarityCol} />
+
+                        {/* Theme pairing hint */}
+                        {skin.requiredTheme && (
+                          <div style={{
+                            marginTop: 8,
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 9,
+                            color: "var(--ft-dim)",
+                            letterSpacing: "0.06em",
+                          }}>
+                            ↳ Pairs with <strong style={{ color: rarityCol }}>{skin.requiredTheme.toUpperCase()}</strong> theme for full effects
                           </div>
-                        ))}
+                        )}
+
+                        {/* Unlock hint */}
+                        {!unlocked && (
+                          <div style={{
+                            marginTop: 8,
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 8,
+                            color: "var(--ft-dim)",
+                            letterSpacing: "0.06em",
+                            padding: "4px 8px",
+                            background: "rgba(255,255,255,0.03)",
+                            border: "1px solid var(--ft-border)",
+                            borderLeft: `2px solid ${rarityCol}`,
+                          }}>
+                            {skin.rarity === "EPIC"
+                              ? "UNLOCK: Complete onboarding, set a savings target, or add a crypto wallet"
+                              : "UNLOCK: Complete Epic requirements + configure rebalance targets & budget rollover"}
+                          </div>
+                        )}
                       </div>
 
-                      {/* Theme pairing hint */}
-                      {skin.requiredTheme && (
-                        <div style={{
-                          marginTop: 10,
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 9,
-                          color: "var(--ft-dim)",
-                          letterSpacing: "0.06em",
-                        }}>
-                          ↳ Pairs with <strong style={{ color: rarityCol }}>{skin.requiredTheme.toUpperCase()}</strong> theme for full effects
-                        </div>
-                      )}
-
-                      {/* Unlock hint for locked skins */}
-                      {!unlocked && (
-                        <div style={{
-                          marginTop: 8,
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 8,
-                          color: "var(--ft-dim)",
-                          letterSpacing: "0.06em",
-                          padding: "4px 6px",
-                          background: "rgba(255,255,255,0.03)",
-                          border: "1px solid var(--ft-border)",
-                        }}>
-                          {skin.rarity === "EPIC"
-                            ? "UNLOCK: Complete onboarding, set a savings target, or add a crypto wallet"
-                            : "UNLOCK: Complete Epic requirements + configure rebalance targets & budget rollover"}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Equip radio */}
-                    <div style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: "50%",
-                      border: `2px solid ${isActive ? rarityCol : "var(--ft-border2)"}`,
-                      background: isActive ? rarityCol : "transparent",
-                      flexShrink: 0,
-                      marginTop: 3,
-                      transition: "all 0.15s",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
-                      {isActive && (
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ft-base)" }} />
-                      )}
+                      {/* Equip radio */}
+                      <div style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: "50%",
+                        border: `2px solid ${isActive ? rarityCol : "var(--ft-border2)"}`,
+                        background: isActive ? rarityCol : "transparent",
+                        flexShrink: 0,
+                        marginTop: 2,
+                        transition: "background 0.15s, border-color 0.15s",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}>
+                        {isActive && (
+                          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />
+                        )}
+                      </div>
                     </div>
                   </div>
-                </button>
-              );
-            })}
+                );
+              })}
+            </div>
 
-            {/* Theme note */}
-            <div style={{
-              marginTop: 8,
-              padding: "12px 16px",
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              color: "var(--ft-dim)",
-              letterSpacing: "0.06em",
-              lineHeight: 1.6,
-            }}>
-              <span style={{ color: "var(--ft-accent)" }}>TIP</span> — Common skins are always unlocked.
-              Epic skins unlock via basic setup (onboarding / savings target / crypto wallet).
-              Legendary skins require full app engagement. Pair unlocked skins with their matching theme via Settings → Appearance.
+            {/* Info footer strip */}
+            <div
+              style={{
+                padding: "9px 14px",
+                background: "var(--ft-raised)",
+                border: "1px solid var(--ft-border)",
+                borderTop: "none",
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                color: "var(--ft-dim)",
+                letterSpacing: "0.05em",
+                lineHeight: 1.7,
+              }}
+            >
+              <span style={{ color: "var(--ft-accent)", fontWeight: 700 }}>COMMON</span>{" "}skins are always unlocked.{" "}
+              <span style={{ color: RARITY_COLOR["EPIC"] }}>EPIC</span>{" "}unlocks via onboarding, savings target, or crypto wallet.{" "}
+              <span style={{ color: RARITY_COLOR["LEGENDARY"] }}>LEGENDARY</span>{" "}requires full engagement.{" "}
+              Pair skins via <a href="/settings" style={{ color: "var(--ft-accent)", textDecoration: "none", borderBottom: "1px solid var(--ft-border2)" }}>Settings → Appearance</a>.
             </div>
           </div>
         </div>

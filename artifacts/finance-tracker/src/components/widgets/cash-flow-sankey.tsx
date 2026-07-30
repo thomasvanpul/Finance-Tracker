@@ -66,12 +66,16 @@ function FlowPath({
 
 export function CashFlowSankeyWidget() {
   const [hovered, setHovered] = useState<string | null>(null);
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+  const [offset, setOffset] = useState(0);
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() + offset);
+  const y = base.getFullYear();
+  const m = String(base.getMonth() + 1).padStart(2, "0");
+  const lastDay = new Date(y, base.getMonth() + 1, 0).getDate();
   const dateFrom = `${y}-${m}-01`;
   const dateTo = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+  const monthLabel = base.toLocaleString("en-GB", { month: "long", year: "numeric" });
 
   const { data, isLoading } = useListTransactions({ dateFrom, dateTo });
   const rows = (data ?? []) as unknown as TxRow[];
@@ -97,19 +101,31 @@ export function CashFlowSankeyWidget() {
     <WidgetShell title="Flow Diagram" accent="var(--ft-blue)" isLoading={isLoading}>
       {!isLoading && (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
+          {/* Month nav */}
+          <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--ft-raised)" }}>
+            <button onClick={() => setOffset(o => o - 1)} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "0 4px", lineHeight: 1 }}>‹</button>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)" }}>{monthLabel}</span>
+            <button onClick={() => setOffset(o => Math.min(o + 1, 0))} disabled={offset >= 0} style={{ background: "none", border: "none", color: offset >= 0 ? "var(--ft-border2)" : "var(--ft-dim)", cursor: offset >= 0 ? "default" : "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "0 4px", lineHeight: 1 }}>›</button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
             {[
-              { label: "Income", value: formatGbp(totalIncome), color: "var(--ft-green)" },
-              { label: "Expenses", value: formatGbp(totalExpense), color: "var(--ft-red)" },
-              { label: savings >= 0 ? "Saved" : "Deficit", value: formatGbp(Math.abs(savings)), color: savings >= 0 ? "var(--ft-accent)" : "var(--ft-red)" },
-            ].map((item, i) => (
-              <div key={item.label} style={{ padding: "10px 12px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3 }}>
+              { label: "Income", value: totalIncome, color: "var(--ft-green)" },
+              { label: "Expenses", value: totalExpense, color: "var(--ft-red)" },
+              { label: savings >= 0 ? "Saved" : "Deficit", value: Math.abs(savings), color: savings >= 0 ? "var(--ft-accent)" : "var(--ft-red)" },
+            ].map((item) => (
+              <div key={item.label} style={{ padding: "8px 12px", background: "var(--ft-surface)", borderTop: `2px solid ${item.color}`, overflow: "hidden", minWidth: 0 }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {item.label}
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: item.color }}>
-                  {item.value}
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: item.color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {formatGbp(item.value)}
                 </div>
+                {totalIncome > 0 && item.label !== "Income" && (
+                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>
+                    {(item.value / totalIncome * 100).toFixed(0)}% of income
+                  </div>
+                )}
               </div>
             ))}
           </div>

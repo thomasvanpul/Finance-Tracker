@@ -1,5 +1,6 @@
 "use client";
 import { useLocation } from "wouter";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 
 type Tool = {
   href: string;
@@ -50,39 +51,6 @@ const TOOLS: Tool[] = [
   },
 ];
 
-export default function Calculators() {
-  const [, navigate] = useLocation();
-
-  return (
-    <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-      {/* Page header */}
-      <div style={{ marginBottom: 28, paddingBottom: 16, borderBottom: "1px solid var(--ft-border)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.16em", marginBottom: 4 }}>
-          TOOLS › CALCULATORS
-        </div>
-        <h1 style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.04em", margin: 0 }}>
-          PLANNING TOOLS
-        </h1>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 6, letterSpacing: "0.04em" }}>
-          Four calculators for long-range financial planning. Select a tool to launch it in full.
-        </p>
-      </div>
-
-      {/* Tool grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(440px, 1fr))", gap: 16 }}>
-        {TOOLS.map((tool) => (
-          <ToolCard key={tool.href} tool={tool} onLaunch={() => navigate(tool.href)} />
-        ))}
-      </div>
-
-      {/* Footer note */}
-      <div style={{ marginTop: 28, paddingTop: 12, borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
-        TIP — Keyboard shortcuts still work directly: G then the key shown on each card to jump straight to any tool.
-      </div>
-    </div>
-  );
-}
-
 function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
   return (
     <div
@@ -98,7 +66,6 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
       onMouseEnter={(e) => { e.currentTarget.style.borderColor = tool.accent; }}
       onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}
     >
-      {/* Card header */}
       <div style={{
         padding: "12px 16px 10px",
         borderBottom: "1px solid var(--ft-border)",
@@ -108,7 +75,6 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
         gap: 12,
       }}>
         <div>
-          {/* Tag */}
           <div style={{
             fontFamily: "var(--font-mono)",
             fontSize: 8,
@@ -118,7 +84,6 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
           }}>
             {tool.tag}
           </div>
-          {/* Title */}
           <div style={{
             fontFamily: "var(--font-mono)",
             fontSize: 13,
@@ -129,8 +94,6 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
             {tool.label}
           </div>
         </div>
-
-        {/* Shortcut chip */}
         <div style={{
           fontFamily: "var(--font-mono)",
           fontSize: 9,
@@ -147,8 +110,6 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
           {tool.code}
         </div>
       </div>
-
-      {/* Description */}
       <div style={{ padding: "12px 16px 8px", flex: 1 }}>
         <p style={{
           fontFamily: "var(--font-mono)",
@@ -160,8 +121,6 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
         }}>
           {tool.description}
         </p>
-
-        {/* Feature bullets */}
         <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
           {tool.bullets.map((b) => (
             <li key={b} style={{ display: "flex", alignItems: "baseline", gap: 7, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.03em" }}>
@@ -171,8 +130,6 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
           ))}
         </ul>
       </div>
-
-      {/* Launch footer */}
       <div style={{
         borderTop: "1px solid var(--ft-border)",
         padding: "8px 16px",
@@ -206,3 +163,58 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
     </div>
   );
 }
+
+export default function Calculators() {
+  const [, navigate] = useLocation();
+
+  return (
+    <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+      {/* Page header */}
+      <div style={{ marginBottom: 28, paddingBottom: 16, borderBottom: "1px solid var(--ft-border)" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.16em", marginBottom: 4 }}>
+          TOOLS › CALCULATORS
+        </div>
+        <h1 style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.04em", margin: 0 }}>
+          PLANNING TOOLS
+        </h1>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 6, letterSpacing: "0.04em" }}>
+          Four calculators for long-range financial planning. Select a tool to launch it in full.
+        </p>
+      </div>
+
+      {/* Persona context strip */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid || pid === "full") return null;
+        const msgs: Record<string, string | null> = {
+          wealth:  "Pension & ISA and What-If are your highest-value tools — model tax-sheltered growth and scenario outcomes before committing capital.",
+          market:  "What-If Simulator and Projection let you model portfolio shock scenarios and project how market regimes affect your net worth trajectory.",
+          budget:  "What-If Expense Cut helps you identify which spending categories have the biggest impact on your monthly surplus.",
+          social:  null,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
+            <span>{msg}</span>
+          </div>
+        );
+      })()}
+
+      {/* Tool grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(440px, 1fr))", gap: 16 }}>
+        {TOOLS.map((tool) => (
+          <ToolCard key={tool.href} tool={tool} onLaunch={() => navigate(tool.href)} />
+        ))}
+      </div>
+
+      {/* Footer note */}
+      <div style={{ marginTop: 28, paddingTop: 12, borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
+        TIP — Keyboard shortcuts still work directly: G then the key shown on each card to jump straight to any tool.
+      </div>
+    </div>
+  );
+}
+

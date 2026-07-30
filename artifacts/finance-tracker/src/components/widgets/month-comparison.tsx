@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -19,6 +20,149 @@ interface CategoryRow {
   lastMonth: number;
   delta: number;
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+type TotalsKpiCellProps = {
+  label: string;
+  amount: number;
+  color: string;
+  savingsRate: number;
+  income: number | null;
+  badge?: React.ReactNode;
+  incomeDeltaLabel?: React.ReactNode;
+};
+
+function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incomeDeltaLabel }: TotalsKpiCellProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "10px 12px",
+        borderTop: "2px solid var(--ft-cyan)",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
+          {label}
+        </span>
+        {badge}
+      </div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
+        {formatGbp(amount)}
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
+        <span className="pnum">{savingsRate.toFixed(0)}%</span> saved
+        {income !== null && income > 0 && <span className="pnum"> · {formatGbp(income)} income</span>}
+        {incomeDeltaLabel}
+      </div>
+    </div>
+  );
+}
+
+type CategoryTableRowProps = {
+  row: CategoryRow;
+};
+
+function CategoryTableRow({ row }: CategoryTableRowProps) {
+  const [hov, setHov] = useState(false);
+  const decreased = row.delta < 0;
+  const deltaColor = row.delta === 0 ? "var(--ft-dim)" : decreased ? "var(--ft-green)" : "var(--ft-red)";
+  const trendBg = row.delta === 0 ? "rgba(255,255,255,0.05)" : decreased ? "rgba(63,185,80,0.15)" : "rgba(248,81,73,0.15)";
+  const pctChange = row.lastMonth > 0 ? Math.round((row.delta / row.lastMonth) * 100) : null;
+
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 100px 100px 80px 60px",
+        gap: 8,
+        padding: "6px 4px",
+        borderBottom: "1px solid var(--ft-border)",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.category}</div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>{formatGbp(row.lastMonth)}</div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>{formatGbp(row.thisMonth)}</div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, textAlign: "right", color: deltaColor }}>
+        {row.delta === 0 ? "—" : `${decreased ? "-" : "+"}${formatGbp(Math.abs(row.delta))}`}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 3 }}>
+        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: trendBg, color: deltaColor, fontFamily: "var(--font-mono)" }}>
+          {row.delta === 0 ? "—" : decreased ? "▼" : "▲"}
+        </span>
+        {pctChange !== null && (
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+            {Math.abs(pctChange)}%
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type CategoryBarRowProps = {
+  row: CategoryRow;
+  maxVal: number;
+};
+
+function CategoryBarRow({ row, maxVal }: CategoryBarRowProps) {
+  const [hov, setHov] = useState(false);
+  const thisW = maxVal > 0 ? (row.thisMonth / maxVal) * 100 : 0;
+  const lastW = maxVal > 0 ? (row.lastMonth / maxVal) * 100 : 0;
+  const decreased = row.delta < 0;
+  const chipColor = row.delta === 0 ? "var(--ft-dim)" : decreased ? "var(--ft-green)" : "var(--ft-red)";
+  const chipBg = row.delta === 0 ? "rgba(255,255,255,0.05)" : decreased ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)";
+  const pctChange = row.lastMonth > 0 ? Math.round((row.delta / row.lastMonth) * 100) : null;
+
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        marginBottom: 9,
+        padding: "3px 4px",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
+          {row.category}
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>{formatGbp(row.thisMonth)}</span>
+          <span className="pnum" style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: chipBg, color: chipColor, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+            {row.delta === 0 ? "=" : decreased ? `↓${formatGbp(Math.abs(row.delta))}` : `↑${formatGbp(Math.abs(row.delta))}`}
+          </span>
+          {pctChange !== null && (
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+              {Math.abs(pctChange)}%
+            </span>
+          )}
+        </div>
+      </div>
+      {/* Last month thin bar */}
+      <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden", marginBottom: 2 }}>
+        <div style={{ height: "100%", width: `${lastW}%`, background: "var(--ft-dim)", borderRadius: 2, transition: "width 0.25s ease" }} />
+      </div>
+      {/* This month thicker bar */}
+      <div style={{ height: 5, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${thisW}%`, background: "var(--ft-cyan)", borderRadius: 2, transition: "width 0.25s ease" }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Widget ───────────────────────────────────────────────────────────────────
 
 export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) {
   const thisMonthBounds = getMonthBounds(0);
@@ -72,7 +216,61 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
 
   const maxVal = Math.max(...rows.map((r) => Math.max(r.thisMonth, r.lastMonth)), 1);
 
+  const thisExpenses = Object.values(thisCats).reduce((s, v) => s + v, 0);
+  const lastExpenses = Object.values(lastCats).reduce((s, v) => s + v, 0);
+  const thisSavings = thisIncome - thisExpenses;
+  const lastSavings = lastIncome - lastExpenses;
+  const thisSavingsRate = thisIncome > 0 ? (thisSavings / thisIncome) * 100 : 0;
+  const lastSavingsRate = lastIncome > 0 ? (lastSavings / lastIncome) * 100 : 0;
+  const expenseDelta = thisExpenses - lastExpenses;
+  const incomeDelta = thisIncome - lastIncome;
+
+  const now = new Date();
+  const thisMonthLabel = now.toLocaleString("en-GB", { month: "short" }).toUpperCase();
+  const lastMonthLabel = new Date(now.getFullYear(), now.getMonth() - 1, 1).toLocaleString("en-GB", { month: "short" }).toUpperCase();
+
   const hasData = rows.length > 0 || thisIncome > 0 || lastIncome > 0;
+
+  // Border-as-gap KPI strip for totals header
+  const totalsHeader = hasData && (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+      <TotalsKpiCell
+        label={`${lastMonthLabel} SPEND`}
+        amount={lastExpenses}
+        color="var(--ft-muted)"
+        savingsRate={lastSavingsRate}
+        income={lastIncome}
+      />
+      <TotalsKpiCell
+        label={`${thisMonthLabel} SPEND`}
+        amount={thisExpenses}
+        color="var(--ft-cyan)"
+        savingsRate={thisSavingsRate}
+        income={null}
+        badge={
+          lastExpenses > 0 ? (
+            <span style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 8,
+              fontWeight: 700,
+              color: expenseDelta <= 0 ? "var(--ft-green)" : "var(--ft-red)",
+              background: `color-mix(in srgb, ${expenseDelta <= 0 ? "var(--ft-green)" : "var(--ft-red)"} 12%, transparent)`,
+              border: `1px solid color-mix(in srgb, ${expenseDelta <= 0 ? "var(--ft-green)" : "var(--ft-red)"} 30%, transparent)`,
+              padding: "1px 4px",
+              letterSpacing: "0.04em",
+            }}>
+              {expenseDelta <= 0 ? "▼" : "▲"} <span className="pnum">{formatGbp(Math.abs(expenseDelta))}</span>
+            </span>
+          ) : undefined
+        }
+        incomeDeltaLabel={
+          incomeDelta !== 0 ? (
+            <span> · income {incomeDelta > 0 ? "▲" : "▼"} <span className="pnum">{formatGbp(Math.abs(incomeDelta))}</span></span>
+          ) : undefined
+        }
+      />
+    </div>
+  );
 
   return (
     <WidgetShell
@@ -88,13 +286,33 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
         </div>
       ) : !isLoading && isExpanded ? (
         /* Expanded: full comparison table */
-        <div style={{ padding: "12px 14px" }}>
+        <div>
+          {totalsHeader}
+          <div style={{ padding: "12px 14px" }}>
           {/* Income comparison header */}
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
+            <div style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--ft-dim)",
+              marginBottom: 8,
+              borderLeft: "3px solid var(--ft-green)",
+              paddingLeft: 8,
+            }}>
               Income
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 80px 60px", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--ft-border2)" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 100px 100px 80px 60px",
+                gap: 8,
+                padding: "6px 4px",
+                borderBottom: "1px solid var(--ft-border2)",
+                background: "color-mix(in srgb, var(--ft-accent) 3%, transparent)",
+              }}
+            >
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)" }}>Total Income</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>{formatGbp(lastIncome)}</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>{formatGbp(thisIncome)}</div>
@@ -110,7 +328,16 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
           </div>
 
           {/* Category table */}
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
+          <div style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "var(--ft-dim)",
+            marginBottom: 8,
+            borderLeft: "3px solid var(--ft-red)",
+            paddingLeft: 8,
+          }}>
             Expenses by Category
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 80px 60px", gap: 8, padding: "4px 0", marginBottom: 4 }}>
@@ -125,31 +352,17 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
               No expense data
             </div>
           ) : (
-            rows.map((row) => {
-              const decreased = row.delta < 0;
-              const deltaColor = row.delta === 0 ? "var(--ft-dim)" : decreased ? "var(--ft-green)" : "var(--ft-red)";
-              const trendBg = row.delta === 0 ? "rgba(255,255,255,0.05)" : decreased ? "rgba(63,185,80,0.15)" : "rgba(248,81,73,0.15)";
-              return (
-                <div key={row.category} style={{ display: "grid", gridTemplateColumns: "1fr 100px 100px 80px 60px", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--ft-border)" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.category}</div>
-                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>{formatGbp(row.lastMonth)}</div>
-                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>{formatGbp(row.thisMonth)}</div>
-                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, textAlign: "right", color: deltaColor }}>
-                    {row.delta === 0 ? "—" : `${decreased ? "-" : "+"}${formatGbp(Math.abs(row.delta))}`}
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: trendBg, color: deltaColor, fontFamily: "var(--font-mono)" }}>
-                      {row.delta === 0 ? "—" : decreased ? "▼" : "▲"}
-                    </span>
-                  </div>
-                </div>
-              );
-            })
+            rows.map((row) => (
+              <CategoryTableRow key={row.category} row={row} />
+            ))
           )}
+          </div>
         </div>
       ) : !isLoading ? (
         /* Compact: top 6 category bar comparison */
-        <div style={{ padding: "10px 12px 12px" }}>
+        <>
+          {totalsHeader}
+          <div style={{ padding: "10px 12px 12px" }}>
           {/* Legend */}
           <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -166,38 +379,12 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
               No expense data yet this month
             </div>
           ) : (
-            rows.map((row) => {
-              const thisW = maxVal > 0 ? (row.thisMonth / maxVal) * 100 : 0;
-              const lastW = maxVal > 0 ? (row.lastMonth / maxVal) * 100 : 0;
-              const decreased = row.delta < 0;
-              const chipColor = row.delta === 0 ? "var(--ft-dim)" : decreased ? "var(--ft-green)" : "var(--ft-red)";
-              const chipBg = row.delta === 0 ? "rgba(255,255,255,0.05)" : decreased ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)";
-              return (
-                <div key={row.category} style={{ marginBottom: 9 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
-                      {row.category}
-                    </span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>{formatGbp(row.thisMonth)}</span>
-                      <span className="pnum" style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: chipBg, color: chipColor, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-                        {row.delta === 0 ? "=" : decreased ? `↓${formatGbp(Math.abs(row.delta))}` : `↑${formatGbp(Math.abs(row.delta))}`}
-                      </span>
-                    </div>
-                  </div>
-                  {/* Last month thin bar */}
-                  <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden", marginBottom: 2 }}>
-                    <div style={{ height: "100%", width: `${lastW}%`, background: "var(--ft-dim)", borderRadius: 2, transition: "width 0.4s ease" }} />
-                  </div>
-                  {/* This month thicker bar */}
-                  <div style={{ height: 5, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${thisW}%`, background: "var(--ft-cyan)", borderRadius: 2, transition: "width 0.4s ease" }} />
-                  </div>
-                </div>
-              );
-            })
+            rows.map((row) => (
+              <CategoryBarRow key={row.category} row={row} maxVal={maxVal} />
+            ))
           )}
-        </div>
+          </div>
+        </>
       ) : null}
     </WidgetShell>
   );

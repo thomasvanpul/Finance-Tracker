@@ -123,6 +123,12 @@ export type StockQuoteData = {
   dayLow: number | null;
   volume: number | null;
   previousClose: number | null;
+  nextEarningsDate: string | null;
+  marketState: string | null;
+  postMarketPrice: number | null;
+  postMarketChangePercent: number | null;
+  preMarketPrice: number | null;
+  preMarketChangePercent: number | null;
 };
 
 export type HistoryPoint = {
@@ -266,12 +272,23 @@ export async function getStockQuotes(tickers: string[]): Promise<StockQuoteData[
           dayLow: typeof q?.regularMarketDayLow === "number" ? q.regularMarketDayLow : null,
           volume: typeof q?.regularMarketVolume === "number" ? q.regularMarketVolume : null,
           previousClose: typeof q?.regularMarketPreviousClose === "number" ? q.regularMarketPreviousClose : null,
+          nextEarningsDate: (() => {
+            const ts = q?.earningsTimestampStart ?? q?.earningsTimestamp;
+            if (typeof ts !== "number" || ts <= 0) return null;
+            const d = new Date(ts * 1000);
+            return d > new Date() ? d.toISOString().slice(0, 10) : null;
+          })(),
+          marketState: typeof q?.marketState === "string" ? q.marketState : null,
+          postMarketPrice: typeof q?.postMarketPrice === "number" ? Math.round(q.postMarketPrice * 100) / 100 : null,
+          postMarketChangePercent: typeof q?.postMarketChangePercent === "number" ? Math.round(q.postMarketChangePercent * 100) / 100 : null,
+          preMarketPrice: typeof q?.preMarketPrice === "number" ? Math.round(q.preMarketPrice * 100) / 100 : null,
+          preMarketChangePercent: typeof q?.preMarketChangePercent === "number" ? Math.round(q.preMarketChangePercent * 100) / 100 : null,
         };
         quoteCache.set(ticker, { data, ts: now });
         results.push(data);
       } catch (err) {
         logger.warn({ err, ticker }, "Stock quote fetch failed");
-        results.push({ ticker, price: 0, currency: "USD", updatedAt: new Date().toISOString(), pe: null, forwardPe: null, eps: null, high52w: null, low52w: null, marketCap: null, beta: null, dividendYield: null, analystTargetPrice: null, displayName: null, changePercent: null, dayHigh: null, dayLow: null, volume: null, previousClose: null });
+        results.push({ ticker, price: 0, currency: "USD", updatedAt: new Date().toISOString(), pe: null, forwardPe: null, eps: null, high52w: null, low52w: null, marketCap: null, beta: null, dividendYield: null, analystTargetPrice: null, displayName: null, changePercent: null, dayHigh: null, dayLow: null, volume: null, previousClose: null, nextEarningsDate: null, marketState: null, postMarketPrice: null, postMarketChangePercent: null, preMarketPrice: null, preMarketChangePercent: null });
       }
     })
   );
@@ -320,63 +337,277 @@ export async function getStockPrices(tickers: string[]): Promise<StockPriceData[
 // ── History ───────────────────────────────────────────────────────────────────
 
 const historyCache = new Map<string, { data: HistoryPoint[]; ts: number }>();
-const HISTORY_TTL_MS = 30 * 60 * 1000;
+const HISTORY_TTL_MS  = 30 * 60 * 1000;
+const INTRADAY_TTL_MS =  2 * 60 * 1000;
+const MICRO_TTL_MS    =     30 * 1000;   // 30 s for 1-min data
+
+const INTRADAY_PERIODS = new Set(["1min", "2min", "5min", "15min", "30min", "1h", "1d", "3d", "5d"]);
+
+type YfInterval = "1m" | "2m" | "5m" | "15m" | "30m" | "60m" | "1d" | "1wk" | "1mo";
+
+interface PeriodConfig { days: number; interval: YfInterval; intraday: boolean; }
+
+const PERIOD_CONFIGS: Record<string, PeriodConfig> = {
+  "1min":  { days: 1,    interval: "1m",  intraday: true  },
+  "2min":  { days: 2,    interval: "2m",  intraday: true  },
+  "5min":  { days: 2,    interval: "5m",  intraday: true  },
+  "15min": { days: 5,    interval: "15m", intraday: true  },
+  "30min": { days: 5,    interval: "30m", intraday: true  },
+  "1h":    { days: 10,   interval: "60m", intraday: true  },
+  "1d":    { days: 1,    interval: "30m", intraday: true  },
+  "3d":    { days: 3,    interval: "60m", intraday: true  },
+  "5d":    { days: 5,    interval: "60m", intraday: true  },
+  "1w":    { days: 7,    interval: "1d",  intraday: false },
+  "1m":    { days: 30,   interval: "1d",  intraday: false },
+  "3m":    { days: 90,   interval: "1wk", intraday: false },
+  "6m":    { days: 180,  interval: "1wk", intraday: false },
+  "1y":    { days: 365,  interval: "1wk", intraday: false },
+  "2y":    { days: 730,  interval: "1mo", intraday: false },
+  "5y":    { days: 1825, interval: "1mo", intraday: false },
+};
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseHistoryRows(rows: any[]): HistoryPoint[] {
+function parseHistoryRows(rows: any[], intraday = false): HistoryPoint[] {
   return rows
     .filter((r) => r.close != null && typeof r.close === "number")
-    .map((r) => ({
-      date: r.date instanceof Date
-        ? r.date.toISOString().slice(0, 10)
-        : new Date(r.date as string | number).toISOString().slice(0, 10),
-      open: typeof r.open === "number" ? r.open : r.close,
-      high: typeof r.high === "number" ? r.high : r.close,
-      low: typeof r.low === "number" ? r.low : r.close,
-      close: r.close as number,
-      volume: typeof r.volume === "number" ? r.volume : 0,
-    }));
+    .map((r) => {
+      let date: string;
+      if (intraday) {
+        const d = r.date instanceof Date ? r.date : new Date(r.date as string | number);
+        // Use UTC throughout to avoid local-timezone/ISO-string mismatch
+        const h = d.getUTCHours().toString().padStart(2, "0");
+        const m = d.getUTCMinutes().toString().padStart(2, "0");
+        date = `${d.toISOString().slice(0, 10)} ${h}:${m}`;
+      } else {
+        date = r.date instanceof Date
+          ? r.date.toISOString().slice(0, 10)
+          : new Date(r.date as string | number).toISOString().slice(0, 10);
+      }
+      return {
+        date,
+        open: typeof r.open === "number" ? r.open : r.close,
+        high: typeof r.high === "number" ? r.high : r.close,
+        low: typeof r.low === "number" ? r.low : r.close,
+        close: r.close as number,
+        volume: typeof r.volume === "number" ? r.volume : 0,
+      };
+    });
+}
+
+// ── Polygon.io integration (optional — set POLYGON_API_KEY for enhanced 1-min data) ──
+
+const POLYGON_KEY = process.env.POLYGON_API_KEY ?? "";
+
+interface PolygonAgg { t: number; o: number; h: number; l: number; c: number; v: number; }
+interface PolygonAggsResponse { results?: PolygonAgg[]; status?: string; error?: string; }
+
+/** Returns YYYY-MM-DD of the most recent trading day (Mon–Fri). */
+function lastTradingDay(daysBack = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysBack);
+  const day = d.getDay();
+  if (day === 0) d.setDate(d.getDate() - 2);
+  else if (day === 6) d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function polygonToPoints(aggs: PolygonAgg[]): HistoryPoint[] {
+  return aggs.map((r) => {
+    const d = new Date(r.t);
+    const date = `${d.toISOString().slice(0, 10)} ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+    return { date, open: r.o, high: r.h, low: r.l, close: r.c, volume: r.v };
+  });
+}
+
+async function fetchPolygonAggs(
+  ticker: string, multiplier: number, timespan: string, from: string, to: string
+): Promise<HistoryPoint[]> {
+  // Polygon uses hyphens for class-B shares (BRK-B), strip exchange suffixes like .HK
+  const polyTicker = ticker.replace(/\.[A-Z]{1,3}$/, "").replace(".", "-");
+  const url = `https://api.polygon.io/v2/aggs/ticker/${polyTicker}/range/${multiplier}/${timespan}/${from}/${to}?adjusted=true&sort=asc&limit=5000&apiKey=${POLYGON_KEY}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!res.ok) throw new Error(`Polygon HTTP ${res.status}`);
+  const body = await res.json() as PolygonAggsResponse;
+  if (!body.results?.length) return [];
+  return polygonToPoints(body.results);
 }
 
 export async function getStockHistory(ticker: string, period: string): Promise<HistoryPoint[]> {
-  const key = `${ticker}:${period}`;
+  const cacheKey = `${ticker}:${period}`;
   const now = Date.now();
-  const cached = historyCache.get(key);
-  if (cached && now - cached.ts < HISTORY_TTL_MS) return cached.data;
+  const ttl = period === "1min" ? MICRO_TTL_MS
+            : INTRADAY_PERIODS.has(period) ? INTRADAY_TTL_MS
+            : HISTORY_TTL_MS;
 
-  const periodMap: Record<string, number> = {
-    "1w": 7, "1m": 30, "3m": 90, "6m": 180, "1y": 365, "2y": 730, "5y": 1825,
-  };
-  const days = periodMap[period] ?? 365;
-  const period1 = new Date(now - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const interval: "1d" | "1wk" | "1mo" =
-    days <= 30 ? "1d" : days < 730 ? "1wk" : "1mo";
+  const cached = historyCache.get(cacheKey);
+  if (cached && now - cached.ts < ttl) return cached.data;
 
-  // Try chart() first, fall back to historical() if it fails
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cfg = PERIOD_CONFIGS[period] ?? { days: 365, interval: "1wk" as YfInterval, intraday: false };
+  const period1 = new Date(now - cfg.days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
   let data: HistoryPoint[] = [];
 
+  // ── Yahoo Finance path (primary for all periods) ──
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await yahooFinance.chart(ticker, { period1, interval });
+    const result: any = await yahooFinance.chart(ticker, { period1, interval: cfg.interval });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows: any[] = result?.quotes ?? [];
-    data = parseHistoryRows(rows);
+    data = parseHistoryRows(rows, cfg.intraday);
   } catch (chartErr) {
     logger.warn({ chartErr, ticker, period }, "chart() failed, trying historical()");
+    if (!cfg.intraday) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rows: any[] = await yahooFinance.historical(ticker, { period1, interval: cfg.interval as "1d" | "1wk" | "1mo" });
+        data = parseHistoryRows(rows, false);
+      } catch (histErr) {
+        logger.warn({ histErr, ticker, period }, "historical() also failed");
+      }
+    }
+  }
+
+  // ── Polygon.io fallback for 1-2min only when Yahoo returns nothing ──
+  if (data.length === 0 && POLYGON_KEY && (period === "1min" || period === "2min")) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rows: any[] = await yahooFinance.historical(ticker, { period1, interval });
-      data = parseHistoryRows(rows);
-    } catch (histErr) {
-      logger.warn({ histErr, ticker, period }, "historical() also failed");
+      const multiplier = period === "1min" ? 1 : 2;
+      const to   = lastTradingDay(0);
+      const from = lastTradingDay(period === "1min" ? 1 : 3);
+      data = await fetchPolygonAggs(ticker, multiplier, "minute", from, to);
+      logger.info({ ticker, period, points: data.length }, "Polygon 1-min fallback ok");
+    } catch (polygonErr) {
+      logger.warn({ polygonErr, ticker, period }, "Polygon fallback also failed");
     }
   }
 
   if (data.length > 0) {
-    historyCache.set(key, { data, ts: now });
+    historyCache.set(cacheKey, { data, ts: now });
   }
   return data;
+}
+
+// ── News ──────────────────────────────────────────────────────────────────────
+
+export interface NewsItem {
+  title: string;
+  link: string;
+  publisher: string;
+  publishedAt: string;
+}
+
+const newsCache = new Map<string, { data: NewsItem[]; ts: number }>();
+const NEWS_TTL_MS = 10 * 60 * 1000;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapNewsItem(n: any): NewsItem {
+  let publishedAt: string;
+  if (n.providerPublishTime instanceof Date) {
+    publishedAt = n.providerPublishTime.toISOString();
+  } else if (typeof n.providerPublishTime === "number") {
+    publishedAt = new Date(n.providerPublishTime * 1000).toISOString();
+  } else {
+    publishedAt = new Date().toISOString();
+  }
+  return { title: n.title ?? "", link: n.link ?? "", publisher: n.publisher ?? "", publishedAt };
+}
+
+async function fetchNewsYahooQuery(ticker: string): Promise<NewsItem[]> {
+  const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(ticker)}&newsCount=10&quotesCount=0&enableFuzzyQuery=false`;
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(8000),
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "application/json",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Referer": "https://finance.yahoo.com/",
+    },
+  });
+  if (!res.ok) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const json: any = await res.json();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawNews: any[] = Array.isArray(json?.news) ? json.news : [];
+  return rawNews
+    .filter((n) => n?.title && n?.link)
+    .map((n) => ({
+      title: String(n.title ?? ""),
+      link: String(n.link ?? ""),
+      publisher: String(n.providerDisplayName ?? n.publisher ?? "Yahoo Finance"),
+      publishedAt: typeof n.providerPublishTime === "number"
+        ? new Date((n.providerPublishTime as number) * 1000).toISOString()
+        : new Date().toISOString(),
+    }));
+}
+
+async function fetchNewsRSS(ticker: string): Promise<NewsItem[]> {
+  const url = `https://feeds.finance.yahoo.com/rss/2.0/headline?s=${encodeURIComponent(ticker)}&region=US&lang=en-US`;
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(6000),
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "application/rss+xml, application/xml, text/xml, */*",
+    },
+  });
+  if (!res.ok) return [];
+  const xml = await res.text();
+  const items: NewsItem[] = [];
+  const itemMatches = xml.match(/<item>([\s\S]*?)<\/item>/g) ?? [];
+  for (const item of itemMatches) {
+    const title = (item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) ?? item.match(/<title>([\s\S]*?)<\/title>/))?.[1]?.trim() ?? "";
+    const link = (item.match(/<link>([\s\S]*?)<\/link>/))?.[1]?.trim() ?? "";
+    const pubDate = (item.match(/<pubDate>([\s\S]*?)<\/pubDate>/))?.[1]?.trim() ?? "";
+    const publisher = "Yahoo Finance";
+    if (!title || !link) continue;
+    const publishedAt = pubDate ? new Date(pubDate).toISOString() : new Date().toISOString();
+    items.push({ title, link, publisher, publishedAt });
+    if (items.length >= 12) break;
+  }
+  return items;
+}
+
+export async function getStockNews(ticker: string): Promise<NewsItem[]> {
+  const key = ticker;
+  const now = Date.now();
+  const cached = newsCache.get(key);
+  if (cached && now - cached.ts < NEWS_TTL_MS) return cached.data;
+
+  // Attempt 1: yahoo-finance2 search()
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = await yahooFinance.search(ticker, { newsCount: 12, quotesCount: 0 }, { validateResult: false });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawNews: any[] = Array.isArray(result?.news) ? result.news : [];
+    const items: NewsItem[] = rawNews
+      .filter((n) => n?.title && n?.link)
+      .map(mapNewsItem);
+    if (items.length > 0) {
+      newsCache.set(key, { data: items, ts: now });
+      return items;
+    }
+  } catch (err) {
+    logger.warn({ err, ticker }, "News search() failed, trying direct Yahoo query");
+  }
+
+  // Attempt 2: direct Yahoo Finance query API (browser-like UA)
+  try {
+    const items = await fetchNewsYahooQuery(ticker);
+    if (items.length > 0) {
+      newsCache.set(key, { data: items, ts: now });
+      return items;
+    }
+  } catch (err) {
+    logger.warn({ err, ticker }, "Direct Yahoo query failed, trying RSS");
+  }
+
+  // Attempt 3: RSS feed
+  try {
+    const items = await fetchNewsRSS(ticker);
+    if (items.length > 0) newsCache.set(key, { data: items, ts: now });
+    return items;
+  } catch (rssErr) {
+    logger.warn({ rssErr, ticker }, "All news sources failed");
+    return [];
+  }
 }
 
 // ── Detail ────────────────────────────────────────────────────────────────────

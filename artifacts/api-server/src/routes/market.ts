@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { getFxRates, getStockPrices, getStockQuotes, getStockHistory, getStockDetail, getOptionsChain } from "../lib/market";
+import { getFxRates, getStockPrices, getStockQuotes, getStockHistory, getStockDetail, getOptionsChain, getStockNews } from "../lib/market";
 import {
   GetFxRatesResponse,
   GetMarketPricesQueryParams,
@@ -59,6 +59,13 @@ router.get("/market/options", async (req, res): Promise<void> => {
   const expiry = typeof req.query.expiry === "string" ? req.query.expiry.trim() : undefined;
   if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
   const data = await getOptionsChain(ticker, expiry);
+  res.json(data);
+});
+
+router.get("/market/news", async (req, res): Promise<void> => {
+  const ticker = typeof req.query.ticker === "string" ? req.query.ticker.trim().toUpperCase() : "";
+  if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
+  const data = await getStockNews(ticker);
   res.json(data);
 });
 

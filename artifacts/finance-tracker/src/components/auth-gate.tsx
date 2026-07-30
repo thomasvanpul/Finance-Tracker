@@ -19,7 +19,7 @@ function TopBar({ locked }: { locked: boolean }) {
         <LogoMark />
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.12em", lineHeight: 1 }}>NUMERIS</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", letterSpacing: "0.15em", lineHeight: 1 }}>PERSONAL OS</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.15em", lineHeight: 1 }}>PERSONAL OS</span>
         </div>
       </div>
       <div className="flex-1" />
@@ -104,7 +104,7 @@ const inputStyle: React.CSSProperties = {
 const btnStyle = (disabled: boolean): React.CSSProperties => ({
   width: "100%",
   background: "var(--ft-blue)",
-  color: "white",
+  color: "var(--ft-base)",
   border: "none",
   borderRadius: 2,
   fontSize: 13,
@@ -164,30 +164,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (isPending) {
-    if (import.meta.env.VITE_DEV_BYPASS === "true") return <>{children}</>;
     return <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
   }
 
   if (session) {
     return <>{children}</>;
   }
-
-  const handleDevBypass = async () => {
-    setSubmitting(true);
-    setError(null);
-    try {
-      const res = await authClient.signIn.email({ email: "dev@bypass.local", password: "DevBypass123!" });
-      if (!res?.error) {
-        window.location.href = "/";
-      } else {
-        setError("Dev bypass failed — ensure dev user exists in DB");
-        setSubmitting(false);
-      }
-    } catch {
-      setError("Dev bypass failed");
-      setSubmitting(false);
-    }
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -529,24 +511,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                       Sign up
                     </button>
                   </p>
-                  {import.meta.env.VITE_DEV_BYPASS === "true" && (
-                    <>
-                      <div style={{ borderTop: "1px solid var(--ft-border)", margin: "12px 0 10px" }} />
-                      <button
-                        type="button"
-                        onClick={handleDevBypass}
-                        disabled={submitting}
-                        style={{
-                          width: "100%", padding: "7px 0", fontSize: 11,
-                          fontFamily: "var(--font-mono)", letterSpacing: "0.06em",
-                          background: "transparent", border: "1px dashed var(--ft-border2)",
-                          color: "var(--ft-dim)", cursor: "pointer",
-                        }}
-                      >
-                        {submitting ? "entering…" : "[ dev bypass ]"}
-                      </button>
-                    </>
-                  )}
+
                 </form>
               ) : (
                 <form onSubmit={handleSignUp}>

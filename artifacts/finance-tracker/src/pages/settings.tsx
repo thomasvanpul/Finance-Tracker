@@ -1,6 +1,8 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { getAiStyle, setAiStylePref, type AiStyle } from "@/components/ai-agent";
 import { loadCatRules, saveCatRules, type CatRule } from "@/lib/auto-cat";
+import { PERSONAS, loadPersonaIds, applyPersonas, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_INSIGHT_PREVIEWS, PERSONA_BG, type PersonaId } from "@/lib/persona";
 import { loadSidebarConfig, saveSidebarConfig } from "@/lib/sidebar-config";
 import {
   useGetSettingsCurrency,
@@ -40,8 +42,7 @@ const DENSITY_KEY = "ft-density";
 type Density = "compact" | "normal" | "comfortable";
 
 type NavItem =
-  | "appearance" | "animations" | "display" | "wardrobe"
-  | "security" | "privacy" | "profile"
+  | "appearance" | "display" | "wardrobe" | "terminal-profile"
   | "currency" | "alerts" | "rules" | "dashboard" | "tx-defaults"
   | "widgets" | "data" | "advanced"
   | "shortcuts" | "ai"
@@ -129,19 +130,11 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
   {
     label: "Personalise",
     items: [
+      { id: "terminal-profile", label: "Terminal Profile" },
       { id: "appearance",  label: "Appearance" },
-      { id: "animations",  label: "Animations" },
-      { id: "display",     label: "Display" },
+      { id: "display",     label: "Display & Motion" },
       { id: "wardrobe",    label: "Wardrobe" },
       { id: "categories",  label: "Categories" },
-    ],
-  },
-  {
-    label: "Account",
-    items: [
-      { id: "profile",  label: "Profile" },
-      { id: "security", label: "Security" },
-      { id: "privacy",  label: "Privacy" },
     ],
   },
   {
@@ -149,7 +142,7 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
     items: [
       { id: "currency",    label: "Currency" },
       { id: "alerts",      label: "Alerts" },
-      { id: "rules",       label: "Categories" },
+      { id: "rules",       label: "Auto-Categorize" },
       { id: "tx-defaults", label: "Tx Defaults" },
       { id: "dashboard",   label: "Dashboard" },
     ],
@@ -165,20 +158,15 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
   {
     label: "Integrations",
     items: [
-      { id: "wise", label: "Wise" },
+      { id: "wise",           label: "Wise" },
       { id: "crypto-wallets", label: "Crypto Wallets" },
-      { id: "digest", label: "Weekly Digest" },
+      { id: "digest",         label: "Weekly Digest" },
     ],
   },
   {
-    label: "AI",
+    label: "AI & Help",
     items: [
-      { id: "ai", label: "AI Assistant" },
-    ],
-  },
-  {
-    label: "Learn",
-    items: [
+      { id: "ai",        label: "AI Assistant" },
       { id: "shortcuts", label: "Shortcuts" },
     ],
   },
@@ -255,6 +243,7 @@ const HEADER_STYLE = {
 
 const ROW = {
   display: "flex", alignItems: "center", justifyContent: "space-between",
+  flexWrap: "wrap" as const, gap: 8,
   padding: "10px 14px", borderBottom: "1px solid var(--ft-border)",
   fontFamily: "var(--font-mono)", fontSize: 12,
 } as const;
@@ -289,12 +278,13 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   );
 }
 
-function SectionHeader({ label }: { label: string }) {
+function SectionHeader({ label, accent = "var(--ft-accent)" }: { label: string; accent?: string }) {
   return (
     <div style={{
       padding: "8px 14px 4px", fontFamily: "var(--font-mono)", fontSize: 9,
-      letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-accent)",
+      letterSpacing: "0.1em", textTransform: "uppercase", color: accent,
       fontWeight: 700, background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)",
+      borderLeft: `3px solid ${accent}`,
     }}>{label}</div>
   );
 }
@@ -312,6 +302,223 @@ function ActionBtn({ label, variant = "accent", onClick, disabled }: { label: st
         opacity: disabled ? 0.5 : 1,
       }}
     >&gt; {label}</button>
+  );
+}
+
+// ── Hover-aware row sub-components ───────────────────────────────────────────
+
+function SettingsActionRow({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...ROW,
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 8,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <RowLabel title={title} sub={sub} />
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function SettingsInputRow({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "12px 14px",
+        borderBottom: "1px solid var(--ft-border)",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <RowLabel title={title} sub={sub} />
+      <div style={{ marginTop: 8 }}>{children}</div>
+    </div>
+  );
+}
+
+function SettingsInfoRow({ label, value, accent = "var(--ft-text)" }: { label: string; value: React.ReactNode; accent?: string }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "8px 14px", borderBottom: "1px solid var(--ft-border)",
+        fontFamily: "var(--font-mono)", fontSize: 10,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <span style={{ color: "var(--ft-muted)", fontSize: 10 }}>{label}</span>
+      <span style={{ color: accent, fontSize: 10 }}>{value}</span>
+    </div>
+  );
+}
+
+function SettingsDataResetRow({ label, description, onReset }: { label: string; description: string; onReset: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...ROW,
+        flexWrap: "wrap",
+        gap: 8,
+        background: hov ? "color-mix(in srgb, var(--ft-red) 4%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>{label}</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{description}</div>
+      </div>
+      <button
+        onClick={onReset}
+        style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "5px 12px", cursor: "pointer", whiteSpace: "nowrap" }}
+      >
+        Reset
+      </button>
+    </div>
+  );
+}
+
+function SettingsToggleRow({ title, sub, on, onChange }: { title: string; sub?: string; on: boolean; onChange: (v: boolean) => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...ROW,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <RowLabel title={title} sub={sub} />
+      <Toggle on={on} onChange={onChange} />
+    </div>
+  );
+}
+
+function SettingsSelectRow({ title, sub, value, onChange, children }: { title: string; sub?: string; value: string; onChange: (v: string) => void; children: React.ReactNode }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...ROW,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <RowLabel title={title} sub={sub} />
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", flexShrink: 0 }}
+      >
+        {children}
+      </select>
+    </div>
+  );
+}
+
+function SettingsNavItemRow({ label, visible, onChange }: { label: string; visible: boolean; onChange: (v: boolean) => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...ROW,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: visible ? "var(--ft-text)" : "var(--ft-dim)" }}>{label}</span>
+      <Toggle on={visible} onChange={onChange} />
+    </div>
+  );
+}
+
+function SettingsWidgetRow({ label, span, description, enabled, onToggle }: { label: string; span: string; description: string; enabled: boolean; onToggle: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...ROW,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>
+          {label}
+          <span style={{ marginLeft: 8, fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+            {span === "full" ? "FULL WIDTH" : "HALF"}
+          </span>
+        </div>
+        <div style={{ fontSize: 11, color: "var(--ft-muted)" }}>{description}</div>
+      </div>
+      <Toggle on={enabled} onChange={onToggle} />
+    </div>
+  );
+}
+
+function SettingsThemeEffectRow({ label, accent, on, onChange }: { label: string; accent: string; on: boolean; onChange: (v: boolean) => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...ROW,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ width: 10, height: 10, borderRadius: "50%", background: accent, display: "inline-block", flexShrink: 0 }} />
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>{label}</span>
+      </div>
+      <Toggle on={on} onChange={onChange} />
+    </div>
+  );
+}
+
+// ── Storage KPI strip ─────────────────────────────────────────────────────────
+
+function StorageKpiStrip({ keyCount, sizeKb, nrKeyCount }: { keyCount: number; sizeKb: number; nrKeyCount: number }) {
+  const cells: { value: React.ReactNode; label: string; color: string }[] = [
+    { value: <span className="pnum">{keyCount}</span>, label: "Keys (ft- + nr-)", color: "var(--ft-accent)" },
+    { value: <><span className="pnum">{sizeKb}</span><span style={{ fontSize: 11, color: "var(--ft-muted)", fontWeight: 400, marginLeft: 3 }}>KB</span></>, label: "Estimated size", color: "var(--ft-cyan)" },
+    { value: <span className="pnum">{nrKeyCount}</span>, label: "App prefs (nr-)", color: "var(--ft-blue)" },
+  ];
+  return (
+    <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+      {cells.map(c => (
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", borderTop: `2px solid ${c.color}` }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{c.value}</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>{c.label}</div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -358,7 +565,7 @@ function SavingsRateTargetInput() {
             outline: "none",
           }}
         />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>%</span>
+        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>%</span>
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
         Saved automatically · used on the dashboard KPI
@@ -367,101 +574,7 @@ function SavingsRateTargetInput() {
   );
 }
 
-function useIsDevUser() {
-  const { data: session } = authClient.useSession();
-  return session?.user?.email === "dev@bypass.local";
-}
 
-// ── Profile panel ─────────────────────────────────────────────────────────────
-function ProfilePanel() {
-  const { data: session } = authClient.useSession();
-  const { toast } = useToast();
-  const [nameEditing, setNameEditing] = useState(false);
-  const [nameVal, setNameVal] = useState("");
-  const [nameSaving, setNameSaving] = useState(false);
-
-  const user = session?.user;
-
-  const startEdit = () => { setNameVal(user?.name ?? ""); setNameEditing(true); };
-
-  const handleSaveName = async () => {
-    if (!nameVal.trim()) return;
-    setNameSaving(true);
-    try {
-      await authClient.updateUser({ name: nameVal.trim() });
-      setNameEditing(false);
-      toast({ title: "Display name updated" });
-    } catch (err) {
-      toast({ title: "Could not update name", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
-    } finally {
-      setNameSaving(false);
-    }
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Profile</div>
-        <div style={{ padding: "16px", background: "var(--ft-surface)", display: "flex", gap: 16, alignItems: "flex-start" }}>
-          <div style={{ width: 52, height: 52, background: "var(--ft-accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-base)", lineHeight: 1 }}>
-              {((user?.name || user?.email || "U").charAt(0)).toUpperCase()}
-            </span>
-          </div>
-          <div style={{ flex: 1 }}>
-            {!nameEditing ? (
-              <>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)", marginBottom: 4 }}>
-                  {user?.name || <span style={{ color: "var(--ft-dim)", fontStyle: "italic" }}>No display name</span>}
-                </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 10 }}>{user?.email}</div>
-                <ActionBtn label="Edit Name" variant="muted" onClick={startEdit} />
-              </>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <input
-                  type="text" autoFocus value={nameVal}
-                  onChange={e => setNameVal(e.target.value)}
-                  placeholder="Display name"
-                  onKeyDown={e => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setNameEditing(false); }}
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 12, background: "var(--ft-raised)", border: "1px solid var(--ft-accent)", color: "var(--ft-text)", padding: "6px 10px", outline: "none" }}
-                />
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={handleSaveName} disabled={nameSaving || !nameVal.trim()} style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "5px 14px", cursor: "pointer", opacity: (nameSaving || !nameVal.trim()) ? 0.5 : 1 }}>
-                    {nameSaving ? "Saving…" : "Save"}
-                  </button>
-                  <button onClick={() => setNameEditing(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "5px 12px", cursor: "pointer" }}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Account Details</div>
-        {([
-          ["Email", user?.email ?? "—"],
-          ["User ID", user?.id ? `…${String(user.id).slice(-8)}` : "—"],
-          ["Created", user?.createdAt ? new Date(String(user.createdAt)).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" }) : "—"],
-        ] as [string, string][]).map(([label, val]) => (
-          <div key={label} style={ROW}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{label}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{val}</span>
-          </div>
-        ))}
-      </div>
-      <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Session</div>
-        <div style={{ ...ROW, flexDirection: "column", alignItems: "flex-start", gap: 10 }}>
-          <RowLabel title="Sign out" sub="Ends your current session on this device" />
-          <ActionBtn label="Sign Out" variant="danger" onClick={async () => { await authClient.signOut(); window.location.href = "/"; }} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Transaction defaults panel ────────────────────────────────────────────────
 function TransactionDefaultsPanel() {
@@ -483,7 +596,7 @@ function TransactionDefaultsPanel() {
       <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Transaction Defaults</div>
       <div style={ROW}>
         <RowLabel title="Default type" sub='Pre-selects the transaction type in Quick Add (N)' />
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", flexShrink: 0 }}>
           {(["expense","income","transfer"] as const).map(t => (
             <button key={t} onClick={() => setType(t)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "4px 10px", background: defType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${defType === t ? "var(--ft-accent)" : "var(--ft-border)"}`, color: defType === t ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer", transition: "background 0.1s" }}>
               {t}
@@ -493,13 +606,13 @@ function TransactionDefaultsPanel() {
       </div>
       <div style={ROW}>
         <RowLabel title="Default currency" sub="Pre-selects the currency in Quick Add" />
-        <select value={defCurrency} onChange={e => setCur(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
+        <select value={defCurrency} onChange={e => setCur(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", flexShrink: 0 }}>
           {SUPPORTED_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
       <div style={ROW}>
         <RowLabel title="Default category" sub='Pre-fills the category field (leave blank to skip)' />
-        <select value={defCategory} onChange={e => setCat(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
+        <select value={defCategory} onChange={e => setCat(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", flexShrink: 0, maxWidth: "100%" }}>
           <option value="">— none —</option>
           {allCats.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -522,14 +635,292 @@ const RARITY_COLOR: Record<string, string> = {
 
 const ACCENT_PRESETS = ["#F4A21E","#00FF41","#FF007A","#4D9FFF","#C8941E","#CC1A2F","#7FFF00","#7B5EA7","#56D364","#F8C800","#FF6B6B","#00BCD4"];
 
+// ── Terminal Profile Panel ────────────────────────────────────────────────────
+
+// Feature matrix — ✓ primary · available — not included
+type FeatureLevel = "primary" | "available" | "none";
+interface FeatureRow { label: string; market: FeatureLevel; budget: FeatureLevel; wealth: FeatureLevel; social: FeatureLevel; full: FeatureLevel; }
+const FEATURE_MATRIX: FeatureRow[] = [
+  { label: "Live prices & portfolio P&L",  market: "primary",   budget: "none",      wealth: "available", social: "none",      full: "primary"   },
+  { label: "Transaction tracking",         market: "available", budget: "primary",   wealth: "available", social: "primary",   full: "primary"   },
+  { label: "Budget limits & categories",   market: "none",      budget: "primary",   wealth: "none",      social: "available", full: "primary"   },
+  { label: "Spending analytics",           market: "available", budget: "primary",   wealth: "available", social: "available", full: "primary"   },
+  { label: "Net worth history",            market: "available", budget: "none",      wealth: "primary",   social: "none",      full: "primary"   },
+  { label: "FIRE / retirement planning",   market: "available", budget: "none",      wealth: "primary",   social: "none",      full: "primary"   },
+  { label: "Pension & ISA tracker",        market: "available", budget: "none",      wealth: "primary",   social: "none",      full: "primary"   },
+  { label: "What-if scenarios",            market: "primary",   budget: "primary",   wealth: "primary",   social: "none",      full: "primary"   },
+  { label: "Tax planning (CGT / shelter)", market: "primary",   budget: "none",      wealth: "primary",   social: "none",      full: "primary"   },
+  { label: "Bill splitting & groups",      market: "none",      budget: "none",      wealth: "none",      social: "primary",   full: "primary"   },
+  { label: "Debt ledger",                  market: "none",      budget: "available", wealth: "available", social: "primary",   full: "primary"   },
+  { label: "Savings goals",                market: "none",      budget: "primary",   wealth: "primary",   social: "none",      full: "primary"   },
+  { label: "Cashflow forecast",            market: "primary",   budget: "primary",   wealth: "primary",   social: "available", full: "primary"   },
+  { label: "AI coach & decisions",         market: "primary",   budget: "primary",   wealth: "primary",   social: "primary",   full: "primary"   },
+  { label: "Full nav (30+ pages)",         market: "none",      budget: "none",      wealth: "none",      social: "none",      full: "primary"   },
+];
+
+
+const PERSONA_PAGE_COUNTS: Record<PersonaId, number> = {
+  market: 10, budget: 15, wealth: 14, social: 10, full: 32,
+};
+
+function FeatureDot({ level, color }: { level: FeatureLevel; color: string }) {
+  if (level === "primary") return (
+    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color, fontWeight: 700, lineHeight: 1 }}>✓</span>
+  );
+  if (level === "available") return (
+    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1 }}>·</span>
+  );
+  return <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-border2)", lineHeight: 1 }}>—</span>;
+}
+
+function TerminalProfilePanel() {
+  function handleResetAndReconfigure() {
+    localStorage.removeItem("nr-onboarding-complete");
+    localStorage.removeItem("ft-onboarding-dismissed");
+    localStorage.removeItem("ft-onboarding-complete");
+    localStorage.removeItem("ft-persona");
+    setTimeout(() => window.location.reload(), 200);
+  }
+
+  const currentIds = loadPersonaIds();
+  const [selected, setSelected] = useState<Set<PersonaId>>(
+    () => new Set(currentIds.length > 0 ? currentIds : ["full"] as PersonaId[])
+  );
+  const [saved, setSaved] = useState(false);
+  const [previewPersona, setPreviewPersona] = useState<PersonaId | null>(null);
+  const [showMatrix, setShowMatrix] = useState(false);
+
+  function toggle(id: PersonaId) {
+    if (id === "full") { setSelected(new Set(["full"])); setSaved(false); return; }
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.delete("full");
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setSaved(false);
+  }
+
+  function handleApply() {
+    const ids = selected.size > 0 ? Array.from(selected) : (["full"] as PersonaId[]);
+    applyPersonas(ids);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  }
+
+  const activePreview = previewPersona ?? (selected.size === 1 ? Array.from(selected)[0] : null);
+  const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Terminal Profile</div>
+        <div style={{ padding: "16px" }}>
+
+          {/* Intro */}
+          <p style={{ ...mono, fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7, marginBottom: 20 }}>
+            Your profile configures the sidebar navigation, default landing page, and dashboard widgets.
+            Select one or more profiles that match how you use Finance Tracker — or choose <strong style={{ color: "var(--ft-text)" }}>Full Analyst</strong> for everything.
+          </p>
+
+          {/* ── Profile cards ─────────────────────────────────── */}
+          <div className="ft-persona-cards" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 20 }}>
+            {PERSONAS.map((persona) => {
+              const isSelected = selected.has(persona.id);
+              const color = PERSONA_COLORS[persona.id];
+              const bg = PERSONA_BG[persona.id];
+              const glyph = PERSONA_GLYPHS[persona.id];
+              const pageCount = PERSONA_PAGE_COUNTS[persona.id];
+
+              return (
+                <button
+                  key={persona.id}
+                  onClick={() => toggle(persona.id)}
+                  onMouseEnter={() => setPreviewPersona(persona.id)}
+                  onMouseLeave={() => setPreviewPersona(null)}
+                  style={{
+                    background: isSelected ? bg : "var(--ft-raised)",
+                    border: `1px solid ${isSelected ? color : "var(--ft-border)"}`,
+                    borderTop: `3px solid ${isSelected ? color : "var(--ft-border2)"}`,
+                    padding: "14px 14px 16px",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    outline: "none",
+                    transition: "all 0.15s",
+                    position: "relative",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0,
+                  }}
+                >
+                  {/* Code + checkmark row */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <span style={{ ...mono, fontSize: 9, letterSpacing: "0.14em", color: isSelected ? color : "var(--ft-dim)", border: `1px solid ${isSelected ? color : "var(--ft-border)"}`, padding: "2px 5px", fontWeight: 700 }}>
+                      {persona.code}
+                    </span>
+                    <div style={{ width: 16, height: 16, border: `1px solid ${isSelected ? color : "var(--ft-border2)"}`, background: isSelected ? color : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--ft-base)", flexShrink: 0, transition: "all 0.15s" }}>
+                      {isSelected ? "✓" : ""}
+                    </div>
+                  </div>
+
+                  {/* Glyph + name */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                    <span style={{ fontSize: 16, color, lineHeight: 1, flexShrink: 0 }}>{glyph}</span>
+                    <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: isSelected ? color : "var(--ft-text)", letterSpacing: "0.02em", lineHeight: 1.2 }}>
+                      {persona.label}
+                    </span>
+                  </div>
+
+                  {/* Tagline */}
+                  <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5, marginBottom: 12 }}>
+                    {persona.tagline}
+                  </div>
+
+                  {/* Highlights */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12, flex: 1 }}>
+                    {persona.highlights.map((h) => (
+                      <div key={h} style={{ display: "flex", alignItems: "flex-start", gap: 5 }}>
+                        <span style={{ ...mono, fontSize: 9, color, flexShrink: 0, lineHeight: 1.5 }}>·</span>
+                        <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5 }}>{h}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer stats */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 10, borderTop: `1px solid ${isSelected ? color + "44" : "var(--ft-border)"}` }}>
+                    <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+                      <span className="pnum">{pageCount}</span> pages
+                    </span>
+                    <span style={{ ...mono, fontSize: 8, color: isSelected ? color : "var(--ft-dim)", letterSpacing: "0.06em" }}>
+                      {isSelected ? "ACTIVE" : "SELECT"}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Insight preview ──────────────────────────────── */}
+          {activePreview && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ ...mono, fontSize: 8, letterSpacing: "0.14em", color: "var(--ft-dim)", textTransform: "uppercase", marginBottom: 8 }}>
+                WHAT YOU'LL SEE — {PERSONAS.find(p => p.id === activePreview)?.label}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {PERSONA_INSIGHT_PREVIEWS[activePreview].map((preview) => (
+                  <div
+                    key={preview.page}
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "flex-start",
+                      background: "var(--ft-raised)",
+                      border: "1px solid var(--ft-border)",
+                      padding: "8px 12px",
+                    }}
+                  >
+                    <span style={{ ...mono, fontSize: 8, letterSpacing: "0.1em", color: PERSONA_COLORS[activePreview], border: `1px solid ${PERSONA_COLORS[activePreview]}44`, padding: "2px 6px", flexShrink: 0, lineHeight: 1.6, fontWeight: 700 }}>
+                      {preview.page.toUpperCase()}
+                    </span>
+                    <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.6 }}>
+                      {preview.msg}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Feature matrix toggle ────────────────────────── */}
+          <button
+            onClick={() => setShowMatrix(m => !m)}
+            style={{ ...mono, fontSize: 9, letterSpacing: "0.08em", background: "none", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", padding: "5px 12px", cursor: "pointer", marginBottom: showMatrix ? 12 : 20, display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <span style={{ color: "var(--ft-accent)" }}>{showMatrix ? "▾" : "▸"}</span>
+            {showMatrix ? "Hide" : "Show"} feature comparison
+          </button>
+
+          {/* ── Feature matrix ───────────────────────────────── */}
+          {showMatrix && (
+            <div className="ft-persona-matrix" style={{ marginBottom: 20, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+              <div className="ft-persona-matrix-inner">
+              {/* Header */}
+              <div style={{ display: "grid", gridTemplateColumns: "2fr repeat(5, 1fr)", columnGap: 10, borderBottom: "1px solid var(--ft-border)" }}>
+                <div style={{ ...mono, fontSize: 8, letterSpacing: "0.1em", color: "var(--ft-dim)", padding: "8px 12px" }}>FEATURE</div>
+                {PERSONAS.map(p => (
+                  <div key={p.id} style={{ ...mono, fontSize: 8, letterSpacing: "0.08em", color: PERSONA_COLORS[p.id], padding: "8px 0", textAlign: "center", fontWeight: 700 }}>
+                    {p.code.split("·")[0]}
+                  </div>
+                ))}
+              </div>
+              {/* Rows */}
+              {FEATURE_MATRIX.map((row, i) => (
+                <div
+                  key={row.label}
+                  style={{ display: "grid", gridTemplateColumns: "2fr repeat(5, 1fr)", columnGap: 10, borderBottom: i < FEATURE_MATRIX.length - 1 ? "1px solid var(--ft-border)" : "none", background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}
+                >
+                  <div style={{ ...mono, fontSize: 9, color: "var(--ft-muted)", padding: "7px 12px", lineHeight: 1.4 }}>{row.label}</div>
+                  {(["market","budget","wealth","social","full"] as PersonaId[]).map(pid => (
+                    <div key={pid} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "7px 0" }}>
+                      <FeatureDot level={row[pid]} color={PERSONA_COLORS[pid]} />
+                    </div>
+                  ))}
+                </div>
+              ))}
+              {/* Legend */}
+              <div style={{ display: "flex", gap: 16, padding: "8px 12px", borderTop: "1px solid var(--ft-border)" }}>
+                <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}><span style={{ color: "var(--ft-green)", fontWeight: 700 }}>✓</span> Primary focus</span>
+                <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}><span style={{ color: "var(--ft-dim)" }}>·</span> Available</span>
+                <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}><span style={{ color: "var(--ft-border2)" }}>—</span> Not included</span>
+              </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Apply row ────────────────────────────────────── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 4 }}>
+            <button
+              onClick={handleApply}
+              disabled={selected.size === 0}
+              style={{
+                ...mono, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
+                textTransform: "uppercase", padding: "8px 22px",
+                background: saved ? "rgba(74,222,128,0.15)" : "var(--ft-accent)",
+                border: `1px solid ${saved ? "var(--ft-green)" : "var(--ft-accent)"}`,
+                color: saved ? "var(--ft-green)" : "var(--ft-base)", cursor: "pointer",
+                transition: "all 0.12s",
+              }}
+            >
+              {saved ? "✓ Profile Applied" : "Apply Profile"}
+            </button>
+            <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+              Sidebar, widgets, and default page update immediately.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Re-run Setup</div>
+        <SettingsActionRow title="Reconfigure terminal" sub="Clears your profile and re-runs the initialization screen on next page load.">
+          <ActionBtn label="Reset & Reconfigure" variant="danger" onClick={handleResetAndReconfigure} />
+        </SettingsActionRow>
+      </div>
+    </div>
+  );
+}
+
+// ── Appearance ────────────────────────────────────────────────────────────────
+
 function AppearancePanel({ theme, setTheme, density, setDensity }: {
   theme: FintrackTheme; setTheme: (t: FintrackTheme) => void;
   density: Density; setDensity: (d: Density) => void;
 }) {
+  const isMobile = useIsMobile();
   const [hoveredTheme, setHoveredTheme] = useState<FintrackTheme | null>(null);
   const [accentOverride, setAccentOverride] = useState(() => ls("nr-accent-override", ""));
-  const isDevUser = useIsDevUser();
-  const learnXP = isDevUser ? Infinity : getLearnXP();
+  const learnXP = getLearnXP();
   const previewId = hoveredTheme ?? theme;
   const previewSwatch = SWATCH_DATA.find(x => x.id === previewId)!;
 
@@ -541,7 +932,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Theme</div>
-        <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(86px, 1fr))", gap: 12, background: "var(--ft-surface)" }}>
+        <div style={{ padding: "16px", display: "grid", gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(72px, 1fr))" : "repeat(auto-fill, minmax(86px, 1fr))", gap: isMobile ? 8 : 12, background: "var(--ft-surface)" }}>
           {visibleSwatches.map(s => {
             const isActive = theme === s.id;
             const isHovered = hoveredTheme === s.id;
@@ -574,10 +965,10 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
                 <div style={{ textAlign: "center" }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: isActive ? s.accent : "var(--ft-muted)", display: "block" }}>{s.label}</span>
                   {reward && (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.08em", color: rarityColor, display: "block", marginTop: 1 }}>{reward.rarity}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: rarityColor, display: "block", marginTop: 1 }}>{reward.rarity}</span>
                   )}
                   {!reward && (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-dim)", display: "block", marginTop: 1 }}>DEFAULT</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-dim)", display: "block", marginTop: 1 }}>DEFAULT</span>
                   )}
                 </div>
               </button>
@@ -588,7 +979,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
           <div style={{ padding: "10px 16px", borderTop: "1px solid var(--ft-border)", background: "var(--ft-surface)", display: "flex", alignItems: "center", gap: 6 }}>
             <Lock size={10} style={{ color: "var(--ft-dim)", flexShrink: 0 }} />
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
-              {lockedSwatches.length} theme{lockedSwatches.length !== 1 ? "s" : ""} locked — earn XP in Learn to unlock
+              <span className="pnum">{lockedSwatches.length}</span> theme{lockedSwatches.length !== 1 ? "s" : ""} locked — earn XP in Learn to unlock
             </span>
           </div>
         )}
@@ -603,7 +994,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
           {(() => {
             const s = previewSwatch;
             return (
-              <div style={{ width: 200, height: 100, background: s.base, border: `1px solid ${s.accent}44`, overflow: "hidden", position: "relative", display: "inline-flex", flexDirection: "column", transition: "background 0.2s" }}>
+              <div style={{ width: 200, height: 100, background: s.base, border: `1px solid ${s.accent}44`, overflow: "hidden", position: "relative", display: "inline-flex", flexDirection: "column", transition: "background 0.12s" }}>
                 <div style={{ height: 22, background: s.surface, display: "flex", alignItems: "center", padding: "0 8px", gap: 6, borderBottom: `1px solid ${s.muted}44` }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: s.accent, letterSpacing: "0.1em" }}>NUMERIS</span>
                   <div style={{ flex: 1 }} />
@@ -639,7 +1030,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
 
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Display Density</div>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", display: "flex", gap: 8 }}>
+        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", display: "flex", gap: 8, flexWrap: "wrap" }}>
           {(["compact","normal","comfortable"] as const).map(d => {
             const labels: Record<Density,string> = { compact: "Compact", normal: "Normal", comfortable: "Comfortable" };
             const isActive = density === d;
@@ -699,69 +1090,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
   );
 }
 
-function AnimationsPanel() {
-  const [masterOn, setMasterOn] = useState(() => lsBool("nr-theme-effects-enabled", true));
-  const [intensity, setIntensity] = useState(() => parseInt(ls("nr-animation-intensity", "50"), 10));
-  const [transition, setTransition] = useState(() => ls("nr-theme-transition", "fade"));
-  const [perTheme, setPerTheme] = useState<Record<string, boolean>>(() => {
-    return SWATCH_DATA.reduce<Record<string,boolean>>((acc, s) => {
-      acc[s.id] = lsBool(`nr-theme-effects-${s.id}`, true);
-      return acc;
-    }, {});
-  });
-
-  const setMaster = (v: boolean) => { setMasterOn(v); lsSet("nr-theme-effects-enabled", String(v)); };
-  const setPerT = (id: string, v: boolean) => {
-    setPerTheme(p => ({ ...p, [id]: v }));
-    lsSet(`nr-theme-effects-${id}`, String(v));
-  };
-  const setIntensityVal = (v: number) => { setIntensity(v); lsSet("nr-animation-intensity", String(v)); };
-  const setTransitionVal = (v: string) => { setTransition(v); lsSet("nr-theme-transition", v); };
-
-  return (
-    <div style={PANEL_STYLE}>
-      <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Animations</div>
-      <div style={ROW}>
-        <RowLabel title="Theme effects" sub="Master switch — disables all ambient background animations" />
-        <Toggle on={masterOn} onChange={setMaster} />
-      </div>
-      {masterOn && (
-        <>
-          <SectionHeader label="Per-theme effects" />
-          {SWATCH_DATA.map(s => (
-            <div key={s.id} style={ROW}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 10, height: 10, borderRadius: "50%", background: s.accent, display: "inline-block", flexShrink: 0 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>{s.label}</span>
-              </div>
-              <Toggle on={perTheme[s.id] ?? true} onChange={v => setPerT(s.id, v)} />
-            </div>
-          ))}
-        </>
-      )}
-      <SectionHeader label="Intensity" />
-      <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 46 }}>Minimal</span>
-          <input type="range" min={0} max={100} value={intensity} onChange={e => setIntensityVal(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 30, textAlign: "right" }}>Rich</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 32, textAlign: "right" }}>{intensity}</span>
-        </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>Affects particle density and opacity. Some effects require a page refresh.</div>
-      </div>
-      <div style={ROW}>
-        <RowLabel title="Theme transition" sub="Animation style when switching themes" />
-        <select value={transition} onChange={e => setTransitionVal(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
-          <option value="instant">Instant</option>
-          <option value="fade">Fade (200ms)</option>
-          <option value="slide">Slide (300ms)</option>
-        </select>
-      </div>
-    </div>
-  );
-}
-
-function DisplayPanel() {
+function DisplayAndMotionPanel() {
   const [dateFormat, setDateFormat] = useState(() => ls("nr-date-format", "DD/MM/YYYY"));
   const [numFormat, setNumFormat] = useState(() => ls("nr-number-format", "1,234.56"));
   const [weekStart, setWeekStart] = useState(() => ls("nr-week-start", "mon"));
@@ -769,6 +1098,21 @@ function DisplayPanel() {
   const [timeFormat, setTimeFormat] = useState(() => ls("nr-time-format", "24h"));
   const [compactNums, setCompactNums] = useState(() => lsBool("nr-compact-numbers", false));
   const [showCents, setShowCents] = useState(() => lsBool("nr-show-cents", true));
+
+  // Motion state (merged from AnimationsPanel)
+  const [masterOn, setMasterOn] = useState(() => lsBool("nr-theme-effects-enabled", true));
+  const [intensity, setIntensity] = useState(() => parseInt(ls("nr-animation-intensity", "50"), 10));
+  const [transition, setTransition] = useState(() => ls("nr-theme-transition", "fade"));
+  const [perTheme, setPerTheme] = useState<Record<string, boolean>>(() =>
+    SWATCH_DATA.reduce<Record<string, boolean>>((acc, s) => {
+      acc[s.id] = lsBool(`nr-theme-effects-${s.id}`, true);
+      return acc;
+    }, {})
+  );
+  const setMaster = (v: boolean) => { setMasterOn(v); lsSet("nr-theme-effects-enabled", String(v)); };
+  const setPerT = (id: string, v: boolean) => { setPerTheme(p => ({ ...p, [id]: v })); lsSet(`nr-theme-effects-${id}`, String(v)); };
+  const setIntensityVal = (v: number) => { setIntensity(v); lsSet("nr-animation-intensity", String(v)); };
+  const setTransitionVal = (v: string) => { setTransition(v); lsSet("nr-theme-transition", v); };
 
   const datePreviewMap: Record<string, string> = {
     "DD/MM/YYYY": "18/07/2026",
@@ -798,7 +1142,7 @@ function DisplayPanel() {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Date &amp; Time</div>
-        <SectionHeader label="Date format" />
+        <SectionHeader label="Date format" accent="var(--ft-blue)" />
         {(["DD/MM/YYYY","MM/DD/YYYY","YYYY-MM-DD","D MMM YYYY"] as const).map(fmt => (
           <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -808,19 +1152,19 @@ function DisplayPanel() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{datePreviewMap[fmt]}</span>
           </label>
         ))}
-        <SectionHeader label="Time format" />
+        <SectionHeader label="Time format" accent="var(--ft-cyan)" />
         <div style={ROW}>
           <RowLabel title="Clock display" sub="Affects timestamps throughout the app" />
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
             {[["24h","24h"],["12h","12h (AM/PM)"]].map(([val, lbl]) => (
               <button key={val} onClick={() => setTime(val)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 12px", background: timeFormat === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${timeFormat === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: timeFormat === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
             ))}
           </div>
         </div>
-        <SectionHeader label="Calendar" />
+        <SectionHeader label="Calendar" accent="var(--ft-green)" />
         <div style={ROW}>
           <RowLabel title="First day of week" sub="Affects calendar and weekly views" />
-          <div style={{ display: "flex", gap: 6 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
             {[["mon","Mon"],["sun","Sun"]].map(([val, lbl]) => (
               <button key={val} onClick={() => setWeek(val)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 12px", background: weekStart === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${weekStart === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: weekStart === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
             ))}
@@ -830,26 +1174,20 @@ function DisplayPanel() {
 
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Numbers &amp; Currency</div>
-        <SectionHeader label="Number format" />
+        <SectionHeader label="Number format" accent="var(--ft-blue)" />
         {(["1,234.56","1.234,56","1 234.56"] as const).map(fmt => (
           <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <input type="radio" name="num-format" checked={numFormat === fmt} onChange={() => setNum(fmt)} style={{ accentColor: "var(--ft-accent)" }} />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>{fmt}</span>
             </div>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{numPreviewMap[fmt]}</span>
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{numPreviewMap[fmt]}</span>
           </label>
         ))}
-        <div style={ROW}>
-          <RowLabel title="Compact large numbers" sub='Show £1.2K and £3.4M instead of full values' />
-          <Toggle on={compactNums} onChange={setCompact} />
-        </div>
-        <div style={ROW}>
-          <RowLabel title="Show pence / cents" sub='Display £12.50 instead of £12' />
-          <Toggle on={showCents} onChange={setCents} />
-        </div>
+        <SettingsToggleRow title="Compact large numbers" sub='Show £1.2K and £3.4M instead of full values' on={compactNums} onChange={setCompact} />
+        <SettingsToggleRow title="Show pence / cents" sub='Display £12.50 instead of £12' on={showCents} onChange={setCents} />
         <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
-          Preview: <span style={{ color: "var(--ft-text)" }}>
+          Preview: <span className="pnum" style={{ color: "var(--ft-text)" }}>
             {compactNums ? "£1.2K" : showCents ? "£1,234.56" : "£1,234"}
           </span>
         </div>
@@ -857,7 +1195,7 @@ function DisplayPanel() {
 
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Typography</div>
-        <SectionHeader label="Font scale" />
+        <SectionHeader label="Font scale" accent="var(--ft-blue)" />
         <div style={{ padding: "12px 14px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 28 }}>85%</span>
@@ -867,6 +1205,34 @@ function DisplayPanel() {
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>Scales all app text. Larger = more readable, smaller = denser layout.</div>
         </div>
+      </div>
+
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Motion &amp; Effects</div>
+        <SettingsToggleRow title="Theme effects" sub="Master switch — disables all ambient background animations" on={masterOn} onChange={setMaster} />
+        {masterOn && (
+          <>
+            <SectionHeader label="Per-theme effects" accent="var(--ft-cyan)" />
+            {SWATCH_DATA.map(s => (
+              <SettingsThemeEffectRow key={s.id} label={s.label} accent={s.accent} on={perTheme[s.id] ?? true} onChange={v => setPerT(s.id, v)} />
+            ))}
+          </>
+        )}
+        <SectionHeader label="Intensity" accent="var(--ft-blue)" />
+        <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 46 }}>Minimal</span>
+            <input type="range" min={0} max={100} value={intensity} onChange={e => setIntensityVal(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 30, textAlign: "right" }}>Rich</span>
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 32, textAlign: "right" }}>{intensity}</span>
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>Affects particle density and opacity. Some effects require a page refresh.</div>
+        </div>
+        <SettingsSelectRow title="Theme transition" sub="Animation style when switching themes" value={transition} onChange={setTransitionVal}>
+          <option value="instant">Instant</option>
+          <option value="fade">Fade (200ms)</option>
+          <option value="slide">Slide (300ms)</option>
+        </SettingsSelectRow>
       </div>
     </div>
   );
@@ -902,10 +1268,7 @@ function PrivacyPanel() {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Amount Privacy</div>
-        <div style={ROW}>
-          <RowLabel title="Blur sensitive amounts" sub='Amounts show as "£ ••••" until hovered. Useful in public places.' />
-          <Toggle on={blurAmounts} onChange={setBlur} />
-        </div>
+        <SettingsToggleRow title="Blur sensitive amounts" sub='Amounts show as "£ ••••" until hovered. Useful in public places.' on={blurAmounts} onChange={setBlur} />
         {blurAmounts && (
           <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 8 }}>Auto-blur delay after hover: <span style={{ color: "var(--ft-accent)" }}>{autoBlurDelay === 0 ? "Immediate" : `${autoBlurDelay}s`}</span></div>
@@ -919,18 +1282,12 @@ function PrivacyPanel() {
       </div>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Data Masking</div>
-        <div style={ROW}>
-          <RowLabel title="Transaction description masking" sub="Controls how merchant names and descriptions appear" />
-          <select value={maskMode} onChange={e => setMask(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
-            <option value="none">None — show full text</option>
-            <option value="partial">Partial — show last 4 chars</option>
-            <option value="full">Full blur — hover to reveal</option>
-          </select>
-        </div>
-        <div style={ROW}>
-          <RowLabel title="Hide amounts when printing" sub="Blurs all financial figures in print / PDF export" />
-          <Toggle on={hideFromPrint} onChange={setPrint} />
-        </div>
+        <SettingsSelectRow title="Transaction description masking" sub="Controls how merchant names and descriptions appear" value={maskMode} onChange={setMask}>
+          <option value="none">None — show full text</option>
+          <option value="partial">Partial — show last 4 chars</option>
+          <option value="full">Full blur — hover to reveal</option>
+        </SettingsSelectRow>
+        <SettingsToggleRow title="Hide amounts when printing" sub="Blurs all financial figures in print / PDF export" on={hideFromPrint} onChange={setPrint} />
         <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
           All privacy settings apply instantly across the app.
         </div>
@@ -975,20 +1332,11 @@ function DashboardPanel() {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Dashboard</div>
-        <div style={ROW}>
-          <RowLabel title="Default landing page" sub="Navigate here when opening the app" />
-          <select value={defaultPage} onChange={e => setPage(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px" }}>
-            {pages.map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
-          </select>
-        </div>
-        <div style={ROW}>
-          <RowLabel title="Sidebar collapsed by default" sub="Start with the sidebar in a collapsed state" />
-          <Toggle on={sidebarCollapsed} onChange={setSidebar} />
-        </div>
-        <div style={ROW}>
-          <RowLabel title="Show net worth in sidebar" sub="Display net worth strip in the sidebar footer" />
-          <Toggle on={showNwStrip} onChange={setNwStrip} />
-        </div>
+        <SettingsSelectRow title="Default landing page" sub="Navigate here when opening the app" value={defaultPage} onChange={setPage}>
+          {pages.map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
+        </SettingsSelectRow>
+        <SettingsToggleRow title="Sidebar collapsed by default" sub="Start with the sidebar in a collapsed state" on={sidebarCollapsed} onChange={setSidebar} />
+        <SettingsToggleRow title="Show net worth in sidebar" sub="Display net worth strip in the sidebar footer" on={showNwStrip} onChange={setNwStrip} />
       </div>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Navigation Visibility</div>
@@ -997,12 +1345,9 @@ function DashboardPanel() {
         </div>
         {navBySection.map(section => (
           <div key={section.label}>
-            <SectionHeader label={section.label} />
+            <SectionHeader label={section.label} accent="var(--ft-blue)" />
             {section.items.map(item => (
-              <div key={item.href} style={ROW}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: item.visible ? "var(--ft-text)" : "var(--ft-dim)" }}>{item.label}</span>
-                <Toggle on={item.visible} onChange={v => toggleNavItem(item.href, v)} />
-              </div>
+              <SettingsNavItemRow key={item.href} label={item.label} visible={item.visible} onChange={v => toggleNavItem(item.href, v)} />
             ))}
           </div>
         ))}
@@ -1084,7 +1429,9 @@ function AdvancedPanel({ toast }: { toast: ReturnType<typeof useToast>["toast"] 
   const handleResetOnboarding = () => {
     localStorage.removeItem("nr-onboarding-complete");
     localStorage.removeItem("ft-onboarding-dismissed");
-    toast({ title: "Onboarding reset. Reload the app." });
+    localStorage.removeItem("ft-onboarding-complete");
+    localStorage.removeItem("ft-persona");
+    toast({ title: "Terminal profile reset. Reloading…" });
     setTimeout(() => window.location.reload(), 800);
   };
 
@@ -1094,44 +1441,21 @@ function AdvancedPanel({ toast }: { toast: ReturnType<typeof useToast>["toast"] 
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Feature Flags</div>
-        <div style={ROW}>
-          <RowLabel title="Beta features" sub='Shows a "BETA" badge on experimental pages' />
-          <Toggle on={beta} onChange={setBetaVal} />
-        </div>
-        <div style={ROW}>
-          <RowLabel title="Developer mode" sub="Shows raw data inspector panels (future use)" />
-          <Toggle on={devMode} onChange={setDev} />
-        </div>
+        <SettingsToggleRow title="Beta features" sub='Shows a "BETA" badge on experimental pages' on={beta} onChange={setBetaVal} />
+        <SettingsToggleRow title="Developer mode" sub="Shows raw data inspector panels (future use)" on={devMode} onChange={setDev} />
       </div>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Maintenance</div>
-        <div style={{ ...ROW, flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-          <RowLabel title="Clear app cache" sub="Removes all nr-* preference keys. Does not affect transactions or account data." />
+        <SettingsActionRow title="Clear app cache" sub="Removes all nr-* preference keys. Does not affect transactions or account data.">
           <ActionBtn label="Clear App Cache" variant="danger" onClick={handleClearCache} />
-        </div>
-        <div style={{ ...ROW, flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-          <RowLabel title="Reset onboarding" sub="Clears the onboarding completion flag and reloads the app." />
+        </SettingsActionRow>
+        <SettingsActionRow title="Reset onboarding" sub="Clears the onboarding completion flag and reloads the app.">
           <ActionBtn label="Reset Onboarding" variant="muted" onClick={handleResetOnboarding} />
-        </div>
+        </SettingsActionRow>
       </div>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Storage Usage</div>
-        <div style={{ padding: "14px 16px", display: "flex", gap: 32 }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{usage.keyCount}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>Keys (ft- + nr-)</div>
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>
-              {usage.sizeKb}<span style={{ fontSize: 12, color: "var(--ft-muted)", fontWeight: 400, marginLeft: 3 }}>KB</span>
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>Estimated size</div>
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{usage.nrKeyCount}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>App prefs (nr-)</div>
-          </div>
-        </div>
+        <StorageKpiStrip keyCount={usage.keyCount} sizeKb={usage.sizeKb} nrKeyCount={usage.nrKeyCount} />
       </div>
     </div>
   );
@@ -1167,8 +1491,7 @@ function WardrobePanel() {
   const [blinking, setBlinking] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
   const phaseIdxRef = useRef(0);
-  const isDevUser = useIsDevUser();
-  const learnXP = isDevUser ? Infinity : getLearnXP();
+  const learnXP = getLearnXP();
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -1210,7 +1533,7 @@ function WardrobePanel() {
         <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)", display: "flex", gap: 12, alignItems: "flex-start" }}>
           <div style={{ width: 86, height: 120, background: "var(--ft-base)", border: "1px solid var(--ft-border)", display: "flex", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, overflow: "hidden", position: "relative" }}>
             <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "16px 16px", pointerEvents: "none" }} />
-            <div style={{ position: "absolute", bottom: 24, left: "8%", right: "8%", height: 1, background: "linear-gradient(90deg,transparent,var(--ft-border2),transparent)" }} />
+            <div style={{ position: "absolute", bottom: 24, left: "8%", right: "8%", height: 1, background: "var(--ft-border)" }} />
             <div style={{
               width: previewPhase === "lying" ? 110 : 36, height: previewPhase === "lying" ? 57 : 66, flexShrink: 0,
               transform: previewPhase === "lying" ? "scale(0.62)" : "scale(1.4)", transformOrigin: "center bottom", marginBottom: 24,
@@ -1228,7 +1551,7 @@ function WardrobePanel() {
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
               {WARDROBE_PHASES.map(p => (
-                <button key={p} onClick={() => { setAutoPlay(false); setPreviewPhase(p); }} style={{ fontFamily: "var(--font-mono)", fontSize: 7, letterSpacing: "0.05em", padding: "2px 5px", border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`, background: previewPhase === p ? "var(--ft-accent)15" : "transparent", color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" }}>
+                <button key={p} onClick={() => { setAutoPlay(false); setPreviewPhase(p); }} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em", padding: "2px 5px", border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`, background: previewPhase === p ? "var(--ft-accent)15" : "transparent", color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" }}>
                   {p}
                 </button>
               ))}
@@ -1240,7 +1563,7 @@ function WardrobePanel() {
                 <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)" }}>{skin.label}</span>
                   {" "}
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", color: RARITY_COLOR_MAP[skin.rarity] }}>{skin.rarity}</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: RARITY_COLOR_MAP[skin.rarity] }}>{skin.rarity}</span>
                 </div>
               );
             })()}
@@ -1257,7 +1580,7 @@ function WardrobePanel() {
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive && isOwned ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>{skin.rarity}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>{skin.rarity}</span>
                   </div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, marginBottom: skin.perks.length > 0 ? 5 : 0 }}>{skin.desc}</div>
                   {skin.perks.length > 0 && (
@@ -1265,7 +1588,7 @@ function WardrobePanel() {
                       {skin.perks.map((perk) => (<span key={perk} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>))}
                     </div>
                   )}
-                  {!isOwned && themeReq && (<div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5, letterSpacing: "0.04em" }}>Requires {themeReq.requiredXP.toLocaleString()} XP to unlock</div>)}
+                  {!isOwned && themeReq && (<div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5, letterSpacing: "0.04em" }}>Requires <span className="pnum">{themeReq.requiredXP.toLocaleString()}</span> XP to unlock</div>)}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginTop: 2 }}>
                   {!isOwned && <Lock style={{ width: 10, height: 10, color: "var(--ft-dim)" }} />}
@@ -1288,6 +1611,7 @@ function AiSettingsPanel() {
   const pick = useCallback((s: AiStyle) => {
     setSelected(s);
     setAiStylePref(s);
+    window.dispatchEvent(new CustomEvent("numeris-ai-style-change", { detail: s }));
   }, []);
 
   return (
@@ -1349,20 +1673,68 @@ function AiSettingsPanel() {
             The AI automatically knows which page you're on and tailors its responses accordingly.
             On the Accounts page it knows you're managing balances; on Investments it focuses on portfolios, etc.
           </div>
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-            {[
-              ["Page awareness", "Current page name sent with every message"],
-              ["Financial context", "Responses tailored to the active section"],
-              ["Powered by", "Google Gemini 2.0 Flash"],
-            ].map(([label, val]) => (
-              <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 0", borderBottom: "1px solid var(--ft-border)" }}>
-                <span style={{ color: "var(--ft-muted)" }}>{label}</span>
-                <span style={{ color: "var(--ft-text)" }}>{val}</span>
-              </div>
-            ))}
+          <div style={{ marginTop: 10 }}>
+            <SettingsInfoRow label="Page awareness" value="Current page name sent with every message" />
+            <SettingsInfoRow label="Financial context" value="Responses tailored to the active section" />
+            <SettingsInfoRow label="Powered by" value="Google Gemini 2.0 Flash" accent="var(--ft-accent)" />
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Wise Account Row ─────────────────────────────────────────────────────────
+
+function WiseAccountRow({ account }: { account: { id: number; name: string; currency: string; lastSyncedAt?: string | null } }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...ROW,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      <div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", fontWeight: 500 }}>
+          {account.name}
+        </div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>
+          {account.lastSyncedAt
+            ? `Last synced ${new Date(account.lastSyncedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`
+            : "Never synced"}
+        </div>
+      </div>
+      <span style={{
+        fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em",
+        fontWeight: 700, color: "var(--ft-accent)",
+        border: "1px solid var(--ft-accent)44", padding: "2px 8px",
+        background: "var(--ft-accent)11",
+      }}>
+        {account.currency}
+      </span>
+    </div>
+  );
+}
+
+// ── Wise Sync KPI Strip ─────────────────────��─────────────────────────────────
+function WiseSyncKpiStrip({ synced, added, updated }: { synced: number; added: number; updated: number }) {
+  const cells: { value: React.ReactNode; label: string; color: string }[] = [
+    { value: <span className="pnum">{synced}</span>, label: "Total synced", color: "var(--ft-accent)" },
+    { value: <span className="pnum">{added}</span>, label: "New transactions", color: "var(--ft-green)" },
+    { value: <span className="pnum">{updated}</span>, label: "Updated", color: "var(--ft-blue)" },
+  ];
+  return (
+    <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+      {cells.map(c => (
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "12px 14px", borderTop: `2px solid ${c.color}` }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{c.value}</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>{c.label}</div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1459,35 +1831,31 @@ function WiseIntegrationPanel() {
 
         {/* Sync button + last result */}
         {isConfigured && isConnected && (
-          <div style={{ ...ROW, flexWrap: "wrap", gap: 8 }}>
-            <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", fontWeight: 500 }}>
-                Sync transactions
-              </div>
-              {lastSyncResult && (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 3 }}>
-                  Last sync: {lastSyncResult.synced} transactions ({lastSyncResult.added} new, {lastSyncResult.updated} updated)
-                </div>
-              )}
+          <>
+            <div style={{ ...ROW, flexWrap: "wrap", gap: 8 }}>
+              <RowLabel title="Sync transactions" sub="Pull the last 90 days from all Wise currency balances" />
+              <button
+                onClick={handleSync}
+                disabled={syncMutation.isPending}
+                style={{
+                  flexShrink: 0,
+                  fontFamily: "var(--font-mono)", fontSize: 11,
+                  color: syncMutation.isPending ? "var(--ft-muted)" : "var(--ft-accent)",
+                  background: "transparent",
+                  border: `1px solid ${syncMutation.isPending ? "var(--ft-border2)" : "var(--ft-accent)"}`,
+                  padding: "7px 18px",
+                  cursor: syncMutation.isPending ? "not-allowed" : "pointer",
+                  opacity: syncMutation.isPending ? 0.6 : 1,
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {syncMutation.isPending ? "SYNCING..." : "↻ SYNC NOW"}
+              </button>
             </div>
-            <button
-              onClick={handleSync}
-              disabled={syncMutation.isPending}
-              style={{
-                flexShrink: 0,
-                fontFamily: "var(--font-mono)", fontSize: 11,
-                color: syncMutation.isPending ? "var(--ft-muted)" : "var(--ft-accent)",
-                background: "transparent",
-                border: `1px solid ${syncMutation.isPending ? "var(--ft-border2)" : "var(--ft-accent)"}`,
-                padding: "7px 18px",
-                cursor: syncMutation.isPending ? "not-allowed" : "pointer",
-                opacity: syncMutation.isPending ? 0.6 : 1,
-                letterSpacing: "0.04em",
-              }}
-            >
-              {syncMutation.isPending ? "SYNCING..." : "↻ SYNC NOW"}
-            </button>
-          </div>
+            {lastSyncResult && (
+              <WiseSyncKpiStrip synced={lastSyncResult.synced} added={lastSyncResult.added} updated={lastSyncResult.updated} />
+            )}
+          </>
         )}
 
         {/* Info note */}
@@ -1514,26 +1882,7 @@ function WiseIntegrationPanel() {
             </div>
           ) : (
             wiseAccounts.map(account => (
-              <div key={account.id} style={ROW}>
-                <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", fontWeight: 500 }}>
-                    {account.name}
-                  </div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>
-                    {account.lastSyncedAt
-                      ? `Last synced ${new Date(account.lastSyncedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`
-                      : "Never synced"}
-                  </div>
-                </div>
-                <span style={{
-                  fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em",
-                  fontWeight: 700, color: "var(--ft-accent)",
-                  border: "1px solid var(--ft-accent)44", padding: "2px 8px",
-                  background: "var(--ft-accent)11",
-                }}>
-                  {account.currency}
-                </span>
-              </div>
+              <WiseAccountRow key={account.id} account={account} />
             ))
           )}
         </div>
@@ -1586,10 +1935,7 @@ function DigestPanel() {
             Receive a weekly summary of your income, expenses, and top spending categories by email every Monday morning.
             Requires <code style={{ color: "var(--ft-accent)" }}>RESEND_API_KEY</code> to be configured on the server.
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>Enable weekly digest</div>
-            <Toggle on={enabled} onChange={toggleEnabled} />
-          </div>
+          <SettingsToggleRow title="Enable weekly digest" on={enabled} onChange={toggleEnabled} />
           <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={sendNow}
@@ -1710,6 +2056,7 @@ const CRYPTO_INPUT_STYLE: React.CSSProperties = {
 };
 
 function CryptoWalletsPanel() {
+  const isMobile = useIsMobile();
   const [wallets, setWallets] = useState<CryptoWallet[]>(() => loadCryptoWallets());
   const [prices, setPrices] = useState<CryptoPrices>(() => loadCryptoPrices());
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
@@ -1814,7 +2161,7 @@ function CryptoWalletsPanel() {
           <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
             {hasSynced && (
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
-                Total ≈ £{totalValueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}
+                Total ≈ £<span className="pnum">{totalValueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}</span>
               </span>
             )}
             <button
@@ -1852,7 +2199,7 @@ function CryptoWalletsPanel() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 2 }}>
               New Wallet
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, alignItems: "end" }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr auto", gap: 8, alignItems: "end" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>LABEL</label>
                 <input
@@ -1881,6 +2228,7 @@ function CryptoWalletsPanel() {
                   color: "var(--ft-base)", background: "var(--ft-accent)",
                   border: "none", padding: "6px 16px", cursor: "pointer",
                   whiteSpace: "nowrap",
+                  width: isMobile ? "100%" : undefined,
                 }}
               >
                 Add
@@ -1944,11 +2292,11 @@ function CryptoWalletsPanel() {
                     </div>
                   ) : wallet.balance != null ? (
                     <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 3 }}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
+                      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
                         {wallet.balance.toFixed(6)} {wallet.chain}
                       </span>
                       {valueGbp != null && (
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
+                        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
                           ≈ £{valueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}
                         </span>
                       )}
@@ -2161,14 +2509,41 @@ function CategoriesPanel() {
   );
 }
 
+// ── Currency KPI Strip ────────────────────────────────────────────────────────
+function CurrencyKpiStrip({ baseCurrency, pairCount }: { baseCurrency: string; pairCount: number }) {
+  const cells: { value: React.ReactNode; label: string; color: string }[] = [
+    { value: <span className="pnum" style={{ fontSize: 20 }}>{baseCurrency}</span>, label: "Base currency", color: "var(--ft-accent)" },
+    { value: <span className="pnum">{SUPPORTED_CURRENCIES.length}</span>, label: "Supported currencies", color: "var(--ft-blue)" },
+    { value: <span className="pnum">{pairCount}</span>, label: "FX overrides active", color: pairCount > 0 ? "var(--ft-amber)" : "var(--ft-dim)" },
+  ];
+  return (
+    <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+      {cells.map(c => (
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", borderTop: `2px solid ${c.color}` }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{c.value}</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>{c.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Settings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { theme, setTheme } = useFintrackTheme();
-  const [activePanel, setActivePanel] = useState<NavItem>("appearance");
+  const isMobile = useIsMobile();
+  const [activePanel, setActivePanel] = useState<NavItem>(() => {
+    try {
+      const p = new URLSearchParams(window.location.search).get("panel");
+      if (p === "terminal-profile") return "terminal-profile";
+    } catch {}
+    return "appearance";
+  });
   const [density, setDensityState] = useState<Density>(() => loadDensity());
+  const [aiStyle, setAiStyleState] = useState<AiStyle>(getAiStyle);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -2177,6 +2552,15 @@ export default function Settings() {
     };
     window.addEventListener("numeris-settings-nav", handler);
     return () => window.removeEventListener("numeris-settings-nav", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const s = (e as CustomEvent<AiStyle>).detail;
+      if (s) setAiStyleState(s);
+    };
+    window.addEventListener("numeris-ai-style-change", handler);
+    return () => window.removeEventListener("numeris-ai-style-change", handler);
   }, []);
 
   const handleSetDensity = (d: Density) => {
@@ -2228,31 +2612,6 @@ export default function Settings() {
       return next;
     });
     toast({ title: "FX overrides cleared. Live rates will be used." });
-  };
-
-  // Password
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [pwdSubmitting, setPwdSubmitting] = useState(false);
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) { toast({ title: "New passwords don't match", variant: "destructive" }); return; }
-    setPwdSubmitting(true);
-    try {
-      const res = await authClient.changePassword({ currentPassword, newPassword, revokeOtherSessions: false });
-      if (res?.error) {
-        toast({ title: "Could not change password", description: (res.error as { message?: string })?.message ?? String(res.error), variant: "destructive" });
-      } else {
-        toast({ title: "Password changed" });
-        setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
-      }
-    } catch (err: unknown) {
-      toast({ title: "Could not change password", description: err instanceof Error ? err.message : undefined, variant: "destructive" });
-    } finally {
-      setPwdSubmitting(false);
-    }
   };
 
   // Widgets
@@ -2312,34 +2671,66 @@ export default function Settings() {
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  const allNavItems = NAV_GROUPS.flatMap(g => g.items);
+  const activeLabel = allNavItems.find(i => i.id === activePanel)?.label ?? "Settings";
+  const activeGroup = NAV_GROUPS.find(g => g.items.some(i => i.id === activePanel)) ?? NAV_GROUPS[0];
+
   return (
-    <div style={{ display: "flex", height: "calc(100vh - 48px)", overflow: "hidden" }}>
-      {/* Left nav */}
-      <div style={{ width: 220, flexShrink: 0, background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "12px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-          <span style={{ color: "var(--ft-accent)" }}>·</span> System Config
-        </div>
-        {NAV_GROUPS.map(group => (
-          <div key={group.label}>
-            <div style={{ padding: "10px 14px 3px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 700 }}>
-              {group.label}
-            </div>
-            {group.items.map(item => {
+    <div className="ft-settings-layout" style={{ display: "flex", height: isMobile ? "auto" : "calc(100vh - 48px)", overflow: isMobile ? "visible" : "hidden" }}>
+
+      {isMobile ? (
+        /* ── Mobile nav: two-level chip nav ── */
+        <div style={{ background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border)", flexShrink: 0 }}>
+          {/* Breadcrumb */}
+          <div style={{ padding: "8px 14px 0", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.14em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 5 }}>
+            <span>◈ SYSTEM CONFIG</span>
+            <span style={{ color: "var(--ft-border2)" }}>›</span>
+            <span style={{ color: "var(--ft-dim)" }}>{activeLabel.toUpperCase()}</span>
+          </div>
+          {/* Group tabs */}
+          <div style={{ display: "flex", overflowX: "auto", scrollbarWidth: "none", padding: "8px 14px 0", gap: 0, borderBottom: "1px solid var(--ft-border)" }}>
+            {NAV_GROUPS.map(group => {
+              const isGActive = group.label === activeGroup.label;
+              return (
+                <button
+                  key={group.label}
+                  onClick={() => {
+                    const first = group.items.find(i => !(i.id === "wardrobe" && aiStyle !== "wanderer"));
+                    if (first) setActivePanel(first.id);
+                  }}
+                  style={{
+                    fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em",
+                    textTransform: "uppercase", padding: "5px 12px 7px", whiteSpace: "nowrap",
+                    background: "transparent", outline: "none", cursor: "pointer",
+                    border: "none",
+                    borderBottom: isGActive ? "2px solid var(--ft-accent)" : "2px solid transparent",
+                    color: isGActive ? "var(--ft-accent)" : "var(--ft-muted)",
+                    marginBottom: -1,
+                  }}
+                >
+                  {group.label}
+                </button>
+              );
+            })}
+          </div>
+          {/* Item chips for active group */}
+          <div style={{ display: "flex", overflowX: "auto", scrollbarWidth: "none", padding: "8px 14px 10px", gap: 6 }}>
+            {activeGroup.items.map(item => {
               const isActive = activePanel === item.id;
+              const isLocked = item.id === "wardrobe" && aiStyle !== "wanderer";
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActivePanel(item.id)}
+                  disabled={isLocked}
+                  onClick={() => !isLocked && setActivePanel(item.id)}
                   style={{
-                    display: "block", width: "100%", textAlign: "left",
-                    padding: "7px 14px 7px 16px",
-                    fontFamily: "var(--font-mono)", fontSize: 12,
-                    background: isActive ? "var(--ft-raised)" : "transparent",
-                    borderLeft: isActive ? "2px solid var(--ft-accent)" : "2px solid transparent",
-                    borderTop: "none", borderRight: "none", borderBottom: "none",
-                    color: isActive ? "var(--ft-text)" : "var(--ft-muted)",
-                    cursor: "pointer",
-                    transition: "background 0.12s, color 0.12s",
+                    fontFamily: "var(--font-mono)", fontSize: 10, padding: "5px 12px",
+                    whiteSpace: "nowrap", outline: "none", cursor: isLocked ? "not-allowed" : "pointer",
+                    flexShrink: 0,
+                    background: isActive ? "var(--ft-accent)" : "var(--ft-raised)",
+                    border: `1px solid ${isActive ? "var(--ft-accent)" : "var(--ft-border2)"}`,
+                    color: isActive ? "var(--ft-base)" : isLocked ? "var(--ft-dim)" : "var(--ft-muted)",
+                    opacity: isLocked ? 0.5 : 1,
                   }}
                 >
                   {item.label}
@@ -2347,52 +2738,84 @@ export default function Settings() {
               );
             })}
           </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        /* ── Desktop nav: left sidebar ── */
+        <div className="ft-settings-nav" style={{ width: 220, flexShrink: 0, background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "12px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            <span style={{ color: "var(--ft-accent)" }}>·</span> System Config
+          </div>
+          {NAV_GROUPS.map(group => (
+            <div key={group.label}>
+              <div style={{ padding: "10px 14px 3px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 700 }}>
+                {group.label}
+              </div>
+              {group.items.map(item => {
+                const isActive = activePanel === item.id;
+                const isWardrobeLocked = item.id === "wardrobe" && aiStyle !== "wanderer";
+                if (isWardrobeLocked) {
+                  return (
+                    <div
+                      key={item.id}
+                      title="Enable AI Wanderer first (AI & Help → AI Assistant)"
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        width: "100%", textAlign: "left",
+                        padding: "7px 14px 7px 16px",
+                        fontFamily: "var(--font-mono)", fontSize: 12,
+                        background: "transparent",
+                        borderLeft: "2px solid transparent",
+                        color: "var(--ft-dim)",
+                        cursor: "not-allowed",
+                      }}
+                    >
+                      <Lock size={9} style={{ flexShrink: 0 }} />
+                      <span>{item.label}</span>
+                    </div>
+                  );
+                }
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActivePanel(item.id)}
+                    style={{
+                      display: "block", width: "100%", textAlign: "left",
+                      padding: "7px 14px 7px 16px",
+                      fontFamily: "var(--font-mono)", fontSize: 12,
+                      background: isActive ? "var(--ft-raised)" : "transparent",
+                      borderLeft: isActive ? "2px solid var(--ft-accent)" : "2px solid transparent",
+                      borderTop: "none", borderRight: "none", borderBottom: "none",
+                      color: isActive ? "var(--ft-text)" : "var(--ft-muted)",
+                      cursor: "pointer",
+                      transition: "background 0.12s, color 0.12s",
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Right panel */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+      {/* Panel content */}
+      <div className="ft-settings-content" style={{ flex: 1, overflowY: isMobile ? "visible" : "auto", padding: isMobile ? "12px 14px" : "16px 20px" }}>
+
+        {activePanel === "terminal-profile" && <TerminalProfilePanel />}
 
         {activePanel === "appearance" && <AppearancePanel theme={theme} setTheme={setTheme} density={density} setDensity={handleSetDensity} />}
 
-        {activePanel === "animations" && <AnimationsPanel />}
-
-        {activePanel === "display" && <DisplayPanel />}
-
-        {activePanel === "security" && (
-          <div style={PANEL_STYLE}>
-            <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Change Password</div>
-            <form onSubmit={handleChangePassword} style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 12, background: "var(--ft-surface)" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Current password</Label>
-                <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>New password (min 8 characters)</Label>
-                <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={8} required />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Confirm new password</Label>
-                <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} minLength={8} required />
-              </div>
-              <button type="submit" disabled={pwdSubmitting} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "7px 18px", cursor: pwdSubmitting ? "not-allowed" : "pointer", opacity: pwdSubmitting ? 0.5 : 1, alignSelf: "flex-start" }}>
-                {pwdSubmitting ? "Changing…" : "> Change Password"}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {activePanel === "privacy" && <PrivacyPanel />}
-
-        {activePanel === "profile" && <ProfilePanel />}
+        {activePanel === "display" && <DisplayAndMotionPanel />}
 
         {activePanel === "currency" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={PANEL_STYLE}>
               <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Base Currency</div>
+              <CurrencyKpiStrip baseCurrency={baseCur} pairCount={Object.keys(fxOverrides).filter(k => fxOverrides[k] !== "").length} />
               <div style={{ padding: "14px 16px", background: "var(--ft-surface)", display: "flex", flexDirection: "column", gap: 10 }}>
                 <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>All amounts will be converted to this currency for display.</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: 180 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%", maxWidth: 240 }}>
                   <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Currency</Label>
                   <Select value={currencySettings?.baseCurrency ?? "GBP"} onValueChange={handleCurrencyChange} disabled={updateCurrency.isPending}>
                     <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
@@ -2405,16 +2828,17 @@ export default function Settings() {
               <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Manual FX Rate Overrides</div>
               <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
                 <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 12 }}>Override live FX rates for multi-currency transaction conversion. Leave blank to use live rates.</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 12 }}>
+                <div className="ft-scroll-x" style={{ marginBottom: 12 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ background: "var(--ft-raised)" }}>
-                      {["Pair",`Rate (per 1 ${currencySettings?.baseCurrency ?? "GBP"})`].map(h => <th key={h} style={{ padding: "5px 10px", textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 600, borderBottom: "1px solid var(--ft-border)" }}>{h}</th>)}
+                      {["Pair",`Rate (per 1 ${currencySettings?.baseCurrency ?? "GBP"})`].map(h => <th key={h} style={{ padding: "5px 10px", textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 600, borderBottom: "1px solid var(--ft-border)", whiteSpace: "nowrap" }}>{h}</th>)}
                     </tr>
                   </thead>
                   <tbody>
                     {COMMON_FX_PAIRS.filter(pair => pair !== baseCur).map(pair => (
                       <tr key={pair} style={{ borderBottom: "1px solid var(--ft-border)" }}>
-                        <td style={{ padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", width: 90 }}>{baseCur}/{pair}</td>
+                        <td style={{ padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", width: 90, whiteSpace: "nowrap" }}>{baseCur}/{pair}</td>
                         <td style={{ padding: "4px 10px" }}>
                           <input
                             type="number" step="0.0001" min={0}
@@ -2428,6 +2852,7 @@ export default function Settings() {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <ActionBtn label="Reset to Live Rates" variant="muted" onClick={handleFxReset} />
               </div>
             </div>
@@ -2437,58 +2862,46 @@ export default function Settings() {
         {activePanel === "alerts" && (
           <div style={PANEL_STYLE}>
             <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Alert Rules</div>
-            <div style={ROW}>
-              <RowLabel title="Enable smart alerts" sub="Threshold-based notifications on the dashboard" />
-              <Toggle on={alertRules.enabled} onChange={v => setAlertRules(p => ({ ...p, enabled: v }))} />
-            </div>
-            <SectionHeader label="Transaction Alerts" />
-            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-              <RowLabel title="Large transaction threshold" sub="Alert when a single transaction exceeds this amount" />
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+            <SettingsToggleRow title="Enable smart alerts" sub="Threshold-based notifications on the dashboard" on={alertRules.enabled} onChange={v => setAlertRules(p => ({ ...p, enabled: v }))} />
+            <SectionHeader label="Transaction Alerts" accent="var(--ft-amber)" />
+            <SettingsInputRow title="Large transaction threshold" sub="Alert when a single transaction exceeds this amount">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>£</span>
-                <Input type="number" min={0} value={alertRules.largeTxThreshold} onChange={e => setAlertRules(p => ({ ...p, largeTxThreshold: Number(e.target.value) }))} style={{ width: 100, fontFamily: "var(--font-mono)", fontSize: 11 }} />
+                <Input type="number" min={0} value={alertRules.largeTxThreshold} onChange={e => setAlertRules(p => ({ ...p, largeTxThreshold: Number(e.target.value) }))} className="pnum" style={{ width: 100, fontFamily: "var(--font-mono)", fontSize: 11 }} />
               </div>
-            </div>
-            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-              <RowLabel title="Category spike alert" sub="Alert when a category is X% above last month" />
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-                <Input type="number" min={1} max={500} value={alertRules.categorySpikeAlertPct} onChange={e => setAlertRules(p => ({ ...p, categorySpikeAlertPct: Number(e.target.value) }))} style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
+            </SettingsInputRow>
+            <SettingsInputRow title="Category spike alert" sub="Alert when a category is X% above last month">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Input type="number" min={1} max={500} value={alertRules.categorySpikeAlertPct} onChange={e => setAlertRules(p => ({ ...p, categorySpikeAlertPct: Number(e.target.value) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>% above last month</span>
               </div>
-            </div>
-            <SectionHeader label="Budget Alerts" />
-            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-              <RowLabel title="Budget warning threshold" sub="Show warning when budget used above this %" />
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-                <Input type="number" min={1} max={100} value={alertRules.budgetWarningPct} onChange={e => setAlertRules(p => ({ ...p, budgetWarningPct: Math.min(100, Math.max(1, Number(e.target.value))) }))} style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
+            </SettingsInputRow>
+            <SectionHeader label="Budget Alerts" accent="var(--ft-red)" />
+            <SettingsInputRow title="Budget warning threshold" sub="Show warning when budget used above this %">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Input type="number" min={1} max={100} value={alertRules.budgetWarningPct} onChange={e => setAlertRules(p => ({ ...p, budgetWarningPct: Math.min(100, Math.max(1, Number(e.target.value))) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>%</span>
               </div>
-            </div>
-            <div style={ROW}>
-              <RowLabel title="Overspend warning" sub="Warn when you've exceeded a budget category" />
-              <Toggle on={alertRules.budgetHardStop} onChange={v => setAlertRules(p => ({ ...p, budgetHardStop: v }))} />
-            </div>
-            <SectionHeader label="Goal Alerts" />
-            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-              <RowLabel title="Months behind alert" sub="Alert when X months behind on a savings goal" />
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-                <Input type="number" min={1} max={24} value={alertRules.goalBehindMonths} onChange={e => setAlertRules(p => ({ ...p, goalBehindMonths: Math.max(1, Number(e.target.value)) }))} style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
+            </SettingsInputRow>
+            <SettingsToggleRow title="Overspend warning" sub="Warn when you've exceeded a budget category" on={alertRules.budgetHardStop} onChange={v => setAlertRules(p => ({ ...p, budgetHardStop: v }))} />
+            <SectionHeader label="Goal Alerts" accent="var(--ft-green)" />
+            <SettingsInputRow title="Months behind alert" sub="Alert when X months behind on a savings goal">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Input type="number" min={1} max={24} value={alertRules.goalBehindMonths} onChange={e => setAlertRules(p => ({ ...p, goalBehindMonths: Math.max(1, Number(e.target.value)) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>months</span>
               </div>
-            </div>
-            <SectionHeader label="Bill Reminders" />
-            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-              <RowLabel title="Bill reminder days" sub="Remind X days before a bill is due" />
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-                <Input type="number" min={0} max={30} value={alertRules.billReminderDays} onChange={e => setAlertRules(p => ({ ...p, billReminderDays: Math.max(0, Number(e.target.value)) }))} style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
+            </SettingsInputRow>
+            <SectionHeader label="Bill Reminders" accent="var(--ft-cyan)" />
+            <SettingsInputRow title="Bill reminder days" sub="Remind X days before a bill is due">
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Input type="number" min={0} max={30} value={alertRules.billReminderDays} onChange={e => setAlertRules(p => ({ ...p, billReminderDays: Math.max(0, Number(e.target.value)) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>days before</span>
               </div>
-            </div>
-            <SectionHeader label="Goals" />
-            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-              <RowLabel title="SAVINGS RATE TARGET" sub="Your monthly income % goal to save/invest" />
+            </SettingsInputRow>
+            <SectionHeader label="Goals" accent="var(--ft-blue)" />
+            <SettingsInputRow title="Savings Rate Target" sub="Your monthly income % goal to save/invest">
               <SavingsRateTargetInput />
-            </div>
+            </SettingsInputRow>
             <div style={{ padding: "12px 14px" }}>
               <ActionBtn label="Save Alert Rules" onClick={handleSaveAlertRules} />
             </div>
@@ -2502,18 +2915,19 @@ export default function Settings() {
             <div style={{ padding: "12px 14px" }}>
               <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 14 }}>When a transaction description contains the keyword, the category is auto-filled.</p>
               {catRules.length > 0 ? (
-                <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16 }}>
+                <div className="ft-scroll-x" style={{ marginBottom: 16 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ background: "var(--ft-raised)" }}>
-                      {["Keyword","","Category",""].map((h,i) => <th key={i} style={{ padding: "5px 10px", textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 600, borderBottom: "1px solid var(--ft-border)" }}>{h}</th>)}
+                      {["Keyword","","Category",""].map((h,i) => <th key={i} style={{ padding: "5px 10px", textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 600, borderBottom: "1px solid var(--ft-border)", whiteSpace: "nowrap" }}>{h}</th>)}
                     </tr>
                   </thead>
                   <tbody>
                     {catRules.map(rule => (
                       <tr key={rule.id} style={{ borderBottom: "1px solid var(--ft-border)" }}>
-                        <td style={{ padding: "7px 10px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{rule.contains}</td>
+                        <td style={{ padding: "7px 10px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", whiteSpace: "nowrap" }}>{rule.contains}</td>
                         <td style={{ padding: "7px 4px", color: "var(--ft-dim)", fontSize: 11, textAlign: "center" }}>→</td>
-                        <td style={{ padding: "7px 10px" }}><span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{rule.category}</span></td>
+                        <td style={{ padding: "7px 10px", whiteSpace: "nowrap" }}><span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{rule.category}</span></td>
                         <td style={{ padding: "4px 10px", textAlign: "right" }}>
                           <button onClick={() => handleDeleteCatRule(rule.id)} style={{ background: "none", border: "none", color: "var(--ft-red)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "2px 4px" }} aria-label={`Delete rule for ${rule.contains}`}>×</button>
                         </td>
@@ -2521,6 +2935,7 @@ export default function Settings() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               ) : (
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", marginBottom: 16, fontStyle: "italic" }}>No rules yet. Add one below.</div>
               )}
@@ -2555,18 +2970,14 @@ export default function Settings() {
             <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Dashboard Widgets</div>
             <div style={{ padding: "0" }}>
               {WIDGET_REGISTRY.map(w => (
-                <div key={w.id} style={ROW}>
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>
-                      {w.label}
-                      <span style={{ marginLeft: 8, fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
-                        {w.defaultSpan === "full" ? "FULL WIDTH" : "HALF"}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--ft-muted)" }}>{w.description}</div>
-                  </div>
-                  <Toggle on={isEnabled(w.id)} onChange={() => toggle(w.id)} />
-                </div>
+                <SettingsWidgetRow
+                  key={w.id}
+                  label={w.label}
+                  span={w.defaultSpan}
+                  description={w.description}
+                  enabled={isEnabled(w.id)}
+                  onToggle={() => toggle(w.id)}
+                />
               ))}
             </div>
             <div style={{ padding: "10px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
@@ -2597,13 +3008,7 @@ export default function Settings() {
                   { label: "Reset Widget Layout", description: "Restores the dashboard to its default widget arrangement", key: "ft-widgets", confirm: "Reset widget layout to defaults?", storage: "local" as const },
                   { label: "Clear Dismissed Alerts", description: "Resets which alerts have been dismissed this session", key: "ft-dismissed-alerts", confirm: "", storage: "session" as const },
                 ] as const).map(item => (
-                  <div key={item.key} style={{ ...ROW, flexWrap: "wrap", gap: 8 }}>
-                    <div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>{item.label}</div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{item.description}</div>
-                    </div>
-                    <button onClick={() => handleReset(item.key, item.confirm, item.storage)} style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "5px 12px", cursor: "pointer", whiteSpace: "nowrap" }}>Reset</button>
-                  </div>
+                  <SettingsDataResetRow key={item.key} label={item.label} description={item.description} onReset={() => handleReset(item.key, item.confirm, item.storage)} />
                 ))}
               </div>
             </div>
@@ -2627,17 +3032,17 @@ export default function Settings() {
         {activePanel === "shortcuts" && (
           <div style={PANEL_STYLE}>
             <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Keyboard Shortcuts</div>
-            <div style={{ background: "var(--ft-surface)" }}>
+            <div className="ft-scroll-x" style={{ background: "var(--ft-surface)" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "var(--ft-raised)" }}>
-                    {["Shortcut","Action"].map(h => <th key={h} style={{ padding: "6px 12px", textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 600, borderBottom: "1px solid var(--ft-border)" }}>{h}</th>)}
+                    {["Shortcut","Action"].map(h => <th key={h} style={{ padding: "6px 12px", textAlign: "left", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 600, borderBottom: "1px solid var(--ft-border)", whiteSpace: "nowrap" }}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {SHORTCUTS.map(([key, action]) => (
                     <tr key={key} style={{ borderBottom: "1px solid var(--ft-border)" }}>
-                      <td style={{ padding: "7px 12px", width: 120 }}>
+                      <td style={{ padding: "7px 12px", width: 120, whiteSpace: "nowrap" }}>
                         <kbd style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-accent)", padding: "2px 6px", letterSpacing: "0.04em" }}>{key}</kbd>
                       </td>
                       <td style={{ padding: "7px 12px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{action}</td>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListDebts,
@@ -18,6 +19,8 @@ import {
   type UserLookupResult,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { haptic } from "@/lib/haptics";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -108,18 +111,19 @@ interface AmortRow {
   total: number;
 }
 
-const today = new Date().toISOString().slice(0, 10);
-const EMPTY_FORM: DebtForm = {
-  personName: "",
-  description: "",
-  date: today,
-  nativeAmount: "",
-  currency: "GBP",
-  direction: "i_owe_them",
-  notes: "",
-  accountId: "",
-  linkedEmail: "",
-};
+function makeEmptyDebtForm(): DebtForm {
+  return {
+    personName: "",
+    description: "",
+    date: new Date().toISOString().slice(0, 10),
+    nativeAmount: "",
+    currency: "GBP",
+    direction: "i_owe_them",
+    notes: "",
+    accountId: "",
+    linkedEmail: "",
+  };
+}
 
 const EMPTY_SPLIT_FORM: SplitBillForm = {
   total: "",
@@ -145,9 +149,10 @@ const TH: React.CSSProperties = {
   textTransform: "uppercase" as const,
   letterSpacing: "0.05em",
   whiteSpace: "nowrap" as const,
+  verticalAlign: "middle" as const,
 };
 const TD: React.CSSProperties = {
-  padding: "6px 12px",
+  padding: "6px 10px",
   fontSize: 12,
   borderBottom: "1px solid var(--ft-border)",
   borderRight: "1px solid var(--ft-border)",
@@ -164,16 +169,9 @@ const INPUT_STYLE: React.CSSProperties = {
 };
 
 const PRESETS = [
-  { icon: "🍜", label: "Restaurant" },
-  { icon: "☕", label: "Cafe" },
-  { icon: "🎉", label: "Entertainment" },
-  { icon: "🍺", label: "Drinks" },
-  { icon: "🛒", label: "Groceries" },
-  { icon: "🚗", label: "Transport" },
-  { icon: "✈️", label: "Travel" },
-  { icon: "🏨", label: "Accommodation" },
-  { icon: "🛍️", label: "Shopping" },
-  { icon: "🏥", label: "Medical" },
+  "Restaurant", "Cafe", "Entertainment", "Drinks",
+  "Groceries", "Transport", "Travel", "Accommodation",
+  "Shopping", "Medical",
 ];
 
 function looksLikeEmail(val: string): boolean {
@@ -265,8 +263,9 @@ function runPayoffStrategy(
     // 1. Apply monthly interest
     for (const d of alive) {
       const monthlyRate = d.apr / 100 / 12;
-      d.remaining += d.remaining * monthlyRate;
-      d.interestAccrued += d.remaining * monthlyRate;
+      const interest = d.remaining * monthlyRate;
+      d.remaining += interest;
+      d.interestAccrued += interest;
     }
 
     // 2. Pay minimums first
@@ -459,7 +458,7 @@ function StrategyTab() {
                   background: mode === m ? "var(--ft-accent)" : "transparent",
                   color: mode === m ? "var(--ft-base)" : "var(--ft-dim)",
                   cursor: "pointer",
-                  transition: "all 0.1s",
+                  transition: "background 0.1s, color 0.1s, border-color 0.1s",
                 }}
               >
                 {m === "snowball" ? "⬤ Snowball" : "▲ Avalanche"}
@@ -490,6 +489,7 @@ function StrategyTab() {
             />
             <input
               type="number"
+              min={0}
               value={budgetInput}
               onChange={e => handleBudgetChange(e.target.value)}
               style={{
@@ -755,7 +755,7 @@ function StrategyTab() {
           }}>
             Amortization · First 12 Months
           </div>
-          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <div className="ft-scroll-x" style={{ WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
               <thead>
                 <tr>
@@ -803,7 +803,8 @@ function csvField(val: string | number | undefined): string {
   return s;
 }
 
-function exportDebtsCSV(debts: Array<{ personName: string; description: string; date: string; direction: string; nativeAmount: number; currency: string; gbpEquivalent: number; status: string; notes?: string | null }>) {
+async function exportDebtsCSV(debts: Array<{ personName: string; description: string; date: string; direction: string; nativeAmount: number; currency: string; gbpEquivalent: number; status: string; notes?: string | null }>) {
+  const { shareOrDownload } = await import("@/lib/native-share");
   const header = ["Person", "Description", "Date", "Direction", "Amount", "Currency", "GBP", "Status", "Notes"];
   const lines = [
     header.map(csvField).join(","),
@@ -819,17 +820,13 @@ function exportDebtsCSV(debts: Array<{ personName: string; description: string; 
       d.notes ?? "",
     ].map(csvField).join(",")),
   ];
-  // UTF-8 BOM ensures Excel opens the file without garbling special characters (André, José, etc.)
   const BOM = "﻿";
-  const blob = new Blob([BOM + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `debts-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  await shareOrDownload({
+    filename: `debts-${new Date().toISOString().slice(0, 10)}.csv`,
+    content: BOM + lines.join("\n"),
+    mimeType: "text/csv;charset=utf-8;",
+    title: "Debts Export",
+  });
 }
 
 // ── Main Owing page ────────────────────────────────────────────────────────────
@@ -837,6 +834,7 @@ function exportDebtsCSV(debts: Array<{ personName: string; description: string; 
 export default function Owing() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const { data: debts, isLoading, error } = useListDebts();
   const { data: summary } = useGetDebtSummary();
@@ -849,7 +847,7 @@ export default function Owing() {
   const { data: accounts } = useListAccounts();
   const [open, setOpen] = useState(false);
   const [splitOpen, setSplitOpen] = useState(false);
-  const [form, setForm] = useState<DebtForm>(EMPTY_FORM);
+  const [form, setForm] = useState<DebtForm>(makeEmptyDebtForm);
   const [splitForm, setSplitForm] = useState<SplitBillForm>(EMPTY_SPLIT_FORM);
   const [filter, setFilter] = useState<"all" | "pending" | "settled">("pending");
   const [directionFilter, setDirectionFilter] = useState<DirectionFilter>("all");
@@ -926,13 +924,15 @@ export default function Owing() {
       });
       invalidate();
       setOpen(false);
-      setForm(EMPTY_FORM);
+      setForm(makeEmptyDebtForm());
       setLinkStatus("idle");
       setLinkedUser(null);
       const linkedMsg = linkedUser ? ` — ${linkedUser.name} will receive this IOU` : "";
       toast({ title: "Added", description: `${form.direction === "i_owe_them" ? "You owe" : form.personName} recorded.${linkedMsg}` });
+      haptic.success();
     } catch {
       toast({ title: "Error", description: "Failed to add entry.", variant: "destructive" });
+      haptic.error();
     }
   }
 
@@ -947,18 +947,22 @@ export default function Owing() {
       invalidate();
       toast({ title: "Settled!", description: "Debt marked as settled." });
       setSettleForm(null);
+      haptic.success();
     } catch {
       toast({ title: "Error", description: "Failed to settle.", variant: "destructive" });
+      haptic.error();
     }
   }
 
   async function handleDelete(id: number) {
+    haptic.warning();
     try {
       await deleteDebt.mutateAsync({ id });
       invalidate();
       toast({ title: "Deleted", description: "Entry removed." });
     } catch {
       toast({ title: "Error", description: "Failed to delete.", variant: "destructive" });
+      haptic.error();
     }
   }
 
@@ -1038,7 +1042,7 @@ export default function Owing() {
           data: {
             personName: person.name.trim(),
             description: splitForm.description.trim(),
-            date: today,
+            date: new Date().toISOString().slice(0, 10),
             nativeAmount: Math.round(amount * 100) / 100,
             currency: splitForm.currency,
             direction: "they_owe_me",
@@ -1133,6 +1137,12 @@ export default function Owing() {
         subtitle="Track who owes who — split bills, IOUs, shared expenses"
         actions={
           <div className="flex items-center gap-2">
+            <a href="/calendar" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent", whiteSpace: "nowrap" }}>
+              → Calendar
+            </a>
+            <a href="/split" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent", whiteSpace: "nowrap" }}>
+              → Group Split
+            </a>
             <Button
               size="sm"
               onClick={() => exportDebtsCSV(debts ?? [])}
@@ -1146,18 +1156,62 @@ export default function Owing() {
               onClick={() => setSplitOpen(true)}
               style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", height: 30, fontSize: 12, gap: 6 }}
             >
-              <SplitSquareHorizontal className="w-3.5 h-3.5" /> Split Bill
+              <SplitSquareHorizontal className="w-3.5 h-3.5" /> Quick Split
             </Button>
             <Button
               size="sm"
               onClick={() => setOpen(true)}
-              style={{ background: "var(--ft-blue)", color: "#fff", height: 30, fontSize: 12, gap: 6 }}
+              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", height: 30, fontSize: 12, gap: 6 }}
+            >
+              <Plus className="w-3.5 h-3.5" /> Add IOU
+            </Button>
+          </div>
+        }
+        mobileActions={
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setSplitOpen(true)}
+              style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", height: 30, fontSize: 12, gap: 6 }}
+            >
+              <SplitSquareHorizontal className="w-3.5 h-3.5" /> Split
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setOpen(true)}
+              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", height: 30, fontSize: 12, gap: 6 }}
             >
               <Plus className="w-3.5 h-3.5" /> Add IOU
             </Button>
           </div>
         }
       />
+
+      {/* Persona context strip */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid || pid === "full") return null;
+        const netOwed = owedToMeTotal - iOweTotal;
+        const msgs: Record<string, string | null> = {
+          social:  netOwed > 0
+            ? `You're net owed ${formatGbp(netOwed)} — follow up on outstanding splits via Group Split.`
+            : netOwed < 0
+            ? `You owe ${formatGbp(Math.abs(netOwed))} net — settle soon to keep your social finances clean.`
+            : `All square — net balance is zero. Great financial hygiene with your social circle.`,
+          budget:  iOweTotal > 0 ? `Outstanding debts of ${formatGbp(iOweTotal)} should be factored into your budget until settled.` : null,
+          wealth:  owedToMeTotal > 0 ? `${formatGbp(owedToMeTotal)} outstanding — uncollected debt reduces your effective liquid net worth.` : null,
+          market:  null,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
+            <span>{msg}</span>
+          </div>
+        );
+      })()}
 
       {error && (
         <Alert variant="destructive">
@@ -1167,86 +1221,78 @@ export default function Owing() {
         </Alert>
       )}
 
-      {/* ── Summary stat bar ── */}
-      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+      {/* ── Net balance hero ── */}
+      <div style={{
+        background: "var(--ft-surface)",
+        border: "1px solid var(--ft-border)",
+        borderTop: `3px solid ${netPosition !== 0 ? (netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-border2)"}`,
+        padding: "16px 20px",
+        display: "flex",
+        alignItems: "center",
+        gap: 24,
+        flexWrap: "wrap",
+      }}>
+        <div>
+          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>
+            Net Position
+          </div>
+          {summary ? (
+            <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", color: netPosition !== 0 ? (netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", lineHeight: 1 }}>
+              {netPosition >= 0 ? "+" : ""}{formatGbp(netPosition)}
+            </div>
+          ) : (
+            <Skeleton className="h-8 w-28" />
+          )}
+          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginTop: 5 }}>
+            {netPosition >= 0 ? "net owed to you" : "net you owe"}
+          </div>
+        </div>
+
+        {!isMobile && <div style={{ width: 1, height: 44, background: "var(--ft-border)", flexShrink: 0 }} />}
+
         {/* Owed to me */}
-        <div style={{
-          background: "var(--ft-raised)",
-          border: "1px solid var(--ft-border)",
-          borderTop: "2px solid var(--ft-green)",
-          padding: "12px 14px",
-          borderRadius: 3,
-        }}>
-          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+        <div>
+          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
             Owed to Me
           </div>
           {summary ? (
-            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-green)", lineHeight: 1 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: owedToMeTotal > 0 ? "var(--ft-green)" : "var(--ft-muted)", lineHeight: 1 }}>
               {formatGbp(owedToMeTotal)}
             </div>
           ) : (
             <Skeleton className="h-5 w-20" />
           )}
-          <div style={{ fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>{theyOwe.length} open</div>
+          <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-mono)" }}>{theyOwe.length} open</div>
         </div>
 
+        {!isMobile && <div style={{ width: 1, height: 44, background: "var(--ft-border)", flexShrink: 0 }} />}
+
         {/* I owe */}
-        <div style={{
-          background: "var(--ft-raised)",
-          border: "1px solid var(--ft-border)",
-          borderTop: "2px solid var(--ft-red)",
-          padding: "12px 14px",
-          borderRadius: 3,
-        }}>
-          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+        <div>
+          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
             I Owe
           </div>
           {summary ? (
-            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-red)", lineHeight: 1 }}>
+            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: iOweTotal > 0 ? "var(--ft-red)" : "var(--ft-muted)", lineHeight: 1 }}>
               {formatGbp(iOweTotal)}
             </div>
           ) : (
             <Skeleton className="h-5 w-20" />
           )}
-          <div style={{ fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>{iOwe.length} open</div>
+          <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-mono)" }}>{iOwe.length} open</div>
         </div>
 
-        {/* Net position */}
-        <div style={{
-          background: "var(--ft-raised)",
-          border: "1px solid var(--ft-border)",
-          borderTop: `2px solid ${netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)"}`,
-          padding: "12px 14px",
-          borderRadius: 3,
-        }}>
-          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-            Net Position
-          </div>
-          {summary ? (
-            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
-              {netPosition >= 0 ? "+" : ""}{formatGbp(netPosition)}
-            </div>
-          ) : (
-            <Skeleton className="h-5 w-20" />
-          )}
-          <div style={{ fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>{summary?.pendingCount ?? 0} total open</div>
-        </div>
+        {!isMobile && <div style={{ width: 1, height: 44, background: "var(--ft-border)", flexShrink: 0 }} />}
 
         {/* Settled this month */}
-        <div style={{
-          background: "var(--ft-raised)",
-          border: "1px solid var(--ft-border)",
-          borderTop: "2px solid var(--ft-blue)",
-          padding: "12px 14px",
-          borderRadius: 3,
-        }}>
-          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+        <div>
+          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
             Settled
           </div>
           <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-blue)", lineHeight: 1 }}>
             {isLoading ? <Skeleton className="h-5 w-12 inline-block" /> : settledThisMonth}
           </div>
-          <div style={{ fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>this month</div>
+          <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-mono)" }}>this month</div>
         </div>
       </div>
 
@@ -1267,7 +1313,7 @@ export default function Owing() {
             <Button size="sm" onClick={() => setSplitOpen(true)} style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", fontSize: 12 }}>
               <SplitSquareHorizontal className="w-3.5 h-3.5 mr-1.5" /> Split a Bill
             </Button>
-            <Button size="sm" onClick={() => setOpen(true)} style={{ background: "var(--ft-blue)", color: "#fff", fontSize: 12 }}>
+            <Button size="sm" onClick={() => setOpen(true)} style={{ background: "var(--ft-blue)", color: "var(--ft-base)", fontSize: 12 }}>
               <Plus className="w-3.5 h-3.5 mr-1.5" /> Add IOU
             </Button>
           </div>
@@ -1281,29 +1327,88 @@ export default function Owing() {
         borderBottom: "2px solid var(--ft-border)",
         gap: 0,
       }}>
-        {(["debts", "strategy"] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setMainTab(tab)}
-            style={{
-              padding: "8px 18px",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: mainTab === tab ? "var(--ft-accent)" : "var(--ft-dim)",
-              background: "transparent",
-              border: "none",
-              borderBottom: `2px solid ${mainTab === tab ? "var(--ft-accent)" : "transparent"}`,
-              marginBottom: -2,
-              cursor: "pointer",
-              transition: "color 0.1s",
-            }}
-          >
-            {tab === "debts" ? "IOUs" : "Strategy"}
-          </button>
-        ))}
+        <button
+          onClick={() => { setMainTab("debts"); setDirectionFilter("i-owe"); }}
+          style={{
+            padding: "5px 14px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: mainTab === "debts" && directionFilter === "i-owe" ? "var(--ft-red)" : "var(--ft-dim)",
+            background: "transparent",
+            border: "none",
+            borderBottom: `2px solid ${mainTab === "debts" && directionFilter === "i-owe" ? "var(--ft-red)" : "transparent"}`,
+            marginBottom: -2,
+            cursor: "pointer",
+            transition: "color 0.1s",
+            whiteSpace: "nowrap",
+          }}
+        >
+          I OWE{iOweTotal > 0 ? ` · ${formatGbp(iOweTotal)}` : ""}
+        </button>
+        <button
+          onClick={() => { setMainTab("debts"); setDirectionFilter("owed-to-me"); }}
+          style={{
+            padding: "5px 14px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: mainTab === "debts" && directionFilter === "owed-to-me" ? "var(--ft-green)" : "var(--ft-dim)",
+            background: "transparent",
+            border: "none",
+            borderBottom: `2px solid ${mainTab === "debts" && directionFilter === "owed-to-me" ? "var(--ft-green)" : "transparent"}`,
+            marginBottom: -2,
+            cursor: "pointer",
+            transition: "color 0.1s",
+            whiteSpace: "nowrap",
+          }}
+        >
+          OWED TO ME{owedToMeTotal > 0 ? ` · ${formatGbp(owedToMeTotal)}` : ""}
+        </button>
+        <button
+          onClick={() => { setMainTab("debts"); setDirectionFilter("all"); }}
+          style={{
+            padding: "5px 14px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: mainTab === "debts" && directionFilter === "all" ? "var(--ft-accent)" : "var(--ft-dim)",
+            background: "transparent",
+            border: "none",
+            borderBottom: `2px solid ${mainTab === "debts" && directionFilter === "all" ? "var(--ft-accent)" : "transparent"}`,
+            marginBottom: -2,
+            cursor: "pointer",
+            transition: "color 0.1s",
+          }}
+        >
+          All IOUs
+        </button>
+        <button
+          onClick={() => setMainTab("strategy")}
+          style={{
+            padding: "5px 14px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: mainTab === "strategy" ? "var(--ft-accent)" : "var(--ft-dim)",
+            background: "transparent",
+            border: "none",
+            borderBottom: `2px solid ${mainTab === "strategy" ? "var(--ft-accent)" : "transparent"}`,
+            marginBottom: -2,
+            cursor: "pointer",
+            transition: "color 0.1s",
+          }}
+        >
+          Strategy
+        </button>
       </div>
 
       {/* ── Strategy tab ── */}
@@ -1336,19 +1441,19 @@ export default function Owing() {
                     </span>
                   )}
                 </div>
-                <span className="text-xs" style={{ color: "var(--ft-dim)" }}>
-                  Someone else created these and linked them to your account
+                <span className="text-xs ft-hide-mobile" style={{ color: "var(--ft-dim)", whiteSpace: "nowrap" }}>
+                  linked by others · read-only
                 </span>
               </div>
 
-              <div className="overflow-x-auto" style={{ WebkitOverflowScrolling: "touch" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 580 }}>
+              <div className="ft-scroll-x" style={{ WebkitOverflowScrolling: "touch" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                   <thead>
                     <tr>
                       <th style={TH}>From</th>
                       <th style={TH}>Description</th>
-                      <th style={TH}>Date</th>
-                      <th style={TH}>Direction</th>
+                      <th className="ft-hide-mobile" style={TH}>Date</th>
+                      <th className="ft-hide-mobile" style={TH}>Direction</th>
                       <th style={{ ...TH, textAlign: "right" }}>Amount</th>
                       <th style={{ ...TH, borderRight: "none" }}>Actions</th>
                     </tr>
@@ -1375,12 +1480,12 @@ export default function Owing() {
                         <td style={TD}>
                           <div className="flex items-center gap-2">
                             <span
-                              className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                              style={{ background: "rgba(86,182,194,0.15)", color: "var(--ft-cyan, #56b6c2)" }}
+                              className="flex items-center justify-center text-xs font-bold flex-shrink-0"
+                              style={{ width: 22, height: 22, borderRadius: 3, background: "rgba(86,182,194,0.15)", color: "var(--ft-cyan, #56b6c2)" }}
                             >
                               {d.personName[0]?.toUpperCase() ?? "?"}
                             </span>
-                            <span style={{ color: "var(--ft-text)" }}>{d.personName}</span>
+                            <span style={{ color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.personName}</span>
                           </div>
                         </td>
                         <td style={{ ...TD, color: "var(--ft-text)" }}>
@@ -1389,8 +1494,8 @@ export default function Owing() {
                             <span className="ml-1.5 text-xs" style={{ color: "var(--ft-dim)" }}>· {d.notes}</span>
                           )}
                         </td>
-                        <td style={{ ...TD, fontFamily: "monospace" }}>{formatDate(d.date)}</td>
-                        <td style={TD}>
+                        <td className="ft-hide-mobile" style={{ ...TD, fontFamily: "monospace" }}>{formatDate(d.date)}</td>
+                        <td className="ft-hide-mobile" style={TD}>
                           {d.direction === "i_owe_them" ? (
                             <span
                               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-xs"
@@ -1465,8 +1570,8 @@ export default function Owing() {
                     }}
                   >
                     <span
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                      style={{ background: "var(--ft-raised)", color: "var(--ft-blue)" }}
+                      className="flex items-center justify-center text-xs font-bold"
+                      style={{ width: 22, height: 22, borderRadius: 3, background: "var(--ft-raised)", color: "var(--ft-blue)", flexShrink: 0 }}
                     >
                       {name[0].toUpperCase()}
                     </span>
@@ -1483,20 +1588,20 @@ export default function Owing() {
           {/* ── Debt cards list ── */}
           <div className="rounded-sm border overflow-hidden" style={{ borderColor: "var(--ft-border)" }}>
             {/* Filter + sort bar */}
-            <div
-              style={{ background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0 }}
-            >
-              {/* Status tabs */}
-              <div style={{ display: "flex", alignItems: "center", borderRight: "1px solid var(--ft-border)" }}>
+            <div className="ft-filter-bar" style={{ background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border)" }}>
+              {/* Row 1: status tabs + count */}
+              <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--ft-border)" }}>
                 {(["pending", "settled", "all"] as const).map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
                     style={{
-                      padding: "8px 14px",
-                      fontSize: 11,
-                      fontWeight: 500,
-                      textTransform: "capitalize",
+                      padding: isMobile ? "7px 12px" : "8px 14px",
+                      fontSize: isMobile ? 10 : 11,
+                      fontFamily: "var(--font-mono)",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
                       color: filter === f ? "var(--ft-blue)" : "var(--ft-dim)",
                       background: "transparent",
                       cursor: "pointer",
@@ -1507,76 +1612,65 @@ export default function Owing() {
                     {f}
                   </button>
                 ))}
+                <div style={{ flex: 1 }} />
+                <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", paddingRight: 10 }}>
+                  {filtered.length} entr{filtered.length === 1 ? "y" : "ies"}
+                </span>
               </div>
-
-              {/* Direction filter */}
-              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 10px", borderRight: "1px solid var(--ft-border)" }}>
-                {(["all", "i-owe", "owed-to-me"] as const).map((df) => {
-                  const labels: Record<DirectionFilter, string> = { all: "All", "i-owe": "I Owe", "owed-to-me": "Owed to Me" };
-                  const isActive = directionFilter === df;
-                  return (
-                    <button
-                      key={df}
-                      onClick={() => setDirectionFilter(df)}
-                      style={{
-                        padding: "3px 8px",
-                        fontSize: 10,
-                        fontFamily: "var(--font-mono)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        borderRadius: 2,
-                        border: `1px solid ${isActive ? (df === "i-owe" ? "rgba(248,81,73,0.5)" : df === "owed-to-me" ? "rgba(63,185,80,0.5)" : "rgba(88,166,255,0.5)") : "var(--ft-border2)"}`,
-                        background: isActive ? (df === "i-owe" ? "rgba(248,81,73,0.1)" : df === "owed-to-me" ? "rgba(63,185,80,0.1)" : "rgba(88,166,255,0.1)") : "transparent",
-                        color: isActive ? (df === "i-owe" ? "var(--ft-red)" : df === "owed-to-me" ? "var(--ft-green)" : "var(--ft-blue)") : "var(--ft-dim)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {labels[df]}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Person search */}
-              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRight: "1px solid var(--ft-border)" }}>
-                <input
-                  type="search"
-                  value={personSearch}
-                  onChange={(e) => setPersonSearch(e.target.value)}
-                  placeholder="Search person…"
-                  style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11, padding: "3px 8px", borderRadius: 2, outline: "none", width: 130, fontFamily: "var(--font-mono)" }}
-                />
-                {personSearch && (
-                  <button onClick={() => setPersonSearch("")} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1 }}>×</button>
-                )}
-              </div>
-
-              <div style={{ flex: 1 }} />
-
-              {/* Sort selector */}
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 10px" }}>
-                <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Sort</span>
+              {/* Row 2: direction pills + search + sort */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", flexWrap: isMobile ? "wrap" : "nowrap" }}>
+                {/* Direction pills */}
+                <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                  {(["all", "i-owe", "owed-to-me"] as const).map((df) => {
+                    const labels: Record<DirectionFilter, string> = { all: "All", "i-owe": "I Owe", "owed-to-me": "Owed" };
+                    const isActive = directionFilter === df;
+                    return (
+                      <button
+                        key={df}
+                        onClick={() => setDirectionFilter(df)}
+                        style={{
+                          padding: "3px 8px",
+                          fontSize: 9,
+                          fontFamily: "var(--font-mono)",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          borderRadius: 2,
+                          border: `1px solid ${isActive ? (df === "i-owe" ? "rgba(248,81,73,0.5)" : df === "owed-to-me" ? "rgba(63,185,80,0.5)" : "rgba(88,166,255,0.5)") : "var(--ft-border2)"}`,
+                          background: isActive ? (df === "i-owe" ? "rgba(248,81,73,0.1)" : df === "owed-to-me" ? "rgba(63,185,80,0.1)" : "rgba(88,166,255,0.1)") : "transparent",
+                          color: isActive ? (df === "i-owe" ? "var(--ft-red)" : df === "owed-to-me" ? "var(--ft-green)" : "var(--ft-blue)") : "var(--ft-dim)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {labels[df]}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Person search */}
+                <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 80 }}>
+                  <input
+                    type="search"
+                    value={personSearch}
+                    onChange={(e) => setPersonSearch(e.target.value)}
+                    placeholder="Search person…"
+                    className="ft-filter-input"
+                    style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 10, padding: "3px 8px", borderRadius: 2, outline: "none", width: "100%", fontFamily: "var(--font-mono)" }}
+                  />
+                  {personSearch && (
+                    <button onClick={() => setPersonSearch("")} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1, flexShrink: 0 }}>×</button>
+                  )}
+                </div>
+                {/* Sort */}
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
-                  style={{
-                    background: "var(--ft-base)",
-                    border: "1px solid var(--ft-border2)",
-                    color: "var(--ft-text)",
-                    fontSize: 11,
-                    padding: "3px 6px",
-                    borderRadius: 2,
-                    cursor: "pointer",
-                    outline: "none",
-                  }}
+                  className="ft-filter-input"
+                  style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 9, padding: "3px 6px", borderRadius: 2, cursor: "pointer", outline: "none", flexShrink: 0 }}
                 >
                   {(Object.keys(SORT_LABELS) as SortOption[]).map((k) => (
                     <option key={k} value={k}>{SORT_LABELS[k]}</option>
                   ))}
                 </select>
-                <span style={{ fontSize: 10, color: "var(--ft-dim)", paddingLeft: 4 }}>
-                  {filtered.length} entr{filtered.length === 1 ? "y" : "ies"}
-                </span>
               </div>
             </div>
 
@@ -1615,12 +1709,12 @@ export default function Owing() {
                       ...(d.status === "settled" ? { borderLeft: "3px solid var(--ft-border2)" } : getCardBorderStyle(d.direction as Direction, age)),
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "11px 14px" }}>
-                      {/* Avatar */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", minHeight: 44 }}>
+                      {/* Avatar — square, not circle */}
                       <div style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
+                        width: 28,
+                        height: 28,
+                        borderRadius: 3,
                         background: isIowe ? "rgba(248,81,73,0.12)" : "rgba(63,185,80,0.12)",
                         color: isIowe ? "var(--ft-red)" : "var(--ft-green)",
                         display: "flex",
@@ -1635,11 +1729,29 @@ export default function Owing() {
 
                       {/* Main content */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ft-text)" }}>{d.personName}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.personName}</span>
+                          {/* Direction badge */}
+                          {d.status === "pending" && (
+                            <span style={{
+                              fontSize: 8,
+                              fontFamily: "var(--font-mono)",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.06em",
+                              padding: "1px 5px",
+                              borderRadius: 2,
+                              fontWeight: 700,
+                              background: isIowe ? "rgba(248,81,73,0.1)" : "rgba(63,185,80,0.1)",
+                              color: isIowe ? "var(--ft-red)" : "var(--ft-green)",
+                              border: isIowe ? "1px solid rgba(248,81,73,0.25)" : "1px solid rgba(63,185,80,0.25)",
+                              flexShrink: 0,
+                            }}>
+                              {isIowe ? "I OWE" : "THEY OWE"}
+                            </span>
+                          )}
                           {d.linkedUserId && (
                             <span style={{
-                              fontSize: 9,
+                              fontSize: 8,
                               fontFamily: "var(--font-mono)",
                               textTransform: "uppercase",
                               letterSpacing: "0.06em",
@@ -1654,7 +1766,7 @@ export default function Owing() {
                           )}
                           {age === "overdue" && d.status === "pending" && (
                             <span style={{
-                              fontSize: 9,
+                              fontSize: 8,
                               fontFamily: "var(--font-mono)",
                               textTransform: "uppercase",
                               letterSpacing: "0.06em",
@@ -1669,7 +1781,7 @@ export default function Owing() {
                           )}
                           {d.status === "settled" && (
                             <span style={{
-                              fontSize: 9,
+                              fontSize: 8,
                               fontFamily: "var(--font-mono)",
                               textTransform: "uppercase",
                               letterSpacing: "0.06em",
@@ -1683,32 +1795,29 @@ export default function Owing() {
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: 11, color: "var(--ft-muted)", marginBottom: 4 }}>
+                        <div style={{ fontSize: 11, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
                           {d.description}
                           {d.notes && (
                             <span style={{ color: "var(--ft-dim)", marginLeft: 6 }}>· {d.notes}</span>
                           )}
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 1 }}>
+                          <span style={{ fontSize: 9, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
                             {formatDate(d.date)}
                           </span>
-                          <span style={{ fontSize: 10, color: age === "overdue" ? "var(--ft-red)" : age === "old" ? "var(--ft-amber)" : "var(--ft-dim)" }}>
-                            {daysOld === 0 ? "today" : `${daysOld}d old`}
-                          </span>
-                          <span style={{ fontSize: 10, color: "var(--ft-dim)" }}>
-                            {isIowe ? `→ You → ${d.personName}` : `${d.personName} → You →`}
+                          <span style={{ fontSize: 9, color: age === "overdue" ? "var(--ft-red)" : age === "old" ? "var(--ft-amber)" : "var(--ft-dim)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
+                            {daysOld === 0 ? "today" : `${daysOld}d`}
                           </span>
                         </div>
                       </div>
 
                       {/* Amount + actions */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: amountColor }}>
                           {isIowe ? "-" : "+"}{formatGbp(d.gbpEquivalent)}
                         </div>
                         {d.currency !== "GBP" && (
-                          <div style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                          <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
                             {formatNative(d.nativeAmount, d.currency)}
                           </div>
                         )}
@@ -1873,7 +1982,7 @@ export default function Owing() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setForm((f) => ({ ...f, direction: "i_owe_them" }))}
-                className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-sm border text-xs font-medium transition-all"
+                className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-sm border text-xs font-medium transition-colors"
                 style={{
                   background: form.direction === "i_owe_them" ? "rgba(248,81,73,0.12)" : "var(--ft-base)",
                   borderColor: form.direction === "i_owe_them" ? "rgba(248,81,73,0.5)" : "var(--ft-border2)",
@@ -1885,7 +1994,7 @@ export default function Owing() {
               </button>
               <button
                 onClick={() => setForm((f) => ({ ...f, direction: "they_owe_me" }))}
-                className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-sm border text-xs font-medium transition-all"
+                className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-sm border text-xs font-medium transition-colors"
                 style={{
                   background: form.direction === "they_owe_me" ? "rgba(63,185,80,0.12)" : "var(--ft-base)",
                   borderColor: form.direction === "they_owe_me" ? "rgba(63,185,80,0.5)" : "var(--ft-border2)",
@@ -1912,16 +2021,17 @@ export default function Owing() {
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {PRESETS.map((p) => (
                   <button
-                    key={p.label}
-                    onClick={() => setForm((f) => ({ ...f, description: `${p.icon} ${p.label}` }))}
+                    key={p}
+                    onClick={() => setForm((f) => ({ ...f, description: p }))}
                     className="px-2 py-0.5 rounded-sm text-xs border transition-colors"
                     style={{
-                      background: form.description === `${p.icon} ${p.label}` ? "rgba(31,111,235,0.15)" : "var(--ft-base)",
-                      borderColor: form.description === `${p.icon} ${p.label}` ? "rgba(31,111,235,0.5)" : "var(--ft-border2)",
-                      color: form.description === `${p.icon} ${p.label}` ? "var(--ft-blue)" : "var(--ft-muted)",
+                      background: form.description === p ? "rgba(31,111,235,0.15)" : "var(--ft-base)",
+                      borderColor: form.description === p ? "rgba(31,111,235,0.5)" : "var(--ft-border2)",
+                      color: form.description === p ? "var(--ft-blue)" : "var(--ft-muted)",
+                      fontFamily: "var(--font-mono)",
                     }}
                   >
-                    {p.icon} {p.label}
+                    {p}
                   </button>
                 ))}
               </div>
@@ -1933,7 +2043,7 @@ export default function Owing() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3" style={{ gridTemplateColumns: "1fr 1fr" }}>
               <div className="space-y-1.5">
                 <Label style={{ color: "var(--ft-muted)", fontSize: 11 }}>Amount</Label>
                 <Input
@@ -1941,7 +2051,7 @@ export default function Owing() {
                   placeholder="0.00"
                   value={form.nativeAmount}
                   onChange={(e) => setForm((f) => ({ ...f, nativeAmount: e.target.value }))}
-                  style={INPUT_STYLE}
+                  style={{ ...INPUT_STYLE, width: "100%" }}
                 />
               </div>
               <div className="space-y-1.5">
@@ -2065,7 +2175,7 @@ export default function Owing() {
               size="sm"
               onClick={handleAdd}
               disabled={createDebt.isPending}
-              style={{ background: "var(--ft-blue)", color: "#fff", fontSize: 12 }}
+              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", fontSize: 12 }}
             >
               {createDebt.isPending ? "Adding…" : "Add IOU"}
             </Button>
@@ -2127,7 +2237,7 @@ export default function Owing() {
                   <button
                     key={t}
                     onClick={() => setSplitForm((f) => ({ ...f, splitType: t }))}
-                    className="px-3 py-1 rounded-sm border text-xs font-medium transition-all capitalize"
+                    className="px-3 py-1 rounded-sm border text-xs font-medium transition-colors capitalize"
                     style={{
                       background: splitForm.splitType === t ? "rgba(31,111,235,0.15)" : "var(--ft-base)",
                       borderColor: splitForm.splitType === t ? "rgba(31,111,235,0.5)" : "var(--ft-border2)",
@@ -2291,7 +2401,7 @@ export default function Owing() {
               size="sm"
               onClick={handleSplitSubmit}
               disabled={splitSubmitting}
-              style={{ background: "var(--ft-blue)", color: "#fff", fontSize: 12 }}
+              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", fontSize: 12 }}
             >
               {splitSubmitting ? "Creating…" : `Create ${validPeople.filter((p) => p.name.toLowerCase() !== "me").length} IOU${validPeople.filter((p) => p.name.toLowerCase() !== "me").length !== 1 ? "s" : ""}`}
             </Button>

@@ -7,7 +7,8 @@ import {
 } from "recharts";
 import type { StockHistoryPoint } from "@workspace/api-client-react";
 
-const PERIODS = ["1w", "1m", "3m", "6m", "1y", "2y", "5y"];
+const PERIODS = ["1d", "3d", "5d", "1w", "1m", "3m", "6m", "1y", "2y", "5y"];
+const INTRADAY_MODAL_SET = new Set(["1d", "3d", "5d"]);
 
 // ── Technical Indicator Computations ─────────────────────────────────────────
 
@@ -110,12 +111,31 @@ function enrichData(history: StockHistoryPoint[]) {
   }));
 }
 
+/** True if the date string has a time component ("YYYY-MM-DD HH:MM") */
+function hasTime(dateStr: string): boolean {
+  return dateStr.length > 10 && dateStr[10] === " ";
+}
+
 function fmtDate(dateStr: string, period: string): string {
-  const d = new Date(dateStr);
+  const d = new Date(dateStr.replace(" ", "T") + (hasTime(dateStr) ? "Z" : ""));
+  const time = hasTime(dateStr) ? dateStr.slice(11, 16) : "";
+  if (period === "1d") return time || d.toLocaleDateString("en", { month: "short", day: "numeric" });
+  if (period === "3d" || period === "5d") {
+    const day = d.toLocaleDateString("en", { weekday: "short" });
+    return time ? `${day} ${time}` : d.toLocaleDateString("en", { month: "short", day: "numeric" });
+  }
   if (period === "1w" || period === "1m" || period === "3m") {
     return d.toLocaleDateString("en", { month: "short", day: "numeric" });
   }
   return d.toLocaleDateString("en", { year: "2-digit", month: "short" });
+}
+
+function fmtTooltipLabel(dateStr: string, period: string): string {
+  const d = new Date(dateStr.replace(" ", "T") + (hasTime(dateStr) ? "Z" : ""));
+  const time = hasTime(dateStr) ? dateStr.slice(11, 16) : null;
+  const dateLabel = d.toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric" });
+  if ((period === "1d" || period === "3d" || period === "5d") && time) return `${dateLabel}  ${time}`;
+  return dateLabel;
 }
 
 // ── Custom Tooltip ─────────────────────────────────────────────────────────────
@@ -133,15 +153,17 @@ interface CustomTooltipProps {
   showSMA20: boolean;
   showSMA50: boolean;
   showBB: boolean;
+  period: string;
 }
 
-function PriceTooltip({ active, payload, label, showSMA20, showSMA50, showBB }: CustomTooltipProps) {
+function PriceTooltip({ active, payload, label, showSMA20, showSMA50, showBB, period }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   const map: Record<string, number> = {};
   payload.forEach(p => { if (p.value != null) map[p.dataKey] = p.value; });
+  const displayLabel = label ? fmtTooltipLabel(label, period) : "";
   return (
     <div style={{ background: "#0d1117", border: "1px solid #30363d", padding: "8px 10px", fontFamily: "var(--font-mono)", fontSize: 10, minWidth: 160, boxShadow: "0 4px 16px rgba(0,0,0,0.6)" }}>
-      <div style={{ color: "#7d8590", marginBottom: 6, fontSize: 9 }}>{label}</div>
+      <div style={{ color: "#7d8590", marginBottom: 6, fontSize: 9 }}>{displayLabel}</div>
       {map.open != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "#e6edf3" }}>
         <span style={{ color: "#7d8590" }}>O</span><span>{map.open?.toFixed(2)}</span>
       </div>}
@@ -228,10 +250,10 @@ export function ChartAnalysisModal({
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "16px", overflowY: "auto" }}
+      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ width: "100%", maxWidth: 1200, background: "#0d1117", border: "1px solid #30363d", display: "flex", flexDirection: "column", minHeight: "85vh", maxHeight: "95vh" }}>
+      <div style={{ width: "100%", maxWidth: 1200, background: "#0d1117", border: "1px solid #30363d", display: "flex", flexDirection: "column", height: "95vh" }}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #21262d", background: "#161b22", gap: 12, flexShrink: 0 }}>
@@ -305,9 +327,10 @@ export function ChartAnalysisModal({
             <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
 
               {/* Main price chart */}
-              <div style={{ flex: mainHeightPct, minHeight: 0, borderBottom: activeSubPanels > 0 ? "1px solid #21262d" : "none" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#7d8590", padding: "4px 16px 0", letterSpacing: "0.06em" }}>PRICE</div>
-                <ResponsiveContainer width="100%" height="95%">
+              <div style={{ flex: mainHeightPct, minHeight: 0, borderBottom: activeSubPanels > 0 ? "1px solid #21262d" : "none", display: "flex", flexDirection: "column" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#7d8590", padding: "4px 16px 2px", letterSpacing: "0.06em", flexShrink: 0 }}>PRICE</div>
+                <div style={{ flex: 1, minHeight: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={enriched} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
@@ -324,7 +347,7 @@ export function ChartAnalysisModal({
                     <CartesianGrid strokeDasharray="2 6" stroke="#21262d" vertical={false} />
                     <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
                     <YAxis domain={["auto", "auto"]} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v.toFixed(0)}`} width={56} orientation="right" />
-                    <Tooltip content={<PriceTooltip showSMA20={showSMA20} showSMA50={showSMA50} showBB={showBB} />} />
+                    <Tooltip content={<PriceTooltip showSMA20={showSMA20} showSMA50={showSMA50} showBB={showBB} period={period} />} />
                     {/* Hidden lines to get OHLCV into tooltip */}
                     <Line dataKey="open" stroke="transparent" dot={false} legendType="none" />
                     <Line dataKey="high" stroke="transparent" dot={false} legendType="none" />
@@ -340,13 +363,15 @@ export function ChartAnalysisModal({
                     {showSMA50 && <Line type="monotone" dataKey="sma50" stroke="#e3b341" strokeWidth={1.2} dot={false} connectNulls />}
                   </ComposedChart>
                 </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Volume panel */}
               {showVolume && (
-                <div style={{ flex: 15, minHeight: 0, borderBottom: (showRSI || showMACD) ? "1px solid #21262d" : "none" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#7d8590", padding: "3px 16px 0", letterSpacing: "0.06em" }}>VOLUME</div>
-                  <ResponsiveContainer width="100%" height="85%">
+                <div style={{ flex: 15, minHeight: 0, borderBottom: (showRSI || showMACD) ? "1px solid #21262d" : "none", display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#7d8590", padding: "3px 16px 2px", letterSpacing: "0.06em", flexShrink: 0 }}>VOLUME</div>
+                  <div style={{ flex: 1, minHeight: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={enriched} margin={{ top: 2, right: 12, left: 0, bottom: 0 }}>
                       <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
                       <YAxis tick={{ fill: "#7d8590", fontSize: 7 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1e6 ? `${(v / 1e6).toFixed(0)}M` : `${v}`} width={40} orientation="right" />
@@ -358,14 +383,16 @@ export function ChartAnalysisModal({
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                 </div>
               )}
 
               {/* RSI panel */}
               {showRSI && (
-                <div style={{ flex: 15, minHeight: 0, borderBottom: showMACD ? "1px solid #21262d" : "none" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#7d8590", padding: "3px 16px 0", letterSpacing: "0.06em" }}>RSI (14)</div>
-                  <ResponsiveContainer width="100%" height="85%">
+                <div style={{ flex: 15, minHeight: 0, borderBottom: showMACD ? "1px solid #21262d" : "none", display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#7d8590", padding: "3px 16px 2px", letterSpacing: "0.06em", flexShrink: 0 }}>RSI (14)</div>
+                  <div style={{ flex: 1, minHeight: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={enriched} margin={{ top: 2, right: 12, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="2 6" stroke="#21262d" vertical={false} />
                       <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
@@ -377,14 +404,16 @@ export function ChartAnalysisModal({
                       <Area type="monotone" dataKey="rsi" stroke="#d2a8ff" strokeWidth={1.2} fill="#d2a8ff14" dot={false} connectNulls />
                     </ComposedChart>
                   </ResponsiveContainer>
+                  </div>
                 </div>
               )}
 
               {/* MACD panel */}
               {showMACD && (
-                <div style={{ flex: 16, minHeight: 0 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#7d8590", padding: "3px 16px 0", letterSpacing: "0.06em" }}>MACD (12, 26, 9)</div>
-                  <ResponsiveContainer width="100%" height="85%">
+                <div style={{ flex: 16, minHeight: 0, display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#7d8590", padding: "3px 16px 2px", letterSpacing: "0.06em", flexShrink: 0 }}>MACD (12, 26, 9)</div>
+                  <div style={{ flex: 1, minHeight: 0 }}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={enriched} margin={{ top: 2, right: 12, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="2 6" stroke="#21262d" vertical={false} />
                       <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
@@ -400,6 +429,7 @@ export function ChartAnalysisModal({
                       <Line type="monotone" dataKey="signal" stroke="#e3b341" strokeWidth={1} dot={false} connectNulls />
                     </ComposedChart>
                   </ResponsiveContainer>
+                  </div>
                 </div>
               )}
 
@@ -407,15 +437,36 @@ export function ChartAnalysisModal({
           )}
         </div>
 
-        {/* Footer legend */}
-        <div style={{ display: "flex", gap: 12, padding: "6px 16px", borderTop: "1px solid #21262d", background: "#161b22", flexShrink: 0, flexWrap: "wrap" }}>
-          {showSMA20 && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#3fb950" }}>── SMA 20</span>}
-          {showSMA50 && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#e3b341" }}>── SMA 50</span>}
-          {showBB && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#22d3ee" }}>- - BB (20,2)</span>}
-          {showRSI && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#d2a8ff" }}>RSI: &lt;30 oversold · &gt;70 overbought</span>}
-          {showMACD && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#58a6ff" }}>MACD ── Signal ── Histogram</span>}
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#484f58", marginLeft: "auto" }}>Data via Yahoo Finance</span>
-        </div>
+        {/* Footer legend + live interpretation */}
+        {(() => {
+          const lastRSI = enriched.length > 0 ? enriched[enriched.length - 1].rsi : null;
+          const lastMACD = enriched.length > 0 ? enriched[enriched.length - 1] : null;
+          const rsiSignal = lastRSI != null
+            ? lastRSI > 70 ? { text: `RSI ${lastRSI.toFixed(0)} — overbought, potential pullback`, color: "#f85149" }
+            : lastRSI < 30 ? { text: `RSI ${lastRSI.toFixed(0)} — oversold, potential bounce`, color: "#3fb950" }
+            : { text: `RSI ${lastRSI.toFixed(0)} — neutral zone`, color: "#7d8590" }
+            : null;
+          const macdSignal = lastMACD?.macd != null && lastMACD?.signal != null
+            ? (lastMACD.macd > lastMACD.signal)
+              ? { text: "MACD above signal — bullish momentum", color: "#3fb950" }
+              : { text: "MACD below signal — bearish momentum", color: "#f85149" }
+            : null;
+          return (
+            <div style={{ padding: "5px 16px", borderTop: "1px solid #21262d", background: "#161b22", flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap", flex: 1 }}>
+                  {showSMA20 && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#3fb950" }}>── SMA 20</span>}
+                  {showSMA50 && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#e3b341" }}>── SMA 50</span>}
+                  {showBB && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#22d3ee" }}>- - BB (20,2) · bands show volatility range</span>}
+                  {showRSI && rsiSignal && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rsiSignal.color, fontWeight: 700 }}>{rsiSignal.text}</span>}
+                  {!showRSI && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#7d8590" }}>RSI: &lt;30 oversold · &gt;70 overbought</span>}
+                  {showMACD && macdSignal && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: macdSignal.color, fontWeight: 700 }}>{macdSignal.text}</span>}
+                </div>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "#484f58" }}>Data via Yahoo Finance</span>
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
     </div>

@@ -11,7 +11,7 @@ import { getBotSkin, type BotSkinId } from "@/lib/bot-skins";
 import { MarioSprite } from "./mario-skin";
 import { GildedSprite, BloodlineSprite } from "./premium-skins";
 
-interface Props { onOpen: () => void; summoned: boolean; locationKey?: string; sidebarW?: number; portfolioSignal?: "up" | "down" | null; }
+interface Props { onOpen: (botX?: number, botY?: number) => void; summoned: boolean; locationKey?: string; sidebarW?: number; portfolioSignal?: "up" | "down" | null; }
 
 function rand(min: number, max: number) { return Math.random() * (max - min) + min; }
 function getDefaultY() { return Math.max(window.innerHeight - 24, 120); }
@@ -529,7 +529,7 @@ function VitalBar({ label, value, color }: { label: string; value: number; color
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
       <span style={{ width: 26, fontSize: 8, color: "var(--ft-muted)", letterSpacing: "0.06em", fontFamily: "var(--font-mono)" }}>{label}</span>
       <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
-        <div style={{ width: `${value}%`, height: "100%", background: isCrit ? "#ef4444" : color, borderRadius: 2, transition: "width 0.6s ease" }}/>
+        <div style={{ width: `${value}%`, height: "100%", background: isCrit ? "#ef4444" : color, borderRadius: 2, transition: "none" }}/>
       </div>
       <span style={{ width: 22, textAlign: "right", fontSize: 8, fontFamily: "var(--font-mono)", color: isCrit ? "#ef4444" : "var(--ft-muted)" }}>{Math.round(value)}</span>
     </div>
@@ -907,11 +907,11 @@ export function AiWanderer({ onOpen, summoned, locationKey, sidebarW, portfolioS
         // Tapped IX mid-air without dragging — resume fling from where it stopped
         startFling();
       } else {
-        // Plain click — open chat
+        // Plain click — sling chat bubble from character position
         ev.preventDefault();
         if (!navPhaseRef.current) {
           setSpeech(null);
-          onOpen();
+          onOpen(xRef.current, y);
           ixRef.current = { ...ixRef.current, chatCount: ixRef.current.chatCount + 1 };
           updateVitals(chatBoost(vitals));
           gainXP(XP.chat);
@@ -1172,7 +1172,7 @@ export function AiWanderer({ onOpen, summoned, locationKey, sidebarW, portfolioS
                   style={{ fontSize: 9, color: "var(--ft-muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", padding: "1px 4px" }}>
                   dismiss
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); setSpeech(null); onOpen(); }}
+                <button onClick={(e) => { e.stopPropagation(); setSpeech(null); onOpen(xRef.current, y); }}
                   style={{ fontSize: 9, color: "var(--ft-accent)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", padding: "1px 4px", letterSpacing: "0.04em" }}>
                   chat →
                 </button>

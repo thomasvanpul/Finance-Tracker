@@ -594,8 +594,8 @@ export function StatDrillModal({ label, value, info, earningsHistory = [], recTr
               <div style={{ display: "flex", gap: 6 }}>
                 {(["poor", "weak", "fair", "good", "excellent"] as Quality[]).map((q) => (
                   <div key={q} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <div style={{ height: 4, background: assessment?.quality === q ? QC[q] : QC[q] + "40", width: "100%", borderRadius: 2, transition: "background 0.2s" }} />
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: assessment?.quality === q ? QC[q] : "var(--ft-dim)", letterSpacing: "0.04em", textTransform: "capitalize" }}>{q}</div>
+                    <div style={{ height: 4, background: assessment?.quality === q ? QC[q] : QC[q] + "40", width: "100%", borderRadius: 2, transition: "background 0.12s" }} />
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: assessment?.quality === q ? QC[q] : "var(--ft-dim)", letterSpacing: "0.04em", textTransform: "capitalize" }}>{q}</div>
                   </div>
                 ))}
               </div>

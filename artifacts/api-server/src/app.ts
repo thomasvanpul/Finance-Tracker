@@ -12,6 +12,9 @@ import healthRouter from "./routes/health";
 import { logger } from "./lib/logger";
 import { auth } from "./lib/better-auth";
 
+// True only when NODE_ENV is explicitly "development". Unset NODE_ENV → false → full production enforcement.
+const IS_DEV = process.env.NODE_ENV === "development";
+
 const app: Express = express();
 
 app.set("trust proxy", 1);
@@ -49,8 +52,8 @@ app.use(
     origin: (origin, callback) => {
       // Server-to-server or same-origin requests have no Origin header
       if (!origin) return callback(null, true);
-      // Always allow localhost in dev
-      if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+      // Allow localhost only when explicitly in development
+      if (IS_DEV && /^https?:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
       // Fail-secure: deny all cross-origin requests when ALLOWED_ORIGINS is not configured
       if (configuredOrigins.length === 0) {
         callback(new Error("ALLOWED_ORIGINS not configured — cross-origin request denied"));
@@ -75,7 +78,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later." },
-  skip: (req) => /^https?:\/\/localhost/.test(req.headers.origin ?? ""),
+  skip: () => IS_DEV,
 });
 
 // Strict per-user limiter for the AI endpoint — prevent Gemini cost exhaustion
@@ -85,7 +88,7 @@ const aiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "AI rate limit exceeded. Please wait before sending more messages." },
-  skip: (req) => /^https?:\/\/localhost/.test(req.headers.origin ?? ""),
+  skip: () => IS_DEV,
 });
 
 // General API limiter — guard all other financial endpoints
@@ -95,7 +98,7 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please slow down." },
-  skip: (req) => /^https?:\/\/localhost/.test(req.headers.origin ?? ""),
+  skip: () => IS_DEV,
 });
 
 // Better Auth handles its own body parsing for /api/auth/* routes,
@@ -127,7 +130,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 app.use("/api/ai", aiLimiter);
 app.use("/api", apiLimiter, requireAuth, router);
 
-if (process.env.NODE_ENV === "production") {
+if (!IS_DEV) {
   const staticDir = path.resolve(__dirname, "../../finance-tracker/dist/public");
   if (existsSync(staticDir)) {
     app.use(express.static(staticDir));

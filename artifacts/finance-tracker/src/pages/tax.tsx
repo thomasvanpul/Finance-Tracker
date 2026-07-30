@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { loadPersonaIds } from "@/lib/persona";
 import {
   useListInvestments,
   useGetMarketQuotes,
@@ -14,7 +16,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
-import { FileText, Plus, Trash2, Download, Info } from "lucide-react";
+import { FileText, Plus, Trash2, Download, Info, Clock, CalendarDays, ShieldCheck } from "lucide-react";
 import { FtDropdown } from "@/components/ft-dropdown";
 import type { FtDropdownOption } from "@/components/ft-dropdown";
 
@@ -321,27 +323,489 @@ function nanoid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+// ── Module-level style constants ───────────────────────────────────────────────
+
+const TH: React.CSSProperties = {
+  padding: "6px 12px",
+  fontSize: 10,
+  fontWeight: 600,
+  color: "var(--ft-dim)",
+  background: "var(--ft-surface)",
+  borderBottom: "2px solid var(--ft-border2)",
+  borderRight: "1px solid var(--ft-border)",
+  textTransform: "uppercase",
+  letterSpacing: "0.4px",
+  whiteSpace: "nowrap",
+};
+
 // ── Shared UI primitives ───────────────────────────────────────────────────────
 
 function SectionHeader({ label, color = "var(--ft-blue)" }: { label: string; color?: string }) {
   return (
-    <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: `${color}12`, borderColor: `${color}25`, color }}>
-      ▼ {label}
+    <div style={{ display: "flex", alignItems: "center", padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)", borderLeft: `3px solid ${color}` }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+        {label}
+      </span>
     </div>
   );
 }
 
 function MetricTile({ label, value, color, sub }: { label: string; value: string; color: string; sub?: string }) {
   return (
-    <div className="px-4 py-3 border-r" style={{ borderColor: "var(--ft-border)" }}>
-      <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>{label}</div>
-      <div className="text-base font-bold font-mono" style={{ color }}>{value}</div>
-      {sub && <div className="text-xs mt-0.5" style={{ color: "var(--ft-dim)" }}>{sub}</div>}
+    <div style={{ padding: "10px 14px", background: "var(--ft-surface)", minWidth: 0 }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 5 }}>{label}</div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{value}</div>
+      {sub && <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
 
+// ── MetricTileGroup wraps tiles with border-as-gap layout ─────────────────────
+
+function MetricTileGroup({ cols, children }: { cols: number; children: React.ReactNode }) {
+  const colClass = cols === 4 ? "ft-four-col" : cols === 3 ? "ft-three-col" : "ft-two-col";
+  return (
+    <div className={colClass} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+      {children}
+    </div>
+  );
+}
+
+// ── HoverRow for interactive list rows ────────────────────────────────────────
+
+function TaxHoverRow({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onTouchStart={() => setHovered(true)}
+      onTouchEnd={() => setHovered(false)}
+      onTouchCancel={() => setHovered(false)}
+      style={{
+        background: hovered ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))" : "var(--ft-base)",
+        transition: "background 0.1s ease",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ── UK Income Tax computation (shared) ────────────────────────────────────────
+
+function computeUkIncomeTax(grossSalary: number) {
+  const PA = 12_570;
+  const BRU = 50_270;
+  const HRU = 125_140;
+  const NI_LPT = 12_570;
+  const NI_UEL = 50_270;
+
+  const effPA = grossSalary > 100_000 ? Math.max(0, PA - Math.floor((grossSalary - 100_000) / 2)) : PA;
+  const adjBRU = BRU - (PA - effPA);
+
+  const basicTax = Math.max(0, Math.min(grossSalary, adjBRU) - effPA) * 0.20;
+  const higherTax = Math.max(0, Math.min(grossSalary, HRU) - adjBRU) * 0.40;
+  const additionalTax = Math.max(0, grossSalary - HRU) * 0.45;
+  const totalIncomeTax = basicTax + higherTax + additionalTax;
+
+  const niMain = Math.max(0, Math.min(grossSalary, NI_UEL) - NI_LPT) * 0.08;
+  const niUpper = Math.max(0, grossSalary - NI_UEL) * 0.02;
+  const totalNI = niMain + niUpper;
+
+  const totalDeductions = totalIncomeTax + totalNI;
+  const netPay = grossSalary - totalDeductions;
+  const effectiveRate = grossSalary > 0 ? (totalDeductions / grossSalary) * 100 : 0;
+
+  const bands = [
+    { label: "Personal Allowance", amount: Math.min(grossSalary, effPA), rate: "0%", color: "var(--ft-green)" },
+    { label: "Basic Rate (20%)", amount: Math.max(0, Math.min(grossSalary, adjBRU) - effPA), rate: "20%", color: "var(--ft-blue)" },
+    { label: "Higher Rate (40%)", amount: Math.max(0, Math.min(grossSalary, HRU) - adjBRU), rate: "40%", color: "var(--ft-amber)" },
+    { label: "Additional Rate (45%)", amount: Math.max(0, grossSalary - HRU), rate: "45%", color: "var(--ft-red)" },
+  ].filter(b => b.amount > 0);
+
+  return { totalIncomeTax, totalNI, totalDeductions, netPay, effectiveRate, effPA, adjBRU, bands };
+}
+
 interface QuoteLike { ticker: string; price: number; currency: string; dividendYield?: number | null; }
+
+// ── Band bar segment (module-level sub-component) ─────────────────────────────
+
+interface BandSegment {
+  label: string;
+  amount: number;
+  rate: string;
+  color: string;
+}
+
+function IncomeBandBar({ b, grossSalary, sym: bandSym }: { b: BandSegment; grossSalary: number; sym: string }) {
+  const pct = (b.amount / grossSalary) * 100;
+  const opacity = b.rate === "0%" ? 0.35 : b.rate === "20%" ? 0.7 : b.rate === "40%" ? 0.85 : 1;
+  return (
+    <div
+      title={`${b.label}: ${fmt(b.amount, bandSym)} (${pct.toFixed(0)}%)`}
+      style={{
+        width: `${pct}%`,
+        background: b.color,
+        opacity,
+        transition: "none",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+function IncomeBandLegendItem({ b, grossSalary, sym: legendSym }: { b: BandSegment; grossSalary: number; sym: string }) {
+  const pct = (b.amount / grossSalary) * 100;
+  const opacity = b.rate === "0%" ? 0.35 : b.rate === "20%" ? 0.7 : b.rate === "40%" ? 0.85 : 1;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+      <div style={{ width: 10, height: 10, background: b.color, opacity, flexShrink: 0 }} />
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+        {b.rate} · {fmt(b.amount, legendSym)} · {pct.toFixed(0)}%
+      </span>
+    </div>
+  );
+}
+
+// ── Disposal table row ────────────────────────────────────────────────────────
+
+interface DisposalRowProps {
+  d: Disposal;
+  sym: string;
+  deleteConfirmId: string | null;
+  onDelete: (id: string) => void;
+  holdingLabel: (d: Disposal) => { text: string; color: string };
+}
+
+function DisposalRow({ d, sym: disposalSym, deleteConfirmId, onDelete, holdingLabel }: DisposalRowProps) {
+  const hl = holdingLabel(d);
+  return (
+    <TaxHoverRow style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--ft-border)", height: 36 }}>
+      <div style={{ flex: 1, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, fontFamily: "var(--font-mono)" }}>{d.assetName}</div>
+      <div style={{ width: 80, minWidth: 80, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-cyan)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.ticker ?? "—"}</div>
+      <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{d.acquiredDate}</div>
+      <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{d.disposedDate}</div>
+      <div style={{ width: 70, minWidth: 70, padding: "6px 8px", borderRight: "1px solid var(--ft-border)", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, color: hl.color, textAlign: "center" }}>{hl.text}</div>
+      <div className="pnum" style={{ width: 120, minWidth: 120, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.proceeds, disposalSym)}</div>
+      <div className="pnum" style={{ width: 110, minWidth: 110, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-muted)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.costBasis, disposalSym)}</div>
+      <div className="pnum" style={{ width: 120, minWidth: 120, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 13, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, color: d.gainLoss > 0 ? "var(--ft-green)" : d.gainLoss < 0 ? "var(--ft-red)" : "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}>{d.gainLoss > 0 ? "+" : ""}{d.gainLoss !== 0 ? fmt(d.gainLoss, disposalSym) : fmt(0, disposalSym)}</div>
+      <div style={{ width: 56, minWidth: 56, padding: "4px 6px", display: "flex", justifyContent: "center" }}>
+        <Button
+          variant="ghost" size="icon" className="h-7 w-7"
+          onClick={() => onDelete(d.id)}
+          title={deleteConfirmId === d.id ? "Click again to confirm delete" : "Delete disposal"}
+          style={deleteConfirmId === d.id ? { background: "var(--ft-red)", color: "#fff" } : undefined}
+        >
+          {deleteConfirmId === d.id
+            ? <span style={{ fontSize: 8, fontWeight: 700, fontFamily: "var(--font-mono)" }}>DEL?</span>
+            : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />}
+        </Button>
+      </div>
+    </TaxHoverRow>
+  );
+}
+
+// ── Shelter contribution row ──────────────────────────────────────────────────
+
+interface ShelterContribRowProps {
+  c: ShelterContrib;
+  i: number;
+  isLast: boolean;
+  sym: string;
+  shelterName: string;
+}
+
+function ShelterContribRow({ c, i, isLast, sym: shelterSym, shelterName }: ShelterContribRowProps) {
+  return (
+    <TaxHoverRow style={{ display: "flex", alignItems: "center", padding: "8px 16px", gap: 16, borderBottom: isLast ? "none" : "1px solid var(--ft-border)" }}>
+      <div style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{c.provider ?? `${shelterName} Provider`}</div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-blue)", fontVariantNumeric: "tabular-nums" }}>{fmt(c.amount, shelterSym)}</div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 60, textAlign: "right" }}>{c.taxYear}</div>
+    </TaxHoverRow>
+  );
+}
+
+// ── Income band reference row ─────────────────────────────────────────────────
+
+interface IncomeBandRowProps {
+  b: { label: string; range: string; rate: string; color: string };
+  isLast: boolean;
+}
+
+function IncomeBandRow({ b, isLast }: IncomeBandRowProps) {
+  return (
+    <TaxHoverRow style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: isLast ? "none" : "1px solid var(--ft-border)", borderLeft: `3px solid ${b.color}` }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: b.color, width: 52, flexShrink: 0 }}>{b.rate}</span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{b.label}</span>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "right" }}>{b.range}</span>
+    </TaxHoverRow>
+  );
+}
+
+// ── Quick-add investment button ───────────────────────────────────────────────
+
+interface QuickAddButtonProps {
+  inv: { id: number; name: string; ticker: string };
+  onClick: () => void;
+}
+
+function QuickAddButton({ inv, onClick }: QuickAddButtonProps) {
+  return (
+    <button
+      key={inv.id}
+      onClick={onClick}
+      style={{
+        padding: "2px 8px",
+        borderRadius: 2,
+        fontSize: 10,
+        fontWeight: 700,
+        background: "rgba(88,166,255,0.12)",
+        color: "var(--ft-blue)",
+        border: "1px solid rgba(88,166,255,0.25)",
+        cursor: "pointer",
+        fontFamily: "var(--font-mono)",
+      }}
+    >
+      {inv.ticker}
+    </button>
+  );
+}
+
+// ── UK Tax Year Progress ───────────────────────────────────────────────────────
+
+function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: {
+  sym: string;
+  grossSalary: number;
+  shelterContribs: ShelterContrib[];
+  selectedYear: string;
+}) {
+  const isMobile = useIsMobile();
+  const now = new Date();
+  const currentYear = getTaxYearLabel(now, "uk");
+  const isCurrentYear = selectedYear === currentYear;
+
+  const startYear = parseInt(selectedYear.slice(0, 4), 10);
+  const taxStart = new Date(startYear, 3, 6);
+  const taxEnd = new Date(startYear + 1, 3, 5, 23, 59, 59);
+
+  const totalDays = Math.round((taxEnd.getTime() - taxStart.getTime()) / 86400000);
+  const elapsed = isCurrentYear ? Math.min(totalDays, Math.round((now.getTime() - taxStart.getTime()) / 86400000)) : totalDays;
+  const progressPct = (elapsed / totalDays) * 100;
+  const remaining = Math.max(0, totalDays - elapsed);
+
+  const saDeadline = new Date(startYear + 2, 0, 31);
+  const daysToSA = Math.max(0, Math.round((saDeadline.getTime() - now.getTime()) / 86400000));
+  const onlineSADeadline = new Date(startYear + 2, 0, 31);
+  const paperSADeadline = new Date(startYear + 1, 9, 31);
+
+  const yearISA = shelterContribs.filter(c => c.taxYear === selectedYear).reduce((s, c) => s + c.amount, 0);
+  const estimatedIsaTaxSaved = yearISA * 0.18 * 0.10;
+
+  const { totalIncomeTax, totalNI, netPay, effectiveRate, totalDeductions } = computeUkIncomeTax(grossSalary);
+  const marginRate = grossSalary > 125_140 ? 45 : grossSalary > 50_270 ? 40 : 20;
+
+  return (
+    <div style={{ border: "1px solid var(--ft-border)" }}>
+      <SectionHeader label={`UK TAX YEAR ${selectedYear} — OVERVIEW`} color="var(--ft-cyan)" />
+
+      {/* Top KPI bar — border-as-gap grid */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
+        gap: 1,
+        background: "var(--ft-border)",
+        borderBottom: "1px solid var(--ft-border)",
+      }}>
+        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-amber)" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
+            Est. Income Tax
+          </div>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+            {fmt(totalIncomeTax, sym)}
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+            on <span className="pnum">{fmt(grossSalary, sym)}</span> gross
+          </div>
+        </div>
+        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderTop: `2px solid ${effectiveRate > 40 ? "var(--ft-red)" : effectiveRate > 25 ? "var(--ft-amber)" : "var(--ft-green)"}` }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
+            Effective Rate
+          </div>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: effectiveRate > 40 ? "var(--ft-red)" : effectiveRate > 25 ? "var(--ft-amber)" : "var(--ft-green)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+            {effectiveRate.toFixed(1)}%
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+            marginal: {marginRate}%
+          </div>
+        </div>
+        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-green)" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
+            Take-Home Pay
+          </div>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-green)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+            {fmt(netPay, sym)}
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+            <span className="pnum">{fmt(netPay / 12, sym)}</span>/mo
+          </div>
+        </div>
+        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-blue)" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
+            NI Contributions
+          </div>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-blue)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+            {fmt(totalNI, sym)}
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+            total deductions: <span className="pnum">{fmt(totalDeductions, sym)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* UK Income Brackets Stacked Bar */}
+      {grossSalary > 0 && (() => {
+        const { bands } = computeUkIncomeTax(grossSalary);
+        return (
+          <div style={{ padding: "16px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10 }}>
+              Income Band Split — <span className="pnum">{fmt(grossSalary, sym)}</span> gross
+            </div>
+            <div style={{ height: 28, display: "flex", overflow: "hidden", border: "1px solid var(--ft-border2)", marginBottom: 8 }}>
+              {bands.map(b => (
+                <IncomeBandBar key={b.label} b={b} grossSalary={grossSalary} sym={sym} />
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" as const }}>
+              {bands.map(b => (
+                <IncomeBandLegendItem key={b.label} b={b} grossSalary={grossSalary} sym={sym} />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Tax year progress + deadlines */}
+      <div style={{ display: "grid", gridTemplateColumns: (isMobile || !isCurrentYear) ? "1fr" : "1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
+        <div style={{ padding: "14px 16px", borderRight: (!isMobile && isCurrentYear) ? "1px solid var(--ft-border)" : "none", borderBottom: (isMobile && isCurrentYear) ? "1px solid var(--ft-border)" : "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <CalendarDays style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
+              Tax Year Progress — 6 Apr {startYear} to 5 Apr {startYear + 1}
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+              Day {elapsed} of {totalDays}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: progressPct > 80 ? "var(--ft-amber)" : "var(--ft-text)" }}>
+              {progressPct.toFixed(0)}%
+            </span>
+          </div>
+          <div style={{ height: 8, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden", marginBottom: 6 }}>
+            <div style={{
+              height: "100%",
+              width: `${progressPct}%`,
+              background: progressPct > 90 ? "var(--ft-amber)" : "var(--ft-blue)",
+              transition: "none",
+            }} />
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+            {isCurrentYear
+              ? remaining === 0 ? "Tax year ended — submit returns now" : `${remaining} days remaining in tax year`
+              : "Historical tax year — ended 5 Apr " + (startYear + 1)
+            }
+          </div>
+        </div>
+
+        {isCurrentYear && (
+          <div style={{ padding: "14px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <Clock style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
+                Self-Assessment Deadlines
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+                  Paper return
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                    31 Oct {paperSADeadline.getFullYear()}
+                  </span>
+                  <span style={{
+                    fontFamily: "var(--font-mono)", fontSize: 8, padding: "2px 6px",
+                    background: now > paperSADeadline ? "rgba(248,81,73,0.12)" : "rgba(139,148,158,0.1)",
+                    color: now > paperSADeadline ? "var(--ft-red)" : "var(--ft-dim)",
+                    letterSpacing: "0.05em",
+                  }}>
+                    {now > paperSADeadline ? "PASSED" : `${Math.round((paperSADeadline.getTime() - now.getTime()) / 86400000)}d`}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+                  Online + tax payment
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                    31 Jan {onlineSADeadline.getFullYear()}
+                  </span>
+                  <span style={{
+                    fontFamily: "var(--font-mono)", fontSize: 8, padding: "2px 6px",
+                    background: daysToSA <= 30 ? "rgba(248,81,73,0.15)" : daysToSA <= 90 ? "rgba(245,158,11,0.12)" : "rgba(139,148,158,0.1)",
+                    color: daysToSA <= 30 ? "var(--ft-red)" : daysToSA <= 90 ? "var(--ft-amber)" : "var(--ft-dim)",
+                    letterSpacing: "0.05em",
+                    fontWeight: daysToSA <= 30 ? 700 : 400,
+                  }}>
+                    {now > onlineSADeadline ? "PASSED" : `${daysToSA}d`}
+                  </span>
+                </div>
+              </div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2, lineHeight: 1.5 }}>
+                Self-assessment required if: self-employed · income &gt;£100k · untaxed income &gt;£1k
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Tax savings row */}
+      <div style={{ padding: "12px 16px", background: "var(--ft-surface)", display: "flex", gap: 24, flexWrap: "wrap" as const }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <ShieldCheck style={{ width: 12, height: 12, color: "var(--ft-green)", flexShrink: 0 }} />
+          <div>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+              ISA Contributions ({selectedYear})
+            </span>
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: yearISA > 0 ? "var(--ft-green)" : "var(--ft-dim)", marginLeft: 8 }}>
+              {fmt(yearISA, sym)}
+            </span>
+            {yearISA > 0 && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6 }}>
+                est. <span className="pnum">{fmt(estimatedIsaTaxSaved, sym)}</span> tax sheltered/yr
+              </span>
+            )}
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <ShieldCheck style={{ width: 12, height: 12, color: "var(--ft-blue)", flexShrink: 0 }} />
+          <div>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+              Pension Relief (basic)
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-blue)", marginLeft: 8 }}>
+              25% HMRC top-up
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
@@ -358,8 +822,10 @@ export default function Tax() {
   const [selectedYear, setSelectedYear] = useState<string>(() => getTaxYearLabel(new Date(), rules.yearFmt));
   const [addDisposalOpen, setAddDisposalOpen] = useState(false);
   const [addShelterOpen, setAddShelterOpen] = useState(false);
+  const [grossSalary, setGrossSalary] = useState(35000);
   const [disposalForm, setDisposalForm] = useState<DisposalForm>({ assetName: "", ticker: "", acquiredDate: "", disposedDate: "", proceeds: "", costBasis: "" });
   const [shelterForm, setShelterForm] = useState<ShelterForm>({ taxYear: selectedYear, amount: "", provider: "" });
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const allYears = useMemo(() => getAvailableYears(rules.yearFmt), [rules.yearFmt]);
 
@@ -437,6 +903,7 @@ export default function Tax() {
   };
 
   const handleExportCsv = () => {
+    const sym = rules.sym;
     const rows = [
       ["Asset", "Ticker", "Acquired", "Disposed", `Proceeds (${sym})`, `Cost Basis (${sym})`, `Gain/Loss (${sym})`, "Holding Days", "Term"].join(","),
       ...yearDisposals.map(d => {
@@ -452,7 +919,15 @@ export default function Tax() {
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `disposals-${country}-${selectedYear.replace("/", "-")}.csv`; a.click();
   };
 
-  const TH: React.CSSProperties = { padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)", background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)", borderRight: "1px solid var(--ft-border)", textTransform: "uppercase" as const, letterSpacing: "0.4px", whiteSpace: "nowrap" as const };
+  const handleDeleteDisposal = (id: string) => {
+    if (deleteConfirmId === id) {
+      persistDisposals(disposals.filter(x => x.id !== id));
+      setDeleteConfirmId(null);
+    } else {
+      setDeleteConfirmId(id);
+      setTimeout(() => setDeleteConfirmId(null), 3000);
+    }
+  };
 
   const sym = rules.sym;
   const allowancePct = rules.cgtAllowance > 0 ? Math.min(100, (netGains / rules.cgtAllowance) * 100) : 0;
@@ -467,7 +942,6 @@ export default function Tax() {
         subtitle="Capital Gains · Tax Shelter Tracker · Dividend Estimate"
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Country selector */}
             <FtDropdown
               label="Country"
               value={country}
@@ -479,7 +953,6 @@ export default function Tax() {
               } satisfies FtDropdownOption))}
               minWidth={160}
             />
-            {/* Year selector */}
             <FtDropdown
               label="Tax Year"
               value={selectedYear}
@@ -497,6 +970,71 @@ export default function Tax() {
         }
       />
 
+      {/* Persona context strip */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid) return null;
+        const allowanceLeft = Math.max(0, rules.cgtAllowance - netGains);
+        const msgs: Record<string, string | null> = {
+          wealth:  shelterRemaining > 0
+            ? `${sym}${shelterRemaining.toLocaleString()} of ${rules.shelterName || "tax shelter"} allowance remaining this year — maximise before year-end.`
+            : taxableGains > 0
+            ? `${sym}${taxableGains.toFixed(0)} taxable gains this year. Consider tax-loss harvesting to reduce liability.`
+            : `CGT allowance fully utilised or no taxable gains. Review shelter contributions via the section below.`,
+          market:  allowanceLeft > 0
+            ? `${sym}${allowanceLeft.toLocaleString()} of CGT allowance still available — rebalancing within this limit is tax-free.`
+            : taxableGains > 0
+            ? `You have exceeded your CGT allowance by ${sym}${Math.abs(rules.cgtAllowance - netGains).toLocaleString()}.`
+            : null,
+          budget:  null,
+          social:  null,
+          full:    null,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        return (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color: "var(--ft-amber)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>TAX TIP</span>
+            <span>{msg}</span>
+          </div>
+        );
+      })()}
+
+      {/* ── UK Income Tax + Year Overview ─────────────────────────────────────── */}
+      {country === "uk" && (
+        <div style={{ border: "1px solid var(--ft-border)" }}>
+          <SectionHeader label="UK INCOME TAX ESTIMATOR (2024/25)" color="var(--ft-green)" />
+          <div style={{ padding: "12px 16px 4px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" as const }}>
+            <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", whiteSpace: "nowrap" as const }}>
+              Gross Annual Salary
+            </label>
+            <input
+              type="number"
+              min={0}
+              step={1000}
+              value={grossSalary}
+              onChange={e => setGrossSalary(Math.max(0, parseInt(e.target.value) || 0))}
+              style={{ fontFamily: "var(--font-mono)", fontSize: 13, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 10px", width: 140, textAlign: "right" as const, outline: "none", marginBottom: 8 }}
+            />
+            {grossSalary > 100_000 && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-amber)", marginBottom: 8 }}>
+                PA tapering applies above £100k
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── UK Tax Year Calendar + KPI block ─────────────────────────────────── */}
+      {country === "uk" && (
+        <UkTaxYearProgress
+          sym={sym}
+          grossSalary={grossSalary}
+          shelterContribs={shelterContribs}
+          selectedYear={selectedYear}
+        />
+      )}
+
       {/* ── Capital Gains ─────────────────────────────────────────────────────── */}
       <div className="border" style={{ borderColor: "var(--ft-border)" }}>
         <SectionHeader label={`CAPITAL GAINS — ${selectedYear} · ${rules.name}`} color="var(--ft-green)" />
@@ -510,7 +1048,34 @@ export default function Tax() {
 
         {!rules.noCgt && (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-4 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
+            {taxableGains > 0 && (rules.cgtRateLow > 0 || rules.cgtRateHigh > 0) && (
+              <div className="px-4 py-4 border-b" style={{ borderColor: "var(--ft-border)", background: "rgba(248,81,73,0.04)" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
+                  ESTIMATED CGT LIABILITY — {selectedYear}
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
+                  <div>
+                    <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
+                      {fmt(cgtLowEst, sym)}
+                    </div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>{rules.cgtRateLowLabel}</div>
+                  </div>
+                  {rules.cgtRateHigh !== rules.cgtRateLow && (
+                    <div>
+                      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1, opacity: 0.75, fontVariantNumeric: "tabular-nums" }}>
+                        {fmt(cgtHighEst, sym)}
+                      </div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>{rules.cgtRateHighLabel}</div>
+                    </div>
+                  )}
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", paddingBottom: 2 }}>
+                    on <span className="pnum">{fmt(taxableGains, sym)}</span> taxable gains
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <MetricTileGroup cols={4}>
               <MetricTile label="Total Gains" value={fmt(totalGains, sym)} color="var(--ft-green)" />
               <MetricTile label="Losses to Offset" value={fmt(totalLosses, sym)} color="var(--ft-red)" />
               <MetricTile label="Net Gains" value={fmt(netGains, sym)} color={rules.cgtAllowance > 0 && netGains > rules.cgtAllowance ? "var(--ft-amber)" : "var(--ft-text)"} />
@@ -519,38 +1084,24 @@ export default function Tax() {
               ) : (
                 <MetricTile label="Taxable Gains" value={fmt(taxableGains, sym)} color={taxableGains > 0 ? "var(--ft-amber)" : "var(--ft-dim)"} />
               )}
-            </div>
+            </MetricTileGroup>
 
             {rules.cgtAllowance > 0 && (
               <div className="px-4 py-3 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-base)" }}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs" style={{ color: "var(--ft-dim)" }}>Annual CGT allowance used ({selectedYear})</span>
-                  <span className="text-xs font-mono" style={{ color: netGains > rules.cgtAllowance ? "var(--ft-red)" : "var(--ft-green)" }}>
-                    {fmt(netGains, sym)} / {fmt(rules.cgtAllowance, sym)}
+                <div className="flex items-center justify-between mb-2">
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>
+                    CGT Allowance — {selectedYear}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: netGains > rules.cgtAllowance ? "var(--ft-red)" : "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>
+                    <span className="pnum">{fmt(netGains, sym)}</span>{" "}
+                    <span style={{ fontWeight: 400, color: "var(--ft-dim)" }}>/ <span className="pnum">{fmt(rules.cgtAllowance, sym)}</span></span>
                   </span>
                 </div>
-                <div style={{ height: 6, background: "var(--ft-raised)", borderRadius: 3 }}>
-                  <div style={{ height: "100%", width: `${allowancePct}%`, background: allowancePct >= 100 ? "var(--ft-red)" : allowancePct > 75 ? "var(--ft-amber)" : "var(--ft-green)", borderRadius: 3, transition: "width 0.3s ease" }} />
+                <div style={{ height: 5, background: "var(--ft-raised)" }}>
+                  <div style={{ height: "100%", width: `${allowancePct}%`, background: allowancePct >= 100 ? "var(--ft-red)" : allowancePct > 80 ? "var(--ft-amber)" : "var(--ft-green)", transition: "none" }} />
                 </div>
-              </div>
-            )}
-
-            {taxableGains > 0 && (rules.cgtRateLow > 0 || rules.cgtRateHigh > 0) && (
-              <div className="px-4 py-3 border-b" style={{ borderColor: "var(--ft-border)", background: "rgba(248,81,73,0.04)" }}>
-                <div className="text-xs font-bold mb-2 uppercase tracking-wide font-mono" style={{ color: "var(--ft-red)" }}>
-                  Estimated tax on {fmt(taxableGains, sym)} above allowance
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 14px" }}>
-                    <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>{rules.cgtRateLowLabel}</div>
-                    <div className="text-xl font-bold font-mono" style={{ color: "var(--ft-amber)" }}>{fmt(cgtLowEst, sym)}</div>
-                  </div>
-                  {rules.cgtRateHigh !== rules.cgtRateLow && (
-                    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 14px" }}>
-                      <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>{rules.cgtRateHighLabel}</div>
-                      <div className="text-xl font-bold font-mono" style={{ color: "var(--ft-red)" }}>{fmt(cgtHighEst, sym)}</div>
-                    </div>
-                  )}
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
+                  <span className="pnum">{fmt(Math.max(0, rules.cgtAllowance - netGains), sym)}</span> remaining · {allowancePct.toFixed(0)}% used
                 </div>
               </div>
             )}
@@ -558,44 +1109,43 @@ export default function Tax() {
         )}
 
         {/* Disposals table */}
-        <div className="overflow-x-auto">
+        <div className="ft-scroll-x overflow-x-auto">
           <div className="flex">
             {[["ASSET", "1"], ["TICKER", "80px"], ["ACQUIRED", "100px"], ["DISPOSED", "100px"], ["HELD", "70px"], [`PROCEEDS (${sym})`, "120px"], [`COST (${sym})`, "110px"], [`GAIN/LOSS`, "120px"], ["", "56px"]].map(([h, w]) => (
               <div key={h} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, textAlign: ["PROCEEDS", "COST", "GAIN/LOSS"].some(x => (h as string).startsWith(x)) ? "right" : "left" }}>{h}</div>
             ))}
           </div>
           {yearDisposals.length === 0 && (
-            <div className="text-center py-8 text-xs" style={{ color: "var(--ft-dim)" }}>No disposals for {selectedYear} — record one below.</div>
+            <div style={{ padding: "40px 24px", textAlign: "center", background: "var(--ft-base)", borderBottom: "1px solid var(--ft-border)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, color: "var(--ft-border2)", marginBottom: 8, lineHeight: 1 }}>—</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 4 }}>No disposals for {selectedYear}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Record a disposal to calculate your CGT liability</div>
+            </div>
           )}
           {yearDisposals.map(d => (
-            <div key={d.id} className="flex items-center border-b" style={{ borderColor: "rgba(33,38,45,0.5)", background: "var(--ft-base)" }}>
-              <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 12, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.assetName}</div>
-              <div style={{ width: 80, minWidth: 80, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-cyan)", fontFamily: "var(--font-mono)" }}>{d.ticker ?? "—"}</div>
-              <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)" }}>{d.acquiredDate}</div>
-              <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)" }}>{d.disposedDate}</div>
-              <div style={{ width: 70, minWidth: 70, padding: "7px 8px", borderRight: "1px solid var(--ft-border)", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, color: holdingLabel(d).color, textAlign: "center" }}>{holdingLabel(d).text}</div>
-              <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-text)" }}>{fmt(d.proceeds, sym)}</div>
-              <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>{fmt(d.costBasis, sym)}</div>
-              <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 600, color: d.gainLoss >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>{d.gainLoss >= 0 ? "+" : ""}{fmt(d.gainLoss, sym)}</div>
-              <div style={{ width: 56, minWidth: 56, padding: "4px 6px", display: "flex", justifyContent: "center" }}>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { if (confirm("Delete this disposal?")) persistDisposals(disposals.filter(x => x.id !== d.id)); }}>
-                  <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
-                </Button>
-              </div>
-            </div>
+            <DisposalRow
+              key={d.id}
+              d={d}
+              sym={sym}
+              deleteConfirmId={deleteConfirmId}
+              onDelete={handleDeleteDisposal}
+              holdingLabel={holdingLabel}
+            />
           ))}
         </div>
         <div className="px-3 py-3 border-t flex items-center gap-3 flex-wrap" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
-          <Button size="sm" onClick={() => setAddDisposalOpen(true)} style={{ background: "var(--ft-green)", color: "white", border: "none", borderRadius: 2, fontSize: 11 }}>
+          <Button size="sm" onClick={() => setAddDisposalOpen(true)} style={{ background: "var(--ft-green)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 11 }}>
             <Plus className="w-3 h-3 mr-1.5" />Record Disposal
           </Button>
           {investments && investments.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs" style={{ color: "var(--ft-dim)" }}>Quick add:</span>
               {investments.slice(0, 8).map(inv => (
-                <button key={inv.id} onClick={() => { setDisposalForm(f => ({ ...f, assetName: inv.name, ticker: inv.ticker })); setAddDisposalOpen(true); }} style={{ padding: "2px 8px", borderRadius: 2, fontSize: 10, fontWeight: 700, background: "rgba(88,166,255,0.12)", color: "var(--ft-blue)", border: "1px solid rgba(88,166,255,0.25)", cursor: "pointer", fontFamily: "var(--font-mono)" }}>
-                  {inv.ticker}
-                </button>
+                <QuickAddButton
+                  key={inv.id}
+                  inv={inv}
+                  onClick={() => { setDisposalForm(f => ({ ...f, assetName: inv.name, ticker: inv.ticker })); setAddDisposalOpen(true); }}
+                />
               ))}
             </div>
           )}
@@ -605,26 +1155,37 @@ export default function Tax() {
       {/* ── Shelter tracker ────────────────────────────────────────────────────── */}
       <div className="border" style={{ borderColor: "var(--ft-border)" }}>
         <SectionHeader label={`${rules.shelterName.toUpperCase()} TRACKER — ${selectedYear}`} color="var(--ft-blue)" />
-        <div className="grid grid-cols-3 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
+        <MetricTileGroup cols={3}>
           <MetricTile label={`Annual ${rules.shelterName} Limit`} value={rules.shelterLimit > 0 ? fmt(rules.shelterLimit, sym) : "—"} color="var(--ft-dim)" />
           <MetricTile label="Contributed This Year" value={fmt(yearShelterTotal, sym)} color="var(--ft-blue)" sub={rules.shelterLimit > 0 ? `${shelterPct.toFixed(0)}% used` : undefined} />
           <MetricTile label="Remaining" value={rules.shelterLimit > 0 ? fmt(shelterRemaining, sym) : "—"} color={rules.shelterLimit > 0 && shelterRemaining < rules.shelterLimit * 0.25 ? "var(--ft-amber)" : "var(--ft-green)"} />
-        </div>
+        </MetricTileGroup>
         {rules.shelterLimit > 0 && (
           <div className="px-4 py-3 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-base)" }}>
-            <div style={{ height: 6, background: "var(--ft-raised)", borderRadius: 3 }}>
-              <div style={{ height: "100%", width: `${shelterPct}%`, background: shelterPct >= 100 ? "var(--ft-red)" : shelterPct > 80 ? "var(--ft-amber)" : "var(--ft-blue)", borderRadius: 3, transition: "width 0.3s ease" }} />
+            <div className="flex items-center justify-between mb-1.5">
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>
+                {rules.shelterName} Allowance Used
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: shelterPct > 80 ? "var(--ft-amber)" : "var(--ft-blue)", fontVariantNumeric: "tabular-nums" }}>
+                <span className="pnum">{fmt(yearShelterTotal, sym)}</span> / <span className="pnum">{fmt(rules.shelterLimit, sym)}</span>
+              </span>
+            </div>
+            <div style={{ height: 5, background: "var(--ft-raised)" }}>
+              <div style={{ height: "100%", width: `${shelterPct}%`, background: shelterPct >= 100 ? "var(--ft-red)" : shelterPct > 80 ? "var(--ft-amber)" : "var(--ft-blue)", transition: "none" }} />
             </div>
           </div>
         )}
         {yearShelter.length > 0 && (
-          <div className="border-b divide-y" style={{ borderColor: "var(--ft-border)" }}>
+          <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
             {yearShelter.map((c, i) => (
-              <div key={i} className="flex items-center px-4 py-2 gap-4">
-                <div className="flex-1 text-sm" style={{ color: "var(--ft-text)" }}>{c.provider ?? `${rules.shelterName} Provider`}</div>
-                <div className="text-sm font-mono font-semibold" style={{ color: "var(--ft-blue)" }}>{fmt(c.amount, sym)}</div>
-                <div className="text-xs" style={{ color: "var(--ft-dim)" }}>{c.taxYear}</div>
-              </div>
+              <ShelterContribRow
+                key={i}
+                c={c}
+                i={i}
+                isLast={i === yearShelter.length - 1}
+                sym={sym}
+                shelterName={rules.shelterName}
+              />
             ))}
           </div>
         )}
@@ -645,7 +1206,7 @@ export default function Tax() {
           </div>
         )}
         <div className="px-3 py-2.5 flex items-center gap-3 flex-wrap" style={{ background: "var(--ft-surface)" }}>
-          <Button size="sm" onClick={() => { setShelterForm({ taxYear: selectedYear, amount: "", provider: "" }); setAddShelterOpen(true); }} style={{ background: "var(--ft-blue)", color: "white", border: "none", borderRadius: 2, fontSize: 11 }}>
+          <Button size="sm" onClick={() => { setShelterForm({ taxYear: selectedYear, amount: "", provider: "" }); setAddShelterOpen(true); }} style={{ background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 11 }}>
             <Plus className="w-3 h-3 mr-1.5" />Add Contribution
           </Button>
           {rules.shelterNote && <span className="text-xs" style={{ color: "var(--ft-dim)" }}>{rules.shelterNote}</span>}
@@ -656,15 +1217,15 @@ export default function Tax() {
       {(rules.dividendAllowance !== undefined || rules.dividendNote) && (
         <div className="border" style={{ borderColor: "var(--ft-border)" }}>
           <SectionHeader label="DIVIDEND INCOME ESTIMATE" color="var(--ft-cyan)" />
-          <div className="grid grid-cols-3 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
+          <MetricTileGroup cols={3}>
             <MetricTile label="Allowance / Exemption" value={rules.dividendAllowance ? fmt(rules.dividendAllowance, sym) : "—"} color="var(--ft-dim)" />
             <MetricTile label="Est. Annual Dividends" value={fmt(estimatedDividends, sym)} color={rules.dividendAllowance && estimatedDividends > rules.dividendAllowance ? "var(--ft-amber)" : "var(--ft-cyan)"} />
             <MetricTile label="Remaining" value={rules.dividendAllowance ? fmt(Math.max(0, rules.dividendAllowance - estimatedDividends), sym) : "N/A"} color={rules.dividendAllowance && estimatedDividends > rules.dividendAllowance ? "var(--ft-red)" : "var(--ft-green)"} />
-          </div>
+          </MetricTileGroup>
           {rules.dividendAllowance && (
             <div className="px-4 py-3 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-base)" }}>
-              <div style={{ height: 6, background: "var(--ft-raised)", borderRadius: 3 }}>
-                <div style={{ height: "100%", width: `${Math.min(100, divPct)}%`, background: divPct > 100 ? "var(--ft-red)" : divPct > 80 ? "var(--ft-amber)" : "var(--ft-cyan)", borderRadius: 3, transition: "width 0.3s ease" }} />
+              <div style={{ height: 5, background: "var(--ft-raised)" }}>
+                <div style={{ height: "100%", width: `${Math.min(100, divPct)}%`, background: divPct > 100 ? "var(--ft-red)" : divPct > 80 ? "var(--ft-amber)" : "var(--ft-cyan)", transition: "none" }} />
               </div>
             </div>
           )}
@@ -678,21 +1239,18 @@ export default function Tax() {
       {rules.incomeBands.length > 0 && (
         <div className="border" style={{ borderColor: "var(--ft-border)" }}>
           <SectionHeader label={`${rules.name.toUpperCase()} — INCOME TAX REFERENCE`} color="var(--ft-accent)" />
-          <div className="p-4">
-            <div className="text-xs font-bold mb-3 uppercase tracking-wide font-mono" style={{ color: "var(--ft-accent)" }}>Income Tax Bands</div>
-            <div className="space-y-2">
-              {rules.incomeBands.map(b => (
-                <div key={b.label} className="flex items-center gap-3 text-xs">
-                  <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: b.color, width: 48, flexShrink: 0 }}>{b.rate}</span>
-                  <span style={{ color: "var(--ft-text)", flex: 1 }}>{b.label}</span>
-                  <span style={{ color: "var(--ft-dim)" }}>{b.range}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex items-start gap-1.5 p-2 border text-xs" style={{ borderColor: "var(--ft-border2)", background: "rgba(139,148,158,0.07)" }}>
-              <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "var(--ft-dim)" }} />
-              <span style={{ color: "var(--ft-dim)" }}>For information only. Rates may change year to year and vary by individual circumstances. Consult a qualified tax professional for personalised advice.</span>
-            </div>
+          <div style={{ background: "var(--ft-base)" }}>
+            {rules.incomeBands.map((b, i) => (
+              <IncomeBandRow
+                key={b.label}
+                b={b}
+                isLast={i === rules.incomeBands.length - 1}
+              />
+            ))}
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 16px", background: "var(--ft-surface)", borderTop: "1px solid var(--ft-border)" }}>
+            <Info style={{ width: 13, height: 13, flexShrink: 0, marginTop: 1, color: "var(--ft-dim)" }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.6 }}>For information only. Rates may change year to year and vary by individual circumstances. Consult a qualified tax professional for personalised advice.</span>
           </div>
         </div>
       )}
@@ -700,50 +1258,51 @@ export default function Tax() {
       {/* ── Add Disposal Dialog ─────────────────────────────────────────────────── */}
       <Dialog open={addDisposalOpen} onOpenChange={setAddDisposalOpen}>
         <DialogContent style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border)" }}>
-          <DialogHeader><DialogTitle style={{ color: "var(--ft-text)" }}>Record Capital Disposal</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em" }}>Record Capital Disposal</DialogTitle></DialogHeader>
           <form onSubmit={handleAddDisposal}>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Asset Name</Label>
-                  <Input placeholder="Apple Inc." value={disposalForm.assetName} onChange={e => setDisposalForm(f => ({ ...f, assetName: e.target.value }))} required />
+            <div className="space-y-3">
+              <div className="ft-two-col grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Asset Name</label>
+                  <Input placeholder="Apple Inc." value={disposalForm.assetName} onChange={e => setDisposalForm(f => ({ ...f, assetName: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12 }} />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Ticker (optional)</Label>
-                  <Input placeholder="AAPL" value={disposalForm.ticker} onChange={e => setDisposalForm(f => ({ ...f, ticker: e.target.value.toUpperCase() }))} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Acquired Date</Label>
-                  <Input type="date" value={disposalForm.acquiredDate} onChange={e => setDisposalForm(f => ({ ...f, acquiredDate: e.target.value }))} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Disposed Date</Label>
-                  <Input type="date" value={disposalForm.disposedDate} onChange={e => setDisposalForm(f => ({ ...f, disposedDate: e.target.value }))} required />
+                <div className="space-y-1">
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Ticker (optional)</label>
+                  <Input placeholder="AAPL" value={disposalForm.ticker} onChange={e => setDisposalForm(f => ({ ...f, ticker: e.target.value.toUpperCase() }))} style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12 }} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Proceeds ({sym})</Label>
-                  <Input type="number" step="0.01" min="0" placeholder="5000.00" value={disposalForm.proceeds} onChange={e => setDisposalForm(f => ({ ...f, proceeds: e.target.value }))} required />
+              <div className="ft-two-col grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Acquired Date</label>
+                  <Input type="date" value={disposalForm.acquiredDate} onChange={e => setDisposalForm(f => ({ ...f, acquiredDate: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12 }} />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Cost Basis ({sym})</Label>
-                  <Input type="number" step="0.01" min="0" placeholder="3000.00" value={disposalForm.costBasis} onChange={e => setDisposalForm(f => ({ ...f, costBasis: e.target.value }))} required />
+                <div className="space-y-1">
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Disposed Date</label>
+                  <Input type="date" value={disposalForm.disposedDate} onChange={e => setDisposalForm(f => ({ ...f, disposedDate: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12 }} />
+                </div>
+              </div>
+              <div className="ft-two-col grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Proceeds ({sym})</label>
+                  <Input type="number" step="0.01" min="0" placeholder="5000.00" value={disposalForm.proceeds} onChange={e => setDisposalForm(f => ({ ...f, proceeds: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12, textAlign: "right" as const }} />
+                </div>
+                <div className="space-y-1">
+                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Cost Basis ({sym})</label>
+                  <Input type="number" step="0.01" min="0" placeholder="3000.00" value={disposalForm.costBasis} onChange={e => setDisposalForm(f => ({ ...f, costBasis: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12, textAlign: "right" as const }} />
                 </div>
               </div>
               {disposalForm.proceeds && disposalForm.costBasis && (
-                <div className="px-3 py-2 border text-sm font-mono" style={{ borderColor: "var(--ft-border2)", background: "var(--ft-surface)" }}>
-                  Gain / Loss: <span style={{ color: (parseFloat(disposalForm.proceeds) - parseFloat(disposalForm.costBasis)) >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700 }}>
+                <div style={{ padding: "8px 12px", border: "1px solid var(--ft-border2)", background: "var(--ft-surface)", fontFamily: "var(--font-mono)", fontSize: 11, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", fontSize: 9 }}>Gain / Loss</span>
+                  <span className="pnum" style={{ color: (parseFloat(disposalForm.proceeds) - parseFloat(disposalForm.costBasis)) >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, fontSize: 14 }}>
                     {fmt(parseFloat(disposalForm.proceeds) - parseFloat(disposalForm.costBasis), sym)}
                   </span>
                 </div>
               )}
             </div>
-            <DialogFooter className="mt-6">
-              <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-              <Button type="submit" style={{ background: "var(--ft-green)", color: "white", border: "none" }}>Record Disposal</Button>
+            <DialogFooter className="mt-5">
+              <DialogClose asChild><Button type="button" variant="outline" style={{ height: 32, fontSize: 11 }}>Cancel</Button></DialogClose>
+              <Button type="submit" style={{ background: "var(--ft-green)", color: "var(--ft-base)", border: "none", height: 32, fontSize: 11, fontFamily: "var(--font-mono)" }}>Record Disposal</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -755,7 +1314,7 @@ export default function Tax() {
           <DialogHeader><DialogTitle style={{ color: "var(--ft-text)" }}>Add {rules.shelterName} Contribution</DialogTitle></DialogHeader>
           <form onSubmit={e => { e.preventDefault(); persistShelter([...shelterContribs, { taxYear: shelterForm.taxYear, amount: parseFloat(shelterForm.amount), provider: shelterForm.provider || undefined }]); setAddShelterOpen(false); setShelterForm({ taxYear: selectedYear, amount: "", provider: "" }); }}>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="ft-two-col grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Tax Year</Label>
                   <FtDropdown
@@ -777,7 +1336,7 @@ export default function Tax() {
             </div>
             <DialogFooter className="mt-6">
               <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-              <Button type="submit" style={{ background: "var(--ft-blue)", color: "white", border: "none" }}>Add Contribution</Button>
+              <Button type="submit" style={{ background: "var(--ft-blue)", color: "var(--ft-base)", border: "none" }}>Add Contribution</Button>
             </DialogFooter>
           </form>
         </DialogContent>

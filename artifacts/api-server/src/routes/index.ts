@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import accountsRouter from "./accounts";
+import marketLiveRouter from "./market-live";
 import transactionsRouter from "./transactions";
 import upcomingRouter from "./upcoming";
 import investmentsRouter from "./investments";
@@ -19,6 +20,7 @@ import receiptRouter from "./receipt";
 
 const router: IRouter = Router();
 
+router.use(marketLiveRouter);
 router.use(budgetsRouter);
 router.use(goalsRouter);
 router.use(subscriptionsRouter);

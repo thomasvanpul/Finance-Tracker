@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINTRACK v2 — Design Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── THEME: VOID (default) ── */
+:root {
+  --base:     #08090B;
+  --surface:  #0F1117;
+  --raised:   #161B24;
+  --border:   #1E2532;
+  --border2:  #252D3D;
+  --text:     #CDD6F4;
+  --muted:    #6C7A96;
+  --dim:      #3A4258;
+  --accent:   #F4A21E;
+  --green:    #4ADE80;
+  --red:      #F87171;
+  --blue:     #60A5FA;
+  --cyan:     #22D3EE;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-head: 'Space Grotesk', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+}
+
+/* ── THEME: PHOSPHOR ── */
+[data-theme="phosphor"] {
+  --base:     #020802;
+  --surface:  #050F05;
+  --raised:   #0A1A0A;
+  --border:   #0D2A0D;
+  --border2:  #1A3D1A;
+  --text:     #39FF14;
+  --muted:    #1E8C0A;
+  --dim:      #0D4406;
+  --accent:   #7FFF00;
+  --green:    #00FF88;
+  --red:      #FF4444;
+  --blue:     #00FFCC;
+  --cyan:     #AAFFAA;
+}
+
+/* ── THEME: ARCTIC ── */
+[data-theme="arctic"] {
+  --base:     #F0F4F8;
+  --surface:  #FFFFFF;
+  --raised:   #E8EDF5;
+  --border:   #C9D4E0;
+  --border2:  #B0BDD0;
+  --text:     #1A2333;
+  --muted:    #5A6A84;
+  --dim:      #8A9AB4;
+  --accent:   #0052CC;
+  --green:    #006644;
+  --red:      #CC0000;
+  --blue:     #0065FF;
+  --cyan:     #0052CC;
+}
+
+/* ── THEME: AMBER ── */
+[data-theme="amber"] {
+  --base:     #0A0600;
+  --surface:  #120C00;
+  --raised:   #1C1400;
+  --border:   #2A1E00;
+  --border2:  #3D2B00;
+  --text:     #FFB000;
+  --muted:    #A07020;
+  --dim:      #5A3E0A;
+  --accent:   #FFD700;
+  --green:    #AAFF44;
+  --red:      #FF4400;
+  --blue:     #44AAFF;
+  --cyan:     #FFEE88;
+}
+
+/* ── THEME: MIDNIGHT ── */
+[data-theme="midnight"] {
+  --base:     #010817;
+  --surface:  #05112A;
+  --raised:   #091A3D;
+  --border:   #0F2456;
+  --border2:  #163070;
+  --text:     #E8F0FF;
+  --muted:    #7A99CC;
+  --dim:      #3A5080;
+  --accent:   #4D9FFF;
+  --green:    #2EFF9F;
+  --red:      #FF4466;
+  --blue:     #80BFFF;
+  --cyan:     #00DDFF;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--base);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── COMMAND BAR ── */
+.cmd-bar {
+  flex-shrink: 0;
+  height: 36px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  gap: 24px;
+}
+
+.cmd-breadcrumb {
+  font-family: var(--font-head);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmd-breadcrumb .brand {
+  color: var(--accent);
+}
+
+.cmd-breadcrumb .sep { color: var(--dim); }
+.cmd-breadcrumb .current { color: var(--text); }
+
+.cmd-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  padding: 0 24px;
+}
+
+.cmd-nav-item {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+  text-transform: uppercase;
+  border: none;
+  background: none;
+}
+
+.cmd-nav-item:hover { color: var(--text); background: var(--raised); }
+.cmd-nav-item.active { color: var(--accent); background: var(--raised); }
+
+.cmd-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cmd-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.cmd-profile {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--accent);
+  color: var(--base);
+  font-family: var(--font-head);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* ── MAIN AREA ── */
+.workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  grid-template-rows: 1fr 240px;
+  gap: 1px;
+  background: var(--border);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.panel {
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.panel-header {
+  flex-shrink: 0;
+  height: 32px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+}
+
+.panel-type {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.panel-type .accent { color: var(--accent); }
+
+.panel-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dim);
+  margin-left: auto;
+}
+
+.panel-dot.live { background: var(--green); box-shadow: 0 0 4px var(--green); }
+
+/* ── LEFT MAIN PANEL ── */
+.panel-main { grid-row: 1; grid-column: 1; }
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+
+.metric-cell {
+  padding: 16px 20px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-cell:last-child { border-right: none; }
+
+.metric-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.metric-value.accent { color: var(--accent); }
+.metric-delta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.metric-delta.up { color: var(--green); }
+.metric-delta.dn { color: var(--red); }
+
+/* ── CHART AREA ── */
+.chart-area {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chart-title {
+  font-family: var(--font-head);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.chart-controls {
+  display: flex;
+  gap: 2px;
+}
+
+.chart-ctrl {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  background: none;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.chart-ctrl:hover, .chart-ctrl.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.chart-svg-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+svg.sparkline { width: 100%; height: 100%; overflow: visible; }
+
+/* ── RIGHT PANELS ── */
+.panel-cashflow { grid-row: 1; grid-column: 2; }
+
+.flow-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.flow-item {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  gap: 10px;
+  border-left: 2px solid transparent;
+  transition: background 0.1s;
+}
+
+.flow-item:hover {
+  background: var(--raised);
+  border-left-color: var(--accent);
+}
+
+.flow-bar-wrap {
+  flex: 1;
+  height: 3px;
+  background: var(--border2);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.flow-bar {
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+.flow-cat {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  width: 80px;
+  flex-shrink: 0;
+  letter-spacing: 0.06em;
+}
+
+.flow-amt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  text-align: right;
+  width: 64px;
+  flex-shrink: 0;
+}
+
+/* ── BOTTOM TRANSACTIONS ── */
+.panel-tx { grid-row: 2; grid-column: 1 / -1; }
+
+.tx-table {
+  flex: 1;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.tx-head {
+  display: grid;
+  grid-template-columns: 100px 180px 1fr 100px 90px 90px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--raised);
+  z-index: 1;
+}
+
+.tx-head-cell {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.tx-row {
+  display: grid;
+  grid-template-columns: 100px 180px 1fr 100px 90px 90px;
+  padding: 7px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  cursor: pointer;
+  transition: background 0.08s;
+  align-items: center;
+}
+
+.tx-row:hover { background: var(--raised); }
+
+.tx-date { color: var(--muted); }
+.tx-payee { color: var(--text); }
+.tx-cat {
+  color: var(--dim);
+  font-size: 10px;
+}
+.tx-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--border2);
+  border-radius: 0;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tx-amt { text-align: right; }
+.tx-amt.inc { color: var(--green); }
+.tx-amt.exp { color: var(--red); }
+
+.tx-status {
+  text-align: right;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.tx-status.cleared { color: var(--dim); }
+.tx-status.pending { color: var(--accent); }
+
+/* ── STATUS STRIP ── */
+.status-strip {
+  flex-shrink: 0;
+  height: 24px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--base));
+  border-top: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 0;
+  overflow: hidden;
+}
+
+.strip-item {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  padding: 0 14px;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.strip-item:first-child { padding-left: 0; }
+.strip-item .val { color: var(--text); }
+.strip-item .up { color: var(--green); }
+.strip-item .dn { color: var(--red); }
+.strip-item .acc { color: var(--accent); }
+
+/* ── THEME SWITCHER ── */
+.theme-switcher {
+  position: fixed;
+  bottom: 36px;
+  right: 16px;
+  display: flex;
+  gap: 6px;
+  z-index: 100;
+}
+
+.theme-btn {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.theme-btn:hover, .theme-btn.active { transform: scale(1.3); border-color: var(--text); }
+.theme-btn[data-t="void"]      { background: #F4A21E; }
+.theme-btn[data-t="phosphor"]  { background: #39FF14; }
+.theme-btn[data-t="arctic"]    { background: #0052CC; }
+.theme-btn[data-t="amber"]     { background: #FFB000; }
+.theme-btn[data-t="midnight"]  { background: #4D9FFF; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); }
+</style>
+</head>
+<body>
+
+<!-- COMMAND BAR -->
+<div class="cmd-bar">
+  <div class="cmd-breadcrumb">
+    <span class="brand">FINTRACK</span>
+    <span style="font-size:9px;color:var(--dim)">v2.1</span>
+    <span class="sep">▸</span>
+    <span class="current">DASHBOARD</span>
+  </div>
+
+  <nav class="cmd-nav">
+    <button class="cmd-nav-item active">Overview</button>
+    <button class="cmd-nav-item">Transactions</button>
+    <button class="cmd-nav-item">Budget</button>
+    <button class="cmd-nav-item">Investments</button>
+    <button class="cmd-nav-item">Debts</button>
+    <button class="cmd-nav-item">Upcoming</button>
+  </nav>
+
+  <div class="cmd-right">
+    <span class="cmd-time" id="clock">THU 16 JUL · 21:14:09</span>
+    <div class="cmd-profile">T</div>
+  </div>
+</div>
+
+<!-- WORKSPACE -->
+<div class="workspace">
+
+  <!-- MAIN LEFT PANEL -->
+  <div class="panel panel-main">
+    <div class="panel-header">
+      <span class="panel-type">· <span class="accent">OVERVIEW</span> · NET POSITION</span>
+      <div class="panel-dot live"></div>
+    </div>
+
+    <!-- KEY METRICS ROW -->
+    <div class="metrics-grid">
+      <div class="metric-cell">
+        <div class="metric-label">Net Worth</div>
+        <div class="metric-value accent">£12,450</div>
+        <div class="metric-delta up">▲ £340 +2.8% MTD</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label">Monthly Income</div>
+        <div class="metric-value">£3,200</div>
+        <div class="metric-delta up">▲ vs last month</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label">Monthly Spend</div>
+        <div class="metric-value">£2,180</div>
+        <div class="metric-delta dn">▼ 68% of budget</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label">Savings Rate</div>
+        <div class="metric-value">31.9<span style="font-size:14px;color:var(--muted)">%</span></div>
+        <div class="metric-delta up">▲ +4.2pp YoY</div>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="chart-area">
+      <div class="chart-header">
+        <span class="chart-title">Cash Flow · July 2026</span>
+        <div class="chart-controls">
+          <button class="chart-ctrl active">1M</button>
+          <button class="chart-ctrl">3M</button>
+          <button class="chart-ctrl">6M</button>
+          <button class="chart-ctrl">1Y</button>
+        </div>
+      </div>
+      <div class="chart-svg-wrap">
+        <svg class="sparkline" viewBox="0 0 600 160" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#F4A21E" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#F4A21E" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <!-- Grid lines -->
+          <line x1="0" y1="40" x2="600" y2="40" stroke="#1E2532" stroke-width="1"/>
+          <line x1="0" y1="80" x2="600" y2="80" stroke="#1E2532" stroke-width="1"/>
+          <line x1="0" y1="120" x2="600" y2="120" stroke="#1E2532" stroke-width="1"/>
+          <!-- Y labels -->
+          <text x="4" y="38" fill="#3A4258" font-family="JetBrains Mono" font-size="9">3.5k</text>
+          <text x="4" y="78" fill="#3A4258" font-family="JetBrains Mono" font-size="9">2.5k</text>
+          <text x="4" y="118" fill="#3A4258" font-family="JetBrains Mono" font-size="9">1.5k</text>
+          <!-- Income bars -->
+          <rect x="40"  y="30" width="18" height="110" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="80"  y="35" width="18" height="105" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="120" y="28" width="18" height="112" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="160" y="32" width="18" height="108" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="200" y="40" width="18" height="100" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="240" y="36" width="18" height="104" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="280" y="30" width="18" height="110" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="320" y="38" width="18" height="102" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="360" y="32" width="18" height="108" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="400" y="29" width="18" height="111" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="440" y="35" width="18" height="105" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <rect x="480" y="31" width="18" height="109" fill="#4ADE80" opacity="0.25" rx="0"/>
+          <!-- Spend bars overlaid -->
+          <rect x="40"  y="80" width="18" height="60" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="80"  y="75" width="18" height="65" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="120" y="85" width="18" height="55" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="160" y="78" width="18" height="62" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="200" y="72" width="18" height="68" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="240" y="80" width="18" height="60" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="280" y="76" width="18" height="64" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="320" y="82" width="18" height="58" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="360" y="79" width="18" height="61" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="400" y="84" width="18" height="56" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="440" y="77" width="18" height="63" fill="#F87171" opacity="0.35" rx="0"/>
+          <rect x="480" y="80" width="18" height="60" fill="#F87171" opacity="0.35" rx="0"/>
+          <!-- Net worth line -->
+          <path d="M49 115 L89 110 L129 108 L169 104 L209 112 L249 100 L289 94 L329 90 L369 85 L409 78 L449 72 L489 65"
+            fill="none" stroke="#F4A21E" stroke-width="1.5"/>
+          <path d="M49 115 L89 110 L129 108 L169 104 L209 112 L249 100 L289 94 L329 90 L369 85 L409 78 L449 72 L489 65 L489 160 L49 160 Z"
+            fill="url(#areaGrad)"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: SPENDING BREAKDOWN -->
+  <div class="panel panel-cashflow">
+    <div class="panel-header">
+      <span class="panel-type">· <span class="accent">SPEND</span> · BY CATEGORY</span>
+      <div class="panel-dot"></div>
+    </div>
+    <div class="flow-list">
+      <div class="flow-item">
+        <span class="flow-cat">HOUSING</span>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:88%"></div></div>
+        <span class="flow-amt">£960</span>
+      </div>
+      <div class="flow-item">
+        <span class="flow-cat">FOOD</span>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:52%"></div></div>
+        <span class="flow-amt">£380</span>
+      </div>
+      <div class="flow-item">
+        <span class="flow-cat">TRANSPORT</span>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:28%"></div></div>
+        <span class="flow-amt">£210</span>
+      </div>
+      <div class="flow-item">
+        <span class="flow-cat">UTILITIES</span>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:22%"></div></div>
+        <span class="flow-amt">£165</span>
+      </div>
+      <div class="flow-item">
+        <span class="flow-cat">ENTERTAIN</span>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:18%"></div></div>
+        <span class="flow-amt">£140</span>
+      </div>
+      <div class="flow-item">
+        <span class="flow-cat">HEALTH</span>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:14%"></div></div>
+        <span class="flow-amt">£95</span>
+      </div>
+      <div class="flow-item">
+        <span class="flow-cat">SUBSCRIPT</span>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:12%;background:var(--cyan)"></div></div>
+        <span class="flow-amt">£88</span>
+      </div>
+      <div class="flow-item">
+        <span class="flow-cat">OTHER</span>
+        <div class="flow-bar-wrap"><div class="flow-bar" style="width:8%"></div></div>
+        <span class="flow-amt">£62</span>
+      </div>
+    </div>
+
+    <!-- Budget progress -->
+    <div style="padding: 12px 14px; border-top: 1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;">Monthly Budget</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--accent)">68% used</span>
+      </div>
+      <div style="height:3px;background:var(--border2);position:relative;">
+        <div style="position:absolute;left:0;top:0;height:100%;width:68%;background:var(--accent);"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">£2,180 spent</span>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">£1,020 left</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM: TRANSACTIONS TABLE -->
+  <div class="panel panel-tx">
+    <div class="panel-header">
+      <span class="panel-type">· <span class="accent">TX</span> · RECENT TRANSACTIONS</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-left:12px;">147 total</span>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+        <button class="chart-ctrl">Filter</button>
+        <button class="chart-ctrl">Export</button>
+        <button class="chart-ctrl" style="color:var(--accent);border-color:var(--accent)">+ Add</button>
+      </div>
+    </div>
+    <div class="tx-table">
+      <div class="tx-head">
+        <span class="tx-head-cell">Date</span>
+        <span class="tx-head-cell">Payee</span>
+        <span class="tx-head-cell">Category</span>
+        <span class="tx-head-cell">Tags</span>
+        <span class="tx-head-cell" style="text-align:right">Amount</span>
+        <span class="tx-head-cell" style="text-align:right">Status</span>
+      </div>
+      <!-- rows -->
+      <div class="tx-row">
+        <span class="tx-date">16 Jul</span>
+        <span class="tx-payee">Tesco Metro</span>
+        <span class="tx-cat">FOOD · Groceries</span>
+        <span><span class="tx-tag">personal</span></span>
+        <span class="tx-amt exp">-£47.23</span>
+        <span class="tx-status cleared">CLEARED</span>
+      </div>
+      <div class="tx-row">
+        <span class="tx-date">16 Jul</span>
+        <span class="tx-payee">Salary — Employer Ltd</span>
+        <span class="tx-cat">INCOME · Salary</span>
+        <span><span class="tx-tag">work</span></span>
+        <span class="tx-amt inc">+£3,200.00</span>
+        <span class="tx-status cleared">CLEARED</span>
+      </div>
+      <div class="tx-row">
+        <span class="tx-date">15 Jul</span>
+        <span class="tx-payee">TfL Contactless</span>
+        <span class="tx-cat">TRANSPORT · Transit</span>
+        <span><span class="tx-tag">commute</span></span>
+        <span class="tx-amt exp">-£4.80</span>
+        <span class="tx-status cleared">CLEARED</span>
+      </div>
+      <div class="tx-row">
+        <span class="tx-date">15 Jul</span>
+        <span class="tx-payee">Netflix</span>
+        <span class="tx-cat">ENTERTAIN · Subscriptions</span>
+        <span><span class="tx-tag">sub</span></span>
+        <span class="tx-amt exp">-£17.99</span>
+        <span class="tx-status pending">PENDING</span>
+      </div>
+      <div class="tx-row">
+        <span class="tx-date">14 Jul</span>
+        <span class="tx-payee">Pret A Manger</span>
+        <span class="tx-cat">FOOD · Coffee & Lunch</span>
+        <span><span class="tx-tag">work</span></span>
+        <span class="tx-amt exp">-£8.50</span>
+        <span class="tx-status cleared">CLEARED</span>
+      </div>
+      <div class="tx-row">
+        <span class="tx-date">14 Jul</span>
+        <span class="tx-payee">British Gas</span>
+        <span class="tx-cat">UTILITIES · Energy</span>
+        <span><span class="tx-tag">home</span></span>
+        <span class="tx-amt exp">-£82.00</span>
+        <span class="tx-status cleared">CLEARED</span>
+      </div>
+      <div class="tx-row">
+        <span class="tx-date">13 Jul</span>
+        <span class="tx-payee">Amazon Prime</span>
+        <span class="tx-cat">ENTERTAIN · Subscriptions</span>
+        <span><span class="tx-tag">sub</span></span>
+        <span class="tx-amt exp">-£8.99</span>
+        <span class="tx-status cleared">CLEARED</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS STRIP -->
+<div class="status-strip">
+  <span class="strip-item">NET WORTH <span class="val">£12,450.00</span></span>
+  <span class="strip-item">MTD SPEND <span class="val">£2,180</span> <span class="dn">-68% budget</span></span>
+  <span class="strip-item">SAVINGS RATE <span class="acc">31.9%</span></span>
+  <span class="strip-item">UPCOMING <span class="val">£340</span> in 7 days</span>
+  <span class="strip-item">LAST SYNC <span class="val">just now</span></span>
+  <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--dim)">THEME: VOID · DENSITY: COMPACT</span>
+</div>
+
+<!-- THEME SWITCHER -->
+<div class="theme-switcher">
+  <div class="theme-btn active" data-t="void"     title="Void"     onclick="setTheme(this,'')"></div>
+  <div class="theme-btn"       data-t="phosphor"  title="Phosphor" onclick="setTheme(this,'phosphor')"></div>
+  <div class="theme-btn"       data-t="arctic"    title="Arctic"   onclick="setTheme(this,'arctic')"></div>
+  <div class="theme-btn"       data-t="amber"     title="Amber"    onclick="setTheme(this,'amber')"></div>
+  <div class="theme-btn"       data-t="midnight"  title="Midnight" onclick="setTheme(this,'midnight')"></div>
+</div>
+
+<script>
+// Clock
+function tick() {
+  const now = new Date();
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const d = days[now.getDay()];
+  const day = String(now.getDate()).padStart(2,'0');
+  const mon = months[now.getMonth()];
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${d} ${day} ${mon} · ${h}:${m}:${s}`;
+}
+tick(); setInterval(tick, 1000);
+
+// Theme switcher
+function setTheme(btn, theme) {
+  document.body.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const name = btn.getAttribute('data-t').toUpperCase();
+  document.querySelector('.status-strip span:last-child').textContent = `THEME: ${name} · DENSITY: COMPACT`;
+}
+
+// Chart ctrl toggle
+document.querySelectorAll('.chart-ctrl').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const group = btn.closest('.chart-controls');
+    if (!group) return;
+    group.querySelectorAll('.chart-ctrl').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// Nav toggle
+document.querySelectorAll('.cmd-nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cmd-nav-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const route = btn.textContent.toUpperCase();
+    document.querySelector('.cmd-breadcrumb .current').textContent = route;
+  });
+});
+</script>
+</body>
+</html>

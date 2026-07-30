@@ -1,7 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   ComposedChart,
   Area,
+  Bar,
   Line,
   XAxis,
   YAxis,
@@ -10,9 +12,13 @@ import {
   Pie,
   Cell,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp, formatDate } from "@/lib/utils";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
+
+// ─── date helpers ─────────────────────────────────────────────────────────────
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -33,6 +39,24 @@ function monthsAgo(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+function quarterRange(q: 1 | 2 | 3 | 4): { from: string; to: string } {
+  const y = new Date().getFullYear();
+  const starts = [0, 3, 6, 9];
+  const start = starts[q - 1];
+  const end = start + 2;
+  const fromDate = new Date(y, start, 1);
+  const toDate = new Date(y, end + 1, 0);
+  return {
+    from: fromDate.toISOString().slice(0, 10),
+    to: toDate.toISOString().slice(0, 10),
+  };
+}
+
+function lastYear(): { from: string; to: string } {
+  const y = new Date().getFullYear() - 1;
+  return { from: `${y}-01-01`, to: `${y}-12-31` };
+}
+
 function formatMonthLabel(yyyyMM: string): string {
   const [year, month] = yyyyMM.split("-");
   const d = new Date(Number(year), Number(month) - 1, 1);
@@ -45,7 +69,9 @@ function formatMonthAbbr(yyyyMM: string): string {
   return d.toLocaleString("en-GB", { month: "short" });
 }
 
-function exportCsv(rows: Array<{
+// ─── CSV export ───────────────────────────────────────────────────────────────
+
+interface CsvRow {
   date: string;
   description: string;
   type: string;
@@ -53,7 +79,9 @@ function exportCsv(rows: Array<{
   nativeAmount: number;
   currency: string;
   gbpValue: number;
-}>) {
+}
+
+function exportCsv(rows: CsvRow[], reportType: string) {
   const header = ["Date", "Description", "Type", "Category", "Amount (Native)", "Currency", "Amount (GBP)"];
   const escape = (v: string | number) => {
     const s = String(v);
@@ -78,7 +106,8 @@ function exportCsv(rows: Array<{
   const csv = lines.join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
-  const filename = `reports-${new Date().toISOString().slice(0, 10)}.csv`;
+  const slug = reportType.toLowerCase().replace(/\s+/g, "-");
+  const filename = `${slug}-${new Date().toISOString().slice(0, 10)}.csv`;
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
@@ -88,19 +117,18 @@ function exportCsv(rows: Array<{
   URL.revokeObjectURL(url);
 }
 
+// ─── style atoms ─────────────────────────────────────────────────────────────
+
+const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+
 const SECTION_LABEL: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
-  fontSize: 9,
+  fontSize: 8,
   fontWeight: 600,
-  letterSpacing: "0.08em",
+  letterSpacing: "0.12em",
   textTransform: "uppercase" as const,
   color: "var(--ft-dim)",
   marginBottom: 10,
-};
-
-const CARD: React.CSSProperties = {
-  background: "var(--ft-surface)",
-  border: "1px solid var(--ft-border)",
 };
 
 const TH: React.CSSProperties = {
@@ -114,6 +142,7 @@ const TH: React.CSSProperties = {
   letterSpacing: "0.4px",
   whiteSpace: "nowrap" as const,
   fontFamily: "var(--font-mono)",
+  verticalAlign: "middle" as const,
 };
 
 const TD: React.CSSProperties = {
@@ -123,6 +152,14 @@ const TD: React.CSSProperties = {
   borderBottom: "1px solid var(--ft-raised)",
   color: "var(--ft-text)",
   whiteSpace: "nowrap" as const,
+};
+
+const TD_TOTAL: React.CSSProperties = {
+  ...TD,
+  fontWeight: 700,
+  background: "var(--ft-raised)",
+  borderTop: "2px solid var(--ft-border2)",
+  borderBottom: "none",
 };
 
 const PALETTE = [
@@ -136,10 +173,24 @@ const PALETTE = [
   "var(--ft-blue)",
 ];
 
+// ─── report types ─────────────────────────────────────────────────────────────
+
+const REPORT_TYPES = [
+  { id: "income-statement", label: "Income Statement" },
+  { id: "expense-report", label: "Expense Report" },
+  { id: "net-worth", label: "Net Worth Report" },
+  { id: "cash-flow", label: "Cash Flow Report" },
+] as const;
+
+type ReportTypeId = typeof REPORT_TYPES[number]["id"];
+
+// ─── quick date ranges ────────────────────────────────────────────────────────
+
 const QUICK_RANGES = [
   { label: "This month", getRange: () => ({ from: firstOfMonth(), to: today() }) },
   {
-    label: "Last month", getRange: () => {
+    label: "Last month",
+    getRange: () => {
       const d = new Date();
       d.setDate(1);
       d.setMonth(d.getMonth() - 1);
@@ -148,68 +199,27 @@ const QUICK_RANGES = [
       const from = `${y}-${String(m + 1).padStart(2, "0")}-01`;
       const to = `${y}-${String(m + 1).padStart(2, "0")}-${String(new Date(y, m + 1, 0).getDate()).padStart(2, "0")}`;
       return { from, to };
-    }
+    },
   },
+  { label: "Q1", getRange: () => quarterRange(1) },
+  { label: "Q2", getRange: () => quarterRange(2) },
+  { label: "Q3", getRange: () => quarterRange(3) },
+  { label: "Q4", getRange: () => quarterRange(4) },
+  { label: "This Year", getRange: () => ({ from: firstOfYear(), to: today() }) },
+  { label: "Last Year", getRange: () => lastYear() },
   { label: "Last 3M", getRange: () => ({ from: monthsAgo(3), to: today() }) },
   { label: "Last 6M", getRange: () => ({ from: monthsAgo(6), to: today() }) },
-  { label: "YTD", getRange: () => ({ from: firstOfYear(), to: today() }) },
   { label: "All time", getRange: () => ({ from: "", to: "" }) },
 ];
 
 const DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-function TrendTooltip({ active, payload, label }: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; color: string }>;
-  label?: string;
-}) {
-  if (!active || !payload || payload.length === 0) return null;
-  return (
-    <div style={{
-      background: "var(--ft-raised)",
-      border: "1px solid var(--ft-border2)",
-      padding: "10px 14px",
-      fontFamily: "var(--font-mono)",
-      fontSize: 11,
-      minWidth: 160,
-    }}>
-      <div style={{ color: "var(--ft-muted)", marginBottom: 6, fontSize: 10 }}>{label}</div>
-      {payload.map((p) => (
-        <div key={p.name} style={{ display: "flex", justifyContent: "space-between", gap: 16, color: p.color, marginBottom: 2 }}>
-          <span style={{ color: "var(--ft-dim)" }}>{p.name}</span>
-          <span>{p.value < 0 ? "−" : ""}{formatGbp(Math.abs(p.value))}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function DonutTooltip({ active, payload }: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number }>;
-}) {
-  if (!active || !payload || payload.length === 0) return null;
-  const p = payload[0];
-  return (
-    <div style={{
-      background: "var(--ft-raised)",
-      border: "1px solid var(--ft-border2)",
-      padding: "8px 12px",
-      fontFamily: "var(--font-mono)",
-      fontSize: 11,
-    }}>
-      <span style={{ color: "var(--ft-muted)" }}>{p.name}: </span>
-      <span style={{ color: "var(--ft-text)" }}>{formatGbp(p.value)}</span>
-    </div>
-  );
-}
+// ─── tax year config ──────────────────────────────────────────────────────────
 
 const CURRENT_YEAR = new Date().getFullYear();
-// Generate last 5 UK tax years. The "current" tax year start is Apr 6 of this year,
-// but only include it if today is on or after 6 April of CURRENT_YEAR.
 const TAX_YEARS: number[] = (() => {
   const now = new Date();
-  const taxYearStart = new Date(CURRENT_YEAR, 3, 6); // April 6 of current year
+  const taxYearStart = new Date(CURRENT_YEAR, 3, 6);
   const latestTaxYear = now >= taxYearStart ? CURRENT_YEAR : CURRENT_YEAR - 1;
   return Array.from({ length: 5 }, (_, i) => latestTaxYear - i);
 })();
@@ -235,10 +245,689 @@ async function downloadTaxYearCsv(year: number): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+// ─── tooltip components ───────────────────────────────────────────────────────
+
+function TrendTooltip({ active, payload, label }: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number; color: string }>;
+  label?: string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  return (
+    <div style={{
+      background: "var(--ft-raised)",
+      border: "1px solid var(--ft-border2)",
+      padding: "8px 12px",
+      fontFamily: "var(--font-mono)",
+      fontSize: 10,
+      minWidth: 160,
+    }}>
+      <div style={{ color: "var(--ft-muted)", marginBottom: 6, fontSize: 9 }}>{label}</div>
+      {payload.map((p) => (
+        <div key={p.name} style={{ display: "flex", justifyContent: "space-between", gap: 16, color: p.color, marginBottom: 2 }}>
+          <span style={{ color: "var(--ft-dim)" }}>{p.name}</span>
+          <span className="pnum">{p.value < 0 ? "−" : ""}{formatGbp(Math.abs(p.value))}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DonutTooltip({ active, payload }: {
+  active?: boolean;
+  payload?: Array<{ name: string; value: number }>;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const p = payload[0];
+  return (
+    <div style={{
+      background: "var(--ft-raised)",
+      border: "1px solid var(--ft-border2)",
+      padding: "8px 12px",
+      fontFamily: "var(--font-mono)",
+      fontSize: 10,
+    }}>
+      <span style={{ color: "var(--ft-muted)" }}>{p.name}: </span>
+      <span className="pnum" style={{ color: "var(--ft-text)" }}>{formatGbp(p.value)}</span>
+    </div>
+  );
+}
+
+// ─── print style injector ──────────────────────────────────────────────────────
+
+function usePrintStyles() {
+  const injected = useRef(false);
+  if (!injected.current && typeof document !== "undefined") {
+    injected.current = true;
+    const style = document.createElement("style");
+    style.id = "ft-reports-print";
+    style.textContent = `
+      @media print {
+        body * { visibility: hidden !important; }
+        #ft-reports-root, #ft-reports-root * { visibility: visible !important; }
+        #ft-reports-root { position: absolute; left: 0; top: 0; width: 100%; }
+        .ft-no-print { display: none !important; }
+        .ft-page-header { border-bottom: 1px solid #ccc !important; }
+        @page { margin: 12mm 10mm; }
+      }
+    `;
+    if (!document.getElementById("ft-reports-print")) {
+      document.head.appendChild(style);
+    }
+  }
+}
+
+// ─── chart section header ─────────────────────────────────────────────────────
+
+function SectionHeader({ title, right, accentColor = "var(--ft-accent)" }: {
+  title: string;
+  right?: React.ReactNode;
+  accentColor?: string;
+}) {
+  return (
+    <div style={{
+      padding: "8px 16px 8px 13px",
+      borderBottom: "1px solid var(--ft-border)",
+      borderLeft: `3px solid ${accentColor}`,
+      background: "var(--ft-surface)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+    }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" as const }}>
+        {title}
+      </span>
+      {right && <div style={{ display: "flex", alignItems: "center", gap: 6 }}>{right}</div>}
+    </div>
+  );
+}
+
+// ─── income statement table ───────────────────────────────────────────────────
+
+interface MonthlyRow {
+  month: string;
+  income: number;
+  expenses: number;
+  netSavings: number;
+}
+
+// ─── income statement row ─────────────────────────────────────────────────────
+
+interface IncomeStatementRowProps {
+  m: MonthlyRow;
+  rowIdx: number;
+}
+
+function IncomeStatementRow({ m, rowIdx }: IncomeStatementRowProps) {
+  const [hov, setHov] = useState(false);
+  const margin = m.income > 0 ? ((m.income - m.expenses) / m.income) * 100 : 0;
+  const isNeg = m.netSavings < 0;
+  return (
+    <tr
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onTouchStart={() => setHov(true)}
+      onTouchEnd={() => setHov(false)}
+      onTouchCancel={() => setHov(false)}
+      style={{
+        background: hov
+          ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
+          : rowIdx % 2 === 0 ? "var(--ft-surface)" : "var(--ft-base)",
+        transition: "background 0.1s",
+      }}
+    >
+      <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>{formatMonthLabel(m.month)}</td>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.income > 0 ? "var(--ft-green)" : "var(--ft-muted)" }}>
+        <span className="pnum">+{formatGbp(m.income)}</span>
+      </td>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
+        <span className="pnum">−{formatGbp(m.expenses)}</span>
+      </td>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", fontWeight: 700, color: m.netSavings !== 0 ? (isNeg ? "var(--ft-red)" : "var(--ft-green)") : "var(--ft-muted)" }}>
+        <span className="pnum">{m.netSavings >= 0 ? "+" : ""}{formatGbp(m.netSavings)}</span>
+      </td>
+      <td style={{ ...TD, textAlign: "right", color: margin < 0 ? "var(--ft-red)" : margin >= 20 ? "var(--ft-green)" : "var(--ft-amber)" }}>
+        <span className="pnum">{m.income > 0 ? `${margin.toFixed(1)}%` : "—"}</span>
+      </td>
+    </tr>
+  );
+}
+
+function IncomeStatementTable({ rows }: { rows: MonthlyRow[] }) {
+  const totals = rows.reduce(
+    (acc, r) => ({ income: acc.income + r.income, expenses: acc.expenses + r.expenses, net: acc.net + r.netSavings }),
+    { income: 0, expenses: 0, net: 0 }
+  );
+
+  return (
+    <div className="ft-scroll-x">
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            {["Period", "Revenue", "Expenses", "Net Income", "Margin"].map((h) => (
+              <th key={h} style={{ ...TH, textAlign: h === "Period" ? "left" : "right", borderRight: "1px solid var(--ft-raised)" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {[...rows].reverse().map((m, rowIdx) => (
+            <IncomeStatementRow key={m.month} m={m} rowIdx={rowIdx} />
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td style={{ ...TD_TOTAL, color: "var(--ft-dim)" }}>TOTAL</td>
+            <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.income > 0 ? "var(--ft-green)" : "var(--ft-muted)" }}>
+              <span className="pnum">+{formatGbp(totals.income)}</span>
+            </td>
+            <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
+              <span className="pnum">−{formatGbp(totals.expenses)}</span>
+            </td>
+            <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.net !== 0 ? (totals.net >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)" }}>
+              <span className="pnum">{totals.net >= 0 ? "+" : ""}{formatGbp(totals.net)}</span>
+            </td>
+            <td style={{ ...TD_TOTAL, textAlign: "right", color: "var(--ft-muted)" }}>
+              <span className="pnum">{totals.income > 0 ? `${(((totals.income - totals.expenses) / totals.income) * 100).toFixed(1)}%` : "—"}</span>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+// ─── expense report row ───────────────────────────────────────────────────────
+
+interface ExpenseReportRowProps {
+  cat: string;
+  amount: number;
+  i: number;
+  totalExpenses: number;
+}
+
+function ExpenseReportRow({ cat, amount, i, totalExpenses }: ExpenseReportRowProps) {
+  const [hov, setHov] = useState(false);
+  const pct = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
+  const color = PALETTE[i % PALETTE.length];
+  return (
+    <tr
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onTouchStart={() => setHov(true)}
+      onTouchEnd={() => setHov(false)}
+      onTouchCancel={() => setHov(false)}
+      style={{
+        background: hov
+          ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
+          : i % 2 === 0 ? "var(--ft-surface)" : "var(--ft-base)",
+        transition: "background 0.1s",
+      }}
+    >
+      <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)" }}>
+        <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: color, marginRight: 8, verticalAlign: "middle" }} />
+        {cat}
+      </td>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color }}>
+        <span className="pnum">−{formatGbp(amount)}</span>
+      </td>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>
+        <span className="pnum">{pct.toFixed(1)}%</span>
+      </td>
+      <td style={{ ...TD, paddingRight: 16 }}>
+        <div style={{ height: 3, background: "var(--ft-border)", width: 120 }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: color, transition: "width 0.25s ease" }} />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// ─── expense report table ─────────────────────────────────────────────────────
+
+function ExpenseReportTable({ categories, totalExpenses }: {
+  categories: Array<[string, number]>;
+  totalExpenses: number;
+}) {
+  return (
+    <div className="ft-scroll-x">
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            {["Category", "Amount", "% of Total", "Share"].map((h) => (
+              <th key={h} style={{ ...TH, textAlign: h === "Category" ? "left" : h === "Share" ? "left" : "right", borderRight: "1px solid var(--ft-raised)" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {categories.map(([cat, amount], i) => (
+            <ExpenseReportRow key={cat} cat={cat} amount={amount} i={i} totalExpenses={totalExpenses} />
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td style={{ ...TD_TOTAL }}>TOTAL EXPENSES</td>
+            <td style={{ ...TD_TOTAL, textAlign: "right", color: totalExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
+              <span className="pnum">−{formatGbp(totalExpenses)}</span>
+            </td>
+            <td style={{ ...TD_TOTAL, textAlign: "right", color: "var(--ft-muted)" }}>
+              <span className="pnum">100%</span>
+            </td>
+            <td style={{ ...TD_TOTAL }} />
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+// ─── cash flow row ────────────────────────────────────────────────────────────
+
+interface CashFlowRowProps {
+  m: MonthlyRow & { balance: number };
+  rowIdx: number;
+}
+
+function CashFlowRow({ m, rowIdx }: CashFlowRowProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <tr
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onTouchStart={() => setHov(true)}
+      onTouchEnd={() => setHov(false)}
+      onTouchCancel={() => setHov(false)}
+      style={{
+        background: hov
+          ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
+          : rowIdx % 2 === 0 ? "var(--ft-surface)" : "var(--ft-base)",
+        transition: "background 0.1s",
+      }}
+    >
+      <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>{formatMonthLabel(m.month)}</td>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-green)" }}>
+        <span className="pnum">+{formatGbp(m.income)}</span>
+      </td>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-red)" }}>
+        <span className="pnum">−{formatGbp(m.expenses)}</span>
+      </td>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", fontWeight: 600, color: m.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+        <span className="pnum">{m.netSavings >= 0 ? "+" : ""}{formatGbp(m.netSavings)}</span>
+      </td>
+      <td style={{ ...TD, textAlign: "right", color: m.balance >= 0 ? "var(--ft-cyan)" : "var(--ft-red)" }}>
+        <span className="pnum">{m.balance >= 0 ? "+" : ""}{formatGbp(m.balance)}</span>
+      </td>
+    </tr>
+  );
+}
+
+// ─── cash flow table ──────────────────────────────────────────────────────────
+
+function CashFlowTable({ rows }: { rows: MonthlyRow[] }) {
+  let runningBalance = 0;
+  const withBalance = [...rows].reverse().map((r) => {
+    runningBalance += r.netSavings;
+    return { ...r, balance: runningBalance };
+  });
+
+  return (
+    <div className="ft-scroll-x">
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            {["Period", "Inflow", "Outflow", "Net", "Cumulative"].map((h) => (
+              <th key={h} style={{ ...TH, textAlign: h === "Period" ? "left" : "right", borderRight: "1px solid var(--ft-raised)" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {withBalance.map((m, rowIdx) => (
+            <CashFlowRow key={m.month} m={m} rowIdx={rowIdx} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── net worth table row ──────────────────────────────────────────────────────
+
+interface NetWorthRowItem {
+  label: string;
+  value: number | null;
+  color: string;
+  prefix?: string;
+  isPct?: boolean;
+}
+
+interface NetWorthTableRowProps {
+  r: NetWorthRowItem;
+  i: number;
+}
+
+function NetWorthTableRow({ r, i }: NetWorthTableRowProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <tr
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onTouchStart={() => setHov(true)}
+      onTouchEnd={() => setHov(false)}
+      onTouchCancel={() => setHov(false)}
+      style={{
+        background: hov
+          ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
+          : i % 2 === 0 ? "var(--ft-surface)" : "var(--ft-base)",
+        transition: "background 0.1s",
+      }}
+    >
+      <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>{r.label}</td>
+      <td style={{ ...TD, textAlign: "right", color: r.color, fontWeight: 700 }}>
+        <span className="pnum">
+          {r.value === null ? "—" : r.isPct ? `${(r.value as number).toFixed(1)}%` : `${r.prefix ?? ""}${formatGbp(r.value as number)}`}
+        </span>
+      </td>
+    </tr>
+  );
+}
+
+// ─── net worth placeholder ────────────────────────────────────────────────────
+
+function NetWorthTable({ income, expenses, netSavings, savingsRate }: {
+  income: number;
+  expenses: number;
+  netSavings: number;
+  savingsRate: number | null;
+}) {
+  const rows: NetWorthRowItem[] = [
+    { label: "Total Income (period)", value: income, color: income > 0 ? "var(--ft-green)" : "var(--ft-muted)", prefix: "+" },
+    { label: "Total Expenses (period)", value: expenses, color: expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", prefix: "−" },
+    { label: "Net Savings (period)", value: netSavings, color: netSavings !== 0 ? (netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", prefix: netSavings >= 0 ? "+" : "" },
+    { label: "Savings Rate", value: savingsRate !== null ? savingsRate : null, color: savingsRate !== null && savingsRate >= 20 ? "var(--ft-green)" : savingsRate !== null && savingsRate >= 0 ? "var(--ft-amber)" : "var(--ft-red)", isPct: true },
+  ];
+  return (
+    <div className="ft-scroll-x">
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={{ ...TH, textAlign: "left", borderRight: "1px solid var(--ft-raised)" }}>Metric</th>
+            <th style={{ ...TH, textAlign: "right" }}>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <NetWorthTableRow key={r.label} r={r} i={i} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ─── waterfall chart (income vs expenses breakdown) ───────────────────────────
+
+function WaterfallChart({ income, expenses, categories }: {
+  income: number;
+  expenses: number;
+  categories: Array<[string, number]>;
+}) {
+  const data = [
+    { name: "Income", value: income, fill: "var(--ft-green)", base: 0 },
+    ...categories.slice(0, 6).map(([cat, amt]) => ({
+      name: cat.length > 12 ? cat.slice(0, 11) + "…" : cat,
+      value: amt,
+      fill: "var(--ft-red)",
+      base: 0,
+    })),
+    { name: "Net", value: Math.max(income - expenses, 0), fill: income >= expenses ? "var(--ft-cyan)" : "var(--ft-red)", base: 0 },
+  ];
+
+  const maxVal = Math.max(income, expenses, 1);
+
+  return (
+    <div style={{ padding: "12px 0 4px" }}>
+      <ResponsiveContainer width="100%" height={160}>
+        <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -4 }}>
+          <XAxis
+            dataKey="name"
+            tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
+            tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }}
+            axisLine={false}
+            tickLine={false}
+            width={36}
+            domain={[0, maxVal * 1.1]}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const val = payload[0]?.value as number;
+              return (
+                <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "7px 12px", fontFamily: "var(--font-mono)", fontSize: 10 }}>
+                  <div style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 3 }}>{label}</div>
+                  <div className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{formatGbp(val)}</div>
+                </div>
+              );
+            }}
+          />
+          <Bar dataKey="value" radius={[0, 0, 0, 0]} maxBarSize={32}>
+            {data.map((d, i) => <Cell key={i} fill={d.fill} opacity={0.85} />)}
+          </Bar>
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ─── category sparkline row ───────────────────────────────────────────────────
+
+interface CategorySparklineRowProps {
+  cat: string;
+  amount: number;
+  i: number;
+  totalExpenses: number;
+  sparkVals: number[];
+  last3Months: Array<{ month: string }>;
+}
+
+function CategorySparklineRow({ cat, amount, i, totalExpenses, sparkVals, last3Months }: CategorySparklineRowProps) {
+  const [hov, setHov] = useState(false);
+  const pct = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
+  const color = PALETTE[i % PALETTE.length];
+  const sparkMax = Math.max(...sparkVals, 1);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        marginBottom: 10,
+        padding: "4px 2px",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+        borderRadius: 2,
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{cat}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {sparkVals.length > 0 && (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 16 }}>
+              {sparkVals.map((v, si) => (
+                <div key={si} title={`${last3Months[si]?.month ?? ""}: ${formatGbp(v)}`}
+                  style={{ width: 5, height: sparkMax > 0 ? `${Math.max(2, (v / sparkMax) * 16)}px` : "2px", background: color, opacity: 0.5 + (si / sparkVals.length) * 0.5, borderRadius: 1 }}
+                />
+              ))}
+            </div>
+          )}
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>{pct.toFixed(1)}%</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color }}> −{formatGbp(amount)}</span>
+        </div>
+      </div>
+      <div style={{ height: 3, background: "var(--ft-border)", overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: color, transition: "width 0.25s ease" }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── DOW bar item ─────────────────────────────────────────────────────────────
+
+interface DowBarItemProps {
+  label: string;
+  val: number;
+  dowMax: number;
+  isWeekend: boolean;
+  isHighest: boolean;
+}
+
+function DowBarItem({ label, val, dowMax, isWeekend, isHighest }: DowBarItemProps) {
+  const [hov, setHov] = useState(false);
+  const barHeight = dowMax > 0 ? Math.max(4, (val / dowMax) * 64) : 4;
+  const barColor = isWeekend ? "var(--ft-amber)" : "var(--ft-accent)";
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 4,
+        padding: "4px 2px",
+        borderRadius: 2,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+      }}
+    >
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2, opacity: val > 0 ? 1 : 0.4 }}>
+        {formatGbp(val)}
+      </div>
+      <div style={{ width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center", height: 64 }}>
+        <div style={{ width: "70%", height: barHeight, background: isHighest ? barColor : `${barColor}99`, borderRadius: "2px 2px 0 0" }} />
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: isHighest ? 700 : 400, color: isHighest ? barColor : "var(--ft-muted)", letterSpacing: "0.04em" }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+// ─── biggest transaction row ──────────────────────────────────────────────────
+
+interface BiggestTxRowProps {
+  tx: {
+    id: string | number;
+    date: string;
+    description: string;
+    category: string;
+    type: string;
+    gbpValue: number;
+  };
+  rowIdx: number;
+}
+
+function BiggestTxRow({ tx, rowIdx }: BiggestTxRowProps) {
+  const [hov, setHov] = useState(false);
+  const typeColor = tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-blue)";
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        borderBottom: "1px solid var(--ft-border)",
+        background: hov
+          ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
+          : rowIdx % 2 === 0 ? "var(--ft-surface)" : "var(--ft-base)",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
+        {formatDate(tx.date)}
+      </div>
+      <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {tx.description}
+      </div>
+      <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
+        <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
+          {tx.category}
+        </span>
+      </div>
+      <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
+        <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "1px 6px", borderRadius: 2, background: typeColor + "22", color: typeColor, textTransform: "uppercase" as const, letterSpacing: "0.3px" }}>
+          {tx.type}
+        </span>
+      </div>
+      <div style={{ width: 140, minWidth: 140, padding: "7px 12px", textAlign: "right", color: typeColor, fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
+        <span className="pnum">
+          {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
+          {formatGbp(Math.abs(tx.gbpValue))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── KPI tile ─────────────────────────────────────────────────────────────────
+
+interface KpiTile {
+  label: string;
+  value: string;
+  color: string;
+  delta: number | null;
+  deltaFmt: (d: number) => string;
+  deltaGoodDir: number;
+}
+
+interface KpiTileProps {
+  tile: KpiTile;
+  isLoading: boolean;
+}
+
+function KpiTileCell({ tile, isLoading }: KpiTileProps) {
+  return (
+    <div
+      style={{
+        background: "var(--ft-surface)",
+        borderTop: `2px solid ${tile.color}`,
+        padding: "10px 14px",
+        minWidth: 0,
+      }}
+    >
+      <div style={{ ...SECTION_LABEL, marginBottom: 6 }}>{tile.label}</div>
+      {isLoading ? (
+        <div style={{ height: 24, width: 80, background: "var(--ft-raised)", borderRadius: 2 }} />
+      ) : (
+        <>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: tile.color, fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+            {tile.value}
+          </div>
+          {tile.delta !== null && (
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, marginTop: 4, color: (tile.delta * tile.deltaGoodDir) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+              {tile.deltaFmt(tile.delta)} vs prior
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── main page ────────────────────────────────────────────────────────────────
+
 export default function Reports() {
+  usePrintStyles();
+  const isMobile = useIsMobile();
+
   const [dateFrom, setDateFrom] = useState(firstOfMonth());
   const [dateTo, setDateTo] = useState(today());
   const [activeQuick, setActiveQuick] = useState("This month");
+  const [reportType, setReportType] = useState<ReportTypeId>("income-statement");
   const [selectedTaxYear, setSelectedTaxYear] = useState<number>(TAX_YEARS[0] ?? CURRENT_YEAR - 1);
   const [taxYearDownloading, setTaxYearDownloading] = useState(false);
   const [taxYearError, setTaxYearError] = useState<string | null>(null);
@@ -269,7 +958,22 @@ export default function Reports() {
     return p;
   }, [dateFrom, dateTo]);
 
+  const priorApiParams = useMemo((): { dateFrom?: string; dateTo?: string } | null => {
+    if (!dateFrom || !dateTo) return null;
+    const DAY = 24 * 60 * 60 * 1000;
+    const fromMs = new Date(dateFrom).getTime();
+    const toMs = new Date(dateTo).getTime();
+    const spanMs = toMs - fromMs + DAY;
+    const priorTo = new Date(fromMs - DAY);
+    const priorFrom = new Date(priorTo.getTime() - spanMs + DAY);
+    return {
+      dateFrom: priorFrom.toISOString().slice(0, 10),
+      dateTo: priorTo.toISOString().slice(0, 10),
+    };
+  }, [dateFrom, dateTo]);
+
   const { data: transactions, isLoading } = useListTransactions(apiParams);
+  const { data: priorTxData } = useListTransactions(priorApiParams ?? {});
   const { data: dashboard } = useGetDashboard();
 
   const { income, expenses, txList } = useMemo(() => {
@@ -283,8 +987,22 @@ export default function Reports() {
     return { income: inc, expenses: exp, txList: list };
   }, [transactions]);
 
+  const { priorIncome, priorExpenses } = useMemo(() => {
+    if (!priorApiParams) return { priorIncome: null, priorExpenses: null };
+    const list = priorTxData ?? [];
+    let inc = 0, exp = 0;
+    for (const tx of list) {
+      if (tx.type === "income") inc += tx.gbpValue;
+      else if (tx.type === "expense") exp += tx.gbpValue;
+    }
+    return { priorIncome: inc, priorExpenses: exp };
+  }, [priorTxData, priorApiParams]);
+
   const netSavings = income - expenses;
   const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : null;
+  const priorSavingsRate = priorIncome !== null && priorIncome > 0
+    ? ((priorIncome - (priorExpenses ?? 0)) / priorIncome) * 100
+    : null;
 
   const topCategories = useMemo(() => {
     const expenseTxs = txList.filter((tx) => tx.type === "expense");
@@ -293,9 +1011,7 @@ export default function Reports() {
       const cat = tx.category || "Other";
       totals[cat] = (totals[cat] ?? 0) + tx.gbpValue;
     }
-    return Object.entries(totals)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8);
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [txList]);
 
   const totalExpenses = topCategories.reduce((s, [, v]) => s + v, 0);
@@ -311,35 +1027,53 @@ export default function Reports() {
   }, [dashboard, dateFrom, dateTo]);
 
   const biggestTxs = useMemo(() => {
-    return [...txList]
-      .sort((a, b) => b.gbpValue - a.gbpValue)
-      .slice(0, 10);
+    return [...txList].sort((a, b) => b.gbpValue - a.gbpValue).slice(0, 10);
   }, [txList]);
 
-  const kpiTiles = [
+  const kpiTiles: KpiTile[] = [
     {
       label: "Total Income",
       value: `+${formatGbp(income)}`,
-      color: "var(--ft-green)",
-      bg: "rgba(63,185,80,0.06)",
+      color: income > 0 ? "var(--ft-green)" : "var(--ft-muted)",
+      delta: priorIncome !== null ? income - priorIncome : null,
+      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatGbp(Math.abs(d))}`,
+      deltaGoodDir: 1,
     },
     {
       label: "Total Expenses",
       value: `-${formatGbp(expenses)}`,
-      color: "var(--ft-red)",
-      bg: "rgba(248,81,73,0.06)",
+      color: expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",
+      delta: priorExpenses !== null ? expenses - priorExpenses : null,
+      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatGbp(Math.abs(d))} spend`,
+      deltaGoodDir: -1,
     },
     {
       label: "Net Savings",
       value: `${netSavings >= 0 ? "+" : ""}${formatGbp(netSavings)}`,
-      color: netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-      bg: netSavings >= 0 ? "rgba(63,185,80,0.06)" : "rgba(248,81,73,0.06)",
+      color: netSavings !== 0 ? (netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)",
+      delta: priorIncome !== null && priorExpenses !== null ? netSavings - (priorIncome - priorExpenses) : null,
+      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatGbp(Math.abs(d))}`,
+      deltaGoodDir: 1,
     },
     {
       label: "Savings Rate",
       value: savingsRate !== null ? `${savingsRate.toFixed(1)}%` : "—",
-      color: savingsRate !== null && savingsRate >= 0 ? "var(--ft-cyan)" : "var(--ft-red)",
-      bg: "rgba(96,165,250,0.06)",
+      color: savingsRate !== null && savingsRate >= 20
+        ? "var(--ft-green)"
+        : savingsRate !== null && savingsRate >= 0
+          ? "var(--ft-amber)"
+          : "var(--ft-red)",
+      delta: priorSavingsRate !== null && savingsRate !== null ? savingsRate - priorSavingsRate : null,
+      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${d.toFixed(1)}pp`,
+      deltaGoodDir: 1,
+    },
+    {
+      label: "Transactions",
+      value: String(txList.length),
+      color: "var(--ft-text)",
+      delta: null,
+      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${d}`,
+      deltaGoodDir: 1,
     },
   ];
 
@@ -394,777 +1128,420 @@ export default function Reports() {
     return result;
   }, [topCategories, last3Months, txList]);
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+  const currentReportLabel = REPORT_TYPES.find((r) => r.id === reportType)?.label ?? "Report";
 
-      <div style={{
+  return (
+    <div id="ft-reports-root" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+
+      {/* ── Header ── */}
+      <div className="ft-page-header ft-no-print" style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "14px 20px",
+        padding: isMobile ? "10px 16px" : "12px 20px",
         borderBottom: "1px solid var(--ft-border)",
         background: "var(--ft-surface)",
+        flexWrap: isMobile ? "nowrap" : "wrap",
+        gap: 8,
       }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-          <span style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            color: "var(--ft-text)",
-          }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0, flexShrink: 0 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", color: "var(--ft-text)", flexShrink: 0 }}>
             REPORTS
           </span>
-          <span style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--ft-dim)",
-            letterSpacing: "0.04em",
-          }}>
-            income · expenses · trends
-          </span>
+          {!isMobile && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+              income · expenses · trends
+            </span>
+          )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        <div className="ft-filter-bar" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: isMobile ? "nowrap" : "wrap", overflowX: isMobile ? "auto" : "visible", minWidth: 0, flex: isMobile ? "1 1 0" : "none" }}>
+          {/* Quick range buttons — scrollable on mobile */}
+          <div style={{ display: "flex", gap: 2, flexWrap: isMobile ? "nowrap" : "wrap", overflowX: isMobile ? "auto" : "visible", flexShrink: 0 }}>
             {QUICK_RANGES.map((qr) => (
               <button
                 key={qr.label}
                 onClick={() => applyQuick(qr)}
                 style={{
-                  padding: "4px 10px",
-                  fontSize: 11,
+                  padding: isMobile ? "4px 7px" : "3px 8px",
+                  minHeight: isMobile ? 32 : undefined,
+                  fontSize: isMobile ? 9 : 10,
                   fontFamily: "var(--font-mono)",
-                  background: activeQuick === qr.label ? "rgba(244,162,30,0.12)" : "var(--ft-raised)",
-                  color: activeQuick === qr.label ? "var(--ft-accent)" : "var(--ft-muted)",
-                  border: `1px solid ${activeQuick === qr.label ? "rgba(244,162,30,0.4)" : "var(--ft-border2)"}`,
+                  background: activeQuick === qr.label ? "var(--ft-raised)" : "transparent",
+                  color: activeQuick === qr.label ? "var(--ft-text)" : "var(--ft-dim)",
+                  border: activeQuick === qr.label ? "1px solid var(--ft-border2)" : "1px solid var(--ft-border)",
                   borderRadius: 2,
                   cursor: "pointer",
+                  fontWeight: activeQuick === qr.label ? 700 : 400,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
                 }}
               >
                 {qr.label}
               </button>
             ))}
           </div>
-          <div style={{ width: 1, height: 24, background: "var(--ft-border2)", margin: "0 4px" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 11, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>From</span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); setActiveQuick(""); }}
-              style={{
-                height: 28,
-                padding: "0 8px",
-                fontSize: 12,
-                fontFamily: "var(--font-mono)",
-                background: "var(--ft-raised)",
-                border: "1px solid var(--ft-border2)",
-                borderRadius: 2,
-                color: "var(--ft-text)",
-                outline: "none",
-              }}
-            />
-            <span style={{ fontSize: 11, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>To</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); setActiveQuick(""); }}
-              style={{
-                height: 28,
-                padding: "0 8px",
-                fontSize: 12,
-                fontFamily: "var(--font-mono)",
-                background: "var(--ft-raised)",
-                border: "1px solid var(--ft-border2)",
-                borderRadius: 2,
-                color: "var(--ft-text)",
-                outline: "none",
-              }}
-            />
-          </div>
-          <div style={{ width: 1, height: 24, background: "var(--ft-border2)", margin: "0 4px" }} />
+          {!isMobile && <div style={{ width: 1, height: 20, background: "var(--ft-border2)", margin: "0 2px" }} />}
+          {/* Custom date range — hidden on mobile to save space */}
+          {!isMobile && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>From</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); setActiveQuick("Custom"); }}
+                style={{ height: 26, padding: "0 6px", fontSize: 11, fontFamily: "var(--font-mono)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)", outline: "none" }}
+              />
+              <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>To</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); setActiveQuick("Custom"); }}
+                style={{ height: 26, padding: "0 6px", fontSize: 11, fontFamily: "var(--font-mono)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)", outline: "none" }}
+              />
+            </div>
+          )}
+          {!isMobile && <div style={{ width: 1, height: 20, background: "var(--ft-border2)", margin: "0 2px" }} />}
           <button
-            onClick={() => exportCsv(txList)}
-            style={{
-              background: "var(--ft-raised)",
-              color: "var(--ft-muted)",
-              border: "1px solid var(--ft-border)",
-              borderRadius: 2,
-              fontSize: 12,
-              fontFamily: "var(--font-mono)",
-              padding: "5px 12px",
-              cursor: "pointer",
-            }}
+            onClick={() => exportCsv(txList as CsvRow[], currentReportLabel)}
+            title="Export transactions to CSV"
+            style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 11, fontFamily: "var(--font-mono)", padding: isMobile ? "6px 10px" : "4px 10px", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
           >
-            ↓ Export CSV
+            ↓ CSV
           </button>
+          {!isMobile && (
+            <button
+              onClick={() => window.print()}
+              title="Print / save as PDF"
+              style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 11, fontFamily: "var(--font-mono)", padding: "4px 10px", cursor: "pointer" }}
+            >
+              ⎙ Print
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Report type selector ── */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        borderBottom: "1px solid var(--ft-border)",
+        background: "var(--ft-surface)",
+        padding: "0 20px",
+        gap: 0,
+        overflowX: "auto",
+        scrollbarWidth: "none",
+        WebkitOverflowScrolling: "touch" as const,
+      } as React.CSSProperties}>
+        {REPORT_TYPES.map((rt) => (
           <button
-            onClick={() => window.print()}
-            className="ft-no-print"
+            key={rt.id}
+            onClick={() => setReportType(rt.id)}
             style={{
-              background: "var(--ft-raised)",
-              color: "var(--ft-muted)",
-              border: "1px solid var(--ft-border)",
-              borderRadius: 2,
-              fontSize: 12,
               fontFamily: "var(--font-mono)",
-              padding: "5px 12px",
+              fontSize: 10,
+              fontWeight: reportType === rt.id ? 700 : 400,
+              color: reportType === rt.id ? "var(--ft-text)" : "var(--ft-dim)",
+              background: "none",
+              border: "none",
+              borderBottom: reportType === rt.id ? "2px solid var(--ft-accent)" : "2px solid transparent",
+              padding: "10px 16px 9px",
               cursor: "pointer",
+              letterSpacing: "0.06em",
+              textTransform: "uppercase" as const,
+              whiteSpace: "nowrap" as const,
+              flexShrink: 0,
             }}
+            tabIndex={0}
+            aria-selected={reportType === rt.id}
+            role="tab"
           >
-            ↓ Export PDF
+            {rt.label}
           </button>
+        ))}
+        <div style={{ marginLeft: "auto", padding: "0 0 0 16px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap", flexShrink: 0 }}>
+          {dateFrom && dateTo ? `${dateFrom} — ${dateTo}` : dateFrom ? `from ${dateFrom}` : "All time"}
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "stretch", borderBottom: "1px solid var(--ft-border)" }}>
-        <div className="ft-four-col" style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          flex: 1,
-        }}>
-          {kpiTiles.map((tile, i) => (
-            <div
-              key={tile.label}
-              style={{
-                background: tile.bg,
-                borderRight: i < 3 ? "1px solid var(--ft-border)" : undefined,
-                padding: "16px 20px",
-              }}
-            >
-              <div style={{ ...SECTION_LABEL, marginBottom: 6 }}>{tile.label}</div>
-              {isLoading ? (
-                <div style={{ height: 24, width: 80, background: "var(--ft-raised)", borderRadius: 2 }} />
-              ) : (
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 20,
-                    fontWeight: 700,
-                    color: tile.color,
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  {tile.value}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div style={{
-          width: 200,
-          borderLeft: "1px solid var(--ft-border)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "12px 0",
-          background: "var(--ft-surface)",
-          position: "relative",
-        }}>
-          <div style={{ ...SECTION_LABEL, position: "absolute", top: 12, left: 16, marginBottom: 0 }}>
-            Income vs Expenses
+      {/* ── Persona context strip ── */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid || pid === "full") return null;
+        const sr = savingsRate;
+        const msgs: Record<string, string> = {
+          market: sr !== null ? `Savings rate ${sr.toFixed(1)}% — surplus beyond expenses is your investable capital.` : `Track income vs expenses to identify your investment contribution capacity.`,
+          budget: `Run this report monthly to spot category drift before it erodes your budget targets.`,
+          wealth: sr !== null && sr >= 20 ? `${sr.toFixed(1)}% savings rate — on track for wealth accumulation goals. Optimise tax efficiency next.` : `Increase savings rate toward 20%+ to accelerate wealth building trajectory.`,
+          social: `Reviewing this period shows how much social / shared spending has impacted your bottom line.`,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
+            <span>{msg}</span>
           </div>
-          <PieChart width={180} height={140}>
-            <Pie
-              data={donutData}
-              cx={90}
-              cy={70}
-              innerRadius={45}
-              outerRadius={62}
-              dataKey="value"
-              strokeWidth={0}
-            >
-              <Cell fill="var(--ft-green)" fillOpacity={0.85} />
-              <Cell fill="var(--ft-red)" fillOpacity={0.85} />
-            </Pie>
-            <Tooltip content={<DonutTooltip />} />
-          </PieChart>
-          <div style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            textAlign: "center",
-            pointerEvents: "none",
-            marginTop: 6,
-          }}>
-            <div style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 14,
-              fontWeight: 700,
-              color: savingsRate !== null && savingsRate >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-              lineHeight: 1,
-            }}>
-              {savingsRate !== null ? `${savingsRate.toFixed(0)}%` : "—"}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
-              SAVED
-            </div>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
-      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
-
-        <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-          <div style={{
-            padding: "10px 16px",
-            borderBottom: "1px solid var(--ft-border)",
-            background: "var(--ft-surface)",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Top Categories by Spend
-            </span>
-          </div>
-          {isLoading ? (
-            <div style={{ padding: 16, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
-              Loading…
-            </div>
-          ) : topCategories.length === 0 ? (
-            <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
-              No expense transactions in this range
-            </div>
-          ) : (
-            <div style={{ padding: "12px 16px 14px" }}>
-              {topCategories.map(([cat, amount], i) => {
-                const pct = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
-                const color = PALETTE[i % PALETTE.length];
-                const sparkVals = categorySparklines[cat] ?? [];
-                const sparkMax = Math.max(...sparkVals, 1);
-                return (
-                  <div key={cat} style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>
-                        {cat}
-                      </span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        {sparkVals.length > 0 && (
-                          <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 18 }}>
-                            {sparkVals.map((v, si) => (
-                              <div
-                                key={si}
-                                title={`${last3Months[si]?.month ?? ""}: ${formatGbp(v)}`}
-                                style={{
-                                  width: 5,
-                                  height: sparkMax > 0 ? `${Math.max(2, (v / sparkMax) * 18)}px` : "2px",
-                                  background: color,
-                                  opacity: 0.5 + (si / sparkVals.length) * 0.5,
-                                  borderRadius: 1,
-                                }}
-                              />
-                            ))}
-                          </div>
-                        )}
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
-                          {pct.toFixed(1)}%
-                        </span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color }}>
-                          −{formatGbp(amount)}
-                        </span>
-                      </div>
-                    </div>
-                    <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
-                      <div
-                        style={{
-                          height: "100%",
-                          width: `${pct}%`,
-                          background: color,
-                          borderRadius: 2,
-                          transition: "width 0.4s ease",
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
-          <div style={{
-            padding: "10px 16px",
-            borderBottom: "1px solid var(--ft-border)",
-            background: "var(--ft-surface)",
-          }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Monthly Trend
-            </span>
-          </div>
-
-          {trendChartData.length > 0 && (
-            <div style={{ padding: "12px 8px 0" }}>
-              <ResponsiveContainer width="100%" height={180}>
-                <ComposedChart data={trendChartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                  <defs>
-                    <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--ft-green)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--ft-green)" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--ft-red)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--ft-red)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
-                    tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={36}
-                  />
-                  <Tooltip content={<TrendTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="income"
-                    name="Income"
-                    stroke="var(--ft-green)"
-                    strokeWidth={1.5}
-                    fill="url(#incomeGrad)"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="expenses"
-                    name="Expenses"
-                    stroke="var(--ft-red)"
-                    strokeWidth={1.5}
-                    fill="url(#expenseGrad)"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="net"
-                    name="Net"
-                    stroke="var(--ft-accent)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {monthlyHistory.length === 0 ? (
-            <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
-              No monthly data available
-            </div>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    {["Month", "Income", "Expenses", "Net", "Rate"].map((h) => (
-                      <th
-                        key={h}
-                        style={{
-                          ...TH,
-                          textAlign: h === "Month" ? "left" : "right",
-                          borderRight: "1px solid var(--ft-raised)",
-                        }}
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...monthlyHistory].reverse().map((m) => {
-                    const rate = m.income > 0 ? ((m.income - m.expenses) / m.income) * 100 : 0;
-                    const isNegative = rate < 0;
-                    return (
-                      <tr
-                        key={m.month}
-                        style={{
-                          background: isNegative ? "rgba(248,81,73,0.04)" : "transparent",
-                        }}
-                      >
-                        <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>
-                          {formatMonthLabel(m.month)}
-                        </td>
-                        <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-green)" }}>
-                          +{formatGbp(m.income)}
-                        </td>
-                        <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-red)" }}>
-                          −{formatGbp(m.expenses)}
-                        </td>
-                        <td
-                          style={{
-                            ...TD,
-                            textAlign: "right",
-                            borderRight: "1px solid var(--ft-raised)",
-                            color: m.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {m.netSavings >= 0 ? "+" : ""}{formatGbp(m.netSavings)}
-                        </td>
-                        <td
-                          style={{
-                            ...TD,
-                            textAlign: "right",
-                            color: isNegative ? "var(--ft-red)" : "var(--ft-cyan)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {m.income > 0 ? `${rate.toFixed(1)}%` : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
-        <div style={{
-          padding: "10px 16px",
-          borderBottom: "1px solid var(--ft-border)",
-          background: "var(--ft-surface)",
-        }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Spending by Day of Week
-          </span>
-        </div>
-        <div style={{ padding: "16px 20px" }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 80 }}>
-            {DOW_LABELS.map((label, i) => {
-              const val = dowSpend[i];
-              const barHeight = dowMax > 0 ? Math.max(4, (val / dowMax) * 64) : 4;
-              const isWeekend = i >= 5;
-              const isHighest = i === dowHighestIdx && val > 0;
-              const barColor = isWeekend ? "var(--ft-amber)" : "var(--ft-accent)";
-              return (
-                <div
-                  key={label}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 4,
-                  }}
-                >
-                  <div style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9,
-                    color: "var(--ft-dim)",
-                    marginBottom: 2,
-                    opacity: val > 0 ? 1 : 0.4,
-                  }}>
-                    {formatGbp(val)}
-                  </div>
-                  <div style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "flex-end",
-                    justifyContent: "center",
-                    height: 64,
-                  }}>
-                    <div
-                      style={{
-                        width: "70%",
-                        height: barHeight,
-                        background: isHighest
-                          ? barColor
-                          : `${barColor}99`,
-                        borderRadius: "2px 2px 0 0",
-                        boxShadow: isHighest ? `0 0 8px ${barColor}66` : undefined,
-                        transition: "height 0.3s ease",
-                      }}
-                    />
-                  </div>
-                  <div style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 9,
-                    fontWeight: isHighest ? 700 : 400,
-                    color: isHighest ? barColor : "var(--ft-muted)",
-                    letterSpacing: "0.04em",
-                  }}>
-                    {label}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div>
+      {/* ── KPI summary bar — border-as-gap grid ── */}
+      <div style={{ display: "flex", alignItems: "stretch", borderBottom: "1px solid var(--ft-border)", flexWrap: isMobile ? "wrap" : "nowrap" }}>
         <div
           style={{
-            padding: "8px 16px",
-            background: "rgba(96,165,250,0.06)",
-            borderBottom: "1px solid rgba(96,165,250,0.15)",
-            display: "flex",
-            alignItems: "center",
+            display: "grid",
+            gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)",
+            gap: 1,
+            background: "var(--ft-border)",
+            flex: 1,
+            minWidth: 0,
           }}
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.04em" }}>
-            ▼ BIGGEST TRANSACTIONS
-          </span>
-          <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
-            Top 10 by GBP value
-          </span>
+          {kpiTiles.map((tile, i) => {
+            const isLastOdd = isMobile && i === kpiTiles.length - 1 && kpiTiles.length % 2 === 1;
+            return isLastOdd
+              ? <div key={tile.label} style={{ gridColumn: "span 2" }}><KpiTileCell tile={tile} isLoading={isLoading} /></div>
+              : <KpiTileCell key={tile.label} tile={tile} isLoading={isLoading} />;
+          })}
         </div>
-        <div style={{ overflowX: "auto" }}>
-          <div style={{ display: "flex" }}>
-            {[
-              ["Date", "100px"],
-              ["Description", "1"],
-              ["Category", "130px"],
-              ["Type", "90px"],
-              ["Amount (GBP)", "140px"],
-            ].map(([h, w]) => (
-              <div
-                key={h}
-                style={{
-                  ...TH,
-                  flex: w === "1" ? 1 : undefined,
-                  width: w !== "1" ? w : undefined,
-                  minWidth: w !== "1" ? w : undefined,
-                  textAlign: h === "Amount (GBP)" ? "right" : "left",
-                  borderRight: "1px solid var(--ft-raised)",
-                }}
-              >
-                {h}
+
+        {/* Donut chart — hidden on mobile to save vertical space */}
+        {!isMobile && (
+          <div style={{ width: 180, minWidth: 140, borderLeft: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 0", background: "var(--ft-surface)", position: "relative", flexShrink: 0 }}>
+            <div style={{ ...SECTION_LABEL, position: "absolute", top: 10, left: 12, marginBottom: 0 }}>I/E Split</div>
+            <PieChart width={160} height={130}>
+              <Pie data={donutData} cx={78} cy={62} innerRadius={38} outerRadius={54} dataKey="value" strokeWidth={0}>
+                <Cell fill="var(--ft-green)" fillOpacity={0.85} />
+                <Cell fill="var(--ft-red)" fillOpacity={0.85} />
+              </Pie>
+              <Tooltip content={<DonutTooltip />} />
+            </PieChart>
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", textAlign: "center", pointerEvents: "none", marginTop: 6 }}>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: savingsRate !== null && savingsRate >= 20 ? "var(--ft-green)" : savingsRate !== null && savingsRate >= 0 ? "var(--ft-amber)" : "var(--ft-red)", lineHeight: 1 }}>
+                {savingsRate !== null ? `${savingsRate.toFixed(0)}%` : "—"}
               </div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>SAVED</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Report-specific content ── */}
+      {reportType === "income-statement" && (
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
+          <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+            <SectionHeader title="Income Statement" accentColor="var(--ft-green)" right={<span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>monthly breakdown</span>} />
+            <IncomeStatementTable rows={monthlyHistory} />
+          </div>
+          <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
+            <SectionHeader title="Monthly Trend" accentColor="var(--ft-accent)" />
+            {trendChartData.length > 0 && (
+              <div style={{ padding: "10px 8px 0" }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <ComposedChart data={trendChartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                    <defs>
+                      <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--ft-green)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="var(--ft-green)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--ft-red)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="var(--ft-red)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} width={36} />
+                    <Tooltip content={<TrendTooltip />} />
+                    <Area type="monotone" dataKey="income" name="Income" stroke="var(--ft-green)" strokeWidth={1.5} fill="url(#incomeGrad)" />
+                    <Area type="monotone" dataKey="expenses" name="Expenses" stroke="var(--ft-red)" strokeWidth={1.5} fill="url(#expenseGrad)" />
+                    <Line type="monotone" dataKey="net" name="Net" stroke="var(--ft-accent)" strokeWidth={2} dot={false} />
+                    {income > 0 && (
+                      <ReferenceLine y={income / Math.max(trendChartData.length, 1)} stroke="var(--ft-accent)" strokeDasharray="4 3" strokeWidth={1} />
+                    )}
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {monthlyHistory.length === 0 && (
+              <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No monthly data available</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {reportType === "expense-report" && (
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
+          <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+            <SectionHeader title="Expense Breakdown by Category" accentColor="var(--ft-red)" right={
+              <button
+                onClick={() => exportCsv(txList.filter((t) => t.type === "expense") as CsvRow[], "Expense Report")}
+                style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "2px 7px", cursor: "pointer", borderRadius: 2 }}
+              >↓ CSV</button>
+            } />
+            <ExpenseReportTable categories={topCategories} totalExpenses={totalExpenses} />
+          </div>
+          <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
+            <SectionHeader title="Breakdown Chart" accentColor="var(--ft-amber)" />
+            <WaterfallChart income={income} expenses={expenses} categories={topCategories} />
+            {/* Category sparklines */}
+            <div style={{ padding: "0 16px 16px" }}>
+              {topCategories.map(([cat, amount], i) => (
+                <CategorySparklineRow
+                  key={cat}
+                  cat={cat}
+                  amount={amount}
+                  i={i}
+                  totalExpenses={totalExpenses}
+                  sparkVals={categorySparklines[cat] ?? []}
+                  last3Months={last3Months}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reportType === "net-worth" && (
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
+          <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+            <SectionHeader title="Net Worth Summary" accentColor="var(--ft-cyan)" />
+            <NetWorthTable income={income} expenses={expenses} netSavings={netSavings} savingsRate={savingsRate} />
+          </div>
+          <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
+            <SectionHeader title="Savings Trend" accentColor="var(--ft-cyan)" />
+            {trendChartData.length > 0 ? (
+              <div style={{ padding: "10px 8px 0" }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <ComposedChart data={trendChartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                    <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} width={36} />
+                    <Tooltip content={<TrendTooltip />} />
+                    <Area type="monotone" dataKey="net" name="Net Savings" stroke="var(--ft-cyan)" strokeWidth={2} fill="var(--ft-cyan)" fillOpacity={0.08} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No data available</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {reportType === "cash-flow" && (
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
+          <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+            <SectionHeader title="Cash Flow Statement" accentColor="var(--ft-blue)" />
+            <CashFlowTable rows={monthlyHistory} />
+          </div>
+          <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
+            <SectionHeader title="Cumulative Flow" accentColor="var(--ft-cyan)" />
+            {trendChartData.length > 0 ? (
+              <div style={{ padding: "10px 8px 0" }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <ComposedChart data={trendChartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                    <defs>
+                      <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--ft-cyan)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="var(--ft-cyan)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} width={36} />
+                    <Tooltip content={<TrendTooltip />} />
+                    <Area type="monotone" dataKey="income" name="Inflow" stroke="var(--ft-green)" strokeWidth={1.5} fill="url(#incomeGrad)" />
+                    <Area type="monotone" dataKey="expenses" name="Outflow" stroke="var(--ft-red)" strokeWidth={1.5} fill="url(#expenseGrad)" />
+                    <Line type="monotone" dataKey="net" name="Net" stroke="var(--ft-cyan)" strokeWidth={2} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No data available</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Spending by day of week ── */}
+      <div style={{ borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+        <SectionHeader title="Spending by Day of Week" accentColor="var(--ft-amber)" />
+        <div style={{ padding: "14px 20px" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 80 }}>
+            {DOW_LABELS.map((label, i) => (
+              <DowBarItem
+                key={label}
+                label={label}
+                val={dowSpend[i]}
+                dowMax={dowMax}
+                isWeekend={i >= 5}
+                isHighest={i === dowHighestIdx && dowSpend[i] > 0}
+              />
             ))}
           </div>
-
-          {isLoading ? (
-            <div style={{ padding: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
-              Loading…
-            </div>
-          ) : biggestTxs.length === 0 ? (
-            <div style={{ padding: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
-              No transactions in this range
-            </div>
-          ) : (
-            biggestTxs.map((tx) => {
-              const typeColor =
-                tx.type === "income"
-                  ? "var(--ft-green)"
-                  : tx.type === "expense"
-                  ? "var(--ft-red)"
-                  : "var(--ft-blue)";
-              return (
-                <div
-                  key={tx.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    borderBottom: "1px solid var(--ft-raised)",
-                    background: "var(--ft-base)",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 100,
-                      minWidth: 100,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                      color: "var(--ft-muted)",
-                      fontSize: 11,
-                      fontFamily: "var(--font-mono)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    {formatDate(tx.date)}
-                  </div>
-                  <div
-                    style={{
-                      flex: 1,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                      color: "var(--ft-text)",
-                      fontSize: 12,
-                      fontFamily: "var(--font-mono)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {tx.description}
-                  </div>
-                  <div
-                    style={{
-                      width: 130,
-                      minWidth: 130,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontFamily: "var(--font-mono)",
-                        padding: "1px 6px",
-                        borderRadius: 2,
-                        background: "var(--ft-raised)",
-                        color: "var(--ft-muted)",
-                      }}
-                    >
-                      {tx.category}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      width: 90,
-                      minWidth: 90,
-                      padding: "7px 12px",
-                      borderRight: "1px solid var(--ft-raised)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontFamily: "var(--font-mono)",
-                        padding: "1px 6px",
-                        borderRadius: 2,
-                        background: typeColor + "22",
-                        color: typeColor,
-                        textTransform: "uppercase" as const,
-                        letterSpacing: "0.3px",
-                      }}
-                    >
-                      {tx.type}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      width: 140,
-                      minWidth: 140,
-                      padding: "7px 12px",
-                      textAlign: "right",
-                      color: typeColor,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      fontFamily: "var(--font-mono)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
-                    {formatGbp(Math.abs(tx.gbpValue))}
-                  </div>
-                </div>
-              );
-            })
-          )}
         </div>
       </div>
 
-      {/* Tax Year Export */}
+      {/* ── Biggest transactions table ── */}
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
-        <div style={{
-          padding: "8px 16px",
-          background: "rgba(244,162,30,0.05)",
-          borderBottom: "1px solid rgba(244,162,30,0.15)",
-          display: "flex",
-          alignItems: "center",
-        }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.04em" }}>
-            ▼ TAX YEAR EXPORT
-          </span>
+        <SectionHeader title="Biggest Transactions" accentColor="var(--ft-accent)" right={
+          <div style={{ display: "flex", gap: 6 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Top 10 by GBP value</span>
+            <button
+              onClick={() => exportCsv(biggestTxs as CsvRow[], "Biggest Transactions")}
+              style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "1px 6px", cursor: "pointer", borderRadius: 2 }}
+            >↓ CSV</button>
+          </div>
+        } />
+        <div className="ft-scroll-x">
+          <div style={{ minWidth: 580 }}>
+            <div style={{ display: "flex" }}>
+              {[["Date","100px"],["Description","1"],["Category","130px"],["Type","90px"],["Amount (GBP)","140px"]].map(([h, w]) => (
+                <div key={h} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, textAlign: h === "Amount (GBP)" ? "right" : "left", borderRight: "1px solid var(--ft-raised)" }}>
+                  {h}
+                </div>
+              ))}
+            </div>
+
+            {isLoading ? (
+              <div style={{ padding: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>Loading…</div>
+            ) : biggestTxs.length === 0 ? (
+              <div style={{ padding: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>No transactions in this range</div>
+            ) : (
+              biggestTxs.map((tx, rowIdx) => (
+                <BiggestTxRow key={tx.id} tx={tx} rowIdx={rowIdx} />
+              ))
+            )}
+          </div>
         </div>
-        <div style={{
-          padding: "16px 20px",
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          flexWrap: "wrap",
-          background: "var(--ft-surface)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
-              TAX YEAR
-            </span>
+      </div>
+
+      {/* ── Tax Year Export ── */}
+      <div style={{ borderTop: "1px solid var(--ft-border)" }}>
+        <SectionHeader title="Tax Year Export" accentColor="var(--ft-amber)" />
+        <div className="ft-filter-bar" style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, background: "var(--ft-surface)", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>TAX YEAR</span>
             <select
               value={selectedTaxYear}
-              onChange={(e) => {
-                setSelectedTaxYear(Number(e.target.value));
-                setTaxYearError(null);
-              }}
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 12,
-                background: "var(--ft-raised)",
-                border: "1px solid var(--ft-border2)",
-                borderRadius: 2,
-                color: "var(--ft-text)",
-                padding: "4px 8px",
-                height: 28,
-                outline: "none",
-                cursor: "pointer",
-              }}
+              onChange={(e) => { setSelectedTaxYear(Number(e.target.value)); setTaxYearError(null); }}
+              style={{ fontFamily: "var(--font-mono)", fontSize: 12, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)", padding: "4px 8px", height: 28, outline: "none", cursor: "pointer" }}
             >
-              {TAX_YEARS.map((yr) => (
-                <option key={yr} value={yr}>
-                  {formatTaxYear(yr)}
-                </option>
-              ))}
+              {TAX_YEARS.map((yr) => <option key={yr} value={yr}>{formatTaxYear(yr)}</option>)}
             </select>
           </div>
-
-          <div style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            color: "var(--ft-dim)",
-            padding: "4px 10px",
-            background: "var(--ft-raised)",
-            border: "1px solid var(--ft-border)",
-            borderRadius: 2,
-          }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", padding: "4px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderRadius: 2 }}>
             UK Tax Year: 6 April {selectedTaxYear} – 5 April {selectedTaxYear + 1}
           </div>
-
           <button
             onClick={handleTaxYearDownload}
             disabled={taxYearDownloading}
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              background: taxYearDownloading ? "var(--ft-raised)" : "rgba(244,162,30,0.1)",
-              color: taxYearDownloading ? "var(--ft-dim)" : "var(--ft-accent)",
-              border: `1px solid ${taxYearDownloading ? "var(--ft-border)" : "rgba(244,162,30,0.4)"}`,
-              borderRadius: 2,
-              padding: "5px 14px",
-              cursor: taxYearDownloading ? "not-allowed" : "pointer",
-              transition: "all 0.15s ease",
-            }}
+            style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", color: taxYearDownloading ? "var(--ft-dim)" : "var(--ft-text)", border: `1px solid ${taxYearDownloading ? "var(--ft-border)" : "var(--ft-border2)"}`, borderRadius: 2, padding: "5px 12px", cursor: taxYearDownloading ? "not-allowed" : "pointer" }}
           >
             {taxYearDownloading ? "Downloading…" : `↓ Download CSV (${formatTaxYear(selectedTaxYear)})`}
           </button>
-
           {taxYearError && (
-            <span style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--ft-red)",
-            }}>
-              {taxYearError}
-            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-red)" }}>{taxYearError}</span>
           )}
-
-          <div style={{
-            marginLeft: "auto",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            color: "var(--ft-dim)",
-            letterSpacing: "0.04em",
-          }}>
+          <div style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
             Columns: Date · Description · Amount · Type · Category · Account · Notes
           </div>
         </div>

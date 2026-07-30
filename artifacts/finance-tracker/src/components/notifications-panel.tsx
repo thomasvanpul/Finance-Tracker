@@ -9,6 +9,7 @@ import {
   useListAccounts,
 } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
+import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_FOCUS } from "@/lib/persona";
 
 const BALANCE_ALERTS_KEY = "ft-balance-alerts";
 
@@ -285,10 +286,70 @@ interface NotificationsPanelProps {
   onClose: () => void;
 }
 
+interface AlertRowProps {
+  alert: Alert;
+  onDismiss: (id: string) => void;
+}
+
+function AlertRow({ alert, onDismiss }: AlertRowProps) {
+  const [hov, setHov] = useState(false);
+  const color = LEVEL_COLOR[alert.level];
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        background: hov ? `color-mix(in srgb, ${color} 6%, var(--ft-raised))` : "var(--ft-raised)",
+        borderLeft: `3px solid ${color}`,
+        borderBottom: "1px solid var(--ft-border)",
+        padding: "8px 12px 8px 10px",
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        lineHeight: "1.4",
+        marginBottom: 1,
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: "var(--ft-text)", fontWeight: 600, marginBottom: 2, lineHeight: "1.3" }}>
+          {alert.title}
+        </div>
+        <div style={{ color: "var(--ft-muted)", fontSize: 10, lineHeight: "1.4" }}>
+          {alert.detail}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => onDismiss(alert.id)}
+        aria-label="Dismiss alert"
+        style={{
+          background: "none", border: "none",
+          color: "var(--ft-dim)", cursor: "pointer",
+          fontFamily: "var(--font-mono)", fontSize: 15,
+          padding: "0 2px", lineHeight: 1, flexShrink: 0, marginTop: 1,
+          transition: "color 0.1s",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-text)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
   const [dismissed, setDismissed] = useState<string[]>(() => loadDismissed());
   const alerts = useAlerts();
   const { data: accounts } = useListAccounts();
+
+  const primaryPersona = useMemo(() => {
+    const ids = loadPersonaIds();
+    return ids.length > 0 ? PERSONAS.find((p) => p.id === ids[0]) ?? null : null;
+  }, []);
 
   // Balance alerts config state
   const [balanceRules, setBalanceRules] = useState<BalanceAlertRule[]>(() =>
@@ -400,7 +461,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
           flexDirection: "column",
           fontFamily: "var(--font-mono)",
           transform: open ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+          transition: "transform 0.12s ease",
         }}
       >
         {/* Panel header */}
@@ -415,17 +476,28 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
             flexShrink: 0,
           }}
         >
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--ft-text)",
-              letterSpacing: "0.1em",
-            }}
-          >
-            ALERTS
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {primaryPersona && primaryPersona.id !== "full" && (
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: 9,
+                color: PERSONA_COLORS[primaryPersona.id],
+                fontWeight: 700, lineHeight: 1,
+              }}>
+                {PERSONA_GLYPHS[primaryPersona.id]}
+              </span>
+            )}
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 700,
+                color: "var(--ft-text)",
+                letterSpacing: "0.1em",
+              }}
+            >
+              ALERTS
+            </span>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {visible.length > 0 && (
               <span
@@ -470,6 +542,37 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
             padding: "8px 0",
           }}
         >
+          {/* Persona context strip */}
+          {primaryPersona && primaryPersona.id !== "full" && (
+            <div
+              style={{
+                margin: "0 0 8px",
+                borderLeft: `3px solid ${PERSONA_COLORS[primaryPersona.id]}`,
+                borderBottom: "1px solid var(--ft-border)",
+                background: `${PERSONA_COLORS[primaryPersona.id]}08`,
+                padding: "6px 12px 6px 10px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 3,
+              }}
+            >
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontFamily: "var(--font-mono)", fontSize: 8,
+                color: PERSONA_COLORS[primaryPersona.id],
+                letterSpacing: "0.1em", fontWeight: 700,
+              }}>
+                <span>{PERSONA_GLYPHS[primaryPersona.id]}</span>
+                <span>{primaryPersona.code} — {primaryPersona.label.toUpperCase()}</span>
+              </div>
+              <div style={{
+                fontFamily: "var(--font-mono)", fontSize: 9,
+                color: "var(--ft-dim)", lineHeight: "1.5",
+              }}>
+                {PERSONA_FOCUS[primaryPersona.id]}
+              </div>
+            </div>
+          )}
           {visible.length === 0 ? (
             <div
               style={{
@@ -508,74 +611,9 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                     {LEVEL_LABEL[level]}
                   </div>
                   {/* Alert rows */}
-                  {items.map((alert) => {
-                    const color = LEVEL_COLOR[alert.level];
-                    return (
-                      <div
-                        key={alert.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: 10,
-                          background: "var(--ft-raised)",
-                          borderLeft: `3px solid ${color}`,
-                          borderBottom: "1px solid var(--ft-border)",
-                          padding: "8px 12px 8px 10px",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11,
-                          lineHeight: "1.4",
-                          marginBottom: 1,
-                        }}
-                      >
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{
-                              color: "var(--ft-text)",
-                              fontWeight: 600,
-                              marginBottom: 2,
-                              lineHeight: "1.3",
-                            }}
-                          >
-                            {alert.title}
-                          </div>
-                          <div
-                            style={{
-                              color: "var(--ft-muted)",
-                              fontSize: 10,
-                              lineHeight: "1.4",
-                            }}
-                          >
-                            {alert.detail}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => dismiss(alert.id)}
-                          aria-label="Dismiss alert"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            color: "var(--ft-dim)",
-                            cursor: "pointer",
-                            fontFamily: "var(--font-mono)",
-                            fontSize: 15,
-                            padding: "0 2px",
-                            lineHeight: 1,
-                            flexShrink: 0,
-                            marginTop: 1,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = "var(--ft-text)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = "var(--ft-dim)";
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    );
-                  })}
+                  {items.map((alert) => (
+                    <AlertRow key={alert.id} alert={alert} onDismiss={dismiss} />
+                  ))}
                 </div>
               );
             })

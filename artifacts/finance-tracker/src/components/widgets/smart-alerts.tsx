@@ -20,8 +20,17 @@ const LEVEL_LABEL: Record<Alert["level"], string> = {
   info: "INFO",
   warn: "WARN",
   critical: "CRIT",
-  success: "OK",
+  success: "OK  ",
 };
+
+const LEVEL_ICON: Record<Alert["level"], string> = {
+  info: "ℹ",
+  warn: "⚠",
+  critical: "✕",
+  success: "✓",
+};
+
+const LEVEL_ORDER: Alert["level"][] = ["critical", "warn", "info", "success"];
 
 function loadDismissed(): string[] {
   try {
@@ -56,6 +65,109 @@ function loadAlertRules() {
     return { ...defaults, ...JSON.parse(raw) };
   } catch { return defaults; }
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+type AlertCountChipProps = {
+  count: number;
+  level: Alert["level"];
+  label: string;
+};
+
+function AlertCountChip({ count, level, label }: AlertCountChipProps) {
+  const color = LEVEL_COLOR[level];
+  return (
+    <span style={{
+      fontFamily: "var(--font-mono)",
+      fontSize: 8,
+      fontWeight: 700,
+      color,
+      background: `color-mix(in srgb, ${color} 15%, transparent)`,
+      border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+      padding: "1px 5px",
+      letterSpacing: "0.06em",
+    }}>
+      {count} {label}
+    </span>
+  );
+}
+
+function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) => void }) {
+  const [hov, setHov] = useState(false);
+  const color = LEVEL_COLOR[alert.level];
+
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "auto 1fr auto",
+        alignItems: "start",
+        gap: "10px",
+        background: hov
+          ? `color-mix(in srgb, ${color} 8%, var(--ft-raised))`
+          : `color-mix(in srgb, ${color} 4%, var(--ft-raised))`,
+        borderLeft: `3px solid ${color}`,
+        borderBottom: "1px solid var(--ft-border)",
+        padding: "8px 10px 8px 12px",
+        fontFamily: "var(--font-mono)",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 1 }}>
+        <span style={{ fontSize: 12, color, lineHeight: 1 }}>
+          {LEVEL_ICON[alert.level]}
+        </span>
+        <span style={{
+          fontSize: 8,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          color,
+          background: `color-mix(in srgb, ${color} 15%, transparent)`,
+          border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+          padding: "1px 4px",
+          lineHeight: "14px",
+        }}>
+          {LEVEL_LABEL[alert.level].trim()}
+        </span>
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-text)", marginBottom: 2, lineHeight: 1.3 }}>
+          {alert.title}
+        </div>
+        <div className="pnum" style={{ fontSize: 9, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
+          {alert.detail}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onDismiss(alert.id)}
+        style={{
+          background: "none",
+          border: "none",
+          color: "var(--ft-dim)",
+          cursor: "pointer",
+          fontFamily: "var(--font-mono)",
+          fontSize: 14,
+          padding: "0 2px",
+          lineHeight: 1,
+          flexShrink: 0,
+          opacity: hov ? 0.9 : 0.4,
+          transition: "opacity 0.1s",
+          paddingTop: 1,
+        }}
+        aria-label="Dismiss alert"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+// ─── Widget ───────────────────────────────────────────────────────────────────
 
 export function SmartAlertsWidget() {
   const [dismissed, setDismissed] = useState<string[]>(() => loadDismissed());
@@ -159,7 +271,7 @@ export function SmartAlertsWidget() {
           id: `goal-achieved-${g.id}`,
           level: "success",
           title: `Goal achieved: ${g.name}`,
-          detail: `${formatGbp(current)} saved — target of ${formatGbp(target)} reached 🎉`,
+          detail: `${formatGbp(current)} saved — target of ${formatGbp(target)} reached`,
         });
       }
     }
@@ -175,7 +287,7 @@ export function SmartAlertsWidget() {
       });
     }
 
-    return result;
+    return result.sort((a, b) => LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level));
   }, [dashboard, monthTxs, recentTxs, upcoming, debts, goals, budgets, alertRules]);
 
   const visible = useMemo(
@@ -189,96 +301,95 @@ export function SmartAlertsWidget() {
 
   if (visible.length === 0) return null;
 
-  const shown = visible.slice(0, 5);
+  const shown = visible.slice(0, 6);
   const extra = visible.length - shown.length;
+
+  const critCount = visible.filter(a => a.level === "critical").length;
+  const warnCount = visible.filter(a => a.level === "warn").length;
+  const successCount = visible.filter(a => a.level === "success").length;
+  const infoCount = visible.filter(a => a.level === "info").length;
 
   function dismiss(id: string) {
     setDismissed((prev) => [...prev, id]);
   }
 
+  function dismissAll() {
+    setDismissed((prev) => [...prev, ...visible.map(a => a.id)]);
+  }
+
+  const borderAccent = critCount > 0 ? "var(--ft-red)" : warnCount > 0 ? "var(--ft-amber)" : "var(--ft-green)";
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-      {shown.map((alert) => {
-        const color = LEVEL_COLOR[alert.level];
-        return (
-          <div
-            key={alert.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              background: "var(--ft-raised)",
-              borderLeft: `3px solid ${color}`,
-              padding: "6px 10px",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              lineHeight: "1.4",
-              borderRadius: 0,
-            }}
-          >
-            <span
-              style={{
-                color,
-                fontWeight: 700,
-                letterSpacing: "0.04em",
-                flexShrink: 0,
-                minWidth: "32px",
-              }}
-            >
-              {LEVEL_LABEL[alert.level]}
-            </span>
-            <span
-              style={{
-                color: "var(--ft-text)",
-                fontWeight: 600,
-                flexShrink: 0,
-              }}
-            >
-              {alert.title}
-            </span>
-            <span
-              style={{
-                color: "var(--ft-muted)",
-                flexGrow: 1,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {alert.detail}
-            </span>
-            <button
-              type="button"
-              onClick={() => dismiss(alert.id)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--ft-dim)",
-                cursor: "pointer",
-                fontFamily: "var(--font-mono)",
-                fontSize: "13px",
-                padding: "0 2px",
-                lineHeight: 1,
-                flexShrink: 0,
-              }}
-              aria-label="Dismiss alert"
-            >
-              ×
-            </button>
+    <div style={{
+      background: "var(--ft-surface)",
+      border: "1px solid var(--ft-border)",
+      borderLeft: `2px solid ${borderAccent}`,
+    }}>
+      {/* Header */}
+      <div style={{
+        background: "var(--ft-raised)",
+        borderBottom: "1px solid var(--ft-border)",
+        padding: "0 12px",
+        height: 34,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "var(--ft-muted)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}>
+            <span style={{ color: borderAccent, fontSize: 12 }}>▪</span>
+            Smart Alerts
+          </span>
+          <div style={{ display: "flex", gap: 3 }}>
+            {critCount > 0 && <AlertCountChip count={critCount} level="critical" label="CRIT" />}
+            {warnCount > 0 && <AlertCountChip count={warnCount} level="warn" label="WARN" />}
+            {infoCount > 0 && <AlertCountChip count={infoCount} level="info" label="INFO" />}
+            {successCount > 0 && <AlertCountChip count={successCount} level="success" label="OK" />}
           </div>
-        );
-      })}
-      {extra > 0 && (
-        <div
+        </div>
+        <button
+          onClick={dismissAll}
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: "11px",
+            fontSize: 8,
+            letterSpacing: "0.06em",
+            padding: "2px 6px",
+            background: "transparent",
             color: "var(--ft-dim)",
-            padding: "4px 13px",
-            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border2)",
+            cursor: "pointer",
           }}
         >
-          +{extra} more
+          DISMISS ALL
+        </button>
+      </div>
+
+      {/* Alert rows */}
+      {shown.map((alert) => (
+        <AlertRow key={alert.id} alert={alert} onDismiss={dismiss} />
+      ))}
+
+      {extra > 0 && (
+        <div style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          color: "var(--ft-dim)",
+          padding: "6px 14px",
+          background: "var(--ft-raised)",
+          letterSpacing: "0.04em",
+        }}>
+          +{extra} more alert{extra > 1 ? "s" : ""} — dismiss above to reveal
         </div>
       )}
     </div>

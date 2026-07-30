@@ -3,8 +3,12 @@ import {
   useListUpcoming,
   useListTransactions,
   useListAccounts,
+  useListSubscriptions,
 } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
+import { PageHeader } from "@/components/page-header";
+import { TrendingUp } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -38,14 +42,22 @@ interface Account {
   gbpEquivalent: number;
 }
 
+interface SubForCashflow {
+  name: string;
+  amount: number;
+  frequency: string;
+  nextDue?: string;
+  active: boolean;
+}
+
 type Horizon = 30 | 60 | 90 | 180;
 type Scenario = "optimistic" | "base" | "pessimistic";
 
 interface ScenarioMultipliers {
-  optimisticIncomeBoost: number;   // e.g. 20 means +20% income
-  optimisticExpenseCut: number;    // e.g. 10 means -10% expenses
-  pessimisticIncomeCut: number;    // e.g. 10 means -10% income
-  pessimisticExpenseBoost: number; // e.g. 15 means +15% expenses
+  optimisticIncomeBoost: number;
+  optimisticExpenseCut: number;
+  pessimisticIncomeCut: number;
+  pessimisticExpenseBoost: number;
 }
 
 const DEFAULT_MULTIPLIERS: ScenarioMultipliers = {
@@ -84,7 +96,7 @@ function saveMultipliers(m: ScenarioMultipliers): void {
 // ─── style atoms ─────────────────────────────────────────────────────────────
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-const label: React.CSSProperties = {
+const labelStyle: React.CSSProperties = {
   ...mono,
   fontSize: 9,
   color: "var(--ft-dim)",
@@ -141,10 +153,6 @@ function formatShortDate(str: string): string {
   return `${d.getDate()} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]}`;
 }
 
-/**
- * Compute the average monthly income and expense from the last 3 months of
- * transaction history. Returns daily averages.
- */
 function computeBaseTrend(allTxs: Tx[]): { dailyIncome: number; dailyExpense: number } {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -168,6 +176,13 @@ function computeBaseTrend(allTxs: Tx[]): { dailyIncome: number; dailyExpense: nu
 
 // ─── projection engine ───────────────────────────────────────────────────────
 
+const SUB_FREQ_DAYS: Record<string, number> = {
+  weekly: 7,
+  monthly: 30,
+  quarterly: 91,
+  annual: 365,
+};
+
 function buildProjection(
   startingBalance: number,
   upcomingItems: UpcomingItem[],
@@ -175,15 +190,14 @@ function buildProjection(
   horizonDays: Horizon,
   scenario: Scenario,
   multipliers: ScenarioMultipliers,
+  subs: SubForCashflow[],
 ): { date: string; balance: number; events: string[] }[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Derive base daily income/expense from last 3 months of real data
   const { dailyIncome: baseDailyIncome, dailyExpense: baseDailyExpense } =
     computeBaseTrend(allTxs);
 
-  // Apply scenario adjustments
   let dailyIncome: number;
   let dailyExpense: number;
 
@@ -196,26 +210,41 @@ function buildProjection(
       dailyIncome = baseDailyIncome * (1 - multipliers.pessimisticIncomeCut / 100);
       dailyExpense = baseDailyExpense * (1 + multipliers.pessimisticExpenseBoost / 100);
       break;
-    default: // base
+    default:
       dailyIncome = baseDailyIncome;
       dailyExpense = baseDailyExpense;
   }
 
   const dailyNetFlow = dailyIncome - dailyExpense;
 
-  // Index upcoming items by date within horizon
   const endDate = addDays(today, horizonDays);
   const endStr = toDateStr(endDate);
+  const todayStr = toDateStr(today);
   const upcomingByDate: Record<string, UpcomingItem[]> = {};
   for (const item of upcomingItems) {
     if (item.status !== "pending") continue;
     if (item.dueDate > endStr) continue;
-    if (item.dueDate < toDateStr(today)) continue;
+    if (item.dueDate < todayStr) continue;
     if (!upcomingByDate[item.dueDate]) upcomingByDate[item.dueDate] = [];
     upcomingByDate[item.dueDate].push(item);
   }
 
-  // Build day-by-day
+  const subsByDate: Record<string, Array<{ name: string; amount: number }>> = {};
+  for (const sub of subs) {
+    if (!sub.active || !sub.nextDue) continue;
+    const intervalDays = SUB_FREQ_DAYS[sub.frequency] ?? 30;
+    let d = new Date(sub.nextDue);
+    d.setHours(0, 0, 0, 0);
+    while (toDateStr(d) <= endStr) {
+      const ds = toDateStr(d);
+      if (ds >= todayStr) {
+        if (!subsByDate[ds]) subsByDate[ds] = [];
+        subsByDate[ds].push({ name: sub.name, amount: sub.amount });
+      }
+      d = addDays(d, intervalDays);
+    }
+  }
+
   const points: { date: string; balance: number; events: string[] }[] = [];
   let balance = startingBalance;
 
@@ -225,10 +254,8 @@ function buildProjection(
     const events: string[] = [];
 
     if (i > 0) {
-      // Apply daily net trend (income - expenses)
       balance += dailyNetFlow;
 
-      // Apply scheduled items
       const scheduled = upcomingByDate[dateStr] ?? [];
       for (const item of scheduled) {
         const impact =
@@ -238,6 +265,12 @@ function buildProjection(
           `${item.description} ${item.type === "income" ? "+" : "-"}${formatGbp(Math.abs(item.gbpEquivalent))}`
         );
       }
+
+      const subsOnDay = subsByDate[dateStr] ?? [];
+      for (const sub of subsOnDay) {
+        balance -= sub.amount;
+        events.push(`${sub.name} (sub) -${formatGbp(sub.amount)}`);
+      }
     }
 
     points.push({ date: dateStr, balance: Math.round(balance * 100) / 100, events });
@@ -246,10 +279,6 @@ function buildProjection(
   return points;
 }
 
-/**
- * Find the first date index where balance crosses zero (from positive to negative).
- * Returns null if the balance never goes negative.
- */
 function findBreakEvenDate(
   projection: { date: string; balance: number }[],
 ): string | null {
@@ -263,7 +292,85 @@ function findBreakEvenDate(
   return null;
 }
 
-// ─── editable multiplier input ────────────────────────────────────────────────
+// ─── module-level sub-components ─────────────────────────────────────────────
+
+interface KpiTileProps {
+  label: string;
+  value: string;
+  color: string;
+  accentTop?: string;
+  sub?: string | null;
+}
+
+function KpiTile({ label, value, color, accentTop, sub }: KpiTileProps) {
+  return (
+    <div style={{
+      background: "var(--ft-surface)",
+      padding: "10px 14px",
+      borderTop: accentTop ? `2px solid ${accentTop}` : "2px solid transparent",
+    }}>
+      <div style={{ ...labelStyle, marginBottom: 4 }}>{label}</div>
+      <div className="pnum" style={{ ...mono, fontSize: 17, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
+        {value}
+      </div>
+      {sub && (
+        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{sub}</div>
+      )}
+    </div>
+  );
+}
+
+interface EventRowProps {
+  row: { date: string; balance: number; events: string[] };
+}
+
+function EventRow({ row }: EventRowProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <tr
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onTouchStart={() => setHov(true)}
+      onTouchEnd={() => setHov(false)}
+      onTouchCancel={() => setHov(false)}
+      style={{
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+      }}
+    >
+      <td style={{ ...td, color: "var(--ft-dim)", width: 100 }}>
+        {formatShortDate(row.date)}
+      </td>
+      <td style={{ ...td }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {row.events.map((ev, i) => {
+            const isIncome = ev.includes("+");
+            return (
+              <span
+                key={i}
+                className="pnum"
+                style={{
+                  color: isIncome ? "var(--ft-green)" : "var(--ft-red)",
+                  fontSize: 10,
+                }}
+              >
+                {ev}
+              </span>
+            );
+          })}
+        </div>
+      </td>
+      <td className="pnum" style={{
+        ...td,
+        textAlign: "right",
+        fontWeight: 700,
+        color: row.balance >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+      }}>
+        {formatGbp(row.balance)}
+      </td>
+    </tr>
+  );
+}
 
 function MultiplierInput({
   label: labelText,
@@ -291,7 +398,7 @@ function MultiplierInput({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <span style={{ ...label, fontSize: 8 }}>{labelText}</span>
+      <span style={{ ...labelStyle, fontSize: 8 }}>{labelText}</span>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <input
           type="number"
@@ -321,8 +428,6 @@ function MultiplierInput({
   );
 }
 
-// ─── custom tooltip ──────────────────────────────────────────────────────────
-
 function CfTooltip({ active, payload, label: dateLbl }: {
   active?: boolean;
   payload?: { value: number }[];
@@ -339,9 +444,29 @@ function CfTooltip({ active, payload, label: dateLbl }: {
       fontSize: 11,
     }}>
       <div style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 4 }}>{dateLbl}</div>
-      <div style={{ color: bal >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, fontSize: 13 }}>
+      <div className="pnum" style={{ color: bal >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, fontSize: 13 }}>
         {formatGbp(bal)}
       </div>
+    </div>
+  );
+}
+
+interface ScenarioLegendItemProps {
+  s: Scenario;
+  multipliers: ScenarioMultipliers;
+}
+
+function ScenarioLegendItem({ s, multipliers }: ScenarioLegendItemProps) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div style={{ width: 24, height: 2, background: SCENARIO_COLORS[s] }} />
+      <span style={{ ...mono, fontSize: 10, color: SCENARIO_COLORS[s] }}>
+        {s === "optimistic"
+          ? `Optimistic (income +${multipliers.optimisticIncomeBoost}%, spend -${multipliers.optimisticExpenseCut}%)`
+          : s === "pessimistic"
+          ? `Pessimistic (income -${multipliers.pessimisticIncomeCut}%, spend +${multipliers.pessimisticExpenseBoost}%)`
+          : "Base (3-month avg trend)"}
+      </span>
     </div>
   );
 }
@@ -358,12 +483,17 @@ export default function CashflowPage() {
   const { data: rawUpcoming, isLoading: loadingUp } = useListUpcoming();
   const { data: rawTxs, isLoading: loadingTx } = useListTransactions({});
   const { data: rawAccounts, isLoading: loadingAcc } = useListAccounts();
+  const { data: rawSubs = [] } = useListSubscriptions();
 
   const isLoading = loadingUp || loadingTx || loadingAcc;
 
   const upcoming = (rawUpcoming ?? []) as UpcomingItem[];
   const allTxs = (rawTxs ?? []) as Tx[];
   const accounts = (rawAccounts ?? []) as Account[];
+  const activeSubs = useMemo(
+    () => (rawSubs as SubForCashflow[]).filter((s) => s.active && s.nextDue),
+    [rawSubs]
+  );
 
   const startingBalance = useMemo(
     () => accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0),
@@ -371,11 +501,10 @@ export default function CashflowPage() {
   );
 
   const projection = useMemo(
-    () => buildProjection(startingBalance, upcoming, allTxs, horizon, scenario, multipliers),
-    [startingBalance, upcoming, allTxs, horizon, scenario, multipliers]
+    () => buildProjection(startingBalance, upcoming, allTxs, horizon, scenario, multipliers, activeSubs),
+    [startingBalance, upcoming, allTxs, horizon, scenario, multipliers, activeSubs]
   );
 
-  // Compute base trend stats for display
   const { dailyIncome: baseDailyIncome, dailyExpense: baseDailyExpense } = useMemo(
     () => computeBaseTrend(allTxs),
     [allTxs]
@@ -392,21 +521,18 @@ export default function CashflowPage() {
     -Infinity
   );
 
-  // Break-even date (only relevant when pessimistic or balance trends negative)
   const breakEvenDate = useMemo(() => findBreakEvenDate(projection), [projection]);
 
-  // Events table: only days with scheduled items
   const eventRows = projection.filter((p) => p.events.length > 0);
 
   const scenarioColor = SCENARIO_COLORS[scenario];
 
-  // Persist multipliers to localStorage whenever they change
   useEffect(() => {
     saveMultipliers(multipliers);
   }, [multipliers]);
 
   const updateMultiplier = (key: keyof ScenarioMultipliers) => (v: number) => {
-    setMultipliers((prev) => ({ ...prev, [key]: v }));
+    setMultipliers((prev) => ({ ...prev, [key]: Math.max(0, Math.min(100, v)) }));
   };
 
   if (isLoading) {
@@ -423,16 +549,29 @@ export default function CashflowPage() {
         <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 20 }}>
           CASH FLOW FORECAST
         </div>
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "48px 32px", textAlign: "center" }}>
-          <div style={{ ...mono, fontSize: 11, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
-            NO ACCOUNTS FOUND
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-accent)", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 16, minHeight: "calc(100vh - 160px)", justifyContent: "center" }}>
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ opacity: 0.25 }}>
+            <path d="M8 36L18 24l8 8 8-12 6 6" stroke="var(--ft-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="8" cy="36" r="2" fill="var(--ft-text)" />
+            <circle cx="18" cy="24" r="2" fill="var(--ft-text)" />
+            <circle cx="26" cy="32" r="2" fill="var(--ft-text)" />
+            <circle cx="34" cy="20" r="2" fill="var(--ft-text)" />
+            <circle cx="40" cy="26" r="2" fill="var(--ft-text)" />
+          </svg>
+          <div>
+            <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 8 }}>
+              Add an account to see your cash flow forecast
+            </div>
+            <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", maxWidth: 340, lineHeight: 1.7, margin: "0 auto" }}>
+              Cash flow projections use your account balances, upcoming bills, and 3-month spending average to show where your money is headed.
+            </div>
           </div>
-          <div style={{ ...mono, fontSize: 13, color: "var(--ft-text)", fontWeight: 700, marginBottom: 8 }}>
-            Add an account to see your cash flow forecast
-          </div>
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", maxWidth: 380, margin: "0 auto" }}>
-            Cash flow projections are based on your current account balances, upcoming bills, and your average income/spending over the last 3 months.
-          </div>
+          <a
+            href="/accounts"
+            style={{ display: "inline-block", padding: "10px 20px", background: "var(--ft-accent)", color: "var(--ft-base)", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textDecoration: "none", minHeight: 44, lineHeight: "24px" }}
+          >
+            + ADD ACCOUNT
+          </a>
         </div>
       </div>
     );
@@ -440,19 +579,14 @@ export default function CashflowPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1 }}>
-            CASH FLOW FORECAST
-          </div>
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", marginTop: 4 }}>
-            projected balances · based on 3-month avg income/expense trend + scheduled bills
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <PageHeader
+        icon={TrendingUp}
+        title="Cash Flow Forecast"
+        subtitle="projected balances · 3-month avg income/expense trend + scheduled bills"
+        actions={
+          <div className="ft-filter-bar" style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {/* Horizon selector */}
-          <div style={{ display: "flex", gap: 2 }}>
+          <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
             {([30, 60, 90, 180] as Horizon[]).map((h) => (
               <button
                 key={h}
@@ -475,7 +609,7 @@ export default function CashflowPage() {
             ))}
           </div>
           {/* Scenario selector */}
-          <div style={{ display: "flex", gap: 2 }}>
+          <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
             {(["optimistic", "base", "pessimistic"] as Scenario[]).map((s) => (
               <button
                 key={s}
@@ -518,8 +652,8 @@ export default function CashflowPage() {
           >
             ⚙ Multipliers
           </button>
-        </div>
-      </div>
+        </div>}
+      />
 
       {/* Editable scenario multipliers panel */}
       {showSettings && (
@@ -530,6 +664,7 @@ export default function CashflowPage() {
             marginBottom: 12,
             padding: "14px 20px",
             borderColor: "rgba(244,162,30,0.3)",
+            borderLeft: "3px solid var(--ft-amber)",
             background: "rgba(244,162,30,0.04)",
           }}
         >
@@ -542,16 +677,8 @@ export default function CashflowPage() {
                 Optimistic
               </div>
               <div style={{ display: "flex", gap: 20 }}>
-                <MultiplierInput
-                  label="Income boost"
-                  value={multipliers.optimisticIncomeBoost}
-                  onChange={updateMultiplier("optimisticIncomeBoost")}
-                />
-                <MultiplierInput
-                  label="Expense cut"
-                  value={multipliers.optimisticExpenseCut}
-                  onChange={updateMultiplier("optimisticExpenseCut")}
-                />
+                <MultiplierInput label="Income boost" value={multipliers.optimisticIncomeBoost} onChange={updateMultiplier("optimisticIncomeBoost")} />
+                <MultiplierInput label="Expense cut" value={multipliers.optimisticExpenseCut} onChange={updateMultiplier("optimisticExpenseCut")} />
               </div>
             </div>
             <div style={{ width: 1, background: "var(--ft-border)", alignSelf: "stretch" }} />
@@ -560,29 +687,21 @@ export default function CashflowPage() {
                 Pessimistic
               </div>
               <div style={{ display: "flex", gap: 20 }}>
-                <MultiplierInput
-                  label="Income cut"
-                  value={multipliers.pessimisticIncomeCut}
-                  onChange={updateMultiplier("pessimisticIncomeCut")}
-                />
-                <MultiplierInput
-                  label="Expense boost"
-                  value={multipliers.pessimisticExpenseBoost}
-                  onChange={updateMultiplier("pessimisticExpenseBoost")}
-                />
+                <MultiplierInput label="Income cut" value={multipliers.pessimisticIncomeCut} onChange={updateMultiplier("pessimisticIncomeCut")} />
+                <MultiplierInput label="Expense boost" value={multipliers.pessimisticExpenseBoost} onChange={updateMultiplier("pessimisticExpenseBoost")} />
               </div>
             </div>
             <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
-                Base: 3-month avg net/day = <span style={{ color: baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                Base: 3-month avg net/day = <span className="pnum" style={{ color: baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                   {baseMonthlyNet >= 0 ? "+" : ""}{formatGbp(baseMonthlyNet)}/mo
                 </span>
               </div>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
-                Avg income: <span style={{ color: "var(--ft-green)" }}>+{formatGbp(baseDailyIncome * 30)}/mo</span>
+                Avg income: <span className="pnum" style={{ color: "var(--ft-green)" }}>+{formatGbp(baseDailyIncome * 30)}/mo</span>
               </div>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
-                Avg expense: <span style={{ color: "var(--ft-red)" }}>-{formatGbp(baseDailyExpense * 30)}/mo</span>
+                Avg expense: <span className="pnum" style={{ color: "var(--ft-red)" }}>-{formatGbp(baseDailyExpense * 30)}/mo</span>
               </div>
               <button
                 onClick={() => setMultipliers(DEFAULT_MULTIPLIERS)}
@@ -605,40 +724,81 @@ export default function CashflowPage() {
         </div>
       )}
 
-      {/* KPI strip */}
-      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
-        {[
-          {
-            label: "Starting Balance",
-            value: formatGbp(startingBalance),
-            color: "var(--ft-text)",
-          },
-          {
-            label: `Projected (${horizon}d)`,
-            value: formatGbp(finalBalance),
-            color: finalBalance >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-          },
-          {
-            label: "Lowest Point",
-            value: formatGbp(lowestPoint === Infinity ? 0 : lowestPoint),
-            color: lowestPoint < 0 ? "var(--ft-red)" : "var(--ft-muted)",
-          },
-          {
-            label: "Highest Point",
-            value: formatGbp(highestPoint === -Infinity ? 0 : highestPoint),
-            color: "var(--ft-green)",
-          },
-        ].map((tile) => (
-          <div
-            key={tile.label}
-            style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "12px 14px" }}
-          >
-            <div style={{ ...label, marginBottom: 6 }}>{tile.label}</div>
-            <div className="pnum" style={{ ...mono, fontSize: 18, fontWeight: 700, color: tile.color, letterSpacing: "-0.02em" }}>
-              {tile.value}
-            </div>
+      {/* Persona context strip */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid || pid === "full") return null;
+        const isNegativeTrend = baseMonthlyNet < 0;
+        const msgs: Record<string, string> = {
+          market:  isNegativeTrend
+            ? `Monthly net is negative — shore up cash flow before deploying to investment positions.`
+            : `Monthly net +${formatGbp(baseMonthlyNet)}: ${horizon}d forecast shows investable surplus trajectory.`,
+          budget:  isNegativeTrend
+            ? `Spending exceeds income on trend — use the scenario toggles to model expense cuts.`
+            : `On track. Use pessimistic scenario to stress-test your budget against unexpected costs.`,
+          wealth:  `Model optimistic and pessimistic scenarios to understand your savings rate range over the forecast period.`,
+          social:  `Upcoming shared expenses (trips, gifts, deposits) are captured in the events table below.`,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
+            <span>{msg}</span>
           </div>
-        ))}
+        );
+      })()}
+
+      {/* KPI strip section header */}
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 8, marginBottom: 8 }}>
+        Balance Metrics
+      </div>
+
+      {/* KPI strip (border-as-gap grid) */}
+      <div
+        className="ft-kpi-bar"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(5, 1fr)",
+          gap: 1,
+          marginBottom: 16,
+          background: "var(--ft-border)",
+        }}
+      >
+        <KpiTile
+          label="Today's Balance"
+          value={formatGbp(startingBalance)}
+          color="var(--ft-text)"
+          accentTop="var(--ft-cyan)"
+        />
+        <KpiTile
+          label={`Projected (${horizon}d)`}
+          value={formatGbp(finalBalance)}
+          color={finalBalance >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+          accentTop={finalBalance >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+          sub={finalBalance !== startingBalance ? `${finalBalance >= startingBalance ? "+" : ""}${formatGbp(finalBalance - startingBalance)} change` : null}
+        />
+        <KpiTile
+          label="Avg Net / Month"
+          value={`${baseMonthlyNet >= 0 ? "+" : ""}${formatGbp(Math.abs(baseMonthlyNet))}`}
+          color={baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+          accentTop={baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+          sub={`${baseDailyIncome > 0 ? `in ${formatGbp(baseDailyIncome * 30)}/mo` : "no income"} · out ${formatGbp(baseDailyExpense * 30)}/mo`}
+        />
+        <KpiTile
+          label="Lowest Point"
+          value={formatGbp(lowestPoint === Infinity ? 0 : lowestPoint)}
+          color={lowestPoint < 0 ? "var(--ft-red)" : "var(--ft-muted)"}
+          accentTop={lowestPoint < 0 ? "var(--ft-red)" : undefined}
+          sub={lowestPoint < 0 ? "dips below zero" : null}
+        />
+        <KpiTile
+          label="Highest Point"
+          value={formatGbp(highestPoint === -Infinity ? 0 : highestPoint)}
+          color="var(--ft-green)"
+          accentTop="var(--ft-green)"
+        />
       </div>
 
       {/* Projected final balance — big number */}
@@ -648,9 +808,11 @@ export default function CashflowPage() {
         alignItems: "center",
         gap: 24,
         padding: "16px 20px",
+        flexWrap: "wrap",
+        borderLeft: `3px solid ${scenarioColor}`,
       }}>
         <div>
-          <div style={{ ...label, marginBottom: 4 }}>PROJECTED FINAL BALANCE · {horizon}D · {scenario.toUpperCase()}</div>
+          <div style={{ ...labelStyle, marginBottom: 4 }}>PROJECTED FINAL BALANCE · {horizon}D · {scenario.toUpperCase()}</div>
           <div className="pnum" style={{
             ...mono,
             fontSize: 36,
@@ -672,9 +834,10 @@ export default function CashflowPage() {
           <div style={{
             background: "var(--ft-red)15",
             border: "1px solid var(--ft-red)44",
+            borderLeft: "3px solid var(--ft-red)",
             padding: "10px 16px",
           }}>
-            <div style={{ ...label, color: "var(--ft-red)", marginBottom: 4 }}>BREAK-EVEN DATE</div>
+            <div style={{ ...labelStyle, color: "var(--ft-red)", marginBottom: 4 }}>BREAK-EVEN DATE</div>
             <div style={{ ...mono, fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>
               {formatShortDate(breakEvenDate)}
             </div>
@@ -688,10 +851,11 @@ export default function CashflowPage() {
           <div style={{
             background: "var(--ft-red)15",
             border: "1px solid var(--ft-red)44",
+            borderLeft: "3px solid var(--ft-red)",
             padding: "10px 16px",
             marginLeft: breakEvenDate ? 0 : "auto",
           }}>
-            <div style={{ ...label, color: "var(--ft-red)", marginBottom: 4 }}>WARNING — BALANCE GOES NEGATIVE</div>
+            <div style={{ ...labelStyle, color: "var(--ft-red)", marginBottom: 4 }}>WARNING — BALANCE GOES NEGATIVE</div>
             <div style={{ ...mono, fontSize: 12, color: "var(--ft-red)" }}>
               Lowest projected: <span className="pnum">{formatGbp(lowestPoint)}</span>
             </div>
@@ -701,11 +865,9 @@ export default function CashflowPage() {
 
       {/* Area chart */}
       <div style={card}>
-        <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>
-          BALANCE PROJECTION
-        </div>
-        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 14 }}>
-          Day-by-day projected cumulative balance · based on 3-month avg trend
+        <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8, marginBottom: 12 }}>
+          <span style={{ fontWeight: 700, color: "var(--ft-accent)" }}>BALANCE PROJECTION</span>
+          <span style={{ color: "var(--ft-dim)", marginLeft: 12, fontSize: 8 }}>Day-by-day projected cumulative balance · based on 3-month avg trend</span>
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={projection} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
@@ -719,11 +881,7 @@ export default function CashflowPage() {
                 <stop offset="100%" stopColor="var(--ft-red)" stopOpacity={0.05} />
               </linearGradient>
             </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="var(--ft-border)"
-              vertical={false}
-            />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" vertical={false} />
             <XAxis
               dataKey="date"
               tickFormatter={formatShortDate}
@@ -782,19 +940,28 @@ export default function CashflowPage() {
 
       {/* Events table */}
       <div style={card}>
-        <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>
-          SCHEDULED EVENTS
-        </div>
-        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 14 }}>
-          Upcoming bills and income within the {horizon}-day horizon
+        <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-blue)", paddingLeft: 8, marginBottom: 12 }}>
+          <span style={{ fontWeight: 700, color: "var(--ft-accent)" }}>SCHEDULED EVENTS</span>
+          <span style={{ color: "var(--ft-dim)", marginLeft: 12, fontSize: 8 }}>Upcoming bills and income within the {horizon}-day horizon</span>
         </div>
         {eventRows.length === 0 ? (
-          <div style={{ ...label, textAlign: "center", padding: "24px 0" }}>
-            No scheduled events in this period
+          <div style={{
+            border: "1px solid var(--ft-border)",
+            borderLeft: "3px solid var(--ft-border2)",
+            background: "var(--ft-surface)",
+            padding: "24px 20px",
+            fontFamily: "var(--font-mono)",
+          }}>
+            <div style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
+              NO SCHEDULED EVENTS
+            </div>
+            <div style={{ fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.6 }}>
+              No bills, income, or subscription renewals detected in this {horizon}-day window.
+            </div>
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ borderCollapse: "collapse", width: "100%" }}>
+          <div className="ft-scroll-x">
+            <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 360 }}>
               <thead>
                 <tr>
                   {["Date", "Description", "Balance After"].map((h, i) => (
@@ -804,37 +971,7 @@ export default function CashflowPage() {
               </thead>
               <tbody>
                 {eventRows.map((row) => (
-                  <tr key={row.date}>
-                    <td style={{ ...td, color: "var(--ft-dim)", width: 100 }}>
-                      {formatShortDate(row.date)}
-                    </td>
-                    <td style={{ ...td }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        {row.events.map((ev, i) => {
-                          const isIncome = ev.includes("+");
-                          return (
-                            <span
-                              key={i}
-                              style={{
-                                color: isIncome ? "var(--ft-green)" : "var(--ft-red)",
-                                fontSize: 10,
-                              }}
-                            >
-                              {ev}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </td>
-                    <td className="pnum" style={{
-                      ...td,
-                      textAlign: "right",
-                      fontWeight: 700,
-                      color: row.balance >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-                    }}>
-                      {formatGbp(row.balance)}
-                    </td>
-                  </tr>
+                  <EventRow key={row.date} row={row} />
                 ))}
               </tbody>
             </table>
@@ -843,19 +980,10 @@ export default function CashflowPage() {
       </div>
 
       {/* Scenario legend */}
-      <div style={{ ...card, padding: "12px 16px", display: "flex", gap: 24, alignItems: "center" }}>
-        <div style={{ ...label }}>SCENARIOS:</div>
+      <div style={{ ...card, padding: "12px 16px", display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ ...labelStyle, borderLeft: "3px solid var(--ft-border2)", paddingLeft: 6 }}>SCENARIOS:</div>
         {(["optimistic", "base", "pessimistic"] as Scenario[]).map((s) => (
-          <div key={s} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ width: 24, height: 2, background: SCENARIO_COLORS[s] }} />
-            <span style={{ ...mono, fontSize: 10, color: SCENARIO_COLORS[s] }}>
-              {s === "optimistic"
-                ? `Optimistic (income +${multipliers.optimisticIncomeBoost}%, spend -${multipliers.optimisticExpenseCut}%)`
-                : s === "pessimistic"
-                ? `Pessimistic (income -${multipliers.pessimisticIncomeCut}%, spend +${multipliers.pessimisticExpenseBoost}%)`
-                : "Base (3-month avg trend)"}
-            </span>
-          </div>
+          <ScenarioLegendItem key={s} s={s} multipliers={multipliers} />
         ))}
         <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginLeft: "auto" }}>
           Variable trend based on 3-month avg · scheduled items use exact amounts

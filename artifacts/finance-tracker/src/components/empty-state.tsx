@@ -2,17 +2,20 @@ interface EmptyStateProps {
   title: string;
   description?: string;
   action?: { label: string; onClick: () => void };
+  fill?: boolean;
+  minHeight?: string;
 }
 
-export function EmptyState({ title, description, action }: EmptyStateProps) {
+export function EmptyState({ title, description, action, fill = true, minHeight }: EmptyStateProps) {
   return (
     <div
       style={{
-        padding: "48px 24px",
+        padding: "60px 24px",
         textAlign: "center",
         border: "1px solid var(--ft-border)",
         background: "var(--ft-surface)",
         fontFamily: "var(--font-mono)",
+        ...(fill ? { minHeight: minHeight ?? "40vh", display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center" } : {}),
       }}
     >
       <div
@@ -34,6 +37,7 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
             color: "var(--ft-dim)",
             letterSpacing: "0.04em",
             marginBottom: action ? 20 : 0,
+            maxWidth: 300,
           }}
         >
           {description}
@@ -48,11 +52,12 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
             fontSize: 10,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
-            background: "transparent",
-            color: "var(--ft-accent)",
-            border: "1px solid var(--ft-accent)",
-            padding: "6px 16px",
+            background: "var(--ft-accent)",
+            color: "var(--ft-base)",
+            border: "none",
+            padding: "10px 20px",
             cursor: "pointer",
+            fontWeight: 700,
           }}
         >
           {action.label}

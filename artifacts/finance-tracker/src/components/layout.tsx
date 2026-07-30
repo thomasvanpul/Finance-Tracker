@@ -1,5 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useAppResume } from "@/hooks/use-app-resume";
+import { MobileFab } from "@/components/mobile-fab";
 import { createPortal } from "react-dom";
 import { useFintrackTheme } from "@/contexts/theme-context";
 import { authClient } from "@/lib/auth-client";
@@ -11,7 +15,7 @@ import { CommandPalette, useCommandPalette } from "@/components/command-palette"
 import { QuickAddTransaction, useQuickAdd } from "@/components/quick-add-transaction";
 import { GlobalSearch, useGlobalSearch } from "@/components/global-search";
 import { KeyboardShortcuts, useKeyboardShortcuts } from "@/components/keyboard-shortcuts";
-import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Menu } from "lucide-react";
+import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, ChevronLeft, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Home, CreditCard, ArrowLeftRight, BarChart2, PieChart, LineChart, TrendingUp, FileText, Briefcase, Activity, Target, Calendar, RefreshCw, Users, BookOpen, Grid3X3, X } from "lucide-react";
 import { Logo, LogoMark } from "@/components/logo";
 import { formatGbp } from "@/lib/utils";
 import { setBaseCurrency } from "@/lib/currency-store";
@@ -22,78 +26,82 @@ import { PWAInstallButton } from "@/components/pwa-install";
 import { NotificationsPanel, useAlerts, loadDismissed } from "@/components/notifications-panel";
 import { loadSidebarConfig, saveSidebarConfig } from "@/lib/sidebar-config";
 import type { SidebarConfig, SidebarItemConfig } from "@/lib/sidebar-config";
+import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
+import { haptic } from "@/lib/haptics";
+import { useKeyboard } from "@/hooks/use-keyboard";
+import { usePageSwipe } from "@/hooks/use-page-swipe";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-// Primary nav — always visible in sidebar
+// Unified nav — primary items shown always, secondary items shown behind "More" toggle.
+// All items for a section live together so section headers never duplicate when More is open.
 const NAV_SECTIONS = [
   {
     label: "CORE",
     items: [
-      { href: "/",             label: "Dashboard",    code: "G·D" },
-      { href: "/accounts",     label: "Accounts",     code: "G·A" },
-      { href: "/transactions", label: "Transactions", code: "G·T" },
+      { href: "/",              label: "Dashboard",    code: "G·D" },
+      { href: "/accounts",      label: "Accounts",     code: "G·A" },
+      { href: "/transactions",  label: "Transactions", code: "G·T" },
     ],
   },
   {
     label: "INVEST",
     items: [
-      { href: "/investments",   label: "Portfolio",    code: "G·I" },
+      { href: "/portfolio",     label: "Portfolio",    code: "G·F" },
+      { href: "/investments",   label: "Markets",      code: "G·I" },
       { href: "/net-worth",     label: "Net Worth",    code: "G·W" },
+      // secondary — visible when More is open
+      { href: "/tax",           label: "Tax",          code: "G·Y" },
     ],
   },
   {
     label: "PLAN",
     items: [
-      { href: "/budget",   label: "Budget",  code: "G·B" },
-      { href: "/goals",    label: "Goals",   code: "G·L" },
+      { href: "/budget",        label: "Budget",       code: "G·B" },
+      { href: "/goals",         label: "Goals",        code: "G·L" },
+      // secondary
+      { href: "/owing",         label: "Debts",        code: "G·O" },
+      { href: "/split",         label: "Bill Split",   code: "G·X" },
+      { href: "/subscriptions", label: "Subscriptions",code: "G·C" },
+      { href: "/calendar",      label: "Calendar",     code: "G·K" },
     ],
   },
   {
     label: "INSIGHTS",
     items: [
-      { href: "/analytics",    label: "Analytics",    code: "G·N" },
-      { href: "/ai-coach",     label: "AI Coach",     code: "G·G" },
-    ],
-  },
-];
-
-// Secondary nav — hidden behind "More" toggle by default
-const SECONDARY_NAV_SECTIONS = [
-  {
-    label: "PLAN",
-    items: [
-      { href: "/owing",         label: "Debts",         code: "G·O" },
-      { href: "/split",         label: "Bill Split",    code: "G·X" },
-      { href: "/subscriptions", label: "Subscriptions", code: "G·C" },
-      { href: "/calendar",      label: "Calendar",      code: "G·K" },
-    ],
-  },
-  {
-    label: "INVEST",
-    items: [
-      { href: "/tax",           label: "Tax",           code: "G·Y" },
-    ],
-  },
-  {
-    label: "INSIGHTS",
-    items: [
-      { href: "/health-score",  label: "Health Score",  code: "G·H" },
-      { href: "/cashflow",      label: "Cash Flow",     code: "G·V" },
-      { href: "/year-review",   label: "Year Review",   code: "G·E" },
-      { href: "/reports",       label: "Reports",       code: "G·R" },
-      { href: "/projection",    label: "Projection",    code: "G·5" },
+      { href: "/decisions",     label: "Decisions",    code: "G·8" },
+      { href: "/analytics",     label: "Analytics",    code: "G·N" },
+      { href: "/ai-coach",      label: "AI Coach",     code: "G·G" },
+      { href: "/briefing",      label: "Briefing",     code: "G·B" },
+      // secondary
+      { href: "/health-score",  label: "Health Score", code: "G·H" },
+      { href: "/cashflow",      label: "Cash Flow",    code: "G·V" },
+      // Year Review excluded from permanent nav — surfaces contextually in Dec/Jan only
+      { href: "/reports",       label: "Reports",      code: "G·R" },
+      { href: "/projection",    label: "Projection",   code: "G·5" },
     ],
   },
   {
     label: "TOOLS",
     items: [
-      { href: "/recurring",    label: "Recurring",    code: "G·U" },
-      { href: "/calculators",  label: "Calculators",  code: "G·F" },
-      { href: "/import",       label: "Import",       code: "G·J" },
-      { href: "/learn",        label: "Learn",        code: "G·Q" },
+      // all secondary
+      { href: "/recurring",     label: "Recurring",    code: "G·U" },
+      { href: "/calculators",   label: "Calculators",  code: "G·F" },
+      { href: "/import",        label: "Import",       code: "G·J" },
+      { href: "/learn",         label: "Learn",        code: "G·Q" },
+    ],
+  },
+  {
+    label: "ADVANCED",
+    items: [
+      // all secondary
+      { href: "/business",      label: "Business",     code: "G·W" },
+      { href: "/family",        label: "Family",       code: "G·Y" },
+      { href: "/trading",       label: "Trading",      code: "G·T" },
     ],
   },
 ];
@@ -105,13 +113,16 @@ const BOTTOM_ITEMS = [
 // Flat list of all configurable nav items (sections only, not bottom items)
 const ALL_NAV_ITEMS: { href: string; label: string; code: string; section: string }[] = [
   ...NAV_SECTIONS.flatMap((s) => s.items.map((item) => ({ ...item, section: s.label }))),
-  ...SECONDARY_NAV_SECTIONS.flatMap((s) => s.items.map((item) => ({ ...item, section: s.label }))),
 ];
 
 // Which hrefs are secondary (shown behind "More" toggle)
-const SECONDARY_HREFS = new Set(
-  SECONDARY_NAV_SECTIONS.flatMap((s) => s.items.map((i) => i.href))
-);
+const SECONDARY_HREFS = new Set([
+  "/tax",
+  "/owing", "/split", "/subscriptions", "/calendar",
+  "/health-score", "/cashflow", "/reports", "/projection", "/briefing",
+  "/recurring", "/calculators", "/import", "/learn",
+  "/business", "/family", "/trading",
+]);
 
 const G_KEY_MAP: Record<string, string> = {
   d: "/", a: "/accounts", t: "/transactions", r: "/reports",
@@ -122,10 +133,78 @@ const G_KEY_MAP: Record<string, string> = {
   f: "/calculators", k: "/calendar",
   s: "/settings", q: "/learn",
   v: "/cashflow", e: "/year-review", j: "/import",
-  g: "/ai-coach", z: "/wardrobe",
+  g: "/ai-coach", z: "/wardrobe", "8": "/decisions", "9": "/briefing",
   // Power-user shortcuts not shown in sidebar
   m: "/mortgage", p: "/pension", "0": "/fire",
   "5": "/projection",
+  // Advanced pages
+  "1": "/business", "2": "/family", "3": "/trading",
+};
+
+// Icon mapping for sidebar nav items — shown in the chip instead of the shortcut code
+const HREF_ICON_MAP: Record<string, React.ElementType> = {
+  "/":              Home,
+  "/accounts":      CreditCard,
+  "/transactions":  ArrowLeftRight,
+  "/portfolio":     Briefcase,
+  "/investments":   Activity,
+  "/net-worth":     TrendingUp,
+  "/tax":           FileText,
+  "/budget":        PieChart,
+  "/goals":         Target,
+  "/owing":         Users,
+  "/split":         Users,
+  "/subscriptions": RefreshCw,
+  "/calendar":      Calendar,
+  "/decisions":     BarChart2,
+  "/analytics":     LineChart,
+  "/ai-coach":      Activity,
+  "/briefing":      FileText,
+  "/health-score":  Activity,
+  "/cashflow":      BarChart2,
+  "/reports":       FileText,
+  "/projection":    TrendingUp,
+  "/recurring":     RefreshCw,
+  "/calculators":   Grid3X3,
+  "/import":        ArrowLeftRight,
+  "/learn":         BookOpen,
+  "/business":      Briefcase,
+  "/family":        Users,
+  "/trading":       TrendingUp,
+  "/settings":      Settings2,
+};
+
+// Section that each page belongs to (for breadcrumb context on mobile)
+const HREF_SECTION_MAP: Record<string, string> = {
+  "/":              "CORE",
+  "/accounts":      "CORE",
+  "/transactions":  "CORE",
+  "/portfolio":     "INVEST",
+  "/investments":   "INVEST",
+  "/net-worth":     "INVEST",
+  "/tax":           "INVEST",
+  "/budget":        "PLAN",
+  "/goals":         "PLAN",
+  "/owing":         "PLAN",
+  "/split":         "PLAN",
+  "/subscriptions": "PLAN",
+  "/calendar":      "PLAN",
+  "/decisions":     "INSIGHTS",
+  "/analytics":     "INSIGHTS",
+  "/ai-coach":      "INSIGHTS",
+  "/briefing":      "INSIGHTS",
+  "/health-score":  "INSIGHTS",
+  "/cashflow":      "INSIGHTS",
+  "/reports":       "INSIGHTS",
+  "/projection":    "INSIGHTS",
+  "/recurring":     "TOOLS",
+  "/calculators":   "TOOLS",
+  "/import":        "TOOLS",
+  "/learn":         "TOOLS",
+  "/business":      "ADVANCED",
+  "/family":        "ADVANCED",
+  "/trading":       "ADVANCED",
+  "/settings":      "SETTINGS",
 };
 
 
@@ -140,7 +219,7 @@ interface WorldCity {
   marketClose: string;
 }
 
-const WORLD_CITIES: WorldCity[] = [
+const DEFAULT_WORLD_CITIES: WorldCity[] = [
   { label: "London",    flag: "🇬🇧", tz: "Europe/London",      exchange: "LSE",     marketOpen: "08:00", marketClose: "16:30" },
   { label: "New York",  flag: "🇺🇸", tz: "America/New_York",   exchange: "NYSE",    marketOpen: "09:30", marketClose: "16:00" },
   { label: "Tokyo",     flag: "🇯🇵", tz: "Asia/Tokyo",          exchange: "TSE",     marketOpen: "09:00", marketClose: "15:30" },
@@ -148,6 +227,41 @@ const WORLD_CITIES: WorldCity[] = [
   { label: "Sydney",    flag: "🇦🇺", tz: "Australia/Sydney",    exchange: "ASX",     marketOpen: "10:00", marketClose: "16:00" },
   { label: "Frankfurt", flag: "🇩🇪", tz: "Europe/Berlin",       exchange: "XETRA",  marketOpen: "09:00", marketClose: "17:30" },
 ];
+
+// Curated timezone presets for the "Add city" dropdown
+const TZ_PRESETS: WorldCity[] = [
+  { label: "London",       flag: "🇬🇧", tz: "Europe/London",        exchange: "LSE",      marketOpen: "08:00", marketClose: "16:30" },
+  { label: "New York",     flag: "🇺🇸", tz: "America/New_York",     exchange: "NYSE",     marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Chicago",      flag: "🇺🇸", tz: "America/Chicago",      exchange: "CME",      marketOpen: "08:30", marketClose: "15:15" },
+  { label: "Los Angeles",  flag: "🇺🇸", tz: "America/Los_Angeles",  exchange: "—",        marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Toronto",      flag: "🇨🇦", tz: "America/Toronto",      exchange: "TSX",      marketOpen: "09:30", marketClose: "16:00" },
+  { label: "São Paulo",    flag: "🇧🇷", tz: "America/Sao_Paulo",    exchange: "B3",       marketOpen: "10:00", marketClose: "17:55" },
+  { label: "Frankfurt",    flag: "🇩🇪", tz: "Europe/Berlin",         exchange: "XETRA",   marketOpen: "09:00", marketClose: "17:30" },
+  { label: "Paris",        flag: "🇫🇷", tz: "Europe/Paris",          exchange: "Euronext", marketOpen: "09:00", marketClose: "17:30" },
+  { label: "Amsterdam",    flag: "🇳🇱", tz: "Europe/Amsterdam",      exchange: "Euronext", marketOpen: "09:00", marketClose: "17:30" },
+  { label: "Zurich",       flag: "🇨🇭", tz: "Europe/Zurich",         exchange: "SIX",      marketOpen: "09:00", marketClose: "17:30" },
+  { label: "Dubai",        flag: "🇦🇪", tz: "Asia/Dubai",            exchange: "DFM",      marketOpen: "10:00", marketClose: "14:00" },
+  { label: "Mumbai",       flag: "🇮🇳", tz: "Asia/Kolkata",          exchange: "NSE",      marketOpen: "09:15", marketClose: "15:30" },
+  { label: "Singapore",    flag: "🇸🇬", tz: "Asia/Singapore",        exchange: "SGX",      marketOpen: "09:00", marketClose: "17:00" },
+  { label: "Hong Kong",    flag: "🇨🇳", tz: "Asia/Hong_Kong",        exchange: "HKEX",     marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Shanghai",     flag: "🇨🇳", tz: "Asia/Shanghai",         exchange: "SSE",      marketOpen: "09:30", marketClose: "15:00" },
+  { label: "Tokyo",        flag: "🇯🇵", tz: "Asia/Tokyo",            exchange: "TSE",      marketOpen: "09:00", marketClose: "15:30" },
+  { label: "Seoul",        flag: "🇰🇷", tz: "Asia/Seoul",            exchange: "KRX",      marketOpen: "09:00", marketClose: "15:30" },
+  { label: "Sydney",       flag: "🇦🇺", tz: "Australia/Sydney",      exchange: "ASX",      marketOpen: "10:00", marketClose: "16:00" },
+];
+
+const LS_WORLD_CLOCK_KEY = "ft-world-clock-cities";
+
+function readWorldCities(): WorldCity[] {
+  try {
+    const r = localStorage.getItem(LS_WORLD_CLOCK_KEY);
+    return r ? JSON.parse(r) : DEFAULT_WORLD_CITIES;
+  } catch { return DEFAULT_WORLD_CITIES; }
+}
+
+function writeWorldCities(cities: WorldCity[]): void {
+  try { localStorage.setItem(LS_WORLD_CLOCK_KEY, JSON.stringify(cities)); } catch { /* noop */ }
+}
 
 function tzTime(tz: string, now: Date): string {
   return now.toLocaleTimeString("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -191,8 +305,30 @@ function useClock() {
 
 function ClockDisplay({ clock }: { clock: string; }) {
   const [hover, setHover] = useState(false);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [pos, setPos] = useState({ x: 0, y: 0, vw: 0 });
+  const [editing, setEditing] = useState(false);
+  const [cities, setCities] = useState<WorldCity[]>(() => readWorldCities());
+  const [addPreset, setAddPreset] = useState(TZ_PRESETS[0].tz);
   const now = new Date();
+
+  const removeCity = (tz: string) => {
+    const updated = cities.filter((c) => c.tz !== tz);
+    setCities(updated);
+    writeWorldCities(updated);
+  };
+
+  const addCity = () => {
+    const preset = TZ_PRESETS.find((p) => p.tz === addPreset);
+    if (!preset || cities.find((c) => c.tz === preset.tz)) return;
+    const updated = [...cities, preset];
+    setCities(updated);
+    writeWorldCities(updated);
+  };
+
+  const resetToDefault = () => {
+    setCities(DEFAULT_WORLD_CITIES);
+    writeWorldCities(DEFAULT_WORLD_CITIES);
+  };
 
   return (
     <>
@@ -200,29 +336,41 @@ function ClockDisplay({ clock }: { clock: string; }) {
         style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", letterSpacing: "0.08em", paddingRight: 16, borderRight: "1px solid var(--ft-border)", marginRight: 16, cursor: "default", userSelect: "none" }}
         onMouseEnter={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
-          setPos({ x: rect.right, y: rect.bottom });
+          setPos({ x: rect.right, y: rect.bottom, vw: window.innerWidth });
           setHover(true);
         }}
-        onMouseLeave={() => setHover(false)}
+        onMouseLeave={() => { if (!editing) setHover(false); }}
       >
         {clock}
       </span>
 
       {hover && createPortal(
         <div
-          style={{ position: "fixed", right: window.innerWidth - pos.x, top: pos.y + 6, zIndex: 9999, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", minWidth: 280 }}
+          style={{ position: "fixed", right: pos.vw - pos.x, top: pos.y + 6, zIndex: 9999, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", boxShadow: "0 8px 32px rgba(0,0,0,0.6)", minWidth: 300 }}
           onMouseEnter={() => setHover(true)}
-          onMouseLeave={() => setHover(false)}
+          onMouseLeave={() => { setHover(false); setEditing(false); }}
         >
-          <div style={{ padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em" }}>WORLD CLOCK — MAJOR EXCHANGES</div>
-          {WORLD_CITIES.map((city) => {
+          {/* Header */}
+          <div style={{ padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>WORLD CLOCK — MAJOR EXCHANGES</span>
+            <button
+              onClick={() => setEditing((e) => !e)}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 8, color: editing ? "var(--ft-amber)" : "var(--ft-dim)", padding: "0 2px", letterSpacing: "0.06em" }}
+            >{editing ? "DONE" : "EDIT"}</button>
+          </div>
+
+          {/* City rows */}
+          {cities.map((city) => {
             const status = getMarketStatus(city, now);
             const t = tzTime(city.tz, now);
             const badgeColor = status === "OPEN" ? "var(--ft-green)" : status === "PRE" ? "var(--ft-amber)" : "var(--ft-dim)";
             const badgeBg   = status === "OPEN" ? "rgba(63,185,80,0.15)" : status === "PRE" ? "rgba(244,162,30,0.12)" : "rgba(255,255,255,0.05)";
             const badgeBdr  = status === "OPEN" ? "rgba(63,185,80,0.3)"  : status === "PRE" ? "rgba(244,162,30,0.3)"  : "var(--ft-border)";
             return (
-              <div key={city.tz} style={{ display: "flex", alignItems: "center", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", gap: 10 }}>
+              <div key={city.tz} style={{ display: "flex", alignItems: "center", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", gap: 8 }}>
+                {editing && (
+                  <button onClick={() => removeCity(city.tz)} title="Remove" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-red)", fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0 }}>✕</button>
+                )}
                 <span style={{ fontSize: 13, flexShrink: 0 }}>{city.flag}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-text)" }}>{city.label}</div>
@@ -237,7 +385,25 @@ function ClockDisplay({ clock }: { clock: string; }) {
               </div>
             );
           })}
-          <div style={{ padding: "5px 12px", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>Market hours exclude public holidays</div>
+
+          {/* Edit controls */}
+          {editing && (
+            <div style={{ padding: "8px 12px", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <select
+                value={addPreset}
+                onChange={(e) => setAddPreset(e.target.value)}
+                style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "4px 6px", outline: "none", minWidth: 120 }}
+              >
+                {TZ_PRESETS.filter((p) => !cities.find((c) => c.tz === p.tz)).map((p) => (
+                  <option key={p.tz} value={p.tz}>{p.flag} {p.label}</option>
+                ))}
+              </select>
+              <button onClick={addCity} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "4px 10px", cursor: "pointer", fontWeight: 700 }}>+ ADD</button>
+              <button onClick={resetToDefault} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "4px 10px", cursor: "pointer" }}>RESET</button>
+            </div>
+          )}
+
+          {!editing && <div style={{ padding: "5px 12px", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>Market hours exclude public holidays · Hover EDIT to customise</div>}
         </div>,
         document.body,
       )}
@@ -246,15 +412,15 @@ function ClockDisplay({ clock }: { clock: string; }) {
 }
 
 function NavRow({
-  href, label, code, collapsed, active,
-}: { href: string; label: string; code: string; collapsed: boolean; active: boolean }) {
+  href, label, code, collapsed, active, Icon,
+}: { href: string; label: string; code: string; collapsed: boolean; active: boolean; Icon?: React.ElementType }) {
   const [hovered, setHovered] = useState(false);
   return (
     <Link href={href}>
       <button
         aria-label={label}
         aria-current={active ? "page" : undefined}
-        title={collapsed ? label : undefined}
+        title={collapsed ? label : code}
         style={{
           display: "flex",
           alignItems: "center",
@@ -271,7 +437,7 @@ function NavRow({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Icon chip */}
+        {/* Icon chip — shows icon if available, falls back to keyboard code */}
         <span style={{
           display: "flex",
           alignItems: "center",
@@ -291,10 +457,10 @@ function NavRow({
           border: active
             ? "1px solid rgba(244,162,30,0.3)"
             : "1px solid rgba(255,255,255,0.06)",
-          boxShadow: active ? "0 0 8px rgba(244,162,30,0.15)" : "none",
+          boxShadow: "none",
           transition: "all 0.12s",
         }}>
-          {code}
+          {Icon ? <Icon size={13} strokeWidth={active ? 2.5 : 1.75} /> : code}
         </span>
 
         {/* Label */}
@@ -326,7 +492,12 @@ function NavRow({
   );
 }
 
-function SectionDivider({ label, collapsed }: { label: string; collapsed: boolean }) {
+function SectionDivider({
+  label, collapsed, onClick, isCollapsed,
+}: {
+  label: string; collapsed: boolean;
+  onClick?: () => void; isCollapsed?: boolean;
+}) {
   if (collapsed) {
     return (
       <div style={{
@@ -337,24 +508,39 @@ function SectionDivider({ label, collapsed }: { label: string; collapsed: boolea
     );
   }
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      padding: "10px 12px 3px 14px",
-    }}>
+    <div
+      onClick={onClick}
+      title={onClick ? (isCollapsed ? `Expand ${label}` : `Collapse ${label}`) : undefined}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "10px 12px 3px 14px",
+        cursor: onClick ? "pointer" : "default",
+      }}
+    >
       <span style={{
         fontSize: 9,
         fontFamily: "var(--font-mono)",
         letterSpacing: "0.14em",
-        color: "var(--ft-dim)",
+        color: isCollapsed ? "var(--ft-muted)" : "var(--ft-dim)",
         fontWeight: 600,
         userSelect: "none",
         flexShrink: 0,
+        transition: "color 0.12s",
       }}>
         {label}
       </span>
       <div style={{ flex: 1, height: "1px", background: "var(--ft-border)" }} />
+      {onClick && (
+        <ChevronRight size={8} style={{
+          flexShrink: 0,
+          color: isCollapsed ? "var(--ft-muted)" : "var(--ft-dim)",
+          transform: isCollapsed ? "rotate(0deg)" : "rotate(90deg)",
+          transition: "transform 0.15s, color 0.12s",
+          opacity: 0.7,
+        }} />
+      )}
     </div>
   );
 }
@@ -741,7 +927,7 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
           color: "var(--ft-dim)",
           marginTop: 2,
           letterSpacing: "0.04em",
-        }}>toggle · pin · reorder</div>
+        }}>toggle visibility · ★ star to pin to top</div>
       </div>
 
       {/* Pinned-first toggle */}
@@ -758,7 +944,7 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
           fontFamily: "var(--font-mono)",
           color: "var(--ft-muted)",
           letterSpacing: "0.06em",
-        }}>PINNED ITEMS FIRST</span>
+        }}>★ STARRED ITEMS FIRST</span>
         <button
           onClick={() => onChange({ ...config, pinnedFirst: !config.pinnedFirst })}
           style={{
@@ -871,70 +1057,26 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
                     letterSpacing: "0.02em",
                   }}>{item.label}</span>
 
-                  {/* Pin toggle */}
+                  {/* Star (pin) toggle */}
                   <button
                     onClick={() => updateItem(item.href, { pinned: !c.pinned, visible: c.pinned ? c.visible : true })}
-                    title={c.pinned ? "Unpin" : "Pin to top"}
+                    title={c.pinned ? "Unstar (unpin)" : "Star — pin to top"}
                     style={{
                       background: "none",
                       border: "none",
                       cursor: "pointer",
-                      color: c.pinned ? "var(--ft-accent)" : "var(--ft-dim)",
-                      fontSize: 10,
+                      color: c.pinned ? "var(--ft-amber)" : "var(--ft-dim)",
+                      fontSize: 13,
                       lineHeight: 1,
                       padding: "0 2px",
                       flexShrink: 0,
                       transition: "color 0.1s",
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-accent)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = c.pinned ? "var(--ft-accent)" : "var(--ft-dim)"; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-amber)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = c.pinned ? "var(--ft-amber)" : "var(--ft-dim)"; }}
                   >
-                    <Pin size={10} />
+                    {c.pinned ? "★" : "☆"}
                   </button>
-
-                  {/* Move up/down */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 0, flexShrink: 0 }}>
-                    <button
-                      onClick={() => moveItem(item.href, -1)}
-                      title="Move up"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "var(--ft-dim)",
-                        fontSize: 7,
-                        lineHeight: 1,
-                        padding: "1px 2px",
-                        height: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "color 0.1s",
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-text)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ft-dim)"; }}
-                    ><ChevronUp size={8} /></button>
-                    <button
-                      onClick={() => moveItem(item.href, 1)}
-                      title="Move down"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "var(--ft-dim)",
-                        fontSize: 7,
-                        lineHeight: 1,
-                        padding: "1px 2px",
-                        height: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "color 0.1s",
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-text)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ft-dim)"; }}
-                    ><ChevronDown size={8} /></button>
-                  </div>
                 </div>
               );
             })}
@@ -1016,6 +1158,20 @@ export function Layout({ children }: LayoutProps) {
   const [moreOpen, setMoreOpen] = useState(() => {
     try { return localStorage.getItem("nr-sidebar-more") === "1"; } catch { return false; }
   });
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+    try {
+      const r = localStorage.getItem("nr-sidebar-collapsed-sections");
+      return r ? new Set<string>(JSON.parse(r)) : new Set<string>();
+    } catch { return new Set<string>(); }
+  });
+  const toggleSection = useCallback((label: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      try { localStorage.setItem("nr-sidebar-collapsed-sections", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }, []);
   const [showNwStrip] = useState(() => {
     try { return localStorage.getItem("nr-show-nw-strip") !== "false"; } catch { return true; }
   });
@@ -1026,6 +1182,14 @@ export function Layout({ children }: LayoutProps) {
   );
   useEffect(() => {
     const handler = () => setSidebarConfig(loadSidebarConfig(ALL_NAV_ITEMS));
+    window.addEventListener("nr-sidebar-config-update", handler);
+    return () => window.removeEventListener("nr-sidebar-config-update", handler);
+  }, []);
+  const [activePersonas, setActivePersonas] = useState(() =>
+    PERSONAS.filter(p => loadPersonaIds().includes(p.id))
+  );
+  useEffect(() => {
+    const handler = () => setActivePersonas(PERSONAS.filter(p => loadPersonaIds().includes(p.id)));
     window.addEventListener("nr-sidebar-config-update", handler);
     return () => window.removeEventListener("nr-sidebar-config-update", handler);
   }, []);
@@ -1049,7 +1213,7 @@ export function Layout({ children }: LayoutProps) {
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [bottomMoreOpen, setBottomMoreOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -1063,6 +1227,14 @@ export function Layout({ children }: LayoutProps) {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const refreshAll = useCallback(async () => {
+    await queryClient.invalidateQueries();
+  }, [queryClient]);
+  const { pullY, isRefreshing, touchHandlers: pullHandlers } = usePullToRefresh(refreshAll);
+  const isOnline = useNetworkStatus();
+  useAppResume(refreshAll);
+  const { dismiss: dismissKeyboard } = useKeyboard();
 
   const allAlerts = useAlerts();
   const unreadCount = useMemo(() => {
@@ -1118,6 +1290,12 @@ export function Layout({ children }: LayoutProps) {
         return;
       }
 
+      if (e.key.toLowerCase() === "a" && !e.metaKey && !e.ctrlKey && !e.altKey && !pendingGRef.current) {
+        e.preventDefault();
+        setNotifOpen(v => !v);
+        return;
+      }
+
       if (e.key === "Escape") { closeShortcuts(); return; }
 
       // G+key navigation: press G, then D/A/T/U/O/I/S/P within 1.5s
@@ -1157,13 +1335,28 @@ export function Layout({ children }: LayoutProps) {
     href === "/" ? location === "/" : location.startsWith(href);
 
   const allItems = NAV_SECTIONS.flatMap(s => s.items).concat(BOTTOM_ITEMS);
-  const activePage = allItems.find(i => isActive(i.href))?.label ?? "Dashboard";
+  const UNLISTED_LABELS: Record<string, string> = {
+    "/fire": "FIRE", "/mortgage": "Mortgage", "/pension": "Pension",
+    "/wardrobe": "Wardrobe", "/year-review": "Year Review",
+    "/whatif": "What If", "/portfolio": "Portfolio",
+    "/upcoming": "Upcoming", "/net-worth-history": "Net Worth",
+    "/trading-journal": "Trading", "/family-finance": "Family",
+    "/subscriptions": "Subscriptions", "/recurring": "Recurring",
+    "/briefing": "Briefing", "/cashflow": "Cash Flow",
+    "/reports": "Reports", "/projection": "Projection",
+    "/decisions": "Decisions", "/ai-coach": "AI Coach",
+    "/net-worth": "Net Worth",
+  };
+  const activePage = allItems.find(i => isActive(i.href))?.label
+    ?? Object.entries(UNLISTED_LABELS).find(([href]) => isActive(href))?.[1]
+    ?? "Dashboard";
 
   const sidebarW = collapsed ? 54 : sidebarWidth;
+  const effectiveCollapsed = collapsed;
 
   return (
     <>
-    <CommandPalette open={cmdOpen} onClose={closePalette} onNewTransaction={openQuickAdd} />
+    <CommandPalette open={cmdOpen} onClose={closePalette} onNewTransaction={openQuickAdd} onToggleAlerts={() => setNotifOpen(v => !v)} onToggleSidebar={toggleSidebar} />
     <QuickAddTransaction open={qaOpen} onClose={qaClose} />
     <GlobalSearch open={searchOpen} onClose={closeSearch} />
     <KeyboardShortcuts open={shortcutsOpen} onClose={closeShortcuts} />
@@ -1173,36 +1366,21 @@ export function Layout({ children }: LayoutProps) {
     >
       <ThemeEffects />
 
-      {/* ══ Sidebar ══ */}
-      {/* Mobile overlay backdrop */}
-      {isMobile && mobileOpen && (
-        <div
-          onClick={() => setMobileOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 299,
-            background: "rgba(0,0,0,0.55)",
-          }}
-        />
-      )}
+      {/* ══ Sidebar — desktop only; mobile uses bottom nav ══ */}
+      {!isMobile && (
       <aside
         className="ft-sidebar"
         style={{
-          width: isMobile ? 240 : sidebarW,
-          flexShrink: isMobile ? 0 : 0,
+          width: sidebarW,
+          flexShrink: 0,
           display: "flex",
           flexDirection: "column",
           background: "var(--ft-surface)",
           borderRight: "1px solid var(--ft-border)",
-          transition: isResizing ? "none" : isMobile ? "transform 0.2s ease" : "width 0.2s cubic-bezier(0.4,0,0.2,1)",
+          transition: isResizing ? "none" : "width 0.12s ease",
           overflow: "hidden",
-          position: isMobile ? "fixed" : "relative",
-          top: isMobile ? 0 : undefined,
-          left: isMobile ? 0 : undefined,
-          bottom: isMobile ? 0 : undefined,
-          zIndex: isMobile ? 300 : 10,
-          transform: isMobile ? (mobileOpen ? "translateX(0)" : "translateX(-100%)") : undefined,
+          position: "relative",
+          zIndex: 10,
         }}
       >
         {/* Left accent rail */}
@@ -1244,33 +1422,76 @@ export function Layout({ children }: LayoutProps) {
 
         {/* Brand */}
         <div
-          ref={logoRef}
-          data-logo
           style={{
             height: 48,
             display: "flex",
             alignItems: "center",
-            paddingLeft: collapsed ? 0 : 16,
+            paddingLeft: effectiveCollapsed ? 0 : 16,
             paddingRight: 10,
-            justifyContent: collapsed ? "center" : "space-between",
+            justifyContent: effectiveCollapsed ? "center" : "space-between",
             borderBottom: "1px solid var(--ft-border)",
             flexShrink: 0,
             cursor: "default",
           }}
         >
-          {collapsed ? (
+          {effectiveCollapsed ? (
             <LogoMark />
           ) : (
             <Logo />
           )}
         </div>
 
+        {/* Persona indicator strip — shown only when sidebar is not collapsed and persona(s) are set */}
+        {!collapsed && activePersonas.length > 0 && (() => {
+          const primary = activePersonas[0];
+          const color = PERSONA_COLORS[primary.id] ?? "var(--ft-accent)";
+          const glyph = PERSONA_GLYPHS[primary.id] ?? "·";
+          return (
+            <Link href="/settings?panel=terminal-profile">
+              <div
+                style={{
+                  padding: "5px 14px 5px",
+                  borderBottom: "1px solid var(--ft-border)",
+                  borderLeft: `2px solid ${color}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  flexShrink: 0,
+                  cursor: "pointer",
+                  transition: "background 0.12s",
+                  background: `${color}08`,
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = `${color}14`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = `${color}08`; }}
+                title="Change terminal profile"
+              >
+                <span style={{ fontSize: 11, color, lineHeight: 1, flexShrink: 0 }}>{glyph}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.12em", color, fontWeight: 700, padding: "1px 4px", border: `1px solid ${color}55`, whiteSpace: "nowrap" }}>
+                      {primary.code}
+                    </span>
+                    {activePersonas.length > 1 && activePersonas.slice(1).map(p => (
+                      <span key={p.id} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-dim)", padding: "1px 3px", border: "1px solid var(--ft-border)", whiteSpace: "nowrap" }}>
+                        +{p.code.split("·")[0]}
+                      </span>
+                    ))}
+                  </div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.03em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>
+                    {primary.label}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          );
+        })()}
+
         {/* Nav or Configure Panel */}
         {configuring ? (
           <SidebarConfigPanel
             config={sidebarConfig}
             allItems={ALL_NAV_ITEMS}
-            collapsed={collapsed}
+            collapsed={effectiveCollapsed}
             onClose={() => setConfiguring(false)}
             onChange={(next) => {
               setSidebarConfig(next);
@@ -1314,14 +1535,14 @@ export function Layout({ children }: LayoutProps) {
                   {/* Pinned section */}
                   {pinnedItems.length > 0 && (
                     <div>
-                      {!collapsed && (
+                      {!effectiveCollapsed && (
                         <div style={{ padding: "0 12px 3px 14px" }}>
                           <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.14em", color: "var(--ft-accent)", fontWeight: 700, opacity: 0.8 }}>
                             PINNED
                           </span>
                         </div>
                       )}
-                      {collapsed && <div style={{ height: 4 }} />}
+                      {effectiveCollapsed && <div style={{ height: 4 }} />}
                       <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
                         {pinnedItems.map((item) => (
                           <NavRow
@@ -1329,8 +1550,9 @@ export function Layout({ children }: LayoutProps) {
                             href={item.href}
                             label={item.label}
                             code={item.code}
-                            collapsed={collapsed}
+                            collapsed={effectiveCollapsed}
                             active={isActive(item.href)}
+                            Icon={HREF_ICON_MAP[item.href]}
                           />
                         ))}
                       </div>
@@ -1339,36 +1561,38 @@ export function Layout({ children }: LayoutProps) {
                   )}
 
                   {/* Regular sections */}
-                  {filteredSections.map((section, i) => (
+                  {filteredSections.map((section, i) => {
+                    const hasActiveInSection = section.items.some(item => isActive(item.href));
+                    const isSectionCollapsed = !effectiveCollapsed && collapsedSections.has(section.label) && !hasActiveInSection;
+                    return (
                     <div key={`${section.label}-${i}`}>
-                      {(i > 0 || pinnedItems.length > 0) && (
-                        <SectionDivider label={section.label} collapsed={collapsed} />
-                      )}
-                      {i === 0 && pinnedItems.length === 0 && !collapsed && (
-                        <div style={{ padding: "0 12px 3px 14px" }}>
-                          <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.14em", color: "var(--ft-dim)", fontWeight: 600 }}>
-                            {section.label}
-                          </span>
+                      <SectionDivider
+                        label={section.label}
+                        collapsed={effectiveCollapsed}
+                        onClick={!effectiveCollapsed ? () => toggleSection(section.label) : undefined}
+                        isCollapsed={isSectionCollapsed}
+                      />
+                      {!isSectionCollapsed && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                          {section.items.map((item) => (
+                            <NavRow
+                              key={item.href}
+                              href={item.href}
+                              label={item.label}
+                              code={item.code}
+                              collapsed={effectiveCollapsed}
+                              active={isActive(item.href)}
+                              Icon={HREF_ICON_MAP[item.href]}
+                            />
+                          ))}
                         </div>
                       )}
-                      {i === 0 && pinnedItems.length === 0 && collapsed && <div style={{ height: 4 }} />}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                        {section.items.map((item) => (
-                          <NavRow
-                            key={item.href}
-                            href={item.href}
-                            label={item.label}
-                            code={item.code}
-                            collapsed={collapsed}
-                            active={isActive(item.href)}
-                          />
-                        ))}
-                      </div>
                     </div>
-                  ))}
+                    );
+                  })}
 
                   {/* More / Less toggle */}
-                  <div style={{ margin: collapsed ? "8px 10px 4px" : "6px 12px 4px" }}>
+                  <div style={{ margin: effectiveCollapsed ? "8px 10px 4px" : "6px 12px 4px" }}>
                     <button
                       onClick={() => {
                         const next = !moreOpen;
@@ -1383,12 +1607,12 @@ export function Layout({ children }: LayoutProps) {
                         cursor: "pointer",
                         color: moreOpen ? "var(--ft-muted)" : "var(--ft-dim)",
                         fontFamily: "var(--font-mono)",
-                        fontSize: collapsed ? 8 : 9,
+                        fontSize: effectiveCollapsed ? 8 : 9,
                         letterSpacing: "0.08em",
-                        padding: collapsed ? "4px 0" : "3px 8px",
+                        padding: effectiveCollapsed ? "4px 0" : "3px 8px",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: collapsed ? "center" : "space-between",
+                        justifyContent: effectiveCollapsed ? "center" : "space-between",
                         gap: 4,
                         transition: "all 0.1s",
                       }}
@@ -1396,7 +1620,7 @@ export function Layout({ children }: LayoutProps) {
                       onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
                       onMouseLeave={e => { e.currentTarget.style.color = moreOpen ? "var(--ft-muted)" : "var(--ft-dim)"; e.currentTarget.style.borderColor = moreOpen ? "var(--ft-border2)" : "var(--ft-border)"; }}
                     >
-                      {collapsed ? (
+                      {effectiveCollapsed ? (
                         moreOpen ? <ChevronUp size={9} /> : <ChevronDown size={9} />
                       ) : (
                         <>
@@ -1425,14 +1649,14 @@ export function Layout({ children }: LayoutProps) {
               cursor: "pointer",
               color: configuring ? "var(--ft-accent)" : "var(--ft-dim)",
               fontFamily: "var(--font-mono)",
-              fontSize: collapsed ? 13 : 9,
+              fontSize: effectiveCollapsed ? 13 : 9,
               letterSpacing: "0.06em",
               padding: "5px 0",
               display: "flex",
               alignItems: "center",
-              justifyContent: collapsed ? "center" : "flex-start",
+              justifyContent: effectiveCollapsed ? "center" : "flex-start",
               gap: 6,
-              paddingLeft: collapsed ? 0 : 14,
+              paddingLeft: effectiveCollapsed ? 0 : 14,
               transition: "color 0.1s, background 0.1s",
             }}
             onMouseEnter={(e) => {
@@ -1449,9 +1673,29 @@ export function Layout({ children }: LayoutProps) {
             }}
           >
             <Settings2 size={11} />
-            {!collapsed && <span>CONFIGURE NAV</span>}
+            {!effectiveCollapsed && <span>CONFIGURE NAV</span>}
           </button>
         </div>
+
+        {/* Year Review seasonal banner — Dec/Jan only */}
+        {(() => {
+          const m = new Date().getMonth(); // 0-indexed: 11=Dec, 0=Jan
+          if (effectiveCollapsed || (m !== 11 && m !== 0)) return null;
+          const year = m === 11 ? new Date().getFullYear() : new Date().getFullYear() - 1;
+          return (
+            <Link href="/year-review">
+              <div style={{ margin: "0 8px 6px", padding: "8px 10px", background: "var(--ft-surface)", border: "1px solid rgba(163,113,247,0.3)", borderTop: "2px solid var(--ft-accent)", cursor: "pointer", transition: "border-color 0.15s" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(163,113,247,0.6)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(163,113,247,0.3)"; }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.06em", marginBottom: 2, display: "flex", alignItems: "center", gap: 5 }}>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M5 1v4M5 1L2.5 3.5M5 1L7.5 3.5M1 7.5h8" /><path d="M2 7.5c0 1.1.9 2 2 2h2a2 2 0 002-2" opacity=".5"/></svg>
+                  {year} YEAR IN REVIEW
+                </div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)", lineHeight: 1.4 }}>Your annual financial recap is ready</div>
+              </div>
+            </Link>
+          );
+        })()}
 
         {/* Bottom: settings / profile */}
         <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 6, flexShrink: 0 }}>
@@ -1462,8 +1706,9 @@ export function Layout({ children }: LayoutProps) {
                 href={item.href}
                 label={item.label}
                 code={item.code}
-                collapsed={collapsed}
+                collapsed={effectiveCollapsed}
                 active={isActive(item.href)}
+                Icon={HREF_ICON_MAP[item.href]}
               />
             ))}
           </div>
@@ -1474,14 +1719,14 @@ export function Layout({ children }: LayoutProps) {
             title="View profile"
             style={{
               margin: "8px 8px 6px",
-              padding: collapsed ? "6px 4px" : "8px 10px",
+              padding: effectiveCollapsed ? "6px 4px" : "8px 10px",
               borderRadius: 7,
               background: "var(--ft-raised)",
               border: "1px solid var(--ft-border)",
               display: "flex",
               alignItems: "center",
               gap: 9,
-              justifyContent: collapsed ? "center" : "flex-start",
+              justifyContent: effectiveCollapsed ? "center" : "flex-start",
               cursor: "pointer",
               transition: "border-color 0.15s",
             }}
@@ -1508,7 +1753,7 @@ export function Layout({ children }: LayoutProps) {
                 width: 28,
                 height: 28,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, var(--ft-accent) 0%, color-mix(in srgb, var(--ft-accent) 60%, var(--ft-blue)) 100%)",
+                background: "var(--ft-accent)",
                 color: "var(--ft-base)",
                 fontSize: 11,
                 fontWeight: 800,
@@ -1532,7 +1777,7 @@ export function Layout({ children }: LayoutProps) {
               }} />
             </div>
 
-            {!collapsed && (
+            {!effectiveCollapsed && (
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {userName}
@@ -1548,14 +1793,14 @@ export function Layout({ children }: LayoutProps) {
           {dashboardData && showNwStrip && (
             <div style={{
               borderTop: "1px solid var(--ft-border)",
-              padding: collapsed ? "5px 0" : "5px 12px",
+              padding: effectiveCollapsed ? "5px 0" : "5px 12px",
               display: "flex",
               alignItems: "center",
-              justifyContent: collapsed ? "center" : "space-between",
+              justifyContent: effectiveCollapsed ? "center" : "space-between",
               gap: 4,
               fontFamily: "var(--font-mono)",
             }}>
-              {collapsed ? (
+              {effectiveCollapsed ? (
                 <PrivNum style={{ fontSize: 9, color: "var(--ft-accent)", fontWeight: 700, letterSpacing: "0.02em" }}>
                   {formatGbp(dashboardData.netWorth)}
                 </PrivNum>
@@ -1570,8 +1815,9 @@ export function Layout({ children }: LayoutProps) {
             </div>
           )}
 
-          {/* Collapse toggle */}
+          {/* Collapse toggle — desktop only, hidden on mobile via CSS */}
           <button
+            className="ft-sidebar-collapse-btn"
             onClick={toggleSidebar}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title="⌘["
@@ -1599,12 +1845,13 @@ export function Layout({ children }: LayoutProps) {
           </button>
         </div>
       </aside>
+      )}
 
       {/* ══ Right panel ══ */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
 
         {/* Top bar */}
-        <header style={{
+        <header className="ft-header" style={{
           height: 48,
           display: "flex",
           alignItems: "center",
@@ -1615,33 +1862,31 @@ export function Layout({ children }: LayoutProps) {
           flexShrink: 0,
           gap: 16,
         }}>
-          {/* Breadcrumb — never shrinks, always visible */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-            {/* Hamburger — mobile only */}
-            {isMobile && (
-              <button
-                type="button"
-                onClick={() => setMobileOpen((o) => !o)}
-                aria-label="Toggle navigation"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "none",
-                  border: "none",
-                  color: "var(--ft-muted)",
-                  cursor: "pointer",
-                  padding: "4px 6px 4px 0",
-                  marginRight: 2,
-                }}
-              >
-                <Menu size={18} />
-              </button>
+          {/* Brand + breadcrumb */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            {isMobile ? (
+              /* Mobile: LogoMark + section breadcrumb */
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div ref={logoRef} data-logo style={{ display: "flex", alignItems: "center", marginRight: 2 }}>
+                  <LogoMark />
+                </div>
+                {(() => {
+                  const section = HREF_SECTION_MAP[location] ?? Object.entries(HREF_SECTION_MAP).find(([h]) => location.startsWith(h) && h !== "/")?.[1];
+                  return section && section !== "CORE" ? (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>
+                      {section} ›
+                    </span>
+                  ) : null;
+                })()}
+              </div>
+            ) : (
+              <>
+                <span className="ft-header-brand" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>
+                  NUMERIS
+                </span>
+                <span className="ft-header-brand" style={{ color: "var(--ft-border2)", fontSize: 12 }}>›</span>
+              </>
             )}
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>
-              NUMERIS
-            </span>
-            <span style={{ color: "var(--ft-border2)", fontSize: 12 }}>›</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em" }}>
               {activePage.toUpperCase()}
             </span>
@@ -1650,19 +1895,19 @@ export function Layout({ children }: LayoutProps) {
           {/* Right side — ticker shrinks first, essential buttons never disappear */}
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 1, minWidth: 0 }}>
 
-            {/* Ticker — isolated so it's the only thing that compresses */}
-            <div style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", borderRight: "1px solid var(--ft-border)", marginRight: 12 }}>
+            {/* Ticker — isolated so it's the only thing that compresses; hidden on mobile via CSS */}
+            <div className="ft-header-ticker-strip" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", borderRight: "1px solid var(--ft-border)", marginRight: 12 }}>
               <LiveTickerBar />
             </div>
 
             {/* Essential buttons — flex-shrink: 0 so they're always visible */}
             <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
 
-            {/* Clock with world timezone hover */}
-            <ClockDisplay clock={clock} />
+            {/* Clock with world timezone hover — hidden on mobile to reclaim header space */}
+            {!isMobile && <ClockDisplay clock={clock} />}
 
-            {/* PWA install prompt */}
-            <PWAInstallButton />
+            {/* PWA install prompt — hidden on mobile (home screen install prompt is native) */}
+            {!isMobile && <PWAInstallButton />}
 
             {/* Notifications bell */}
             <div style={{ position: "relative", marginRight: 10 }}>
@@ -1712,6 +1957,7 @@ export function Layout({ children }: LayoutProps) {
 
             {/* Global search button */}
             <button
+              className="ft-header-search-btn"
               onClick={openSearch}
               title="Search (⌘K)"
               style={{
@@ -1761,8 +2007,9 @@ export function Layout({ children }: LayoutProps) {
               {privacy ? <EyeOff size={13} /> : <Eye size={13} />}
             </button>
 
-            {/* Sign out */}
+            {/* Sign out — hidden on mobile (accessible via sidebar profile) */}
             <button
+              className="ft-header-sign-out"
               onClick={handleSignOut}
               style={{
                 background: "var(--ft-raised)",
@@ -1786,9 +2033,74 @@ export function Layout({ children }: LayoutProps) {
           </div>{/* end right side */}
         </header>
 
+        {/* Offline banner — mobile only, shows when no network */}
+        {isMobile && !isOnline && (
+          <div
+            style={{
+              background: "var(--ft-red)",
+              color: "#fff",
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              textAlign: "center",
+              padding: "6px 12px",
+              zIndex: 60,
+            }}
+          >
+            ● NO CONNECTION — DATA MAY BE STALE
+          </div>
+        )}
+
         {/* Main */}
-        <main className="ft-main" style={{ flex: 1, overflowY: "auto", background: "var(--ft-base)" }}>
-          <div className="ft-main-inner" style={{ padding: "20px 24px 32px" }}>{children}</div>
+        <main
+          className="ft-main"
+          style={{ flex: 1, overflowY: "auto", overflowX: "hidden", background: "var(--ft-base)", position: "relative" }}
+          {...(isMobile ? pullHandlers : {})}
+          onScroll={isMobile ? dismissKeyboard : undefined}
+        >
+          {/* Pull-to-refresh indicator — mobile only */}
+          {isMobile && (pullY > 0 || isRefreshing) && (
+            <div
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 30,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: pullY > 0 ? pullY : isRefreshing ? 36 : 0,
+                overflow: "hidden",
+                background: "var(--ft-surface)",
+                borderBottom: "1px solid var(--ft-border)",
+                transition: isRefreshing ? "none" : "height 0.15s ease",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "0.1em",
+                  color: pullY >= 60 || isRefreshing ? "var(--ft-accent)" : "var(--ft-dim)",
+                  textTransform: "uppercase",
+                }}
+              >
+                {isRefreshing ? "REFRESHING…" : pullY >= 60 ? "RELEASE TO REFRESH" : "PULL TO REFRESH"}
+              </span>
+            </div>
+          )}
+          <div
+            className="ft-main-inner"
+            style={{
+              padding: "20px 24px 32px",
+              transform: isMobile && pullY > 0 ? `translateY(${pullY * 0.3}px)` : undefined,
+              transition: isMobile && pullY === 0 ? "transform 0.15s ease" : undefined,
+            }}
+          >
+            {children}
+          </div>
         </main>
 
         {/* Status strip */}
@@ -1829,50 +2141,472 @@ export function Layout({ children }: LayoutProps) {
     </div>
     <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
     <EasterEggRenderer overlay={eggOverlay} clearOverlay={clearOverlay} />
-    <AiAgent sidebarW={sidebarW} />
+    {!isMobile && <AiAgent sidebarW={sidebarW} />}
+    {/* Mobile FAB — floating quick-add button */}
+    <MobileFab />
     {/* Mobile bottom navigation — only shows on small screens via CSS */}
-    <MobileBottomNav />
+    <MobileBottomNav moreOpen={bottomMoreOpen} setMoreOpen={setBottomMoreOpen} onOpenMore={() => {}} />
     </>
   );
 }
 
-function MobileBottomNav() {
-  const [loc] = useLocation();
-  const items = [
-    { href: "/",             label: "Home",  icon: "⬡" },
-    { href: "/accounts",     label: "Accts", icon: "⊟" },
-    { href: "/transactions", label: "Txns",  icon: "≡" },
-    { href: "/analytics",    label: "Stats", icon: "▲" },
-    { href: "/budget",       label: "Budget",icon: "◎" },
-  ];
+const MORE_SECTIONS = [
+  {
+    label: "ANALYZE",
+    items: [
+      { href: "/analytics",      label: "Analytics",     Icon: LineChart,   desc: "Spending insights" },
+      { href: "/net-worth",      label: "Net Worth",     Icon: TrendingUp,  desc: "Total wealth view" },
+      { href: "/tax",            label: "Tax",           Icon: FileText,    desc: "Tax estimates" },
+    ],
+  },
+  {
+    label: "INVEST",
+    items: [
+      { href: "/portfolio",      label: "Portfolio",     Icon: Briefcase,   desc: "Your holdings" },
+      { href: "/investments",    label: "Markets",       Icon: Activity,    desc: "Live prices" },
+    ],
+  },
+  {
+    label: "PLAN",
+    items: [
+      { href: "/goals",          label: "Goals",         Icon: Target,      desc: "Savings targets" },
+      { href: "/upcoming",       label: "Upcoming",      Icon: Calendar,    desc: "Bills & due dates" },
+      { href: "/subscriptions",  label: "Recurring",     Icon: RefreshCw,   desc: "Subscriptions" },
+    ],
+  },
+  {
+    label: "LIFE",
+    items: [
+      { href: "/owing",          label: "Owing",         Icon: Users,       desc: "Shared expenses" },
+      { href: "/learn",          label: "Learn",         Icon: BookOpen,    desc: "Finance guides" },
+      { href: "/settings",       label: "Settings",      Icon: Settings2,   desc: "Preferences" },
+    ],
+  },
+];
+
+// ── Bottom-nav customisation ──────────────────────────────────────────────────
+const NAV_CONFIG_KEY = "ft-bottom-nav-config";
+const DEFAULT_NAV_HREFS = ["/", "/accounts", "/transactions", "/budget"];
+
+const NAV_CUSTOMISE_OPTIONS = [
+  { href: "/",               label: "Home",      Icon: Home },
+  { href: "/accounts",       label: "Accts",     Icon: CreditCard },
+  { href: "/transactions",   label: "Txns",      Icon: ArrowLeftRight },
+  { href: "/budget",         label: "Budget",    Icon: PieChart },
+  { href: "/analytics",      label: "Analytics", Icon: LineChart },
+  { href: "/net-worth",      label: "Net Worth", Icon: TrendingUp },
+  { href: "/tax",            label: "Tax",       Icon: FileText },
+  { href: "/portfolio",      label: "Portfolio", Icon: Briefcase },
+  { href: "/investments",    label: "Markets",   Icon: Activity },
+  { href: "/goals",          label: "Goals",     Icon: Target },
+  { href: "/upcoming",       label: "Upcoming",  Icon: Calendar },
+  { href: "/subscriptions",  label: "Recurring", Icon: RefreshCw },
+  { href: "/owing",          label: "Owing",     Icon: Users },
+  { href: "/learn",          label: "Learn",     Icon: BookOpen },
+  { href: "/settings",       label: "Settings",  Icon: Settings2 },
+];
+
+function loadNavConfig(): string[] {
+  try {
+    const raw = localStorage.getItem(NAV_CONFIG_KEY);
+    if (!raw) return DEFAULT_NAV_HREFS;
+    const parsed = JSON.parse(raw) as string[];
+    if (Array.isArray(parsed) && parsed.length === 4 && parsed.every(h => NAV_CUSTOMISE_OPTIONS.some(i => i.href === h)))
+      return parsed;
+  } catch {}
+  return DEFAULT_NAV_HREFS;
+}
+
+function saveNavConfig(hrefs: string[]) {
+  localStorage.setItem(NAV_CONFIG_KEY, JSON.stringify(hrefs));
+}
+
+function MobileBottomNav({ moreOpen, setMoreOpen, onOpenMore }: { moreOpen: boolean; setMoreOpen: (v: boolean) => void; onOpenMore: () => void }) {
+  const [loc, setLoc] = useLocation();
+  const { navigatePrev, navigateNext, hasPrev, hasNext, currentIdx } = usePageSwipe();
+  const isMobileNav = useIsMobile();
+  const PAGE_TOTAL = 13;
+
+  const [primaryHrefs, setPrimaryHrefs] = useState<string[]>(() => loadNavConfig());
+  const primaryItems = primaryHrefs
+    .map(h => NAV_CUSTOMISE_OPTIONS.find(i => i.href === h))
+    .filter((i): i is typeof NAV_CUSTOMISE_OPTIONS[0] => !!i);
+
+  const [customiseOpen, setCustomiseOpen] = useState(false);
+  const [pendingHrefs, setPendingHrefs] = useState<string[]>([]);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMorePointerDown = () => {
+    longPressTimer.current = setTimeout(() => {
+      haptic.heavy();
+      setPendingHrefs([...primaryHrefs]);
+      setCustomiseOpen(true);
+    }, 600);
+  };
+
+  const handleMorePointerUp = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const moreActive = MORE_SECTIONS.some(s => s.items.some(i => loc.startsWith(i.href)));
+
+  const NavItem = ({ href, label, Icon: IconComp, active }: { href: string; label: string; Icon: React.ElementType; active: boolean }) => (
+    <Link href={href}>
+      <span
+        onClick={() => haptic.selection()}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
+          fontFamily: "var(--font-mono)",
+          fontSize: 8,
+          letterSpacing: "0.08em",
+          color: active ? "var(--ft-accent)" : "var(--ft-dim)",
+          padding: "6px 4px",
+          cursor: "pointer",
+          transition: "color 0.1s",
+          textTransform: "uppercase",
+          position: "relative",
+          minWidth: 44,
+          textAlign: "center",
+        }}
+      >
+        {active && (
+          <span style={{
+            position: "absolute",
+            top: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 20,
+            height: 2,
+            background: "var(--ft-accent)",
+            borderRadius: 1,
+          }} />
+        )}
+        <IconComp size={16} strokeWidth={active ? 2.5 : 1.75} />
+        {label}
+      </span>
+    </Link>
+  );
+
   return (
-    <nav className="ft-mobile-nav" aria-label="Mobile navigation">
-      {items.map(item => {
-        const active = item.href === "/" ? loc === "/" : loc.startsWith(item.href);
-        return (
-          <Link key={item.href} href={item.href}>
-            <span
+    <>
+      <nav className="ft-mobile-nav" aria-label="Mobile navigation">
+        {primaryItems.map(item => {
+          const active = item.href === "/" ? loc === "/" : loc.startsWith(item.href);
+          return <NavItem key={item.href} {...item} active={active} />;
+        })}
+        {/* More button — tap opens More drawer, long-press opens Customise */}
+        <button
+          onPointerDown={handleMorePointerDown}
+          onPointerUp={handleMorePointerUp}
+          onPointerCancel={handleMorePointerUp}
+          onClick={() => { haptic.light(); onOpenMore(); setMoreOpen(true); }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+            fontFamily: "var(--font-mono)",
+            fontSize: 8,
+            letterSpacing: "0.08em",
+            color: moreActive ? "var(--ft-accent)" : "var(--ft-dim)",
+            padding: "6px 4px",
+            cursor: "pointer",
+            transition: "color 0.1s",
+            textTransform: "uppercase",
+            position: "relative",
+            minWidth: 44,
+            background: "none",
+            border: "none",
+          }}
+        >
+          {moreActive && (
+            <span style={{
+              position: "absolute",
+              top: 0,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 20,
+              height: 2,
+              background: "var(--ft-accent)",
+              borderRadius: 1,
+            }} />
+          )}
+          <Grid3X3 size={16} strokeWidth={moreActive ? 2.5 : 1.75} />
+          More
+        </button>
+      </nav>
+
+      {/* More pages sheet */}
+      <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+        <DrawerContent
+          style={{
+            background: "var(--ft-surface)",
+            borderColor: "var(--ft-border)",
+            borderTop: "1px solid var(--ft-border2)",
+            maxHeight: "80dvh",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Handle */}
+          <div style={{ display: "flex", justifyContent: "center", paddingTop: 8, paddingBottom: 4 }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--ft-border2)" }} />
+          </div>
+          <DrawerHeader style={{ padding: "6px 16px 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <DrawerTitle
               style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 3,
                 fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: "0.06em",
-                color: active ? "var(--ft-accent)" : "var(--ft-dim)",
-                padding: "8px 12px",
-                cursor: "pointer",
-                transition: "color 0.1s",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
                 textTransform: "uppercase",
+                color: "var(--ft-text)",
               }}
             >
-              <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
-              {item.label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
+              ALL PAGES
+            </DrawerTitle>
+            <button
+              onClick={() => setMoreOpen(false)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: 4 }}
+            >
+              <X size={14} />
+            </button>
+          </DrawerHeader>
+          <div style={{ overflowY: "auto", flex: 1, padding: "4px 16px 24px", WebkitOverflowScrolling: "touch" as const }}>
+            {MORE_SECTIONS.map(section => (
+              <div key={section.label} style={{ marginBottom: 20 }}>
+                <div style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  color: "var(--ft-dim)",
+                  textTransform: "uppercase",
+                  marginBottom: 8,
+                  paddingBottom: 4,
+                  borderBottom: "1px solid var(--ft-border)",
+                }}>
+                  {section.label}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  {section.items.map(item => {
+                    const active = loc.startsWith(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => { haptic.selection(); setMoreOpen(false); }}
+                      >
+                        <div style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "10px 6px",
+                          borderRadius: 8,
+                          background: active ? `var(--ft-accent)18` : "var(--ft-raised)",
+                          border: `1px solid ${active ? "var(--ft-accent)44" : "var(--ft-border)"}`,
+                          cursor: "pointer",
+                          transition: "all 0.1s",
+                        }}>
+                          <item.Icon
+                            size={20}
+                            strokeWidth={active ? 2.5 : 1.75}
+                            color={active ? "var(--ft-accent)" : "var(--ft-text)"}
+                          />
+                          <span style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 9,
+                            fontWeight: 600,
+                            letterSpacing: "0.06em",
+                            textTransform: "uppercase",
+                            color: active ? "var(--ft-accent)" : "var(--ft-text)",
+                            textAlign: "center",
+                          }}>
+                            {item.label}
+                          </span>
+                          {"desc" in item && item.desc && (
+                            <span style={{
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 7,
+                              color: active ? "var(--ft-accent)" : "var(--ft-muted)",
+                              textAlign: "center",
+                              letterSpacing: "0.04em",
+                              lineHeight: 1.3,
+                            }}>
+                              {item.desc}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            {/* Customise entry point */}
+            <button
+              onClick={() => { setPendingHrefs([...primaryHrefs]); setMoreOpen(false); setCustomiseOpen(true); }}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: "var(--ft-raised)",
+                border: "1px solid var(--ft-border)",
+                color: "var(--ft-dim)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                cursor: "pointer",
+                marginTop: 4,
+              }}
+            >
+              <Settings2 size={13} strokeWidth={1.75} />
+              Customise tabs
+            </button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Nav customise sheet */}
+      <Drawer open={customiseOpen} onOpenChange={setCustomiseOpen}>
+        <DrawerContent style={{
+          background: "var(--ft-surface)",
+          borderColor: "var(--ft-border)",
+          borderTop: "1px solid var(--ft-border2)",
+          maxHeight: "88dvh",
+          display: "flex",
+          flexDirection: "column",
+        }}>
+          <div style={{ display: "flex", justifyContent: "center", paddingTop: 8, paddingBottom: 4 }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "var(--ft-border2)" }} />
+          </div>
+          <DrawerHeader style={{ padding: "6px 16px 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <DrawerTitle style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--ft-text)",
+              }}>
+                CUSTOMISE TABS
+              </DrawerTitle>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+                CHOOSE 4 — HOLD MORE TO REOPEN
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                fontWeight: 700,
+                color: pendingHrefs.length === 4 ? "var(--ft-accent)" : "var(--ft-dim)",
+              }}>
+                {pendingHrefs.length}/4
+              </span>
+              <button
+                onClick={() => setCustomiseOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: 4 }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </DrawerHeader>
+          <div style={{ overflowY: "auto", flex: 1, padding: "4px 16px 12px", WebkitOverflowScrolling: "touch" as const }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              {NAV_CUSTOMISE_OPTIONS.map(item => {
+                const selected = pendingHrefs.includes(item.href);
+                const disabled = !selected && pendingHrefs.length >= 4;
+                return (
+                  <button
+                    key={item.href}
+                    onClick={() => {
+                      haptic.selection();
+                      if (selected) {
+                        setPendingHrefs(prev => prev.filter(h => h !== item.href));
+                      } else if (pendingHrefs.length < 4) {
+                        setPendingHrefs(prev => [...prev, item.href]);
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "12px 8px",
+                      borderRadius: 8,
+                      background: selected ? `var(--ft-accent)18` : "var(--ft-raised)",
+                      border: `1px solid ${selected ? "var(--ft-accent)" : "var(--ft-border)"}`,
+                      cursor: disabled ? "default" : "pointer",
+                      opacity: disabled ? 0.35 : 1,
+                      transition: "all 0.1s",
+                    }}
+                  >
+                    <item.Icon
+                      size={20}
+                      strokeWidth={selected ? 2.5 : 1.75}
+                      color={selected ? "var(--ft-accent)" : "var(--ft-text)"}
+                    />
+                    <span style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 9,
+                      fontWeight: 600,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      color: selected ? "var(--ft-accent)" : "var(--ft-text)",
+                      textAlign: "center",
+                    }}>
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ padding: "12px 16px 24px", borderTop: "1px solid var(--ft-border)" }}>
+            <button
+              disabled={pendingHrefs.length !== 4}
+              onClick={() => {
+                saveNavConfig(pendingHrefs);
+                setPrimaryHrefs(pendingHrefs);
+                haptic.heavy();
+                setCustomiseOpen(false);
+              }}
+              style={{
+                width: "100%",
+                padding: "11px 16px",
+                borderRadius: 8,
+                background: pendingHrefs.length === 4 ? "var(--ft-accent)" : "var(--ft-raised)",
+                border: `1px solid ${pendingHrefs.length === 4 ? "var(--ft-accent)" : "var(--ft-border)"}`,
+                color: pendingHrefs.length === 4 ? "#000" : "var(--ft-dim)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase" as const,
+                cursor: pendingHrefs.length === 4 ? "pointer" : "not-allowed",
+                transition: "all 0.15s",
+              }}
+            >
+              SAVE TABS
+            </button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }

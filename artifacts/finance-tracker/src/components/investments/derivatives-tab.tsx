@@ -1,8 +1,12 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, BarChart2 } from "lucide-react";
+import {
+  LineChart, Line, XAxis, YAxis, ReferenceLine, Tooltip,
+  ResponsiveContainer, CartesianGrid,
+} from "recharts";
 import { useGetOptionsChain } from "@workspace/api-client-react";
 import type { OptionsContract } from "@workspace/api-client-react";
 import {
@@ -442,6 +446,45 @@ function BSCalculator({ quoteMap }: BSCalcProps) {
               </div>
             ))}
           </div>
+
+          {/* Payoff diagram */}
+          {(() => {
+            const S = parseFloat(spot);
+            const K = parseFloat(strike);
+            const optPrice = optType === "call" ? result.callPrice : result.putPrice;
+            if (isNaN(S) || isNaN(K) || S <= 0) return null;
+            const lo = S * 0.6, hi = S * 1.4;
+            const pts = Array.from({ length: 60 }, (_, i) => {
+              const sT = lo + (hi - lo) * (i / 59);
+              const iv2 = optType === "call" ? Math.max(sT - K, 0) : Math.max(K - sT, 0);
+              return { spot: Math.round(sT * 100) / 100, pl: Math.round((iv2 - optPrice) * 100) / 100 };
+            });
+            const maxAbs = Math.max(...pts.map((p) => Math.abs(p.pl)));
+            const breakeven = optType === "call" ? K + optPrice : K - optPrice;
+            return (
+              <div style={{ marginBottom: 12, border: "1px solid var(--ft-border)", padding: "10px 4px 4px" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", padding: "0 10px", marginBottom: 6 }}>
+                  AT-EXPIRY PAYOFF · BREAKEVEN {breakeven.toFixed(2)}
+                </div>
+                <ResponsiveContainer width="100%" height={160}>
+                  <LineChart data={pts} margin={{ top: 4, right: 12, bottom: 4, left: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,110,123,0.15)" />
+                    <XAxis dataKey="spot" tick={{ fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(v: number) => v.toFixed(0)} interval="preserveStartEnd" />
+                    <YAxis domain={[-maxAbs * 1.1, maxAbs * 1.1]} tick={{ fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(v: number) => v.toFixed(1)} width={44} />
+                    <ReferenceLine y={0} stroke="rgba(99,110,123,0.4)" strokeDasharray="4 2" />
+                    <ReferenceLine x={S} stroke="var(--ft-blue)" strokeDasharray="3 3" label={{ value: "S", fill: "var(--ft-blue)", fontSize: 9, position: "top" }} />
+                    <ReferenceLine x={breakeven} stroke="var(--ft-amber)" strokeDasharray="2 2" label={{ value: "BE", fill: "var(--ft-amber)", fontSize: 9, position: "insideTopRight" }} />
+                    <Tooltip
+                      contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 10, fontFamily: "var(--font-mono)" }}
+                      formatter={(v: number) => [v >= 0 ? `+${v.toFixed(2)}` : v.toFixed(2), "P&L"]}
+                      labelFormatter={(l: number) => `Spot: ${Number(l).toFixed(2)}`}
+                    />
+                    <Line dataKey="pl" stroke={optType === "call" ? "var(--ft-green)" : "var(--ft-red)"} dot={false} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            );
+          })()}
 
           {/* Greeks table */}
           <div style={{ border: "1px solid var(--ft-border)", overflowX: "auto" }}>
@@ -1355,6 +1398,183 @@ function OptionsChainViewer() {
   );
 }
 
+// ── Strategy Builder ──────────────────────────────────────────────────────────
+
+interface StratLeg {
+  id: string;
+  type: "call" | "put";
+  direction: "long" | "short";
+  strike: string;
+  premium: string;
+  qty: string;
+}
+
+function detectStrategy(legs: StratLeg[]): string {
+  const valid = legs.filter((l) => l.strike && l.premium && l.qty);
+  if (valid.length === 0) return "";
+  if (valid.length === 1) {
+    const l = valid[0];
+    return `${l.direction === "long" ? "Long" : "Short"} ${l.type === "call" ? "Call" : "Put"}`;
+  }
+  if (valid.length === 2) {
+    const [a, b] = valid;
+    const sameType = a.type === b.type;
+    const Ka = parseFloat(a.strike), Kb = parseFloat(b.strike);
+    if (sameType) {
+      if (a.direction !== b.direction) return `${a.type === "call" ? "Call" : "Put"} Spread`;
+      return `${a.direction === "long" ? "Long" : "Short"} ${a.type === "call" ? "Call" : "Put"} Ratio`;
+    }
+    if (a.direction === b.direction && a.direction === "long") {
+      return Math.abs(Ka - Kb) < (Ka + Kb) * 0.03 ? "Long Straddle" : "Long Strangle";
+    }
+    if (a.direction === b.direction && a.direction === "short") {
+      return Math.abs(Ka - Kb) < (Ka + Kb) * 0.03 ? "Short Straddle" : "Short Strangle";
+    }
+  }
+  if (valid.length === 4) {
+    const types = valid.map((l) => l.type);
+    const dirs = valid.map((l) => l.direction);
+    if (types.filter((t) => t === "call").length === 2 && types.filter((t) => t === "put").length === 2) {
+      if (dirs.filter((d) => d === "long").length === 2) return "Long Iron Condor";
+      if (dirs.filter((d) => d === "short").length === 2) return "Short Iron Condor";
+    }
+  }
+  return `${valid.length}-Leg Strategy`;
+}
+
+function StrategyBuilder({ quoteMap }: { quoteMap: Map<string, QuoteData> }) {
+  const [spot, setSpot] = useState("");
+  const [ticker, setTicker] = useState("");
+  const [legs, setLegs] = useState<StratLeg[]>([
+    { id: "1", type: "call", direction: "long", strike: "", premium: "", qty: "1" },
+  ]);
+
+  useEffect(() => {
+    const q = quoteMap.get(ticker.toUpperCase());
+    if (q) setSpot(q.price.toFixed(2));
+  }, [ticker, quoteMap]);
+
+  const addLeg = () =>
+    setLegs((prev) => [...prev, { id: String(Date.now()), type: "call", direction: "long", strike: "", premium: "", qty: "1" }]);
+
+  const removeLeg = (id: string) => setLegs((prev) => prev.filter((l) => l.id !== id));
+
+  const updateLeg = <K extends keyof StratLeg>(id: string, key: K, value: StratLeg[K]) =>
+    setLegs((prev) => prev.map((l) => (l.id === id ? { ...l, [key]: value } : l)));
+
+  const payoffData = useMemo(() => {
+    const S = parseFloat(spot);
+    if (isNaN(S) || S <= 0) return [];
+    const validLegs = legs.filter((l) => l.strike && l.premium && l.qty);
+    if (validLegs.length === 0) return [];
+    const lo = S * 0.6, hi = S * 1.4;
+    return Array.from({ length: 60 }, (_, i) => {
+      const sT = lo + (hi - lo) * (i / 59);
+      let pl = 0;
+      for (const leg of validLegs) {
+        const K = parseFloat(leg.strike);
+        const prem = parseFloat(leg.premium);
+        const qty = parseFloat(leg.qty);
+        if (isNaN(K) || isNaN(prem) || isNaN(qty)) continue;
+        const iv2 = leg.type === "call" ? Math.max(sT - K, 0) : Math.max(K - sT, 0);
+        const legPl = leg.direction === "long" ? iv2 - prem : prem - iv2;
+        pl += legPl * qty * 100;
+      }
+      return { spot: Math.round(sT * 100) / 100, pl: Math.round(pl * 100) / 100 };
+    });
+  }, [legs, spot]);
+
+  const strategyName = detectStrategy(legs);
+  const maxAbs = payoffData.length > 0 ? Math.max(...payoffData.map((p) => Math.abs(p.pl))) : 1;
+  const S = parseFloat(spot);
+
+  const SEL_STYLE: React.CSSProperties = {
+    height: 28, fontSize: 11, background: "var(--ft-base)", color: "var(--ft-text)",
+    border: "1px solid var(--ft-border2)", borderRadius: 3, padding: "0 6px",
+  };
+
+  return (
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <BarChart2 style={{ width: 12, height: 12, color: "var(--ft-cyan)" }} />
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+            Strategy Builder
+          </span>
+          {strategyName && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-cyan)", marginLeft: 6 }}>
+              — {strategyName}
+            </span>
+          )}
+        </div>
+        <Button onClick={addLeg} size="sm" style={{ height: 26, fontSize: 11, background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", borderRadius: 2, padding: "0 8px" }}>
+          <Plus style={{ width: 10, height: 10, marginRight: 4 }} />Add Leg
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="space-y-1">
+          <Label style={{ fontSize: 10 }}>Ticker (auto-fill spot)</Label>
+          <Input value={ticker} onChange={(e) => setTicker(e.target.value)} placeholder="e.g. AAPL" style={{ height: 28, fontSize: 11 }} />
+        </div>
+        <div className="space-y-1">
+          <Label style={{ fontSize: 10 }}>Spot Price (S)</Label>
+          <Input type="number" value={spot} onChange={(e) => setSpot(e.target.value)} placeholder="e.g. 185" style={{ height: 28, fontSize: 11 }} />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "80px 80px 90px 90px 60px 28px", gap: 6, marginBottom: 4 }}>
+          {["Type", "Direction", "Strike", "Premium/sh", "Qty", ""].map((h) => (
+            <div key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</div>
+          ))}
+        </div>
+        {legs.map((leg) => (
+          <div key={leg.id} style={{ display: "grid", gridTemplateColumns: "80px 80px 90px 90px 60px 28px", gap: 6, marginBottom: 6 }}>
+            <select value={leg.type} onChange={(e) => updateLeg(leg.id, "type", e.target.value as "call" | "put")} style={SEL_STYLE}>
+              <option value="call">Call</option>
+              <option value="put">Put</option>
+            </select>
+            <select value={leg.direction} onChange={(e) => updateLeg(leg.id, "direction", e.target.value as "long" | "short")} style={SEL_STYLE}>
+              <option value="long">Long</option>
+              <option value="short">Short</option>
+            </select>
+            <Input type="number" value={leg.strike} onChange={(e) => updateLeg(leg.id, "strike", e.target.value)} placeholder="Strike" style={{ height: 28, fontSize: 11 }} />
+            <Input type="number" value={leg.premium} onChange={(e) => updateLeg(leg.id, "premium", e.target.value)} placeholder="Premium" style={{ height: 28, fontSize: 11 }} />
+            <Input type="number" value={leg.qty} onChange={(e) => updateLeg(leg.id, "qty", e.target.value)} placeholder="Qty" style={{ height: 28, fontSize: 11 }} />
+            <button onClick={() => removeLeg(leg.id)} disabled={legs.length === 1} style={{ background: "transparent", border: "none", cursor: "pointer", color: legs.length === 1 ? "var(--ft-border)" : "var(--ft-red)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Trash2 style={{ width: 12, height: 12 }} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {payoffData.length > 0 && (
+        <div style={{ border: "1px solid var(--ft-border)", padding: "10px 4px 4px" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", padding: "0 10px", marginBottom: 6 }}>
+            COMBINED PAYOFF AT EXPIRY
+          </div>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={payoffData} margin={{ top: 4, right: 12, bottom: 4, left: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,110,123,0.15)" />
+              <XAxis dataKey="spot" tick={{ fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(v: number) => v.toFixed(0)} interval="preserveStartEnd" />
+              <YAxis domain={[-maxAbs * 1.15, maxAbs * 1.15]} tick={{ fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)} width={48} />
+              <ReferenceLine y={0} stroke="rgba(99,110,123,0.5)" strokeDasharray="4 2" />
+              {!isNaN(S) && S > 0 && <ReferenceLine x={S} stroke="var(--ft-blue)" strokeDasharray="3 3" label={{ value: "S", fill: "var(--ft-blue)", fontSize: 9, position: "top" }} />}
+              <Tooltip
+                contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 10, fontFamily: "var(--font-mono)" }}
+                formatter={(v: number) => [v >= 0 ? `+$${v.toFixed(0)}` : `-$${Math.abs(v).toFixed(0)}`, "P&L"]}
+                labelFormatter={(l: number) => `Spot: ${Number(l).toFixed(2)}`}
+              />
+              <Line dataKey="pl" stroke="var(--ft-cyan)" dot={false} strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function DerivativesTab({ quoteMap }: DerivativesTabProps) {
@@ -1415,6 +1635,12 @@ export function DerivativesTab({ quoteMap }: DerivativesTabProps) {
           ▼ Futures Tracker
         </div>
         <FuturesSection quoteMap={quoteMap} />
+      </div>
+      <div style={{ border: "1px solid var(--ft-border)", padding: 16, background: "var(--ft-base)" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-cyan)", textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--ft-border)", paddingBottom: 8, marginBottom: 16 }}>
+          ▼ Strategy Builder
+        </div>
+        <StrategyBuilder quoteMap={quoteMap} />
       </div>
     </div>
   );

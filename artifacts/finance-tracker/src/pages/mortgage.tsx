@@ -1,5 +1,10 @@
 import { useState, useMemo, useCallback } from "react";
+import { Home } from "lucide-react";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
+import { PageHeader } from "@/components/page-header";
 import {
+  AreaChart,
+  Area,
   LineChart,
   Line,
   XAxis,
@@ -143,7 +148,6 @@ function stampDuty(price: number, firstTimeBuyer: boolean): number {
   if (firstTimeBuyer) {
     if (price <= 425_000) return 0;
     if (price <= 625_000) return (price - 425_000) * 0.05;
-    // Above £625k FTB relief no longer applies
     return price * 0 + (125_000 * 0.02) + (250_000 * 0.05) + (price - 375_000) * 0.1;
   }
   let tax = 0;
@@ -154,7 +158,7 @@ function stampDuty(price: number, firstTimeBuyer: boolean): number {
   return tax;
 }
 
-// ─── Subcomponents ───────────────────────────────────────────────────────────
+// ─── Style constants ──────────────────────────────────────────────────────────
 
 const LABEL_STYLE: React.CSSProperties = {
   fontSize: 9,
@@ -179,38 +183,185 @@ const INPUT_STYLE: React.CSSProperties = {
 
 const FIELD_STYLE: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 4 };
 
-const SECTION_HEADER: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
-  fontWeight: 700,
-  color: "var(--ft-accent)",
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  marginBottom: 10,
-  borderBottom: "1px solid var(--ft-border)",
-  paddingBottom: 6,
-};
+// ─── Section header with left accent bar ─────────────────────────────────────
+
+interface SectionHeaderProps {
+  children: React.ReactNode;
+  accentColor?: string;
+}
+
+function SectionHeader({ children, accentColor = "var(--ft-accent)" }: SectionHeaderProps) {
+  return (
+    <div
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        fontWeight: 700,
+        color: accentColor,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        marginBottom: 10,
+        borderLeft: `3px solid ${accentColor}`,
+        paddingLeft: 8,
+        paddingBottom: 2,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── Amortization helpers ────────────────────────────────────────────────────
 
 interface AmortizationTableProps {
   rows: AmortizationRow[];
   totalInterest: number;
+  principal: number;
 }
 
-function AmortizationTable({ rows, totalInterest }: AmortizationTableProps) {
-  const [showAll, setShowAll] = useState(false);
+interface YearRow {
+  year: number;
+  totalPayment: number;
+  totalInterest: number;
+  totalPrincipal: number;
+  endBalance: number;
+}
 
-  const displayed = useMemo(() => {
+function buildYearRows(rows: AmortizationRow[]): YearRow[] {
+  const byYear: Map<number, YearRow> = new Map();
+  for (const row of rows) {
+    const year = Math.ceil(row.month / 12);
+    const existing = byYear.get(year);
+    if (existing) {
+      existing.totalPayment += row.payment;
+      existing.totalInterest += row.interestPortion;
+      existing.totalPrincipal += row.principalPortion;
+      existing.endBalance = row.balance;
+    } else {
+      byYear.set(year, {
+        year,
+        totalPayment: row.payment,
+        totalInterest: row.interestPortion,
+        totalPrincipal: row.principalPortion,
+        endBalance: row.balance,
+      });
+    }
+  }
+  return Array.from(byYear.values());
+}
+
+// ─── AmortTable sub-rows ─────────────────────────────────────────────────────
+
+interface YearTableRowProps {
+  row: YearRow;
+}
+
+function YearTableRow({ row }: YearTableRowProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <tr
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        borderBottom: "1px solid var(--ft-border)",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+        cursor: "default",
+      }}
+    >
+      <td style={{ padding: "5px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: hov ? "var(--ft-accent)" : "var(--ft-muted)", fontWeight: hov ? 700 : 400, transition: "color 0.1s" }}>
+        Yr {row.year}
+      </td>
+      <td style={{ padding: "5px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", textAlign: "right" }}>
+        <span className="pnum">{formatGbp(row.totalPayment)}</span>
+      </td>
+      <td style={{ padding: "5px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)", textAlign: "right" }}>
+        <span className="pnum">{formatGbp(row.totalInterest)}</span>
+      </td>
+      <td style={{ padding: "5px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)", textAlign: "right" }}>
+        <span className="pnum">{formatGbp(row.totalPrincipal)}</span>
+      </td>
+      <td style={{ padding: "5px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", textAlign: "right", fontWeight: 600 }}>
+        <span className="pnum">{formatGbp(row.endBalance)}</span>
+      </td>
+    </tr>
+  );
+}
+
+interface MonthTableRowProps {
+  row: AmortizationRow;
+  isGapAbove: boolean;
+  totalHidden: number;
+}
+
+function MonthTableRow({ row, isGapAbove, totalHidden }: MonthTableRowProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <>
+      {isGapAbove && (
+        <tr>
+          <td colSpan={5} style={{ textAlign: "center", padding: "4px", fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", background: "var(--ft-raised)" }}>
+            ··· {totalHidden} months hidden ···
+          </td>
+        </tr>
+      )}
+      <tr
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          borderBottom: "1px solid var(--ft-border)",
+          background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+          transition: "background 0.1s",
+          cursor: "default",
+        }}
+      >
+        <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: hov ? "var(--ft-accent)" : "var(--ft-muted)", fontWeight: hov ? 700 : 400, transition: "color 0.1s" }}>
+          {row.month}
+        </td>
+        <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", textAlign: "right" }}>
+          <span className="pnum">{formatGbp(row.payment)}</span>
+        </td>
+        <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)", textAlign: "right" }}>
+          <span className="pnum">{formatGbp(row.interestPortion)}</span>
+        </td>
+        <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)", textAlign: "right" }}>
+          <span className="pnum">{formatGbp(row.principalPortion)}</span>
+        </td>
+        <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", textAlign: "right", fontWeight: 600 }}>
+          <span className="pnum">{formatGbp(row.balance)}</span>
+        </td>
+      </tr>
+    </>
+  );
+}
+
+// ─── Amortization Table ───────────────────────────────────────────────────────
+
+function AmortizationTable({ rows, totalInterest, principal }: AmortizationTableProps) {
+  const [showAll, setShowAll] = useState(false);
+  const [viewMode, setViewMode] = useState<"monthly" | "yearly">("yearly");
+
+  const yearRows = useMemo(() => buildYearRows(rows), [rows]);
+
+  const displayedMonthly = useMemo(() => {
     if (showAll || rows.length <= 24) return rows;
     return [...rows.slice(0, 12), ...rows.slice(-12)];
   }, [rows, showAll]);
 
-  const chartData = useMemo(
-    () => rows.filter((_, i) => i % 6 === 0 || i === rows.length - 1).map((r) => ({
-      month: `M${r.month}`,
-      balance: Math.round(r.balance),
-    })),
-    [rows]
-  );
+  const areaChartData = useMemo(() => {
+    const step = Math.max(1, Math.floor(rows.length / 60));
+    return rows
+      .filter((_, i) => i % step === 0 || i === rows.length - 1)
+      .map((r) => ({
+        month: `M${r.month}`,
+        principal: Math.round(r.principalPortion),
+        interest: Math.round(r.interestPortion),
+        balance: Math.round(r.balance),
+      }));
+  }, [rows]);
+
+  const totalPaid = rows.reduce((s, r) => s + r.payment, 0);
+  const interestRatio = totalPaid > 0 ? (totalInterest / totalPaid) * 100 : 0;
 
   const TH_STYLE: React.CSSProperties = {
     padding: "5px 10px",
@@ -225,74 +376,197 @@ function AmortizationTable({ rows, totalInterest }: AmortizationTableProps) {
     whiteSpace: "nowrap",
   };
 
+  const TOGGLE_BTN = (active: boolean): React.CSSProperties => ({
+    padding: "3px 10px",
+    fontSize: 9,
+    fontFamily: "var(--font-mono)",
+    background: active ? "var(--ft-accent)" : "var(--ft-raised)",
+    border: `1px solid ${active ? "var(--ft-accent)" : "var(--ft-border)"}`,
+    color: active ? "var(--ft-base)" : "var(--ft-dim)",
+    cursor: "pointer",
+    letterSpacing: "0.06em",
+    textTransform: "uppercase" as const,
+  });
+
   return (
     <div style={{ marginTop: 16 }}>
-      <div style={{ height: 160, marginBottom: 14 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" />
-            <XAxis dataKey="month" tick={{ fontSize: 9, fontFamily: "var(--font-mono)", fill: "var(--ft-dim)" }} />
-            <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 9, fontFamily: "var(--font-mono)", fill: "var(--ft-dim)" }} />
-            <Tooltip
-              contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 11 }}
-              formatter={(v: number) => [formatGbp(v), "Balance"]}
-            />
-            <Line type="monotone" dataKey="balance" stroke="var(--ft-accent)" strokeWidth={1.5} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+      {/* Border-as-gap KPI strip */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 14 }}>
+        <div style={{ background: "var(--ft-surface)", padding: "10px 12px" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Repaid</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+            <span className="pnum">{formatGbp(totalPaid)}</span>
+          </div>
+        </div>
+        <div style={{ background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-red)", padding: "10px 12px" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Interest</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-red)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+            <span className="pnum">{formatGbp(totalInterest)}</span>
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", marginTop: 3 }}>
+            <span className="pnum">{interestRatio.toFixed(1)}</span>% of total repaid
+          </div>
+        </div>
+        <div style={{ background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-green)", padding: "10px 12px" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Principal</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-green)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+            <span className="pnum">{formatGbp(principal)}</span>
+          </div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", marginTop: 3 }}>
+            <span className="pnum">{(100 - interestRatio).toFixed(1)}</span>% of total repaid
+          </div>
+        </div>
       </div>
 
-      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", marginBottom: 8 }}>
-        Total interest paid: <span style={{ color: "var(--ft-red)", fontWeight: 700 }}>{formatGbp(totalInterest)}</span>
+      {/* Principal vs Interest AreaChart */}
+      <div style={{ marginBottom: 6 }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+          Monthly Breakdown — Principal vs. Interest
+        </div>
+        <div style={{ height: 160 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={areaChartData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
+              <defs>
+                <linearGradient id="gradPrincipal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--ft-green)" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="var(--ft-green)" stopOpacity={0.05} />
+                </linearGradient>
+                <linearGradient id="gradInterest" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--ft-red)" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="var(--ft-red)" stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" />
+              <XAxis dataKey="month" tick={{ fontSize: 9, fontFamily: "var(--font-mono)", fill: "var(--ft-dim)" }} />
+              <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(1)}k`} tick={{ fontSize: 9, fontFamily: "var(--font-mono)", fill: "var(--ft-dim)" }} />
+              <Tooltip
+                contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 11 }}
+                formatter={(v: number, name: string) => [formatGbp(v), name === "principal" ? "Principal" : "Interest"]}
+              />
+              <Legend wrapperStyle={{ fontSize: 9, fontFamily: "var(--font-mono)" }} formatter={(value: string) => value === "principal" ? "Principal" : "Interest"} />
+              <Area type="monotone" dataKey="interest" stackId="1" stroke="var(--ft-red)" fill="url(#gradInterest)" strokeWidth={1.5} dot={false} name="interest" />
+              <Area type="monotone" dataKey="principal" stackId="1" stroke="var(--ft-green)" fill="url(#gradPrincipal)" strokeWidth={1.5} dot={false} name="principal" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-          <thead>
-            <tr>
-              {["Month", "Payment", "Interest", "Principal", "Balance"].map((h, i) => (
-                <th key={h} style={{ ...TH_STYLE, textAlign: i === 0 ? "left" : "right" }}>{h}</th>
+      {/* Balance over time line chart */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+          Outstanding Balance
+        </div>
+        <div style={{ height: 120 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={areaChartData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" />
+              <XAxis dataKey="month" tick={{ fontSize: 9, fontFamily: "var(--font-mono)", fill: "var(--ft-dim)" }} />
+              <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 9, fontFamily: "var(--font-mono)", fill: "var(--ft-dim)" }} />
+              <Tooltip
+                contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 11 }}
+                formatter={(v: number) => [formatGbp(v), "Balance"]}
+              />
+              <Line type="monotone" dataKey="balance" stroke="var(--ft-accent)" strokeWidth={1.5} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Table view toggle */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Amortization Schedule</div>
+        <div style={{ display: "flex", gap: 0 }}>
+          <button onClick={() => setViewMode("yearly")} style={TOGGLE_BTN(viewMode === "yearly")}>Year</button>
+          <button onClick={() => setViewMode("monthly")} style={TOGGLE_BTN(viewMode === "monthly")}>Month</button>
+        </div>
+      </div>
+
+      {viewMode === "yearly" ? (
+        <div className="ft-scroll-x">
+          <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+            <thead>
+              <tr>
+                {["Year", "Total Paid", "Interest", "Principal", "End Balance"].map((h, i) => (
+                  <th key={h} style={{ ...TH_STYLE, textAlign: i === 0 ? "left" : "right" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {yearRows.map((row) => (
+                <YearTableRow key={row.year} row={row} />
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {displayed.map((row, idx) => {
-              const prevRow = displayed[idx - 1];
-              const isGap = !showAll && rows.length > 24 && idx === 12 && prevRow && prevRow.month !== row.month - 1;
-              return (
-                <>
-                  {isGap && (
-                    <tr key={`gap-${row.month}`}>
-                      <td colSpan={5} style={{ textAlign: "center", padding: "4px", fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", background: "var(--ft-raised)" }}>
-                        ··· {rows.length - 24} months hidden ···
-                      </td>
-                    </tr>
-                  )}
-                  <tr
-                    key={row.month}
-                    style={{ borderBottom: "1px solid var(--ft-border)", background: idx % 2 === 0 ? "transparent" : "var(--ft-raised)22" }}
-                  >
-                    <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>{row.month}</td>
-                    <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", textAlign: "right" }}>{formatGbp(row.payment)}</td>
-                    <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)", textAlign: "right" }}>{formatGbp(row.interestPortion)}</td>
-                    <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)", textAlign: "right" }}>{formatGbp(row.principalPortion)}</td>
-                    <td style={{ padding: "4px 10px", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", textAlign: "right", fontWeight: 600 }}>{formatGbp(row.balance)}</td>
-                  </tr>
-                </>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <>
+          <div className="ft-scroll-x">
+            <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+              <thead>
+                <tr>
+                  {["Month", "Payment", "Interest", "Principal", "Balance"].map((h, i) => (
+                    <th key={h} style={{ ...TH_STYLE, textAlign: i === 0 ? "left" : "right" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayedMonthly.map((row, idx) => {
+                  const prevRow = displayedMonthly[idx - 1];
+                  const isGapAbove = !showAll && rows.length > 24 && idx === 12 && prevRow != null && prevRow.month !== row.month - 1;
+                  return (
+                    <MonthTableRow
+                      key={row.month}
+                      row={row}
+                      isGapAbove={isGapAbove}
+                      totalHidden={rows.length - 24}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-      {rows.length > 24 && (
-        <button
-          onClick={() => setShowAll((v) => !v)}
-          style={{ marginTop: 8, background: "none", border: "1px dashed var(--ft-border2)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "4px 12px", cursor: "pointer", width: "100%" }}
-        >
-          {showAll ? "Show less" : `Show all ${rows.length} months`}
-        </button>
+          {rows.length > 24 && (
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              style={{ marginTop: 8, background: "none", border: "1px dashed var(--ft-border2)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "4px 12px", cursor: "pointer", width: "100%" }}
+            >
+              {showAll ? "Show less" : `Show all ${rows.length} months`}
+            </button>
+          )}
+        </>
       )}
+    </div>
+  );
+}
+
+// ─── Overpayment Scenario Card ────────────────────────────────────────────────
+
+interface OverpaymentScenarioCardProps {
+  label: string;
+  months: number;
+  interest: number;
+  color: string;
+}
+
+function OverpaymentScenarioCard({ label, months, interest, color }: OverpaymentScenarioCardProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
+        border: "1px solid var(--ft-border)",
+        padding: "10px 12px",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color, marginBottom: 2 }}>{formatMonths(months)}</div>
+      <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>
+        <span className="pnum">{formatGbp(interest)}</span> interest
+      </div>
     </div>
   );
 }
@@ -335,10 +609,10 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
 
   return (
     <div style={{ marginTop: 16 }}>
-      <div style={SECTION_HEADER}>Overpayment Impact Calculator</div>
+      <SectionHeader>Overpayment Impact Calculator</SectionHeader>
 
       <div style={{ marginBottom: 12 }}>
-        <div style={LABEL_STYLE}>Extra monthly payment: <span style={{ color: "var(--ft-accent)" }}>{formatGbp(extra)}</span></div>
+        <div style={LABEL_STYLE}>Extra monthly payment: <span style={{ color: "var(--ft-accent)" }}><span className="pnum">{formatGbp(extra)}</span></span></div>
         <input
           type="range"
           min={0}
@@ -354,28 +628,25 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
       </div>
 
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-        {[
-          { label: "Standard", months: standard.length, interest: stdInterest, color: "var(--ft-muted)" },
-          { label: "With Overpayment", months: overpaid.length, interest: ovInterest, color: "var(--ft-accent)" },
-        ].map(({ label, months, interest, color }) => (
-          <div key={label} style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "10px 12px" }}>
-            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{label}</div>
-            <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color, marginBottom: 2 }}>{formatMonths(months)}</div>
-            <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>{formatGbp(interest)} interest</div>
-          </div>
-        ))}
+        <OverpaymentScenarioCard label="Standard" months={standard.length} interest={stdInterest} color="var(--ft-muted)" />
+        <OverpaymentScenarioCard label="With Overpayment" months={overpaid.length} interest={ovInterest} color="var(--ft-accent)" />
       </div>
 
-      <div className="ft-three-col" style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 14px", marginBottom: 14, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-        <div>
+      {/* Border-as-gap savings summary */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 14 }}>
+        <div style={{ background: "var(--ft-surface)", padding: "10px 14px" }}>
           <div style={LABEL_STYLE}>Months Saved</div>
-          <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: monthsSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>{monthsSaved > 0 ? `${monthsSaved}mo` : "—"}</div>
+          <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: monthsSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
+            {monthsSaved > 0 ? `${monthsSaved}mo` : "—"}
+          </div>
         </div>
-        <div>
+        <div style={{ background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-green)", padding: "10px 14px" }}>
           <div style={LABEL_STYLE}>Interest Saved</div>
-          <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: interestSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>{interestSaved > 0 ? formatGbp(interestSaved) : "—"}</div>
+          <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: interestSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
+            <span className="pnum">{interestSaved > 0 ? formatGbp(interestSaved) : "—"}</span>
+          </div>
         </div>
-        <div>
+        <div style={{ background: "var(--ft-surface)", padding: "10px 14px" }}>
           <div style={LABEL_STYLE}>New Payoff</div>
           <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ft-text)" }}>{newPayoffDate}</div>
         </div>
@@ -401,6 +672,41 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
   );
 }
 
+// ─── Rate Scenario Card ───────────────────────────────────────────────────────
+
+interface RateScenarioCardProps {
+  rate: number;
+  delta: number;
+  principal: number;
+  termYears: number;
+  type: LoanType;
+}
+
+function RateScenarioCard({ rate, delta, principal, termYears, type }: RateScenarioCardProps) {
+  const [hov, setHov] = useState(false);
+  const monthly = monthlyPayment(principal, rate, termYears, type);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background: delta === 0 ? "var(--ft-raised)" : hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        border: `1px solid ${delta === 0 ? "var(--ft-accent)" : "var(--ft-border)"}`,
+        padding: "10px 12px",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: delta === 0 ? "var(--ft-accent)" : "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+        <span className="pnum">{rate.toFixed(1)}</span>%{delta > 0 ? ` (+${delta}%)` : ""}
+      </div>
+      <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ft-text)" }}>
+        <span className="pnum">{formatGbp(monthly)}</span>
+      </div>
+      <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>/ month</div>
+    </div>
+  );
+}
+
 // ─── Rate Scenario Comparison ────────────────────────────────────────────────
 
 interface RateScenariosProps {
@@ -413,7 +719,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
 
   return (
     <div style={{ marginTop: 16 }}>
-      <div style={SECTION_HEADER}>Interest Rate Scenarios</div>
+      <SectionHeader accentColor="var(--ft-blue)">Interest Rate Scenarios</SectionHeader>
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
         <div style={LABEL_STYLE}>Base rate (%)</div>
         <input
@@ -426,20 +732,51 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
         />
       </div>
       <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
-        {scenarios.map((delta) => {
-          const rate = baseRate + delta;
-          const monthly = monthlyPayment(mortgage.principal, rate, mortgage.termYears, mortgage.type);
-          return (
-            <div key={delta} style={{ background: delta === 0 ? "var(--ft-raised)" : "var(--ft-surface)", border: `1px solid ${delta === 0 ? "var(--ft-accent)" : "var(--ft-border)"}`, padding: "10px 12px" }}>
-              <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: delta === 0 ? "var(--ft-accent)" : "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
-                {rate.toFixed(1)}%{delta > 0 ? ` (+${delta}%)` : ""}
-              </div>
-              <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ft-text)" }}>{formatGbp(monthly)}</div>
-              <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>/ month</div>
-            </div>
-          );
-        })}
+        {scenarios.map((delta) => (
+          <RateScenarioCard
+            key={delta}
+            rate={baseRate + delta}
+            delta={delta}
+            principal={mortgage.principal}
+            termYears={mortgage.termYears}
+            type={mortgage.type}
+          />
+        ))}
       </div>
+    </div>
+  );
+}
+
+// ─── Affordability Result Card ────────────────────────────────────────────────
+
+interface AffordabilityKpiCardProps {
+  label: string;
+  value: string;
+  color: string;
+  sub?: string;
+  borderColor?: string;
+}
+
+function AffordabilityKpiCard({ label, value, color, sub, borderColor }: AffordabilityKpiCardProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        border: `1px solid ${borderColor ?? "var(--ft-border)"}`,
+        padding: "10px 14px",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={LABEL_STYLE}>{label}</div>
+      <div style={{ fontSize: 14, fontFamily: "var(--font-mono)", fontWeight: 700, color }}>
+        <span className="pnum">{value}</span>
+      </div>
+      {sub && (
+        <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color, marginTop: 2 }}>{sub}</div>
+      )}
     </div>
   );
 }
@@ -476,7 +813,7 @@ function AffordabilityTab() {
 
   return (
     <div>
-      <div style={SECTION_HEADER}>Affordability Calculator</div>
+      <SectionHeader>Affordability Calculator</SectionHeader>
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
         <div style={FIELD_STYLE}>
           <div style={LABEL_STYLE}>Annual income (£)</div>
@@ -514,7 +851,7 @@ function AffordabilityTab() {
                   border: `1px solid ${isFtb === value ? "var(--ft-accent)" : "var(--ft-border)"}`,
                   color: isFtb === value ? "var(--ft-base)" : "var(--ft-dim)",
                   cursor: "pointer",
-                  transition: "all 0.1s",
+                  transition: "background 0.1s, color 0.1s, border-color 0.1s",
                 }}
               >
                 {label}
@@ -526,35 +863,83 @@ function AffordabilityTab() {
 
       {maxLoan > 0 && (
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {[
-            { label: "Max Loan", value: formatGbp(maxLoan), color: "var(--ft-text)" },
-            { label: "Max Property Value", value: formatGbp(maxPropertyValue), color: "var(--ft-accent)" },
-            { label: "Stamp Duty", value: formatGbp(sdlt), color: "var(--ft-amber)" },
-            { label: "Total Cost", value: formatGbp(totalCost), color: "var(--ft-text)" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 14px" }}>
-              <div style={LABEL_STYLE}>{label}</div>
-              <div style={{ fontSize: 14, fontFamily: "var(--font-mono)", fontWeight: 700, color }}>{value}</div>
-            </div>
-          ))}
-
-          <div style={{ background: "var(--ft-surface)", border: `1px solid ${ltvColor}`, padding: "10px 14px" }}>
-            <div style={LABEL_STYLE}>LTV</div>
-            <div style={{ fontSize: 14, fontFamily: "var(--font-mono)", fontWeight: 700, color: ltvColor }}>{ltv.toFixed(1)}%</div>
-            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: ltvColor, marginTop: 2 }}>{ltvLabel}</div>
-          </div>
-
-          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 14px" }}>
-            <div style={LABEL_STYLE}>Income Multiple</div>
-            <div style={{ fontSize: 14, fontFamily: "var(--font-mono)", fontWeight: 700, color: incomeMultiple <= 4.5 ? "var(--ft-green)" : "var(--ft-red)" }}>
-              {incomeMultiple > 0 ? `${incomeMultiple.toFixed(1)}x` : "—"}
-            </div>
-            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginTop: 2 }}>
-              {incomeMultiple <= 4.5 ? "Within typical lender limit" : "Above 4.5x — harder to borrow"}
-            </div>
-          </div>
+          <AffordabilityKpiCard label="Max Loan" value={formatGbp(maxLoan)} color="var(--ft-text)" />
+          <AffordabilityKpiCard label="Max Property Value" value={formatGbp(maxPropertyValue)} color="var(--ft-accent)" />
+          <AffordabilityKpiCard label="Stamp Duty" value={formatGbp(sdlt)} color="var(--ft-amber)" />
+          <AffordabilityKpiCard label="Total Cost" value={formatGbp(totalCost)} color="var(--ft-text)" />
+          <AffordabilityKpiCard
+            label="LTV"
+            value={`${ltv.toFixed(1)}%`}
+            color={ltvColor}
+            sub={ltvLabel}
+            borderColor={ltvColor}
+          />
+          <AffordabilityKpiCard
+            label="Income Multiple"
+            value={incomeMultiple > 0 ? `${incomeMultiple.toFixed(1)}x` : "—"}
+            color={incomeMultiple <= 4.5 ? "var(--ft-green)" : "var(--ft-red)"}
+            sub={incomeMultiple <= 4.5 ? "Within typical lender limit" : "Above 4.5x — harder to borrow"}
+          />
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Page KPI Strip ──────────────────────────────────────────────────────────
+
+interface PageKpiStripProps {
+  mortgages: StoredMortgage[];
+}
+
+function PageKpiStrip({ mortgages }: PageKpiStripProps) {
+  const items = useMemo(() => {
+    if (mortgages.length === 0) return null;
+
+    const totalMonthly = mortgages.reduce((s, m) => s + monthlyPayment(m.principal, m.annualRate, m.termYears, m.type), 0);
+    const totalOutstanding = mortgages.reduce((s, m) => s + outstandingBalance(m), 0);
+    const totalPrincipal = mortgages.reduce((s, m) => s + m.principal, 0);
+    const totalInterest = mortgages.reduce((s, m) => {
+      const rows = buildAmortization(m.principal, m.annualRate, m.termYears, m.type, m.extraMonthly ?? 0);
+      return s + rows.reduce((si, r) => si + r.interestPortion, 0);
+    }, 0);
+    const avgLtv = totalPrincipal > 0 ? (totalOutstanding / totalPrincipal) * 100 : 0;
+    const shortestRemaining = Math.min(...mortgages.map((m) => monthsRemaining(m)));
+
+    return { totalMonthly, totalOutstanding, totalInterest, avgLtv, shortestRemaining };
+  }, [mortgages]);
+
+  if (!items) return null;
+
+  const ltvColor = items.avgLtv < 60 ? "var(--ft-green)" : items.avgLtv < 75 ? "var(--ft-accent)" : items.avgLtv < 90 ? "var(--ft-amber)" : "var(--ft-red)";
+
+  const kpis = [
+    { label: "Monthly Payment", value: formatGbp(items.totalMonthly), color: "var(--ft-amber)", accent: "var(--ft-amber)" },
+    { label: "Total Interest", value: formatGbp(items.totalInterest), color: "var(--ft-red)", accent: "var(--ft-red)" },
+    { label: "LTV", value: `${items.avgLtv.toFixed(1)}%`, color: ltvColor, accent: ltvColor },
+    { label: "Remaining Term", value: formatMonths(items.shortestRemaining), color: "var(--ft-muted)", accent: "var(--ft-border)" },
+  ];
+
+  return (
+    <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
+      {kpis.map(({ label, value, color, accent }) => (
+        <div
+          key={label}
+          style={{
+            padding: "12px 16px",
+            background: "var(--ft-surface)",
+            borderLeft: `3px solid ${accent}`,
+          }}
+        >
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 6 }}>{label}</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color, lineHeight: 1, letterSpacing: "-0.025em" }}>
+            <span className="pnum">{value}</span>
+          </div>
+          {label === "Monthly Payment" && mortgages.length > 1 && (
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>{mortgages.length} loans combined</div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -568,34 +953,90 @@ interface LoanCardProps {
 
 function LoanCard({ mortgage, onDelete }: LoanCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const balance = useMemo(() => outstandingBalance(mortgage), [mortgage]);
   const remaining = useMemo(() => monthsRemaining(mortgage), [mortgage]);
   const monthly = monthlyPayment(mortgage.principal, mortgage.annualRate, mortgage.termYears, mortgage.type);
-  const rows = useMemo(() => (expanded ? buildAmortization(mortgage.principal, mortgage.annualRate, mortgage.termYears, mortgage.type, mortgage.extraMonthly ?? 0) : []), [mortgage, expanded]);
-  const totalInterest = rows.reduce((s, r) => s + r.interestPortion, 0);
+
+  const allRows = useMemo(
+    () => buildAmortization(mortgage.principal, mortgage.annualRate, mortgage.termYears, mortgage.type, mortgage.extraMonthly ?? 0),
+    [mortgage]
+  );
+  const rows = useMemo(() => (expanded ? allRows : []), [allRows, expanded]);
+  const totalInterest = useMemo(() => allRows.reduce((s, r) => s + r.interestPortion, 0), [allRows]);
+
+  const ltv = mortgage.principal > 0 ? (balance / mortgage.principal) * 100 : 0;
+  const ltvColor = ltv < 60 ? "var(--ft-green)" : ltv < 75 ? "var(--ft-accent)" : ltv < 90 ? "var(--ft-amber)" : "var(--ft-red)";
+
+  const totalMonths = mortgage.termYears * 12;
+  const elapsedMonths = Math.max(0, totalMonths - remaining);
+  const termProgressPct = totalMonths > 0 ? (elapsedMonths / totalMonths) * 100 : 0;
 
   return (
-    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 8 }}>
-      <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 12 }}>
+    <div style={{ border: "1px solid var(--ft-border)", borderLeft: `3px solid ${ltvColor}`, background: "var(--ft-surface)", marginBottom: 8 }}>
+      <div style={{ padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 16 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)" }}>{mortgage.name}</span>
-            <span style={{ fontSize: 9, padding: "1px 6px", background: "var(--ft-raised)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               {mortgage.type === "repayment" ? "Repayment" : "Interest-only"}
             </span>
+            <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 2, background: "var(--ft-raised)", color: ltvColor, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.06em", border: `1px solid ${ltvColor}33` }}>
+              LTV <span className="pnum">{ltv.toFixed(1)}</span>%
+            </span>
           </div>
-          <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-            {[
-              { label: "Outstanding", value: formatGbp(balance), color: "var(--ft-text)" },
-              { label: "Monthly", value: formatGbp(monthly), color: "var(--ft-amber)" },
-              { label: "Rate", value: `${mortgage.annualRate}%`, color: "var(--ft-muted)" },
-              { label: "Remaining", value: formatMonths(remaining), color: "var(--ft-muted)" },
-            ].map(({ label, value, color }) => (
-              <div key={label}>
-                <div style={LABEL_STYLE}>{label}</div>
-                <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700, color }}>{value}</div>
+          {/* Hero stats row */}
+          <div style={{ display: "flex", gap: 24, alignItems: "flex-end", marginBottom: 14, flexWrap: "wrap" as const }}>
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Monthly Payment</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1, letterSpacing: "-0.025em" }}>
+                <span className="pnum">{formatGbp(monthly)}</span>
               </div>
-            ))}
+            </div>
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Outstanding</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, letterSpacing: "-0.02em" }}>
+                <span className="pnum">{formatGbp(balance)}</span>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Interest</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1, letterSpacing: "-0.02em" }}>
+                <span className="pnum">{formatGbp(totalInterest)}</span>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Rate</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-muted)", lineHeight: 1 }}>
+                <span className="pnum">{mortgage.annualRate}</span>%
+              </div>
+            </div>
+            <div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Remaining</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-muted)", lineHeight: 1 }}>
+                {formatMonths(remaining)}
+              </div>
+            </div>
+          </div>
+          {/* LTV progress bar */}
+          <div style={{ marginBottom: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4, letterSpacing: "0.06em" }}>
+              <span>LTV — <span style={{ color: ltvColor, fontWeight: 700 }}><span className="pnum">{ltv.toFixed(1)}</span>%</span></span>
+              <span style={{ color: "var(--ft-dim)" }}>Principal: <span className="pnum">{formatGbp(mortgage.principal)}</span></span>
+            </div>
+            <div style={{ height: 5, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.min(100, ltv)}%`, background: ltvColor, transition: "width 0.25s ease" }} />
+            </div>
+          </div>
+          {/* Term progress bar */}
+          <div style={{ marginBottom: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4, letterSpacing: "0.06em" }}>
+              <span>Term — <span style={{ color: "var(--ft-cyan)", fontWeight: 700 }}><span className="pnum">{termProgressPct.toFixed(1)}</span>% elapsed</span></span>
+              <span style={{ color: "var(--ft-dim)" }}>{formatMonths(elapsedMonths)} of {mortgage.termYears}yr</span>
+            </div>
+            <div style={{ height: 5, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.min(100, termProgressPct)}%`, background: "var(--ft-cyan)", transition: "width 0.25s ease" }} />
+            </div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 4 }}>
@@ -606,17 +1047,31 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
             {expanded ? "▲ Hide" : "▼ Details"}
           </button>
           <button
-            onClick={() => { if (confirm(`Delete "${mortgage.name}"?`)) onDelete(mortgage.id); }}
-            style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-red)", fontFamily: "var(--font-mono)", fontSize: 9, padding: "4px 8px", cursor: "pointer" }}
+            onClick={() => {
+              if (deleteConfirm) { onDelete(mortgage.id); }
+              else { setDeleteConfirm(true); setTimeout(() => setDeleteConfirm(false), 3000); }
+            }}
+            style={{
+              background: deleteConfirm ? "var(--ft-red)" : "none",
+              border: `1px solid ${deleteConfirm ? "var(--ft-red)" : "var(--ft-border)"}`,
+              color: deleteConfirm ? "#fff" : "var(--ft-red)",
+              fontFamily: "var(--font-mono)",
+              fontSize: deleteConfirm ? 8 : 9,
+              fontWeight: deleteConfirm ? 700 : undefined,
+              padding: "4px 8px",
+              cursor: "pointer",
+              borderRadius: 2,
+            }}
+            title={deleteConfirm ? "Click again to confirm delete" : `Delete "${mortgage.name}"`}
           >
-            ×
+            {deleteConfirm ? "DEL?" : "×"}
           </button>
         </div>
       </div>
 
       {expanded && (
         <div style={{ borderTop: "1px solid var(--ft-border)", padding: "12px 14px" }}>
-          <AmortizationTable rows={rows} totalInterest={totalInterest} />
+          <AmortizationTable rows={rows} totalInterest={totalInterest} principal={mortgage.principal} />
           <OverpaymentImpact mortgage={mortgage} />
           <RateScenarios mortgage={mortgage} />
         </div>
@@ -627,15 +1082,17 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
 
 // ─── Add Loan Form ────────────────────────────────────────────────────────────
 
-const EMPTY_FORM: AddLoanForm = {
-  name: "",
-  principal: "",
-  annualRate: "",
-  termYears: "",
-  startDate: new Date().toISOString().slice(0, 10),
-  type: "repayment",
-  extraMonthly: "",
-};
+function makeEmptyLoanForm(): AddLoanForm {
+  return {
+    name: "",
+    principal: "",
+    annualRate: "",
+    termYears: "",
+    startDate: new Date().toISOString().slice(0, 10),
+    type: "repayment",
+    extraMonthly: "",
+  };
+}
 
 interface AddLoanFormPanelProps {
   onAdd: (mortgage: StoredMortgage) => void;
@@ -643,7 +1100,7 @@ interface AddLoanFormPanelProps {
 }
 
 function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
-  const [form, setForm] = useState<AddLoanForm>(EMPTY_FORM);
+  const [form, setForm] = useState<AddLoanForm>(makeEmptyLoanForm);
 
   const setField = useCallback(<K extends keyof AddLoanForm>(k: K, v: AddLoanForm[K]) => {
     setForm((f) => ({ ...f, [k]: v }));
@@ -662,12 +1119,12 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
       extraMonthly: form.extraMonthly ? parseFloat(form.extraMonthly) : 0,
     };
     onAdd(mortgage);
-    setForm(EMPTY_FORM);
+    setForm(makeEmptyLoanForm());
   };
 
   return (
     <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "14px 16px", marginBottom: 16 }}>
-      <div style={SECTION_HEADER}>Add Loan / Mortgage</div>
+      <SectionHeader>Add Loan / Mortgage</SectionHeader>
       <form onSubmit={handleSubmit}>
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <div style={{ ...FIELD_STYLE, gridColumn: "1 / -1" }}>
@@ -707,7 +1164,7 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
                     border: `1px solid ${form.type === t ? "var(--ft-accent)" : "var(--ft-border)"}`,
                     color: form.type === t ? "var(--ft-base)" : "var(--ft-dim)",
                     cursor: "pointer",
-                    transition: "all 0.1s",
+                    transition: "background 0.1s, color 0.1s, border-color 0.1s",
                     textTransform: "capitalize",
                   }}
                 >
@@ -756,26 +1213,40 @@ export default function MortgagePage() {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
-      {/* Page header */}
-      <div style={{ marginBottom: 16, display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>
-            <span style={{ color: "var(--ft-accent)" }}>·</span> Mortgage &amp; Loans
-          </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)" }}>
-            Mortgage &amp; Loan Calculator
-          </div>
-        </div>
-
-        {activeTab === "loans" && !showAddForm && (
+      <PageHeader
+        icon={Home}
+        title="MORTGAGE & LOANS"
+        subtitle="Repayment schedules · overpayment impact · affordability"
+        actions={activeTab === "loans" && !showAddForm ? (
           <button
             onClick={() => setShowAddForm(true)}
             style={{ background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "6px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}
           >
             + Add Loan
           </button>
-        )}
-      </div>
+        ) : undefined}
+      />
+
+      {/* Persona context strip */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid || pid === "full") return null;
+        const msgs: Record<string, string | null> = {
+          wealth:  "Track all mortgage balances here — the outstanding principal is a liability that reduces your true net worth. Overpaying reduces total interest paid and accelerates equity.",
+          budget:  "Monthly mortgage payments are typically your largest fixed cost. Use the Affordability tab to stress-test repayments at different rates before committing.",
+          market:  null,
+          social:  null,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
+            <span>{msg}</span>
+          </div>
+        );
+      })()}
 
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid var(--ft-border)", marginBottom: 16 }}>
@@ -810,9 +1281,28 @@ export default function MortgagePage() {
           )}
 
           {mortgages.length === 0 && !showAddForm && (
-            <div style={{ textAlign: "center", padding: "48px 0", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
-              No loans saved — add one to get started.
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", gap: 16, textAlign: "center", minHeight: "calc(100vh - 160px)" }}>
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ opacity: 0.25 }}>
+                <rect x="6" y="20" width="36" height="22" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M2 22L24 6L46 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <rect x="18" y="30" width="12" height="12" rx="1" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.04em" }}>NO LOANS TRACKED</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.7, maxWidth: 280 }}>
+                Add a mortgage or loan to track repayments, model overpayments, and calculate total interest cost.
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "12px 24px", cursor: "pointer", marginTop: 4 }}
+              >
+                + ADD LOAN
+              </button>
             </div>
+          )}
+
+          {mortgages.length > 0 && !showAddForm && (
+            <PageKpiStrip mortgages={mortgages} />
           )}
 
           {mortgages.map((m) => (

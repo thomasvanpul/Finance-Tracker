@@ -16,7 +16,7 @@ export function LogoMark({ hovered = false }: { hovered?: boolean }) {
       style={{
         overflow: "visible",
         transform: hovered ? "scale(1.1)" : "scale(1)",
-        transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        transition: "transform 0.12s ease",
       }}
     >
       <style>{`

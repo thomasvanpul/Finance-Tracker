@@ -99,6 +99,124 @@ router.get("/ai/status", (_req, res): void => {
   res.json({ available: !!process.env.GEMINI_API_KEY });
 });
 
+// ── Bill split receipt analysis ───────────────────────────────────────────────
+
+router.post("/ai/receipt-split", async (req, res): Promise<void> => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    res.status(503).json({ error: "AI assistant is not configured on this server." });
+    return;
+  }
+
+  const { imageBase64, mimeType, members } = req.body as {
+    imageBase64?: string;
+    mimeType?: string;
+    members?: string[];
+  };
+
+  if (!imageBase64 || typeof imageBase64 !== "string") {
+    res.status(400).json({ error: "imageBase64 is required" });
+    return;
+  }
+  if (!Array.isArray(members) || members.length === 0) {
+    res.status(400).json({ error: "members array is required" });
+    return;
+  }
+
+  const safeMime = typeof mimeType === "string" ? mimeType : "image/jpeg";
+  const safeMembers = members.slice(0, 20).map(String);
+  const memberList = safeMembers.join(", ");
+
+  const prompt = `Analyze this receipt image and extract every line item. The bill will be split among: ${memberList}.
+
+Return ONLY valid JSON (no markdown fences) in this exact structure:
+{
+  "items": [
+    {"name": "Item name", "price": 0.00}
+  ],
+  "subtotal": 0.00,
+  "tax": 0.00,
+  "tip": 0.00,
+  "total": 0.00,
+  "suggestions": [
+    {
+      "label": "Equal Split",
+      "description": "Total divided equally among all ${safeMembers.length} people",
+      "shares": ${JSON.stringify(Object.fromEntries(safeMembers.map((m) => [m, 0])))}
+    },
+    {
+      "label": "Subtotal Only",
+      "description": "Split the food subtotal equally, excluding tax and tip",
+      "shares": ${JSON.stringify(Object.fromEntries(safeMembers.map((m) => [m, 0])))}
+    },
+    {
+      "label": "Custom",
+      "description": "Suggested split based on item prices (estimate each person's share)",
+      "shares": ${JSON.stringify(Object.fromEntries(safeMembers.map((m) => [m, 0])))}
+    }
+  ]
+}
+
+Rules:
+- "items" must list every individual item on the receipt with its price
+- For "suggestions[0]" (Equal Split): divide total equally among all members
+- For "suggestions[1]" (Subtotal Only): divide subtotal equally; 0 tax/tip
+- For "suggestions[2]" (Custom): distribute items as evenly as possible across members by alternating assignment
+- All shares in each suggestion must sum to that suggestion's total amount
+- If you cannot read a value, use 0
+- Return raw JSON only`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: safeMime, data: imageBase64 } },
+              { text: prompt },
+            ],
+          }],
+          generationConfig: { maxOutputTokens: 1024, temperature: 0.1 },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const err = await response.text();
+      res.status(502).json({ error: `Gemini API error: ${response.status}`, detail: err });
+      return;
+    }
+
+    const data = (await response.json()) as {
+      candidates?: Array<{ content: { parts: Array<{ text: string }> } }>;
+      error?: { message: string };
+    };
+
+    if (data.error) {
+      res.status(502).json({ error: data.error.message });
+      return;
+    }
+
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+
+    let result: unknown;
+    try {
+      result = JSON.parse(cleaned);
+    } catch {
+      res.status(500).json({ error: "Failed to parse AI response", raw: rawText.slice(0, 500) });
+      return;
+    }
+
+    res.json(result);
+  } catch {
+    res.status(500).json({ error: "Failed to reach AI service" });
+  }
+});
+
 // ── Receipt scanning ──────────────────────────────────────────────────────────
 
 const RECEIPT_CATEGORIES = [

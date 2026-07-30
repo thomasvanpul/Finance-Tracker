@@ -118,7 +118,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  });
+  }, [open, handleClose]); // handleSubmit intentionally omitted — declared after this effect, effect re-runs on open change
 
   const handleImageFile = useCallback(async (file: File) => {
     setScanState("scanning");
@@ -326,7 +326,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                 gap: 5,
               }}
             >
-              <span style={{ fontSize: 12 }}>📷</span>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1 3.5A1.5 1.5 0 012.5 2h.5l.75-1h3.5L8 2h.5A1.5 1.5 0 0110 3.5v5A1.5 1.5 0 018.5 10h-5A1.5 1.5 0 012 8.5v-5z"/><circle cx="6" cy="6" r="1.5"/></svg>
               {scanState === "scanning" ? "Scanning…" : "Scan Receipt"}
             </button>
             {scanState === "error" && (

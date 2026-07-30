@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CsvImportModal } from "@/components/csv-import";
 import {
@@ -14,6 +14,7 @@ import {
   getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PrivDesc } from "@/contexts/privacy-context";
 import { convertWithOverride } from "@/lib/currency-store";
 import { applyAutoCategory } from "@/lib/auto-cat";
@@ -22,8 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Plus, Trash2, Edit2, Search, X, ArrowLeftRight, Save, FileText, Sparkles, Tag } from "lucide-react";
-import { PageHeader } from "@/components/page-header";
+import { AlertCircle, Plus, Trash2, Edit2, Search, X, Save, FileText, Sparkles, Tag, SlidersHorizontal } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,10 @@ import { Skeleton as FtSkeleton } from "@/components/skeleton";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { useToast } from "@/hooks/use-toast";
+import { haptic } from "@/lib/haptics";
+import { MobileSheet } from "@/components/mobile-sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useSwipeDelete } from "@/hooks/use-swipe-delete";
 
 type TxType = "income" | "expense" | "transfer";
 type Currency = "GBP" | "USD" | "EUR" | "MYR" | "CNY" | "JPY" | "AUD" | "CAD" | "SGD" | "HKD" | "THB" | "INR";
@@ -127,8 +131,7 @@ interface MerchantGroup {
   expanded: boolean;
 }
 
-const today = new Date().toISOString().slice(0, 10);
-const EMPTY_FORM: TxForm = { date: today, description: "", type: "expense", category: "", accountId: "", nativeAmount: "", currency: "GBP" };
+function makeEmptyForm(): TxForm { return { date: new Date().toISOString().slice(0, 10), description: "", type: "expense", category: "", accountId: "", nativeAmount: "", currency: "GBP" }; }
 
 const BULK_CATEGORIES = [
   "Food & Drink", "Transport", "Shopping", "Bills & Utilities",
@@ -147,16 +150,20 @@ const CATEGORIES = [
 ];
 
 const TH: React.CSSProperties = {
-  padding: "6px 12px",
+  padding: "0 var(--ft-cell-px)",
+  height: 28,
   fontSize: 10,
   fontWeight: 600,
-  color: "var(--ft-dim)",
-  background: "var(--ft-surface)",
-  borderBottom: "2px solid var(--ft-border2)",
-  borderRight: "1px solid var(--ft-raised)",
+  fontFamily: "var(--font-mono)",
+  color: "var(--ft-muted)",
+  background: "var(--ft-raised)",
+  borderBottom: "1px solid var(--ft-border2)",
+  borderRight: "1px solid var(--ft-border)",
   textTransform: "uppercase" as const,
-  letterSpacing: "0.4px",
+  letterSpacing: "0.08em",
   whiteSpace: "nowrap" as const,
+  display: "flex",
+  alignItems: "center",
 };
 
 const TX_TYPE_COLOR: Record<TxType, string> = {
@@ -316,12 +323,11 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
         style={{
           background: "var(--ft-surface)",
           border: "1px solid var(--ft-border)",
-          borderRadius: 4,
+          borderRadius: 2,
           width: "min(540px, 95vw)",
           maxHeight: "85vh",
           display: "flex",
           flexDirection: "column",
-          boxShadow: "0 16px 64px rgba(0,0,0,0.8)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -547,6 +553,120 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
   );
 }
 
+// ── Wise-style empty state preview ────────────────────────────────────────────
+
+const PREVIEW_ICONS: Record<string, React.ReactNode> = {
+  housing: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 6.5L7 1.5l5.5 5M3 5.5V12h3V9h2v3h3V5.5" />
+    </svg>
+  ),
+  groceries: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 1.5h2l1.5 6.5h6l1-4H4.5" />
+      <circle cx="6" cy="11.5" r="0.75" fill="currentColor" stroke="none" />
+      <circle cx="10" cy="11.5" r="0.75" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  income: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="4" width="11" height="8" rx="0.5" />
+      <path d="M4.5 4V3a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v1" />
+      <path d="M1.5 7h11" />
+    </svg>
+  ),
+  transport: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2.5" y="1.5" width="9" height="8" rx="1" />
+      <path d="M2.5 6.5h9M5 1.5V6.5M9 1.5V6.5" />
+      <path d="M4 9.5L2 12M10 9.5l2 2.5" />
+    </svg>
+  ),
+  eatingout: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 1.5v4a2.5 2.5 0 005 0v-4" />
+      <path d="M6.5 5.5v7" />
+      <path d="M4 3.5h5" />
+    </svg>
+  ),
+  subscriptions: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.5" y="1" width="7" height="12" rx="1" />
+      <path d="M5.5 10.5h3" />
+      <circle cx="7" cy="3" r="0.5" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+};
+
+const PREVIEW_ROWS = [
+  { iconKey: "housing",      label: "Rent",           category: "Housing",       amount: -1100,  income: false, date: "Today" },
+  { iconKey: "groceries",    label: "Sainsbury's",    category: "Groceries",     amount: -67.4,  income: false, date: "Today" },
+  { iconKey: "income",       label: "Monthly Salary", category: "Income",        amount: 3700,   income: true,  date: "Yesterday" },
+  { iconKey: "transport",    label: "TfL Contactless",category: "Transport",     amount: -4.8,   income: false, date: "Yesterday" },
+  { iconKey: "eatingout",    label: "Pret A Manger",  category: "Eating Out",    amount: -5.95,  income: false, date: "Tue 27 Jul" },
+  { iconKey: "subscriptions",label: "Spotify",        category: "Subscriptions", amount: -11.99, income: false, date: "Mon 26 Jul" },
+];
+
+function TxFeedPreview({ openAdd }: { openAdd: () => void }) {
+  const mono: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
+  const grouped = PREVIEW_ROWS.reduce<Record<string, typeof PREVIEW_ROWS>>((acc, r) => {
+    if (!acc[r.date]) acc[r.date] = [];
+    acc[r.date].push(r);
+    return acc;
+  }, {});
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100vh - 260px)" }}>
+      {/* Preview feed */}
+      <div style={{ flex: 1, opacity: 0.45, pointerEvents: "none", userSelect: "none" }}>
+        {Object.entries(grouped).map(([date, rows]) => (
+          <div key={date}>
+            {/* Date header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 16px 4px", background: "var(--ft-base)", borderBottom: "1px solid var(--ft-border)", borderTop: "1px solid var(--ft-border)" }}>
+              <span style={{ ...mono, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)" }}>{date}</span>
+              <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginLeft: "auto" }}>
+                {rows.reduce((s, r) => s + r.amount, 0) >= 0
+                  ? `+£${Math.abs(rows.reduce((s, r) => s + r.amount, 0)).toFixed(2)}`
+                  : `-£${Math.abs(rows.reduce((s, r) => s + r.amount, 0)).toFixed(2)}`}
+              </span>
+            </div>
+            {rows.map((r, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: "1px solid var(--ft-border)", background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
+                {/* Category icon */}
+                <div style={{ width: 28, height: 28, borderRadius: 2, border: "1px solid var(--ft-border)", background: "var(--ft-surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-muted)", flexShrink: 0 }}>
+                  {PREVIEW_ICONS[r.iconKey]}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</div>
+                  <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>{r.category}</div>
+                </div>
+                <div style={{ ...mono, fontSize: 12, fontWeight: 700, color: r.income ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
+                  {r.income ? "+" : "−"}£{Math.abs(r.amount).toFixed(2)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      {/* CTA overlay */}
+      <div style={{ padding: "28px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, borderTop: "1px solid var(--ft-border)" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Your transaction feed</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center", maxWidth: 340, lineHeight: 1.7 }}>
+          Transactions appear here as you add them. Import a bank CSV for instant history, or add manually.
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={openAdd} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px 20px", cursor: "pointer" }}>
+            + Add transaction
+          </button>
+          <a href="/import" style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "none", color: "var(--ft-accent)", border: "1px solid var(--ft-border2)", padding: "8px 20px", cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
+            Import CSV
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function Transactions() {
@@ -558,12 +678,16 @@ export default function Transactions() {
   const deleteTx = useDeleteTransaction();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+
+  // Computed each render so it stays correct after midnight
+  const today = new Date().toISOString().slice(0, 10);
 
   // ── core dialog state ───────────────────────────────────────────────────
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
-  const [form, setForm] = useState<TxForm>(EMPTY_FORM);
+  const [form, setForm] = useState<TxForm>(makeEmptyForm);
   const [formErrors, setFormErrors] = useState<TxFormErrors>(EMPTY_ERRORS);
   const [submitting, setSubmitting] = useState(false);
 
@@ -613,8 +737,9 @@ export default function Transactions() {
   const [groupByMerchant, setGroupByMerchant] = useState(false);
   const [expandedMerchants, setExpandedMerchants] = useState<Set<string>>(new Set());
 
-  // ── group by day ─────────────────────────────────────────────────────────
+  // ── group by day — always on for mobile (Monzo/Revolut pattern) ───────────
   const [groupByDay, setGroupByDay] = useState(false);
+  React.useEffect(() => { if (isMobile) setGroupByDay(true); }, [isMobile]);
 
   // ── pagination ────────────────────────────────────────────────────────────
   const PAGE_SIZE = 75;
@@ -637,6 +762,14 @@ export default function Transactions() {
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<number>>(new Set());
   const deleteTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
+  // Clear all pending delete timers on unmount to prevent firing after navigation
+  useEffect(() => {
+    return () => {
+      deleteTimers.current.forEach((timer) => clearTimeout(timer));
+      deleteTimers.current.clear();
+    };
+  }, []);
+
   // ── search input ref for / shortcut ─────────────────────────────────────
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -649,6 +782,8 @@ export default function Transactions() {
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const hasFilters = search || filterType !== "all" || filterCategory !== "all" || filterAccount !== "all" || filterDateFrom || filterDateTo || amountMin || amountMax || filterTag;
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const activeFilterCount = [filterType !== "all", filterCategory !== "all", filterAccount !== "all", !!(filterDateFrom || filterDateTo), !!(amountMin || amountMax), !!filterTag].filter(Boolean).length;
 
   // Reset pagination when filters change
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, filterTag]);
@@ -664,10 +799,16 @@ export default function Transactions() {
     if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [selectedRowIndex]);
 
-  const allCategories = [...new Set((transactions ?? []).map(tx => tx.category).filter(Boolean))].sort();
-  const allAccounts = [...new Set((transactions ?? []).map(tx => tx.accountName).filter(Boolean))].sort();
+  const allCategories = useMemo(
+    () => [...new Set((transactions ?? []).map(tx => tx.category).filter(Boolean))].sort(),
+    [transactions],
+  );
+  const allAccounts = useMemo(
+    () => [...new Set((transactions ?? []).map(tx => tx.accountName).filter(Boolean))].sort(),
+    [transactions],
+  );
 
-  const filtered = (() => {
+  const filtered = useMemo(() => {
     const base = (transactions ?? []).filter((tx) => {
       if (filterType !== "all" && tx.type !== filterType) return false;
       if (filterCategory !== "all" && tx.category !== filterCategory) return false;
@@ -694,11 +835,12 @@ export default function Transactions() {
     if (sortBy === "amount-high") return [...base].sort((a, b) => Math.abs(b.gbpValue) - Math.abs(a.gbpValue));
     if (sortBy === "amount-low") return [...base].sort((a, b) => Math.abs(a.gbpValue) - Math.abs(b.gbpValue));
     return base; // date-desc is server default
-  })();
+  }, [transactions, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, search, filterTag, tags, sortBy]);
 
-  const filteredAvg = filtered.length > 0
-    ? filtered.reduce((acc, tx) => acc + tx.gbpValue, 0) / filtered.length
-    : 0;
+  const filteredAvg = useMemo(() =>
+    filtered.length > 0 ? filtered.reduce((acc, tx) => acc + tx.gbpValue, 0) / filtered.length : 0,
+    [filtered],
+  );
 
   // ── keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
@@ -706,7 +848,7 @@ export default function Transactions() {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") { setSelectedIds(new Set()); setBulkFormCat(""); setBulkFormType(""); setOpenNoteId(null); setOpenTagId(null); return; }
       if (e.key === "/" && !inInput()) { e.preventDefault(); searchInputRef.current?.focus(); }
-      if (e.key === "n" && !inInput() && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setForm(EMPTY_FORM); setAutoCatFilled(false); setAddOpen(true); }
+      if (e.key === "n" && !inInput() && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setForm(makeEmptyForm()); setAutoCatFilled(false); setAddOpen(true); }
       if (e.key === "e" && !inInput() && !e.metaKey && !e.ctrlKey) { e.preventDefault(); exportCsv(filtered); }
     };
     document.addEventListener("keydown", handler);
@@ -754,7 +896,7 @@ export default function Transactions() {
   };
 
   // ── merchant groups ──────────────────────────────────────────────────────
-  const merchantGroups: MerchantGroup[] = (() => {
+  const merchantGroups: MerchantGroup[] = useMemo(() => {
     if (!groupByMerchant) return [];
     const map = new Map<string, MerchantGroup>();
     for (const tx of filtered) {
@@ -775,10 +917,10 @@ export default function Transactions() {
       }
     }
     return Array.from(map.values()).map((g) => ({ ...g, expanded: expandedMerchants.has(g.description) }));
-  })();
+  }, [filtered, groupByMerchant, expandedMerchants]);
 
   // ── day groups ───────────────────────────────────────────────────────────
-  const dayGroups: Array<{ date: string; txs: typeof filtered; net: number }> = (() => {
+  const dayGroups: Array<{ date: string; txs: typeof filtered; net: number }> = useMemo(() => {
     if (!groupByDay) return [];
     const map = new Map<string, typeof filtered>();
     for (const tx of filtered) {
@@ -797,7 +939,7 @@ export default function Transactions() {
         txs,
         net: txs.reduce((acc, tx) => acc + (tx.type === "income" ? tx.gbpValue : tx.type === "expense" ? -tx.gbpValue : 0), 0),
       }));
-  })();
+  }, [filtered, groupByDay]);
 
   // Paginated slices
   const visibleFiltered = filtered.slice(0, visibleCount);
@@ -829,7 +971,7 @@ export default function Transactions() {
 
   const openAdd = () => {
     const first = accounts?.[0];
-    setForm({ ...EMPTY_FORM, accountId: first ? String(first.id) : "", currency: (first?.currency as Currency) ?? "GBP" });
+    setForm({ ...makeEmptyForm(), accountId: first ? String(first.id) : "", currency: (first?.currency as Currency) ?? "GBP" });
     setFormErrors(EMPTY_ERRORS);
     setAutoCatFilled(false);
     setTemplates(loadTemplates());
@@ -868,7 +1010,8 @@ export default function Transactions() {
     try {
       await createTx.mutateAsync({ data: { date: form.date, description: form.description, type: form.type, category: form.category, accountId: parseInt(form.accountId), nativeAmount: parseFloat(form.nativeAmount), currency: form.currency } });
       invalidate(); setAddOpen(false); toast({ title: "Transaction added" });
-    } catch { toast({ title: "Failed to add transaction", variant: "destructive" }); }
+      haptic.success();
+    } catch { toast({ title: "Failed to add transaction", variant: "destructive" }); haptic.error(); }
     finally { setSubmitting(false); }
   };
 
@@ -877,7 +1020,8 @@ export default function Transactions() {
     try {
       await updateTx.mutateAsync({ id: editId, data: { date: form.date, description: form.description, type: form.type, category: form.category, nativeAmount: parseFloat(form.nativeAmount), currency: form.currency } });
       invalidate(); setEditId(null); toast({ title: "Transaction updated" });
-    } catch { toast({ title: "Failed to update", variant: "destructive" }); }
+      haptic.success();
+    } catch { toast({ title: "Failed to update", variant: "destructive" }); haptic.error(); }
     finally { setSubmitting(false); }
   };
 
@@ -893,6 +1037,7 @@ export default function Transactions() {
   }, [deleteTx, invalidate, toast]);
 
   const handleDelete = useCallback((id: number) => {
+    haptic.warning();
     setPendingDeleteIds((prev) => new Set([...prev, id]));
     const { id: toastId, dismiss } = toast({
       title: "Deleting in 3s",
@@ -1283,36 +1428,64 @@ export default function Transactions() {
 
   if (isLoading || isSummaryLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {/* Header skeleton */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <FtSkeleton width={180} height={16} />
-          <FtSkeleton width={240} height={28} />
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
+        {/* KPI bar skeleton */}
+        <div className="ft-scroll-x" style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", minWidth: 640 }}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)" }}>
+                <FtSkeleton width="50%" height={8} />
+                <div style={{ marginTop: 8 }}><FtSkeleton width="70%" height={18} /></div>
+                <div style={{ marginTop: 5 }}><FtSkeleton width="40%" height={8} /></div>
+              </div>
+            ))}
+          </div>
         </div>
-        {/* Summary bar skeleton */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} style={{ padding: "12px 16px", borderRight: "1px solid var(--ft-border)" }}>
-              <FtSkeleton width="60%" height={9} />
-              <div style={{ marginTop: 6 }}><FtSkeleton width="80%" height={14} /></div>
-            </div>
-          ))}
+        {/* Filter bar skeleton */}
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <div style={{ display: "flex", height: 28, alignItems: "center", gap: 0, borderBottom: "1px solid var(--ft-border)" }}>
+            {[80, 120, 100, 120, 80, 80, 60].map((w, i) => (
+              <div key={i} style={{ width: w, padding: "0 10px", borderRight: "1px solid var(--ft-border)", height: "100%", display: "flex", alignItems: "center" }}>
+                <FtSkeleton width="80%" height={9} />
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", height: 26, alignItems: "center" }}>
+            {[80, 60, 60, 60, 60, 60, 60, 120, 120, 80, 80].map((w, i) => (
+              <div key={i} style={{ width: w, padding: "0 8px", borderRight: "1px solid var(--ft-border)", height: "100%", display: "flex", alignItems: "center" }}>
+                <FtSkeleton width="80%" height={8} />
+              </div>
+            ))}
+          </div>
         </div>
         {/* Table skeleton */}
         <div style={{ border: "1px solid var(--ft-border)" }}>
-          <div style={{ padding: "6px 12px", background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border)" }}>
-            <FtSkeleton width={200} height={10} />
+          <div style={{ display: "flex", height: 34, alignItems: "center", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", padding: "0 12px" }}>
+            <FtSkeleton width={160} height={10} />
           </div>
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} style={{ display: "flex", gap: 12, padding: "9px 12px", borderBottom: "1px solid var(--ft-raised)", alignItems: "center" }}>
-              <FtSkeleton width={14} height={14} />
-              <FtSkeleton width={76} height={11} />
-              <FtSkeleton width="30%" height={12} />
-              <FtSkeleton width={90} height={11} />
-              <FtSkeleton width={120} height={11} />
-              <FtSkeleton width={60} height={10} />
-              <FtSkeleton width={80} height={12} />
-              <FtSkeleton width={70} height={12} />
+          {/* Column headers skeleton */}
+          <div style={{ display: "flex", height: 28, background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)" }}>
+            {[36, 90, 240, 120, 150, 90, 130, 110, 36, 36, 128].map((w, i) => (
+              <div key={i} style={{ width: w, minWidth: w, borderRight: "1px solid var(--ft-border)", padding: "0 10px", display: "flex", alignItems: "center" }}>
+                <FtSkeleton width="60%" height={8} />
+              </div>
+            ))}
+          </div>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} style={{ display: "flex", borderBottom: "1px solid var(--ft-border)", height: 32, alignItems: "center" }}>
+              <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <FtSkeleton width={12} height={12} />
+              </div>
+              <div style={{ width: 90, minWidth: 90, borderRight: "1px solid var(--ft-border)", padding: "0 12px" }}><FtSkeleton width={70} height={10} /></div>
+              <div style={{ flex: 1, borderRight: "1px solid var(--ft-border)", padding: "0 12px" }}><FtSkeleton width="55%" height={11} /></div>
+              <div style={{ width: 120, minWidth: 120, borderRight: "1px solid var(--ft-border)", padding: "0 12px" }}><FtSkeleton width={60} height={10} /></div>
+              <div style={{ width: 150, minWidth: 150, borderRight: "1px solid var(--ft-border)", padding: "0 12px" }}><FtSkeleton width={90} height={10} /></div>
+              <div style={{ width: 90, minWidth: 90, borderRight: "1px solid var(--ft-border)", padding: "0 12px" }}><FtSkeleton width={50} height={10} /></div>
+              <div style={{ width: 130, minWidth: 130, borderRight: "1px solid var(--ft-border)", padding: "0 12px", display: "flex", justifyContent: "flex-end" }}><FtSkeleton width={70} height={11} /></div>
+              <div style={{ width: 110, minWidth: 110, borderRight: "1px solid var(--ft-border)", padding: "0 12px", display: "flex", justifyContent: "flex-end" }}><FtSkeleton width={60} height={11} /></div>
+              <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)" }} />
+              <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)" }} />
+              <div style={{ width: 128, minWidth: 128, padding: "0 8px" }}><FtSkeleton width={80} height={10} /></div>
             </div>
           ))}
         </div>
@@ -1466,7 +1639,7 @@ export default function Transactions() {
               style={{
                 fontSize: 9,
                 padding: "1px 5px",
-                background: "rgba(6,182,212,0.12)",
+                background: "color-mix(in srgb, var(--ft-cyan) 12%, transparent)",
                 border: "1px solid var(--ft-cyan)",
                 borderRadius: 2,
                 color: "var(--ft-cyan)",
@@ -1557,13 +1730,13 @@ export default function Transactions() {
         padding: "0 7px",
         fontSize: 10,
         fontFamily: "var(--font-mono)",
-        background: activeQuickRange === key ? "rgba(245,158,11,0.12)" : "var(--ft-surface)",
+        background: activeQuickRange === key ? "color-mix(in srgb, var(--ft-amber) 12%, transparent)" : "var(--ft-surface)",
         border: `1px solid ${activeQuickRange === key ? "var(--ft-amber)" : "var(--ft-border2)"}`,
         borderRadius: 2,
         color: activeQuickRange === key ? "var(--ft-amber)" : "var(--ft-dim)",
         cursor: "pointer",
         whiteSpace: "nowrap" as const,
-        transition: "all 0.1s",
+        transition: "background 0.1s, color 0.1s, border-color 0.1s",
       }}
     >
       {label}
@@ -1571,9 +1744,9 @@ export default function Transactions() {
   );
 
   const TAG_CHIP_STYLE: React.CSSProperties = {
-    background: "rgba(245,158,11,0.15)",
+    background: "color-mix(in srgb, var(--ft-amber) 15%, transparent)",
     color: "var(--ft-amber)",
-    border: "1px solid rgba(245,158,11,0.3)",
+    border: "1px solid color-mix(in srgb, var(--ft-amber) 30%, transparent)",
     borderRadius: 2,
     padding: "0 4px",
     fontSize: 9,
@@ -1599,21 +1772,77 @@ export default function Transactions() {
     const tagSuggestionsFiltered = tagInput
       ? allTagSuggestions.filter((s) => s.toLowerCase().includes(tagInput.toLowerCase()) && !txTags.includes(s))
       : allTagSuggestions.filter((s) => !txTags.includes(s));
+    const [hovered, setHovered] = useState(false);
+    const swipe = useSwipeDelete(() => handleDelete(tx.id));
     return (
-    <div style={{ position: "relative" }} data-tx-row>
+    <div className="ft-swipe-row" data-tx-row>
+      {isMobile && (
+        <button
+          type="button"
+          className="ft-swipe-delete-action"
+          onClick={swipe.handleDelete}
+          aria-label={`Delete ${tx.description}`}
+        >
+          DELETE
+        </button>
+      )}
       <div
         key={tx.id}
-        className="flex items-center border-b xls-row"
+        className={`flex items-center border-b xls-row${isMobile ? " ft-swipe-row-content" : ""}`}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        {...(isMobile ? swipe.touchHandlers : {})}
         style={{
-          borderColor: "rgba(33,38,45,0.5)",
-          background: selectedIds.has(tx.id) ? "#1F3A5F55" : isKeyboardSelected ? "var(--ft-raised)" : "var(--ft-base)",
-          borderLeft: isKeyboardSelected ? "2px solid var(--ft-amber)" : "2px solid transparent",
+          borderColor: "var(--ft-border)",
+          background: selectedIds.has(tx.id) ? "color-mix(in srgb, var(--ft-blue) 8%, var(--ft-base))" : isKeyboardSelected ? "var(--ft-raised)" : hovered ? "var(--ft-raised)" : "var(--ft-surface)",
+          borderLeft: isKeyboardSelected ? "2px solid var(--ft-accent)" : selectedIds.has(tx.id) ? "2px solid var(--ft-accent)" : "2px solid transparent",
           opacity: pendingDeleteIds.has(tx.id) ? 0.4 : 1,
           textDecoration: pendingDeleteIds.has(tx.id) ? "line-through" : "none",
-          transition: "opacity 0.2s, background 0.1s, border-left 0.1s",
+          transition: isMobile ? "opacity 0.15s, background 0.1s, border-left-color 0.1s, transform 0.15s ease" : "opacity 0.15s, background 0.1s, border-left-color 0.1s",
+          ...(isMobile ? { transform: `translateX(${swipe.offset}px)` } : {}),
         }}
       >
-        <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }}>
+        {isMobile ? (
+          <div style={{ display: "flex", flex: 1, alignItems: "center", minWidth: 0, padding: "11px 14px", gap: 12 }}>
+            {/* Category avatar circle */}
+            <div style={{
+              flexShrink: 0, width: 38, height: 38, borderRadius: "50%",
+              background: `color-mix(in srgb, ${TX_TYPE_COLOR[tx.type as TxType]} 18%, var(--ft-raised))`,
+              border: `1.5px solid ${TX_TYPE_COLOR[tx.type as TxType]}44`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: TX_TYPE_COLOR[tx.type as TxType] }}>
+                {(tx.category ?? tx.type ?? "?")[0].toUpperCase()}
+              </span>
+            </div>
+            {/* Description + meta */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 500, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
+                <PrivDesc>{tx.description}</PrivDesc>
+              </div>
+              <div style={{ display: "flex", gap: 5, alignItems: "center", overflow: "hidden" }}>
+                {tx.category && <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>{tx.category}</span>}
+                {tx.category && tx.accountName && <span style={{ fontSize: 11, color: "var(--ft-border2)", flexShrink: 0 }}>·</span>}
+                {tx.accountName && <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{tx.accountName}</span>}
+                {hasNote && <span title="Has note" style={{ fontSize: 10, color: "var(--ft-amber)", flexShrink: 0 }}>✎</span>}
+                {hasTags && <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-amber)", flexShrink: 0 }}>+{txTags.length}</span>}
+              </div>
+            </div>
+            {/* Amount + edit */}
+            <div style={{ flexShrink: 0, textAlign: "right" }}>
+              <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", color: TX_TYPE_COLOR[tx.type as TxType], whiteSpace: "nowrap" }}>
+                {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(displayGbp)}
+              </div>
+              <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center", marginTop: 3 }}>
+                <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", whiteSpace: "nowrap" }}>{formatDate(tx.date)}</span>
+                <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(tx.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, lineHeight: 0, display: "flex", alignItems: "center" }}>
+                  <Edit2 style={{ width: 12, height: 12, color: "var(--ft-muted)" }} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (<>
+        <div style={{ width: 36, minWidth: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch" }}>
           <input
             type="checkbox"
             checked={selectedIds.has(tx.id)}
@@ -1622,10 +1851,10 @@ export default function Transactions() {
             aria-label={`Select transaction ${tx.description}`}
           />
         </div>
-        <div style={{ width: 90, minWidth: 90, padding: indented ? "7px 12px 7px 20px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>
+        <div style={{ width: 90, minWidth: 90, flexShrink: 0, padding: indented ? "6px 10px 6px 20px" : "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
           {formatDate(tx.date)}
         </div>
-        <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ flex: 1, minWidth: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
             <PrivDesc>{tx.description}</PrivDesc>
           </span>
@@ -1635,50 +1864,51 @@ export default function Transactions() {
                 <span key={t} style={TAG_CHIP_STYLE}>{t}</span>
               ))}
               {hiddenTagCount > 0 && (
-                <span style={{ ...TAG_CHIP_STYLE, background: "rgba(245,158,11,0.08)" }}>+{hiddenTagCount}</span>
+                <span style={{ ...TAG_CHIP_STYLE, background: "color-mix(in srgb, var(--ft-amber) 8%, transparent)" }}>+{hiddenTagCount}</span>
               )}
             </span>
           )}
         </div>
-        <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
+        <div style={{ width: 120, minWidth: 120, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
+          <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, border: "1px solid var(--ft-border2)", background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", letterSpacing: "0.05em", fontWeight: 700, whiteSpace: "nowrap" as const, lineHeight: "14px", flexShrink: 0, maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis" }}>
             {tx.category}
           </span>
           {splits[String(tx.id)] && (
             <span style={{
               fontSize: 8,
-              padding: "1px 5px",
+              padding: "0 4px",
               borderRadius: 2,
-              background: "rgba(6,182,212,0.12)",
+              background: "transparent",
               color: "var(--ft-accent)",
               border: "1px solid var(--ft-accent)",
               fontFamily: "var(--font-mono)",
               letterSpacing: "0.04em",
               whiteSpace: "nowrap" as const,
+              lineHeight: "16px",
             }}>
-              ⊕ split
+              ⊕
             </span>
           )}
         </div>
-        <div style={{ width: 150, minWidth: 150, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div className="ft-hide-mobile" style={{ width: 150, minWidth: 150, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontSize: 10, fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {tx.accountName}
         </div>
-        <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
-          <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: TX_TYPE_COLOR[tx.type as TxType] + "22", color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase", letterSpacing: "0.3px" }}>
+        <div className="ft-hide-mobile" style={{ width: 90, minWidth: 90, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center" }}>
+          <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, border: `1px solid ${TX_TYPE_COLOR[tx.type as TxType]}`, background: "transparent", color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase" as const, letterSpacing: "0.06em", fontFamily: "var(--font-mono)", fontWeight: 700, lineHeight: "14px" }}>
             {tx.type}
           </span>
         </div>
-        <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums", background: tx.type === "income" ? "rgba(63,185,80,0.04)" : tx.type === "expense" ? "rgba(248,81,73,0.04)" : "transparent" }}>
-          {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
+        <div style={{ width: 130, minWidth: 130, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-blue)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+          {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
           {formatNative(Math.abs(tx.nativeAmount), tx.currency)}
         </div>
-        <div className="pnum" style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-          {tx.type === "income" ? "+" : tx.type === "expense" ? "-" : ""}
+        <div className="pnum" style={{ width: 110, minWidth: 110, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-blue)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+          {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
           {formatGbp(displayGbp)}
           {hasOverride && <span title="Custom FX rate applied" style={{ fontSize: 8, color: "var(--ft-amber)", marginLeft: 2, verticalAlign: "super" }}>★</span>}
         </div>
         {/* Note icon column */}
-        <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }}>
+        <div style={{ width: 36, minWidth: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch" }}>
           <button
             type="button"
             onClick={() => { if (isNoteOpen) { setOpenNoteId(null); } else { openNote(tx.id); setOpenTagId(null); } }}
@@ -1693,7 +1923,7 @@ export default function Transactions() {
           </button>
         </div>
         {/* Tag icon column */}
-        <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch", position: "relative" }}>
+        <div style={{ width: 36, minWidth: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch", position: "relative" }}>
           <button
             type="button"
             onClick={() => { if (isTagOpen) { setOpenTagId(null); } else { setOpenTagId(tx.id); setTagInput(""); setOpenNoteId(null); } }}
@@ -1706,13 +1936,13 @@ export default function Transactions() {
               style={{ color: hasTags ? "var(--ft-amber)" : "var(--ft-border2)", transition: "color 0.1s" }}
             />
             {hasTags && (
-              <span style={{ position: "absolute", top: -1, right: -1, background: "var(--ft-amber)", color: "#000", borderRadius: 2, fontSize: 7, fontWeight: 700, fontFamily: "var(--font-mono)", lineHeight: 1, padding: "1px 2px", minWidth: 10, textAlign: "center" }}>
+              <span style={{ position: "absolute", top: -1, right: -1, background: "var(--ft-amber)", color: "var(--ft-base)", borderRadius: 2, fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", lineHeight: 1, padding: "1px 2px", minWidth: 10, textAlign: "center" }}>
                 {txTags.length}
               </span>
             )}
           </button>
         </div>
-        <div style={{ width: 128, minWidth: 128, padding: "4px 4px", display: "flex", justifyContent: "flex-end", gap: 2 }}>
+        <div style={{ width: 128, minWidth: 128, flexShrink: 0, padding: "2px 4px", display: "flex", justifyContent: "flex-end", gap: 2, alignItems: "center" }}>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSplit(tx.id)} title="Split transaction (creates new transactions)">
             <span style={{ color: "var(--ft-muted)", fontSize: 13 }}>⊕</span>
           </Button>
@@ -1726,13 +1956,14 @@ export default function Transactions() {
           >
             <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, color: splits[String(tx.id)] ? "var(--ft-accent)" : "var(--ft-dim)" }}>SL</span>
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tx.id)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tx.id)} title="Edit transaction">
             <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} />
           </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(tx.id)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(tx.id)} title="Delete transaction (undo available)">
             <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
           </Button>
         </div>
+        </>)}
       </div>
       {/* Note popover — inline below the row */}
       {isNoteOpen && (
@@ -1747,11 +1978,15 @@ export default function Transactions() {
             borderRadius: 2,
             padding: "10px 12px",
             width: 280,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
           }}
         >
-          <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6, fontFamily: "var(--font-mono)" }}>
-            NOTE — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
+              NOTE — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
+            </div>
+            <span style={{ fontSize: 8, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.04em", background: "var(--ft-raised)" }} title="Notes are saved locally on this device only and will not sync across browsers or devices">
+              device-local
+            </span>
           </div>
           <textarea
             autoFocus
@@ -1784,7 +2019,7 @@ export default function Transactions() {
             <button
               type="button"
               onClick={() => { saveNote(tx.id, noteDraft); setOpenNoteId(null); }}
-              style={{ fontSize: 11, padding: "3px 10px", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "#000", cursor: "pointer", fontFamily: "var(--font-mono)", fontWeight: 600 }}
+              style={{ fontSize: 11, padding: "3px 10px", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "var(--ft-base)", cursor: "pointer", fontFamily: "var(--font-mono)", fontWeight: 600 }}
             >
               Save
             </button>
@@ -1804,11 +2039,15 @@ export default function Transactions() {
             borderRadius: 2,
             padding: "10px 12px",
             width: 300,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
           }}
         >
-          <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8, fontFamily: "var(--font-mono)" }}>
-            TAGS — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
+              TAGS — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
+            </div>
+            <span style={{ fontSize: 8, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.04em", background: "var(--ft-raised)" }} title="Tags are saved locally on this device only and will not sync across browsers or devices">
+              device-local
+            </span>
           </div>
           {/* Existing tag chips */}
           {txTags.length > 0 && (
@@ -1913,8 +2152,16 @@ export default function Transactions() {
   );
   };
 
+  // ── Derived KPI data ─────────────────────────────────────────────────────
+  const kpiIncome = filtered.reduce((acc, tx) => acc + (tx.type === "income" ? tx.gbpValue : 0), 0);
+  const kpiExpenses = filtered.reduce((acc, tx) => acc + (tx.type === "expense" ? Math.abs(tx.gbpValue) : 0), 0);
+  const kpiNet = kpiIncome - kpiExpenses;
+  const kpiAvg = filtered.length > 0 ? filtered.reduce((acc, tx) => acc + Math.abs(tx.gbpValue), 0) / filtered.length : 0;
+  const kpiDateFrom = filtered.length > 0 ? filtered.reduce((a, b) => a.date < b.date ? a : b).date : null;
+  const kpiDateTo = filtered.length > 0 ? filtered.reduce((a, b) => a.date > b.date ? a : b).date : null;
+
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
       <CsvImportModal
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
@@ -1926,32 +2173,40 @@ export default function Transactions() {
       </datalist>
 
       {/* ── Add dialog ── */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Add Transaction</DialogTitle></DialogHeader>
-          <form onSubmit={handleAdd}>
-            {FormFields(false)}
-            <DialogFooter className="mt-6">
-              <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-              <Button type="submit" disabled={submitting}>{submitting ? "Adding…" : "Add Transaction"}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <MobileSheet
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        title="Add Transaction"
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button type="submit" form="add-tx-form" disabled={submitting}>{submitting ? "Adding…" : "Add Transaction"}</Button>
+          </>
+        }
+      >
+        <form id="add-tx-form" onSubmit={handleAdd}>
+          {FormFields(false)}
+          {isMobile && <div style={{ height: 8 }} />}
+        </form>
+      </MobileSheet>
 
       {/* ── Edit dialog ── */}
-      <Dialog open={editId !== null} onOpenChange={(o) => !o && setEditId(null)}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit Transaction</DialogTitle></DialogHeader>
-          <form onSubmit={handleEdit}>
-            {FormFields(true)}
-            <DialogFooter className="mt-6">
-              <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-              <Button type="submit" disabled={submitting}>{submitting ? "Saving…" : "Save Changes"}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <MobileSheet
+        open={editId !== null}
+        onOpenChange={(o) => !o && setEditId(null)}
+        title="Edit Transaction"
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={() => setEditId(null)}>Cancel</Button>
+            <Button type="submit" form="edit-tx-form" disabled={submitting}>{submitting ? "Saving…" : "Save Changes"}</Button>
+          </>
+        }
+      >
+        <form id="edit-tx-form" onSubmit={handleEdit}>
+          {FormFields(true)}
+          {isMobile && <div style={{ height: 8 }} />}
+        </form>
+      </MobileSheet>
 
       {/* ── Split dialog ── */}
       <Dialog open={splitTxId !== null} onOpenChange={(o) => !o && setSplitTxId(null)}>
@@ -2010,11 +2265,11 @@ export default function Transactions() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--ft-raised)", borderBottom: "1px solid var(--ft-raised)", marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--ft-muted)" }}>
                   Total split: <span style={{ color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{splitTx.currency} {splitTotal.toFixed(2)}</span>
                 </div>
-                <div style={{ fontSize: 11, color: splitRemaining === 0 ? "var(--ft-green)" : splitRemaining < 0 ? "var(--ft-red)" : "#F0A030" }}>
+                <div style={{ fontSize: 11, color: splitRemaining === 0 ? "var(--ft-green)" : splitRemaining < 0 ? "var(--ft-red)" : "var(--ft-amber)" }}>
                   {splitRemaining === 0 ? "Balanced" : splitRemaining > 0 ? `Remaining: ${splitTx.currency} ${splitRemaining.toFixed(2)}` : `Over by: ${splitTx.currency} ${Math.abs(splitRemaining).toFixed(2)}`}
                 </div>
               </div>
@@ -2075,7 +2330,7 @@ export default function Transactions() {
               type="button"
               disabled={uncategorizedTxs.length === 0}
               onClick={handleAiCategorize}
-              style={{ background: "var(--ft-amber)", color: "#000", border: "none", borderRadius: 2, fontWeight: 700 }}
+              style={{ background: "var(--ft-amber)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontWeight: 700 }}
             >
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
               Proceed
@@ -2084,59 +2339,122 @@ export default function Transactions() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Page header ── */}
-      <PageHeader
-        icon={ArrowLeftRight}
-        title="Transactions"
-        subtitle="Every flow of capital, tracked and categorised"
-        actions={
-          <div style={{ display: "flex", gap: 8 }}>
-            <Button
-              onClick={() => setAiCatConfirmOpen(true)}
-              disabled={aiCatRunning}
-              size="sm"
-              style={{ background: aiCatRunning ? "var(--ft-raised)" : "rgba(245,158,11,0.12)", color: aiCatRunning ? "var(--ft-dim)" : "var(--ft-amber)", border: `1px solid ${aiCatRunning ? "var(--ft-border)" : "var(--ft-amber)"}`, borderRadius: 2, fontSize: 12, display: "flex", alignItems: "center", gap: 5 }}
-              title="Auto-categorize uncategorized transactions using AI"
-            >
-              <Sparkles className="w-3 h-3" />
-              {aiCatRunning ? "Categorizing…" : "AI Categorize"}
-            </Button>
-            <Button
-              onClick={() => exportCsv(filtered)}
-              size="sm"
-              style={{ background: "var(--ft-raised)", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", borderRadius: 2, fontSize: 12 }}
-            >
-              ↓ CSV
-            </Button>
-            <Button
-              onClick={() => exportJson(filtered)}
-              size="sm"
-              style={{ background: "var(--ft-raised)", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", borderRadius: 2, fontSize: 12 }}
-            >
-              ↓ JSON
-            </Button>
-            <Button
-              onClick={() => window.print()}
-              size="sm"
-              className="ft-no-print"
-              style={{ background: "var(--ft-raised)", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", borderRadius: 2, fontSize: 12 }}
-            >
-              ↓ Export PDF
-            </Button>
-            <Button
-              onClick={() => setCsvOpen(true)}
-              size="sm"
-              style={{ background: "var(--ft-raised)", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", borderRadius: 2, fontSize: 12 }}
-            >
-              ↑ Import CSV
-            </Button>
-            <Button onClick={openAdd} size="sm" style={{ background: "var(--ft-blue)", color: "white", border: "none", borderRadius: 2, fontSize: 12 }}>
-              <Plus className="w-3.5 h-3.5 mr-1.5" />
-              Add Transaction
-            </Button>
+      {/* ── KPI bar — Bloomberg-style 6-cell strip (desktop only) ── */}
+      <div className="ft-hide-mobile" style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)" }}>
+          {/* TX COUNT */}
+          <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>TX COUNT</div>
+            <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--ft-text)", lineHeight: 1 }}>
+              {filtered.length}
+            </div>
+            {hasFilters && (
+              <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>
+                of {transactions?.length ?? 0}
+              </div>
+            )}
           </div>
-        }
-      />
+          {/* TOTAL IN */}
+          <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>TOTAL IN</div>
+            <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiIncome > 0 ? "var(--ft-green)" : "var(--ft-muted)", lineHeight: 1 }}>
+              {formatGbp(kpiIncome)}
+            </div>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.04em" }}>income</div>
+          </div>
+          {/* TOTAL OUT */}
+          <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>TOTAL OUT</div>
+            <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", lineHeight: 1 }}>
+              {formatGbp(kpiExpenses)}
+            </div>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.04em" }}>expenses</div>
+          </div>
+          {/* NET */}
+          <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>NET</div>
+            <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", lineHeight: 1 }}>
+              {kpiNet >= 0 ? "+" : "−"}{formatGbp(Math.abs(kpiNet))}
+            </div>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", letterSpacing: "0.04em" }}>
+              {kpiNet > 0 ? "▲ surplus" : kpiNet < 0 ? "▼ deficit" : "net"}
+            </div>
+          </div>
+          {/* AVG / TX */}
+          <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>AVG / TX</div>
+            <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--ft-text)", lineHeight: 1 }}>
+              {filtered.length > 0 ? formatGbp(kpiAvg) : "—"}
+            </div>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.04em" }}>per transaction</div>
+          </div>
+          {/* DATE RANGE + ACTIONS */}
+          <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>DATE RANGE</div>
+            <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--ft-muted)", lineHeight: 1.4 }}>
+              {kpiDateFrom && kpiDateTo
+                ? kpiDateFrom === kpiDateTo
+                  ? kpiDateFrom
+                  : `${kpiDateFrom} → ${kpiDateTo}`
+                : "—"}
+            </div>
+            {/* Action buttons stacked — hidden on mobile (use FAB instead) */}
+            <div className="ft-hide-mobile" style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={openAdd}
+                style={{ height: 20, padding: "0 8px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "var(--ft-base)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}
+              >
+                + ADD
+              </button>
+              <button
+                type="button"
+                onClick={() => exportCsv(filtered)}
+                style={{ height: 20, padding: "0 7px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-muted)", cursor: "pointer", whiteSpace: "nowrap" as const }}
+              >
+                ↓ CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => setCsvOpen(true)}
+                style={{ height: 20, padding: "0 7px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-muted)", cursor: "pointer", whiteSpace: "nowrap" as const }}
+              >
+                ↑ CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiCatConfirmOpen(true)}
+                disabled={aiCatRunning}
+                style={{ height: 20, padding: "0 7px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: `1px solid ${aiCatRunning ? "var(--ft-border)" : "var(--ft-amber)"}`, borderRadius: 2, color: aiCatRunning ? "var(--ft-dim)" : "var(--ft-amber)", cursor: aiCatRunning ? "not-allowed" : "pointer", whiteSpace: "nowrap" as const }}
+              >
+                {aiCatRunning ? "AI…" : "AI CAT"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Persona context strip */}
+      {(() => {
+        const pid = loadPersonaIds()[0];
+        if (!pid || pid === "full") return null;
+        const sr = summary?.savingsRate;
+        const msgs: Record<string, string | null> = {
+          budget:  `Categorize every transaction for accurate budget tracking. Use the AI Categorize button to auto-tag uncategorized entries in bulk.`,
+          market:  sr != null ? `Savings rate this month: ${sr.toFixed(1)}%. Track income transactions to identify your investable surplus after all expenses.` : `Ensure income transactions are correctly typed to accurately calculate your investable surplus.`,
+          wealth:  sr != null && sr >= 20 ? `${sr.toFixed(1)}% savings rate this month — solid wealth accumulation pace. Keep categorization clean for accurate FIRE progress tracking.` : `Clean categorization feeds accurate analytics and cashflow projections — key inputs for your FIRE timeline.`,
+          social:  `Tag shared expenses with the correct category so Bill Split and Group Split can identify them automatically.`,
+        };
+        const msg = msgs[pid];
+        if (!msg) return null;
+        const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
+        return (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `2px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
+            <span>{msg}</span>
+          </div>
+        );
+      })()}
 
       {isSummaryError && !isError && (
         <Alert variant="destructive">
@@ -2146,180 +2464,369 @@ export default function Transactions() {
         </Alert>
       )}
 
-      {/* ── Summary bar ── */}
-      {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-6 border" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
-          {[
-            { label: `Income (${summary.month})`, value: `+${formatGbp(summary.totalIncome)}`, color: "var(--ft-green)" },
-            { label: "Expenses", value: `-${formatGbp(summary.totalExpenses)}`, color: "var(--ft-red)" },
-            { label: "Net", value: `${summary.netSavings > 0 ? "+" : ""}${formatGbp(summary.netSavings)}`, color: summary.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
-            { label: "Savings Rate", value: `${summary.savingsRate.toFixed(1)}%`, color: "var(--ft-blue)" },
-            { label: `Filtered (${filtered.length} of ${transactions?.length ?? 0})`, value: `${filtered.length} tx`, color: "var(--ft-cyan)" },
-            { label: "Avg / Tx", value: formatGbp(Math.abs(filteredAvg)), color: "var(--ft-amber)" },
-          ].map((s) => (
-            <div key={s.label} className="px-3 sm:px-4 py-3 border-r border-b sm:border-b-0" style={{ borderColor: "var(--ft-border)" }}>
-              <div className="text-xs mb-1 truncate" style={{ color: "var(--ft-dim)" }}>{s.label}</div>
-              <div className={`text-sm font-bold font-mono${s.value.includes("£") ? " pnum" : ""}`} style={{ color: s.color }}>{s.value}</div>
+      {/* ── Mobile Wise-style summary strip ── */}
+      {isMobile && (
+        <div style={{ border: "1px solid var(--ft-border)", borderTop: "none", background: "var(--ft-surface)" }}>
+          <div style={{ padding: "5px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em" }}>
+              {kpiDateFrom && kpiDateTo
+                ? kpiDateFrom === kpiDateTo ? kpiDateFrom : `${kpiDateFrom} → ${kpiDateTo}`
+                : "All Transactions"}
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{filtered.length} TX</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
+            <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>In</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiIncome > 0 ? "var(--ft-green)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                {formatGbp(kpiIncome)}
+              </div>
             </div>
-          ))}
+            <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>Out</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                {formatGbp(kpiExpenses)}
+              </div>
+            </div>
+            <div style={{ padding: "10px 10px" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>Net</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                {kpiNet >= 0 ? "+" : "−"}{formatGbp(Math.abs(kpiNet))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* ── Filter bar ── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {/* Row 1: search + type */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="relative flex-1 min-w-[160px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3" style={{ color: "var(--ft-dim)" }} />
-            <Input
+      {/* ── Mobile filter bar: search + bottom-sheet for all filters ── */}
+      {isMobile && (
+        <>
+          <div style={{ display: "flex", gap: 6, padding: "6px 10px", border: "1px solid var(--ft-border)", borderTop: "none", background: "var(--ft-surface)", alignItems: "center" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 2, padding: "0 8px", height: 32 }}>
+              <Search style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
+              <input
+                ref={searchInputRef}
+                placeholder="Search…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="ft-filter-input"
+                style={{ flex: 1, background: "none", border: "none", outline: "none", color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 13 }}
+              />
+              {search && (
+                <button type="button" onClick={() => setSearch("")} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
+                  <X style={{ width: 13, height: 13 }} />
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setFilterSheetOpen(true)}
+              style={{
+                height: 32, minWidth: 60, padding: "0 10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                background: activeFilterCount > 0 ? "color-mix(in srgb, var(--ft-accent) 15%, transparent)" : "var(--ft-surface)",
+                border: `1px solid ${activeFilterCount > 0 ? "var(--ft-accent)" : "var(--ft-border2)"}`,
+                borderRadius: 2, cursor: "pointer", flexShrink: 0,
+                color: activeFilterCount > 0 ? "var(--ft-accent)" : "var(--ft-muted)",
+                fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.04em", fontWeight: 600,
+              }}
+            >
+              <SlidersHorizontal style={{ width: 11, height: 11 }} />
+              {activeFilterCount > 0 ? `·${activeFilterCount}` : "FILTER"}
+            </button>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="ft-filter-input"
+              style={{ height: 32, padding: "0 6px", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, outline: "none", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", cursor: "pointer", flexShrink: 0 }}
+            >
+              <option value="date-desc">↓ Date</option>
+              <option value="date-asc">↑ Date</option>
+              <option value="amount-high">↓ Amt</option>
+              <option value="amount-low">↑ Amt</option>
+            </select>
+          </div>
+          {activeFilterCount > 0 && (
+            <div style={{ display: "flex", gap: 6, padding: "5px 10px", flexWrap: "wrap" as const, borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", alignItems: "center" }}>
+              {filterType !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-blue) 15%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-blue) 40%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-blue)" }}>{filterType}</span>}
+              {filterCategory !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-accent) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-accent)" }}>{filterCategory}</span>}
+              {filterAccount !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-green) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-green) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>{filterAccount}</span>}
+              {(filterDateFrom || filterDateTo) && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-amber) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-amber)" }}>{filterDateFrom || "…"} → {filterDateTo || "…"}</span>}
+              <button type="button" onClick={() => { setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setFilterTag(""); }} style={{ marginLeft: "auto", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear</button>
+            </div>
+          )}
+          <MobileSheet
+            open={filterSheetOpen}
+            onOpenChange={setFilterSheetOpen}
+            title="Filter Transactions"
+            footer={
+              <div style={{ display: "flex", gap: 8 }}>
+                {(hasFilters) && (
+                  <button type="button" onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); setFilterSheetOpen(false); }} style={{ flex: 1, padding: "11px", fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 3, color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear all</button>
+                )}
+                <button type="button" onClick={() => setFilterSheetOpen(false)} style={{ flex: 2, padding: "11px", fontSize: 13, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 3, color: "var(--ft-base)", fontWeight: 700, cursor: "pointer" }}>Show {filtered.length} results</button>
+              </div>
+            }
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Type</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                  {(["all", "income", "expense", "transfer"] as const).map(t => (
+                    <button key={t} type="button" onClick={() => setFilterType(t)} style={{ padding: "9px 4px", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.04em", borderRadius: 3, cursor: "pointer", background: filterType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${filterType === t ? "var(--ft-accent)" : "var(--ft-border2)"}`, color: filterType === t ? "var(--ft-base)" : "var(--ft-muted)", fontWeight: filterType === t ? 700 : 400, textTransform: "capitalize" as const }}>
+                      {t === "all" ? "All" : t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Category</div>
+                <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-mono)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
+                  <option value="all">All categories</option>
+                  {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Account</div>
+                <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-mono)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
+                  <option value="all">All accounts</option>
+                  {allAccounts.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Date Range</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
+                  {(["Today", "Week", "Month", "Last Mo", "3M", "All"] as const).map((label, i) => {
+                    const keys = ["today", "week", "month", "lastmonth", "3m", "all"] as const;
+                    const k = keys[i];
+                    return (
+                      <button key={k} type="button" onClick={() => applyQuickRange(k)} style={{ padding: "9px 4px", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.04em", borderRadius: 3, cursor: "pointer", background: activeQuickRange === k ? "color-mix(in srgb, var(--ft-accent) 15%, transparent)" : "transparent", border: `1px solid ${activeQuickRange === k ? "var(--ft-accent)" : "var(--ft-border2)"}`, color: activeQuickRange === k ? "var(--ft-accent)" : "var(--ft-muted)", textTransform: "uppercase" as const }}>
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 4 }}>FROM</div>
+                    <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 4 }}>TO</div>
+                    <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Amount Range</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <div>
+                    <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 4 }}>MIN</div>
+                    <input type="number" placeholder="0.00" value={amountMin} min="0" step="0.01" onChange={(e) => setAmountMin(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 4 }}>MAX</div>
+                    <input type="number" placeholder="∞" value={amountMax} min="0" step="0.01" onChange={(e) => setAmountMax(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Tag</div>
+                <input type="text" placeholder="Filter by tag…" value={filterTag} onChange={(e) => setFilterTag(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
+              </div>
+            </div>
+          </MobileSheet>
+        </>
+      )}
+
+      {/* ── Desktop filter bar — compact single-row terminal style ── */}
+      {!isMobile && (
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        {/* Row A: search · type · category · account · sort · tag · clear */}
+        <div className="ft-scroll-x" style={{ borderBottom: "1px solid var(--ft-border)" }}>
+          <div style={{ display: "flex", alignItems: "stretch", minWidth: "max-content" }}>
+          {/* SEARCH label */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 10px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>SEARCH</span>
+          </div>
+          <div style={{ position: "relative", flex: 1, minWidth: 160, display: "flex", alignItems: "center" }}>
+            <Search className="absolute left-2.5 w-3 h-3" style={{ color: "var(--ft-dim)", pointerEvents: "none" }} />
+            <input
               ref={searchInputRef}
-              placeholder="Search description, category, account… ( / )"
+              placeholder="description, category, account…  ( / )"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: 28, fontSize: 12, height: 30, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)" }}
+              className="ft-filter-input"
+              style={{ paddingLeft: 24, paddingRight: 8, fontSize: 11, height: 28, background: "transparent", border: "none", outline: "none", color: "var(--ft-text)", fontFamily: "var(--font-mono)", width: "100%" }}
             />
           </div>
-          <Select value={filterType} onValueChange={(v) => setFilterType(v as "all" | TxType)}>
-            <SelectTrigger style={{ width: 110, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2 }}>
-              <SelectValue placeholder="All types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="income">Income</SelectItem>
-              <SelectItem value="expense">Expense</SelectItem>
-              <SelectItem value="transfer">Transfer</SelectItem>
-            </SelectContent>
-          </Select>
-          {hasFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); }}
-              style={{ height: 30, fontSize: 11, color: "var(--ft-muted)", padding: "0 8px" }}
-            >
-              <X className="w-3 h-3 mr-1" />Clear
-            </Button>
-          )}
-          <span className="ml-auto text-xs" style={{ color: "var(--ft-dim)" }}>
-            {filtered.length}{hasFilters ? ` of ${transactions?.length ?? 0}` : ""} transaction{filtered.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-
-        {/* Row 1b: category + account + sort */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger style={{ width: 148, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2 }}>
-              <SelectValue placeholder="All categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All categories</SelectItem>
-              {allCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterAccount} onValueChange={setFilterAccount}>
-            <SelectTrigger style={{ width: 148, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2 }}>
-              <SelectValue placeholder="All accounts" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All accounts</SelectItem>
-              {allAccounts.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <div style={{ width: 1, height: 20, background: "var(--ft-border2)", margin: "0 2px" }} />
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-            <SelectTrigger style={{ width: 138, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2 }}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="date-desc">Date: Newest first</SelectItem>
-              <SelectItem value="date-asc">Date: Oldest first</SelectItem>
-              <SelectItem value="amount-high">Amount: High → Low</SelectItem>
-              <SelectItem value="amount-low">Amount: Low → High</SelectItem>
-            </SelectContent>
-          </Select>
-          <div style={{ width: 1, height: 20, background: "var(--ft-border2)", margin: "0 2px" }} />
-          {/* Tag filter */}
-          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-            <Tag className="w-3 h-3" style={{ position: "absolute", left: 7, color: filterTag ? "var(--ft-amber)" : "var(--ft-dim)", pointerEvents: "none" }} />
+          {/* TYPE */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderLeft: "1px solid var(--ft-border)", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>TYPE</span>
+          </div>
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as "all" | TxType)}
+            style={{ height: 28, fontSize: 11, background: "transparent", border: "none", outline: "none", color: filterType !== "all" ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", padding: "0 6px", cursor: "pointer", borderRight: "1px solid var(--ft-border)", minWidth: 80, flexShrink: 0 }}
+          >
+            <option value="all">all</option>
+            <option value="income">income</option>
+            <option value="expense">expense</option>
+            <option value="transfer">transfer</option>
+          </select>
+          {/* CATEGORY */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>CAT</span>
+          </div>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            style={{ height: 28, fontSize: 11, background: "transparent", border: "none", outline: "none", color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", padding: "0 6px", cursor: "pointer", borderRight: "1px solid var(--ft-border)", minWidth: 100, flexShrink: 0 }}
+          >
+            <option value="all">all</option>
+            {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          {/* ACCOUNT */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>ACCT</span>
+          </div>
+          <select
+            value={filterAccount}
+            onChange={(e) => setFilterAccount(e.target.value)}
+            style={{ height: 28, fontSize: 11, background: "transparent", border: "none", outline: "none", color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", padding: "0 6px", cursor: "pointer", borderRight: "1px solid var(--ft-border)", minWidth: 100, flexShrink: 0 }}
+          >
+            <option value="all">all</option>
+            {allAccounts.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+          {/* SORT */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>SORT</span>
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            style={{ height: 28, fontSize: 11, background: "transparent", border: "none", outline: "none", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", padding: "0 6px", cursor: "pointer", borderRight: "1px solid var(--ft-border)", minWidth: 130, flexShrink: 0 }}
+          >
+            <option value="date-desc">date ↓</option>
+            <option value="date-asc">date ↑</option>
+            <option value="amount-high">amount ↓</option>
+            <option value="amount-low">amount ↑</option>
+          </select>
+          {/* TAG */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>TAG</span>
+          </div>
+          <div style={{ position: "relative", display: "flex", alignItems: "center", flex: "0 0 90px" }}>
             <input
               type="text"
-              placeholder="TAG"
+              placeholder="filter…"
               value={filterTag}
               onChange={(e) => setFilterTag(e.target.value)}
-              style={{
-                paddingLeft: 22,
-                paddingRight: filterTag ? 22 : 8,
-                height: 30,
-                fontSize: 11,
-                fontFamily: "var(--font-mono)",
-                background: filterTag ? "rgba(245,158,11,0.06)" : "var(--ft-surface)",
-                border: `1px solid ${filterTag ? "var(--ft-amber)" : "var(--ft-border2)"}`,
-                borderRadius: 2,
-                color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)",
-                outline: "none",
-                width: 90,
-                letterSpacing: "0.04em",
-              }}
+              className="ft-filter-input"
+              style={{ height: 28, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", outline: "none", color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", width: "100%" }}
             />
-            {filterTag && (
-              <button
-                type="button"
-                onClick={() => setFilterTag("")}
-                style={{ position: "absolute", right: 5, background: "none", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: 0, display: "flex", alignItems: "center" }}
-                aria-label="Clear tag filter"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
+          </div>
+          {/* Clear */}
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); }}
+              style={{ height: 28, padding: "0 10px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "none", borderLeft: "1px solid var(--ft-border)", color: "var(--ft-red)", cursor: "pointer", flexShrink: 0 }}
+              aria-label="Clear all filters"
+            >
+              ✕ CLR
+            </button>
+          )}
           </div>
         </div>
 
-        {/* Row 2: quick date ranges + date inputs + amount range */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
-            {quickRangeBtn("Today", "today")}
-            {quickRangeBtn("This Week", "week")}
-            {quickRangeBtn("This Month", "month")}
-            {quickRangeBtn("Last Month", "lastmonth")}
-            {quickRangeBtn("Last 3M", "3m")}
-            {quickRangeBtn("All", "all")}
+        {/* Row B: quick date ranges · date from · date to · amount range */}
+        <div className="ft-scroll-x">
+          <div style={{ display: "flex", alignItems: "stretch", minWidth: "max-content" }}
+        >
+          {/* Quick ranges */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 10px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>RANGE</span>
           </div>
-          <div style={{ width: 1, height: 20, background: "var(--ft-border2)", margin: "0 2px" }} />
-          <Input
+          <div style={{ display: "flex", alignItems: "center", gap: 0, borderRight: "1px solid var(--ft-border)" }}>
+            {(["Today", "Week", "Month", "Last Mo", "3M", "All"] as const).map((label, i) => {
+              const keys = ["today", "week", "month", "lastmonth", "3m", "all"] as const;
+              const k = keys[i];
+              const isActive = activeQuickRange === k;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => applyQuickRange(k)}
+                  style={{
+                    height: 26,
+                    padding: "0 8px",
+                    fontSize: 9,
+                    fontFamily: "var(--font-mono)",
+                    letterSpacing: "0.06em",
+                    background: isActive ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
+                    border: "none",
+                    borderRight: "1px solid var(--ft-border)",
+                    color: isActive ? "var(--ft-accent)" : "var(--ft-dim)",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap" as const,
+                    textTransform: "uppercase" as const,
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {/* DATE FROM label */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>FROM</span>
+          </div>
+          <input
             type="date"
             value={filterDateFrom}
             onChange={(e) => setFilterDateFrom(e.target.value)}
-            style={{ width: 130, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)" }}
+            style={{ height: 26, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", borderRight: "1px solid var(--ft-border)", outline: "none", color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", flexShrink: 0, width: 126 }}
           />
-          <span style={{ color: "var(--ft-dim)", fontSize: 11 }}>to</span>
-          <Input
+          {/* DATE TO label */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>TO</span>
+          </div>
+          <input
             type="date"
             value={filterDateTo}
             onChange={(e) => setFilterDateTo(e.target.value)}
-            style={{ width: 130, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)" }}
+            style={{ height: 26, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", borderRight: "1px solid var(--ft-border)", outline: "none", color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", flexShrink: 0, width: 126 }}
           />
-          <div style={{ width: 1, height: 20, background: "var(--ft-border2)", margin: "0 2px" }} />
-          <Input
+          {/* AMOUNT MIN */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>£ MIN</span>
+          </div>
+          <input
             type="number"
-            placeholder="Min £"
+            placeholder="0.00"
             value={amountMin}
             min="0"
             step="0.01"
             onChange={(e) => setAmountMin(e.target.value)}
-            style={{ width: 80, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)" }}
+            style={{ height: 26, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", borderRight: "1px solid var(--ft-border)", outline: "none", color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", width: 72, flexShrink: 0 }}
           />
-          <span style={{ color: "var(--ft-dim)", fontSize: 11 }}>–</span>
-          <Input
+          {/* AMOUNT MAX */}
+          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>£ MAX</span>
+          </div>
+          <input
             type="number"
-            placeholder="Max £"
+            placeholder="∞"
             value={amountMax}
             min="0"
             step="0.01"
             onChange={(e) => setAmountMax(e.target.value)}
-            style={{ width: 80, height: 30, fontSize: 12, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)" }}
+            style={{ height: 26, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", outline: "none", color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", width: 72, flexShrink: 0 }}
           />
+          </div>
         </div>
       </div>
+      )}
 
       {/* ── Floating bulk action bar (bottom-center) ── */}
       {selectedIds.size > 0 && (
@@ -2332,14 +2839,15 @@ export default function Transactions() {
             zIndex: 100,
             display: "flex",
             alignItems: "center",
-            gap: 10,
-            padding: "10px 16px",
-            background: "#0d1117",
+            flexWrap: "wrap",
+            gap: 8,
+            padding: "10px 14px",
+            background: "var(--ft-base)",
             border: "1px solid var(--ft-blue)",
-            borderRadius: 4,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.7)",
+            borderRadius: 2,
             fontFamily: "var(--font-mono)",
-            whiteSpace: "nowrap",
+            maxWidth: "calc(100vw - 32px)",
+            overflowX: "auto",
           }}
         >
           <span style={{ fontSize: 12, color: "var(--ft-blue)", fontWeight: 700, minWidth: 70 }}>
@@ -2435,30 +2943,44 @@ export default function Transactions() {
         </div>
       )}
 
-      {/* ── Transaction ledger ── */}
-      <div className="border" style={{ borderColor: "var(--ft-border)" }}>
-        <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "var(--ft-blue)22", borderColor: "var(--ft-blue)44", color: "var(--ft-blue)" }}>
-          <span>▼ TRANSACTION LEDGER — {hasFilters ? `Filtered (${filtered.length})` : "All Entries"}</span>
-          {groupByMerchant && <span style={{ marginLeft: 8, fontWeight: 400, color: "var(--ft-muted)" }}>· grouped by merchant</span>}
-          {groupByDay && !groupByMerchant && <span style={{ marginLeft: 8, fontWeight: 400, color: "var(--ft-muted)" }}>· grouped by day</span>}
-          <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+      {/* ── Transaction ledger ��─ */}
+      <div style={{ border: "1px solid var(--ft-border)" }}>
+        {/* Panel header — Bloomberg · SECTION NAME pattern */}
+        <div className="ft-panel-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="ft-panel-label">
+              <span className="accent-dot">·</span>
+              TRANSACTION LEDGER
+            </span>
+            <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>
+              {hasFilters ? `${filtered.length} of ${transactions?.length ?? 0}` : `${filtered.length} entries`}
+            </span>
+            {groupByMerchant && (
+              <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY MERCHANT</span>
+            )}
+            {groupByDay && !groupByMerchant && (
+              <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY DAY</span>
+            )}
+          </div>
+          {!isMobile && <div style={{ display: "flex", gap: 4 }}>
             <button
               type="button"
               onClick={() => { setGroupByDay((v) => !v); if (groupByMerchant) setGroupByMerchant(false); }}
               style={{
                 height: 22,
                 padding: "0 8px",
-                fontSize: 10,
-                background: groupByDay ? "rgba(96,165,250,0.08)" : "transparent",
+                fontSize: 9,
+                fontFamily: "var(--font-mono)",
+                letterSpacing: "0.06em",
+                background: groupByDay ? "color-mix(in srgb, var(--ft-blue) 10%, transparent)" : "transparent",
                 border: `1px solid ${groupByDay ? "var(--ft-blue)" : "var(--ft-border2)"}`,
                 borderRadius: 2,
                 color: groupByDay ? "var(--ft-blue)" : "var(--ft-dim)",
                 cursor: "pointer",
-                whiteSpace: "nowrap",
-                fontFamily: "var(--font-mono)",
+                whiteSpace: "nowrap" as const,
               }}
             >
-              {groupByDay ? "⊞ By Day" : "⊟ By Day"}
+              {groupByDay ? "▣ DAY" : "□ DAY"}
             </button>
             <button
               type="button"
@@ -2466,32 +2988,47 @@ export default function Transactions() {
               style={{
                 height: 22,
                 padding: "0 8px",
-                fontSize: 10,
-                background: groupByMerchant ? "rgba(96,165,250,0.08)" : "transparent",
+                fontSize: 9,
+                fontFamily: "var(--font-mono)",
+                letterSpacing: "0.06em",
+                background: groupByMerchant ? "color-mix(in srgb, var(--ft-blue) 10%, transparent)" : "transparent",
                 border: `1px solid ${groupByMerchant ? "var(--ft-blue)" : "var(--ft-border2)"}`,
                 borderRadius: 2,
                 color: groupByMerchant ? "var(--ft-blue)" : "var(--ft-dim)",
                 cursor: "pointer",
-                whiteSpace: "nowrap",
-                fontFamily: "var(--font-mono)",
+                whiteSpace: "nowrap" as const,
               }}
             >
-              {groupByMerchant ? "⊞ By Merchant" : "⊟ By Merchant"}
+              {groupByMerchant ? "▣ MERCHANT" : "□ MERCHANT"}
             </button>
-          </div>
+            <button
+              type="button"
+              onClick={() => exportJson(filtered)}
+              style={{ height: 22, padding: "0 8px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", whiteSpace: "nowrap" as const }}
+            >
+              ↓ JSON
+            </button>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              style={{ height: 22, padding: "0 8px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", whiteSpace: "nowrap" as const }}
+            >
+              PDF
+            </button>
+          </div>}
         </div>
 
         <div
-          className="overflow-x-auto"
+          className={isMobile ? undefined : "ft-scroll-x"}
           ref={tableContainerRef}
           tabIndex={0}
           onKeyDown={handleTableKeyDown}
           style={{ outline: "none" }}
           aria-label="Transaction table — use ↑↓ or j/k to navigate, Enter to open note, Escape to clear"
         >
-          {/* Column headers */}
-          <div style={{ display: "flex" }}>
-            <div style={{ ...TH, width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", padding: "6px 0" }}>
+          {/* Column headers — desktop only */}
+          {!isMobile && <div style={{ display: "flex", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", minWidth: 760 }}>
+            <div style={{ ...TH, width: 36, minWidth: 36, justifyContent: "center", padding: "0", borderRight: "1px solid var(--ft-border)" }}>
               <input
                 type="checkbox"
                 checked={isAllSelected}
@@ -2500,32 +3037,54 @@ export default function Transactions() {
                 aria-label="Select all"
               />
             </div>
-            {[["DATE", "90px"], ["DESCRIPTION", "1"], ["CATEGORY", "120px"], ["ACCOUNT", "150px"], ["TYPE", "90px"], ["AMOUNT", "130px"], ["GBP", "110px"], ["NOTE", "36px"], ["TAG", "36px"], ["", "128px"]].map(([h, w]) => (
-              <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["AMOUNT", "GBP"].includes(h as string) ? "right" : "center", padding: h === "NOTE" || h === "TAG" ? "6px 0" : undefined }}>
+            {([
+              ["DATE",        "90px",  "left",    ""],
+              ["DESCRIPTION", "1",     "left",    ""],
+              ["CATEGORY",    "120px", "left",    ""],
+              ["ACCOUNT",     "150px", "left",    "ft-hide-mobile"],
+              ["TYPE",        "90px",  "left",    "ft-hide-mobile"],
+              ["AMOUNT",      "130px", "right",   ""],
+              ["GBP",         "110px", "right",   ""],
+              ["",            "36px",  "center",  ""],
+              ["",            "36px",  "center",  ""],
+              ["",            "128px", "right",   ""],
+            ] as [string, string, string, string][]).map(([h, w, align, extraClass], i) => (
+              <div
+                key={`${h}-${i}`}
+                className={extraClass || undefined}
+                style={{
+                  ...TH,
+                  flex: w === "1" ? 1 : undefined,
+                  width: w !== "1" ? w : undefined,
+                  minWidth: w === "1" ? 0 : w,
+                  flexShrink: w === "1" ? undefined : 0,
+                  overflow: w === "1" ? "hidden" : undefined,
+                  justifyContent: align === "right" ? "flex-end" : align === "center" ? "center" : "flex-start",
+                  padding: h === "" ? "0 3px" : "0 12px",
+                }}
+              >
                 {h}
               </div>
             ))}
-          </div>
+          </div>}
 
           {/* Rows — flat, grouped by day, or grouped by merchant */}
           {!groupByMerchant && !groupByDay && (
             <>
               {visibleFiltered.map((tx, idx) => <TxRow key={tx.id} tx={tx} isKeyboardSelected={selectedRowIndex === idx} />)}
               {filtered.length === 0 && (
-                <EmptyState
-                  title={hasFilters ? "No matches" : "No data"}
-                  description={hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
-                  action={!hasFilters ? { label: "+ Add Transaction", onClick: openAdd } : undefined}
-                />
+                hasFilters
+                  ? <EmptyState title="No matches" description="No transactions match the current filters." minHeight="calc(100vh - 260px)" />
+                  : <TxFeedPreview openAdd={openAdd} />
               )}
               {hasMoreFlat && (
-                <div className="flex items-center justify-center py-3 border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 0", borderBottom: "1px solid var(--ft-border)" }}>
                   <button
                     type="button"
                     onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "4px 14px", cursor: "pointer", letterSpacing: "0.06em" }}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "3px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, borderRadius: 2 }}
                   >
-                    LOAD MORE · showing {visibleCount} of {filtered.length}
+                    LOAD MORE · {visibleCount} of {filtered.length}
                   </button>
                 </div>
               )}
@@ -2538,15 +3097,27 @@ export default function Transactions() {
                 let flatIdx = 0;
                 return visibleDayGroups.map((group) => (
                   <div key={group.date}>
-                    <div style={{ display: "flex", alignItems: "center", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", padding: "6px 12px 6px 48px", gap: 12 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)" }}>
-                        {new Date(group.date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
-                      </span>
-                      <span style={{ fontSize: 10, color: "var(--ft-muted)" }}>{group.txs.length} transaction{group.txs.length !== 1 ? "s" : ""}</span>
-                      <span className="pnum" style={{ fontSize: 11, fontWeight: 600, color: group.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontVariantNumeric: "tabular-nums", marginLeft: "auto" }}>
-                        net {group.net >= 0 ? "+" : ""}{formatGbp(group.net)}
-                      </span>
-                    </div>
+                    {(() => {
+                      const gd = new Date(group.date + "T00:00:00");
+                      const nowD = new Date(); nowD.setHours(0,0,0,0);
+                      const yesD = new Date(nowD); yesD.setDate(nowD.getDate() - 1);
+                      const isToday = gd.toDateString() === nowD.toDateString();
+                      const isYesterday = gd.toDateString() === yesD.toDateString();
+                      const mobileLabel = isToday ? "Today" : isYesterday ? "Yesterday" : gd.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+                      const desktopLabel = gd.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", background: isMobile ? "color-mix(in srgb, var(--ft-raised) 80%, var(--ft-base))" : "var(--ft-base)", borderBottom: "1px solid var(--ft-border)", padding: isMobile ? "6px 14px" : "4px 10px 4px 48px", gap: 10, position: "sticky", top: 0, zIndex: 10 }}>
+                          <span style={{ fontSize: isMobile ? 12 : 9, fontFamily: "var(--font-mono)", fontWeight: 700, color: isMobile && (isToday || isYesterday) ? "var(--ft-accent)" : "var(--ft-dim)", letterSpacing: isMobile ? "0.02em" : "0.1em", textTransform: isMobile ? "none" : "uppercase" as const }}>
+                            {isMobile ? mobileLabel : desktopLabel}
+                          </span>
+                          <span style={{ fontSize: isMobile ? 11 : 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.06em" }}>{group.txs.length} tx</span>
+                          <span className="pnum" style={{ fontSize: isMobile ? 12 : 9, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: group.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto", letterSpacing: "0.04em" }}>
+                            {group.net >= 0 ? "+" : "−"}{formatGbp(Math.abs(group.net))}
+                          </span>
+                        </div>
+                      );
+                    })()}
+
                     {group.txs.map((tx) => {
                       const rowIdx = flatIdx++;
                       return <TxRow key={tx.id} tx={tx} indented isKeyboardSelected={selectedRowIndex === rowIdx} />;
@@ -2555,20 +3126,18 @@ export default function Transactions() {
                 ));
               })()}
               {dayGroups.length === 0 && (
-                <EmptyState
-                  title={hasFilters ? "No matches" : "No data"}
-                  description={hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
-                  action={!hasFilters ? { label: "+ Add Transaction", onClick: openAdd } : undefined}
-                />
+                hasFilters
+                  ? <EmptyState title="No matches" description="No transactions match the current filters." minHeight="calc(100vh - 260px)" />
+                  : <TxFeedPreview openAdd={openAdd} />
               )}
               {hasMoreDayGroups && (
-                <div className="flex items-center justify-center py-3 border-b" style={{ borderColor: "rgba(33,38,45,0.5)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 0", borderBottom: "1px solid var(--ft-border)" }}>
                   <button
                     type="button"
                     onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "4px 14px", cursor: "pointer", letterSpacing: "0.06em" }}
+                    style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "3px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, borderRadius: 2 }}
                   >
-                    LOAD MORE · showing {Math.min(visibleCount, filtered.length)} of {filtered.length}
+                    LOAD MORE · {Math.min(visibleCount, filtered.length)} of {filtered.length}
                   </button>
                 </div>
               )}
@@ -2582,8 +3151,8 @@ export default function Transactions() {
                 return (
                   <div key={group.description}>
                     <div
-                      className="flex items-center border-b"
-                      style={{ borderColor: "rgba(33,38,45,0.5)", background: "var(--ft-base)", cursor: "pointer" }}
+                      className="flex items-center"
+                      style={{ borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", cursor: "pointer" }}
                       onClick={() => {
                         setExpandedMerchants((prev) => {
                           const next = new Set(prev);
@@ -2593,26 +3162,26 @@ export default function Transactions() {
                         });
                       }}
                     >
-                      <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch", color: "var(--ft-dim)", fontSize: 10 }}>
+                      <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch", color: "var(--ft-accent)", fontSize: 9, fontFamily: "var(--font-mono)" }}>
                         {group.expanded ? "▼" : "▶"}
                       </div>
-                      <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-dim)", fontSize: 11 }} />
-                      <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, fontWeight: 600 }}>
+                      <div style={{ width: 90, minWidth: 90, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)" }} />
+                      <div style={{ flex: 1, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 11, fontWeight: 600, fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         <PrivDesc>{group.description}</PrivDesc>
                       </div>
-                      <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
-                        <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
+                      <div style={{ width: 120, minWidth: 120, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }}>
+                        <span style={{ fontSize: 9, padding: "0 5px", borderRadius: 2, border: "1px solid var(--ft-border2)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", lineHeight: "16px" }}>
                           {group.count} tx
                         </span>
                       </div>
-                      <div style={{ width: 150, minWidth: 150, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }} />
-                      <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }} />
-                      <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }} />
-                      <div className="pnum" style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: group.total >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                        {group.total >= 0 ? "+" : ""}{formatGbp(group.total)}
+                      <div className="ft-hide-mobile" style={{ width: 150, minWidth: 150, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
+                      <div className="ft-hide-mobile" style={{ width: 90, minWidth: 90, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
+                      <div style={{ width: 130, minWidth: 130, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
+                      <div className="pnum" style={{ width: 110, minWidth: 110, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: group.total >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
+                        {group.total >= 0 ? "+" : "−"}{formatGbp(Math.abs(group.total))}
                       </div>
-                      <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-raised)" }} />
-                      <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-raised)" }} />
+                      <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)" }} />
+                      <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)" }} />
                       <div style={{ width: 128, minWidth: 128 }} />
                     </div>
 
@@ -2622,16 +3191,45 @@ export default function Transactions() {
               })}
 
               {merchantGroups.length === 0 && (
-                <EmptyState
-                  title={hasFilters ? "No matches" : "No data"}
-                  description={hasFilters ? "No transactions match the current filters." : "No transactions yet — add one to get started."}
-                  action={!hasFilters ? { label: "+ Add Transaction", onClick: openAdd } : undefined}
-                />
+                hasFilters
+                  ? <EmptyState title="No matches" description="No transactions match the current filters." minHeight="calc(100vh - 260px)" />
+                  : <TxFeedPreview openAdd={openAdd} />
               )}
             </>
           )}
         </div>
       </div>
+
+      {/* ── Mobile FAB — add transaction ── */}
+      {isMobile && (
+        <button
+          type="button"
+          onClick={openAdd}
+          aria-label="Add transaction"
+          style={{
+            position: "fixed",
+            bottom: "calc(68px + env(safe-area-inset-bottom))",
+            right: 20,
+            zIndex: 50,
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            background: "var(--ft-accent)",
+            border: "none",
+            color: "var(--ft-base)",
+            fontSize: 26,
+            fontWeight: 300,
+            lineHeight: 1,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 16px color-mix(in srgb, var(--ft-accent) 40%, transparent)",
+          }}
+        >
+          +
+        </button>
+      )}
 
       {/* ── localStorage SplitModal ── */}
       {splitModalTx && (

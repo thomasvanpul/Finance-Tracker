@@ -44,6 +44,28 @@ function formatNative(amount: number, currency: string): string {
   return `${sym}${Math.abs(amount).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+function loadHistory(): HistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+}
+
+function saveHistory(entries: HistoryEntry[]): void {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(entries)); } catch {}
+}
+
+function formatYAxis(value: number): string {
+  return Math.abs(value) >= 1000 ? `£${(value / 1000).toFixed(0)}k` : `£${value.toFixed(0)}`;
+}
+function formatXAxis(value: string): string {
+  return new Date(value).toLocaleDateString("en-GB", { month: "short", day: "numeric" });
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
 function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
   if (groups.length <= 1) return null;
   return (
@@ -78,20 +100,11 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
                 {formatGbp(g.gbpTotal)}
               </div>
             )}
+            {/* share bar */}
+            <div style={{ marginTop: 4, height: 2, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${g.share}%`, background: `hsl(${(groups.indexOf(g) * 47 + 200) % 360}, 60%, 55%)`, opacity: 0.9 }} />
+            </div>
           </div>
-        ))}
-      </div>
-      <div style={{ height: 3, background: "var(--ft-border)", display: "flex" }}>
-        {groups.map((g) => (
-          <div
-            key={g.currency}
-            style={{
-              height: "100%",
-              width: `${g.share}%`,
-              background: `hsl(${(groups.indexOf(g) * 47 + 200) % 360}, 60%, 55%)`,
-              opacity: 0.8,
-            }}
-          />
         ))}
       </div>
     </div>
@@ -105,26 +118,6 @@ const PERIODS: { label: Period; days: number | null }[] = [
   { label: "ALL", days: null },
 ];
 
-function loadHistory(): HistoryEntry[] {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
-}
-
-function saveHistory(entries: HistoryEntry[]): void {
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(entries)); } catch {}
-}
-
-function formatYAxis(value: number): string {
-  return Math.abs(value) >= 1000 ? `£${(value / 1000).toFixed(0)}k` : `£${value.toFixed(0)}`;
-}
-function formatXAxis(value: string): string {
-  return new Date(value).toLocaleDateString("en-GB", { month: "short", day: "numeric" });
-}
-
 type TooltipProps = { active?: boolean; payload?: { value: number }[]; label?: string };
 function NetWorthTooltip({ active, payload, label }: TooltipProps) {
   if (!active || !payload?.length || !label) return null;
@@ -133,7 +126,7 @@ function NetWorthTooltip({ active, payload, label }: TooltipProps) {
       <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {new Date(label).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
       </div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ft-accent)" }}>
+      <div className="pnum" style={{ fontSize: 12, fontWeight: 700, color: "var(--ft-accent)" }}>
         {formatGbp(payload[0].value)}
       </div>
     </div>
@@ -152,7 +145,7 @@ function TodayBadge({ history }: { history: HistoryEntry[] }) {
       fontFamily: "var(--font-mono)",
       fontSize: 9,
       fontWeight: 700,
-      color: isUp ? "var(--ft-base)" : "var(--ft-base)",
+      color: "var(--ft-base)",
       background: isUp ? "var(--ft-green)" : "var(--ft-red)",
       padding: "2px 6px",
       borderRadius: 2,
@@ -182,6 +175,7 @@ function PeriodSelector({ period, setPeriod }: { period: Period; setPeriod: (p: 
             color: period === p.label ? "var(--ft-base)" : "var(--ft-dim)",
             border: `1px solid ${period === p.label ? "var(--ft-accent)" : "var(--ft-border2)"}`,
             transition: "all 0.1s",
+            cursor: "pointer",
           }}
         >
           {p.label}
@@ -195,6 +189,133 @@ function AnimatedGbp({ value }: { value: number }) {
   const animated = useCountUp(value);
   return <>{formatGbp(animated)}</>;
 }
+
+type KpiCellProps = {
+  label: string;
+  raw: number | null;
+  value: string;
+  color: string;
+  sub: string;
+  animate: boolean;
+  isLast: boolean;
+};
+
+function KpiCell({ label, raw, value, color, sub, animate, isLast }: KpiCellProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "14px 12px",
+        borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+        overflow: "hidden",
+        minWidth: 0,
+      }}
+    >
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
+        {label}
+      </div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color, lineHeight: 1.1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {animate && raw !== null ? <AnimatedGbp value={raw} /> : value}
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
+        {sub}
+      </div>
+    </div>
+  );
+}
+
+type MonthStatCellProps = { label: string; value: string; color: string; isLast: boolean };
+
+function MonthStatCell({ label, value, color, isLast }: MonthStatCellProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "10px 12px",
+        borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
+        transition: "background 0.1s",
+        overflow: "hidden",
+        minWidth: 0,
+      }}
+    >
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {label}
+      </div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+type BreakdownCellProps = { label: string; value: string; color: string; isLast: boolean };
+
+function BreakdownCell({ label, value, color, isLast }: BreakdownCellProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "8px 12px",
+        borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+        overflow: "hidden",
+        minWidth: 0,
+      }}
+    >
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {label}
+      </div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+type AccountTableRowProps = {
+  acct: { id: number | string; name: string; currency: string; balance: number; gbpEquivalent: number };
+  isFirst: boolean;
+};
+
+function AccountTableRow({ acct, isFirst }: AccountTableRowProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <tr
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        borderTop: isFirst ? "1px solid var(--ft-border)" : "1px solid var(--ft-border)",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        transition: "background 0.1s",
+      }}
+    >
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "7px 0 7px 0", paddingRight: 8, maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {acct.name}
+      </td>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "7px 8px 7px 0" }}>
+        {acct.currency}
+      </td>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "7px 8px 7px 0", textAlign: "right" }}>
+        <span className="pnum">{acct.currency !== "GBP" ? acct.balance.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}</span>
+      </td>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-accent)", textAlign: "right", padding: "7px 0" }}>
+        <span className="pnum">{formatGbp(acct.gbpEquivalent)}</span>
+      </td>
+    </tr>
+  );
+}
+
+// ─── Main widget ──────────────────────────────────────────────────────────────
 
 export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   const { data: d, isLoading } = useGetDashboard();
@@ -220,30 +341,23 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   const currencyGroups = d ? buildCurrencyGroups(d.accountBreakdown, d.totalCash) : [];
 
   const kpis = d ? [
-    { label: "Net Worth",    raw: d.netWorth,                            value: formatGbp(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true },
-    { label: "Total Cash",   raw: null,                                  value: formatGbp(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false },
-    { label: "Portfolio",    raw: null,                                  value: formatGbp(d.portfolio.totalValueGbp), color: d.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlGbp >= 0 ? "+" : ""}${formatGbp(d.portfolio.totalPlGbp)}`, animate: false },
-    { label: "Net Liquidity",raw: null,                                  value: formatGbp(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false },
+    { label: "Net Worth",    raw: d.netWorth,                             value: formatGbp(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true },
+    { label: "Total Cash",   raw: null,                                   value: formatGbp(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false },
+    { label: "Portfolio",    raw: null,                                   value: formatGbp(d.portfolio.totalValueGbp), color: d.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlGbp >= 0 ? "+" : ""}${formatGbp(d.portfolio.totalPlGbp)}`, animate: false },
+    { label: "Net Liquidity",raw: null,                                   value: formatGbp(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false },
   ] : [];
 
-  const breakdownRow = d && (
-    <div style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", background: "var(--ft-surface)" }}>
-      {[
-        { label: "Cash",      value: formatGbp(d.totalCash),                 color: "var(--ft-accent)" },
-        { label: "Portfolio", value: formatGbp(d.portfolio.totalValueGbp),  color: "var(--ft-green)" },
-        { label: "Net Debt",  value: formatGbp(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)" },
-      ].map((item, i) => (
-        <div key={item.label} style={{ padding: "8px 12px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3 }}>
-            {item.label}
-          </div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: item.color }}>
-            {item.value}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const monthStats = d ? [
+    { label: "Income",       value: `+${formatGbp(d.thisMonth.income)}`,   color: "var(--ft-green)" },
+    { label: "Expenses",     value: `-${formatGbp(d.thisMonth.expenses)}`, color: "var(--ft-red)" },
+    { label: "Savings Rate", value: formatPercent(d.thisMonth.savingsRate), color: d.thisMonth.savingsRate >= 20 ? "var(--ft-green)" : "var(--ft-amber)" },
+  ] : [];
+
+  const breakdownItems = d ? [
+    { label: "Cash",      value: formatGbp(d.totalCash),                color: "var(--ft-accent)" },
+    { label: "Portfolio", value: formatGbp(d.portfolio.totalValueGbp),  color: "var(--ft-green)" },
+    { label: "Net Debt",  value: formatGbp(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)" },
+  ] : [];
 
   const chartSection = (
     <div style={{ borderTop: "1px solid var(--ft-border)", padding: "12px" }}>
@@ -282,40 +396,47 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const compactContent = d && (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+      {/* KPI strip — border-as-gap pattern */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--ft-border)" }}>
         {kpis.map((k, i) => (
-          <div key={k.label} style={{ padding: "14px 12px", borderRight: i < kpis.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
-              {k.label}
-            </div>
-            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: k.color, lineHeight: 1.1 }}>
-              {k.animate && k.raw !== null ? <AnimatedGbp value={k.raw} /> : k.value}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
-              {k.sub}
-            </div>
-          </div>
+          <KpiCell
+            key={k.label}
+            label={k.label}
+            raw={k.raw}
+            value={k.value}
+            color={k.color}
+            sub={k.sub}
+            animate={k.animate}
+            isLast={i === kpis.length - 1}
+          />
         ))}
       </div>
 
-      <div style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", background: "var(--ft-raised)" }}>
-        {[
-          { label: "Income",       value: `+${formatGbp(d.thisMonth.income)}`,   color: "var(--ft-green)" },
-          { label: "Expenses",     value: `-${formatGbp(d.thisMonth.expenses)}`, color: "var(--ft-red)" },
-          { label: "Savings Rate", value: formatPercent(d.thisMonth.savingsRate), color: d.thisMonth.savingsRate >= 20 ? "var(--ft-green)" : "var(--ft-amber)" },
-        ].map((item, i) => (
-          <div key={item.label} style={{ padding: "10px 12px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3 }}>
-              {item.label}
-            </div>
-            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: item.color }}>
-              {item.value}
-            </div>
-          </div>
+      {/* Month stats strip */}
+      <div style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+        {monthStats.map((item, i) => (
+          <MonthStatCell
+            key={item.label}
+            label={item.label}
+            value={item.value}
+            color={item.color}
+            isLast={i === monthStats.length - 1}
+          />
         ))}
       </div>
 
-      {breakdownRow}
+      {/* Breakdown strip */}
+      <div style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+        {breakdownItems.map((item, i) => (
+          <BreakdownCell
+            key={item.label}
+            label={item.label}
+            value={item.value}
+            color={item.color}
+            isLast={i === breakdownItems.length - 1}
+          />
+        ))}
+      </div>
 
       <CurrencyExposureStrip groups={currencyGroups} />
 
@@ -340,20 +461,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
         </thead>
         <tbody>
           {d.accountBreakdown.map((acct, i) => (
-            <tr key={acct.id} style={{ borderTop: i === 0 ? "1px solid var(--ft-border)" : "1px solid var(--ft-border)" }}>
-              <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "7px 0 7px 0", paddingRight: 8, maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {acct.name}
-              </td>
-              <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "7px 8px 7px 0" }}>
-                {acct.currency}
-              </td>
-              <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "7px 8px 7px 0", textAlign: "right" }}>
-                <span className="pnum">{acct.currency !== "GBP" ? acct.balance.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}</span>
-              </td>
-              <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-accent)", textAlign: "right", padding: "7px 0" }}>
-                <span className="pnum">{formatGbp(acct.gbpEquivalent)}</span>
-              </td>
-            </tr>
+            <AccountTableRow key={acct.id} acct={acct} isFirst={i === 0} />
           ))}
         </tbody>
         <tfoot>

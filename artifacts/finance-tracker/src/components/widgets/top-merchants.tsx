@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -31,6 +32,72 @@ function rankMerchants(expenses: { description: string; gbpValue: number }[]): {
     .sort((a, b) => b.total - a.total);
 }
 
+interface MerchantRowProps {
+  merchant: { name: string; total: number };
+  rank: number;
+  isLast: boolean;
+  isExpanded?: boolean;
+  color: string;
+  barWidth: number;
+  pctOfTotal: number;
+  isNew: boolean;
+  rankDelta: number | null;
+}
+
+function MerchantRow({ merchant, rank, isLast, isExpanded: expanded, color, barWidth, pctOfTotal, isNew, rankDelta }: MerchantRowProps) {
+  const [hov, setHov] = useState(false);
+  const truncatedName = merchant.name.length > (expanded ? 24 : 20) ? merchant.name.slice(0, expanded ? 24 : 20) + "…" : merchant.name;
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        padding: "7px 0",
+        borderBottom: !isLast ? "1px solid var(--ft-border)" : undefined,
+        position: "relative",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 4%, transparent)" : "transparent",
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, position: "relative", zIndex: 1 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", width: 14, flexShrink: 0, textAlign: "right" }}>
+          {rank}
+        </span>
+        <div style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0 }} />
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {truncatedName}
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0 }}>
+          {pctOfTotal.toFixed(0)}%
+        </span>
+        {isNew ? (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color: "var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 30%, transparent)", padding: "1px 4px", flexShrink: 0, letterSpacing: "0.04em" }}>
+            NEW
+          </span>
+        ) : rankDelta !== null && rankDelta !== 0 ? (
+          <span style={{
+            fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700,
+            color: rankDelta > 0 ? "var(--ft-green)" : "var(--ft-red)",
+            background: `color-mix(in srgb, ${rankDelta > 0 ? "var(--ft-green)" : "var(--ft-red)"} 12%, transparent)`,
+            border: `1px solid color-mix(in srgb, ${rankDelta > 0 ? "var(--ft-green)" : "var(--ft-red)"} 30%, transparent)`,
+            padding: "1px 4px", flexShrink: 0, letterSpacing: "0.04em",
+          }}>
+            {rankDelta > 0 ? `▲${rankDelta}` : `▼${Math.abs(rankDelta)}`}
+          </span>
+        ) : (
+          <span style={{ width: 28, flexShrink: 0 }} />
+        )}
+        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color, flexShrink: 0, textAlign: "right", minWidth: 56 }}>
+          {formatGbp(merchant.total)}
+        </span>
+      </div>
+      <div style={{ marginLeft: 27, height: 4, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${barWidth}%`, background: color, opacity: 0.7, borderRadius: 2, transition: "width 0.12s ease" }} />
+      </div>
+    </div>
+  );
+}
+
 export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
   const { data, isLoading } = useListTransactions({});
 
@@ -60,14 +127,39 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
     ...(otherTotal > 0 ? [{ name: "Other", value: otherTotal, color: "var(--ft-border2)" }] : []),
   ];
 
+  const prevMonthTotal = lastMonthExpenses.reduce((s, tx) => s + tx.gbpValue, 0);
+  const totalDelta = monthlyTotal - prevMonthTotal;
+  const totalDeltaColor = totalDelta <= 0 ? "var(--ft-green)" : "var(--ft-red)";
+
   const header = (
-    <div style={{ padding: "8px 12px 6px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
-      Top Merchants · This Month
+    <div style={{ padding: "10px 12px 8px", borderBottom: "1px solid var(--ft-border)" }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
+        Top Merchants · This Month
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, justifyContent: "space-between" }}>
+        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+          {formatGbp(monthlyTotal)}
+        </span>
+        {prevMonthTotal > 0 && (
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            fontWeight: 700,
+            color: totalDeltaColor,
+            background: `color-mix(in srgb, ${totalDeltaColor} 12%, transparent)`,
+            border: `1px solid color-mix(in srgb, ${totalDeltaColor} 30%, transparent)`,
+            padding: "2px 6px",
+            letterSpacing: "0.04em",
+          }}>
+            {totalDelta > 0 ? "▲" : "▼"} {formatGbp(Math.abs(totalDelta))} vs last
+          </span>
+        )}
+      </div>
     </div>
   );
 
   const merchantRows = (
-    <div style={{ padding: "0 12px 12px" }}>
+    <div style={{ padding: "4px 12px 12px" }}>
       {topMerchants.length === 0 ? (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", paddingTop: 16 }}>
           No expenses this month
@@ -77,57 +169,23 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
           const barWidth = maxTotal > 0 ? (merchant.total / maxTotal) * 100 : 0;
           const pctOfTotal = monthlyTotal > 0 ? (merchant.total / monthlyTotal) * 100 : 0;
           const lastRank = lastRankMap.get(merchant.name);
-          const rankDelta = lastRank ? lastRank - (i + 1) : null;
-          const truncatedName = merchant.name.length > 20 ? merchant.name.slice(0, 20) + "…" : merchant.name;
+          const rankDelta = lastRank !== undefined ? lastRank - (i + 1) : null;
+          const isNew = lastRank === undefined && lastRanked.length > 0;
+          const color = DONUT_COLORS[i % DONUT_COLORS.length];
 
           return (
-            <div
+            <MerchantRow
               key={merchant.name}
-              style={{
-                padding: "6px 0",
-                borderBottom: i < topMerchants.length - 1 ? "1px solid var(--ft-border)" : undefined,
-                position: "relative",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, position: "relative", zIndex: 1 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", width: 14, flexShrink: 0, textAlign: "right" }}>
-                  {i + 1}
-                </span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {truncatedName}
-                </span>
-                {isExpanded && (
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0 }}>
-                    {pctOfTotal.toFixed(0)}%
-                  </span>
-                )}
-                {isExpanded && lastRank !== undefined && (
-                  <span style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 8,
-                    color: rankDelta !== null && rankDelta > 0 ? "var(--ft-green)" : rankDelta !== null && rankDelta < 0 ? "var(--ft-red)" : "var(--ft-dim)",
-                    flexShrink: 0,
-                    width: 28,
-                    textAlign: "right",
-                  }}>
-                    {rankDelta !== null && rankDelta > 0 ? `▲${rankDelta}` : rankDelta !== null && rankDelta < 0 ? `▼${Math.abs(rankDelta)}` : "—"}
-                  </span>
-                )}
-                <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-text)", flexShrink: 0, textAlign: "right", minWidth: 60 }}>
-                  {formatGbp(merchant.total)}
-                </span>
-              </div>
-              <div style={{ marginLeft: 22, height: 3, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{
-                  height: "100%",
-                  width: `${barWidth}%`,
-                  background: DONUT_COLORS[i % DONUT_COLORS.length],
-                  opacity: 0.6,
-                  borderRadius: 2,
-                  transition: "width 0.4s ease",
-                }} />
-              </div>
-            </div>
+              merchant={merchant}
+              rank={i + 1}
+              isLast={i === topMerchants.length - 1}
+              isExpanded={isExpanded}
+              color={color}
+              barWidth={barWidth}
+              pctOfTotal={pctOfTotal}
+              isNew={isNew}
+              rankDelta={rankDelta}
+            />
           );
         })
       )}

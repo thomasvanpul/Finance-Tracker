@@ -54,21 +54,58 @@ function CashFlowTooltip({ active, payload, label, avgIncome, avgExpense }: Cust
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "2px 8px", alignItems: "center" }}>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Income</span>
-        <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ft-green)", textAlign: "right" }}>{formatGbp(income)}</span>
-        <span style={{ fontSize: 9, color: vsIncome >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: "var(--ft-green)", textAlign: "right" }}>{formatGbp(income)}</span>
+        <span className="pnum" style={{ fontSize: 9, color: vsIncome >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
           {vsIncome >= 0 ? "+" : ""}{formatGbp(Math.abs(vsIncome))} avg
         </span>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Expenses</span>
-        <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ft-red)", textAlign: "right" }}>{formatGbp(expenses)}</span>
-        <span style={{ fontSize: 9, color: vsExpense <= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: "var(--ft-red)", textAlign: "right" }}>{formatGbp(expenses)}</span>
+        <span className="pnum" style={{ fontSize: 9, color: vsExpense <= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
           {vsExpense >= 0 ? "+" : ""}{formatGbp(Math.abs(vsExpense))} avg
         </span>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Net</span>
-        <span style={{ fontSize: 10, fontWeight: 700, color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)", textAlign: "right" }}>
+        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)", textAlign: "right" }}>
           {net >= 0 ? "+" : ""}{formatGbp(net)}
         </span>
         <span />
       </div>
+    </div>
+  );
+}
+
+// ── Summary strip item sub-component ─────────────────────────────────────────
+
+type SummaryItemProps = {
+  label: string;
+  value: string;
+  color: string;
+  delta: { label: string; color: string } | null;
+};
+
+function SummaryItem({ label, value, color, delta }: SummaryItemProps) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      style={{
+        padding: "10px 12px",
+        borderTop: `2px solid ${color}`,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3 }}>
+        {label}
+      </div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color }}>
+        {value}
+      </div>
+      {delta && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: delta.color, marginTop: 2, opacity: 0.8 }}>
+          {delta.label}
+        </div>
+      )}
     </div>
   );
 }
@@ -90,26 +127,23 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
   const avgIncome = avg(history.map(m => m.income));
   const avgExpense = avg(history.map(m => m.expenses));
 
+  const summaryItems = d ? [
+    { label: "Income",      value: `+${formatGbp(d.thisMonth.income)}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income ?? 0) },
+    { label: "Expenses",    value: `−${formatGbp(d.thisMonth.expenses)}`, color: d.thisMonth.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses ?? 0) },
+    { label: "Net Savings", value: `${d.thisMonth.netSavings >= 0 ? "+" : ""}${formatGbp(d.thisMonth.netSavings)}`, color: d.thisMonth.netSavings !== 0 ? (d.thisMonth.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", delta: null },
+  ] : [];
+
+  // Border-as-gap KPI strip: 1px gap background = border, each cell bg = surface
   const summaryStrip = d && (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
-      {[
-        { label: "Income",     value: `+${formatGbp(d.thisMonth.income)}`,   color: "var(--ft-green)", delta: momDelta(d.thisMonth.income, prevMonth?.income ?? 0) },
-        { label: "Expenses",   value: `−${formatGbp(d.thisMonth.expenses)}`, color: "var(--ft-red)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses ?? 0) },
-        { label: "Net Savings",value: `${d.thisMonth.netSavings >= 0 ? "+" : ""}${formatGbp(d.thisMonth.netSavings)}`, color: d.thisMonth.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)", delta: null },
-      ].map((item, i) => (
-        <div key={item.label} style={{ padding: "10px 12px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3 }}>
-            {item.label}
-          </div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: item.color }}>
-            {item.value}
-          </div>
-          {item.delta && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: item.delta.color, marginTop: 2, opacity: 0.8 }}>
-              {item.delta.label}
-            </div>
-          )}
-        </div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+      {summaryItems.map((item) => (
+        <SummaryItem
+          key={item.label}
+          label={item.label}
+          value={item.value}
+          color={item.color}
+          delta={item.delta}
+        />
       ))}
     </div>
   );

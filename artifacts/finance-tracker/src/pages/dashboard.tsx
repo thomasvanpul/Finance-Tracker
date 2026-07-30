@@ -2,15 +2,22 @@ import {
   DndContext,
   DragOverlay,
   closestCenter,
+  pointerWithin,
   PointerSensor,
+  TouchSensor,
+  MouseSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  type DragOverEvent,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   useSortable,
+  arrayMove,
+  verticalListSortingStrategy,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -34,14 +41,22 @@ import { SpendingForecastWidget } from "@/components/widgets/spending-forecast";
 import { DailySpendWidget } from "@/components/widgets/daily-spend";
 import { TopMerchantsWidget } from "@/components/widgets/top-merchants";
 import { SmartAlertsWidget } from "@/components/widgets/smart-alerts";
+import { DecisionEngineWidget } from "@/components/widgets/decision-engine";
+import { CashRunwayWidget } from "@/components/widgets/cash-runway";
+import { COMPACT_WIDGET_COMPONENTS, COMPACT_WIDGET_FULL_WIDTH } from "@/components/widgets/compact-tiles";
 import { OnboardingWizard } from "@/components/onboarding-wizard";
 import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard } from "@workspace/api-client-react";
+import { Link } from "wouter";
 import { formatGbp } from "@/lib/utils";
-import { useState, useMemo, useEffect } from "react";
+import { loadPersonaIds, PERSONAS } from "@/lib/persona";
+import { PersonaQuickStart } from "@/components/persona-quick-start";
+import { Zap, RefreshCw } from "lucide-react";
+import { useState, useMemo, useEffect, useRef, memo } from "react";
 import type { ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -111,7 +126,7 @@ function SavingsRateKpi() {
   const savingsRate = dashData?.thisMonth?.savingsRate ?? null;
 
   if (savingsRate === null) return (
-    <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-green)", minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
       No data yet
     </div>
   );
@@ -128,19 +143,19 @@ function SavingsRateKpi() {
       : "var(--ft-red)";
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${barColor}`, minHeight: 160, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)" }}>SAVINGS RATE</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{target}% TARGET</span>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", minWidth: 0 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>SAVINGS RATE</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{target}% TARGET</span>
       </div>
 
       {/* Big number */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 32, fontWeight: 700, color: barColor, letterSpacing: "-0.02em", lineHeight: 1 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: barColor, letterSpacing: "-0.02em", lineHeight: 1, flexShrink: 0, whiteSpace: "nowrap" }}>
           {rate}%
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: diff >= 0 ? "var(--ft-green)" : barColor, fontWeight: 600 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: diff >= 0 ? "var(--ft-green)" : barColor, fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}>
           {diff >= 0 ? `+${diff}pp` : `${diff}pp`}
         </span>
       </div>
@@ -148,7 +163,7 @@ function SavingsRateKpi() {
       {/* Progress bar */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6 }}>
         <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.4s ease" }} />
+          <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.15s ease" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
           <span>0%</span>
@@ -204,26 +219,26 @@ function EmergencyFundWidget() {
   const barColor = valueColor;
 
   if (accounts === undefined) return (
-    <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-amber)", minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
       Loading…
     </div>
   );
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${valueColor}`, minHeight: 180, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)" }}>EMERGENCY FUND</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{TARGET_MONTHS}MO TARGET</span>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", minWidth: 0 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>EMERGENCY FUND</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{TARGET_MONTHS}MO TARGET</span>
       </div>
 
       {/* Big number */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 32, fontWeight: 700, color: valueColor, letterSpacing: "-0.02em", lineHeight: 1 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: valueColor, letterSpacing: "-0.02em", lineHeight: 1, flexShrink: 0, whiteSpace: "nowrap" }}>
           {monthsCovered > 0 ? `${monthsCovered.toFixed(1)}` : "—"}
         </span>
         {monthsCovered > 0 && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ft-muted)", fontWeight: 600 }}>months</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ft-muted)", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}>months</span>
         )}
       </div>
 
@@ -236,7 +251,7 @@ function EmergencyFundWidget() {
       {/* Progress bar */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6 }}>
         <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.4s ease" }} />
+          <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.15s ease" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
           <span>0 mo</span>
@@ -284,7 +299,7 @@ export function NetWorthMilestonesWidget() {
     if (newlyReached.length > 0) {
       const top = newlyReached[newlyReached.length - 1];
       toast({
-        title: `🏆 Milestone reached!`,
+        title: "MILESTONE REACHED",
         description: `Net worth has crossed ${formatMilestone(top)}`,
       });
       saveReachedMilestones([...stored, ...newlyReached]);
@@ -309,7 +324,7 @@ export function NetWorthMilestonesWidget() {
                 fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 7px",
                 border: `1px solid ${done ? "var(--ft-green)" : "var(--ft-border)"}`,
                 color: done ? "var(--ft-green)" : "var(--ft-dim)",
-                background: done ? "rgba(0,255,136,0.06)" : "transparent",
+                background: done ? "color-mix(in srgb, var(--ft-green) 6%, transparent)" : "transparent",
                 letterSpacing: "0.04em",
               }}>
                 {done ? "✓ " : ""}{formatMilestone(m)}
@@ -323,12 +338,15 @@ export function NetWorthMilestonesWidget() {
               Next: {formatMilestone(next)} · {formatMilestone(Math.round(next - netWorth))} to go
             </div>
             <div style={{ height: 4, background: "var(--ft-border)", marginTop: 2 }}>
-              <div style={{ height: "100%", width: `${progress}%`, background: "var(--ft-green)", transition: "width 0.4s" }} />
+              <div style={{ height: "100%", width: `${progress}%`, background: "var(--ft-green)", transition: "width 0.15s ease" }} />
             </div>
           </>
         )}
         {!next && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)" }}>All milestones reached! 🏆</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)", display: "flex", alignItems: "center", gap: 5 }}>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2 1h7v5a3.5 3.5 0 01-7 0V1z"/><path d="M2 3H.5a1 1 0 000 2H2M9 3h1.5a1 1 0 010 2H9M5.5 9.5v1M3.5 10.5h4"/></svg>
+            All milestones reached!
+          </div>
         )}
       </div>
     </div>
@@ -358,9 +376,35 @@ const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<{ isExpanded?: boolean }
   "savings-rate": SavingsRateKpi,
   "emergency-fund": EmergencyFundWidget,
   "nw-milestones": NetWorthMilestonesWidget,
+  "decision-engine": DecisionEngineWidget,
+  "cash-runway": CashRunwayWidget,
 };
 
 const WIDGET_DEF_MAP = Object.fromEntries(WIDGET_REGISTRY.map(w => [w.id, w]));
+
+const WIDGET_NAV: Partial<Record<WidgetId, { label: string; href: string }[]>> = {
+  "spending-breakdown":  [{ label: "→ Analytics", href: "/analytics" }, { label: "→ Transactions", href: "/transactions" }],
+  "cash-flow":           [{ label: "→ Analytics", href: "/analytics" }],
+  "recent-transactions": [{ label: "→ All transactions", href: "/transactions" }],
+  "accounts-summary":    [{ label: "→ Accounts", href: "/accounts" }],
+  "net-worth":           [{ label: "→ Net Worth", href: "/net-worth" }],
+  "budget-tracker":      [{ label: "→ Budget", href: "/budget" }],
+  "savings-goals":       [{ label: "→ Goals", href: "/goals" }],
+  "market-snapshot":     [{ label: "→ Markets", href: "/markets" }],
+  "transaction-calendar":[{ label: "→ Analytics", href: "/analytics" }],
+  "month-comparison":    [{ label: "→ Analytics", href: "/analytics" }],
+  "spending-forecast":   [{ label: "→ Budget", href: "/budget" }],
+  "daily-spend":         [{ label: "→ Transactions", href: "/transactions" }],
+  "top-merchants":       [{ label: "→ Transactions", href: "/transactions" }],
+  "cash-flow-preview":   [{ label: "→ Analytics", href: "/analytics" }],
+  "spending-velocity":   [{ label: "→ Transactions", href: "/transactions" }],
+  "savings-rate":        [{ label: "→ Goals", href: "/goals" }],
+  "cash-runway":         [{ label: "→ Accounts", href: "/accounts" }],
+  "emergency-fund":      [{ label: "→ Goals", href: "/goals" }],
+  "decision-engine":     [{ label: "→ Decisions", href: "/decisions" }],
+  "financial-health":    [{ label: "→ Analytics", href: "/analytics" }],
+  "nw-milestones":       [{ label: "→ Net Worth", href: "/net-worth" }],
+};
 
 // ── Utility helpers ────────────────────────────────────────────────────────────
 
@@ -414,7 +458,7 @@ function CashFlowPreviewPanel() {
   }, [upcoming]);
 
   const net = inflows - outflows;
-  const netColor = net >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+  const netColor = net > 0 ? "var(--ft-green)" : net < 0 ? "var(--ft-red)" : "var(--ft-muted)";
 
   return (
     <div style={{
@@ -427,27 +471,27 @@ function CashFlowPreviewPanel() {
         Cash Flow · 30 Days
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: 14 }}>
-        <div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: netColor, lineHeight: 1 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: 14, minWidth: 0 }}>
+        <div style={{ minWidth: 0 }}>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: netColor, lineHeight: 1, whiteSpace: "nowrap" }}>
             <AnimatedNet value={net} />
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>projected net</div>
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2 }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
           from <span className="pnum">{formatGbp(startingBalance)}</span>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Inflows</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-green)" }}>+{formatGbp(inflows)}</span>
+      <div style={{ display: "flex", gap: 16, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Inflows</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>+{formatGbp(inflows)}</span>
         </div>
         <div style={{ width: 1, background: "var(--ft-border2)", flexShrink: 0 }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Outflows</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-red)" }}>-{formatGbp(outflows)}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Outflows</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>-{formatGbp(outflows)}</span>
         </div>
       </div>
     </div>
@@ -507,12 +551,12 @@ function SpendingVelocityPanel() {
         Spend Rate
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 14 }}>
-        <div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 14, minWidth: 0, gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, whiteSpace: "nowrap" }}>
             <AnimatedSpendRate value={avgDailyThis} /><span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)" }}>/day</span>
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             vs <span className="pnum">{formatGbp(avgDailyPrev)}</span>/day last month
           </div>
         </div>
@@ -523,8 +567,8 @@ function SpendingVelocityPanel() {
           letterSpacing: "0.06em",
           textTransform: "uppercase",
           color: onTrack ? "var(--ft-green)" : "var(--ft-amber)",
-          border: `1px solid ${onTrack ? "rgba(63,185,80,0.3)" : "rgba(255,166,0,0.3)"}`,
-          background: onTrack ? "rgba(63,185,80,0.08)" : "rgba(255,166,0,0.08)",
+          border: `1px solid ${onTrack ? "color-mix(in srgb, var(--ft-green) 30%, transparent)" : "color-mix(in srgb, var(--ft-amber) 30%, transparent)"}`,
+          background: onTrack ? "color-mix(in srgb, var(--ft-green) 8%, transparent)" : "color-mix(in srgb, var(--ft-amber) 8%, transparent)",
           padding: "3px 8px",
         }}>
           {onTrack ? "On Track" : "Over Pace"}
@@ -538,18 +582,17 @@ function SpendingVelocityPanel() {
 
       {/* Sparkline bars — last 14 days */}
       <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 32 }}>
-        {last14.map((d, i) => {
+        {last14.map((d) => {
           const h = Math.round((d.amount / maxBar) * 28);
           return (
             <div
-              key={i}
+              key={d.label}
               title={`Day ${d.label}: ${formatGbp(d.amount)}`}
               style={{
                 flex: 1,
                 height: Math.max(h, d.amount > 0 ? 2 : 1),
                 background: d.amount > avgDailyThis * 1.3 ? "var(--ft-amber)" : "var(--ft-accent)",
                 opacity: 0.7,
-                transition: "height 0.2s",
               }}
             />
           );
@@ -563,6 +606,31 @@ function SpendingVelocityPanel() {
 }
 
 // ── AI Insights strip ──────────────────────────────────────────────────────────
+
+function InsightRow({ label, text }: { label: string; text: string }) {
+  const [hovered, setHovered] = useState<boolean>(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: hovered ? "var(--ft-raised)" : "var(--ft-surface)",
+        borderLeft: "2px solid color-mix(in srgb, var(--ft-accent) 40%, transparent)",
+        padding: "10px 12px",
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        color: "var(--ft-muted)",
+        lineHeight: 1.6,
+        transition: "background 0.1s",
+      }}
+    >
+      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 4 }}>
+        {label}
+      </div>
+      {text}
+    </div>
+  );
+}
 
 function AiInsightsStrip() {
   const monthStart = useMemo(() => getMonthStart(), []);
@@ -623,9 +691,13 @@ function AiInsightsStrip() {
     return `${bills.length} recurring bill${bills.length !== 1 ? "s" : ""} totalling ${formatGbp(total)} due in the next 7 days.`;
   }, [upcoming]);
 
-  const insights = [insight1, insight2, insight3].filter(Boolean) as string[];
+  const insightRows = [
+    { label: "Category Trend", text: insight1 },
+    { label: "Peak Day",       text: insight2 },
+    { label: "Upcoming",       text: insight3 },
+  ].filter(r => r.text !== null) as { label: string; text: string }[];
 
-  if (insights.length === 0) return null;
+  if (insightRows.length === 0) return null;
 
   return (
     <div style={{ marginTop: 10 }}>
@@ -633,25 +705,198 @@ function AiInsightsStrip() {
         <span style={{ color: "var(--ft-accent)" }}>·</span> Insights
       </div>
       <div className="ft-dashboard-insights">
-        {insights.map((text, i) => (
-          <div
-            key={i}
-            style={{
-              background: "var(--ft-surface)",
-              borderLeft: "2px solid rgba(244,162,30,0.4)",
-              padding: "10px 12px",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--ft-muted)",
-              lineHeight: 1.6,
-            }}
-          >
-            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 4 }}>
-              {i === 0 ? "Category Trend" : i === 1 ? "Peak Day" : "Upcoming"}
-            </div>
-            {text}
-          </div>
+        {insightRows.map(({ label, text }) => (
+          <InsightRow key={label} label={label} text={text} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── AI Insights Panel (AI-powered, sessionStorage-cached) ─────────────────────
+
+const AI_INSIGHTS_CACHE_KEY = "ft-dashboard-ai-insights";
+const AI_INSIGHTS_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+interface AiInsightsCacheEntry {
+  insights: string[];
+  ts: number;
+}
+
+function loadCachedInsights(): string[] | null {
+  try {
+    const raw = sessionStorage.getItem(AI_INSIGHTS_CACHE_KEY);
+    if (!raw) return null;
+    const entry = JSON.parse(raw) as AiInsightsCacheEntry;
+    if (Date.now() - entry.ts > AI_INSIGHTS_TTL_MS) return null;
+    return entry.insights;
+  } catch { return null; }
+}
+
+function saveCachedInsights(insights: string[]): void {
+  try {
+    const entry: AiInsightsCacheEntry = { insights, ts: Date.now() };
+    sessionStorage.setItem(AI_INSIGHTS_CACHE_KEY, JSON.stringify(entry));
+  } catch {}
+}
+
+interface AiInsightsPanelProps {
+  netWorth: number;
+  income: number;
+  expenses: number;
+  savingsRate: number;
+  topCategories: { name: string; amount: number }[];
+  budgetStatus: string;
+}
+
+function AiInsightsPanel({ netWorth, income, expenses, savingsRate, topCategories, budgetStatus }: AiInsightsPanelProps) {
+  const [insights, setInsights] = useState<string[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const fetchedRef = useRef(false);
+
+  const contextStr = useMemo(() => {
+    const top3 = topCategories.slice(0, 3).map(c => `${c.name}:${formatGbp(c.amount)}`).join(", ");
+    return `NW:${formatGbp(netWorth)} Inc:${formatGbp(income)} Exp:${formatGbp(expenses)} SR:${Math.round(savingsRate)}% Top:${top3} ${budgetStatus}`.slice(0, 400);
+  }, [netWorth, income, expenses, savingsRate, topCategories, budgetStatus]);
+
+  const fetchInsights = async (ctx: string) => {
+    try {
+      const statusRes = await fetch("/api/ai/status", { credentials: "include" });
+      if (!statusRes.ok) return; // no skeleton flash — AI unavailable
+      const { available } = await statusRes.json() as { available: boolean };
+      if (!available) return; // confirmed unavailable — stay hidden, no flash
+
+      setLoading(true); // only show skeleton after confirming AI is reachable
+      const prompt = `You are a concise personal finance analyst. Given this dashboard snapshot: ${ctx}\n\nWrite exactly 3 short, punchy, data-specific insight sentences (1 sentence each). Each should be actionable and reference actual numbers from the context. Respond with only the 3 sentences, one per line, no numbering, no extra text.`;
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          messages: [{ role: "user", text: prompt }],
+          context: ctx,
+        }),
+      });
+      if (!res.ok) { setLoading(false); return; }
+      const data = await res.json() as { text: string };
+      const lines = data.text
+        .split("\n")
+        .map((l: string) => l.trim())
+        .filter((l: string) => l.length > 0)
+        .slice(0, 3);
+      if (lines.length > 0) {
+        saveCachedInsights(lines);
+        setInsights(lines);
+      }
+    } catch {
+      // silently hide on error
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    const cached = loadCachedInsights();
+    if (cached) { setInsights(cached); return; }
+    const timer = setTimeout(() => fetchInsights(contextStr), 500);
+    return () => clearTimeout(timer);
+  // contextStr is built from stable props — intentionally only run on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleRefresh = () => {
+    try { sessionStorage.removeItem(AI_INSIGHTS_CACHE_KEY); } catch {}
+    setInsights(null);
+    setLoading(false);
+    fetchedRef.current = false;
+    void fetchInsights(contextStr);
+  };
+
+  // Don't render anything until we know the result (avoids layout shift)
+  if (!loading && insights === null) return null;
+
+  return (
+    <div style={{
+      background: "var(--ft-surface)",
+      border: "1px solid var(--ft-border)",
+      marginBottom: 6,
+    }}>
+      {/* Terminal panel header */}
+      <div style={{
+        background: "var(--ft-raised)",
+        borderBottom: "1px solid var(--ft-border)",
+        padding: "0 12px",
+        height: "var(--ft-panel-header-h)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}>
+        <span className="ft-panel-label">
+          <span className="accent-dot">·</span> AI INSIGHTS
+        </span>
+        <button
+          onClick={handleRefresh}
+          title="Refresh AI insights"
+          disabled={loading}
+          style={{
+            background: "none",
+            border: "none",
+            padding: "2px 4px",
+            cursor: loading ? "default" : "pointer",
+            color: "var(--ft-dim)",
+            display: "flex",
+            alignItems: "center",
+            opacity: loading ? 0.4 : 1,
+            transition: "opacity 0.15s, color 0.15s",
+          }}
+          onMouseEnter={e => { if (!loading) e.currentTarget.style.color = "var(--ft-accent)"; }}
+          onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+        >
+          <RefreshCw size={10} />
+        </button>
+      </div>
+
+      {/* Content grid */}
+      <div className="ft-dashboard-insights" style={{ padding: 8, gap: 6 }}>
+        {loading && insights === null
+          ? [0, 1, 2].map(i => (
+              <div
+                key={i}
+                style={{
+                  background: "var(--ft-raised)",
+                  border: "1px solid var(--ft-border)",
+                  borderLeft: "2px solid var(--ft-accent)",
+                  padding: "8px 10px",
+                  minHeight: 52,
+                }}
+              />
+            ))
+          : (insights ?? []).map((text, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "var(--ft-raised)",
+                  border: "1px solid var(--ft-border)",
+                  borderLeft: "2px solid var(--ft-accent)",
+                  padding: "8px 10px",
+                  display: "flex",
+                  gap: 6,
+                  alignItems: "flex-start",
+                }}
+              >
+                <Zap size={10} style={{ color: "var(--ft-accent)", flexShrink: 0, marginTop: 1, opacity: 0.8 }} />
+                <span style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: "var(--ft-muted)",
+                  lineHeight: 1.6,
+                }}>
+                  {text}
+                </span>
+              </div>
+            ))
+        }
       </div>
     </div>
   );
@@ -676,9 +921,9 @@ function RailBtn({ icon, title, onClick, danger }: {
         color: "var(--ft-dim)",
         cursor: "pointer",
         fontFamily: "var(--font-mono)",
-        fontSize: 13,
+        fontSize: 11,
         width: 30,
-        height: 28,
+        height: 20,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -686,17 +931,18 @@ function RailBtn({ icon, title, onClick, danger }: {
         transition: "color 0.1s, background 0.1s",
         lineHeight: 1,
         borderRadius: 0,
+        userSelect: "none" as const,
       }}
       onMouseEnter={e => {
         e.currentTarget.style.color = danger ? "var(--ft-red)" : "var(--ft-accent)";
-        e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+        e.currentTarget.style.background = "color-mix(in srgb, var(--ft-text) 7%, transparent)";
       }}
       onMouseLeave={e => {
         e.currentTarget.style.color = "var(--ft-dim)";
         e.currentTarget.style.background = "none";
       }}
     >
-      {icon}
+      <span style={{ pointerEvents: "none" }}>{icon}</span>
     </button>
   );
 }
@@ -718,26 +964,24 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.78)",
+        background: "color-mix(in srgb, var(--ft-base) 88%, transparent)",
         zIndex: 200,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
-        backdropFilter: "blur(2px)",
       }}
       onClick={onClose}
     >
       <div
         style={{
-          background: "var(--ft-bg)",
-          border: "1px solid var(--ft-border)",
+          background: "var(--ft-surface)",
+          border: "1px solid var(--ft-border2)",
           width: "min(95vw, 1400px)",
           height: "min(90vh, 900px)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -797,9 +1041,43 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
             ×
           </button>
         </div>
-        {/* Widget content */}
-        <div style={{ flex: 1, overflow: "auto" }}>
-          <Component isExpanded={true} />
+        {/* Widget content — flex: 1 so widget can fill height */}
+        <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1 }}>
+            <Component isExpanded={true} />
+          </div>
+          {/* Nav strip — quick links to related pages */}
+          {WIDGET_NAV[id] && (
+            <div style={{
+              display: "flex",
+              gap: 0,
+              borderTop: "1px solid var(--ft-border)",
+              background: "var(--ft-raised)",
+              flexShrink: 0,
+            }}>
+              {WIDGET_NAV[id]!.map(link => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={onClose}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    color: "var(--ft-dim)",
+                    padding: "8px 14px",
+                    borderRight: "1px solid var(--ft-border)",
+                    textDecoration: "none",
+                    letterSpacing: "0.04em",
+                    transition: "color 0.1s, background 0.1s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-accent)"; e.currentTarget.style.background = "var(--ft-surface)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; e.currentTarget.style.background = "var(--ft-raised)"; }}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>,
@@ -807,18 +1085,265 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
   );
 }
 
+// ── View-mode widget (read-only, no DnD, just expand on hover) ────────────────
+
+function ViewModeWidget({ id, onExpand }: { id: WidgetId; onExpand: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  const isMobile = useIsMobile();
+
+  // On mobile use compact tiles — purpose-built for ~183px columns
+  if (isMobile) {
+    const CompactComponent = COMPACT_WIDGET_COMPONENTS[id];
+    if (CompactComponent) return <CompactComponent />;
+  }
+
+  const Component = WIDGET_COMPONENTS[id];
+  if (!Component) return null;
+
+  return (
+    <div
+      style={{ position: "relative" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <Component />
+      {hovered && (
+        <button
+          onClick={onExpand}
+          title="Expand widget"
+          style={{
+            position: "absolute",
+            top: 7,
+            right: 8,
+            zIndex: 5,
+            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border)",
+            color: "var(--ft-dim)",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            width: 20,
+            height: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-accent)"; }}
+          onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+        >
+          ⤢
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── View-mode widget with long-press drag (desktop only, no editing controls) ──
+
+function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId; anyDragging: boolean; onExpand: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useSortable({ id, animateLayoutChanges: () => false });
+  const [hovered, setHovered] = useState(false);
+  const [holding, setHolding] = useState(false);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const Component = WIDGET_COMPONENTS[id];
+  if (!Component) return null;
+
+  function onMouseDown() {
+    holdTimerRef.current = setTimeout(() => setHolding(true), 150);
+  }
+
+  function clearHold() {
+    if (holdTimerRef.current) { clearTimeout(holdTimerRef.current); holdTimerRef.current = null; }
+    setHolding(false);
+  }
+
+  const outerStyle: React.CSSProperties = {
+    position: "relative",
+    transform: CSS.Transform.toString(
+      transform ? { ...transform, scaleX: 1, scaleY: 1 } : { x: 0, y: 0, scaleX: 1, scaleY: 1 }
+    ),
+    transition: isDragging ? "none" : "transform 0.12s ease",
+    opacity: isDragging ? 0 : anyDragging ? 0.8 : 1,
+    outline: holding && !isDragging ? "1px solid var(--ft-accent)" : "none",
+    cursor: isDragging ? "grabbing" : holding ? "grab" : "default",
+    userSelect: "none",
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={outerStyle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); clearHold(); }}
+      onMouseDown={onMouseDown}
+      onMouseUp={clearHold}
+      {...attributes}
+      {...listeners}
+    >
+      <Component />
+      {hovered && !isDragging && !anyDragging && (
+        <button
+          onPointerDown={e => e.stopPropagation()}
+          onClick={onExpand}
+          title="Expand widget"
+          style={{
+            position: "absolute",
+            top: 7,
+            right: 8,
+            zIndex: 5,
+            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border)",
+            color: "var(--ft-dim)",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            width: 20,
+            height: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-accent)"; }}
+          onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+        >
+          ⤢
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Mobile compact tile with drag handle (used in customize mode on mobile) ───
+
+function SortableCompactTile({ id, onRemove, isFullWidth, activeId }: { id: WidgetId; onRemove: () => void; isFullWidth?: boolean; activeId?: WidgetId | null }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useSortable({ id, animateLayoutChanges: () => false });
+  const CompactComponent = COMPACT_WIDGET_COMPONENTS[id];
+  const def = WIDGET_DEF_MAP[id];
+  const anyDragging = activeId != null;
+
+  // gridColumn is on the setNodeRef element so dnd-kit measures the actual grid cell
+  const outerStyle: React.CSSProperties = {
+    gridColumn: isFullWidth ? "1 / -1" : "auto",
+    minWidth: 0,
+    overflow: "hidden",
+    position: "relative",
+    transform: CSS.Transform.toString(
+      transform ? { ...transform, scaleX: 1, scaleY: 1 } : { x: 0, y: 0, scaleX: 1, scaleY: 1 }
+    ),
+    transition: isDragging ? "none" : "transform 0.12s ease",
+    opacity: isDragging ? 0 : anyDragging ? 0.8 : 1,
+    willChange: isDragging ? "transform" : "auto",
+    zIndex: isDragging ? 0 : "auto",
+  };
+
+  return (
+    <div ref={setNodeRef} style={outerStyle}>
+      {CompactComponent && <CompactComponent />}
+      {/* Customize strip — the whole strip is the drag handle; remove button stops propagation */}
+      <div
+        {...attributes}
+        {...listeners}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          background: isDragging ? "var(--ft-surface)" : "var(--ft-raised)",
+          borderTop: "1px solid var(--ft-border)",
+          height: 36,
+          cursor: "grab",
+          touchAction: "none",
+          userSelect: "none",
+        }}
+      >
+        <span style={{
+          flex: "0 0 auto",
+          fontFamily: "var(--font-mono)",
+          fontSize: 14,
+          color: "var(--ft-accent)",
+          padding: "0 10px",
+          display: "flex",
+          alignItems: "center",
+          opacity: 0.8,
+        }}>
+          ⠿
+        </span>
+        <span style={{
+          flex: 1,
+          fontFamily: "var(--font-mono)",
+          fontSize: 8,
+          color: "var(--ft-muted)",
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          textAlign: "center",
+          padding: "0 4px",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          pointerEvents: "none",
+        }}>
+          {def?.label ?? id}
+        </span>
+        <button
+          onClick={e => { e.stopPropagation(); onRemove(); }}
+          onPointerDown={e => e.stopPropagation()}
+          style={{
+            flex: "0 0 auto",
+            background: "transparent",
+            border: "none",
+            borderLeft: "1px solid var(--ft-border)",
+            color: "var(--ft-red)",
+            cursor: "pointer",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            padding: "0 12px",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Sortable widget wrapper ────────────────────────────────────────────────────
+
+// Memoized shell so recharts never re-renders while the drag container moves
+const StableWidgetContent = memo(function StableWidgetContent({
+  Component,
+  isExpanded,
+}: {
+  Component: React.ComponentType<{ isExpanded?: boolean }>;
+  isExpanded: boolean;
+}) {
+  return <Component isExpanded={isExpanded} />;
+});
+
+// Prefer pointer-within so widgets are droppable as soon as the cursor enters them.
+// Fall back to closestCenter for gaps between widgets (CSS columns).
+const customCollisionDetection: CollisionDetection = (args) => {
+  const pw = pointerWithin(args);
+  if (pw.length > 0) return pw;
+  return closestCenter(args);
+};
 
 interface SortableWidgetProps {
   id: WidgetId;
   span: "half" | "full";
   index: number;
+  anyDragging: boolean;
   onToggleSpan: () => void;
   onRemove: () => void;
   onExpand: () => void;
 }
 
-function SortableWidget({ id, span, index, onToggleSpan, onRemove, onExpand }: SortableWidgetProps) {
+function SortableWidget({ id, span, index, anyDragging, onToggleSpan, onRemove, onExpand }: SortableWidgetProps) {
   const {
     attributes,
     listeners,
@@ -826,16 +1351,24 @@ function SortableWidget({ id, span, index, onToggleSpan, onRemove, onExpand }: S
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, animateLayoutChanges: () => false });
 
   const [hovered, setHovered] = useState(false);
+  // Once a drag has ever occurred, permanently disable the entrance animation so it
+  // never re-runs and races against displacement transitions when anyDragging flips back.
+  const entranceKilledRef = useRef(false);
+  if (anyDragging) entranceKilledRef.current = true;
 
   const outerStyle = {
-    transform: isDragging ? undefined : CSS.Transform.toString(transform ? { ...transform, scaleX: 1, scaleY: 1 } : null),
-    transition: isDragging ? undefined : transition,
+    transform: CSS.Transform.toString(
+      transform
+        ? { ...transform, scaleX: 1, scaleY: 1 }
+        : { x: 0, y: 0, scaleX: 1, scaleY: 1 }
+    ),
+    transition: isDragging ? "none" : "transform 0.12s ease",
     opacity: isDragging ? 0 : 1,
+    animationName: entranceKilledRef.current ? "none" : undefined,
     position: "relative" as const,
-    gridColumn: span === "full" ? "1 / -1" : undefined,
     "--widget-stagger": `${index * 40}ms`,
   } as React.CSSProperties;
 
@@ -848,25 +1381,31 @@ function SortableWidget({ id, span, index, onToggleSpan, onRemove, onExpand }: S
       className="widget-container"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onMouseMove={() => { if (!hovered) setHovered(true); }}
     >
-      {/* Flex row: rail + widget side by side — rail pushes content, never overlays it */}
-      <div style={{ display: "flex", alignItems: "stretch" }}>
+      {/* Relative wrapper: rail is absolutely positioned so it never inflates widget height */}
+      <div style={{ position: "relative" }}>
 
-        {/* Left rail */}
+        {/* Left rail — absolute so short widgets aren't forced to match button stack height */}
         <div
           style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
             width: hovered ? 30 : 0,
-            minWidth: 0,
             overflow: "hidden",
-            flexShrink: 0,
             background: "var(--ft-raised)",
             borderRight: hovered ? "1px solid var(--ft-border2)" : "none",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
-            gap: 2,
-            transition: "width 0.16s cubic-bezier(0.4,0,0.2,1)",
+            justifyContent: "flex-start",
+            paddingTop: 6,
+            gap: 1,
+            transition: "width 0.1s ease",
+            zIndex: 1,
+            cursor: "pointer",
           }}
         >
           <button
@@ -879,50 +1418,169 @@ function SortableWidget({ id, span, index, onToggleSpan, onRemove, onExpand }: S
               color: "var(--ft-dim)",
               cursor: isDragging ? "grabbing" : "grab",
               fontFamily: "var(--font-mono)",
-              fontSize: 13,
+              fontSize: 11,
               width: 30,
-              height: 28,
+              height: 20,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
               transition: "color 0.1s",
+              userSelect: "none" as const,
             }}
             onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-accent)"; }}
             onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
           >
-            ⠿
+            <span style={{ pointerEvents: "none" }}>⠿</span>
           </button>
 
           <div style={{ width: 14, height: 1, background: "var(--ft-border2)", flexShrink: 0 }} />
 
+          {/* × is second so it's always visible even on very short widgets */}
+          <RailBtn icon="×" title="Remove widget" onClick={onRemove} danger />
           <RailBtn icon="⤢" title="Expand to fullscreen" onClick={onExpand} />
           <RailBtn
             icon={span === "full" ? "⊟" : "⊞"}
             title={span === "full" ? "Make half-width" : "Make full-width"}
             onClick={onToggleSpan}
           />
-          <RailBtn icon="×" title="Remove widget" onClick={onRemove} danger />
         </div>
 
-        {/* Widget fills remaining width */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Component isExpanded={span === "full"} />
+        {/* Widget content — left padding slides in when rail appears */}
+        <div style={{
+          paddingLeft: hovered ? 30 : 0,
+          transition: "padding-left 0.1s ease",
+        }}>
+          <StableWidgetContent Component={Component} isExpanded={span === "full"} />
         </div>
       </div>
     </div>
   );
 }
 
+// ── Widget Picker list row ─────────────────────────────────────────────────────
+
+function WidgetPickerRow({ id, onAdd, onHover }: {
+  id: WidgetId;
+  onAdd: (id: WidgetId) => void;
+  onHover: (id: WidgetId | null) => void;
+}) {
+  const [hovered, setHovered] = useState<boolean>(false);
+  const def = WIDGET_DEF_MAP[id];
+  return (
+    <button
+      onClick={() => onAdd(id)}
+      onMouseEnter={() => { setHovered(true); onHover(id); }}
+      onMouseLeave={() => { setHovered(false); onHover(null); }}
+      style={{
+        background: hovered ? "var(--ft-raised)" : "var(--ft-surface)",
+        border: `1px solid ${hovered ? "var(--ft-accent)" : "var(--ft-border)"}`,
+        padding: "9px 11px",
+        textAlign: "left",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        gap: 3,
+        transition: "border-color 0.1s, background 0.1s",
+        flexShrink: 0,
+        width: "100%",
+      }}
+    >
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: hovered ? "var(--ft-accent)" : "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        {def?.label ?? id}
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5 }}>
+        {def?.description ?? ""}
+      </div>
+    </button>
+  );
+}
+
 function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: (id: WidgetId) => void }) {
   const [open, setOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<WidgetId | null>(null);
+  const isMobile = useIsMobile();
 
   if (disabledIds.length === 0) return null;
 
   const previewId = hoveredId ?? disabledIds[0];
   const PreviewComponent = previewId ? WIDGET_COMPONENTS[previewId] : null;
   const previewDef = previewId ? WIDGET_DEF_MAP[previewId] : null;
+
+  if (isMobile) {
+    return (
+      <div style={{ marginTop: 12 }}>
+        <button
+          onClick={() => setOpen(o => !o)}
+          style={{
+            background: "none",
+            border: "1px dashed var(--ft-border2)",
+            color: open ? "var(--ft-accent)" : "var(--ft-dim)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            padding: "8px 14px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            width: "100%",
+            justifyContent: "center",
+            touchAction: "manipulation",
+          }}
+        >
+          <span style={{ fontSize: 14, lineHeight: 1 }}>{open ? "−" : "+"}</span>
+          {open ? "Close" : `Add widgets (${disabledIds.length})`}
+        </button>
+        {open && (
+          <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {disabledIds.map(id => {
+              const def = WIDGET_DEF_MAP[id];
+              const isFull = COMPACT_WIDGET_FULL_WIDTH.has(id);
+              return (
+                <button
+                  key={id}
+                  onClick={() => { onAdd(id); }}
+                  style={{
+                    background: "var(--ft-surface)",
+                    border: "1px solid var(--ft-border)",
+                    borderTop: `2px solid var(--ft-accent)`,
+                    padding: "10px 10px 8px",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                    touchAction: "manipulation",
+                    gridColumn: isFull ? "1 / -1" : "auto",
+                    WebkitTapHighlightColor: "transparent",
+                  }}
+                  onTouchStart={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-accent)"; }}
+                  onTouchEnd={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-border)"; }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.04em" }}>
+                      {def?.label ?? id}
+                    </span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.06em", border: "1px solid color-mix(in srgb, var(--ft-accent) 30%, transparent)", padding: "1px 4px" }}>
+                      {isFull ? "FULL" : "HALF"}
+                    </span>
+                  </div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                    {def?.description ?? ""}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.04em", marginTop: 2 }}>
+                    ＋ Add
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -941,7 +1599,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
           display: "flex",
           alignItems: "center",
           gap: 6,
-          transition: "all 0.1s",
+          transition: "border-color 0.1s, color 0.1s",
           width: "100%",
           justifyContent: "center",
         }}
@@ -964,37 +1622,14 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
             maxHeight: 420,
             overflowY: "auto",
           }}>
-            {disabledIds.map(id => {
-              const def = WIDGET_DEF_MAP[id];
-              const isHovered = id === hoveredId;
-              return (
-                <button
-                  key={id}
-                  onClick={() => { onAdd(id); setOpen(false); }}
-                  onMouseEnter={() => setHoveredId(id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  style={{
-                    background: isHovered ? "var(--ft-raised)" : "var(--ft-surface)",
-                    border: `1px solid ${isHovered ? "var(--ft-accent)" : "var(--ft-border)"}`,
-                    padding: "9px 11px",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 3,
-                    transition: "border-color 0.1s, background 0.1s",
-                    flexShrink: 0,
-                  }}
-                >
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: isHovered ? "var(--ft-accent)" : "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                    {def?.label ?? id}
-                  </div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5 }}>
-                    {def?.description ?? ""}
-                  </div>
-                </button>
-              );
-            })}
+            {disabledIds.map(id => (
+              <WidgetPickerRow
+                key={id}
+                id={id}
+                onAdd={(wid) => { onAdd(wid); setOpen(false); }}
+                onHover={setHoveredId}
+              />
+            ))}
           </div>
 
           {/* Right — live preview */}
@@ -1040,10 +1675,740 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
   );
 }
 
+// ── Persona quick start ────────────────────────────────────────────────────────
+
+// ── Bloomberg KPI Bar ─────────────────────────────────────────────────────────
+
+interface KpiCellData {
+  label: string;
+  value: string;
+  delta?: string;
+  deltaColor?: string;
+  valueColor?: string;
+}
+
+function DashboardKpiBar({
+  cells,
+  onCustomize,
+  isCustomizing,
+  dashboardLabel,
+  isMobile,
+}: {
+  cells: KpiCellData[];
+  onCustomize: () => void;
+  isCustomizing: boolean;
+  dashboardLabel: string;
+  isMobile: boolean;
+}) {
+  const netWorthCell = cells.find(c => c.label === "NET WORTH");
+  const savingsCell  = cells.find(c => c.label === "SAVINGS RATE");
+  const spendCell    = cells.find(c => c.label === "MONTHLY SPEND");
+
+  if (isMobile) {
+    return (
+      <div style={{
+        background: "var(--ft-surface)",
+        border: "1px solid var(--ft-border)",
+        marginBottom: 6,
+      }}>
+        {/* Row 1: label + customize toggle */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: "1px solid var(--ft-border)",
+          height: 32,
+          paddingLeft: 12,
+        }}>
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 8,
+            fontWeight: 700,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "var(--ft-muted)",
+          }}>
+            <span style={{ color: "var(--ft-accent)", marginRight: 5 }}>·</span>{dashboardLabel}
+          </span>
+          <button
+            onClick={onCustomize}
+            style={{
+              background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
+              border: "none",
+              borderLeft: "1px solid var(--ft-border)",
+              color: isCustomizing ? "var(--ft-accent)" : "var(--ft-dim)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 8,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              padding: "0 14px",
+              height: "100%",
+              cursor: "pointer",
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {isCustomizing ? "EXIT" : "CUSTOMIZE"}
+          </button>
+        </div>
+        {/* Row 2: big net worth + secondary metrics */}
+        <div style={{ display: "flex", alignItems: "stretch" }}>
+          {/* Net worth — hero */}
+          <div style={{ flex: 1, padding: "12px 14px", borderRight: "1px solid var(--ft-border)", minHeight: 72, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
+              NET WORTH
+            </div>
+            <div className="pnum" style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 34,
+              fontWeight: 700,
+              letterSpacing: "-0.03em",
+              color: netWorthCell?.valueColor ?? "var(--ft-blue)",
+              lineHeight: 1,
+              fontVariantNumeric: "tabular-nums",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}>
+              {netWorthCell?.value ?? "—"}
+            </div>
+          </div>
+          {/* Secondary stats column */}
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", padding: "10px 12px 10px 14px", gap: 6, minHeight: 72, maxWidth: "48%", overflow: "hidden" }}>
+            {savingsCell && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" }}>SAVED</span>
+                <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: savingsCell.valueColor ?? "var(--ft-green)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {savingsCell.value}
+                </span>
+              </div>
+            )}
+            {spendCell && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" }}>SPEND</span>
+                <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: spendCell.valueColor ?? "var(--ft-red)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {spendCell.value}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Map label to accent color for borderTop per cell
+  const KPI_ACCENT: Record<string, string> = {
+    "NET WORTH":      "var(--ft-blue)",
+    "MONTHLY INCOME": "var(--ft-green)",
+    "MONTHLY SPEND":  "var(--ft-red)",
+    "SAVINGS RATE":   "var(--ft-cyan)",
+    "MoM SPEND":      "var(--ft-amber)",
+    "PORTFOLIO":      "var(--ft-accent)",
+  };
+
+  return (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: `auto auto repeat(${cells.length}, 1fr)`,
+      gap: 1,
+      background: "var(--ft-border)",
+      border: "1px solid var(--ft-border)",
+      marginBottom: 6,
+      overflowX: "auto",
+      scrollbarWidth: "none",
+    }}>
+      {/* Customize button — first cell */}
+      <button
+        onClick={onCustomize}
+        style={{
+          background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 10%, transparent)" : "var(--ft-surface)",
+          border: "none",
+          borderTop: isCustomizing ? "2px solid var(--ft-accent)" : "2px solid transparent",
+          color: isCustomizing ? "var(--ft-accent)" : "var(--ft-dim)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          padding: "0 14px",
+          cursor: "pointer",
+          flexShrink: 0,
+          transition: "color 0.1s, background 0.1s",
+          whiteSpace: "nowrap",
+        }}
+        onMouseEnter={e => { if (!isCustomizing) e.currentTarget.style.color = "var(--ft-accent)"; }}
+        onMouseLeave={e => { if (!isCustomizing) e.currentTarget.style.color = "var(--ft-dim)"; }}
+        title={isCustomizing ? "Exit customize mode" : "Enter customize mode to drag & rearrange widgets"}
+      >
+        {isCustomizing ? "[EXIT CUSTOMIZE]" : "[CUSTOMIZE]"}
+      </button>
+
+      {/* Page identifier cell */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "0 14px",
+        background: "var(--ft-surface)",
+        borderTop: "2px solid transparent",
+        flexShrink: 0,
+        minWidth: 110,
+        gap: 5,
+      }}>
+        <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1 }}>·</span>
+        <span style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "var(--ft-muted)",
+          whiteSpace: "nowrap",
+        }}>
+          {dashboardLabel}
+        </span>
+      </div>
+
+      {/* KPI cells */}
+      {cells.map((cell) => (
+        <div
+          key={cell.label}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "var(--ft-metric-py) 14px",
+            background: "var(--ft-surface)",
+            borderTop: `2px solid ${KPI_ACCENT[cell.label] ?? cell.valueColor ?? "var(--ft-accent)"}`,
+            flexShrink: 0,
+            minWidth: 90,
+            minHeight: 52,
+          }}
+        >
+          <span style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            fontWeight: 600,
+            letterSpacing: "0.10em",
+            textTransform: "uppercase",
+            color: "var(--ft-dim)",
+            marginBottom: 2,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}>
+            {cell.label}
+          </span>
+          <span className="pnum" style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 18,
+            fontWeight: 700,
+            letterSpacing: "-0.01em",
+            color: cell.valueColor ?? "var(--ft-text)",
+            lineHeight: 1,
+            fontVariantNumeric: "tabular-nums",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}>
+            {cell.value}
+          </span>
+          {cell.delta && (
+            <span className="pnum" style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              fontWeight: 600,
+              color: cell.deltaColor ?? "var(--ft-dim)",
+              marginTop: 2,
+              fontVariantNumeric: "tabular-nums",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}>
+              {cell.delta}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Terminal Section Header ───────────────────────────────────────────────────
+
+function SectionHeader({ label, right }: { label: string; right?: React.ReactNode }) {
+  return (
+    <div style={{
+      background: "var(--ft-raised)",
+      borderBottom: "1px solid var(--ft-border)",
+      padding: "0 12px",
+      height: "var(--ft-panel-header-h)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+    }}>
+      <span className="ft-panel-label">
+        <span className="accent-dot">·</span>{label}
+      </span>
+      {right}
+    </div>
+  );
+}
+
+// ── Terminal Three-Zone Default Layout ────────────────────────────────────────
+
+interface TerminalLayoutProps {
+  aiInsightsProps: AiInsightsPanelProps;
+}
+
+function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {/* AI Insights — only shown if AI available */}
+      <AiInsightsPanel {...aiInsightsProps} />
+
+      {/* Row 1: Accounts (60%) + Transactions (40%) */}
+      <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }} className="ft-dashboard-two-col">
+        {/* Accounts panel — 60%: AccountsSummaryWidget has its own WidgetShell header */}
+        <div style={{ flex: "3 1 0", minWidth: 0 }}>
+          <AccountsSummaryWidget />
+        </div>
+
+        {/* Recent Transactions — 40%: custom compact inline table */}
+        <div style={{ flex: "2 1 0", minWidth: 0, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
+          <SectionHeader
+            label="RECENT TRANSACTIONS"
+            right={
+              <a href="/transactions" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", textDecoration: "none", letterSpacing: "0.04em" }}>
+                → ALL
+              </a>
+            }
+          />
+          <RecentTransactionsWidgetInline />
+        </div>
+      </div>
+
+      {/* Row 2: Cash Flow + Spending Breakdown + Smart Alerts (equal thirds) */}
+      {/* CashFlowWidget and SpendingBreakdownWidget use WidgetShell (own headers) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }} className="ft-three-col">
+        <div>
+          <CashFlowWidget />
+        </div>
+
+        <div>
+          <SpendingBreakdownWidget />
+        </div>
+
+        {/* Smart Alerts panel — SmartAlertsWidget renders flat rows, wrap in panel */}
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
+          <SectionHeader label="ALERTS" />
+          <div style={{ padding: "6px 0", minHeight: 42 }}>
+            <SmartAlertsWidget />
+          </div>
+        </div>
+      </div>
+
+      {/* AI Insights strip — rule-based insights below grid */}
+      <AiInsightsStrip />
+    </div>
+  );
+}
+
+// ── Compact recent transactions for terminal layout (no filter bar, dense rows) ─
+
+function RecentTransactionsWidgetInline() {
+  const { data, isLoading } = useListTransactions({});
+  const txs = (data ?? []).slice(0, 12);
+
+  const TYPE_COLOR: Record<string, string> = {
+    income: "var(--ft-green)",
+    expense: "var(--ft-red)",
+    transfer: "var(--ft-amber)",
+  };
+  const TYPE_PREFIX: Record<string, string> = {
+    income: "+",
+    expense: "−",
+    transfer: "↔",
+  };
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+        {[80, 60, 90, 70, 50].map(w => (
+          <div key={w} style={{ height: 8, background: "var(--ft-border)", width: `${w}%` }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (txs.length === 0) {
+    return (
+      <div style={{ padding: "16px 12px" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+          No transactions yet
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Column headers */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "56px 1fr 60px",
+        padding: "4px 10px",
+        background: "var(--ft-raised)",
+        borderBottom: "1px solid var(--ft-border)",
+      }}>
+        {["DATE", "DESCRIPTION", "AMOUNT"].map(h => (
+          <span key={h} style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--ft-muted)",
+            textAlign: h === "AMOUNT" ? "right" : "left",
+          }}>
+            {h}
+          </span>
+        ))}
+      </div>
+
+      {/* Transaction rows */}
+      {txs.map(tx => (
+        <div
+          key={tx.id}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "56px 1fr 60px",
+            padding: "var(--ft-cell-py) 10px",
+            borderBottom: "1px solid var(--ft-border)",
+            transition: "background 0.1s",
+          }}
+          className="ft-tx-row"
+        >
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+            {tx.date.slice(5).replace("-", "/")}
+          </span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {tx.description}
+          </span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+            {TYPE_PREFIX[tx.type]}{formatGbp(tx.gbpValue)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Dashboard Overview (default view) ────────────────────────────────────────
+
+const OV_MONO: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
+const OV_LABEL: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.13em", textTransform: "uppercase" as const };
+const OV_SURFACE: React.CSSProperties = { background: "var(--ft-surface)", border: "1px solid var(--ft-border)" };
+const OV_CLIP: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, minWidth: 0 };
+
+const DEMO_ACCOUNTS = [
+  { id: "d1", name: "Barclays Current",    currency: "GBP", gbpEquivalent: 3842.15 },
+  { id: "d2", name: "Marcus Savings",      currency: "GBP", gbpEquivalent: 8120.00 },
+  { id: "d3", name: "Wise USD Jar",        currency: "USD", gbpEquivalent: 1298.40 },
+  { id: "d4", name: "Monzo Flex",          currency: "GBP", gbpEquivalent: -320.00 },
+  { id: "d5", name: "Chase Saver",         currency: "GBP", gbpEquivalent: 2400.00 },
+];
+
+const DEMO_TX_ROWS = [
+  { id: "t1", description: "Monthly Salary",    gbpValue: 3700,   type: "income",   date: "", category: "Income" },
+  { id: "t2", description: "Rent",              gbpValue: 1100,   type: "expense",  date: "", category: "Housing" },
+  { id: "t3", description: "Sainsbury's",       gbpValue: 67.4,   type: "expense",  date: "", category: "Groceries" },
+  { id: "t4", description: "TfL Contactless",   gbpValue: 4.8,    type: "expense",  date: "", category: "Transport" },
+  { id: "t5", description: "Pret A Manger",     gbpValue: 5.95,   type: "expense",  date: "", category: "Eating Out" },
+  { id: "t6", description: "Spotify Premium",   gbpValue: 11.99,  type: "expense",  date: "", category: "Subscriptions" },
+];
+
+const DEMO_BILLS = [
+  { id: "b1", description: "Council Tax",  gbpEquivalent: 142, dueDate: "2026-08-02", type: "expense" },
+  { id: "b2", description: "Sky Broadband",gbpEquivalent: 39.99, dueDate: "2026-08-05", type: "expense" },
+  { id: "b3", description: "Amazon Prime", gbpEquivalent: 8.99, dueDate: "2026-08-10", type: "expense" },
+  { id: "b4", description: "Gym Membership",gbpEquivalent: 29.99, dueDate: "2026-08-15", type: "expense" },
+];
+
+function DashboardOverview() {
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const { data: dash } = useGetDashboard();
+  const { data: accounts = [] } = useListAccounts({});
+  const now = useMemo(() => new Date(), []);
+  const monthStart = useMemo(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`, [now]);
+  const { data: recentTxs = [] } = useListTransactions({ dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
+  const { data: upcoming = [] } = useListUpcoming();
+
+  const isDemo = accounts.length === 0 && recentTxs.length === 0;
+
+  const netWorth = isDemo ? 15340.55 : (dash?.netWorth ?? null);
+  const income = isDemo ? 3700 : (dash?.thisMonth?.income ?? 0);
+  const expenses = isDemo ? 1514.14 : (dash?.thisMonth?.expenses ?? 0);
+  const savingsRate = isDemo ? 59 : (dash?.thisMonth?.savingsRate ?? 0);
+  const net = income - expenses;
+  const netColor = net > 0 ? "var(--ft-green)" : net < 0 ? "var(--ft-red)" : "var(--ft-muted)";
+
+  const sortedAccounts = useMemo(() =>
+    isDemo
+      ? DEMO_ACCOUNTS
+      : [...accounts].sort((a, b) => b.gbpEquivalent - a.gbpEquivalent).slice(0, 6),
+    [accounts, isDemo]
+  );
+  const txRows = useMemo(() => (isDemo ? DEMO_TX_ROWS : recentTxs.slice(0, 6)) as Array<{ id: string | number; description: string; gbpValue: number; type: string; date: string; category?: string }>, [recentTxs, isDemo]);
+  const upcomingBills = useMemo(() =>
+    isDemo
+      ? DEMO_BILLS
+      : (upcoming as Array<{ id: string | number; description: string; gbpEquivalent: number; dueDate: string; type: string }>)
+          .filter(u => u.type === "expense")
+          .slice(0, 4),
+    [upcoming, isDemo]
+  );
+
+  const C = (color: string) => ({ color });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+
+      {/* Demo mode banner */}
+      {isDemo && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 12px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-amber)" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em" }}>DEMO</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Sample data — add accounts and transactions to see your real dashboard</span>
+          <a href="/import" style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", fontWeight: 700, textDecoration: "none", letterSpacing: "0.06em", flexShrink: 0 }}>IMPORT →</a>
+        </div>
+      )}
+
+      {/* ── Hero: Net Worth ── */}
+      <Link href="/net-worth">
+        <div
+          style={{ ...OV_SURFACE, padding: "14px 16px", borderLeft: "3px solid var(--ft-accent)", cursor: "pointer" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
+          onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
+          onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <div style={{ ...OV_LABEL, marginBottom: 3 }}>NET WORTH</div>
+              <div style={{ ...OV_MONO, fontSize: isMobile ? 34 : 36, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.03em", lineHeight: 1 }}>
+                {netWorth === null ? "—" : formatGbp(netWorth)}
+              </div>
+            </div>
+            {income > 0 && (
+              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                <div>
+                  <div style={{ ...OV_LABEL, marginBottom: 3 }}>THIS MONTH</div>
+                  <div style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, ...C(netColor) }}>
+                    {net >= 0 ? "+" : ""}{formatGbp(net)}
+                  </div>
+                </div>
+                {savingsRate > 0 && (
+                  <div>
+                    <div style={{ ...OV_LABEL, marginBottom: 3 }}>SAVED</div>
+                    <div style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
+                      {savingsRate.toFixed(0)}%
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {income > 0 && (
+            <div style={{ display: "flex", gap: 16, marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
+              <span style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-green)") }}>▲ {formatGbp(income)} in</span>
+              <span style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-red)") }}>▼ {formatGbp(expenses)} out</span>
+            </div>
+          )}
+        </div>
+      </Link>
+
+      {/* ── Middle: Accounts + Recent Transactions ── */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
+
+        {/* Accounts */}
+        <div style={{ ...OV_SURFACE, overflow: "hidden", borderLeft: "3px solid var(--ft-cyan)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: isMobile ? 12 : 14, paddingRight: 4, height: 34 }}>
+            <span style={{ ...OV_LABEL }}>ACCOUNTS</span>
+            <Link href="/accounts" style={{ textDecoration: "none" }}>
+              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-cyan)"), fontWeight: 700, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
+                {accounts.length} LINKED →
+              </span>
+            </Link>
+          </div>
+          {sortedAccounts.length === 0 ? (
+            <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-muted)"), padding: "12px 14px" }}>No accounts linked</div>
+          ) : sortedAccounts.map((acc, i) => (
+            <div key={acc.id ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: isMobile ? "10px 12px" : "7px 14px", borderBottom: i < sortedAccounts.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: isMobile ? 13 : 11, fontWeight: isMobile ? 500 : 400, ...C("var(--ft-text)") }}>{acc.name}</div>
+                <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)"), letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: isMobile ? 2 : 0 }}>{(acc as any).currency ?? ""}</div>
+              </div>
+              <span style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.gbpEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
+                {formatGbp(acc.gbpEquivalent)}
+              </span>
+            </div>
+          ))}
+          {accounts.length > 6 && (
+            <div style={{ ...OV_MONO, fontSize: 8, ...C("var(--ft-dim)"), textAlign: "right", padding: "5px 12px", borderTop: "1px solid var(--ft-border)" }}>
+              +{accounts.length - 6} more →
+            </div>
+          )}
+        </div>
+
+        {/* Recent Transactions */}
+        <div style={{ ...OV_SURFACE, overflow: "hidden", borderLeft: "3px solid var(--ft-blue)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: isMobile ? 12 : 14, paddingRight: 4, height: 34 }}>
+            <span style={{ ...OV_LABEL }}>RECENT TRANSACTIONS</span>
+            <Link href="/transactions" style={{ textDecoration: "none" }}>
+              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-blue)"), fontWeight: 700, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>VIEW ALL →</span>
+            </Link>
+          </div>
+          {txRows.length === 0 ? (
+            <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-muted)"), padding: "12px 14px" }}>No transactions this month</div>
+          ) : txRows.map((tx, i) => {
+            const txTypeColor = tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-amber)";
+            const today2 = new Date(); const yesterday2 = new Date(today2); yesterday2.setDate(today2.getDate() - 1);
+            const txDate2 = tx.date ? new Date(tx.date + "T00:00:00") : null;
+            const dateLabel = txDate2
+              ? txDate2.toDateString() === today2.toDateString() ? "Today"
+              : txDate2.toDateString() === yesterday2.toDateString() ? "Yesterday"
+              : txDate2.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+              : tx.date?.slice(5).replace("-", "/") ?? "";
+            if (isMobile) return (
+              <div key={tx.id ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: i < txRows.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+                <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: "50%", background: `color-mix(in srgb, ${txTypeColor} 15%, var(--ft-raised))`, border: `1.5px solid ${txTypeColor}44`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, color: txTypeColor }}>{(tx.category ?? tx.type ?? "?")[0].toUpperCase()}</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 13, fontWeight: 500, ...C("var(--ft-text)"), marginBottom: 2 }}>{tx.description}</div>
+                  <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</div>
+                </div>
+                <span style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(txTypeColor), flexShrink: 0 }}>
+                  {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(Math.abs(tx.gbpValue))}
+                </span>
+              </div>
+            );
+            return (
+              <div key={tx.id ?? i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 14px", borderBottom: i < txRows.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+                <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                  <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 10, ...C("var(--ft-text)") }}>{tx.description}</span>
+                  <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</span>
+                </div>
+                <span style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
+                  {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(Math.abs(tx.gbpValue))}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Upcoming Bills ── */}
+      {upcomingBills.length > 0 && (
+        <Link href="/upcoming">
+          <div
+            style={{ ...OV_SURFACE, padding: "12px 14px", cursor: "pointer" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
+            onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
+            onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
+              <span style={{ ...OV_LABEL, borderBottom: "1px solid var(--ft-border)", paddingBottom: 2 }}>UPCOMING BILLS</span>
+              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-amber)"), fontWeight: 700 }}>VIEW ALL →</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(upcomingBills.length, isMobile ? 2 : 4)}, 1fr)`, gap: 8 }}>
+              {upcomingBills.map((bill, i) => (
+                <div key={bill.id ?? i} style={{ padding: "9px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-amber)" }}>
+                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 8, ...C("var(--ft-dim)"), marginBottom: 4 }}>{bill.description}</div>
+                  <div style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, ...C("var(--ft-text)"), marginBottom: 3 }}>
+                    {formatGbp(bill.gbpEquivalent)}
+                  </div>
+                  {bill.dueDate && (
+                    <div style={{ ...OV_MONO, fontSize: 8, ...C("var(--ft-amber)") }}>
+                      {bill.dueDate.slice(5).replace("-", "/")}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </Link>
+      )}
+
+    </div>
+  );
+}
+
+// ── Saved View Row ────────────────────────────────────────────────────────────
+
+function ViewRow({ view, onLoad, onDelete }: {
+  view: DashboardView;
+  onLoad: (v: DashboardView) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [hovered, setHovered] = useState<boolean>(false);
+  return (
+    <div
+      key={view.id}
+      style={{ display: "flex", alignItems: "center", gap: 0 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <button
+        onClick={() => onLoad(view)}
+        style={{
+          fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em",
+          color: hovered ? "var(--ft-text)" : "var(--ft-accent)",
+          background: hovered ? "var(--ft-raised)" : "transparent",
+          border: `1px solid ${hovered ? "var(--ft-accent)" : "var(--ft-border)"}`,
+          padding: "3px 9px",
+          cursor: "pointer", borderRight: "none",
+          transition: "color 0.1s, background 0.1s, border-color 0.1s",
+        }}
+      >
+        {view.name}
+      </button>
+      <button
+        onClick={() => onDelete(view.id)}
+        style={{
+          fontFamily: "var(--font-mono)", fontSize: 9,
+          color: "var(--ft-red)", background: hovered ? "var(--ft-raised)" : "transparent",
+          border: `1px solid ${hovered ? "var(--ft-accent)" : "var(--ft-border)"}`,
+          padding: "3px 6px",
+          cursor: "pointer",
+          transition: "background 0.1s, border-color 0.1s",
+        }}
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 // ── Dashboard page ─────────────────────────────────────────────────────────────
+
+const PERSONA_DASHBOARD_LABEL: Record<string, string> = {
+  market: "MARKET TERMINAL",
+  budget: "COMMAND CENTER",
+  wealth: "WEALTH OVERVIEW",
+  social: "FINANCE HUB",
+  full: "PORTFOLIO OVERVIEW",
+};
+
+const CUSTOMIZE_MODE_KEY = "ft-dashboard-customize-mode";
 
 export default function Dashboard() {
   const { order, enabled, spans, isEnabled, setOrder, toggle, toggleSpan, getSpan, restoreView } = useWidgets();
+  const { data: dashData } = useGetDashboard();
+  const monthStart = useMemo(() => getMonthStart(), []);
+  const prevBounds = useMemo(() => getPrevMonthBounds(), []);
+  const { data: monthTxs } = useListTransactions({ type: "expense", dateFrom: monthStart });
+  const { data: prevMonthTxs } = useListTransactions({ type: "expense", dateFrom: prevBounds.from, dateTo: prevBounds.to });
   const [activeId, setActiveId] = useState<WidgetId | null>(null);
   const [expandedWidgetId, setExpandedWidgetId] = useState<WidgetId | null>(null);
   const [views, setViews] = useState<DashboardView[]>(() => loadViews());
@@ -1054,6 +2419,32 @@ export default function Dashboard() {
       localStorage.getItem("nr-onboarding-complete") === "1" ||
       localStorage.getItem("ft-onboarding-dismissed") === "1"
   );
+  const [personaVersion, setPersonaVersion] = useState(0);
+  const [isCustomizing, setIsCustomizing] = useState(
+    () => localStorage.getItem(CUSTOMIZE_MODE_KEY) === "1"
+  );
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setPersonaVersion(v => v + 1);
+    window.addEventListener("nr-sidebar-config-update", handler);
+    return () => window.removeEventListener("nr-sidebar-config-update", handler);
+  }, []);
+
+  const dashboardLabel = useMemo(() => {
+    const ids = loadPersonaIds();
+    if (ids.length === 0) return "PORTFOLIO OVERVIEW";
+    if (ids.length > 1) return ids.map(id => PERSONAS.find(p => p.id === id)?.code ?? id).join("+");
+    return PERSONA_DASHBOARD_LABEL[ids[0]] ?? "PORTFOLIO OVERVIEW";
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personaVersion]);
+
   // Show the wizard whenever the user hasn't completed/dismissed it, regardless of account count.
   // This ensures returning users who reset onboarding also see it.
   const showOnboarding = !onboardingDismissed;
@@ -1062,31 +2453,131 @@ export default function Dashboard() {
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
 
+  const mobileSensors = useSensors(
+    useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } })
+  );
+
+  // Long-press sensors for view-mode drag (hold 250ms anywhere on widget)
+  const longPressDesktopSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
+
   const enabledIds = order.filter(id => isEnabled(id as WidgetId)) as WidgetId[];
   const disabledIds = order.filter(id => !isEnabled(id as WidgetId)) as WidgetId[];
+
+  // Two-column layout: track which items are in the right column.
+  // Left column = all enabled items NOT in rightSet (in enabledIds order).
+  // Right column = enabled items IN rightSet (in enabledIds order).
+  // Lazy-initialized from enabledIds so first render already shows two columns (no flash).
+  const [rightSet, setRightSet] = useState<Set<WidgetId>>(
+    () => new Set(enabledIds.filter((_, i) => i % 2 === 1))
+  );
+  // Prevent duplicate onDragOver commits for the same active→over pair
+  const lastOverRef = useRef<string | null>(null);
+  // Snapshots at drag-start so cancel can fully restore
+  const preDragOrderRef = useRef<WidgetId[]>([]);
+  const preDragRightSetRef = useRef<Set<WidgetId>>(new Set());
+
+  const leftIds = useMemo(() => enabledIds.filter(id => !rightSet.has(id)), [enabledIds, rightSet]);
+  const rightIds = useMemo(() => enabledIds.filter(id => rightSet.has(id)), [enabledIds, rightSet]);
 
   const isCurrentLayoutSaved = views.some(v =>
     layoutFingerprint(v.enabled, v.order, v.spans as Record<string, string>) ===
     layoutFingerprint([...enabled], order, spans as Record<string, string>)
   );
 
+  function handleCustomizeToggle() {
+    const next = !isCustomizing;
+    setIsCustomizing(next);
+    try { localStorage.setItem(CUSTOMIZE_MODE_KEY, next ? "1" : "0"); } catch {}
+  }
+
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as WidgetId);
+    lastOverRef.current = null;
+    preDragOrderRef.current = [...order];
+    preDragRightSetRef.current = new Set(rightSet);
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const aId = active.id as WidgetId;
+    const oId = over.id as WidgetId;
+    const aIsRight = rightSet.has(aId);
+    const oIsRight = rightSet.has(oId);
+    // Only handle cross-column moves here; same-column reorder is handled on drop
+    if (aIsRight === oIsRight) return;
+    const key = `${aId}→${oId}`;
+    if (lastOverRef.current === key) return;
+    lastOverRef.current = key;
+    // Insert aId immediately AFTER oId in enabledIds so that oId keeps its DOM
+    // position (index unchanged) and aId enters below it. Without this, aId's
+    // lower enabledIds index causes it to appear before oId, teleporting oId down.
+    const withoutA = enabledIds.filter(id => id !== aId);
+    const oPos = withoutA.indexOf(oId);
+    const reordered = [...withoutA];
+    reordered.splice(oPos + 1, 0, aId);
+    setOrder([...reordered, ...disabledIds]);
+    setRightSet(prev => {
+      const next = new Set(prev);
+      if (oIsRight) next.add(aId);
+      else next.delete(aId);
+      return next;
+    });
   }
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveId(null);
+    lastOverRef.current = null;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+    const aId = active.id as WidgetId;
+    const oId = over.id as WidgetId;
+    const aIsRight = rightSet.has(aId);
+    const oIsRight = rightSet.has(oId);
+    // Cross-column was already committed in onDragOver; nothing to do here
+    if (aIsRight !== oIsRight) return;
+    // Within-column reorder
+    const colIds = aIsRight ? rightIds : leftIds;
+    const oldIdx = colIds.indexOf(aId);
+    const newIdx = colIds.indexOf(oId);
+    if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
+    const newColIds = arrayMove(colIds, oldIdx, newIdx);
+    // Reconstruct flat enabled order: left column first, then right column
+    const newEnabled = aIsRight ? [...leftIds, ...newColIds] : [...newColIds, ...rightIds];
+    setOrder([...newEnabled, ...disabledIds]);
+  }
 
-    const oldIndex = enabledIds.indexOf(active.id as WidgetId);
-    const newIndex = enabledIds.indexOf(over.id as WidgetId);
-    if (oldIndex === -1 || newIndex === -1) return;
+  function handleDragOverMobile(event: DragOverEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const aId = active.id as WidgetId;
+    const oId = over.id as WidgetId;
+    const key = `${aId}→${oId}`;
+    if (lastOverRef.current === key) return;
+    lastOverRef.current = key;
+    const oldIdx = enabledIds.indexOf(aId);
+    const newIdx = enabledIds.indexOf(oId);
+    if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
+    const newEnabled = arrayMove(enabledIds, oldIdx, newIdx);
+    setOrder([...newEnabled, ...disabledIds]);
+  }
 
-    const newEnabled = [...enabledIds];
-    newEnabled.splice(oldIndex, 1);
-    newEnabled.splice(newIndex, 0, active.id as WidgetId);
-
+  function handleDragEndMobile(event: DragEndEvent) {
+    setActiveId(null);
+    lastOverRef.current = null;
+    // Order is fully managed by handleDragOverMobile (live reorder).
+    // Only apply here if over fired a final position that wasn't caught by over.
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const aId = active.id as WidgetId;
+    const oId = over.id as WidgetId;
+    const oldIdx = enabledIds.indexOf(aId);
+    const newIdx = enabledIds.indexOf(oId);
+    if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
+    const newEnabled = arrayMove(enabledIds, oldIdx, newIdx);
     setOrder([...newEnabled, ...disabledIds]);
   }
 
@@ -1117,6 +2608,92 @@ export default function Dashboard() {
     saveViews(updated);
   }
 
+  // ── KPI Bar calculations ─────────────────────────────────────────────────────
+  const kpiCells = useMemo((): KpiCellData[] => {
+    if (!dashData) return [];
+
+    const netWorth = dashData.netWorth ?? 0;
+    const income = dashData.thisMonth?.income ?? 0;
+    const expenses = dashData.thisMonth?.expenses ?? 0;
+    const savingsRate = dashData.thisMonth?.savingsRate ?? 0;
+    const netSavings = dashData.thisMonth?.netSavings ?? 0;
+
+    // MoM delta: compare current month expenses to previous
+    const prevExpenses = (prevMonthTxs ?? []).reduce((s, t) => s + t.gbpValue, 0);
+    const momDelta = prevExpenses > 0 ? ((expenses - prevExpenses) / prevExpenses) * 100 : 0;
+    const momSign = momDelta >= 0 ? "+" : "";
+    const momColor = momDelta > 5 ? "var(--ft-red)" : momDelta < -5 ? "var(--ft-green)" : "var(--ft-amber)";
+
+    return [
+      {
+        label: "NET WORTH",
+        value: formatGbp(netWorth),
+        delta: netWorth > 0 ? undefined : "–",
+        valueColor: "var(--ft-blue)",
+      },
+      {
+        label: "MONTHLY INCOME",
+        value: income > 0 ? formatGbp(income) : "–",
+        valueColor: income > 0 ? "var(--ft-green)" : "var(--ft-dim)",
+      },
+      {
+        label: "MONTHLY SPEND",
+        value: expenses > 0 ? formatGbp(expenses) : "–",
+        valueColor: expenses > 0 ? "var(--ft-red)" : "var(--ft-dim)",
+      },
+      {
+        label: "SAVINGS RATE",
+        value: income > 0 ? `${Math.round(savingsRate)}%` : "–",
+        delta: netSavings !== 0 ? `${netSavings >= 0 ? "+" : ""}${formatGbp(netSavings)}` : undefined,
+        deltaColor: netSavings > 0 ? "var(--ft-green)" : "var(--ft-red)",
+        valueColor: savingsRate >= 20
+          ? "var(--ft-green)"
+          : savingsRate >= 10
+          ? "var(--ft-amber)"
+          : savingsRate > 0
+          ? "var(--ft-red)"
+          : "var(--ft-dim)",
+      },
+      {
+        label: "MoM SPEND",
+        value: prevExpenses > 0 ? `${momSign}${momDelta.toFixed(1)}%` : "–",
+        valueColor: prevExpenses > 0 ? momColor : "var(--ft-dim)",
+      },
+      {
+        label: "PORTFOLIO",
+        value: (dashData.portfolio?.totalValueGbp ?? 0) > 0 ? formatGbp(dashData.portfolio.totalValueGbp) : "–",
+        delta: (dashData.portfolio?.totalPlGbp ?? 0) !== 0
+          ? `${dashData.portfolio.totalPlGbp >= 0 ? "+" : ""}${formatGbp(dashData.portfolio.totalPlGbp)}`
+          : undefined,
+        deltaColor: (dashData.portfolio?.totalPlGbp ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+        valueColor: "var(--ft-text)",
+      },
+    ];
+  }, [dashData, prevMonthTxs]);
+
+  // ── AI Insights props ────────────────────────────────────────────────────────
+  const aiInsightsProps = useMemo((): AiInsightsPanelProps => {
+    const netWorth = dashData?.netWorth ?? 0;
+    const income = dashData?.thisMonth?.income ?? 0;
+    const expenses = dashData?.thisMonth?.expenses ?? 0;
+    const savingsRate = dashData?.thisMonth?.savingsRate ?? 0;
+
+    const catMap: Record<string, number> = {};
+    for (const t of (monthTxs ?? [])) {
+      catMap[t.category] = (catMap[t.category] ?? 0) + t.gbpValue;
+    }
+    const topCategories = Object.entries(catMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name, amount]) => ({ name, amount }));
+
+    const budgetStatus = expenses > 0 && income > 0
+      ? (expenses / income > 0.9 ? "OverBudget" : expenses / income > 0.7 ? "OnTrack" : "UnderBudget")
+      : "";
+
+    return { netWorth, income, expenses, savingsRate, topCategories, budgetStatus };
+  }, [dashData, monthTxs]);
+
   return (
     <div>
       {/* Expanded widget modal */}
@@ -1124,8 +2701,7 @@ export default function Dashboard() {
         <WidgetModal id={expandedWidgetId} onClose={() => setExpandedWidgetId(null)} />
       )}
 
-      {/* Smart alerts — renders nothing when no active alerts */}
-      <SmartAlertsWidget />
+      {/* Smart alerts — renders nothing when no active alerts (shown inside terminal layout) */}
 
       {/* First-run onboarding wizard */}
       <OnboardingWizard
@@ -1136,124 +2712,271 @@ export default function Dashboard() {
         }}
       />
 
-      {/* Page label */}
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4, display: "flex", alignItems: "center", gap: 10 }}>
-        <span><span style={{ color: "var(--ft-accent)" }}>·</span> Portfolio Overview</span>
-        <span style={{ color: "var(--ft-border2)" }}>
-          {enabledIds.length} widget{enabledIds.length !== 1 ? "s" : ""}
-        </span>
-        <span style={{ color: "var(--ft-border2)", fontSize: 9 }}>· drag to reorder · hover for controls</span>
-      </div>
+      {/* ── Bloomberg KPI Bar ── */}
+      <DashboardKpiBar
+        cells={kpiCells}
+        onCustomize={handleCustomizeToggle}
+        isCustomizing={isCustomizing}
+        dashboardLabel={dashboardLabel}
+        isMobile={isMobile}
+      />
 
-      {/* Saved Views */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 8,
-        marginBottom: 12, flexWrap: "wrap",
-      }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginRight: 4 }}>
-          VIEWS:
-        </span>
-        {views.map(v => (
-          <div key={v.id} style={{ display: "flex", alignItems: "center", gap: 0 }}>
-            <button
-              onClick={() => handleLoadView(v)}
-              style={{
-                fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em",
-                color: "var(--ft-accent)", background: "transparent",
-                border: "1px solid var(--ft-border)", padding: "3px 9px",
-                cursor: "pointer", borderRight: "none",
-              }}
-            >
-              {v.name}
-            </button>
-            <button
-              onClick={() => handleDeleteView(v.id)}
-              style={{
-                fontFamily: "var(--font-mono)", fontSize: 9,
-                color: "var(--ft-red)", background: "transparent",
-                border: "1px solid var(--ft-border)", padding: "3px 6px",
-                cursor: "pointer",
-              }}
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-        {!isCurrentLayoutSaved && (showViewSave ? (
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            <input
-              value={viewNameInput}
-              onChange={e => setViewNameInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") handleSaveView(); if (e.key === "Escape") setShowViewSave(false); }}
-              placeholder="View name…"
-              autoFocus
-              style={{
-                fontFamily: "var(--font-mono)", fontSize: 10,
-                background: "var(--ft-raised)", border: "1px solid var(--ft-accent)",
-                color: "var(--ft-text)", padding: "3px 8px", outline: "none", width: 120,
-              }}
-            />
-            <button onClick={handleSaveView} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "3px 9px", cursor: "pointer" }}>Save</button>
-            <button onClick={() => setShowViewSave(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "transparent", border: "1px solid var(--ft-border)", padding: "3px 9px", cursor: "pointer" }}>Cancel</button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowViewSave(true)}
-            style={{
-              fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em",
-              color: "var(--ft-dim)", background: "transparent",
-              border: "1px dashed var(--ft-border)", padding: "3px 9px", cursor: "pointer",
-            }}
-          >
-            + Save current
-          </button>
-        ))}
-      </div>
+      {/* Persona quick start — shown once, disappears when all steps done or dismissed */}
+      <PersonaQuickStart />
 
-      {enabledIds.length === 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "60px 0" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-muted)" }}>
-            No widgets enabled — add one below
+      {/* ── Main Content ── */}
+      {isCustomizing ? (
+        /* ── CUSTOMIZE MODE: widget drag-and-drop grid ── */
+        <div>
+          {/* Customize mode header */}
+          <div style={{
+            background: "color-mix(in srgb, var(--ft-accent) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--ft-accent) 30%, transparent)",
+            padding: "7px 12px",
+            marginBottom: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+              <span style={{ color: "var(--ft-accent)" }}>·</span> CUSTOMIZE MODE — drag widgets to rearrange · hover for controls · click [EXIT CUSTOMIZE] when done
+            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+              {enabledIds.length} widget{enabledIds.length !== 1 ? "s" : ""} active
+            </span>
           </div>
+
+          {/* Saved Views toolbar */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            marginBottom: 10, flexWrap: "wrap",
+          }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginRight: 4 }}>
+              VIEWS:
+            </span>
+            {views.map(v => (
+              <ViewRow key={v.id} view={v} onLoad={handleLoadView} onDelete={handleDeleteView} />
+            ))}
+            {!isCurrentLayoutSaved && (showViewSave ? (
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <input
+                  className="ft-filter-input"
+                  value={viewNameInput}
+                  onChange={e => setViewNameInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") handleSaveView(); if (e.key === "Escape") setShowViewSave(false); }}
+                  placeholder="View name…"
+                  autoFocus
+                  style={{
+                    fontFamily: "var(--font-mono)", fontSize: 10,
+                    background: "var(--ft-raised)", border: "1px solid var(--ft-accent)",
+                    color: "var(--ft-text)", padding: "3px 8px", outline: "none", width: 120,
+                  }}
+                />
+                <button onClick={handleSaveView} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "3px 9px", cursor: "pointer" }}>Save</button>
+                <button onClick={() => setShowViewSave(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "transparent", border: "1px solid var(--ft-border)", padding: "3px 9px", cursor: "pointer" }}>Cancel</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowViewSave(true)}
+                style={{
+                  fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em",
+                  color: "var(--ft-dim)", background: "transparent",
+                  border: "1px dashed var(--ft-border)", padding: "3px 9px", cursor: "pointer",
+                }}
+              >
+                + Save current
+              </button>
+            ))}
+          </div>
+
+          {/* AI Insights panel in customize mode too */}
+          <AiInsightsPanel {...aiInsightsProps} />
+
+          {enabledIds.length === 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "60px 0" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-muted)" }}>
+                No widgets enabled — add one below
+              </div>
+            </div>
+          ) : isMobile ? (
+            /* Mobile: compact tile DnD — matches view mode exactly, just adds grip + remove strip */
+            <DndContext sensors={mobileSensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOverMobile} onDragEnd={handleDragEndMobile} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) setOrder(preDragOrderRef.current); }}>
+              <div className="ft-mobile-widget-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                <SortableContext items={enabledIds} strategy={rectSortingStrategy}>
+                  {enabledIds.map(id => (
+                    <SortableCompactTile key={id} id={id} onRemove={() => toggle(id)} isFullWidth={COMPACT_WIDGET_FULL_WIDTH.has(id)} activeId={activeId} />
+                  ))}
+                </SortableContext>
+              </div>
+              <DragOverlay dropAnimation={{ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>
+                {activeId ? (() => {
+                  const CompactPreview = COMPACT_WIDGET_COMPONENTS[activeId];
+                  return (
+                    <div style={{
+                      background: "var(--ft-surface)",
+                      border: "1px solid var(--ft-accent)",
+                      boxShadow: "0 12px 40px rgba(0,0,0,0.55)",
+                      cursor: "grabbing",
+                      opacity: 0.92,
+                      overflow: "hidden",
+                      borderRadius: 1,
+                    }}>
+                      {CompactPreview && <CompactPreview />}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        background: "var(--ft-raised)",
+                        borderTop: "1px solid var(--ft-accent)",
+                        height: 36,
+                        paddingLeft: 10,
+                        gap: 8,
+                      }}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ft-accent)" }}>⠿</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
+                          {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })() : null}
+              </DragOverlay>
+            </DndContext>
+          ) : (
+            /* Desktop: drag-and-drop two-column grid */
+            <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
+              <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                {/* Left column */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
+                    {leftIds.map((id, idx) => (
+                      <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} anyDragging={activeId !== null} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
+                    ))}
+                  </SortableContext>
+                </div>
+                {/* Right column */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <SortableContext items={rightIds} strategy={verticalListSortingStrategy}>
+                    {rightIds.map((id, idx) => (
+                      <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} anyDragging={activeId !== null} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
+                    ))}
+                  </SortableContext>
+                </div>
+              </div>
+              <DragOverlay dropAnimation={{ duration: 150, easing: "ease" }}>
+                {activeId ? (
+                  <div style={{
+                    background: "var(--ft-surface)",
+                    border: "1px solid var(--ft-accent)",
+                    padding: "10px 14px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "grabbing",
+                    minHeight: 48,
+                  }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>⠿</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+                      {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
+                    </span>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          )}
+
+          {/* AI Insights strip — full width below grid */}
+          <AiInsightsStrip />
+
+          {/* Inline widget picker */}
+          <WidgetPicker disabledIds={disabledIds} onAdd={id => toggle(id)} />
         </div>
       ) : (
-        /* Drag-and-drop grid */
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveId(null)}>
-          <SortableContext items={enabledIds} strategy={rectSortingStrategy}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
-              {enabledIds.map((id, idx) => (
-                <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
-              ))}
-            </div>
-          </SortableContext>
-          <DragOverlay dropAnimation={{ duration: 150, easing: "ease" }}>
-            {activeId ? (
-              <div style={{
-                background: "var(--ft-surface)",
-                border: "1px solid var(--ft-accent)",
-                boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
-                padding: "10px 14px",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                cursor: "grabbing",
-                minHeight: 48,
-              }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>⠿</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
-                  {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
-                </span>
+        /* ── DEFAULT VIEW: widget grid (mirrors customize mode, read-only) ── */
+        <div>
+          {enabledIds.length === 0 ? (
+            /* No custom widgets — show terminal layout (desktop) or overview (mobile) */
+            isMobile ? <DashboardOverview /> : <TerminalLayout aiInsightsProps={aiInsightsProps} />
+          ) : isMobile ? (
+            <>
+              <AiInsightsPanel {...aiInsightsProps} />
+              <div
+                className="ft-mobile-widget-grid"
+                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}
+              >
+                {enabledIds.map(id => (
+                  <div
+                    key={id}
+                    style={{
+                      gridColumn: COMPACT_WIDGET_FULL_WIDTH.has(id) ? "1 / -1" : "auto",
+                      minWidth: 0,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <ViewModeWidget id={id} onExpand={() => setExpandedWidgetId(id)} />
+                  </div>
+                ))}
               </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+              <AiInsightsStrip />
+            </>
+          ) : (
+            <>
+              <AiInsightsPanel {...aiInsightsProps} />
+              <DndContext
+                sensors={longPressDesktopSensors}
+                collisionDetection={customCollisionDetection}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onDragCancel={() => {
+                  setActiveId(null);
+                  lastOverRef.current = null;
+                  if (preDragOrderRef.current.length) {
+                    setOrder(preDragOrderRef.current);
+                    setRightSet(preDragRightSetRef.current);
+                  }
+                }}
+              >
+                <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
+                      {leftIds.map(id => (
+                        <LongPressDraggableWidget key={id} id={id} anyDragging={activeId !== null} onExpand={() => setExpandedWidgetId(id)} />
+                      ))}
+                    </SortableContext>
+                  </div>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <SortableContext items={rightIds} strategy={verticalListSortingStrategy}>
+                      {rightIds.map(id => (
+                        <LongPressDraggableWidget key={id} id={id} anyDragging={activeId !== null} onExpand={() => setExpandedWidgetId(id)} />
+                      ))}
+                    </SortableContext>
+                  </div>
+                </div>
+                <DragOverlay dropAnimation={{ duration: 150, easing: "ease" }}>
+                  {activeId ? (
+                    <div style={{
+                      background: "var(--ft-surface)",
+                      border: "1px solid var(--ft-accent)",
+                      padding: "10px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      cursor: "grabbing",
+                      minHeight: 48,
+                    }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>⠿</span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+                        {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
+                      </span>
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+              <AiInsightsStrip />
+            </>
+          )}
+        </div>
       )}
-
-      {/* AI Insights strip — full width below grid */}
-      <AiInsightsStrip />
-
-      {/* Inline widget picker */}
-      <WidgetPicker disabledIds={disabledIds} onAdd={id => toggle(id)} />
     </div>
   );
 }

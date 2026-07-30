@@ -185,6 +185,7 @@ function StepAddAccount() {
 
       {/* ASCII-style account type diagram */}
       <div
+        className="ft-two-col"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -657,7 +658,7 @@ export function OnboardingWizard({ open, onClose }: Props) {
         justifyContent: "center",
         padding: 20,
         opacity: isVisible ? 1 : 0,
-        transition: "opacity 200ms ease",
+        transition: "opacity 120ms ease",
       }}
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
@@ -674,7 +675,7 @@ export function OnboardingWizard({ open, onClose }: Props) {
           display: "flex",
           flexDirection: "column",
           transform: isVisible ? "translateY(0)" : "translateY(12px)",
-          transition: "transform 200ms ease",
+          transition: "transform 120ms ease",
         }}
       >
         {/* Top bar: step counter + skip */}
@@ -745,7 +746,7 @@ export function OnboardingWizard({ open, onClose }: Props) {
                   i <= step ? "var(--ft-amber)" : "var(--ft-border2)",
                 border: "none",
                 cursor: "pointer",
-                transition: "width 200ms ease, background 200ms ease",
+                transition: "background 0.1s",
                 padding: 0,
               }}
             />

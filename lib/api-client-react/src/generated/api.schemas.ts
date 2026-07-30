@@ -737,6 +737,28 @@ export interface StockQuote {
   analystTargetPrice?: number | null;
   /** @nullable */
   displayName?: string | null;
+  /** @nullable */
+  changePercent?: number | null;
+  /** @nullable */
+  dayHigh?: number | null;
+  /** @nullable */
+  dayLow?: number | null;
+  /** @nullable */
+  volume?: number | null;
+  /** @nullable */
+  previousClose?: number | null;
+  /** @nullable */
+  nextEarningsDate?: string | null;
+  /** @nullable */
+  marketState?: string | null;
+  /** @nullable */
+  postMarketPrice?: number | null;
+  /** @nullable */
+  postMarketChangePercent?: number | null;
+  /** @nullable */
+  preMarketPrice?: number | null;
+  /** @nullable */
+  preMarketChangePercent?: number | null;
 }
 
 export type CurrencySettingsBaseCurrency = typeof CurrencySettingsBaseCurrency[keyof typeof CurrencySettingsBaseCurrency];
