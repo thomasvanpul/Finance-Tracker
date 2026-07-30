@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Plus, Trash2, CheckCheck, HandCoins, TrendingDown, TrendingUp, RefreshCw, SplitSquareHorizontal, Mail, X, Check } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { MonoLabel, PanelBox, PanelHeader, DataTH, DataTD } from "@/components/primitives";
 import {
   Dialog,
   DialogContent,
@@ -137,28 +138,6 @@ const EMPTY_SPLIT_FORM: SplitBillForm = {
 };
 
 const CURRENCIES: Currency[] = ["GBP", "USD", "EUR", "MYR", "CNY", "JPY", "AUD", "CAD", "SGD", "HKD", "THB", "INR"];
-
-const TH: React.CSSProperties = {
-  padding: "6px 12px",
-  fontSize: 10,
-  fontWeight: 600,
-  color: "var(--ft-dim)",
-  background: "var(--ft-surface)",
-  borderBottom: "2px solid var(--ft-border2)",
-  borderRight: "1px solid var(--ft-border)",
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.05em",
-  whiteSpace: "nowrap" as const,
-  verticalAlign: "middle" as const,
-};
-const TD: React.CSSProperties = {
-  padding: "6px 10px",
-  fontSize: 12,
-  borderBottom: "1px solid var(--ft-border)",
-  borderRight: "1px solid var(--ft-border)",
-  color: "var(--ft-text)",
-  whiteSpace: "nowrap" as const,
-};
 
 const INPUT_STYLE: React.CSSProperties = {
   background: "var(--ft-base)",
@@ -426,21 +405,11 @@ function StrategyTab() {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
       {/* Mode toggle + budget input */}
-      <div style={{
-        background: "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
-        padding: "14px 16px",
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        gap: 16,
-      }}>
+      <PanelBox padding="14px 16px" row gap={16}>
 
         {/* Mode toggle */}
         <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
-            Strategy
-          </div>
+          <MonoLabel mb={6}>Strategy</MonoLabel>
           <div style={{ display: "flex" }}>
             {(["snowball", "avalanche"] as const).map(m => (
               <button
@@ -474,9 +443,7 @@ function StrategyTab() {
 
         {/* Budget slider */}
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
-            Monthly Budget
-          </div>
+          <MonoLabel mb={6}>Monthly Budget</MonoLabel>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <input
               type="range"
@@ -506,23 +473,21 @@ function StrategyTab() {
             />
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
-            Min payments: {formatGbp(totalMinimums)} · Extra available: {formatGbp(extraAvailable)}
+            Min payments: <span className="pnum">{formatGbp(totalMinimums)}</span> · Extra available: <span className="pnum">{formatGbp(extraAvailable)}</span>
           </div>
         </div>
 
         {/* Total balance */}
         <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
-            Total Balance
-          </div>
+          <MonoLabel mb={6}>Total Balance</MonoLabel>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-red)" }}>
-            {formatGbp(totalBalance)}
+            <span className="pnum">{formatGbp(totalBalance)}</span>
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
             {pendingDebts.length} debt{pendingDebts.length !== 1 ? "s" : ""}
           </div>
         </div>
-      </div>
+      </PanelBox>
 
       {monthlyBudget < totalMinimums && (
         <div style={{
@@ -533,22 +498,15 @@ function StrategyTab() {
           fontSize: 11,
           color: "var(--ft-red)",
         }}>
-          Budget ({formatGbp(monthlyBudget)}) is less than total minimum payments ({formatGbp(totalMinimums)}). Increase the budget to run a strategy.
+          Budget (<span className="pnum">{formatGbp(monthlyBudget)}</span>) is less than total minimum payments (<span className="pnum">{formatGbp(totalMinimums)}</span>). Increase the budget to run a strategy.
         </div>
       )}
 
       {/* Summary strip */}
       {result && (
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          <div style={{
-            background: "var(--ft-surface)",
-            border: "1px solid var(--ft-border)",
-            borderTop: "2px solid var(--ft-green)",
-            padding: "12px 14px",
-          }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
-              Debt-free in
-            </div>
+          <PanelBox borderTop="2px solid var(--ft-green)" padding="12px 14px">
+            <MonoLabel mb={4}>Debt-free in</MonoLabel>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-green)", lineHeight: 1 }}>
               {result.months}
               <span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)", marginLeft: 3 }}>mo</span>
@@ -556,59 +514,34 @@ function StrategyTab() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               {Math.floor(result.months / 12)}y {result.months % 12}m
             </div>
-          </div>
+          </PanelBox>
 
-          <div style={{
-            background: "var(--ft-surface)",
-            border: "1px solid var(--ft-border)",
-            borderTop: "2px solid var(--ft-amber)",
-            padding: "12px 14px",
-          }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
-              Total Interest
-            </div>
+          <PanelBox borderTop="2px solid var(--ft-amber)" padding="12px 14px">
+            <MonoLabel mb={4}>Total Interest</MonoLabel>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>
-              {formatGbp(result.totalInterest)}
+              <span className="pnum">{formatGbp(result.totalInterest)}</span>
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               over {result.months} months
             </div>
-          </div>
+          </PanelBox>
 
-          <div style={{
-            background: "var(--ft-surface)",
-            border: "1px solid var(--ft-border)",
-            borderTop: `2px solid ${savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)"}`,
-            padding: "12px 14px",
-          }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
-              vs {mode === "snowball" ? "Avalanche" : "Snowball"}
-            </div>
+          <PanelBox borderTop={`2px solid ${savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)"}`} padding="12px 14px">
+            <MonoLabel mb={4}>vs {mode === "snowball" ? "Avalanche" : "Snowball"}</MonoLabel>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)", lineHeight: 1 }}>
-              {savingsVsAlt >= 0 ? "saves " : "costs "}{formatGbp(Math.abs(savingsVsAlt))}
+              {savingsVsAlt >= 0 ? "saves " : "costs "}<span className="pnum">{formatGbp(Math.abs(savingsVsAlt))}</span>
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               {savingsVsAlt >= 0 ? "this strategy is better" : "other strategy saves more"}
             </div>
-          </div>
+          </PanelBox>
         </div>
       )}
 
       {/* Debt cards with APR inputs + payoff order */}
       {result && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
-          <div style={{
-            padding: "8px 14px",
-            background: "var(--ft-surface)",
-            borderBottom: "1px solid var(--ft-border)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "var(--ft-dim)",
-          }}>
-            Payoff Order · APR per Debt
-          </div>
+        <PanelBox>
+          <PanelHeader>Payoff Order · APR per Debt</PanelHeader>
           <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
             {result.payoffOrder.map((po, i) => {
               const debt = strategyDebts.find(d => d.id === po.id);
@@ -649,12 +582,12 @@ function StrategyTab() {
                       {debt.name}
                     </div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-                      Balance: {formatGbp(debt.balance)} · Min: {formatGbp(debt.minimumPayment)}/mo
+                      Balance: <span className="pnum">{formatGbp(debt.balance)}</span> · Min: <span className="pnum">{formatGbp(debt.minimumPayment)}</span>/mo
                     </div>
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em" }}>APR</span>
+                    <MonoLabel as="span" letterSpacing="0.06em">APR</MonoLabel>
                     <input
                       type="number"
                       value={apr}
@@ -683,30 +616,20 @@ function StrategyTab() {
                       Month {po.month}
                     </div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-                      +{formatGbp(po.interestPaid)} interest
+                      +<span className="pnum">{formatGbp(po.interestPaid)}</span> interest
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
+        </PanelBox>
       )}
 
       {/* Chart: Total debt over time */}
       {result && result.chart.length > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
-          <div style={{
-            padding: "8px 14px",
-            borderBottom: "1px solid var(--ft-border)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "var(--ft-dim)",
-          }}>
-            Total Debt Remaining
-          </div>
+        <PanelBox>
+          <PanelHeader>Total Debt Remaining</PanelHeader>
           <div style={{ padding: "12px 0 8px" }}>
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={result.chart} margin={{ top: 4, right: 20, left: 10, bottom: 4 }}>
@@ -738,58 +661,48 @@ function StrategyTab() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </PanelBox>
       )}
 
       {/* Amortization table — first 12 months */}
       {result && result.amortization.length > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
-          <div style={{
-            padding: "8px 14px",
-            borderBottom: "1px solid var(--ft-border)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "var(--ft-dim)",
-          }}>
-            Amortization · First 12 Months
-          </div>
+        <PanelBox>
+          <PanelHeader>Amortization · First 12 Months</PanelHeader>
           <div className="ft-scroll-x" style={{ WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
               <thead>
                 <tr>
-                  <th style={TH}>Month</th>
+                  <DataTH>Month</DataTH>
                   {strategyDebts.map(d => (
-                    <th key={d.id} style={{ ...TH, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <DataTH key={d.id} style={{ maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>
                       {d.name.split(" — ")[0]}
-                    </th>
+                    </DataTH>
                   ))}
-                  <th style={{ ...TH, borderRight: "none" }}>Total</th>
+                  <DataTH noRightBorder>Total</DataTH>
                 </tr>
               </thead>
               <tbody>
                 {result.amortization.map(row => (
                   <tr key={row.month}>
-                    <td style={TD}>
+                    <DataTD>
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>M{row.month}</span>
-                    </td>
+                    </DataTD>
                     {strategyDebts.map(d => (
-                      <td key={d.id} style={{ ...TD, fontFamily: "var(--font-mono)", color: (row[d.id] ?? 0) === 0 ? "var(--ft-green)" : "var(--ft-text)" }}>
+                      <DataTD key={d.id} mono style={{ color: (row[d.id] ?? 0) === 0 ? "var(--ft-green)" : "var(--ft-text)" }}>
                         {(row[d.id] ?? 0) === 0
                           ? <span style={{ color: "var(--ft-green)", fontSize: 9 }}>PAID</span>
-                          : formatGbp(row[d.id] as number)}
-                      </td>
+                          : <span className="pnum">{formatGbp(row[d.id] as number)}</span>}
+                      </DataTD>
                     ))}
-                    <td style={{ ...TD, borderRight: "none", fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ft-text)" }}>
-                      {formatGbp(row.total)}
-                    </td>
+                    <DataTD noRightBorder mono bold>
+                      <span className="pnum">{formatGbp(row.total)}</span>
+                    </DataTD>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </PanelBox>
       )}
     </div>
   );
@@ -1222,23 +1135,17 @@ export default function Owing() {
       )}
 
       {/* ── Net balance hero ── */}
-      <div style={{
-        background: "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
-        borderTop: `3px solid ${netPosition !== 0 ? (netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-border2)"}`,
-        padding: "16px 20px",
-        display: "flex",
-        alignItems: "center",
-        gap: 24,
-        flexWrap: "wrap",
-      }}>
+      <PanelBox
+        borderTop={`3px solid ${netPosition !== 0 ? (netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-border2)"}`}
+        padding="16px 20px"
+        row
+        gap={24}
+      >
         <div>
-          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>
-            Net Position
-          </div>
+          <MonoLabel letterSpacing="0.1em" mb={6}>Net Position</MonoLabel>
           {summary ? (
             <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", color: netPosition !== 0 ? (netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", lineHeight: 1 }}>
-              {netPosition >= 0 ? "+" : ""}{formatGbp(netPosition)}
+              <span className="pnum">{netPosition >= 0 ? "+" : ""}{formatGbp(netPosition)}</span>
             </div>
           ) : (
             <Skeleton className="h-8 w-28" />
@@ -1252,12 +1159,10 @@ export default function Owing() {
 
         {/* Owed to me */}
         <div>
-          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-            Owed to Me
-          </div>
+          <MonoLabel mb={4}>Owed to Me</MonoLabel>
           {summary ? (
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: owedToMeTotal > 0 ? "var(--ft-green)" : "var(--ft-muted)", lineHeight: 1 }}>
-              {formatGbp(owedToMeTotal)}
+              <span className="pnum">{formatGbp(owedToMeTotal)}</span>
             </div>
           ) : (
             <Skeleton className="h-5 w-20" />
@@ -1269,12 +1174,10 @@ export default function Owing() {
 
         {/* I owe */}
         <div>
-          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-            I Owe
-          </div>
+          <MonoLabel mb={4}>I Owe</MonoLabel>
           {summary ? (
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: iOweTotal > 0 ? "var(--ft-red)" : "var(--ft-muted)", lineHeight: 1 }}>
-              {formatGbp(iOweTotal)}
+              <span className="pnum">{formatGbp(iOweTotal)}</span>
             </div>
           ) : (
             <Skeleton className="h-5 w-20" />
@@ -1286,19 +1189,17 @@ export default function Owing() {
 
         {/* Settled this month */}
         <div>
-          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
-            Settled
-          </div>
+          <MonoLabel mb={4}>Settled</MonoLabel>
           <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-blue)", lineHeight: 1 }}>
             {isLoading ? <Skeleton className="h-5 w-12 inline-block" /> : settledThisMonth}
           </div>
           <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-mono)" }}>this month</div>
         </div>
-      </div>
+      </PanelBox>
 
       {/* ── First-time empty state ── */}
       {!isLoading && (debts ?? []).length === 0 && (
-        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "40px 24px", textAlign: "center" }}>
+        <PanelBox padding="40px 24px" style={{ textAlign: "center" }}>
           <pre style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6, marginBottom: 20 }}>{`  ┌─────────────────────────────────┐
   │   IOU LEDGER                    │
   │                                 │
@@ -1317,7 +1218,7 @@ export default function Owing() {
               <Plus className="w-3.5 h-3.5 mr-1.5" /> Add IOU
             </Button>
           </div>
-        </div>
+        </PanelBox>
       )}
 
       {/* ── Main tab bar: DEBTS / STRATEGY ── */}
@@ -1450,12 +1351,12 @@ export default function Owing() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                   <thead>
                     <tr>
-                      <th style={TH}>From</th>
-                      <th style={TH}>Description</th>
-                      <th className="ft-hide-mobile" style={TH}>Date</th>
-                      <th className="ft-hide-mobile" style={TH}>Direction</th>
-                      <th style={{ ...TH, textAlign: "right" }}>Amount</th>
-                      <th style={{ ...TH, borderRight: "none" }}>Actions</th>
+                      <DataTH>From</DataTH>
+                      <DataTH>Description</DataTH>
+                      <DataTH className="ft-hide-mobile">Date</DataTH>
+                      <DataTH className="ft-hide-mobile">Direction</DataTH>
+                      <DataTH align="right">Amount</DataTH>
+                      <DataTH noRightBorder>Actions</DataTH>
                     </tr>
                   </thead>
                   <tbody>
@@ -1463,21 +1364,21 @@ export default function Owing() {
                       Array.from({ length: 2 }).map((_, i) => (
                         <tr key={i}>
                           {Array.from({ length: 6 }).map((_, j) => (
-                            <td key={j} style={TD}><Skeleton className="h-3 w-full" /></td>
+                            <DataTD key={j}><Skeleton className="h-3 w-full" /></DataTD>
                           ))}
                         </tr>
                       ))
                     )}
                     {!receivedLoading && (receivedDebts ?? []).length === 0 && (
                       <tr>
-                        <td colSpan={6} style={{ ...TD, textAlign: "center", padding: "20px 12px", color: "var(--ft-dim)", borderRight: "none" }}>
+                        <DataTD colSpan={6} noRightBorder style={{ textAlign: "center", padding: "20px 12px", color: "var(--ft-dim)" }}>
                           No received IOUs
-                        </td>
+                        </DataTD>
                       </tr>
                     )}
                     {!receivedLoading && (receivedDebts ?? []).map((d) => (
                       <tr key={d.id}>
-                        <td style={TD}>
+                        <DataTD>
                           <div className="flex items-center gap-2">
                             <span
                               className="flex items-center justify-center text-xs font-bold flex-shrink-0"
@@ -1487,15 +1388,15 @@ export default function Owing() {
                             </span>
                             <span style={{ color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.personName}</span>
                           </div>
-                        </td>
-                        <td style={{ ...TD, color: "var(--ft-text)" }}>
+                        </DataTD>
+                        <DataTD>
                           {d.description}
                           {d.notes && (
                             <span className="ml-1.5 text-xs" style={{ color: "var(--ft-dim)" }}>· {d.notes}</span>
                           )}
-                        </td>
-                        <td className="ft-hide-mobile" style={{ ...TD, fontFamily: "monospace" }}>{formatDate(d.date)}</td>
-                        <td className="ft-hide-mobile" style={TD}>
+                        </DataTD>
+                        <DataTD className="ft-hide-mobile" mono>{formatDate(d.date)}</DataTD>
+                        <DataTD className="ft-hide-mobile">
                           {d.direction === "i_owe_them" ? (
                             <span
                               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-xs"
@@ -1511,11 +1412,11 @@ export default function Owing() {
                               <TrendingUp className="w-3 h-3" /> They owe
                             </span>
                           )}
-                        </td>
-                        <td style={{ ...TD, textAlign: "right", fontFamily: "monospace" }}>
-                          {formatNative(d.nativeAmount, d.currency)}
-                        </td>
-                        <td style={{ ...TD, borderRight: "none" }}>
+                        </DataTD>
+                        <DataTD numeric>
+                          <span className="pnum">{formatNative(d.nativeAmount, d.currency)}</span>
+                        </DataTD>
+                        <DataTD noRightBorder>
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleAcceptReceived(d.personName)}
@@ -1534,7 +1435,7 @@ export default function Owing() {
                               <X className="w-3 h-3" /> Reject
                             </button>
                           </div>
-                        </td>
+                        </DataTD>
                       </tr>
                     ))}
                   </tbody>
@@ -1576,7 +1477,7 @@ export default function Owing() {
                       {name[0].toUpperCase()}
                     </span>
                     <span style={{ color: "var(--ft-text)" }}>{name}</span>
-                    <span className="font-mono font-semibold" style={{ color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                    <span className="font-mono font-semibold pnum" style={{ color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                       {net >= 0 ? "+" : ""}{formatGbp(net)}
                     </span>
                   </div>
@@ -1814,11 +1715,11 @@ export default function Owing() {
                       {/* Amount + actions */}
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: amountColor }}>
-                          {isIowe ? "-" : "+"}{formatGbp(d.gbpEquivalent)}
+                          <span className="pnum">{isIowe ? "-" : "+"}{formatGbp(d.gbpEquivalent)}</span>
                         </div>
                         {d.currency !== "GBP" && (
                           <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
-                            {formatNative(d.nativeAmount, d.currency)}
+                            <span className="pnum">{formatNative(d.nativeAmount, d.currency)}</span>
                           </div>
                         )}
                         {d.status === "pending" && !isSettling && (
@@ -1927,7 +1828,7 @@ export default function Owing() {
                           }}
                         />
                         <span style={{ fontSize: 10, color: "var(--ft-dim)" }}>
-                          of {formatGbp(settleForm.fullAmount)}
+                          of <span className="pnum">{formatGbp(settleForm.fullAmount)}</span>
                         </span>
                         <button
                           onClick={confirmSettle}
@@ -2057,7 +1958,7 @@ export default function Owing() {
               <div className="space-y-1.5">
                 <Label style={{ color: "var(--ft-muted)", fontSize: 11 }}>Currency</Label>
                 <Select value={form.currency} onValueChange={(v) => setForm((f) => ({ ...f, currency: v as Currency }))}>
-                  <SelectTrigger style={{ ...INPUT_STYLE }}>
+                  <SelectTrigger style={INPUT_STYLE}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
@@ -2152,7 +2053,7 @@ export default function Owing() {
                 value={form.accountId || "__none__"}
                 onValueChange={(v) => setForm((f) => ({ ...f, accountId: v === "__none__" ? "" : v }))}
               >
-                <SelectTrigger style={{ ...INPUT_STYLE }}>
+                <SelectTrigger style={INPUT_STYLE}>
                   <SelectValue placeholder="No account linked" />
                 </SelectTrigger>
                 <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
@@ -2208,7 +2109,7 @@ export default function Owing() {
               <div className="space-y-1.5">
                 <Label style={{ color: "var(--ft-muted)", fontSize: 11 }}>Currency</Label>
                 <Select value={splitForm.currency} onValueChange={(v) => setSplitForm((f) => ({ ...f, currency: v as Currency }))}>
-                  <SelectTrigger style={{ ...INPUT_STYLE }}>
+                  <SelectTrigger style={INPUT_STYLE}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
@@ -2332,14 +2233,14 @@ export default function Owing() {
                                 lineHeight: 1.4,
                               }}
                             >
-                              ← {customRemaining.toFixed(2)}
+                              ← <span className="pnum">{customRemaining.toFixed(2)}</span>
                             </button>
                           )}
                         </div>
                       )}
                       {splitForm.splitType === "equal" && splitTotal > 0 && (
                         <span className="text-xs font-mono flex-shrink-0" style={{ color: "var(--ft-green)", minWidth: 70, textAlign: "right" }}>
-                          {splitForm.currency} {perPersonEqual.toFixed(2)}
+                          {splitForm.currency} <span className="pnum">{perPersonEqual.toFixed(2)}</span>
                         </span>
                       )}
                       {splitForm.people.length > 2 && (

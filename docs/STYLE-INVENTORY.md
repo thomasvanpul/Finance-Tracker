@@ -300,7 +300,7 @@ appears anywhere in the file.
 | `accounts.tsx` | 46 | YES (78) | YES (tabular) | Consistent |
 | `analytics.tsx` | 110 | YES (98) | YES (tabular) | Consistent |
 | `reports.tsx` | 45 | YES (57) | YES (tabular) | Consistent |
-| `tax.tsx` | 17 | YES (86) | YES (tabular) | Consistent |
+| `tax.tsx` | 4 | YES (86) | YES (tabular + 23 pnum) | Consistent |
 | `trading-journal.tsx` | 26 | YES (8) | YES (tabular) | Consistent |
 | `budget.tsx` | 38 | YES (60) | YES (tabular) | Consistent |
 | `year-review.tsx` | 55 | YES (32) | YES (tabular) | Consistent |
@@ -508,35 +508,51 @@ figure alignment.
 
 ## 7. Recommended Proof-of-Concept Page
 
-### Recommendation: `pages/tax.tsx`
+### Recommendation: `pages/owing.tsx` *(selected; migration complete)*
 
-**Why:**
+**Why owing.tsx instead of tax.tsx:**
 
-1. **Representativeness.** tax.tsx contains every pattern in the inventory:
-   a `TH` constant (§1b), a `SectionHeader` function (9 redefinitions codebase-wide),
-   currency rendering with `tabular-nums` present on some values but not all,
-   a `<table>` with hardcoded padding ignoring density, and extensive
-   `fontFamily: --font-mono` inline without `.pnum`.
+tax.tsx was initially considered but is one of the best-covered pages: it has
+only 4 currency renders (not 17 as previously recorded), 13 inline
+`fontVariantNumeric: tabular-nums` occurrences, and 23 `.pnum` usages. Its
+typography gap is close to zero. Using it as a POC would demonstrate mostly
+`<DataTH>` adoption and little else.
 
-2. **Size.** 172 `style={{ }}` occurrences — substantial enough to be a real
-   test but smaller than `investments.tsx` (717) or `analytics.tsx` (536).
-   Migrating it will produce a measurable before/after diff that can be
-   reviewed in a single PR.
+**Data behind the owing.tsx selection:**
 
-3. **Self-contained.** The `SectionHeader` in tax.tsx is used only within that
-   file; deleting it after extracting `<PanelHeader>` has no cross-file
-   ripple. The `TH` constant is similarly local.
+| Metric | Value |
+|---|---|
+| `style={{ }}` occurrences | **239** |
+| Local constants to delete | `TH`, `TD`, `INPUT_STYLE` |
+| Tables | 2 (`<table>` in received-IOUs, amortization) |
+| `fontFamily: --font-mono` inline | **76** |
+| Currency renders (`formatGbp` / `formatNative`) | **25** |
+| `.pnum` usages before migration | **0** |
+| `fontVariantNumeric: tabular-nums` | **0** |
 
-4. **High-value typography fix.** tax.tsx has 17 currency renders, a tabular
-   `TH` header, and two income-tax reference tables — all rendered without
-   `tabular-nums`. This is the most user-visible trust signal: tax figures
-   must align in columns.
+**Why owing.tsx:**
 
-5. **Not the hardest.** `investments.tsx` (717 occurrences, 300 kB, 5000 lines)
-   would take weeks. tax.tsx is a 172-occurrence / 1200-line file: a day's
-   work for P1 + P3 + P6 primitives.
+1. **Typography gap is the largest.** 25 currency renders, 76 mono-font usages,
+   zero tabular-nums — this page will produce the highest-signal before/after
+   for numeric alignment and privacy-mode blur, both of which are visible to
+   the user.
 
-**What a migration proves:** that `<MonoLabel>`, `<PanelHeader>`, `<DataTH>`,
-and `.pnum` can be introduced without changing the visual output, that density
-tokens work end-to-end, and that the approach is safe to extend to the larger
-files.
+2. **Has all five target primitives.** owns `TH`, `TD`, and `INPUT_STYLE` local
+   constants (§1b, §1c, §1d); section-header divs matching `<PanelHeader>`;
+   surface containers matching `<PanelBox>`; and many uppercase mono labels
+   matching `<MonoLabel>`.
+
+3. **Self-contained.** All constants and local patterns are file-local; no
+   cross-file ripple when they are deleted.
+
+4. **Medium size.** 239 occurrences and ~2414 lines — large enough to be a
+   real stress test, small enough to review in a single PR.
+
+5. **Density mode gap.** Both tables ignore `--ft-cell-py` / `--ft-cell-px`;
+   `<DataTH>` / `<DataTD>` introduce the density-token path naturally.
+
+**What the migration proves:** that `<MonoLabel>`, `<PanelBox>`, `<PanelHeader>`,
+`<DataTH>`, `<DataTD>`, and `.pnum` can be introduced without changing the visual
+output (except numeric alignment and privacy blur), and that the approach is safe
+to extend to larger files such as `accounts.tsx`, `reports.tsx`, and eventually
+`investments.tsx`.
