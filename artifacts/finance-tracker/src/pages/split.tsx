@@ -487,26 +487,26 @@ function ReceiptAnalysisPanel({
             {analysis.items.map((item, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)" }}>
                 <span style={{ color: "var(--ft-muted)" }}>{item.name}</span>
-                <span style={{ color: "var(--ft-text)" }}>£{item.price.toFixed(2)}</span>
+                <span className="pnum" style={{ color: "var(--ft-text)" }}>£{item.price.toFixed(2)}</span>
               </div>
             ))}
             {(analysis.tax > 0 || analysis.tip > 0) && (
               <>
                 {analysis.tax > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>
-                    <span>Tax</span><span>£{analysis.tax.toFixed(2)}</span>
+                    <span>Tax</span><span className="pnum">£{analysis.tax.toFixed(2)}</span>
                   </div>
                 )}
                 {analysis.tip > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>
-                    <span>Tip / Service</span><span>£{analysis.tip.toFixed(2)}</span>
+                    <span>Tip / Service</span><span className="pnum">£{analysis.tip.toFixed(2)}</span>
                   </div>
                 )}
               </>
             )}
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2 }}>
               <span style={{ color: "var(--ft-text)" }}>Total</span>
-              <span style={{ color: "var(--ft-text)" }}>£{analysis.total.toFixed(2)}</span>
+              <span className="pnum" style={{ color: "var(--ft-text)" }}>£{analysis.total.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -551,7 +551,7 @@ function ReceiptAnalysisPanel({
                 return (
                   <div key={member} style={{ display: "flex", alignItems: "center", gap: 3, padding: "2px 6px", background: col.bg, borderRadius: 2, fontSize: 9, fontFamily: "var(--font-mono)" }}>
                     <span style={{ color: col.color, fontWeight: 700 }}>{member}</span>
-                    <span style={{ color: col.color }}>£{(share ?? 0).toFixed(2)}</span>
+                    <span className="pnum" style={{ color: col.color }}>£{(share ?? 0).toFixed(2)}</span>
                   </div>
                 );
               })}
@@ -622,22 +622,22 @@ function ReceiptViewerModal({
                 {scanData.items.map((item, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, fontFamily: "var(--font-mono)" }}>
                     <span style={{ color: "var(--ft-muted)", flex: 1 }}>{item.name}</span>
-                    <span style={{ color: "var(--ft-text)", flexShrink: 0 }}>£{item.price.toFixed(2)}</span>
+                    <span className="pnum" style={{ color: "var(--ft-text)", flexShrink: 0 }}>£{item.price.toFixed(2)}</span>
                   </div>
                 ))}
                 <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 5, marginTop: 3 }}>
                   {scanData.tax > 0 && (
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 2 }}>
-                      <span>Tax</span><span>£{scanData.tax.toFixed(2)}</span>
+                      <span>Tax</span><span className="pnum">£{scanData.tax.toFixed(2)}</span>
                     </div>
                   )}
                   {scanData.tip > 0 && (
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 2 }}>
-                      <span>Tip / Service</span><span>£{scanData.tip.toFixed(2)}</span>
+                      <span>Tip / Service</span><span className="pnum">£{scanData.tip.toFixed(2)}</span>
                     </div>
                   )}
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ft-text)" }}>
-                    <span>Total</span><span>£{scanData.total.toFixed(2)}</span>
+                    <span>Total</span><span className="pnum">£{scanData.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -653,7 +653,7 @@ function ReceiptViewerModal({
                   {Object.entries(sug.shares).map(([member, share]) => (
                     <div key={member} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)" }}>
                       <span style={{ color: "var(--ft-muted)" }}>{member}</span>
-                      <span style={{ color: "var(--ft-text)" }}>£{(share ?? 0).toFixed(2)}</span>
+                      <span className="pnum" style={{ color: "var(--ft-text)" }}>£{(share ?? 0).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -1177,6 +1177,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
                 </span>
                 {splitType === "equal" ? (
                   <span
+                    className="pnum"
                     style={{
                       fontSize: 11,
                       fontFamily: "var(--font-mono)",
@@ -1198,6 +1199,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
                 )}
                 {splitType !== "equal" && (
                   <span
+                    className="pnum"
                     style={{
                       fontSize: 10,
                       fontFamily: "var(--font-mono)",

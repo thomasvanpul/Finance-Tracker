@@ -244,7 +244,7 @@ function EmergencyFundWidget() {
 
       {/* Meta */}
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-        {formatGbp(liquidSavings)} liquid
+        <span className="pnum">{formatGbp(liquidSavings)}</span> liquid
         {avgMonthlyExpenses > 0 && ` · ${formatGbp(avgMonthlyExpenses)}/mo avg`}
       </div>
 
@@ -2194,7 +2194,7 @@ function DashboardOverview() {
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
             <div>
               <div style={{ ...OV_LABEL, marginBottom: 3 }}>NET WORTH</div>
-              <div style={{ ...OV_MONO, fontSize: isMobile ? 34 : 36, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.03em", lineHeight: 1 }}>
+              <div className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 34 : 36, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.03em", lineHeight: 1 }}>
                 {netWorth === null ? "—" : formatGbp(netWorth)}
               </div>
             </div>
@@ -2202,14 +2202,14 @@ function DashboardOverview() {
               <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <div>
                   <div style={{ ...OV_LABEL, marginBottom: 3 }}>THIS MONTH</div>
-                  <div style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, ...C(netColor) }}>
+                  <div className="pnum" style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, ...C(netColor) }}>
                     {net >= 0 ? "+" : ""}{formatGbp(net)}
                   </div>
                 </div>
                 {savingsRate > 0 && (
                   <div>
                     <div style={{ ...OV_LABEL, marginBottom: 3 }}>SAVED</div>
-                    <div style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
+                    <div className="pnum" style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
                       {savingsRate.toFixed(0)}%
                     </div>
                   </div>
@@ -2219,8 +2219,8 @@ function DashboardOverview() {
           </div>
           {income > 0 && (
             <div style={{ display: "flex", gap: 16, marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
-              <span style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-green)") }}>▲ {formatGbp(income)} in</span>
-              <span style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-red)") }}>▼ {formatGbp(expenses)} out</span>
+              <span className="pnum" style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-green)") }}>▲ {formatGbp(income)} in</span>
+              <span className="pnum" style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-red)") }}>▼ {formatGbp(expenses)} out</span>
             </div>
           )}
         </div>
@@ -2247,7 +2247,7 @@ function DashboardOverview() {
                 <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: isMobile ? 13 : 11, fontWeight: isMobile ? 500 : 400, ...C("var(--ft-text)") }}>{acc.name}</div>
                 <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)"), letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: isMobile ? 2 : 0 }}>{(acc as any).currency ?? ""}</div>
               </div>
-              <span style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.gbpEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
+              <span className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.gbpEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
                 {formatGbp(acc.gbpEquivalent)}
               </span>
             </div>
@@ -2287,7 +2287,7 @@ function DashboardOverview() {
                   <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 13, fontWeight: 500, ...C("var(--ft-text)"), marginBottom: 2 }}>{tx.description}</div>
                   <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</div>
                 </div>
-                <span style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(txTypeColor), flexShrink: 0 }}>
+                <span className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(txTypeColor), flexShrink: 0 }}>
                   {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(Math.abs(tx.gbpValue))}
                 </span>
               </div>
@@ -2298,7 +2298,7 @@ function DashboardOverview() {
                   <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 10, ...C("var(--ft-text)") }}>{tx.description}</span>
                   <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</span>
                 </div>
-                <span style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
+                <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
                   {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(Math.abs(tx.gbpValue))}
                 </span>
               </div>
@@ -2325,7 +2325,7 @@ function DashboardOverview() {
               {upcomingBills.map((bill, i) => (
                 <div key={bill.id ?? i} style={{ padding: "9px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-amber)" }}>
                   <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 8, ...C("var(--ft-dim)"), marginBottom: 4 }}>{bill.description}</div>
-                  <div style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, ...C("var(--ft-text)"), marginBottom: 3 }}>
+                  <div className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, ...C("var(--ft-text)"), marginBottom: 3 }}>
                     {formatGbp(bill.gbpEquivalent)}
                   </div>
                   {bill.dueDate && (
