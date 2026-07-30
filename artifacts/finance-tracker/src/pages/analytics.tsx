@@ -66,7 +66,7 @@ function MonoTooltip({ active, payload, label, formatter }: {
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />
             )}
             {displayName && <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>{displayName}</span>}
-            <span style={{ color: "var(--ft-text)", fontWeight: 700 }}>{displayVal}</span>
+            <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{displayVal}</span>
           </div>
         );
       })}
@@ -492,7 +492,7 @@ function IncomeSourceRow({ cat, total, grandTotal, colorIndex, isLast }: IncomeS
       <div style={{ height: 3, background: "var(--ft-border)" }}>
         <div style={{ height: "100%", width: `${Math.round(pct * 100)}%`, background: color }} />
       </div>
-      <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", textAlign: "right" as const }}>{Math.round(pct * 100)}%</div>
+      <div className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", textAlign: "right" as const }}>{Math.round(pct * 100)}%</div>
       <div className="pnum" style={{ ...mono, fontSize: 11, fontWeight: 600, color, textAlign: "right" as const }}>{formatGbp(total)}</div>
     </div>
   );
@@ -687,7 +687,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
-              {rangedExpenses.length} tx · {formatGbp(totalForCategory)}
+              {rangedExpenses.length} tx · <span className="pnum">{formatGbp(totalForCategory)}</span>
             </span>
             <button
               onClick={onClose}
@@ -720,7 +720,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
                   <tr key={t.id} style={{ background: ri % 2 === 0 ? "transparent" : "color-mix(in srgb, var(--ft-raised) 30%, transparent)" }}>
                     <td style={{ ...td, fontSize: 10, color: "var(--ft-dim)", padding: "6px 12px", minWidth: 80 }}>{t.date}</td>
                     <td style={{ ...td, fontSize: 11, padding: "6px 12px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}>{t.description || "—"}</td>
-                    <td style={{ ...td, fontSize: 11, fontWeight: 700, color: "var(--ft-red)", textAlign: "right", padding: "6px 12px" }}>{formatGbp(t.gbpValue)}</td>
+                    <td className="pnum" style={{ ...td, fontSize: 11, fontWeight: 700, color: "var(--ft-red)", textAlign: "right", padding: "6px 12px" }}>{formatGbp(t.gbpValue)}</td>
                     <td style={{ ...td, fontSize: 9, color: "var(--ft-muted)", padding: "6px 12px", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>{t.accountName || "—"}</td>
                   </tr>
                 ))}
@@ -838,7 +838,7 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
     {
       label: "Highest Category",
       value: topCat ? topCat[0] : "—",
-      delta: topCat ? <span style={{ color: "var(--ft-accent)", fontSize: 9, fontFamily: "var(--font-mono)" }}>{formatGbp(topCat[1])}</span> : null,
+      delta: topCat ? <span className="pnum" style={{ color: "var(--ft-accent)", fontSize: 9, fontFamily: "var(--font-mono)" }}>{formatGbp(topCat[1])}</span> : null,
       valueColor: "var(--ft-text)",
     },
     {
@@ -855,7 +855,7 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
     {
       label: "Best Month",
       value: bestMonthLabel,
-      delta: bestMonthEntry ? <span style={{ color: "var(--ft-green)", fontSize: 9, fontFamily: "var(--font-mono)" }}>{formatGbp(bestMonthEntry[1])}</span> : null,
+      delta: bestMonthEntry ? <span className="pnum" style={{ color: "var(--ft-green)", fontSize: 9, fontFamily: "var(--font-mono)" }}>{formatGbp(bestMonthEntry[1])}</span> : null,
       valueColor: "var(--ft-text)",
     },
     {
@@ -920,7 +920,7 @@ function KpiStrip({ expenses, range, onRangeChange }: { expenses: Tx[]; range: R
       value: formatGbp(thisMonthSpend),
       sub: delta !== 0 ? (
         <span style={{ color: delta > 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 10, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-          {delta > 0 ? "▲" : "▼"} {formatGbp(Math.abs(delta))} MoM
+          {delta > 0 ? "▲" : "▼"} <span className="pnum">{formatGbp(Math.abs(delta))}</span> MoM
         </span>
       ) : null,
     },
@@ -1021,7 +1021,7 @@ function SpendingVelocity({ allExpenses, budgetTotal, range, onRangeChange }: {
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
                       {entry.color && <div style={{ width: 6, height: 6, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />}
                       <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>{String(entry.name ?? "")}</span>
-                      <span style={{ color: "var(--ft-text)", fontWeight: 700 }}>{formatGbp(typeof entry.value === "number" ? entry.value : 0)}</span>
+                      <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{formatGbp(typeof entry.value === "number" ? entry.value : 0)}</span>
                     </div>
                   ))}
                 </div>
@@ -1202,7 +1202,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
               </Pie>
             </PieChart>
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", textAlign: "center" }}>
-              <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: savingsPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>{savingsPct}%</div>
+              <div className="pnum" style={{ ...mono, fontSize: 18, fontWeight: 700, color: savingsPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>{savingsPct}%</div>
               <div style={{ ...ftLabel, fontSize: 8, marginTop: 2 }}>saved</div>
             </div>
           </div>
@@ -1318,7 +1318,7 @@ function CategoryIntelligence({ expenses, range, onCategoryClick }: CategoryInte
       </div>
       <div style={{ padding: "4px 12px 6px", borderTop: "1px solid var(--ft-border)" }}>
         <span style={{ ...ftLabel }}>Click row to drill into transactions · Total in range: </span>
-        <span style={{ ...mono, fontSize: 9, color: "var(--ft-accent)" }}>{formatGbp(totalSpend)}</span>
+        <span className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-accent)" }}>{formatGbp(totalSpend)}</span>
       </div>
     </div>
   );
@@ -1458,7 +1458,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
                         {cell.day}
                       </span>
                       {cell.total > 0 && (
-                        <span style={{ ...mono, fontSize: 8, fontWeight: 700, color: isHighSpend ? "var(--ft-text)" : "var(--ft-muted)", lineHeight: 1 }}>
+                        <span className="pnum" style={{ ...mono, fontSize: 8, fontWeight: 700, color: isHighSpend ? "var(--ft-text)" : "var(--ft-muted)", lineHeight: 1 }}>
                           £{Math.round(cell.total)}
                         </span>
                       )}
@@ -1487,14 +1487,14 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
               boxShadow: "none",
             }}>
               <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 5, letterSpacing: "0.06em" }}>
-                {tooltip.day.date} · {formatGbp(tooltip.day.total)}
+                {tooltip.day.date} · <span className="pnum">{formatGbp(tooltip.day.total)}</span>
               </div>
               {tooltip.day.txs.slice(0, 5).map(t => (
                 <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
                   <span style={{ color: "var(--ft-muted)", fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
                     {t.description || t.category || "—"}
                   </span>
-                  <span style={{ color: "var(--ft-red)", fontWeight: 700, fontSize: 9, flexShrink: 0 }}>{formatGbp(t.gbpValue)}</span>
+                  <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, fontSize: 9, flexShrink: 0 }}>{formatGbp(t.gbpValue)}</span>
                 </div>
               ))}
               {tooltip.day.txs.length > 5 && (
@@ -1562,7 +1562,7 @@ function SpendingHeatmap({ expenses }: { expenses: Tx[] }) {
                   const isMax = val === maxVal && val > 0;
                   return (
                     <td key={wi} style={{ padding: "3px 3px" }}>
-                      <div title={formatGbp(val)} style={{
+                      <div title={formatGbp(val)} className="pnum" style={{
                         background: heatBg,
                         border: isMax ? "1px solid var(--ft-amber)" : "1px solid var(--ft-border)",
                         height: 32,
@@ -1579,13 +1579,13 @@ function SpendingHeatmap({ expenses }: { expenses: Tx[] }) {
                     </td>
                   );
                 })}
-                <td style={{ ...td, textAlign: "right", color: "var(--ft-accent)", paddingLeft: 12 }}>{formatGbp(rowTotals[di])}</td>
+                <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-accent)", paddingLeft: 12 }}>{formatGbp(rowTotals[di])}</td>
               </tr>
             ))}
             <tr style={{ borderTop: "1px solid var(--ft-border2)" }}>
               <td style={{ ...td, color: "var(--ft-dim)", fontSize: 9, fontWeight: 600 }}>Total</td>
-              {colTotals.map((v, wi) => <td key={wi} style={{ ...td, textAlign: "center", color: "var(--ft-accent)" }}>{formatGbp(v)}</td>)}
-              <td style={{ ...td, textAlign: "right", fontWeight: 700 }}>{formatGbp(expenses.reduce((s, t) => s + t.gbpValue, 0))}</td>
+              {colTotals.map((v, wi) => <td key={wi} className="pnum" style={{ ...td, textAlign: "center", color: "var(--ft-accent)" }}>{formatGbp(v)}</td>)}
+              <td className="pnum" style={{ ...td, textAlign: "right", fontWeight: 700 }}>{formatGbp(expenses.reduce((s, t) => s + t.gbpValue, 0))}</td>
             </tr>
           </tbody>
         </table>
@@ -1772,8 +1772,8 @@ function RecurringVsOneOff({ expenses }: { expenses: Tx[] }) {
       <PanelHeader title="Recurring vs One-Off" />
       <div style={{ padding: "10px 12px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-          <span style={{ ...mono, fontSize: 11, color: "var(--ft-amber)" }}>Recurring {formatGbp(recurring)} ({recPct}%)</span>
-          <span style={{ ...mono, fontSize: 11, color: "var(--ft-muted)" }}>One-off {formatGbp(oneOff)} ({100 - recPct}%)</span>
+          <span style={{ ...mono, fontSize: 11, color: "var(--ft-amber)" }}>Recurring <span className="pnum">{formatGbp(recurring)}</span> (<span className="pnum">{recPct}%</span>)</span>
+          <span style={{ ...mono, fontSize: 11, color: "var(--ft-muted)" }}>One-off <span className="pnum">{formatGbp(oneOff)}</span> (<span className="pnum">{100 - recPct}%</span>)</span>
         </div>
         <div style={{ height: 16, background: "var(--ft-border)", overflow: "hidden", display: "flex" }}>
           <div style={{ width: `${recPct}%`, background: "var(--ft-amber)", opacity: 0.85 }} />
@@ -1887,7 +1887,7 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {latestRate !== null && (
               <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: latestRate >= 20 ? "var(--ft-green)" : latestRate >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>
-                {latestRate}% this month
+                <span className="pnum">{latestRate}%</span> this month
               </span>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -1923,8 +1923,8 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
                     <div style={{ color: "var(--ft-text)", fontWeight: 700, marginBottom: 2 }}>
                       Rate: {d.rate !== null ? `${d.rate}%` : "—"}
                     </div>
-                    <div style={{ color: "var(--ft-green)", fontSize: 9 }}>Income: {formatGbp(d.income)}</div>
-                    <div style={{ color: "var(--ft-red)", fontSize: 9 }}>Expense: {formatGbp(d.expense)}</div>
+                    <div style={{ color: "var(--ft-green)", fontSize: 9 }}>Income: <span className="pnum">{formatGbp(d.income)}</span></div>
+                    <div style={{ color: "var(--ft-red)", fontSize: 9 }}>Expense: <span className="pnum">{formatGbp(d.expense)}</span></div>
                   </div>
                 );
               }}
@@ -2031,7 +2031,7 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
           {([["MEAN/MO", formatGbp(mean), "var(--ft-text)"], ["STD DEV (σ)", formatGbp(sigma), cvColor], ["COEFF VAR", `${cv}%`, cvColor]] as [string, string, string][]).map(([lbl, val, col]) => (
             <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 10px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{val}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{val}</div>
             </div>
           ))}
         </div>
@@ -2047,8 +2047,8 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
                 <div key={r.cat} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < catVolatility.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)" }}>{r.cat}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(r.mean)}/mo avg</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>CV {r.cv}%</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}><span className="pnum">{formatGbp(r.mean)}</span>/mo avg</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>CV <span className="pnum">{r.cv}%</span></span>
                   </div>
                 </div>
               );
@@ -2119,7 +2119,7 @@ function IncomeStability({ allTxs }: { allTxs: Tx[] }) {
         </div>
         {/* Mean line label */}
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: -6, borderTop: "1px dashed var(--ft-border2)", paddingTop: 4 }}>
-          avg {formatGbp(mean)}/mo
+          avg <span className="pnum">{formatGbp(mean)}</span>/mo
         </div>
         {/* Stats grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
@@ -2131,7 +2131,7 @@ function IncomeStability({ allTxs }: { allTxs: Tx[] }) {
           ] as [string, string, string][]).map(([lbl, val, col]) => (
             <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{val}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{val}</div>
             </div>
           ))}
         </div>
@@ -2165,7 +2165,7 @@ function SeasonalityIndex({ expenses }: { expenses: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader title="Spending Seasonality (12M Index)"
-        right={<span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>100 = monthly average · {formatGbp(mean)}/mo</span>}
+        right={<span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>100 = monthly average · <span className="pnum">{formatGbp(mean)}</span>/mo</span>}
       />
       <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         {/* Index bar chart */}
@@ -2283,9 +2283,9 @@ function CategoryMomentum({ expenses }: { expenses: Tx[] }) {
               return (
                 <tr key={r.cat} style={{ background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
                   <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, fontWeight: 500, color: "var(--ft-text)" }}>{r.cat}</td>
-                  <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.last > 0 ? formatGbp(r.last) : "—"}</td>
-                  <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-text)" }}>{r.this > 0 ? formatGbp(r.this) : "—"}</td>
-                  <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: col, fontWeight: 700 }}>{arrow}</td>
+                  <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.last > 0 ? formatGbp(r.last) : "—"}</td>
+                  <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-text)" }}>{r.this > 0 ? formatGbp(r.this) : "—"}</td>
+                  <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: col, fontWeight: 700 }}>{arrow}</td>
                   <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right" }}>
                     {accelLabel && (
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: accelCol, fontWeight: 700, letterSpacing: "0.08em", border: `1px solid ${accelCol}44`, padding: "1px 5px" }}>
@@ -2386,16 +2386,16 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
               <div style={{ height: isFirst || isLast ? 10 : 7, background: "var(--ft-raised)", position: "relative", overflow: "hidden" }}>
                 <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${Math.min(100, row.pct)}%`, background: row.color, opacity: 0.85 }} />
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: isFirst || isLast ? 700 : 400, color: row.sign === 1 ? "var(--ft-text)" : "var(--ft-dim)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: isFirst || isLast ? 700 : 400, color: row.sign === 1 ? "var(--ft-text)" : "var(--ft-dim)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                 {row.sign === -1 ? "−" : ""}{formatGbp(row.amount)}
               </div>
               <div style={{ textAlign: "right" }}>
                 {mom != null && !isFirst && !isLast ? (
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, fontWeight: 700, color: mom > 0 ? "var(--ft-red)" : "var(--ft-green)", letterSpacing: "0.04em" }}>
+                  <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, fontWeight: 700, color: mom > 0 ? "var(--ft-red)" : "var(--ft-green)", letterSpacing: "0.04em" }}>
                     {mom > 0 ? "+" : ""}{mom}%
                   </span>
                 ) : (
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)" }}>
+                  <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)" }}>
                     {row.pct.toFixed(0)}%
                   </span>
                 )}
@@ -2493,9 +2493,9 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
             return (
               <tr key={r.cat} style={{ background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, fontWeight: 500 }}>{r.cat}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700 }}>{r.actual > 0 ? formatGbp(r.actual) : "—"}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{formatGbp(r.benchmark)}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: diffColor }}>{diffLabel}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700 }}>{r.actual > 0 ? formatGbp(r.actual) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{formatGbp(r.benchmark)}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: diffColor }}>{diffLabel}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", paddingLeft: 16, minWidth: 120 }}>
                   <div style={{ position: "relative", height: 12 }}>
                     <div style={{ position: "absolute", left: 0, top: 3, height: 6, width: `${ukPct}%`, background: "var(--ft-border2)", borderRadius: 1 }} />
@@ -2625,8 +2625,8 @@ function SpendingAnomalies({ expenses, isDemo }: { expenses: Tx[]; isDemo: boole
               <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.description}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", color: "var(--ft-dim)" }}>{r.category}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: "var(--ft-red)" }}>{formatGbp(r.amount)}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.catAvg > 0 ? formatGbp(r.catAvg) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: "var(--ft-red)" }}>{formatGbp(r.amount)}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.catAvg > 0 ? formatGbp(r.catAvg) : "—"}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: sigmaColor }}>{sigmaLabel}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", paddingLeft: 12, minWidth: 100 }}>
                   <div style={{ height: 8, background: "var(--ft-raised)", position: "relative" }}>
@@ -2697,12 +2697,12 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
                 </div>
               </div>
               <div style={{ height: 1, background: "var(--ft-border)" }} />
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: pos ? "var(--ft-green)" : "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: pos ? "var(--ft-green)" : "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>
                 {pos ? "+" : ""}{formatGbp(d.saved)}
               </div>
               <div style={{ display: "flex", gap: 4 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(d.income)}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(d.expenses)}</div>
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(d.income)}</div>
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(d.expenses)}</div>
               </div>
             </div>
           );
@@ -2789,11 +2789,11 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
             return (
               <tr key={r.cat} style={{ background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, fontWeight: 500 }}>{r.cat}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.m3 > 0 ? formatGbp(r.m3) : "—"}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.m2 > 0 ? formatGbp(r.m2) : "—"}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right" }}>{r.m1 > 0 ? formatGbp(r.m1) : "—"}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-dim)" }}>{formatGbp(r.avg)}</td>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: fColor }}>{formatGbp(r.forecast)}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.m3 > 0 ? formatGbp(r.m3) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.m2 > 0 ? formatGbp(r.m2) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right" }}>{r.m1 > 0 ? formatGbp(r.m1) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-dim)" }}>{formatGbp(r.avg)}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: fColor }}>{formatGbp(r.forecast)}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", minWidth: 80 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: trendColor, fontWeight: 700 }}>{trendIcon}</span>
@@ -2801,7 +2801,7 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
                       <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${sparkW}%`, background: fColor, opacity: 0.7 }} />
                     </div>
                     {r.changePct != null && (
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: trendColor, whiteSpace: "nowrap" }}>
+                      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: trendColor, whiteSpace: "nowrap" }}>
                         {r.changePct > 0 ? "+" : ""}{r.changePct}%
                       </span>
                     )}
@@ -2870,8 +2870,8 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
                   {d.count}
                 </span>
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)", textAlign: "right" }}>{pct}%</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textAlign: "right" }}>{d.total > 0 ? formatGbp(d.total) : "—"}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)", textAlign: "right" }}>{pct}%</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textAlign: "right" }}>{d.total > 0 ? formatGbp(d.total) : "—"}</div>
             </div>
           );
         })}
@@ -2945,7 +2945,7 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
             </div>
             {cell.delta != null && (
               <div style={{ ...mono, fontSize: 9, marginTop: 3, color: cell.delta <= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-                {cell.delta >= 0 ? "▲" : "▼"} {Math.abs(cell.delta).toFixed(1)}% vs {i === 0 ? "prior wk" : "avg"}
+                {cell.delta >= 0 ? "▲" : "▼"} <span className="pnum">{Math.abs(cell.delta).toFixed(1)}%</span> vs {i === 0 ? "prior wk" : "avg"}
               </div>
             )}
           </div>
@@ -2973,7 +2973,7 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
         </div>
         {/* Average reference line label */}
         <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 4, textAlign: "right" as const }}>
-          avg line: {formatGbp(avgWeek)}/wk
+          avg line: <span className="pnum">{formatGbp(avgWeek)}</span>/wk
         </div>
       </div>
     </div>
@@ -3046,10 +3046,10 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
         title="Subscription Tracker"
         right={
           <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-            <span style={{ ...mono, fontSize: 12, fontWeight: 700, color: "var(--ft-red)" }}>
+            <span className="pnum" style={{ ...mono, fontSize: 12, fontWeight: 700, color: "var(--ft-red)" }}>
               {formatGbp(totalMonthly)}<span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", fontWeight: 400 }}>/mo</span>
             </span>
-            <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}>{formatGbp(totalAnnual)}/yr</span>
+            <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}><span className="pnum">{formatGbp(totalAnnual)}</span>/yr</span>
           </div>
         }
       />
@@ -3085,7 +3085,7 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
                         <div style={{ flex: 1, height: 3, background: "var(--ft-border)" }}>
                           <div style={{ height: "100%", width: `${Math.round(sharePct)}%`, background: "var(--ft-red)", opacity: 0.7 }} />
                         </div>
-                        <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", width: 32, textAlign: "right" }}>{sharePct.toFixed(0)}%</span>
+                        <span className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", width: 32, textAlign: "right" }}>{sharePct.toFixed(0)}%</span>
                       </div>
                     </td>
                   )}
@@ -3099,10 +3099,10 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
         <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{subscriptions.length} subscriptions detected</span>
         <span style={{ ...mono, fontSize: 9, color: "var(--ft-border2)" }}>·</span>
         <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)" }}>
-          <span style={{ color: "var(--ft-red)", fontWeight: 700 }}>{formatGbp(totalMonthly)}</span>/mo
+          <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700 }}>{formatGbp(totalMonthly)}</span>/mo
         </span>
         <span style={{ ...mono, fontSize: 9, color: "var(--ft-border2)" }}>·</span>
-        <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{formatGbp(totalAnnual)}/yr</span>
+        <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}><span className="pnum">{formatGbp(totalAnnual)}</span>/yr</span>
       </div>
     </div>
   );
@@ -3168,24 +3168,24 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
           <div>
             <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>RUNWAY</div>
             <div style={{ ...mono, fontSize: 36, fontWeight: 700, color: runwayColor, letterSpacing: "-0.04em", lineHeight: 1 }}>{runwayLabel}</div>
-            <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>at £{monthlyBurn.toFixed(0)}/mo burn rate</div>
+            <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>at <span className="pnum">£{monthlyBurn.toFixed(0)}</span>/mo burn rate</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Net Saved</div>
-              <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>{formatGbp(netSavings)}</div>
+              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>{formatGbp(netSavings)}</div>
             </div>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Save Rate</div>
-              <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)" }}>{savingsRate.toFixed(1)}%</div>
+              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)" }}>{savingsRate.toFixed(1)}%</div>
             </div>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Mo. Income</div>
-              <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{formatGbp(monthlyIncome)}</div>
+              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{formatGbp(monthlyIncome)}</div>
             </div>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Mo. Burn</div>
-              <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-red)" }}>{formatGbp(monthlyBurn)}</div>
+              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-red)" }}>{formatGbp(monthlyBurn)}</div>
             </div>
           </div>
         </div>
@@ -3284,11 +3284,11 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
         <div style={{ display: "flex", gap: 20, alignItems: "baseline" }}>
           <div>
             <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>Monthly savings · </span>
-            <span style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatGbp(monthlySavings)}</span>
+            <span className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatGbp(monthlySavings)}</span>
           </div>
           <div>
             <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>10yr projection · </span>
-            <span style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{formatGbp(points[10]?.current ?? 0)}</span>
+            <span className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{formatGbp(points[10]?.current ?? 0)}</span>
           </div>
           <div>
             <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>at {rate}% p.a.</span>
@@ -3307,7 +3307,7 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
                     {payload.map((e, i) => (
                       <div key={i} style={{ display: "flex", gap: 8, justifyContent: "space-between", fontSize: 9, color: (e as { color?: string }).color ?? "var(--ft-text)" }}>
                         <span>{e.name}</span>
-                        <span>{formatGbp(e.value as number)}</span>
+                        <span className="pnum">{formatGbp(e.value as number)}</span>
                       </div>
                     ))}
                   </div>
@@ -3324,7 +3324,7 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
             <div key={s.label} style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <span style={{ display: "inline-block", width: 20, height: 2, background: s.color }} />
               <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{s.label}</span>
-              <span style={{ ...mono, fontSize: 9, fontWeight: 700, color: s.color }}>{formatGbp(s.v)}</span>
+              <span className="pnum" style={{ ...mono, fontSize: 9, fontWeight: 700, color: s.color }}>{formatGbp(s.v)}</span>
             </div>
           ))}
         </div>
@@ -3378,7 +3378,7 @@ function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader title="Paycheck Allocation" right={
-        <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>per £{totalIncome.toFixed(0)} monthly income</span>
+        <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>per <span className="pnum">£{totalIncome.toFixed(0)}</span> monthly income</span>
       } />
       <div style={{ padding: "10px 14px" }}>
         {/* Stacked bar */}
@@ -3396,8 +3396,8 @@ function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
               <div style={{ flex: 2, minWidth: 80, height: 4, background: "var(--ft-border)", position: "relative" }}>
                 <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${c.pct}%`, background: c.color, opacity: 0.7 }} />
               </div>
-              <span style={{ ...mono, fontSize: 10, fontWeight: 700, color: c.color, minWidth: 38, textAlign: "right" }}>{c.pct.toFixed(1)}%</span>
-              <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", minWidth: 60, textAlign: "right" }}>{formatGbp(c.spend)}</span>
+              <span className="pnum" style={{ ...mono, fontSize: 10, fontWeight: 700, color: c.color, minWidth: 38, textAlign: "right" }}>{c.pct.toFixed(1)}%</span>
+              <span className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", minWidth: 60, textAlign: "right" }}>{formatGbp(c.spend)}</span>
             </div>
           ))}
         </div>
