@@ -1541,7 +1541,7 @@ function MarketsTab() {
                       tickLine={{ stroke: "#374151", strokeWidth: 1 }}
                       height={26}
                     />
-                    <YAxis domain={["auto", "auto"]} tick={{ fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`} width={56} />
+                    <YAxis domain={["auto", "auto"]} tick={{ fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`} width={56} />
                     <Tooltip content={<OHLCTooltip />} />
                     {q?.analystTargetPrice && <ReferenceLine y={q.analystTargetPrice} stroke="var(--ft-amber)" strokeDasharray="4 3" label={{ value: `Target $${q.analystTargetPrice.toFixed(0)}`, fill: "var(--ft-amber)", fontSize: 9, position: "insideTopRight" }} />}
                     {chartType === "area" && <Area type="monotone" dataKey="close" stroke={chartColor} strokeWidth={1.5} fill="url(#chartGrad)" dot={false} activeDot={{ r: 3 }} />}
@@ -1716,7 +1716,7 @@ function MarketsTab() {
                 <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={detail.earningsHistory} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
                     <XAxis dataKey="date" tick={{ fill: "var(--ft-dim)", fontSize: 8 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "var(--ft-dim)", fontSize: 8 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v.toFixed(1)}`} width={36} />
+                    <YAxis tick={{ fill: "var(--ft-dim)", fontSize: 8, className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v.toFixed(1)}`} width={36} />
                     <Tooltip contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontSize: 11 }} formatter={(v: number, name: string) => [`$${v.toFixed(2)}`, name === "epsActual" ? "Actual" : "Estimate"]} />
                     <Legend iconSize={8} wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: 9, paddingTop: 4 }} formatter={(v) => v === "epsActual" ? "Actual" : "Estimate"} />
                     <Bar dataKey="epsEstimate" fill="var(--ft-dim)" opacity={0.5} radius={[1, 1, 0, 0]} maxBarSize={18} />
@@ -2580,7 +2580,7 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
               <LineChart data={chartData} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke="var(--ft-raised)" vertical={false} />
                 <XAxis dataKey="date" tick={{ fill: "var(--ft-dim)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis domain={["auto", "auto"]} tick={{ fill: "var(--ft-dim)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${sym}${v.toFixed(0)}`} width={48} />
+                <YAxis domain={["auto", "auto"]} tick={{ fill: "var(--ft-dim)", fontSize: 10, className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${sym}${v.toFixed(0)}`} width={48} />
                 <Tooltip contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontSize: 11 }} formatter={(value: number, name: string) => [`${sym}${value.toFixed(2)}`, name === "costBasis" ? "Cost Basis" : "Live Price"]} />
                 <Line type="monotone" dataKey="costBasis" stroke="var(--ft-dim)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} name="costBasis" />
                 <Line type="monotone" dataKey="value" stroke={plColor} strokeWidth={2} dot={{ fill: plColor, r: 4, strokeWidth: 0 }} name="value" />
@@ -2602,7 +2602,7 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
               ].map(({ label, value, color }) => (
                 <div key={label} className="px-3 py-2 border-b border-r" style={{ borderColor: "var(--ft-border)" }}>
                   <div className="text-xs mb-0.5" style={{ color: "var(--ft-dim)" }}>{label}</div>
-                  <div className="text-xs font-mono font-semibold" style={{ color: color ?? "var(--ft-text)" }}>{value}</div>
+                  <div className="text-xs font-mono font-semibold pnum" style={{ color: color ?? "var(--ft-text)" }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -3074,7 +3074,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
                   <span style={{ color: "var(--ft-text)", fontWeight: 600, fontSize: 12 }}>{row.assetClass}</span>
                 </div>
                 {/* Current value */}
-                <div style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)" }}>
+                <div className="pnum" style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)" }}>
                   {formatGbp(row.currentValue)}
                 </div>
                 {/* Current % */}
@@ -3116,7 +3116,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
                       padding: "1px 6px", borderRadius: 2,
                       background: row.action === "Buy" ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)",
                     }}>
-                      {row.action} {formatGbp(row.actionAmount)}
+                      {row.action} <span className="pnum">{formatGbp(row.actionAmount)}</span>
                     </span>
                   )}
                 </div>
@@ -3129,7 +3129,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
             <div style={{ ...RTBD, flex: 1, color: "var(--ft-dim)", fontWeight: 700, fontSize: 10, letterSpacing: "0.4px", textTransform: "uppercase" }}>
               TOTAL
             </div>
-            <div style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)", fontWeight: 700 }}>
+            <div className="pnum" style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)", fontWeight: 700 }}>
               {formatGbp(totalCurrentValue)}
             </div>
             <div style={{ ...RTBD, width: 100, minWidth: 100, textAlign: "right", color: "var(--ft-muted)", fontWeight: 700 }}>
@@ -3161,7 +3161,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
       {/* Info note */}
       <div style={{ padding: "8px 12px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-dim)" }}>
         Targets persist in localStorage. Asset classes are derived from your portfolio positions using the class tags you assign to each holding.
-        Portfolio total used: <span style={{ fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>{formatGbp(totalPortfolioValue)}</span>.
+        Portfolio total used: <span className="pnum" style={{ fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>{formatGbp(totalPortfolioValue)}</span>.
       </div>
     </div>
   );
@@ -4707,7 +4707,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={plData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
                     <XAxis dataKey="name" tick={{ fill: "var(--ft-dim)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "var(--ft-dim)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `£${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}`} />
+                    <YAxis tick={{ fill: "var(--ft-dim)", fontSize: 10, className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v) => `£${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}`} />
                     <Tooltip formatter={(v: number) => [formatGbp(v), "P&L"]} contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11 }} />
                     <Bar dataKey="pl" radius={[2, 2, 0, 0]} maxBarSize={40}>{plData.map((e, i) => <Cell key={i} fill={e.fill} />)}</Bar>
                   </BarChart>
@@ -4785,7 +4785,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                       <div key={d.name} className="flex items-center gap-2 text-xs">
                         <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
                         <span style={{ color: "var(--ft-text)", flex: 1 }}>{d.name}</span>
-                        <span className="font-mono" style={{ color: "var(--ft-muted)" }}>{formatGbp(d.value)}</span>
+                        <span className="pnum font-mono" style={{ color: "var(--ft-muted)" }}>{formatGbp(d.value)}</span>
                         <span className="font-mono w-10 text-right" style={{ color: "var(--ft-dim)" }}>{pct.toFixed(1)}%</span>
                       </div>
                     );
@@ -4858,7 +4858,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                 </div>
                 <div className="px-4 py-3">
                   <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Est. Annual Dividends</div>
-                  <div className="text-base font-bold font-mono" style={{ color: "var(--ft-green)" }}>{formatGbp(totalAnnualDividend)}</div>
+                  <div className="pnum text-base font-bold font-mono" style={{ color: "var(--ft-green)" }}>{formatGbp(totalAnnualDividend)}</div>
                   <div className="text-xs mt-1" style={{ color: "var(--ft-dim)" }}>From {dividendPositions.length} position{dividendPositions.length !== 1 ? "s" : ""}</div>
                 </div>
               </div>

@@ -2234,7 +2234,7 @@ export default function Accounts() {
                   nwDelta !== null
                     ? <span style={{ color: nwDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)", display: "inline-flex", alignItems: "center", gap: 3 }}>
                         {nwDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        {nwDelta >= 0 ? "+" : ""}{formatGbp(nwDelta)} vs yesterday
+                        <span className="pnum">{nwDelta >= 0 ? "+" : ""}{formatGbp(nwDelta)}</span> vs yesterday
                       </span>
                     : <span style={{ color: "var(--ft-dim)" }}>{accounts!.length} account{accounts!.length !== 1 ? "s" : ""}</span>
                 }
@@ -2276,7 +2276,7 @@ export default function Accounts() {
                     CURRENCY EXPOSURE — {currencies.length} currencies
                   </span>
                   <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
-                    {baseCurrency} base · {formatGbp(totalCash)} total
+                    {baseCurrency} base · <span className="pnum">{formatGbp(totalCash)}</span> total
                   </span>
                 </div>
                 {/* Stacked bar */}
@@ -2812,7 +2812,7 @@ export default function Accounts() {
             <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
               <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
                 <div style={{ width: 8, height: 8, background: "var(--ft-green)" }} />
-                <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>
+                <span className="pnum" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>
                   {formatGbp(totalAssets)}
                 </span>
                 <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>assets</span>
@@ -2821,7 +2821,7 @@ export default function Accounts() {
                 <>
                   <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
                     <div style={{ width: 8, height: 8, background: "var(--ft-red)" }} />
-                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>
+                    <span className="pnum" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>
                       -{formatGbp(totalOwed)}
                     </span>
                     <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
@@ -2830,7 +2830,7 @@ export default function Accounts() {
                   </div>
                   <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
                     <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>net</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: (totalAssets - totalOwed) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                    <span className="pnum" style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: (totalAssets - totalOwed) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                       {formatGbp(totalAssets - totalOwed)}
                     </span>
                   </div>
@@ -2886,7 +2886,7 @@ export default function Accounts() {
               <ResponsiveContainer width="100%" height={140}>
                 <ComposedChart data={monthlyFlow} margin={{ top: 4, right: 16, left: 0, bottom: 0 }} barGap={4}>
                   <XAxis dataKey="month" tick={{ fill: "#6b7280", fontSize: 10, fontFamily: "var(--font-mono)" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#6b7280", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `£${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toFixed(0)}`} width={44} />
+                  <YAxis tick={{ fill: "#6b7280", fontSize: 9, className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `£${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toFixed(0)}`} width={44} />
                   <Tooltip
                     contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", borderRadius: 2 }}
                     formatter={(v: number, name: string) => [formatGbp(v), name === "income" ? "Income" : name === "expense" ? "Expenses" : "Net"]}

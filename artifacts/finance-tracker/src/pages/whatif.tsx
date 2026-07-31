@@ -751,7 +751,7 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
                   margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
                 >
                   <XAxis dataKey="name" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `£${v}`} width={40} />
+                  <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `£${v}`} width={40} />
                   <Tooltip formatter={(v: number) => [formatGbp(v), "Monthly saving"]} contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }} />
                   <Bar dataKey="saving" fill="var(--ft-green)" radius={[1, 1, 0, 0]} />
                 </BarChart>
@@ -827,7 +827,7 @@ function LumpSumTab() {
           <BarChart data={barData} margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" vertical={false} />
             <XAxis dataKey="year" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} tickLine={false} axisLine={false} width={44} />
+            <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }} tickLine={false} axisLine={false} width={44} />
             <Tooltip
               formatter={(v: number, name: string) => [formatGbp(v), name === "principal" ? "Principal" : "Interest"]}
               contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
@@ -921,7 +921,7 @@ function DebtPayoffTab() {
             <LineChart data={lineData} margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" vertical={false} />
               <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} label={{ value: "Month", position: "insideBottomRight", fill: "var(--ft-dim)", fontSize: 8, fontFamily: "var(--font-mono)" }} />
-              <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} tickLine={false} axisLine={false} width={44} />
+              <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }} tickLine={false} axisLine={false} width={44} />
               <Tooltip
                 formatter={(v: number, name: string) => [formatGbp(v), name === "baseBalance" ? "Min payment" : `+${formatGbp(extraPayment)}/mo`]}
                 contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
@@ -1101,7 +1101,7 @@ function InflationTab() {
                 tickFormatter={(v: number) => `Yr ${v}`}
               />
               <YAxis
-                tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }}
+                tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}

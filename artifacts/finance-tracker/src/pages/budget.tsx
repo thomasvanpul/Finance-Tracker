@@ -328,7 +328,7 @@ function ForecastAtRiskRow({ category, effectiveLimit, projectedSpend, projected
         <div style={{ position: "absolute" as const, height: "100%", width: `${barPct}%`, background: "var(--ft-amber)", borderRadius: 0 }} />
       </div>
       <span className="pnum" style={{ color: "var(--ft-dim)", minWidth: 65, fontSize: 9, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{formatGbp(effectiveLimit)} limit</span>
-      <span style={{ color: "var(--ft-amber)", fontSize: 9, fontWeight: 700, minWidth: 70, textTransform: "uppercase" as const, letterSpacing: "0.04em", flexShrink: 0 }}>→ {formatGbp(projectedSpend)}</span>
+      <span className="pnum" style={{ color: "var(--ft-amber)", fontSize: 9, fontWeight: 700, minWidth: 70, textTransform: "uppercase" as const, letterSpacing: "0.04em", flexShrink: 0 }}>→ {formatGbp(projectedSpend)}</span>
       <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, minWidth: 72, textAlign: "right" as const, fontSize: 10, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>+{formatGbp(projectedOverspend)}</span>
     </div>
   );
@@ -637,7 +637,7 @@ function BudgetTooltip({
       </div>
       {payload.map((p) => (
         <div key={p.name} style={{ color: p.fill, marginBottom: 2 }}>
-          {p.name}: {formatGbp(p.value)}
+          {p.name}: <span className="pnum">{formatGbp(p.value)}</span>
         </div>
       ))}
     </div>
@@ -831,7 +831,7 @@ function BudgetTableRow({
         </div>
         <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
           {rolloverEnabled && rolloverAccumulated > 0 && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-cyan)", letterSpacing: "0.04em" }}>
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-cyan)", letterSpacing: "0.04em" }}>
               ↻ +{formatGbp(rolloverAccumulated)}
             </span>
           )}
@@ -841,7 +841,7 @@ function BudgetTableRow({
             </span>
           )}
           {isOver && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", fontWeight: 700, letterSpacing: "0.04em" }}>
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", fontWeight: 700, letterSpacing: "0.04em" }}>
               +{formatGbp(Math.abs(rem))} over
             </span>
           )}
@@ -2285,7 +2285,7 @@ export default function Budget() {
               >
                 <XAxis
                   type="number"
-                  tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }}
+                  tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: number) => `£${v}`}

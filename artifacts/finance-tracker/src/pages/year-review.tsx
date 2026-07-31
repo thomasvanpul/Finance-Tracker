@@ -317,9 +317,9 @@ function QuarterBreakdown({ txs, year, prevTxs }: { txs: Tx[]; year: number; pre
                     {q.prevNet !== undefined && (
                       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
                         {q.net > q.prevNet
-                          ? <span style={{ color: "var(--ft-green)" }}>▲ {formatGbp(q.net - q.prevNet)} vs {year - 1}</span>
+                          ? <span style={{ color: "var(--ft-green)" }}>▲ <span className="pnum">{formatGbp(q.net - q.prevNet)}</span> vs {year - 1}</span>
                           : q.net < q.prevNet
-                          ? <span style={{ color: "var(--ft-red)" }}>▼ {formatGbp(q.prevNet - q.net)} vs {year - 1}</span>
+                          ? <span style={{ color: "var(--ft-red)" }}>▼ <span className="pnum">{formatGbp(q.prevNet - q.net)}</span> vs {year - 1}</span>
                           : <span>— flat vs {year - 1}</span>
                         }
                       </div>
@@ -604,7 +604,7 @@ function MonthByMonth({ txs, year }: { txs: Tx[]; year: number }) {
               tickLine={false}
             />
             <YAxis
-              tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }}
+              tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
@@ -701,7 +701,7 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
               tickLine={false}
             />
             <YAxis
-              tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }}
+              tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
@@ -1262,7 +1262,7 @@ export default function YearReviewPage() {
                       <div key={cat}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                           <span style={{ fontSize: 13, fontWeight: i === 0 ? 700 : 400, color: i === 0 ? "var(--ft-accent)" : "var(--ft-text)" }}>{i === 0 ? "★ " : ""}{cat}</span>
-                          <span style={{ fontSize: 13, color: "var(--ft-muted)" }}>{formatGbp(amt)}</span>
+                          <span className="pnum" style={{ fontSize: 13, color: "var(--ft-muted)" }}>{formatGbp(amt)}</span>
                         </div>
                         <div style={{ height: 4, background: "var(--ft-border2)", overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${(amt / maxVal) * 100}%`, background: i === 0 ? "var(--ft-accent)" : "var(--ft-border2)", transition: "width 0.25s ease" }} />

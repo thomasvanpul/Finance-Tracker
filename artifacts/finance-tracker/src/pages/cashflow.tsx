@@ -891,7 +891,7 @@ export default function CashflowPage() {
               interval={Math.floor(horizon / 6)}
             />
             <YAxis
-              tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }}
+              tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
@@ -908,6 +908,7 @@ export default function CashflowPage() {
                 fontFamily: "var(--font-mono)",
                 fontSize: 9,
                 fill: "var(--ft-red)",
+                className: "pnum",
               }}
             />
             {breakEvenDate && (
