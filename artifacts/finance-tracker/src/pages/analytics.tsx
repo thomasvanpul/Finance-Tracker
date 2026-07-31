@@ -1012,7 +1012,7 @@ function SpendingVelocity({ allExpenses, budgetTotal, range, onRangeChange }: {
               </linearGradient>
             </defs>
             <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
+            <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
             <Tooltip
               content={(p) => (
                 <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 10 }}>
@@ -1095,7 +1095,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
           <ResponsiveContainer width="100%" height={160}>
             <ComposedChart data={bars} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
               <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
+              <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
               <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={String(p.label ?? "")} formatter={(v, n) => [formatGbp(v), n]} />} />
               <Bar dataKey="income" fill="var(--ft-green)" opacity={0.8} radius={[0, 0, 0, 0]} maxBarSize={20} />
               <Bar dataKey="expense" fill="var(--ft-red)" opacity={0.8} radius={[0, 0, 0, 0]} maxBarSize={20} />
@@ -1610,7 +1610,7 @@ function DayOfWeekPatterns({ expenses }: { expenses: Tx[] }) {
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
             <XAxis dataKey="name" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
+            <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
             <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={String(p.label ?? "")} formatter={(v) => [formatGbp(v), "Spend"]} />} />
             <Bar dataKey="total" radius={[0, 0, 0, 0]} maxBarSize={28}>
               {data.map((d, i) => <Cell key={i} fill={d.weekend ? "var(--ft-amber)" : "var(--ft-accent)"} opacity={0.85} />)}
@@ -1701,7 +1701,7 @@ function MonthDayPattern({ expenses }: { expenses: Tx[] }) {
         <ResponsiveContainer width="100%" height={130}>
           <BarChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
             <XAxis dataKey="day" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} interval={4} />
-            <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
+            <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
             <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={p.label != null ? `Day ${p.label}` : ""} formatter={(v) => [formatGbp(v), "Day total"]} />} />
             <Bar dataKey="total" radius={[0, 0, 0, 0]} maxBarSize={12}>
               {data.map((d, i) => {
@@ -1908,7 +1908,7 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
             </defs>
             <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
             <YAxis
-              tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }}
+              tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }}
               axisLine={false} tickLine={false}
               tickFormatter={v => `${v}%`}
               domain={[-10, 60]}
@@ -1929,8 +1929,8 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
                 );
               }}
             />
-            <ReferenceLine y={20} stroke="var(--ft-accent)" strokeDasharray="4 3" strokeWidth={1} label={{ value: "20%", position: "right", fill: "var(--ft-accent)", fontSize: 8, fontFamily: "var(--font-mono)" }} />
-            <ReferenceLine y={avgRate} stroke="var(--ft-blue)" strokeDasharray="3 3" strokeWidth={1} label={{ value: `avg ${avgRate}%`, position: "right", fill: "var(--ft-blue)", fontSize: 8, fontFamily: "var(--font-mono)" }} />
+            <ReferenceLine y={20} stroke="var(--ft-accent)" strokeDasharray="4 3" strokeWidth={1} label={{ value: "20%", position: "right", fill: "var(--ft-accent)", fontSize: 8, fontFamily: "var(--font-mono)", className: "pnum" }} />
+            <ReferenceLine y={avgRate} stroke="var(--ft-blue)" strokeDasharray="3 3" strokeWidth={1} label={{ value: `avg ${avgRate}%`, position: "right", fill: "var(--ft-blue)", fontSize: 8, fontFamily: "var(--font-mono)", className: "pnum" }} />
             <ReferenceLine y={0} stroke="var(--ft-border2)" strokeWidth={1} />
             <Area type="monotone" dataKey="rate" name="Savings Rate" stroke="var(--ft-green)" strokeWidth={2} fill="url(#savingsGrad)" dot={(props: { cx?: number; cy?: number; payload?: { rate: number | null } }) => {
               const { cx, cy, payload } = props;
