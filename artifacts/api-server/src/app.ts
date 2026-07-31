@@ -47,6 +47,8 @@ const configuredOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
   : [];
 
+class CorsError extends Error {}
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -56,18 +58,27 @@ app.use(
       if (IS_DEV && /^https?:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
       // Fail-secure: deny all cross-origin requests when ALLOWED_ORIGINS is not configured
       if (configuredOrigins.length === 0) {
-        callback(new Error("ALLOWED_ORIGINS not configured — cross-origin request denied"));
+        callback(new CorsError("ALLOWED_ORIGINS not configured — cross-origin request denied"));
         return;
       }
       if (configuredOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error(`Origin ${origin} not allowed by CORS`));
+        callback(new CorsError(`Origin ${origin} not allowed by CORS`));
       }
     },
     credentials: true,
   }),
 );
+
+// Denied origins are a client error (403), not a server error (500)
+app.use((err: Error, _req: Request, res: Response, next: NextFunction): void => {
+  if (err instanceof CorsError) {
+    res.status(403).json({ error: err.message });
+    return;
+  }
+  next(err);
+});
 
 // ── Rate limiters ────────────────────────────────────────────────────────────
 
