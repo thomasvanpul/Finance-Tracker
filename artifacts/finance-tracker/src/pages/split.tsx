@@ -11,6 +11,7 @@ import {
   getListDebtsQueryKey,
 } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
+import { computeBalances, minimumTransfers, type Transfer } from "@/lib/split-math";
 import { PageHeader } from "@/components/page-header";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -83,12 +84,6 @@ interface BillSplitData {
   expenses: SplitExpense[];
 }
 
-interface Transfer {
-  from: string;
-  to: string;
-  amount: number;
-}
-
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 
 const LS_DATA = "ft-bill-splits";
@@ -128,68 +123,6 @@ function formatDateShort(dateStr: string): string {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
-}
-
-// ─── Balance + settle-up algorithm ───────────────────────────────────────────
-
-function computeBalances(
-  members: string[],
-  expenses: SplitExpense[]
-): Record<string, number> {
-  const balances: Record<string, number> = {};
-  for (const m of members) balances[m] = 0;
-
-  for (const exp of expenses) {
-    // The payer gets credited the full amount
-    if (balances[exp.paidBy] !== undefined) {
-      balances[exp.paidBy] += exp.amount;
-    }
-    // Each member is debited their share
-    for (const [member, share] of Object.entries(exp.shares)) {
-      if (balances[member] !== undefined) {
-        balances[member] -= share;
-      }
-    }
-  }
-  return balances;
-}
-
-function minimumTransfers(balances: Record<string, number>): Transfer[] {
-  const transfers: Transfer[] = [];
-  // Work on a mutable copy, rounded to 2dp
-  const pos: Array<{ name: string; amount: number }> = [];
-  const neg: Array<{ name: string; amount: number }> = [];
-
-  for (const [name, bal] of Object.entries(balances)) {
-    const rounded = Math.round(bal * 100) / 100;
-    if (rounded > 0.005) pos.push({ name, amount: rounded });
-    else if (rounded < -0.005) neg.push({ name, amount: rounded });
-  }
-
-  // Sort descending by absolute amount
-  pos.sort((a, b) => b.amount - a.amount);
-  neg.sort((a, b) => a.amount - b.amount);
-
-  let pi = 0;
-  let ni = 0;
-  while (pi < pos.length && ni < neg.length) {
-    const creditor = pos[pi];
-    const debtor = neg[ni];
-    const transfer = Math.min(creditor.amount, Math.abs(debtor.amount));
-    if (transfer > 0.005) {
-      transfers.push({
-        from: debtor.name,
-        to: creditor.name,
-        amount: Math.round(transfer * 100) / 100,
-      });
-    }
-    creditor.amount -= transfer;
-    debtor.amount += transfer;
-    if (Math.abs(creditor.amount) < 0.005) pi++;
-    if (Math.abs(debtor.amount) < 0.005) ni++;
-  }
-
-  return transfers;
 }
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────

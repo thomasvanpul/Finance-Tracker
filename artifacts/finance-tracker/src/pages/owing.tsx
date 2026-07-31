@@ -19,6 +19,7 @@ import {
   type UserLookupResult,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { type StrategyMode, type StrategyDebt, type AmortRow, type PayoffResult, runPayoffStrategy } from "@/lib/payoff";
 import { haptic } from "@/lib/haptics";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { Button } from "@/components/ui/button";
@@ -62,8 +63,6 @@ type LinkStatus = "idle" | "checking" | "found" | "not_found" | "invalid";
 type DirectionFilter = "all" | "i-owe" | "owed-to-me";
 type SortOption = "date-newest" | "date-oldest" | "amount-high" | "amount-low" | "name-az";
 type AgeBucket = "fresh" | "aging" | "old" | "overdue";
-type StrategyMode = "snowball" | "avalanche";
-
 interface DebtForm {
   personName: string;
   description: string;
@@ -95,21 +94,6 @@ interface SettleFormState {
   fullAmount: number;
   inputValue: string;
   mode: "full" | "partial";
-}
-
-// Debt for strategy calculations (internal, not from API — those have no APR)
-interface StrategyDebt {
-  id: number;
-  name: string;
-  balance: number;
-  apr: number; // user-overrideable, stored in localStorage
-  minimumPayment: number; // 2% of balance default
-}
-
-interface AmortRow {
-  month: number;
-  [key: string]: number; // debtId -> remaining balance
-  total: number;
 }
 
 function makeEmptyDebtForm(): DebtForm {
@@ -204,118 +188,6 @@ function saveAprOverrides(overrides: Record<number, number>): void {
   try {
     localStorage.setItem("nr-debt-aprs", JSON.stringify(overrides));
   } catch {}
-}
-
-// ── Payoff strategy calculator ─────────────────────────────────────────────────
-
-interface PayoffResult {
-  months: number;
-  totalInterest: number;
-  payoffOrder: { id: number; name: string; month: number; interestPaid: number }[];
-  chart: { month: number; total: number }[];
-  amortization: AmortRow[]; // first 12 months
-}
-
-function runPayoffStrategy(
-  debts: StrategyDebt[],
-  monthlyBudget: number,
-  mode: StrategyMode
-): PayoffResult {
-  const MAX_MONTHS = 360;
-
-  // Work with mutable copies
-  const state = debts.map(d => ({
-    ...d,
-    remaining: d.balance,
-    interestAccrued: 0,
-    paidOffMonth: null as number | null,
-  }));
-
-  const payoffOrder: PayoffResult["payoffOrder"] = [];
-  const chart: PayoffResult["chart"] = [];
-  const amortRows: AmortRow[] = [];
-
-  for (let month = 1; month <= MAX_MONTHS; month++) {
-    const alive = state.filter(d => d.remaining > 0);
-    if (alive.length === 0) break;
-
-    // 1. Apply monthly interest
-    for (const d of alive) {
-      const monthlyRate = d.apr / 100 / 12;
-      const interest = d.remaining * monthlyRate;
-      d.remaining += interest;
-      d.interestAccrued += interest;
-    }
-
-    // 2. Pay minimums first
-    let budgetLeft = monthlyBudget;
-    for (const d of alive) {
-      const minPay = Math.min(d.minimumPayment, d.remaining);
-      d.remaining -= minPay;
-      d.remaining = Math.max(d.remaining, 0);
-      budgetLeft -= minPay;
-    }
-
-    // 3. Apply extra to target debt
-    if (budgetLeft > 0) {
-      const stillAlive = state.filter(d => d.remaining > 0);
-      let target: typeof state[number] | undefined;
-      if (mode === "snowball") {
-        target = stillAlive.slice().sort((a, b) => a.remaining - b.remaining)[0];
-      } else {
-        target = stillAlive.slice().sort((a, b) => b.apr - a.apr)[0];
-      }
-      if (target) {
-        const extra = Math.min(budgetLeft, target.remaining);
-        target.remaining -= extra;
-        target.remaining = Math.max(target.remaining, 0);
-      }
-    }
-
-    // 4. Track paid-off debts
-    for (const d of state) {
-      if (d.remaining <= 0.005 && d.paidOffMonth === null) {
-        d.remaining = 0;
-        d.paidOffMonth = month;
-        payoffOrder.push({ id: d.id, name: d.name, month, interestPaid: d.interestAccrued });
-      }
-    }
-
-    // 5. Chart data point
-    const totalRemaining = state.reduce((s, d) => s + d.remaining, 0);
-    chart.push({ month, total: Math.round(totalRemaining * 100) / 100 });
-
-    // 6. Amortization for first 12 months
-    if (month <= 12) {
-      const row: AmortRow = { month, total: Math.round(totalRemaining * 100) / 100 };
-      for (const d of state) {
-        row[d.id] = Math.round(d.remaining * 100) / 100;
-      }
-      amortRows.push(row);
-    }
-  }
-
-  // Remaining debts not yet paid off (shouldn't happen within 360 months but defensive)
-  for (const d of state) {
-    if (d.paidOffMonth === null && d.remaining <= 0.005) {
-      d.paidOffMonth = MAX_MONTHS;
-      payoffOrder.push({ id: d.id, name: d.name, month: MAX_MONTHS, interestPaid: d.interestAccrued });
-    }
-  }
-
-  const totalMonths = payoffOrder.length > 0
-    ? Math.max(...payoffOrder.map(p => p.month))
-    : MAX_MONTHS;
-
-  const totalInterest = state.reduce((s, d) => s + d.interestAccrued, 0);
-
-  return {
-    months: totalMonths,
-    totalInterest,
-    payoffOrder: [...payoffOrder].sort((a, b) => a.month - b.month),
-    chart,
-    amortization: amortRows,
-  };
 }
 
 // ── Strategy tab component ─────────────────────────────────────────────────────
