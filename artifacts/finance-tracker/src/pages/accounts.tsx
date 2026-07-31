@@ -2119,7 +2119,7 @@ export default function Accounts() {
         return (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span style={{ color: "var(--ft-accent)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>·</span>
-            <span>{msg}</span>
+            <span className="pnum">{msg}</span>
           </div>
         );
       })()}

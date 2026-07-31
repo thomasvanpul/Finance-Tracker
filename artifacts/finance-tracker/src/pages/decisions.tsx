@@ -435,6 +435,7 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore }: D
       {/* Main content */}
       <div style={{ padding: "12px 14px", minWidth: 0 }}>
         <div
+          className="pnum"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 12,
@@ -462,6 +463,7 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore }: D
           )}
         </div>
         <div
+          className="pnum"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,

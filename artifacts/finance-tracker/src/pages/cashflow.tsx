@@ -314,7 +314,7 @@ function KpiTile({ label, value, color, accentTop, sub }: KpiTileProps) {
         {value}
       </div>
       {sub && (
-        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{sub}</div>
+        <div className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{sub}</div>
       )}
     </div>
   );
@@ -745,7 +745,7 @@ export default function CashflowPage() {
         return (
           <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
-            <span>{msg}</span>
+            <span className="pnum">{msg}</span>
           </div>
         );
       })()}

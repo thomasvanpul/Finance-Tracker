@@ -363,7 +363,7 @@ function MilestoneCard({ item, i, total }: { item: { icon: string; label: string
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: item.color, marginBottom: 3, fontVariantNumeric: "tabular-nums" }}>
         {item.value}
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
         {item.sub}
       </div>
     </div>
@@ -867,7 +867,7 @@ function StreaksAndFacts({ txs, year }: { txs: Tx[]; year: number }) {
             }}
           >
             <span style={{ ...mono, fontSize: 8, color: "var(--ft-border2)", letterSpacing: "0.06em", width: 18, flexShrink: 0 }}>{f.marker}</span>
-            <span style={{ ...mono, fontSize: 11, color: "var(--ft-text)" }}>{f.text}</span>
+            <span className="pnum" style={{ ...mono, fontSize: 11, color: "var(--ft-text)" }}>{f.text}</span>
           </HoverRow>
         ))}
       </div>
@@ -1467,7 +1467,7 @@ export default function YearReviewPage() {
         return (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
-            <span>{msg}</span>
+            <span className="pnum">{msg}</span>
           </div>
         );
       })()}

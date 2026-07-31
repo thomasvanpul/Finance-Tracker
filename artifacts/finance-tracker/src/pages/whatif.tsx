@@ -259,7 +259,7 @@ function InflationKpiTile({ label, value, color, note }: InflationKpiTileProps) 
     >
       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 5 }}>{label}</div>
       <div style={{ ...mono, fontSize: 18, fontWeight: 700, color, lineHeight: 1, marginBottom: 3 }}><span className="pnum">{value}</span></div>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{note}</div>
+      <div className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{note}</div>
     </div>
   );
 }
@@ -1192,7 +1192,7 @@ function PortfolioKpiTile({ label, value, color, borderColor, topBorderColor, su
       <div style={{ ...mono, fontSize: 18, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
         <span className="pnum">{value}</span>
       </div>
-      {sub && <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>{sub}</div>}
+      {sub && <div className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>{sub}</div>}
     </div>
   );
 }
