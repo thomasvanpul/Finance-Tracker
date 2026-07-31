@@ -61,7 +61,13 @@ labeled **[inferred]**.
 | `/trading` | Desktop TradingJournal page with isMobile branches | 2+3 |
 | `*` | Desktop NotFound (no isMobile) | 3 only |
 
-**Key consequence**: `dashboard.tsx` has isMobile branches (confirmed by grep) but they are unreachable on mobile — the MobileApp intercept at App.tsx line 141 fires before the Switch, so `dashboard.tsx` never renders on a phone at `/`.
+**Key consequence**: `dashboard.tsx` has `isMobile` branches but they are unreachable on mobile. Three locations confirmed by read:
+
+- Line 1092 — inside private function `ViewModeWidget` (not exported)
+- Line 1502 — inside private function `WidgetPicker` (not exported)
+- Line 1695 — inside private function `DashboardKpiBar`, which takes `isMobile` as a prop but is only ever called from the default `Dashboard` export, also not exported separately
+
+`dashboard.tsx` exports exactly two things: the named export `NetWorthMilestonesWidget` (line 287, which has no `isMobile` branches and is only referenced in the internal `WIDGET_COMPONENTS` map at line 378) and `default Dashboard`. Only `App.tsx` imports from `dashboard.tsx`, and it imports only `default Dashboard`. Since MobileApp intercepts the only route (`/`) that renders `Dashboard`, all four of these isMobile sites are dead on mobile.
 
 ---
 
