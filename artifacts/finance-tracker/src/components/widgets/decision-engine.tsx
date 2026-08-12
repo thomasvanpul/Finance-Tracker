@@ -170,11 +170,12 @@ function DecisionRow({ d, rank }: { d: MiniDecision; rank: number }) {
   const [hov, setHov] = useState(false);
   const color = PRIORITY_COLOR[d.priority];
   return (
-    <Link key={d.id} href={d.href}>
-      <a
-        onMouseEnter={() => setHov(true)}
-        onMouseLeave={() => setHov(false)}
-        style={{
+    <Link
+      key={d.id}
+      href={d.href}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
           display: "grid",
           gridTemplateColumns: "14px 4px auto 1fr auto auto",
           alignItems: "center",
@@ -213,7 +214,6 @@ function DecisionRow({ d, rank }: { d: MiniDecision; rank: number }) {
           </span>
         ) : <span />}
         <ChevronRight size={9} style={{ color: "var(--ft-dim)", flexShrink: 0 }} />
-      </a>
     </Link>
   );
 }
@@ -262,10 +262,8 @@ export function DecisionEngineWidget() {
             </div>
           )}
         </div>
-        <Link href="/decisions">
-          <a style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-blue)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2, letterSpacing: "0.04em" }}>
-            ALL <ChevronRight size={9} />
-          </a>
+        <Link href="/decisions" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-blue)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2, letterSpacing: "0.04em" }}>
+          ALL <ChevronRight size={9} />
         </Link>
       </div>
 
@@ -299,10 +297,8 @@ export function DecisionEngineWidget() {
         <>
           {top.map((d, i) => <DecisionRow key={d.id} d={d} rank={i + 1} />)}
           {decisions.length > 6 && (
-            <Link href="/decisions">
-              <a style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textDecoration: "none", textAlign: "center", padding: "7px 0", background: "var(--ft-raised)", letterSpacing: "0.04em" }}>
-                +{decisions.length - 6} more →
-              </a>
+            <Link href="/decisions" style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textDecoration: "none", textAlign: "center", padding: "7px 0", background: "var(--ft-raised)", letterSpacing: "0.04em" }}>
+              +{decisions.length - 6} more →
             </Link>
           )}
         </>

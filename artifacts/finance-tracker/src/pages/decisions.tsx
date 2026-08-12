@@ -475,24 +475,23 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore }: D
           {d.detail}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <Link href={d.href}>
-            <a
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                color: "var(--ft-blue)",
-                textDecoration: "none",
-                padding: "2px 8px",
-                border: "1px solid rgba(88,166,255,0.3)",
-                background: "rgba(88,166,255,0.06)",
-              }}
-            >
-              {d.action}
-              <ChevronRight size={10} />
-            </a>
+          <Link
+            href={d.href}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              color: "var(--ft-blue)",
+              textDecoration: "none",
+              padding: "2px 8px",
+              border: "1px solid rgba(88,166,255,0.3)",
+              background: "rgba(88,166,255,0.06)",
+            }}
+          >
+            {d.action}
+            <ChevronRight size={10} />
           </Link>
           {d.annualCost !== undefined && d.annualCost > 0 && (
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 25%, transparent)", padding: "1px 5px" }}>
