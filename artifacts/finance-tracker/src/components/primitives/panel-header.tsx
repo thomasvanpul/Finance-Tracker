@@ -18,6 +18,7 @@ export function PanelHeader({ children, style, className }: PanelHeaderProps) {
         letterSpacing: "0.08em",
         textTransform: "uppercase" as const,
         color: "var(--ft-dim)",
+        transition: "var(--ft-theme-transition)",
         ...style,
       }}
     >

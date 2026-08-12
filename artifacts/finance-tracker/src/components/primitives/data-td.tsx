@@ -18,6 +18,7 @@ export function DataTD({ children, style, className, noRightBorder, numeric, mon
         borderRight: noRightBorder ? "none" : "1px solid var(--ft-border)",
         color: "var(--ft-text)",
         whiteSpace: "nowrap" as const,
+        transition: "var(--ft-theme-transition)",
         ...(numeric ? { textAlign: "right" as const, fontFamily: "var(--font-mono)" } : {}),
         ...(mono && !numeric ? { fontFamily: "var(--font-mono)" } : {}),
         ...(bold ? { fontWeight: 700 } : {}),

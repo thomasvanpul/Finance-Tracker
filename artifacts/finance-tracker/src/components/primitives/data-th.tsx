@@ -21,6 +21,7 @@ export function DataTH({ children, style, className, noRightBorder, align, ...re
         letterSpacing: "0.05em",
         whiteSpace: "nowrap" as const,
         verticalAlign: "middle" as const,
+        transition: "var(--ft-theme-transition)",
         ...(align !== undefined ? { textAlign: align } : {}),
         ...style,
       }}

@@ -30,6 +30,7 @@ export function MonoLabel({
         color,
         letterSpacing,
         textTransform: "uppercase" as const,
+        transition: "var(--ft-theme-transition)",
         ...(mb !== undefined ? { marginBottom: mb } : {}),
         ...style,
       }}

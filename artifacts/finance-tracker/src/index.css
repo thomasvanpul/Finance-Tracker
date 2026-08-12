@@ -85,6 +85,39 @@
   --radius: 0.125rem; /* near-sharp corners */
 }
 
+/* ── Motion tokens ──────────────────────────────────────────────────────────
+   Use these instead of hardcoded durations so motion stays coherent as themes
+   change. Never animate a numeric value itself: a figure that is mid-animation
+   is a figure the user cannot read. Motion is for interaction feedback and
+   theme transitions only. */
+:root {
+  --ft-motion-fast: 120ms;  /* press states, hover */
+  --ft-motion-base: 200ms;  /* theme crossfade, colour changes */
+  --ft-motion-slow: 320ms;  /* sheets, drawers, tab panels */
+  --ft-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Crossfades colour tokens when the theme changes. Colour only: never
+     transition layout properties here or tables will reflow on theme switch. */
+  --ft-theme-transition:
+    background-color var(--ft-motion-base) var(--ft-ease),
+    border-color     var(--ft-motion-base) var(--ft-ease),
+    color            var(--ft-motion-base) var(--ft-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ft-motion-fast: 0ms;
+    --ft-motion-base: 0ms;
+    --ft-motion-slow: 0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Density: affects row/cell padding, not page zoom */
 :root {
   --ft-cell-py: 7px;
