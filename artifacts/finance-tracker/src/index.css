@@ -48,15 +48,23 @@
    Below 768px, the following override the rules above. Everything not listed
    here still applies — the identity does not change, the physics do.
 
-   RELAXED on mobile:
-   ~  border-radius up to 8px on tappable surfaces (rows, sheets, buttons).
-      Data tables and metric cells stay at 0. Roundness marks "you can touch
-      this", it is not decoration.
+   RELAXED on mobile — the desktop bans below do NOT apply under 768px.
+   Reference apps the phone UI is measured against: Yahoo Finance mobile,
+   plus the modern-fintech reference set. Those are the target for craft.
+   ~  border-radius 16-24px on cards, sheets, buttons and floating nav.
+      Tables and aligned metric columns stay square.
+   ~  sans-serif is permitted, and preferred, for display numbers and labels.
+      Tabular figures are still required for any number in an aligned column
+      or list, so rows line up.
+   ~  gradients are permitted on backgrounds, cards and area-chart fills.
+      Not on text.
+   ~  saturated accents are permitted, including lime, violet and magenta,
+      provided they come from a theme token.
+   ~  charts are permitted and wanted: sparklines, gradient-filled area
+      charts, donuts. They must be legible, not ornamental.
    ~  transitions up to 250ms for sheets, drawers and screen transitions.
       The 150ms cap still holds for any state change on a data value.
-   ~  one elevation step is permitted for surfaces that float above content
-      (bottom sheet, action menu) using a 1px border plus a raised background
-      token. Still no box-shadow on anything displaying financial data.
+   ~  elevation and depth are permitted on surfaces that float above content.
    ~  vertical rhythm may be uniform within a list. Ragged padding reads as
       broken alignment at phone scale, not as intentional hierarchy.
    ~  "data density first" is suspended. On a phone, fewer values read larger
@@ -66,20 +74,23 @@
    ✓  minimum 44x44px for anything tappable, no exceptions
    ✓  primary action reachable in the bottom third of the screen
    ✓  respect safe-area-inset on top and bottom
-   ✓  minimum 11px type; numeric values that matter at 16px or above
+   ✓  minimum 11px type; the primary number on a screen at 28px or above
    ✓  no screen may end with more than ~25% dead vertical space unless the
       emptiness is the message and is labelled as such
-   ✓  columns that share a metaphor must actually align — fixed-width label
-      columns, not ragged ones
+   ✓  values in a list or column must align — fixed-width label columns,
+      never ragged
    ✓  every screen has at least one thing the user can do, not only read
+   ✓  rows representing a merchant, person or account carry an avatar,
+      logo or glyph. Identity per row, not a wall of text
+   ✓  generous vertical spacing. Sparse and confident beats dense and cramped
 
    STILL BANNED on mobile, without exception:
-   ✗  gradients, gradient text, glassmorphism, backdrop-filter
-   ✗  purple, violet or pink as primary or accent
-   ✗  Inter or Roboto
-   ✗  decorative illustration, empty-state artwork, particle effects
    ✗  animating a numeric value, or delaying data behind a transition
-   ✗  non-mono, non-tabular financial figures
+   ✗  ragged columns, colliding text, values touching their own suffix
+   ✗  tabular figures omitted from any number that sits in an aligned column
+   ✗  gain/loss legibility depending on hue alone
+   ✗  decorative illustration, empty-state artwork, particle effects, emoji
+   ✗  manufactured urgency — every countdown must be a real date the user has
    ══════════════════════════════════════════════════════════════════════════════ */
 
 @custom-variant dark (&:is(.dark *));
