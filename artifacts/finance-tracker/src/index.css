@@ -38,6 +38,48 @@
    ✓  font-variant-numeric: tabular-nums on all financial numbers
    ✓  status bar always visible at bottom — never hidden or collapsible
    ✓  data density first: if you can show 12 numbers, show 12, not 6
+   ══════════════════════════════════════════════════════════════════════════════
+
+   MOBILE AMENDMENT — applies below 768px only
+   The constitution above was written for a desktop financial terminal and is
+   correct there. A phone is a different medium: held one-handed, at arm's
+   length, tapped with a thumb. Applying the desktop rules verbatim produced
+   three mobile designs that obeyed every rule and were still bad apps.
+   Below 768px, the following override the rules above. Everything not listed
+   here still applies — the identity does not change, the physics do.
+
+   RELAXED on mobile:
+   ~  border-radius up to 8px on tappable surfaces (rows, sheets, buttons).
+      Data tables and metric cells stay at 0. Roundness marks "you can touch
+      this", it is not decoration.
+   ~  transitions up to 250ms for sheets, drawers and screen transitions.
+      The 150ms cap still holds for any state change on a data value.
+   ~  one elevation step is permitted for surfaces that float above content
+      (bottom sheet, action menu) using a 1px border plus a raised background
+      token. Still no box-shadow on anything displaying financial data.
+   ~  vertical rhythm may be uniform within a list. Ragged padding reads as
+      broken alignment at phone scale, not as intentional hierarchy.
+   ~  "data density first" is suspended. On a phone, fewer values read larger
+      beats more values read smaller. Density lives on desktop.
+
+   REQUIRED on mobile, additionally:
+   ✓  minimum 44x44px for anything tappable, no exceptions
+   ✓  primary action reachable in the bottom third of the screen
+   ✓  respect safe-area-inset on top and bottom
+   ✓  minimum 11px type; numeric values that matter at 16px or above
+   ✓  no screen may end with more than ~25% dead vertical space unless the
+      emptiness is the message and is labelled as such
+   ✓  columns that share a metaphor must actually align — fixed-width label
+      columns, not ragged ones
+   ✓  every screen has at least one thing the user can do, not only read
+
+   STILL BANNED on mobile, without exception:
+   ✗  gradients, gradient text, glassmorphism, backdrop-filter
+   ✗  purple, violet or pink as primary or accent
+   ✗  Inter or Roboto
+   ✗  decorative illustration, empty-state artwork, particle effects
+   ✗  animating a numeric value, or delaying data behind a transition
+   ✗  non-mono, non-tabular financial figures
    ══════════════════════════════════════════════════════════════════════════════ */
 
 @custom-variant dark (&:is(.dark *));
