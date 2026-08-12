@@ -27,15 +27,16 @@ export function formatCurrency(value: number, currency: string): string {
 }
 
 export function formatGbp(value: number): string {
-  return formatCurrency(value, getBaseCurrency());
+  return formatCurrency(Object.is(value, -0) ? 0 : value, getBaseCurrency());
 }
 
 export function formatNative(value: number, currency: string): string {
+  const v = Object.is(value, -0) ? 0 : value;
   return (
     new Intl.NumberFormat(getNumberLocale(), {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(value) +
+    }).format(v) +
     " " +
     currency
   );

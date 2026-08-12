@@ -40,6 +40,19 @@ describe("formatGbp", () => {
   it("handles Infinity (division-by-zero result)", () => {
     expect(formatGbp(1 / 0)).toContain("∞");
   });
+
+  it("formats negative zero as £0.00 (normalised before Intl; raw V8 would return -£0.00)", () => {
+    // Raw V8 Intl.NumberFormat distinguishes IEEE 754 -0 and renders it as "-£0.00".
+    // formatGbp normalises -0 → 0 via Object.is before calling Intl, so callers always get "£0.00".
+    expect(formatGbp(-0)).toBe("£0.00");
+  });
+
+  it("formats 0.005 as £0.01 (V8 Intl rounds up at the half-penny boundary)", () => {
+    // IEEE 754 stores 0.005 as 0.004999999999999999583..., which is below 0.005.
+    // However V8's Intl.NumberFormat implementation applies round-half-away-from-zero at
+    // the decimal level and produces £0.01, not £0.00.
+    expect(formatGbp(0.005)).toBe("£0.01");
+  });
 });
 
 describe("formatNative", () => {
@@ -99,6 +112,17 @@ describe("computeBalances", () => {
       [{ paidBy: "Alice", amount: 0, shares: { Alice: 0, Bob: 0 } }]
     );
     expect(result).toEqual({ Alice: 0, Bob: 0 });
+  });
+
+  it("produces incoherent balances when shares exceed the expense amount (unvalidated caller input — not correct output)", () => {
+    // shares sum to 120 but amount is 90; the implementation does not validate.
+    // Alice gets +90 credit and -60 share debit → net +30.
+    // Bob gets -60 share debit → net -60. Sum is -30, not zero.
+    const result = computeBalances(
+      ["Alice", "Bob"],
+      [{ paidBy: "Alice", amount: 90, shares: { Alice: 60, Bob: 60 } }]
+    );
+    expect(result).toEqual({ Alice: 30, Bob: -60 });
   });
 });
 
@@ -175,7 +199,9 @@ describe("runPayoffStrategy", () => {
     expect(result.payoffOrder[0].name).toBe("HighAPR");
   });
 
-  it("produces 12-month amortization table", () => {
+  it("pins the 12-month amortization cap — implementation constant, not a behavioural guarantee", () => {
+    // amortRows are appended only when month <= 12 (payoff.ts). This test records that cap.
+    // If the cap changes (e.g. to 6 or 24), this test fails with no functional regression.
     const result = runPayoffStrategy(
       [{ id: 1, name: "Debt", balance: 2400, apr: 0, minimumPayment: 0 }],
       100,
@@ -186,13 +212,31 @@ describe("runPayoffStrategy", () => {
     expect(result.amortization[0].total).toBe(2300);
   });
 
-  it("runs to 360 months when budget covers nothing", () => {
+  it("pins MAX_MONTHS = 360 cap — implementation constant, not a behavioural guarantee", () => {
+    // The loop limit is MAX_MONTHS = 360 (payoff.ts). This test records that constant.
+    // If MAX_MONTHS changes, this test fails with no functional regression.
     const result = runPayoffStrategy(
       [{ id: 1, name: "Unpayable", balance: 1000, apr: 0, minimumPayment: 0 }],
       0,
       "snowball"
     );
     expect(result.months).toBe(360);
+  });
+
+  it("reports monthlyShortfall when budget is below the sum of minimums", () => {
+    // budget = 300, minimums = 200 + 200 = 400; shortfall in month 1 = 100.
+    // The simulation still runs (applying minimums regardless), so the projection exists
+    // but assumes payments the user cannot cover.
+    const result = runPayoffStrategy(
+      [
+        { id: 1, name: "A", balance: 1000, apr: 0, minimumPayment: 200 },
+        { id: 2, name: "B", balance: 1000, apr: 0, minimumPayment: 200 },
+      ],
+      300,
+      "snowball"
+    );
+    expect(result.monthlyShortfall).toBe(100);
+    expect(result.shortfallMonths).toBeGreaterThan(0);
   });
 });
 

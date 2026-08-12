@@ -20,6 +20,10 @@ export interface PayoffResult {
   payoffOrder: { id: number; name: string; month: number; interestPaid: number }[];
   chart: { month: number; total: number }[];
   amortization: AmortRow[];
+  /** Amount by which applicable minimum payments exceed monthlyBudget in month 1, or 0. */
+  monthlyShortfall: number;
+  /** Number of months across the simulation where minimum payments exceeded the budget. */
+  shortfallMonths: number;
 }
 
 export function runPayoffStrategy(
@@ -39,6 +43,8 @@ export function runPayoffStrategy(
   const payoffOrder: PayoffResult["payoffOrder"] = [];
   const chart: PayoffResult["chart"] = [];
   const amortRows: AmortRow[] = [];
+  let monthlyShortfall = 0;
+  let shortfallMonths = 0;
 
   for (let month = 1; month <= MAX_MONTHS; month++) {
     const alive = state.filter(d => d.remaining > 0);
@@ -57,6 +63,11 @@ export function runPayoffStrategy(
       d.remaining -= minPay;
       d.remaining = Math.max(d.remaining, 0);
       budgetLeft -= minPay;
+    }
+
+    if (budgetLeft < 0) {
+      if (month === 1) monthlyShortfall = Math.round(-budgetLeft * 100) / 100;
+      shortfallMonths++;
     }
 
     if (budgetLeft > 0) {
@@ -113,5 +124,7 @@ export function runPayoffStrategy(
     payoffOrder: [...payoffOrder].sort((a, b) => a.month - b.month),
     chart,
     amortization: amortRows,
+    monthlyShortfall,
+    shortfallMonths,
   };
 }

@@ -370,7 +370,7 @@ function StrategyTab() {
           fontSize: 11,
           color: "var(--ft-red)",
         }}>
-          Budget (<span className="pnum">{formatGbp(monthlyBudget)}</span>) is less than total minimum payments (<span className="pnum">{formatGbp(totalMinimums)}</span>). Increase the budget to run a strategy.
+          Budget (<span className="pnum">{formatGbp(monthlyBudget)}</span>) is less than total minimum payments (<span className="pnum">{formatGbp(totalMinimums)}</span>) — increase by <span className="pnum">{formatGbp(totalMinimums - monthlyBudget)}</span> to run a strategy.
         </div>
       )}
 
