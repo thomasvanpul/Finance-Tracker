@@ -188,13 +188,9 @@ land.
 
 ## 7. Bugs
 
-- **Nested anchors.** `<Link href="..."><a>…</a></Link>` is the wouter v2
-  pattern; v3 renders `Link` as an anchor itself, so this nests two and throws
-  a hydration error. 4 sites: 3 in `components/widgets/decision-engine.tsx`
-  (around lines 264–265), 1 in `pages/decisions.tsx`.
-- **`pnpm dev` builds in production mode.** `NODE_ENV=production` is set in the
-  shell environment; Vite reads `DEV` from `NODE_ENV`, not `MODE`, so
-  `import.meta.env.DEV` is false and the app points straight at Railway instead
-  of through the Vite proxy, which then fails CORS. Launch with
-  `NODE_ENV=development PORT=4321 BASE_PATH=/ pnpm dev`, or bake it into the
-  `dev` script.
+- ~~**Nested anchors.**~~ DONE (`df93246`). All 4 sites collapsed to the
+  wouter v3 pattern.
+- ~~**`pnpm dev` builds in production mode.**~~ DONE (`df93246`).
+  `NODE_ENV=development` is now baked into the `dev` script. Note the repo
+  still needs `PORT=4321 BASE_PATH=/` since `PORT` defaults to 3000 and
+  `strictPort: true`, and Obsidian holds 3000.
