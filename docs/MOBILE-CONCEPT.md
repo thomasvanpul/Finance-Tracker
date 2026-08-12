@@ -1,74 +1,69 @@
-# Mobile concept — an installation you maintain
+# Mobile design direction
 
-Decided 12 Aug 2026. This supersedes the spreadsheet metaphor **for mobile only**.
-The desktop stays a spreadsheet terminal; that identity is earned and unchanged.
+Decided 12 Aug 2026, after seven rejected attempts across three tools.
 
-## How we got here
+## The direction
 
-Six design attempts across three tools were rejected. All of them were static
-summary dashboards, and all of them translated the desktop spreadsheet metaphor
-to a 390px screen. Nobody opens Excel on a phone. The metaphor is desktop-bound.
+**Terminal DNA, reference-level craft.** The phone speaks the same language as
+the desktop — a Bloomberg-style financial terminal — executed with the spacing,
+alignment and type discipline of a modern consumer app.
 
-The unblock was naming the apps actually enjoyed: **Instagram, Reddit, Clash of
-Clans, Yahoo Finance**.
+Desktop and mobile stay one product. Desktop may drift slightly toward the
+mobile execution, not the reverse.
 
-Three of the four are feeds, not dashboards. In all four, actions live on the
-content rather than in a separate zone. And Clash of Clans is the outlier that
-mattered: it is a *place you own and tend*, not a screen you read.
+## Why the earlier attempts failed
 
-## The concept
+Two separate causes, and conflating them cost several rounds.
 
-The mobile home is an **installation you maintain**. Not a village, not a
-dashboard. A persistent set of objects with telemetry and state that you
-service.
+**Rounds 1-2 (chat mockups)** and **round 7 (Claude Design, card style)** failed
+because they were *generic*. Round 7 was well crafted and still read as a
+template: dark rounded cards, one neon accent, gradient area chart, greeting with
+avatar, floating pill nav with a bright centre FAB. Every one of those elements
+appears in the reference set that inspired it. The reference apps are
+interchangeable with each other, so matching them cannot produce something
+distinctive.
 
-**The core loop: things accumulate while you are away, and you clear them.**
+**Rounds 3-6 (terminal directions)** failed on *craft*, not concept:
+- the `=` column landed at a different x on nearly every row
+- words collided: `+2,570MTD`, `83%MO`, `RENT5D`, `+56.72IN`
+- type ran at 8-11px with no hierarchy
+- 40-50% of the screen was empty below the content
+- the top status strip was clipped on all nine frames
+- 7 nav items at 390px, below tappable size
+- no primary action on any screen
 
-This is not a metaphor bolted on. It is already true of the app:
+None of those is an argument against a terminal. They are execution defects.
 
-| Clash of Clans      | Numeris                                              |
-| ------------------- | ---------------------------------------------------- |
-| Resources fill up   | Wise syncs, salary lands, interest accrues            |
-| Tap to collect      | Categorise 3 uncategorised transactions, confirm a bill paid |
-| Build timers        | Rent in 5 days, budget resets in 19, ISA in ~2mo      |
-| Buildings           | Accounts — Wise, Revolut, Maybank — each with balance, currency, sync freshness |
-| Upgrade progress    | Debt payoff schedules, savings goals, net-worth milestones |
-| Your layout         | `MobileWidgetManager`, `config.midTabs`, persona — already built, unused on mobile |
+## The synthesis
 
-The three uncategorised Wise transactions are literally a resource pile. They
-currently sit three taps deep in a transactions table. They belong on the home
-screen asking to be dealt with.
+A real Bloomberg terminal is dense *and* immaculately aligned, and it is full of
+sparklines, heat colouring, colour-coded columns and per-row identity. The
+reference apps taught spacing, type hierarchy, alignment discipline, row
+identity, real charts and depth. Those lessons apply to a terminal.
 
-## Register: terminal, not cartoon
+Nobody ships a terminal on a phone. That is where the uniqueness comes from, not
+from styling borrowed off Dribbble.
 
-Clash of Clans is a fantasy village. This is an installation — a machine room, a
-trading floor. Objects with telemetry, things you service. Same tending rhythm,
-completely different visual language. If it starts looking playful or
-illustrated, it has gone wrong.
+## Craft requirements, non-negotiable
 
-## Hard limits
+- Fixed-width label columns. Values align down the screen, always.
+- A real type hierarchy: primary number 28px+, not everything at 10px.
+- Sparklines and micro-charts. Terminals are full of them.
+- Per-row identity: account glyph, merchant mark, counterparty initial.
+- The screen fills. No dead band at the bottom.
+- Whitespace is permitted and wanted. Dense does not mean cramped.
+- Depth only where it aids scanning.
+- 44px touch targets, thumb-reachable primary action, safe areas.
+- Tabular figures on every number in an aligned column.
+- Must survive all 11 themes including light (`arctic`).
 
-- **Do not copy the compulsion loop.** CoC monetises impatience and manufactures
-  urgency. Every timer here must be a real date the user already has.
-- **Never reward spending.** Progression tracks maintenance and position, never
-  transaction volume.
-- **Do not gamify debt.** A payoff bar is a plan, not a score.
+See the Mobile Amendment in `index.css` for the full rule set. Note the
+amendment *permits* rounded corners, gradients and sans display type; this
+direction largely declines them. Permission is not obligation.
 
-## Constraints that still apply
+## Parked
 
-- The Mobile Amendment in `index.css` (below 768px): 44px touch targets,
-  thumb-reachable primary action, safe areas, no large dead space, aligned
-  columns, every screen offers an action.
-- 11 themes including a light one (`arctic`). Hierarchy from structure and
-  scale, never from colour alone.
-- Banned throughout: gradients, glassmorphism, purple/pink accent, Inter,
-  Roboto, decorative illustration, animating a numeric value.
-- JetBrains Mono and tabular figures on every financial number.
-
-## Open questions
-
-- How much of the XP / theme-unlock / bot-skin system becomes the spine versus
-  staying decoration (see backlog 6.7).
-- Whether the installation is spatial (a fixed arrangement you return to) or
-  ordered (a feed that reorders by what needs attention). The first is more
-  CoC; the second is more Reddit.
+**"An installation you maintain"** — Clash of Clans' tending loop applied to
+finance. Died on a fair objection: if servicing objects is the mobile loop it has
+to exist on desktop too, or the platforms diverge in behaviour rather than
+layout. Worth revisiting as a cross-platform feature, not as a mobile shell.
