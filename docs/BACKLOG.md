@@ -188,6 +188,20 @@ land.
 
 ## 7. Bugs
 
+### 7.0 Motion tokens violate the Anti-Vibe Constitution — UNDECIDED
+`index.css` line 5 bans "CSS transitions longer than 150ms on UI state
+changes". The motion tokens added later exceed that:
+
+    --ft-motion-base: 200ms   drives --ft-theme-transition, live on all 5 primitives
+    --ft-motion-slow: 320ms
+
+Two valid resolutions and it needs a decision, not drift:
+(a) bring both under 150ms and obey the constitution, or
+(b) amend the constitution deliberately — the stated preference is for more
+    animation than that document allows, and the document predates it.
+
+Do not resolve this by quietly leaving both in place.
+
 - ~~**Nested anchors.**~~ DONE (`df93246`). All 4 sites collapsed to the
   wouter v3 pattern.
 - ~~**`pnpm dev` builds in production mode.**~~ DONE (`df93246`).
