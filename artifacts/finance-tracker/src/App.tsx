@@ -14,8 +14,8 @@ import { CategoryProvider } from "@/contexts/category-context";
 import { Onboarding } from "@/components/onboarding";
 import { isOnboardingComplete } from "@/lib/persona";
 import NotFound from "@/pages/not-found";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileApp } from "@/components/mobile/MobileApp";
+import { useIsMobile, MOBILE_BREAKPOINT } from "@/hooks/use-mobile";
+import { MobileApp, MOBILE_ROUTES } from "@/components/mobile/MobileApp";
 import { PageTransitionOverlay } from "@/components/page-transition";
 
 // Dashboard is eager — it is the landing route; a lazy round-trip here buys nothing.
@@ -69,9 +69,15 @@ function DefaultPageRedirector() {
     if (sessionStorage.getItem("ft-initial-redirect-done")) return;
     sessionStorage.setItem("ft-initial-redirect-done", "1");
     const page = localStorage.getItem("nr-default-page");
-    if (page && page !== "/" && window.location.pathname === (import.meta.env.BASE_URL.replace(/\/$/, "") || "/")) {
-      navigate(page);
-    }
+    if (!page || page === "/") return;
+    if (window.location.pathname !== (import.meta.env.BASE_URL.replace(/\/$/, "") || "/")) return;
+    // useIsMobile() is undefined on first render (its own effect hasn't run
+    // yet), so we read the viewport directly. Prevents a mobile user's
+    // stored default (e.g. /fire) from dumping them onto a bare desktop
+    // page with no mobile shell on cold open.
+    const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+    if (isMobile && !MOBILE_ROUTES.has(page)) return;
+    navigate(page);
   }, [navigate]);
   return null;
 }
@@ -136,9 +142,11 @@ function Router() {
     document.title = PAGE_TITLES[location] ?? "Numeris";
   }, [location]);
 
-  // Mobile shell only at root — all other paths fall through to desktop layout
-  // so that More links to /fire, /reports etc. actually render something
-  if (isMobile && (location === "/" || location === "")) return <MobileApp />;
+  // Mobile shell owns the routes in MOBILE_ROUTES (derived from
+  // SCREEN_TO_PATH in MobileApp.tsx). Anything else — MobileMore hrefs
+  // to /fire, /tax etc., or /transactions (excluded so deep links keep
+  // desktop swipe-delete) — falls through to the desktop Layout below.
+  if (isMobile && MOBILE_ROUTES.has(location)) return <MobileApp />;
 
   return (
     <Layout>

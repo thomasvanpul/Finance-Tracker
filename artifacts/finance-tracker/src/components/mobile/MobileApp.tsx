@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { Plus, X, Minus, Target as TargetIcon, CreditCard as CardIcon } from "lucide-react";
 import { MobileNav, type MobileTab } from "./MobileNav";
 import { MobileHome } from "./MobileHome";
@@ -29,6 +30,36 @@ export type AppScreen =
   | "net-worth"
   | "settings"
   | "upcoming";
+
+// Every AppScreen except "txns" maps to a real URL. "txns" is a temporary
+// exception: /transactions is intentionally left OUT of MOBILE_ROUTES so
+// deep links to it hit the desktop page (which has swipe-to-delete via
+// useSwipeDelete). Tapping the txns tab in MobileNav sets a local
+// override to render MobileTransactions inside the mobile shell without
+// changing the URL. Remove the override once swipe-delete is ported to
+// MobileTransactions.
+export const SCREEN_TO_PATH: Record<Exclude<AppScreen, "txns">, string> = {
+  home: "/",
+  accounts: "/accounts",
+  budget: "/budget",
+  goals: "/goals",
+  investments: "/investments",
+  more: "/more",
+  personalize: "/personalize",
+  analytics: "/analytics",
+  subscriptions: "/subscriptions",
+  owing: "/owing",
+  reports: "/reports",
+  "net-worth": "/net-worth",
+  settings: "/settings",
+  upcoming: "/upcoming",
+};
+
+export const MOBILE_ROUTES = new Set<string>(Object.values(SCREEN_TO_PATH));
+
+const PATH_TO_SCREEN: Record<string, Exclude<AppScreen, "txns">> = Object.fromEntries(
+  Object.entries(SCREEN_TO_PATH).map(([s, p]) => [p, s as Exclude<AppScreen, "txns">]),
+);
 
 const ACTION_DEFS: Record<QuickAction, { label: string; Icon: React.ComponentType<{ size: number; style?: React.CSSProperties }>; color: string }> = {
   "log-expense":   { label: "Log Expense",   Icon: Minus,      color: "var(--ft-red)" },
@@ -118,15 +149,38 @@ function SpeedDial({ onTabChange }: { onTabChange: (screen: AppScreen) => void }
 const NAV_SCREENS = new Set<AppScreen>(["home", "accounts", "txns", "budget", "goals", "investments", "more"]);
 
 function MobileAppInner() {
-  const [screen, setScreen] = useState<AppScreen>("home");
+  const [location, navigate] = useLocation();
+  // Local override for the "txns" tab only; see SCREEN_TO_PATH comment.
+  const [showTxnsOverride, setShowTxnsOverride] = useState(false);
 
-  const navTab = (NAV_SCREENS.has(screen) ? screen : screen === "personalize" ? "more" : "more") as MobileTab;
+  // Any URL change (browser back, forward, in-app nav, direct entry) clears
+  // the txns override so screen tracks the URL again.
+  useEffect(() => {
+    setShowTxnsOverride(false);
+  }, [location]);
 
-  function handleNavChange(tab: MobileTab) {
-    setScreen(tab);
+  const urlScreen = PATH_TO_SCREEN[location] ?? "home";
+  const screen: AppScreen = showTxnsOverride ? "txns" : urlScreen;
+
+  const navTab = (NAV_SCREENS.has(screen) ? screen : "more") as MobileTab;
+
+  function navigateToScreen(s: AppScreen) {
+    if (s === "txns") {
+      setShowTxnsOverride(true);
+      return;
+    }
+    setShowTxnsOverride(false);
+    navigate(SCREEN_TO_PATH[s]);
   }
 
-  const goBack = () => setScreen("more");
+  function handleNavChange(tab: MobileTab) {
+    navigateToScreen(tab);
+  }
+
+  // Sub-screen back chevron means "up to parent (More)", not "browser back".
+  // The browser back button handles history walking on its own now that we
+  // push real URLs.
+  const goBack = () => navigateToScreen("more");
 
   return (
     <div style={{
@@ -146,13 +200,13 @@ function MobileAppInner() {
             </span>
           ))}
         </div>
-        {screen === "home"          && <MobileHome onNavigate={s => setScreen(s)} />}
+        {screen === "home"          && <MobileHome onNavigate={navigateToScreen} />}
         {screen === "accounts"      && <MobileAccounts />}
         {screen === "txns"          && <MobileTransactions />}
         {screen === "budget"        && <MobileBudget />}
         {screen === "goals"         && <MobileGoals />}
         {screen === "investments"   && <MobileInvestments />}
-        {screen === "more"          && <MobileMore onPersonalize={() => setScreen("personalize")} onNavigate={s => setScreen(s)} />}
+        {screen === "more"          && <MobileMore onPersonalize={() => navigateToScreen("personalize")} onNavigate={navigateToScreen} />}
         {screen === "personalize"   && <MobilePersonalize />}
         {screen === "analytics"     && <MobileAnalytics onBack={goBack} />}
         {screen === "subscriptions" && <MobileSubscriptions onBack={goBack} />}
@@ -163,7 +217,7 @@ function MobileAppInner() {
         {screen === "upcoming"      && <MobileUpcomingFull onBack={goBack} />}
       </div>
       <MobileNav active={navTab} onChange={handleNavChange} />
-      {screen !== "personalize" && screen !== "settings" && screen !== "home" && <SpeedDial onTabChange={s => setScreen(s)} />}
+      {screen !== "personalize" && screen !== "settings" && screen !== "home" && <SpeedDial onTabChange={navigateToScreen} />}
     </div>
   );
 }

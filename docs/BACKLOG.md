@@ -109,3 +109,92 @@ finance app that must load fast.
   changes can use them. Never animate a numeric value or delay data.
 - **`mockup-sandbox` still declares `framer-motion`.** Harmless, no deploy
   target, worth removing if the sandbox stops needing it.
+
+---
+
+## 6. Mobile UX — persona-driven home
+
+Reference points: Wise (one dominant balance, two or three large actions,
+everything else behind navigation) and Yahoo Finance (one line per item, large
+tap targets, detail on tap). Phone is for efficiency: read fast, act, leave.
+Desktop carries the complexity.
+
+**The system already exists.** `src/lib/persona.ts` defines five personas —
+`market`, `budget`, `wealth`, `social`, `full` — each with an `enabled` /
+`order` / `spans` widget config. The desktop dashboard honours it.
+`components/mobile/MobileHome.tsx` is 1,020 lines and references persona
+**zero** times. Every user gets the same hardcoded phone screen.
+
+### 6.1 Wire MobileHome to persona
+Read the active persona and render its widget set instead of the fixed layout.
+
+### 6.2 Give mobile its own widget budget — DO THIS BEFORE 6.1
+`market` enables 5 widgets, `wealth` 10, `budget` 12, `full` 23. Those are
+desktop counts. Phone should show 3–4, with the rest behind a "More" affordance.
+
+Critical: persona is shared between desktop and mobile (decided), so a `full`
+user gets no benefit from 6.1 alone — they would get all 23 widgets instead of
+the current hardcoded set. And `full` is defined as
+`enabled: [...ALL_WIDGET_IDS], order: [...ALL_WIDGET_IDS]`, so its order is
+just declaration order and carries no priority signal at all.
+
+The cap therefore cannot derive from `enabled`. Add an explicit
+`MOBILE_PRIORITY` ordering that applies across all personas, intersected with
+whatever that persona enables. `full` then gets the top 4 by global priority.
+
+### 6.7 "Since you last looked" strip — build this first
+The retention hook and the most efficient possible screen at the same time,
+because it is the only content that cannot be stale. One strip at the top of
+MobileHome: which balances moved (Wise auto-sync), what is due soon, what
+crossed a threshold. Everything else on the phone is a dashboard the user
+could have checked yesterday; this is the only part that rewards reopening.
+
+Note the tension being resolved here: "efficient" means minimising time in the
+app, "encouraging to come back" means the opposite. They only reconcile if
+something is genuinely new on each open.
+
+Related open question: the XP system (theme unlocks, bot skins via
+`lib/learn-xp.ts`) is the existing engagement layer. Decide whether it is
+pulling weight or competing for the same attention as this.
+
+### 6.8 Custom personas and onboarding questionnaire — PARKED
+Five personas is broad coverage and none of them work well on a phone yet.
+Make the existing five excellent on mobile first; that will define what a
+custom persona would need to configure. Building the configurator first is
+guessing.
+
+### 6.3 Mobile variants of the widgets
+Persona picks *which* widgets, not how dense each one is. Financial Health
+renders a score plus five progress bars; Wealth Milestones renders four rows of
+three figures. Both are sit-and-study desktop widgets. Each needs a phone
+variant: one number, one action, tap through for the full version.
+
+### 6.4 Primary action per persona
+The Wise lesson via the existing architecture. `social` opens on settle up or
+request; `budget` on log expense; `market` on watchlist or quote lookup.
+Currently SpeedDial is the same floating button for everyone.
+
+### 6.5 Make alerts actionable
+"SHOPPING Budget 99% used this month" is a sentence. It should be a row that
+taps through to somewhere the user can change it. Every object on screen should
+be somewhere you can manage or clear the thing it describes.
+
+### 6.6 Phone type and spacing scale
+Depends on 3.1 being fixed first — the `[style*="font-size"]` `!important`
+hack is the current mobile type scale and it has to go before a real one can
+land.
+
+---
+
+## 7. Bugs
+
+- **Nested anchors.** `<Link href="..."><a>…</a></Link>` is the wouter v2
+  pattern; v3 renders `Link` as an anchor itself, so this nests two and throws
+  a hydration error. 4 sites: 3 in `components/widgets/decision-engine.tsx`
+  (around lines 264–265), 1 in `pages/decisions.tsx`.
+- **`pnpm dev` builds in production mode.** `NODE_ENV=production` is set in the
+  shell environment; Vite reads `DEV` from `NODE_ENV`, not `MODE`, so
+  `import.meta.env.DEV` is false and the app points straight at Railway instead
+  of through the Vite proxy, which then fails CORS. Launch with
+  `NODE_ENV=development PORT=4321 BASE_PATH=/ pnpm dev`, or bake it into the
+  `dev` script.
