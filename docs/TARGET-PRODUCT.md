@@ -77,3 +77,38 @@ persona.
 Never shown to a single non-technical person. Every design decision so far has
 been made against an imagined user. Five observed sessions would be worth more
 than another month of design.
+
+---
+
+## Payments — the regulatory position
+
+Researched 13 Aug 2026. Not legal advice; confirm with TrueLayer and take
+proper advice before building.
+
+**The app can initiate payments without its own FCA authorisation.** TrueLayer
+is an authorised PISP and supports unregulated callers: you supply payment
+service user details in the request and include TrueLayer's exact wording
+stating that TrueLayer is initiating the payment. The app never holds or touches
+funds — it constructs a payment and the user authorises it in their own bank's
+interface.
+
+This is the "one level under moving money" model. `SETTLE £24.50` on a debt to a
+person, paying a bill, and moving between the user's own accounts are all
+achievable this way.
+
+**Doing it directly is not viable.** FCA authorisation as a PISP requires a
+minimum of €50,000 initial capital plus professional indemnity insurance, and
+registration takes up to a year.
+
+**Reading account data is much lighter.** The AIS agent route runs through a
+Third Party Provider who assumes PSD2 compliance responsibility; agents
+typically get access in four to six weeks against roughly a year for direct
+registration.
+
+**Scope limit:** UK only. Malaysia has no open banking regime, so Maybank and
+MYR stay read-only and manual.
+
+**Design consequence:** the v11 action row was premature but not fake. Actions
+that are genuinely achievable: settle a debt to a person, pay a bill, move
+between own accounts. Currency conversion is a different service and would need
+separate permissions — do not design it in.
