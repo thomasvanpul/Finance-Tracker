@@ -194,3 +194,45 @@ The Dial's failure is worth keeping in mind for all of them: two concentric
 rings doing unrelated jobs, labels radiating at four angles with no reading
 order, and a circle with no natural start. **One shape, one meaning.** If a
 shape needs a legend it has failed.
+
+---
+
+## Approved direction — 2C, extruded area
+
+Decided 13 Aug 2026 after 21 rounds. The first design accepted without
+qualification.
+
+**Extruded area.** Holdings drawn as proportional blocks — area encodes value,
+`1px² = £1.09` — with a constant 10px decorative depth on every block. Depth is
+styling and encodes nothing.
+
+This came from correcting the earlier isometric version, which used depth to
+encode value and was unreliable for five reasons: tall solids occlude short ones
+so an account can vanish; volume cannot be compared by eye and perspective
+shrinks distant objects, so the encoding lies; at true proportion a £102 account
+next to a £94,600 flat is an unlabellable sliver; negative value has no volume,
+so liabilities cannot be solids; and isometric shading needs three face tones
+surviving eleven themes including a light one.
+
+The fix, and the rule going forward: **dimensionality is styling, never data.**
+Value is encoded by length or area — flat, measurable, honest. The look is
+retained, the failure modes are not.
+
+Liabilities are outlined with no depth — a claim is not material you hold.
+Cells narrower than 24px cannot carry a label and collapse into a `+n` cell.
+
+### Next: the view switcher
+
+The user chooses how their wealth is drawn — blocks, charts, graphs, 3D models.
+This is a real feature, not a preference toggle, and it gives the earlier
+geometric explorations (Level, Horizon, Balance, Dial) a home as alternative
+renderings of the same data rather than as separate pages. It also connects to
+`MobileWidgetManager`, personas and the eleven themes, all of which already
+exist and are unused on mobile.
+
+### Also outstanding on this design
+- Footer redesign. The current HOME / FLOW / HOLD / PAY / ALL 37 is wrong, and
+  "ALL 37" should not be a footer item.
+- Proper routes to the other tools from the home screen.
+- Formatting pass across the whole screen.
+- Port to desktop once the phone version is settled.
