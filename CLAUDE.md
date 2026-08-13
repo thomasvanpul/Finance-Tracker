@@ -33,6 +33,11 @@ and the repo-root `vercel.json` is dead config. The API is on Railway; that
 subscription is ending and the service needs rehosting. The database is Neon
 (`eu-west-2`), **not** Railway, so losing Railway does not touch data.
 
+Local development points at the Neon branch **`dev`** (`br-cold-term-abp7fwtk`),
+a copy-on-write clone of production carrying real data. Safe to migrate, seed
+and break. The production URL is preserved in `lib/db/.env.production.backup`.
+Never point local development at production.
+
 ## Hard constraints
 
 - `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440` as a supply-chain
