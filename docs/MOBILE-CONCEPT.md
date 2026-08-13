@@ -124,3 +124,41 @@ urgency, every countdown is a real date.
 **Design status:** v7 approved on craft. Design exploration continues in breadth
 rather than depth — many divergent takes at once rather than further refinement
 of one screen.
+
+---
+
+## The Numeris signature — 13 Aug 2026
+
+A UI is recognisable because of one device repeated everywhere until it becomes
+the product's mark, not because of a whole system. Bloomberg's amber-on-black.
+Monzo's coral card. Robinhood's scrubbing line.
+
+The v7 design had no such device — mark tiles, sparklines, hairline column
+headers and the type ladder are all borrowed. That is why it read as Bloomberg.
+
+Three signature devices, all drawn from things structurally true about this app
+rather than invented. They occupy different jobs and do not conflict.
+
+### 1. Dotted means not-yet-real
+Solid means it happened. Dotted means it has not yet. Applies to projected
+balances, the chart tail past today, pending transfers, uncategorised amounts,
+scheduled rows, forecast values. One rule, on every screen, immediately legible.
+
+No other finance app can do this consistently because no other finance app knows
+its own future — rent, salary and subscriptions have known dates here.
+
+### 2. Every value carries its native currency
+Positions span GBP, MYR and EUR across Wise, Revolut and Maybank. Foreign values
+render as a permanent two-part treatment (native, then converted), everywhere,
+not just in the Atlas. UK finance apps do not do this because they are
+single-currency.
+
+### 3. The formula mark
+The sign-in screen speaks `fx =NUMERIS.SIGN_IN()`. It is the only genuinely
+original element in the product. Used as a *provenance device* rather than as an
+organising metaphor: the formula bar states where a figure came from, in the
+app's own syntax. "Show the working" under £289 is literally
+`=SPEND.SAFE(TO 17 AUG)`.
+
+A full spreadsheet metaphor fails on a phone. A single formula line as the
+product's mark is a different proposition and survives.
