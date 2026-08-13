@@ -192,14 +192,17 @@ function MobileAppInner() {
       overflow: "hidden",
     }}>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "hidden", paddingTop: "env(safe-area-inset-top, 0px)" }}>
-        {/* Bloomberg-style persistent financial status strip */}
-        <div style={{ height: 22, borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", display: "flex", alignItems: "center", paddingLeft: 14, paddingRight: 14, overflow: "hidden", flexShrink: 0, gap: 0 }}>
-          {([ ["NW", "£18.2k +23%", "var(--ft-green)"], ["SAVE", "£1,860/mo", "var(--ft-accent)"], ["HLTH", "72/100", "var(--ft-accent)"], ["NEXT", "Rent 5d", "var(--ft-text)"] ] as [string,string,string][]).map(([k, v, c], i) => (
-            <span key={k} style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
-              {i > 0 && <span style={{ margin: "0 8px", color: "var(--ft-border)" }}>·</span>}{k}&nbsp;<span style={{ color: c, fontWeight: 700 }}>{v}</span>
-            </span>
-          ))}
-        </div>
+        {/* Bloomberg-style persistent financial status strip.
+            Hidden on Home — the v7 design carries its own top bar and footer. */}
+        {screen !== "home" && (
+          <div style={{ height: 22, borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", display: "flex", alignItems: "center", paddingLeft: 14, paddingRight: 14, overflow: "hidden", flexShrink: 0, gap: 0 }}>
+            {([ ["NW", "£18.2k +23%", "var(--ft-green)"], ["SAVE", "£1,860/mo", "var(--ft-accent)"], ["HLTH", "72/100", "var(--ft-accent)"], ["NEXT", "Rent 5d", "var(--ft-text)"] ] as [string,string,string][]).map(([k, v, c], i) => (
+              <span key={k} style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                {i > 0 && <span style={{ margin: "0 8px", color: "var(--ft-border)" }}>·</span>}{k}&nbsp;<span style={{ color: c, fontWeight: 700 }}>{v}</span>
+              </span>
+            ))}
+          </div>
+        )}
         {screen === "home"          && <MobileHome onNavigate={navigateToScreen} />}
         {screen === "accounts"      && <MobileAccounts />}
         {screen === "txns"          && <MobileTransactions />}
@@ -216,7 +219,8 @@ function MobileAppInner() {
         {screen === "settings"      && <MobileSettings onBack={goBack} />}
         {screen === "upcoming"      && <MobileUpcomingFull onBack={goBack} />}
       </div>
-      <MobileNav active={navTab} onChange={handleNavChange} />
+      {/* MobileNav hidden on Home — the v7 design owns the footer there. */}
+      {screen !== "home" && <MobileNav active={navTab} onChange={handleNavChange} />}
       {screen !== "personalize" && screen !== "settings" && screen !== "home" && <SpeedDial onTabChange={navigateToScreen} />}
     </div>
   );
