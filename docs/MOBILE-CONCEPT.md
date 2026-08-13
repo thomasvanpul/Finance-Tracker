@@ -236,3 +236,36 @@ exist and are unused on mobile.
 - Proper routes to the other tools from the home screen.
 - Formatting pass across the whole screen.
 - Port to desktop once the phone version is settled.
+
+---
+
+## Approved — 13 Aug 2026, second pass
+
+**View switcher.** BLOCKS / BANDS / RING as user-selectable renderings of the
+same position. 1B (full-bleed month field), 2A (extruded field) and 2B (side
+elevation) are kept as further options rather than discarded. All renderings
+encode value by length or area only; depth is always decorative.
+
+**Footer.** HOME / MONTH / MOVE / FIND. Four slots, each a thing you *do*
+rather than somewhere you read. ALL 37 is gone — a directory is not a
+destination. FIND is the door to everything else; its empty state is the full
+list, grouped, so a stranger reaches any of the 37 in two taps and a regular
+types three letters.
+
+**Routes.** Every section header links to its tool (Holdings, Cashflow, Budget,
+Accounts, Month, Split). The home scroll ends in a short named list —
+Investments, Goals, Subscriptions, Currency — carrying live values, so it reads
+as news rather than a grid of tiles.
+
+**Number rule.** Separators always. Two decimals when the figure is a fact you
+could reconcile (balances, transactions, claims, the headline). No decimals when
+the figure is a shape (labels inside a graphic, axis ticks). Negatives take a
+true minus before the symbol, never brackets, never colour alone. Foreign
+holdings read native first, converted second, never converted alone. In aligned
+columns the symbol is dropped and stated once in the column header; figures are
+tabular and right-aligned.
+
+**Customisation.** Onboarding selects the starting configuration and it stays
+changeable. Scope of what onboarding sets is still open — see below.
+
+**Desktop.** Must be brought in line. Not yet specified.
