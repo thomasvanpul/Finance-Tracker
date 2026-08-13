@@ -51,6 +51,38 @@ interface MobileHomeProps {
   onNavigate: (screen: AppScreen) => void;
 }
 
+// ── Holdings composition (pure, testable) ────────────────────────────────────
+// Residual = netWorth − totalCash − portfolio. See MobileHome for the caveat:
+// netWorth is already net of liabilities, so this is "everything else, minus
+// every debt". Rendered as OTHER only when strictly positive; suppressed at
+// zero or negative so the block field never claims property equity that isn't
+// tracked.
+export interface HoldingsInput {
+  netWorth?: number;
+  totalCash?: number;
+  portfolio?: { totalValueGbp?: number };
+}
+export interface Holdings {
+  liquid: number;
+  invested: number;
+  other: number;
+  pension: number | null;
+  showOther: boolean;
+}
+export function computeHoldings(d: HoldingsInput | null | undefined): Holdings {
+  const netWorth = d?.netWorth ?? 0;
+  const totalCash = d?.totalCash ?? 0;
+  const portfolio = d?.portfolio?.totalValueGbp ?? 0;
+  const residual = netWorth - totalCash - portfolio;
+  return {
+    liquid: totalCash,
+    invested: portfolio,
+    other: residual > 0 ? residual : 0,
+    pension: null,
+    showOther: residual > 0,
+  };
+}
+
 export function MobileHome(_props: MobileHomeProps) {
   const [, navigate] = useLocation();
   const { privacy: _privacy } = usePrivacy();
@@ -76,19 +108,9 @@ export function MobileHome(_props: MobileHomeProps) {
   const priorNw = netWorth - mtdDelta;
   const mtdPct = priorNw > 0 ? (mtdDelta / priorNw) * 100 : 0;
 
-  const totalCash = dashboard?.totalCash ?? 0;
-  const portfolioValue = dashboard?.portfolio.totalValueGbp ?? 0;
-  // Residual: netWorth is already net of liabilities, so this equals
-  // "everything else, minus every debt". It is NOT property equity — it
-  // contains any untracked pension, unlisted asset, and (as a negative) any
-  // mortgage or long-term loan not captured elsewhere. Rendered as OTHER
-  // when strictly positive; not rendered at all when zero or negative.
-  // A honest FLAT/PROPERTY block requires an account.type column or a
-  // dedicated property field on Account — see the "values the API cannot
-  // supply" note.
-  const residual = netWorth - totalCash - portfolioValue;
-  // PENSION: no API field. Placeholder — rendered as an outlined empty block.
-  const pensionValue: number | null = null;
+  const holdings = computeHoldings(dashboard);
+  const totalCash = holdings.liquid;
+  const portfolioValue = holdings.invested;
 
   const activeAccounts = dashboard?.accountBreakdown ?? [];
   const currencyCount = new Set(activeAccounts.map((a) => a.currency)).size;
@@ -114,13 +136,11 @@ export function MobileHome(_props: MobileHomeProps) {
     return sum + per;
   }, 0);
 
-  // Days left in month
   const lastDayOfMonth = new Date(
     now.getFullYear(),
     now.getMonth() + 1,
     0,
   ).getDate();
-  const daysLeft = lastDayOfMonth - now.getDate();
 
   // Cashflow: rolling daily balance from txns this month (past only).
   const dailyBalances = buildDailyBalances(txns, now, totalCash);
@@ -132,14 +152,27 @@ export function MobileHome(_props: MobileHomeProps) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const monthAbbr = now
-    .toLocaleDateString("en-GB", { month: "short" })
-    .toUpperCase();
   const monthShortMixed = now.toLocaleDateString("en-GB", { month: "short" });
   const monthName = now
     .toLocaleDateString("en-GB", { month: "long" })
     .toUpperCase();
   const todayIndex = now.getDate() - 1;
+
+  // ── Empty state: no accounts connected ───────────────────────────────────
+  // Show a single message-and-CTA screen instead of an empty terminal.
+  // Only fires once the dashboard has actually loaded (not during initial
+  // fetch), so we don't flash it before data arrives.
+  if (dashboard != null && activeAccounts.length === 0) {
+    return (
+      <EmptyHome
+        timeStr={timeStr}
+        onAddAccount={() => navigate("/accounts")}
+        onMonth={() => navigate("/upcoming")}
+        onMove={() => navigate("/accounts")}
+        onFind={() => navigate("/more")}
+      />
+    );
+  }
 
   return (
     <div
@@ -267,14 +300,14 @@ export function MobileHome(_props: MobileHomeProps) {
         <div style={{ padding: "0 18px" }}>
           {view === "blocks" && (
             <BlocksView
-              other={residual > 0 ? residual : 0}
-              liquid={totalCash}
-              invested={portfolioValue}
-              pension={pensionValue}
+              other={holdings.other}
+              liquid={holdings.liquid}
+              invested={holdings.invested}
+              pension={holdings.pension}
             />
           )}
-          {view === "bands" && <PlaceholderPanel label="BANDS view — reserved" />}
-          {view === "ring" && <PlaceholderPanel label="RING view — reserved" />}
+          {view === "bands" && <PlaceholderPanel />}
+          {view === "ring" && <PlaceholderPanel />}
         </div>
 
         {/* Claimed (liabilities are outlined, no depth) */}
@@ -291,7 +324,7 @@ export function MobileHome(_props: MobileHomeProps) {
               style={{
                 width: 88,
                 height: 19,
-                border: "1px solid var(--ft-red)",
+                borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-red)",
                 boxSizing: "border-box",
                 flex: "none",
                 marginTop: 1,
@@ -312,42 +345,25 @@ export function MobileHome(_props: MobileHomeProps) {
           </div>
         )}
 
-        <div
-          style={{
-            padding: "10px 18px 0",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ft-dim)",
-          }}
-        >
-          AREA IS VALUE. DEPTH IS DECORATION.
-        </div>
-
-        {/* Cashflow section */}
-        <SectionHeader
-          label={`${monthName} · LIQUID`}
-          link="CASHFLOW ›"
-          onLink={() => navigate("/cashflow")}
-        />
-        <div style={{ padding: "0 18px" }}>
-          <CashflowChart
-            days={dailyBalances}
-            todayIndex={todayIndex}
-            lastDay={lastDayOfMonth}
-            low={monthLow}
-            monthShortMixed={monthShortMixed}
-          />
-        </div>
-
-        {/* Budget section (discretionary spend is a placeholder — no API field) */}
-        <SectionHeader
-          label={`DISCRETIONARY · ${daysLeft} DAYS LEFT`}
-          link="BUDGET ›"
-          onLink={() => navigate("/budget")}
-        />
-        <div style={{ padding: "0 18px" }}>
-          <BudgetPlaceholder daysLeft={daysLeft} />
-        </div>
+        {/* Cashflow section — only when there is anything to plot */}
+        {txns.length > 0 && (
+          <>
+            <SectionHeader
+              label={`${monthName} · LIQUID`}
+              link="CASHFLOW ›"
+              onLink={() => navigate("/cashflow")}
+            />
+            <div style={{ padding: "0 18px" }}>
+              <CashflowChart
+                days={dailyBalances}
+                todayIndex={todayIndex}
+                lastDay={lastDayOfMonth}
+                low={monthLow}
+                monthShortMixed={monthShortMixed}
+              />
+            </div>
+          </>
+        )}
 
         {/* Accounts section */}
         <SectionHeader
@@ -392,7 +408,7 @@ export function MobileHome(_props: MobileHomeProps) {
           style={{
             marginTop: 12,
             padding: "16px 18px 24px",
-            borderTop: "1px solid var(--ft-border)",
+            borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
           }}
         >
           <div
@@ -468,7 +484,7 @@ export function MobileHome(_props: MobileHomeProps) {
           height: 60,
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
-          borderTop: "1px solid var(--ft-border)",
+          borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
           background: "var(--ft-base)",
           fontFamily: "var(--font-mono)",
           fontSize: 11,
@@ -528,7 +544,7 @@ function ViewTab({ label, active, onClick }: { label: string; active: boolean; o
   };
   const off: React.CSSProperties = {
     color: "var(--ft-dim)",
-    border: "1px solid var(--ft-border)",
+    borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-border)",
   };
   return (
     <div
@@ -695,7 +711,7 @@ function BlocksView({
   );
 }
 
-function PlaceholderPanel({ label }: { label: string }) {
+function PlaceholderPanel() {
   return (
     <div
       style={{
@@ -704,17 +720,8 @@ function PlaceholderPanel({ label }: { label: string }) {
         height: 296,
         boxShadow: "10px -10px 0 0 var(--ft-border)",
         background: "var(--ft-surface)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "var(--font-mono)",
-        fontSize: 11,
-        letterSpacing: "0.16em",
-        color: "var(--ft-dim)",
       }}
-    >
-      {label}
-    </div>
+    />
   );
 }
 
@@ -733,7 +740,7 @@ function SectionHeader({
       style={{
         marginTop: 24,
         padding: "16px 18px 0",
-        borderTop: "1px solid var(--ft-border)",
+        borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
       }}
     >
       <div
@@ -892,54 +899,6 @@ function CashflowChart({
   );
 }
 
-// ── Budget placeholder (no discretionary-budget API) ─────────────────────────
-function BudgetPlaceholder({ daysLeft: _daysLeft }: { daysLeft: number }) {
-  return (
-    <>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          gap: 8,
-          marginTop: 10,
-        }}
-      >
-        <span
-          className="pnum"
-          style={{
-            fontSize: 21,
-            fontWeight: 600,
-            letterSpacing: "-0.03em",
-            color: "var(--ft-dim)",
-          }}
-        >
-          —
-        </span>
-        <span style={{ fontSize: 13, color: "var(--ft-dim)" }}>
-          no discretionary-budget field in the API
-        </span>
-      </div>
-      <div
-        style={{
-          marginTop: 14,
-          width: "100%",
-          maxWidth: 354,
-          height: 44,
-          display: "flex",
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            border: "1px solid var(--ft-border)",
-            boxSizing: "border-box",
-          }}
-        />
-      </div>
-    </>
-  );
-}
-
 // ── Accounts list ────────────────────────────────────────────────────────────
 type Acct = {
   id: number;
@@ -968,9 +927,10 @@ function AccountsList({ accounts }: { accounts: Acct[] }) {
             alignItems: "center",
             gap: 10,
             minHeight: 44,
-            borderTop: "1px solid var(--ft-border)",
-            borderBottom:
-              i === accounts.length - 1 ? "1px solid var(--ft-border)" : undefined,
+            borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
+            ...(i === accounts.length - 1
+              ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
+              : {}),
             fontSize: 14,
           }}
         >
@@ -1038,9 +998,10 @@ function UpcomingList({
               justifyContent: "space-between",
               alignItems: "center",
               minHeight: 44,
-              borderTop: "1px solid var(--ft-border)",
-              borderBottom:
-                i === bills.length - 1 ? "1px solid var(--ft-border)" : undefined,
+              borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
+              ...(i === bills.length - 1
+                ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
+                : {}),
               fontSize: 14,
             }}
           >
@@ -1087,7 +1048,7 @@ function ElsewhereRow({
         alignItems: "baseline",
         justifyContent: "space-between",
         minHeight: 44,
-        borderBottom: "1px solid var(--ft-border)",
+        borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)",
         textDecoration: "none",
         color: "var(--ft-text)",
         fontSize: 14,
@@ -1128,7 +1089,7 @@ function GlyphOutline() {
       style={{
         width: 16,
         height: 10,
-        border: "1px solid var(--ft-dim)",
+        borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-dim)",
         boxSizing: "border-box",
         display: "block",
       }}
@@ -1141,8 +1102,8 @@ function GlyphBars() {
       style={{
         width: 16,
         height: 10,
-        borderTop: "1px solid var(--ft-dim)",
-        borderBottom: "1px solid var(--ft-dim)",
+        borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-dim)",
+        borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-dim)",
         display: "block",
       }}
     />
@@ -1154,7 +1115,7 @@ function GlyphRing() {
       style={{
         width: 10,
         height: 10,
-        border: "1px solid var(--ft-dim)",
+        borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-dim)",
         borderRadius: "50%",
         boxSizing: "border-box",
         display: "block",
@@ -1190,6 +1151,138 @@ function FooterTab({
     >
       {glyph}
       {label}
+    </div>
+  );
+}
+
+// ── Empty state (no accounts connected) ──────────────────────────────────────
+function EmptyHome({
+  timeStr,
+  onAddAccount,
+  onMonth,
+  onMove,
+  onFind,
+}: {
+  timeStr: string;
+  onAddAccount: () => void;
+  onMonth: () => void;
+  onMove: () => void;
+  onFind: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        background: "var(--ft-base)",
+        color: "var(--ft-text)",
+        fontFamily: "var(--font-sans)",
+        WebkitFontSmoothing: "antialiased",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: "0 0 60px 0",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {/* Top bar — time only, no account count */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            height: 44,
+            padding: "0 18px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--ft-dim)",
+          }}
+        >
+          <span>{timeStr}</span>
+          <span>NUMERIS</span>
+        </div>
+
+        {/* Centred message + CTA */}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "0 24px",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              letterSpacing: "0.16em",
+              color: "var(--ft-dim)",
+            }}
+          >
+            NO ACCOUNTS
+          </div>
+          <div style={{ fontSize: 21, lineHeight: "28px", fontWeight: 600, letterSpacing: "-0.02em" }}>
+            Nothing to show yet.
+          </div>
+          <div style={{ fontSize: 14, lineHeight: "20px", color: "var(--ft-muted)" }}>
+            Numeris reads Wise and Revolut, or you can add an account by hand.
+            Once one is connected the home screen fills in on its own.
+          </div>
+          <div
+            onClick={onAddAccount}
+            style={{
+              marginTop: 6,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              alignSelf: "flex-start",
+              minHeight: 44,
+              padding: "0 18px",
+              background: "var(--ft-text)",
+              color: "var(--ft-base)",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            Add an account
+          </div>
+        </div>
+      </div>
+
+      {/* Same footer as home so nav is consistent */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 60,
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          borderTopWidth: 1,
+          borderTopStyle: "solid",
+          borderTopColor: "var(--ft-border)",
+          background: "var(--ft-base)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          letterSpacing: "0.08em",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+      >
+        <FooterTab label="HOME" active={true} onClick={() => { /* already home */ }} glyph={<GlyphFilled />} />
+        <FooterTab label="MONTH" active={false} onClick={onMonth} glyph={<GlyphOutline />} />
+        <FooterTab label="MOVE" active={false} onClick={onMove} glyph={<GlyphBars />} />
+        <FooterTab label="FIND" active={false} onClick={onFind} glyph={<GlyphRing />} />
+      </div>
     </div>
   );
 }
