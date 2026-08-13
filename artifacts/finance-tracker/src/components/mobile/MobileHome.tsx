@@ -8,6 +8,7 @@ import {
   useListSubscriptions,
 } from "@workspace/api-client-react";
 import type { AppScreen } from "./MobileApp";
+import { MobileEmptyState } from "./mobile-ui";
 
 // ── Number rule (docs/MOBILE-CONCEPT.md § Approved 13 Aug 2026, second pass) ──
 // Separators always. Two decimals for facts. No decimals for shapes.
@@ -159,43 +160,64 @@ export function MobileHome(_props: MobileHomeProps) {
   const todayIndex = now.getDate() - 1;
 
   // ── Empty state: no accounts connected ───────────────────────────────────
-  // Show a single message-and-CTA screen instead of an empty terminal.
-  // Only fires once the dashboard has actually loaded (not during initial
-  // fetch), so we don't flash it before data arrives.
+  // Only fires once the dashboard has actually loaded so we don't flash it
+  // before data arrives. Footer is rendered by MobileApp, so this returns
+  // just the screen body.
   if (dashboard != null && activeAccounts.length === 0) {
     return (
-      <EmptyHome
-        timeStr={timeStr}
-        onAddAccount={() => navigate("/accounts")}
-        onMonth={() => navigate("/upcoming")}
-        onMove={() => navigate("/accounts")}
-        onFind={() => navigate("/more")}
-      />
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          background: "var(--ft-base)",
+          color: "var(--ft-text)",
+          fontFamily: "var(--font-sans)",
+          WebkitFontSmoothing: "antialiased",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            height: 44,
+            padding: "0 18px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--ft-dim)",
+          }}
+        >
+          <span>{timeStr}</span>
+          <span>NUMERIS</span>
+        </div>
+        <MobileEmptyState
+          label="NO ACCOUNTS"
+          title="Nothing to show yet."
+          description="Numeris reads Wise and Revolut, or you can add an account by hand. Once one is connected the home screen fills in on its own."
+          ctaLabel="Add an account"
+          onCta={() => navigate("/accounts")}
+        />
+      </div>
     );
   }
 
   return (
     <div
       style={{
-        position: "relative",
         width: "100%",
         height: "100%",
         background: "var(--ft-base)",
         color: "var(--ft-text)",
         fontFamily: "var(--font-sans)",
         WebkitFontSmoothing: "antialiased",
-        overflow: "hidden",
+        overflowY: "auto",
+        overflowX: "hidden",
+        paddingBottom: "calc(60px + env(safe-area-inset-bottom, 0px) + 16px)",
       }}
+      className="mobile-scroll"
     >
-      <div
-        className="mobile-scroll"
-        style={{
-          position: "absolute",
-          inset: "0 0 60px 0",
-          overflowY: "auto",
-          overflowX: "hidden",
-        }}
-      >
         {/* Top bar (44px, JetBrains Mono, dim) */}
         <div
           style={{
@@ -472,53 +494,6 @@ export function MobileHome(_props: MobileHomeProps) {
             ALL 37 PLACES · SEARCH ›
           </a>
         </div>
-      </div>
-
-      {/* Footer HOME / MONTH / MOVE / FIND */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 60,
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-          background: "var(--ft-base)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.08em",
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        }}
-      >
-        <FooterTab
-          label="HOME"
-          active={true}
-          onClick={() => {
-            /* already home */
-          }}
-          glyph={<GlyphFilled />}
-        />
-        <FooterTab
-          label="MONTH"
-          active={false}
-          onClick={() => navigate("/upcoming")}
-          glyph={<GlyphOutline />}
-        />
-        <FooterTab
-          label="MOVE"
-          active={false}
-          onClick={() => navigate("/accounts")}
-          glyph={<GlyphBars />}
-        />
-        <FooterTab
-          label="FIND"
-          active={false}
-          onClick={() => navigate("/more")}
-          glyph={<GlyphRing />}
-        />
-      </div>
     </div>
   );
 }
@@ -1066,223 +1041,5 @@ function ElsewhereRow({
         {valueLabel}
       </span>
     </a>
-  );
-}
-
-// ── Footer glyphs ────────────────────────────────────────────────────────────
-function GlyphFilled() {
-  return (
-    <span
-      style={{
-        width: 16,
-        height: 10,
-        background: "var(--ft-text)",
-        boxShadow: "4px -4px 0 0 var(--ft-border)",
-        display: "block",
-      }}
-    />
-  );
-}
-function GlyphOutline() {
-  return (
-    <span
-      style={{
-        width: 16,
-        height: 10,
-        borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-dim)",
-        boxSizing: "border-box",
-        display: "block",
-      }}
-    />
-  );
-}
-function GlyphBars() {
-  return (
-    <span
-      style={{
-        width: 16,
-        height: 10,
-        borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-dim)",
-        borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-dim)",
-        display: "block",
-      }}
-    />
-  );
-}
-function GlyphRing() {
-  return (
-    <span
-      style={{
-        width: 10,
-        height: 10,
-        borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-dim)",
-        borderRadius: "50%",
-        boxSizing: "border-box",
-        display: "block",
-      }}
-    />
-  );
-}
-
-function FooterTab({
-  label,
-  active,
-  onClick,
-  glyph,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  glyph: React.ReactNode;
-}) {
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        color: active ? "var(--ft-text)" : "var(--ft-dim)",
-        cursor: "pointer",
-        userSelect: "none",
-      }}
-    >
-      {glyph}
-      {label}
-    </div>
-  );
-}
-
-// ── Empty state (no accounts connected) ──────────────────────────────────────
-function EmptyHome({
-  timeStr,
-  onAddAccount,
-  onMonth,
-  onMove,
-  onFind,
-}: {
-  timeStr: string;
-  onAddAccount: () => void;
-  onMonth: () => void;
-  onMove: () => void;
-  onFind: () => void;
-}) {
-  return (
-    <div
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        background: "var(--ft-base)",
-        color: "var(--ft-text)",
-        fontFamily: "var(--font-sans)",
-        WebkitFontSmoothing: "antialiased",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: "0 0 60px 0",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Top bar — time only, no account count */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            height: 44,
-            padding: "0 18px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ft-dim)",
-          }}
-        >
-          <span>{timeStr}</span>
-          <span>NUMERIS</span>
-        </div>
-
-        {/* Centred message + CTA */}
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            padding: "0 24px",
-            gap: 14,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.16em",
-              color: "var(--ft-dim)",
-            }}
-          >
-            NO ACCOUNTS
-          </div>
-          <div style={{ fontSize: 21, lineHeight: "28px", fontWeight: 600, letterSpacing: "-0.02em" }}>
-            Nothing to show yet.
-          </div>
-          <div style={{ fontSize: 14, lineHeight: "20px", color: "var(--ft-muted)" }}>
-            Numeris reads Wise and Revolut, or you can add an account by hand.
-            Once one is connected the home screen fills in on its own.
-          </div>
-          <div
-            onClick={onAddAccount}
-            style={{
-              marginTop: 6,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              alignSelf: "flex-start",
-              minHeight: 44,
-              padding: "0 18px",
-              background: "var(--ft-text)",
-              color: "var(--ft-base)",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-              userSelect: "none",
-            }}
-          >
-            Add an account
-          </div>
-        </div>
-      </div>
-
-      {/* Same footer as home so nav is consistent */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 60,
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          borderTopWidth: 1,
-          borderTopStyle: "solid",
-          borderTopColor: "var(--ft-border)",
-          background: "var(--ft-base)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.08em",
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        }}
-      >
-        <FooterTab label="HOME" active={true} onClick={() => { /* already home */ }} glyph={<GlyphFilled />} />
-        <FooterTab label="MONTH" active={false} onClick={onMonth} glyph={<GlyphOutline />} />
-        <FooterTab label="MOVE" active={false} onClick={onMove} glyph={<GlyphBars />} />
-        <FooterTab label="FIND" active={false} onClick={onFind} glyph={<GlyphRing />} />
-      </div>
-    </div>
   );
 }
