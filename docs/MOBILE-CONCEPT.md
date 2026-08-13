@@ -67,3 +67,60 @@ direction largely declines them. Permission is not obligation.
 finance. Died on a fair objection: if servicing objects is the mobile loop it has
 to exist on desktop too, or the platforms diverge in behaviour rather than
 layout. Worth revisiting as a cross-platform feature, not as a mobile shell.
+
+---
+
+## Parked spines — content-level differentiation
+
+Four ways the app could be organised that Bloomberg structurally cannot copy.
+Not chosen yet; worth keeping.
+
+**Forward time.** Bloomberg cannot know tomorrow's price. This app can: rent
+leaves on the 17th, salary lands on the 28th, six subscriptions renew on known
+dates. A terminal organised around a forward curve rather than a historical one.
+
+**People as instruments.** `JM` and `PT` are already ticker-shaped. Treat
+counterparties as positions held in humans — a receivables book with ageing,
+exposure per person, settlement history. Every finance app buries "who owes me"
+in a sub-page.
+
+**Books and scopes.** `/business`, `/family`, `/trading` already exist, as does
+the persona system. A life runs several books at once; a trader switches desks.
+Scope as the top-level control rather than a setting.
+
+**Decision surface.** The decision engine already exists. A terminal that
+proposes rather than only reports — rows carrying a suggested action and its
+modelled impact, so the screen argues a position instead of listing state.
+
+---
+
+## Product decisions — 13 Aug 2026
+
+After nine design rounds failed to produce "feels special" or "makes me want to
+come back", the diagnosis: **visual design cannot create return frequency.**
+
+All four reference apps (Instagram, Reddit, Clash of Clans, Yahoo Finance) share
+one mechanism: something changes without the user doing anything, driven by other
+people or the outside world. Numeris currently changes only when its single user
+logs something. That is a content problem, not a UI problem.
+
+All three of the following are approved to build:
+
+**1. Market, FX and news.** Alpaca is already wired; the app already holds
+multi-currency positions across Wise, Revolut and Maybank. Markets, FX and rates
+move daily and genuinely affect the position. The market and news panes in the v7
+design are the only elements on that screen that will differ tomorrow morning.
+
+**2. Other people.** Split and owing is currently a ledger. Make it social:
+request, settle, add a shared expense. Then another person's action puts
+something on the user's screen without the user doing anything.
+
+**3. Progression.** XP, theme unlocks and bot skins already exist
+(`lib/learn-xp.ts`) and are decoration. Make the layer mean something.
+
+Constraint carried from earlier: never reward spending, never manufacture
+urgency, every countdown is a real date.
+
+**Design status:** v7 approved on craft. Design exploration continues in breadth
+rather than depth — many divergent takes at once rather than further refinement
+of one screen.
