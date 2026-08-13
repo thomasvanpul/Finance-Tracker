@@ -112,3 +112,35 @@ MYR stay read-only and manual.
 that are genuinely achievable: settle a debt to a person, pay a bill, move
 between own accounts. Currency conversion is a different service and would need
 separate permissions — do not design it in.
+
+---
+
+## Desktop and phone are one product — 13 Aug 2026
+
+**Stated requirement:** the desktop app and the phone app must be fully linked
+for accounts. Same data, same account model, no divergence. That means the two
+UIs cannot be too different from each other either, and everything has to
+actually work on both.
+
+Willing to change parts of the desktop UI; many parts of it are liked and should
+survive. So this is alignment, not replacement.
+
+**What this implies, and it is significant:**
+
+The mobile design language now settled — hairline structure, extruded-area
+blocks with area encoding value, the number rule, Archivo with IBM Plex Mono for
+aligned figures, all colour from `--ft-*` tokens — has to become *shared
+components*, not a second implementation. Two codebases drifting apart is
+exactly the failure this requirement exists to prevent.
+
+The desktop currently carries 11,715 inline style objects and a 306KB
+`investments.tsx`. It cannot absorb a shared design language in that state.
+Section 3 of BACKLOG.md (the flex-container primitive, migrating pages to
+primitives, breaking up the oversized files) is therefore no longer optional
+polish — it is the prerequisite for keeping the two platforms in step.
+
+**Also relevant:** mock data was found hardcoded in `MobileAccounts.tsx` and
+`MobileNetWorth.tsx` behind a `hasMockData` flag, surfaced only as the word
+"preview" in a 10px label. Any screen showing fabricated numbers breaks the
+"everything has to fully work" requirement more seriously than a missing
+feature does, because it is indistinguishable from working.
