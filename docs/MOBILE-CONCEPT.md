@@ -162,3 +162,35 @@ app's own syntax. "Show the working" under £289 is literally
 
 A full spreadsheet metaphor fails on a phone. A single formula line as the
 product's mark is a different proposition and survives.
+
+---
+
+## Resolution — 13 Aug 2026
+
+After fourteen design rounds, the structure settled:
+
+**The home screen is v7** — the dense Bloomberg-lineage terminal. Not replaced.
+Perfected. Density may come down slightly but the character stays.
+
+**The geometric explorations become detail pages, not the home.** Each maps to
+an existing route:
+
+| Design       | Idea                                                    | Route |
+| ------------ | ------------------------------------------------------- | ----- |
+| The Level    | Money as a column; committed sediment, waterline is free | `/budget` / safe-to-spend |
+| The Horizon  | Terrain ahead; elevation is balance, dips are bills      | `/cashflow` |
+| The Balance  | Two pans; owned against claimed, tilt is the net         | `/net-worth` |
+| The Dial     | The month as a ring; angle says when                     | month view |
+| The Deck     | One question per full-bleed card, swiped                 | `/year-review`, month-so-far |
+
+**The connecting idea: each home pane carries a miniature of the geometry of the
+page it opens.** The budget pane holds a small Level, the cashflow pane a small
+Horizon, the net worth pane a small Balance. Same density, same terminal
+discipline, but panes stop being interchangeable — which was the strongest
+AI-tell in the design — because each pane's shape now means something, and
+tapping it expands the shape already being looked at.
+
+The Dial's failure is worth keeping in mind for all of them: two concentric
+rings doing unrelated jobs, labels radiating at four angles with no reading
+order, and a circle with no natural start. **One shape, one meaning.** If a
+shape needs a legend it has failed.
