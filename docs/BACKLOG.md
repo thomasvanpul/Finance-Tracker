@@ -1,210 +1,231 @@
 # Backlog
 
-Outstanding work on Numeris. Analysis lives in `STYLE-INVENTORY.md` and
-`MOBILE-INVENTORY.md`; this file is the running list of what is left to do.
+Task list for both humans and agents. Every task has a scope, a definition of
+done, and a way to prove it. If a task cannot be verified by a command or a
+described observation, it is not ready to be picked up.
+
+**Working rules for an unattended run**
+- One task at a time, in ID order within a section, unless `Blocked by` says
+  otherwise.
+- Run the verification before claiming done. If it fails, stop and report —
+  never adjust the check to make it pass.
+- Commit per task with the task ID in the subject. Never batch unrelated tasks.
+- If a task's assumptions do not hold, stop and write what you found. Do not
+  improvise a substitute.
+- Read `CLAUDE.md` first; it carries the constraints.
+
+Status: `TODO` · `IN PROGRESS` · `DONE` · `BLOCKED` · `PARKED`
 
 ---
 
-## 1. Risk — do before schema work or large refactors
+## A. Safety — before schema work or unattended runs
 
-### 1.1 Split the dev database from production
-One `DATABASE_URL` in `lib/db/.env` serves both. The Vite proxy spoofs `Origin`
-to `https://financetracker.work` and rewrites `__Secure-` cookie prefixes, so
-local dev holds production session cookies and reads and writes real financial
-data. Provision a second Railway Postgres, point local at it, seed it.
+### A1 · Split dev from production — DONE (`e5b77f3`)
+Neon branch `dev` (`br-cold-term-abp7fwtk`), a copy-on-write clone.
+`lib/db/.env` points at it. Production URL is in `lib/db/.env.production.backup`.
 
-### 1.2 Move to real migrations
-`lib/db/package.json` has only `push` and `push-force` (`drizzle-kit push
---force`). No migrations directory, no version history, no down path. Add
-`drizzle-kit generate`, commit the migration files, delete `push-force`.
-Take a production dump before baselining.
+### A2 · Rotate the `neondb_owner` password — TODO · needs a human
+Neon roles are project-level, so the dev branch password also authenticates
+against production, and the current one was exposed in a chat transcript.
+- **Do:** `npx -y neonctl@latest roles reset-password neondb_owner` in a real
+  terminal — the CLI needs a TTY. Update `lib/db/.env` with the new dev string
+  and the Railway service variable with the new production string.
+- **Done when:** the old password is rejected and the app still connects.
 
-### 1.3 Confirm the `dev@bypass.local` account is gone
-The code referencing it was removed and deployed. The row in production
-Postgres was never confirmed deleted. Delete it, plus its `session` and
-`account` rows, or rotate the password.
+### A3 · Real migrations — TODO · Blocked by A2
+`lib/db/package.json` has only `push` and `push-force`. No history, no down
+path, and `push-force` applies destructive changes without confirming.
+- **Do:** add `drizzle-kit generate`, generate a baseline against the dev
+  branch, commit the migrations, delete `push-force`.
+- **Verify:** `cd lib/db && pnpm generate` yields no diff on a clean tree.
 
----
-
-## 2. Mobile
-
-See `MOBILE-INVENTORY.md` Q7 for the full plan and the three overlapping
-systems it describes.
-
-### 2.1 URL routing for MobileApp — IN PROGRESS
-Steps 1 and 2 fused: `AppScreen` state replaced by wouter location, and the
-`location === "/"` gate in `App.tsx` replaced by membership in an explicit
-`MOBILE_ROUTES` allowlist. Uncovered routes fall through to desktop unchanged.
-
-### 2.2 Port delete to MobileTransactions, then cover `/transactions`
-`pages/transactions.tsx:1776` uses `useSwipeDelete`.
-`components/mobile/MobileTransactions.tsx` has no delete of any kind. Until
-delete is ported, `/transactions` stays out of `MOBILE_ROUTES` and the `txns`
-tab keeps its state-machine fallback.
-
-### 2.3 Remaining MOBILE-INVENTORY steps 3–6
-Route-level component swap, removal of dead `isMobile` branches from the 12
-now-unreachable desktop pages, a decision on the 11 pages with no mobile
-screen, and rationalising the `@media (max-width: 767px)` block.
+### A4 · Confirm `dev@bypass.local` is gone from production — TODO
+Code referencing it was removed and deployed; the row was never confirmed.
+- **Verify:** query the production `user` table for that email, expect zero
+  rows. If present, delete it and its `session` and `account` rows.
 
 ---
 
-## 3. UI systems
+## B. Hosting — the Railway subscription is ending
 
-### 3.1 The `index.css` inline-style font-size hack
-`[style*="font-size: 36px"] { font-size: 22px !important; }` and siblings.
-Mobile typography is a lookup table keyed on serialised inline style text,
-enforced with `!important`. It beats inline styles, it is invisible from the
-component, it only catches the enumerated pixel values, and it will silently
-fight any primitive that sets a font size. Needs replacing with a real
-responsive type scale before more primitive work lands.
+### B1 · Rehost the API server — TODO · needs a human for signup
+Railway runs `artifacts/api-server` only. The database is Neon and is
+unaffected. The API has `ws` for the Alpaca stream, so it needs a long-lived
+process — serverless platforms cannot hold the socket open.
+- **Candidates:** Render (`render.yaml` already exists and correctly sets
+  `NODE_ENV=production`), Fly.io.
+- **Human step:** create the account and connect the repo.
+- **Agent step:** prepare the config, env var list, and health check; state
+  exactly which dashboard fields need setting.
+- **Verify:** `curl` the new API host and get a 401 with `ratelimit-limit`
+  headers on `/api/accounts`, matching current Railway behaviour.
 
-### 3.2 Flex-container primitive
-`STYLE-INVENTORY.md` shapes 2, 8, 9, 10 and 13 are flex row and column
+### B2 · Point the frontend at the new API — TODO · Blocked by B1
+`VITE_API_URL` in the Vercel project and in
+`artifacts/finance-tracker/.env.local`.
+- **Verify:** the deployed site loads data; no CORS errors in console.
+
+### B3 · Remove `NODE_ENV=production` from the shell profile — TODO
+It is set globally in the user's shell, which is why `pnpm dev` built in
+production mode and pointed the app at Railway instead of the Vite proxy. The
+`dev` script now forces it, but the global value will keep surprising other
+tools.
+- **Do:** find it in `~/.zshrc` / `~/.zprofile` / `~/.zshenv` and remove it.
+- **Verify:** a new terminal reports an empty `NODE_ENV`.
+
+---
+
+## C. Data model — unblocks honest UI
+
+### C1 · `account.type` column — TODO · Blocked by A3
+The mobile home screen derives a residual (`netWorth − cash − portfolio`) and can
+only label it `OTHER`, because nothing in the schema says whether an account is
+property, pension, cash or investment. This is the one remaining compromise on
+the approved design.
+- **Do:** add a typed column to `accounts`, backfill existing rows, expose it in
+  `DashboardSummary.accountBreakdown`, then have `computeHoldings` categorise
+  from it instead of subtracting.
+- **Done when:** `computeHoldings` no longer computes a residual.
+- **Verify:** `pnpm --filter @workspace/finance-tracker test` — extend
+  `mobile-home.test.ts`, which already covers the residual cases.
+
+### C2 · Gaps the mobile home cannot fill — TODO
+Found during implementation, ranked. Each needs an API field before its UI can
+be honest: pension balance; 12-month asset-composition history (for the BANDS
+and RING renderings); discretionary budget total and spend-to-date; upcoming
+income, so `COMING` can show salary; split-request detail (counterparty and
+amount, not just `pendingCount`); FX moves; Wise connectivity status for the
+`LIVE` indicator, currently hardcoded.
+
+---
+
+## D. Mobile
+
+### D1 · Port delete to `MobileTransactions`, then cover `/transactions` — TODO
+`pages/transactions.tsx` has `useSwipeDelete`; the mobile screen has no delete
+at all, which is why `/transactions` is deliberately excluded from
+`MOBILE_ROUTES`.
+- **Done when:** delete works on the mobile screen and `/transactions` is in the
+  route map.
+- **Verify:** open `/transactions` on a phone viewport and delete a row.
+
+### D2 · Remaining mobile screens in the new design — TODO
+Only the home screen uses the approved language. The other 14 are stripped to
+real-data-only but still carry the old visual treatment, which is visible and
+jarring next to Home.
+- **Order:** Accounts, Net Worth, Upcoming first — they are reachable from the
+  home screen's own links.
+- **Read:** `docs/MOBILE-CONCEPT.md` before starting.
+- **Note:** build two or three before designing all fourteen. The design phase
+  ran to twenty-two rounds partly by answering questions only implementation
+  could answer.
+
+### D3 · Dead config cleanup — TODO
+`useMobileConfig().midTabs` and `.quickActions` have no consumers after the nav
+unification. `MobileWidgetManager` and `useWidgetVisibility` are orphaned — every
+widget they gated was mock-driven and has been deleted.
+- **Decide:** delete, or keep for the onboarding customisation in F1.
+
+---
+
+## E. UI systems — prerequisite for desktop alignment
+
+Desktop and phone must not diverge (see `docs/TARGET-PRODUCT.md`). That makes
+this section a prerequisite rather than polish: the mobile design language has
+to become shared components, and the desktop cannot absorb them in its current
+state.
+
+### E1 · The `index.css` inline-style font-size hack — TODO
+`[style*="font-size: 36px"] { font-size: 22px !important }` and siblings. Mobile
+typography is a lookup table keyed on serialised inline style text, enforced
+with `!important`. It beats inline styles, is invisible from the component, and
+only catches enumerated pixel values.
+- **Done when:** a real responsive type scale replaces it and the selectors are
+  gone.
+- **Verify:** grep `index.css` for `[style*="font-size` — expect zero.
+
+### E2 · Flex-container primitive — TODO
+`docs/STYLE-INVENTORY.md` shapes 2, 8, 9, 10 and 13 are flex row and column
 variants, roughly 793 occurrences. Nothing in `components/primitives/` covers
-them. Largest single remaining block of the 11,715 inline style objects.
+them; it is the largest remaining block of the 11,715 inline style objects.
+- **Verify:** report the `style={{` count in `src` before and after.
 
-### 3.3 Migrate remaining pages to the primitives
-`pages/owing.tsx` is the only migrated page. 239 style objects to 207 there.
+### E3 · Migrate remaining pages to the primitives — TODO · Blocked by E2
+`pages/owing.tsx` is the only migrated page (239 → 207 style objects).
 
-### 3.4 Break up the oversized pages
+### E4 · Break up the oversized pages — TODO · Blocked by A3
 `investments.tsx` 306KB, `analytics.tsx` 193KB, `transactions.tsx` 168KB,
 `settings.tsx` 166KB. Layout work inside files this size drifts page to page.
-Do this after 1.1, so a mistake cannot reach production data.
 
 ---
 
-## 4. Avatars — 3D redesign
+## F. Product — the things that make it worth returning to
 
-Redesign the bot avatars as proper 3D models, authored in Claude Design, with
-the ability to swap between them.
+See `docs/TARGET-PRODUCT.md`. Design and rationale are settled; these are build
+tasks. None are blocked on design.
 
-Where they live today:
-- `src/lib/bot-skins.ts` — skin definitions
-- `src/pages/settings.tsx` — `WardrobePanel`, skin labels at 1471 (Classic),
-  1477 (Wanderer), 1483 (Minimal)
-- `src/components/ai-wanderer.tsx`, `src/components/ai-agent.tsx` — render sites
-- Unlocking is gated on XP via `src/lib/learn-xp.ts`
+### F1 · Onboarding questionnaire → persona — TODO
+A short questionnaire infers persona, panes, view rendering, density and theme.
+`lib/persona.ts` has five personas; today they choose widgets, and they should
+choose the whole register — `market` is the dense terminal, `budget` is plain
+English with larger type and obvious entry points.
 
-Open questions to settle before starting: what format ships (rendered sprite
-sheets, glTF with a light WebGL renderer, or pre-rendered turnaround frames);
-whether the XP unlock model carries over; and what this costs on mobile, since
-a WebGL renderer for a decorative avatar is a real battery and bundle cost on a
-finance app that must load fast.
+### F2 · Open banking — TODO · needs a human conversation first
+Data must arrive by itself; manual CSV import is the reason a non-technical user
+would never complete onboarding. UK providers: TrueLayer, Plaid, GoCardless.
+The AIS agent route is roughly 4–6 weeks against about a year for direct
+registration. Payment initiation is achievable as an unregulated caller through
+TrueLayer — see the regulatory section of `docs/TARGET-PRODUCT.md`.
+Malaysia has no open banking regime, so Maybank and MYR stay read-only.
 
----
+### F3 · Market, FX and news — TODO
+Alpaca is already wired. These are the only elements on the home screen that
+differ tomorrow morning, and therefore the only ones that reward reopening.
 
-## 5. Smaller items
+### F4 · Social split and owing — TODO
+Currently a ledger. Make it social: request, settle, add a shared expense. This
+is the only mechanism in the product that produces genuine return frequency,
+because another person's action puts something on the user's screen without the
+user doing anything.
 
-- **Recharts tooltips.** `accounts.tsx:2892` and `year-review.tsx` 614, 711 use
-  `<Tooltip formatter>` returning arrays, so those values get no `.pnum`
-  treatment. The app already has a `MonoTooltip` component used elsewhere.
-- **Dead root `vercel.json`.** Vercel's project root directory is
-  `artifacts/finance-tracker`, so the repo-root `vercel.json` is never read,
-  including its `/api` rewrite. Confirm no second Vercel project points at the
-  repo root before removing it.
-- **Extend motion.** `--ft-motion-fast/base/slow`, `--ft-ease` and
-  `--ft-theme-transition` exist in `index.css` and are currently used only by
-  the five primitives. Press states, sheet and drawer transitions and tab
-  changes can use them. Never animate a numeric value or delay data.
-- **`mockup-sandbox` still declares `framer-motion`.** Harmless, no deploy
-  target, worth removing if the sandbox stops needing it.
+### F5 · Progression — TODO
+XP, theme unlocks and avatar skins exist in `lib/learn-xp.ts` and
+`lib/bot-skins.ts` and are decoration. Never reward spending; track maintenance
+and position only.
 
----
-
-## 6. Mobile UX — persona-driven home
-
-Reference points: Wise (one dominant balance, two or three large actions,
-everything else behind navigation) and Yahoo Finance (one line per item, large
-tap targets, detail on tap). Phone is for efficiency: read fast, act, leave.
-Desktop carries the complexity.
-
-**The system already exists.** `src/lib/persona.ts` defines five personas —
-`market`, `budget`, `wealth`, `social`, `full` — each with an `enabled` /
-`order` / `spans` widget config. The desktop dashboard honours it.
-`components/mobile/MobileHome.tsx` is 1,020 lines and references persona
-**zero** times. Every user gets the same hardcoded phone screen.
-
-### 6.1 Wire MobileHome to persona
-Read the active persona and render its widget set instead of the fixed layout.
-
-### 6.2 Give mobile its own widget budget — DO THIS BEFORE 6.1
-`market` enables 5 widgets, `wealth` 10, `budget` 12, `full` 23. Those are
-desktop counts. Phone should show 3–4, with the rest behind a "More" affordance.
-
-Critical: persona is shared between desktop and mobile (decided), so a `full`
-user gets no benefit from 6.1 alone — they would get all 23 widgets instead of
-the current hardcoded set. And `full` is defined as
-`enabled: [...ALL_WIDGET_IDS], order: [...ALL_WIDGET_IDS]`, so its order is
-just declaration order and carries no priority signal at all.
-
-The cap therefore cannot derive from `enabled`. Add an explicit
-`MOBILE_PRIORITY` ordering that applies across all personas, intersected with
-whatever that persona enables. `full` then gets the top 4 by global priority.
-
-### 6.7 "Since you last looked" strip — build this first
-The retention hook and the most efficient possible screen at the same time,
-because it is the only content that cannot be stale. One strip at the top of
-MobileHome: which balances moved (Wise auto-sync), what is due soon, what
-crossed a threshold. Everything else on the phone is a dashboard the user
-could have checked yesterday; this is the only part that rewards reopening.
-
-Note the tension being resolved here: "efficient" means minimising time in the
-app, "encouraging to come back" means the opposite. They only reconcile if
-something is genuinely new on each open.
-
-Related open question: the XP system (theme unlocks, bot skins via
-`lib/learn-xp.ts`) is the existing engagement layer. Decide whether it is
-pulling weight or competing for the same attention as this.
-
-### 6.8 Custom personas and onboarding questionnaire — PARKED
-Five personas is broad coverage and none of them work well on a phone yet.
-Make the existing five excellent on mobile first; that will define what a
-custom persona would need to configure. Building the configurator first is
-guessing.
-
-### 6.3 Mobile variants of the widgets
-Persona picks *which* widgets, not how dense each one is. Financial Health
-renders a score plus five progress bars; Wealth Milestones renders four rows of
-three figures. Both are sit-and-study desktop widgets. Each needs a phone
-variant: one number, one action, tap through for the full version.
-
-### 6.4 Primary action per persona
-The Wise lesson via the existing architecture. `social` opens on settle up or
-request; `budget` on log expense; `market` on watchlist or quote lookup.
-Currently SpeedDial is the same floating button for everyone.
-
-### 6.5 Make alerts actionable
-"SHOPPING Budget 99% used this month" is a sentence. It should be a row that
-taps through to somewhere the user can change it. Every object on screen should
-be somewhere you can manage or clear the thing it describes.
-
-### 6.6 Phone type and spacing scale
-Depends on 3.1 being fixed first — the `[style*="font-size"]` `!important`
-hack is the current mobile type scale and it has to go before a real one can
-land.
+### F6 · Avatars as 3D models — PARKED
+Redesign in Claude Design, swappable. Files: `lib/bot-skins.ts`,
+`WardrobePanel` in `settings.tsx` (labels at 1471, 1477, 1483), render sites in
+`ai-wanderer.tsx` and `ai-agent.tsx`. Decide the format first — sprite sheets,
+glTF with a small WebGL renderer, or pre-rendered turnarounds — since a WebGL
+renderer for a decorative avatar is real battery and bundle cost.
 
 ---
 
-## 7. Bugs
+## G. Smaller items
 
-### 7.0 Motion tokens violate the Anti-Vibe Constitution — UNDECIDED
-`index.css` line 5 bans "CSS transitions longer than 150ms on UI state
-changes". The motion tokens added later exceed that:
+- **G1 · Motion tokens vs the constitution — UNDECIDED.** `index.css` bans
+  transitions over 150ms on UI state changes; `--ft-motion-base` is 200ms and
+  `--ft-motion-slow` is 320ms, both live on the five primitives. Either bring
+  them under the cap or amend the constitution deliberately. Do not resolve it
+  by leaving both in place.
+- **G2 · Recharts tooltips.** `accounts.tsx:2892` and `year-review.tsx` 614, 711
+  return arrays from `<Tooltip formatter>`, so those values get no `.pnum`
+  treatment. A `MonoTooltip` component already exists elsewhere.
+- **G3 · Dead root `vercel.json`.** Vercel's project root is
+  `artifacts/finance-tracker`, so the repo-root file is never read. Confirm no
+  second Vercel project points at the repo root before deleting it.
+- **G4 · CORS rejections return 500.** A denied origin is a client error and
+  should be 403; currently every denial looks like a server fault in monitoring.
+- **G5 · `mockup-sandbox` still declares `framer-motion`.** No deploy target, so
+  harmless, but removable.
+- **G6 · `sslmode=require` no longer verifies certificates** in newer pg
+  clients. Revisit the connection config.
 
-    --ft-motion-base: 200ms   drives --ft-theme-transition, live on all 5 primitives
-    --ft-motion-slow: 320ms
+---
 
-Two valid resolutions and it needs a decision, not drift:
-(a) bring both under 150ms and obey the constitution, or
-(b) amend the constitution deliberately — the stated preference is for more
-    animation than that document allows, and the document predates it.
+## Superseded
 
-Do not resolve this by quietly leaving both in place.
-
-- ~~**Nested anchors.**~~ DONE (`df93246`). All 4 sites collapsed to the
-  wouter v3 pattern.
-- ~~**`pnpm dev` builds in production mode.**~~ DONE (`df93246`).
-  `NODE_ENV=development` is now baked into the `dev` script. Note the repo
-  still needs `PORT=4321 BASE_PATH=/` since `PORT` defaults to 3000 and
-  `strictPort: true`, and Obsidian holds 3000.
+`docs/BACKLOG-old.md` holds the previous version. Section 6 of that file (the
+persona-driven mobile home) was superseded by the design work recorded in
+`docs/MOBILE-CONCEPT.md`; its useful parts are now F1 and D2.
