@@ -1,22 +1,47 @@
 services:
   - type: web
-    name: fintrack
+    name: numeris-api
     runtime: node
     plan: free
-    buildCommand: pnpm install --frozen-lockfile && pnpm run build
+    region: frankfurt
+    rootDir: .
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
     startCommand: pnpm --filter @workspace/api-server run start
+    healthCheckPath: /api/accounts
     envVars:
+      # Render injects PORT itself — do not set it.
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
-      - key: BASE_PATH
-        value: /
-      - key: DATABASE_URL
+      - key: LOG_LEVEL
+        value: info
+
+      # --- copy these values out of Railway BEFORE the trial expires ---
+      # Several cannot be reconstructed if the project suspends.
+      - key: DATABASE_URL          # Neon production, with the rotated password
+        sync: false
+      - key: ALLOWED_ORIGINS       # https://financetracker.work
+        sync: false
+      - key: API_BASE_URL          # this service's own https URL, set after first deploy
+        sync: false
+      - key: BETTER_AUTH_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
         sync: false
       - key: WISE_API_TOKEN
         sync: false
-      - key: SESSION_SECRET
-        generateValue: true
-      - key: APP_PASSWORD
+      - key: WISE_ENV
+        sync: false
+      - key: ALPACA_KEY_ID
+        sync: false
+      - key: ALPACA_SECRET_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: POLYGON_API_KEY
         sync: false

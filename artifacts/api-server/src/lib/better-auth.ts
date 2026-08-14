@@ -31,9 +31,10 @@ export const auth = betterAuth({
     },
   }),
   baseURL: process.env.API_BASE_URL
-    ?? (process.env.RAILWAY_PUBLIC_DOMAIN
-      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-      : "http://localhost:3000"),
+    ?? (process.env.RENDER_EXTERNAL_URL
+      ?? (process.env.RAILWAY_PUBLIC_DOMAIN
+        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+        : "http://localhost:3000")),
   trustedOrigins: allowedOrigins.length
     ? [...allowedOrigins, ...localhostOrigins]
     : localhostOrigins,
