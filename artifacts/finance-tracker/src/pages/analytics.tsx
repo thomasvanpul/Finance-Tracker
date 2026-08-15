@@ -16,7 +16,7 @@ import {
 // ─── annotation storage ──────────────────────────────────────────────────────
 
 // Helpers, constants, and types extracted to analytics-helpers.ts
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 import {
   loadAnnotations, saveAnnotations,
   DOW_LABELS, MONTH_SHORT,

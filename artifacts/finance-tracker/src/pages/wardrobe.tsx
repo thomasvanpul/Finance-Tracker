@@ -4,7 +4,7 @@ import { BotPreview, type Phase } from "@/components/ai-wanderer";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId, type SkinRarity } from "@/lib/bot-skins";
 import { PageHeader } from "@/components/page-header";
 import { Shirt, Lock } from "lucide-react";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 const RARITY_COLOR: Record<SkinRarity, string> = {
   COMMON: "var(--ft-dim)",

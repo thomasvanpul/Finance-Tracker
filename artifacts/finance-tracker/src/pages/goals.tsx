@@ -13,7 +13,7 @@ import {
   getListGoalsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 interface HistoryEntry {
   date: string;
@@ -1573,18 +1573,7 @@ export default function Goals() {
 
       {/* ── Goals Summary Footer ── */}
       {goals.length > 0 && (
-        <div style={{
-          marginTop: 16,
-          border: "1px solid var(--ft-border)",
-          borderTop: "2px solid var(--ft-border2)",
-          background: "var(--ft-surface)",
-          padding: "14px 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 16,
-        }}>
+        <PanelBox padding="14px 20px" borderTop="2px solid var(--ft-border2)"><HStack gap={16} align="center" justify="between" wrap marginTop={16}>
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-green)", paddingLeft: 6, marginBottom: 6 }}>
               Portfolio Summary
@@ -1619,7 +1608,7 @@ export default function Goals() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>{unachievedGoals.length} goal{unachievedGoals.length !== 1 ? "s" : ""} in progress</div>
             </div>
           </HStack>
-        </div>
+        </HStack></PanelBox>
       )}
     </div>
   );

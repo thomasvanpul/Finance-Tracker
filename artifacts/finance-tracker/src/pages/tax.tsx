@@ -19,7 +19,7 @@ import {
 import { FileText, Plus, Trash2, Download, Info, Clock, CalendarDays, ShieldCheck } from "lucide-react";
 import { FtDropdown } from "@/components/ft-dropdown";
 import type { FtDropdownOption } from "@/components/ft-dropdown";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

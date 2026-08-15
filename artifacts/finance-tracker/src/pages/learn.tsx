@@ -1,5 +1,5 @@
 import { LearnTab } from "@/components/investments/learn-tab";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 export default function Learn() {
   return (

@@ -4,7 +4,7 @@ import { useListTransactions, useListAccounts, useGetDashboard, useListBudgets, 
 import { formatGbp } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

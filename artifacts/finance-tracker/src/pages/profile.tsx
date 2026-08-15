@@ -16,7 +16,7 @@ import {
 import { formatGbp } from "@/lib/utils";
 import { getLevel, getLearnXP } from "@/lib/learn-xp";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 const PANEL: React.CSSProperties = {
   background: "var(--ft-surface)",

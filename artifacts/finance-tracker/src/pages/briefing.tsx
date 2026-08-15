@@ -8,7 +8,7 @@ import {
 import { formatGbp } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { FileText, RefreshCw, Loader2, AlertTriangle, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

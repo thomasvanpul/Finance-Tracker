@@ -57,7 +57,7 @@ import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -1622,14 +1622,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
           </div>
 
           {/* Right — live preview */}
-          <div style={{
-            flex: 1,
-            minWidth: 0,
-            border: "1px solid var(--ft-border)",
-            background: "var(--ft-surface)",
-            display: "flex",
-            flexDirection: "column",
-          }}>
+          <PanelBox><VStack grow minWidth0>
             <div style={{
               padding: "5px 10px",
               background: "var(--ft-raised)",
@@ -1657,7 +1650,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
                 </div>
               )}
             </div>
-          </div>
+          </VStack></PanelBox>
         </HStack>
       )}
     </div>

@@ -16,7 +16,7 @@ import { TrendingUp, ArrowRight, Target, ShieldCheck, AlertTriangle } from "luci
 import { formatGbp } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { loadPersonaIds } from "@/lib/persona";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

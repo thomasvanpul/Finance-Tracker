@@ -17,7 +17,7 @@ import { PiggyBank, CalendarCheck, BarChart3, Zap, Star } from "lucide-react";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { Activity } from "lucide-react";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Persona focus areas ───────────────────────────────────────────────────────
 const PERSONA_HEALTH_FOCUS: Record<string, { label: string; tip: string; keys: string[] }> = {

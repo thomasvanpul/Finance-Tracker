@@ -57,7 +57,7 @@ import {
   TICK_PERIODS_SET, TICK_INTERVAL_MAP, isUSTicker,
   MOCK_QUOTES, newsScore, timeAgo, fmtCap, fmtNum,
 } from "@/components/investments/markets-data";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 import {
   CandlestickLayer, OHLCTooltip, RangeBar, RecBar, RatingBar,
 } from "@/components/investments/markets-widgets";

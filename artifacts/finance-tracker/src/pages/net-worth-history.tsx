@@ -23,7 +23,7 @@ import {
   Cell,
 } from "recharts";
 import { formatGbp } from "@/lib/utils";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

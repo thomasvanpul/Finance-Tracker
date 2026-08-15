@@ -24,7 +24,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { formatGbp } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

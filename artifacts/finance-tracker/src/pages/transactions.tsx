@@ -47,7 +47,7 @@ import { haptic } from "@/lib/haptics";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeDelete } from "@/hooks/use-swipe-delete";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 import {
   type TxType, type Currency, type TxForm, type TxFormErrors,
@@ -2310,7 +2310,7 @@ export default function Transactions() {
       {/* ── Mobile filter bar: search + bottom-sheet for all filters ── */}
       {isMobile && (
         <>
-          <div style={{ display: "flex", gap: 6, padding: "6px 10px", border: "1px solid var(--ft-border)", borderTop: "none", background: "var(--ft-surface)", alignItems: "center" }}>
+          <PanelBox padding="6px 10px" borderTop="none"><HStack gap={6} align="center">
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 2, padding: "0 8px", height: 32 }}>
               <Search style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
               <input
@@ -2353,7 +2353,7 @@ export default function Transactions() {
               <option value="amount-high">↓ Amt</option>
               <option value="amount-low">↑ Amt</option>
             </select>
-          </div>
+          </HStack></PanelBox>
           {activeFilterCount > 0 && (
             <div style={{ display: "flex", gap: 6, padding: "5px 10px", flexWrap: "wrap" as const, borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", alignItems: "center" }}>
               {filterType !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-blue) 15%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-blue) 40%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-blue)" }}>{filterType}</span>}

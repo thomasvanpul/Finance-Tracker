@@ -25,7 +25,7 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { CreditCard, Plus, Trash2, Edit2, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

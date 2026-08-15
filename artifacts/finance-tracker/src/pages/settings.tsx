@@ -233,7 +233,7 @@ function getFtLocalStorageEntries(): Record<string, string> {
 }
 
 // ── Shared primitives extracted to settings-atoms.tsx ─────────────────────
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 import {
   PANEL_STYLE, HEADER_STYLE, ROW,
   RowLabel, Toggle, SectionHeader, ActionBtn,

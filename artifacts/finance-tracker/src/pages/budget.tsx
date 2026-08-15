@@ -26,7 +26,7 @@ import {
 import { formatGbp } from "@/lib/utils";
 import type { Transaction } from "@workspace/api-client-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

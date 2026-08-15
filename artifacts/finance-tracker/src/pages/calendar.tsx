@@ -5,7 +5,7 @@ import { formatGbp } from "@/lib/utils";
 import type { Transaction, UpcomingItem, Subscription } from "@workspace/api-client-react";
 import { Download, Upload, Plus, Bell, BellOff, Calendar, X, Check, AlignJustify, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

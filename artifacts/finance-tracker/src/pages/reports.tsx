@@ -17,7 +17,7 @@ import {
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 

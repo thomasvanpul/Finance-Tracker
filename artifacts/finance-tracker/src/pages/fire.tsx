@@ -19,7 +19,7 @@ import {
   useGetInvestmentSummary,
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -939,7 +939,7 @@ export default function Fire() {
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 12, alignItems: "start", marginBottom: 12 }}>
 
         {/* Left: Input panel */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0, background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
+        <PanelBox><VStack gap={0}>
           <PanelHeader>Inputs</PanelHeader>
 
           <SectionLabel>Current State</SectionLabel>
@@ -1067,7 +1067,7 @@ export default function Fire() {
             <div><span>FIRE =</span> <Text as="span" color="var(--ft-text)">expenses × 12 / {withdrawalRate}%</Text></div>
             <div><span>25×</span> rule at 4% · <span>Trinity study</span></div>
           </div>
-        </div>
+        </VStack></PanelBox>
 
         {/* Right: chart + survival + coast */}
         <VStack gap={12}>

@@ -51,7 +51,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 type UpType = "income" | "expense";
 type Freq = "one-time" | "weekly" | "monthly" | "quarterly" | "yearly";

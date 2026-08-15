@@ -7,7 +7,7 @@ import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Repeat2 } from "lucide-react";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 

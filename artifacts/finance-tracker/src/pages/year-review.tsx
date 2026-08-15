@@ -16,7 +16,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
