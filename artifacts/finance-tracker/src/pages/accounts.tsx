@@ -1452,14 +1452,14 @@ function AccountTableRow({
             {formatNative(account.balance, account.currency)}
           </div>
           {sparkBars && (
-            <div style={{ display: "flex", gap: 1, alignItems: "flex-end", height: 14, marginTop: 3, justifyContent: "flex-end" }}>
+            <HStack gap={1} align="end" justify="end" marginTop={3} height={14}>
               {sparkBars.bars.map((v, bi) => {
                 const h = Math.max(2, (Math.abs(v) / sparkBars.maxAbs) * 12);
                 return (
                   <div key={bi} title={`${v >= 0 ? "+" : ""}${formatGbp(v)}`} style={{ width: 4, height: h, background: v >= 0 ? "var(--ft-green)" : "var(--ft-red)", opacity: 0.75 }} />
                 );
               })}
-            </div>
+            </HStack>
           )}
           {stats.daysSinceLast !== null && (
             <div style={{ fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>
@@ -2807,10 +2807,10 @@ export default function Accounts() {
             <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
               Balance Sheet
             </span>
-            <div style={{ display: "flex", gap: 4, flex: 1, height: 6, minWidth: 100 }}>
+            <HStack gap={4} grow minWidth={100} height={6}>
               <div style={{ flex: totalAssets, background: "var(--ft-green)", opacity: 0.8 }} title={`Assets: ${formatGbp(totalAssets)}`} />
               {totalOwed > 0 && <div style={{ flex: totalOwed, background: "var(--ft-red)", opacity: 0.8 }} title={`Liabilities: ${formatGbp(totalOwed)}`} />}
-            </div>
+            </HStack>
             <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
               <HStack gap={5} align="center">
                 <div style={{ width: 8, height: 8, background: "var(--ft-green)" }} />

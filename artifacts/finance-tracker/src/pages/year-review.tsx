@@ -1271,7 +1271,7 @@ export default function YearReviewPage() {
               return (
                 <>
                   <div style={{ fontSize: 16, color: "var(--ft-dim)", letterSpacing: "0.06em", marginBottom: 28 }}>Where your money went</div>
-                  <div style={{ width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <VStack gap={10} wide maxWidth={460}>
                     {topCats.map(([cat, amt], i) => (
                       <div key={cat}>
                         <HStack justify="between" marginBottom={4}>
@@ -1283,7 +1283,7 @@ export default function YearReviewPage() {
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </VStack>
                 </>
               );
             })()}

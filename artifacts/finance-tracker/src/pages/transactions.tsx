@@ -1259,13 +1259,13 @@ export default function Transactions() {
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", height: 26, alignItems: "center" }}>
+          <HStack align="center" height={26}>
             {[80, 60, 60, 60, 60, 60, 60, 120, 120, 80, 80].map((w, i) => (
               <div key={i} style={{ width: w, padding: "0 8px", borderRight: "1px solid var(--ft-border)", height: "100%", display: "flex", alignItems: "center" }}>
                 <FtSkeleton width="80%" height={8} />
               </div>
             ))}
-          </div>
+          </HStack>
         </div>
         {/* Table skeleton */}
         <div style={{ border: "1px solid var(--ft-border)" }}>
@@ -1668,14 +1668,14 @@ export default function Transactions() {
             <PrivDesc>{tx.description}</PrivDesc>
           </span>
           {hasTags && (
-            <span style={{ display: "flex", gap: 3, flexShrink: 0, alignItems: "center" }}>
+            <HStack gap={3} align="center" shrink={false}>
               {visibleTags.map((t) => (
                 <span key={t} style={TAG_CHIP_STYLE}>{t}</span>
               ))}
               {hiddenTagCount > 0 && (
                 <span style={{ ...TAG_CHIP_STYLE, background: "color-mix(in srgb, var(--ft-amber) 8%, transparent)" }}>+{hiddenTagCount}</span>
               )}
-            </span>
+            </HStack>
           )}
         </div>
         <div style={{ width: 120, minWidth: 120, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
@@ -2452,7 +2452,7 @@ export default function Transactions() {
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
         {/* Row A: search · type · category · account · sort · tag · clear */}
         <div className="ft-scroll-x" style={{ borderBottom: "1px solid var(--ft-border)" }}>
-          <div style={{ display: "flex", alignItems: "stretch", minWidth: "max-content" }}>
+          <HStack align="stretch" minWidth="max-content">
           {/* SEARCH label */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 10px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
             <MonoLabel as="span" size={9} letterSpacing="0.10em">SEARCH</MonoLabel>
@@ -2545,7 +2545,7 @@ export default function Transactions() {
               ✕ CLR
             </button>
           )}
-          </div>
+          </HStack>
         </div>
 
         {/* Row B: quick date ranges · date from · date to · amount range */}

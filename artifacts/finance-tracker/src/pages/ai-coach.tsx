@@ -566,7 +566,7 @@ export default function AiCoach() {
   const srLabel = srPct == null ? "" : !srHasIncome ? "no income yet" : srPct >= 20 ? "on track" : srPct >= 10 ? "below target" : "low";
 
   return (
-    <div style={{ height: "calc(100vh - 64px)", display: "flex", flexDirection: "column" }}>
+    <VStack height="calc(100vh - 64px)">
       <PageHeader
         icon={Sparkles}
         title="AI Coach"
@@ -695,7 +695,7 @@ export default function AiCoach() {
             )}
 
             {/* Suggested prompts — persona-aware */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%", maxWidth: 480 }}>
+            <VStack gap={4} wide maxWidth={480}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8 }}>
                 <MonoLabel as="span" size={8} letterSpacing="0.12em">Suggested queries</MonoLabel>
                 {primaryPersona && (
@@ -713,7 +713,7 @@ export default function AiCoach() {
                   onSend={handleSend}
                 />
               ))}
-            </div>
+            </VStack>
           </div>
         ) : (
           <div style={{ paddingTop: 8 }}>
@@ -833,6 +833,6 @@ export default function AiCoach() {
         @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
-    </div>
+    </VStack>
   );
 }

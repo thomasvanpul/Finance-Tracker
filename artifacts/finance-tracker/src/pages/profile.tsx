@@ -1651,7 +1651,7 @@ export default function Profile() {
   );
 
   const privacyPanel = (
-    <div style={{ maxWidth: 560, width: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
+    <VStack gap={10} wide maxWidth={560}>
       {/* Amount Privacy */}
       <div style={PANEL}>
         <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-accent)", paddingLeft: 10 }}>
@@ -1759,7 +1759,7 @@ export default function Profile() {
           </Text>
         </div>
       </div>
-    </div>
+    </VStack>
   );
 
   return (

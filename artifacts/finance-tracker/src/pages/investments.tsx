@@ -1820,7 +1820,7 @@ function MarketsTab() {
               <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginLeft: 12, fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>next 90 days · click to view</span>
             </div>
             <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
-              <div style={{ display: "flex", minWidth: "max-content" }}>
+              <HStack minWidth="max-content">
                 {weekKeys.map((weekKey) => {
                   const items = buckets.get(weekKey)!;
                   const weekDate = new Date(weekKey);
@@ -1864,7 +1864,7 @@ function MarketsTab() {
                     </div>
                   );
                 })}
-              </div>
+              </HStack>
             </div>
           </div>
         );
@@ -2015,11 +2015,11 @@ function MarketsTab() {
         ) : (
           // Desktop wide table
           <div className="ft-scroll-x" style={{ border: "1px solid var(--ft-border)", overflowX: "auto" }}>
-            <div style={{ display: "flex", minWidth: 980 }}>
+            <HStack minWidth={980}>
               {[["#", 32], ["Ticker", 72], ["Company", "flex"], ["Price", 90], ["Chg %", 80], ["Day Hi", 90], ["Day Lo", 90], ["52W Range", 150], ["Mkt Cap", 90], ["P/E", 60], ["Fwd P/E", 70], ["Beta", 60]].map(([h, w]) => (
                 <div key={h} style={{ ...MH, ...(w === "flex" ? { flex: 1, minWidth: 130 } : { width: w, minWidth: w }), textAlign: ["Price","Chg %","Day Hi","Day Lo","52W Range","Mkt Cap","P/E","Fwd P/E","Beta"].includes(h as string) ? "right" : h === "#" ? "center" : "left" }}>{h}</div>
               ))}
-            </div>
+            </HStack>
             {POPULAR_TICKERS.split(",").map((ticker, i) => {
               const q = qMap.get(ticker);
               const chg = q?.changePercent ?? 0;

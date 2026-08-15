@@ -755,13 +755,13 @@ function CategorySparklineRow({ cat, amount, i, totalExpenses, sparkVals, last3M
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{cat}</span>
         <HStack gap={10} align="center">
           {sparkVals.length > 0 && (
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 16 }}>
+            <HStack gap={2} align="end" height={16}>
               {sparkVals.map((v, si) => (
                 <div key={si} title={`${last3Months[si]?.month ?? ""}: ${formatGbp(v)}`}
                   style={{ width: 5, height: sparkMax > 0 ? `${Math.max(2, (v / sparkMax) * 16)}px` : "2px", background: color, opacity: 0.5 + (si / sparkVals.length) * 0.5, borderRadius: 1 }}
                 />
               ))}
-            </div>
+            </HStack>
           )}
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>{pct.toFixed(1)}%</span>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color }}> −{formatGbp(amount)}</span>
@@ -807,9 +807,9 @@ function DowBarItem({ label, val, dowMax, isWeekend, isHighest }: DowBarItemProp
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2, opacity: val > 0 ? 1 : 0.4 }}>
         {formatGbp(val)}
       </div>
-      <div style={{ width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center", height: 64 }}>
+      <HStack align="end" justify="center" wide height={64}>
         <div style={{ width: "70%", height: barHeight, background: isHighest ? barColor : `${barColor}99`, borderRadius: "2px 2px 0 0" }} />
-      </div>
+      </HStack>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: isHighest ? 700 : 400, color: isHighest ? barColor : "var(--ft-muted)", letterSpacing: "0.04em" }}>
         {label}
       </div>
@@ -1145,7 +1145,7 @@ export default function Reports() {
         flexWrap: isMobile ? "nowrap" : "wrap",
         gap: 8,
       }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12, minWidth: 0, flexShrink: 0 }}>
+        <HStack gap={12} align="baseline" shrink={false} minWidth0>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: "0.12em", color: "var(--ft-text)", flexShrink: 0 }}>
             REPORTS
           </span>
@@ -1154,7 +1154,7 @@ export default function Reports() {
               income · expenses · trends
             </span>
           )}
-        </div>
+        </HStack>
         <div className="ft-filter-bar" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: isMobile ? "nowrap" : "wrap", overflowX: isMobile ? "auto" : "visible", minWidth: 0, flex: isMobile ? "1 1 0" : "none" }}>
           {/* Quick range buttons — scrollable on mobile */}
           <div style={{ display: "flex", gap: 2, flexWrap: isMobile ? "nowrap" : "wrap", overflowX: isMobile ? "auto" : "visible", flexShrink: 0 }}>
@@ -1466,7 +1466,7 @@ export default function Reports() {
       <div style={{ borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
         <SectionHeader title="Spending by Day of Week" accentColor="var(--ft-amber)" />
         <div style={{ padding: "14px 20px" }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 80 }}>
+          <HStack gap={8} align="end" height={80}>
             {DOW_LABELS.map((label, i) => (
               <DowBarItem
                 key={label}
@@ -1477,7 +1477,7 @@ export default function Reports() {
                 isHighest={i === dowHighestIdx && dowSpend[i] > 0}
               />
             ))}
-          </div>
+          </HStack>
         </div>
       </div>
 

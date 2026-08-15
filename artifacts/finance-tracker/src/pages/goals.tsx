@@ -394,7 +394,7 @@ function GoalCard({
 
       {/* Goal Header */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, paddingTop: !done && priorityRank > 0 ? 14 : 0 }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+        <VStack align="center" shrink={false}>
           <div style={{
             width: 52,
             height: 52,
@@ -423,7 +423,7 @@ function GoalCard({
               ~{compoundDate.getFullYear()} {(annualRate * 100).toFixed(0)}%↑
             </div>
           )}
-        </div>
+        </VStack>
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)", paddingRight: 28, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
@@ -1510,7 +1510,7 @@ export default function Goals() {
             const pid = loadPersonaIds()[0] ?? "full";
             const templates = PERSONA_GOAL_TEMPLATES[pid] ?? PERSONA_GOAL_TEMPLATES["full"];
             return (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20, maxWidth: 460 }}>
+              <HStack gap={8} wrap marginBottom={20} maxWidth={460}>
                 {templates.map((t) => (
                   <button
                     key={t.name}
@@ -1524,7 +1524,7 @@ export default function Goals() {
                     {t.name}
                   </button>
                 ))}
-              </div>
+              </HStack>
             );
           })()}
           <Text as="div" mono size={10} color="var(--ft-dim)" letterSpacing="0.06em">

@@ -741,11 +741,11 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
         <div style={{ ...mono, fontSize: 12, color: "var(--ft-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
           {p.merchantName}
         </div>
-        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+        <HStack gap={4} shrink={false}>
           <span style={{ ...mono, fontSize: 9, padding: "1px 6px", background: "var(--ft-accent)22", color: "var(--ft-accent)" }}>
             {p.frequency}
           </span>
-        </div>
+        </HStack>
       </HStack>
 
       {/* Confidence bar */}
@@ -1213,7 +1213,7 @@ function ManualRules({
         alignItems: "flex-end",
         flexWrap: "wrap",
       }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 2, minWidth: 140 }}>
+        <VStack gap={4} grow={2} minWidth={140}>
           <div style={labelStyle}>Match text (substring)</div>
           <input
             value={form.matchText}
@@ -1226,8 +1226,8 @@ function ManualRules({
               color: "var(--ft-text)", padding: "6px 10px", outline: "none",
             }}
           />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 120 }}>
+        </VStack>
+        <VStack gap={4} grow minWidth={120}>
           <div style={labelStyle}>Assign category</div>
           <input
             value={form.category}
@@ -1243,8 +1243,8 @@ function ManualRules({
           <datalist id="rule-categories">
             {CATEGORIES.map((c) => <option key={c} value={c} />)}
           </datalist>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 2, minWidth: 120 }}>
+        </VStack>
+        <VStack gap={4} grow={2} minWidth={120}>
           <div style={labelStyle}>Notes (optional)</div>
           <input
             value={form.notes}
@@ -1256,7 +1256,7 @@ function ManualRules({
               color: "var(--ft-text)", padding: "6px 10px", outline: "none",
             }}
           />
-        </div>
+        </VStack>
         <button
           onClick={handleAdd}
           disabled={!form.matchText.trim()}
@@ -1304,15 +1304,15 @@ function ManualRules({
                           background: "var(--ft-accent)08", border: "1px solid var(--ft-accent)33",
                           padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap",
                         }}>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 2, minWidth: 120 }}>
+                          <VStack gap={4} grow={2} minWidth={120}>
                             <div style={labelStyle}>Match text</div>
                             <input
                               value={editForm.matchText}
                               onChange={(e) => setEditForm((f) => ({ ...f, matchText: e.target.value }))}
                               style={{ ...mono, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
                             />
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 100 }}>
+                          </VStack>
+                          <VStack gap={4} grow minWidth={100}>
                             <div style={labelStyle}>Category</div>
                             <input
                               value={editForm.category}
@@ -1320,15 +1320,15 @@ function ManualRules({
                               list="rule-categories"
                               style={{ ...mono, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
                             />
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 2, minWidth: 100 }}>
+                          </VStack>
+                          <VStack gap={4} grow={2} minWidth={100}>
                             <div style={labelStyle}>Notes</div>
                             <input
                               value={editForm.notes}
                               onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                               style={{ ...mono, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
                             />
-                          </div>
+                          </VStack>
                           <HStack gap={6}>
                             <button
                               onClick={() => {

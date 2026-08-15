@@ -806,7 +806,7 @@ function Step2({
   onApplyPreset: (preset: FormatPreset) => void;
 }) {
   const ColSelect = ({ field, label }: { field: keyof ColumnMap; label: string }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 140 }}>
+    <VStack gap={4} grow minWidth={140}>
       <div style={labelStyle}>{label}</div>
       <select
         value={colMap[field]}
@@ -828,7 +828,7 @@ function Step2({
           <option key={h} value={h}>{h}</option>
         ))}
       </select>
-    </div>
+    </VStack>
   );
 
   return (

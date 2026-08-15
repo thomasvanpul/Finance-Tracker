@@ -407,11 +407,11 @@ function RecommendationRow({
           <span style={{ color: "var(--ft-accent)", marginRight: 5 }}>↗</span>{rec.impact}
         </Text>
       </div>
-      <div style={{ flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px" }}>
+      <HStack align="center" padding="0 12px" shrink={false}>
         <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
           R{String(index + 1).padStart(2, "0")}
         </Text>
-      </div>
+      </HStack>
     </div>
   );
 }

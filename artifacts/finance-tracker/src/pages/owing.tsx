@@ -1393,7 +1393,7 @@ export default function Owing() {
               {/* Row 2: direction pills + search + sort */}
               <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px", flexWrap: isMobile ? "wrap" : "nowrap" }}>
                 {/* Direction pills */}
-                <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                <HStack gap={4} align="center" shrink={false}>
                   {(["all", "i-owe", "owed-to-me"] as const).map((df) => {
                     const labels: Record<DirectionFilter, string> = { all: "All", "i-owe": "I Owe", "owed-to-me": "Owed" };
                     const isActive = directionFilter === df;
@@ -1418,9 +1418,9 @@ export default function Owing() {
                       </button>
                     );
                   })}
-                </div>
+                </HStack>
                 {/* Person search */}
-                <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 80 }}>
+                <HStack gap={4} align="center" grow minWidth={80}>
                   <input
                     type="search"
                     value={personSearch}
@@ -1432,7 +1432,7 @@ export default function Owing() {
                   {personSearch && (
                     <button onClick={() => setPersonSearch("")} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1, flexShrink: 0 }}>×</button>
                   )}
-                </div>
+                </HStack>
                 {/* Sort */}
                 <select
                   value={sortOption}
@@ -1585,7 +1585,7 @@ export default function Owing() {
                       </div>
 
                       {/* Amount + actions */}
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                      <VStack gap={4} align="end" shrink={false}>
                         <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: amountColor }}>
                           <span className="pnum">{isIowe ? "-" : "+"}{formatGbp(d.gbpEquivalent)}</span>
                         </div>
@@ -1631,7 +1631,7 @@ export default function Owing() {
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
-                      </div>
+                      </VStack>
                     </div>
 
                     {/* Inline settle form */}

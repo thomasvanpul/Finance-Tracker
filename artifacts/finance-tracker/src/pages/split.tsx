@@ -1357,7 +1357,7 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
             </div>
           )}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+        <VStack gap={4} align="end" shrink={false}>
           {group.settled && (
             <span
               style={{
@@ -1399,7 +1399,7 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
           >
             {deleteConfirm ? "DEL?" : <Trash2 style={{ width: 12, height: 12 }} />}
           </button>
-        </div>
+        </VStack>
       </HStack>
     </div>
   );
@@ -2673,7 +2673,7 @@ export default function SplitPage() {
             </span>
           </HStack>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <HStack gap={6} align="center" shrink={false}>
           {!selectedGroup.settled && (
             <button
               onClick={() => setShowAddExpense(true)}
@@ -2695,7 +2695,7 @@ export default function SplitPage() {
               <Plus style={{ width: 11, height: 11 }} /> Add Expense
             </button>
           )}
-        </div>
+        </HStack>
       </div>
 
       {/* Your name bar */}

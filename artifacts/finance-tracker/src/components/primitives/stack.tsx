@@ -43,10 +43,20 @@ interface StackProps {
   marginBottom?: number | string;
   /** flex: 1 when true, otherwise the given number. */
   grow?: boolean | number;
+  /** flex-shrink. `false` == 0 (never shrink). */
+  shrink?: boolean | number;
   /** width: 100% */
   wide?: boolean;
   /** min-width: 0 — the flexbox "text truncates properly" fix. */
   minWidth0?: boolean;
+  /** min-width numeric or string. Kept separate from minWidth0 to keep the
+   *  common truncation-fix case a single-name boolean. */
+  minWidth?: number | string;
+  /** max-width in px or CSS string. */
+  maxWidth?: number | string;
+  /** height in px or CSS string. Layout only — chrome (background, border)
+   *  stays on PanelBox, not here. */
+  height?: number | string;
   className?: string;
   role?: React.AriaRole;
   onClick?: React.MouseEventHandler<HTMLDivElement>;
@@ -72,8 +82,14 @@ function build(p: StackProps, direction: "row" | "column"): React.CSSProperties 
   if (p.marginBottom !== undefined) s.marginBottom = p.marginBottom;
   if (p.grow === true) s.flex = 1;
   else if (typeof p.grow === "number") s.flex = p.grow;
+  if (p.shrink === false) s.flexShrink = 0;
+  else if (p.shrink === true) s.flexShrink = 1;
+  else if (typeof p.shrink === "number") s.flexShrink = p.shrink;
   if (p.wide) s.width = "100%";
   if (p.minWidth0) s.minWidth = 0;
+  if (p.minWidth !== undefined) s.minWidth = p.minWidth;
+  if (p.maxWidth !== undefined) s.maxWidth = p.maxWidth;
+  if (p.height !== undefined) s.height = p.height;
   return s;
 }
 

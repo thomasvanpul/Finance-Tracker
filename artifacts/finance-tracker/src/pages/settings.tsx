@@ -318,13 +318,13 @@ function TransactionDefaultsPanel() {
       <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Transaction Defaults</div>
       <div style={ROW}>
         <RowLabel title="Default type" sub='Pre-selects the transaction type in Quick Add (N)' />
-        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", flexShrink: 0 }}>
+        <HStack gap={4} wrap shrink={false}>
           {(["expense","income","transfer"] as const).map(t => (
             <button key={t} onClick={() => setType(t)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "4px 10px", background: defType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${defType === t ? "var(--ft-accent)" : "var(--ft-border)"}`, color: defType === t ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer", transition: "background 0.1s" }}>
               {t}
             </button>
           ))}
-        </div>
+        </HStack>
       </div>
       <div style={ROW}>
         <RowLabel title="Default currency" sub="Pre-selects the currency in Quick Add" />
@@ -877,20 +877,20 @@ function DisplayAndMotionPanel() {
         <SectionHeader label="Time format" accent="var(--ft-cyan)" />
         <div style={ROW}>
           <RowLabel title="Clock display" sub="Affects timestamps throughout the app" />
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
+          <HStack gap={6} wrap shrink={false}>
             {[["24h","24h"],["12h","12h (AM/PM)"]].map(([val, lbl]) => (
               <button key={val} onClick={() => setTime(val)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 12px", background: timeFormat === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${timeFormat === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: timeFormat === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
             ))}
-          </div>
+          </HStack>
         </div>
         <SectionHeader label="Calendar" accent="var(--ft-green)" />
         <div style={ROW}>
           <RowLabel title="First day of week" sub="Affects calendar and weekly views" />
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
+          <HStack gap={6} wrap shrink={false}>
             {[["mon","Mon"],["sun","Sun"]].map(([val, lbl]) => (
               <button key={val} onClick={() => setWeek(val)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 12px", background: weekStart === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${weekStart === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: weekStart === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
             ))}
-          </div>
+          </HStack>
         </div>
       </div>
 
@@ -1312,12 +1312,12 @@ function WardrobePanel() {
                   )}
                   {!isOwned && themeReq && (<Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em" mt={5}>Requires <span className="pnum">{themeReq.requiredXP.toLocaleString()}</span> XP to unlock</Text>)}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginTop: 2 }}>
+                <HStack gap={6} align="center" marginTop={2} shrink={false}>
                   {!isOwned && <Lock style={{ width: 10, height: 10, color: "var(--ft-dim)" }} />}
                   <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${isActive && isOwned ? rarityCol : "var(--ft-border2)"}`, background: isActive && isOwned ? rarityCol : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {isActive && isOwned && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />}
                   </div>
-                </div>
+                </HStack>
               </div>
             );
           })}
@@ -2537,13 +2537,13 @@ export default function Settings() {
               <CurrencyKpiStrip baseCurrency={baseCur} pairCount={Object.keys(fxOverrides).filter(k => fxOverrides[k] !== "").length} />
               <div style={{ padding: "14px 16px", background: "var(--ft-surface)", display: "flex", flexDirection: "column", gap: 10 }}>
                 <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>All amounts will be converted to this currency for display.</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%", maxWidth: 240 }}>
+                <VStack gap={4} wide maxWidth={240}>
                   <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Currency</Label>
                   <Select value={currencySettings?.baseCurrency ?? "GBP"} onValueChange={handleCurrencyChange} disabled={updateCurrency.isPending}>
                     <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>{SUPPORTED_CURRENCIES.map(c => <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>)}</SelectContent>
                   </Select>
-                </div>
+                </VStack>
               </div>
             </div>
             <div style={PANEL_STYLE}>

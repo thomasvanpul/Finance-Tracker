@@ -2008,7 +2008,7 @@ export default function Budget() {
             </div>
             {atRisk.length > 0 && (
               <div className="ft-scroll-x" style={{ padding: "0 14px 10px" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 500 }}>
+                <VStack gap={5} minWidth={500}>
                   {atRisk.map((f) => (
                     <ForecastAtRiskRow
                       key={f.category}
@@ -2018,7 +2018,7 @@ export default function Budget() {
                       projectedOverspend={f.projectedOverspend}
                     />
                   ))}
-                </div>
+                </VStack>
               </div>
             )}
           </div>

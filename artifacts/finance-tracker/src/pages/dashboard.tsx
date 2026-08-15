@@ -582,7 +582,7 @@ function SpendingVelocityPanel() {
       </HStack>
 
       {/* Sparkline bars — last 14 days */}
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 32 }}>
+      <HStack gap={2} align="end" height={32}>
         {last14.map((d) => {
           const h = Math.round((d.amount / maxBar) * 28);
           return (
@@ -598,7 +598,7 @@ function SpendingVelocityPanel() {
             />
           );
         })}
-      </div>
+      </HStack>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 3, textAlign: "right" }}>
         last 14 days
       </div>
