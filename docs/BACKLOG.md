@@ -407,6 +407,30 @@ renderer for a decorative avatar is real battery and bundle cost.
   in a second pass; the 800-line file cap keeps each migration commit
   reviewable.
 
+  **E4 · MarketsTab extraction — 2026-08-16 entanglement report.**
+  The type + helper lift landed (`pages/investments/types.ts`, commit
+  9ca8b1a). Extracting `MarketsTab` itself is a real refactor, not a
+  pure move, because the component sits on top of five sibling pieces
+  in the same file that any extraction has to bring along:
+
+  1. `MOCK_QUOTES` (module-level constant used in the qMap fallback).
+     **Blocks the move on its own** — this violates CLAUDE.md's "never
+     show a number the API did not supply" rule and cannot be moved
+     verbatim into a shared module; it needs to be *deleted* first,
+     which is a behaviour change and belongs in a separate task.
+  2. `OVERVIEW_TICKERS` — module-level ticker list.
+  3. `TICK_PERIODS_SET` — SSE tick-period whitelist.
+  4. `useTickerStream(ticker, period)` — 40-line SSE hook.
+  5. `WatchlistsPanel` — a ~150-line component with its own state.
+  6. `computeStockRating(quote, detail)` — 100-line rating heuristic.
+
+  Item (1) alone forces a scope decision the user has to make: either
+  MarketsTab keeps a mock fallback (contra CLAUDE.md) or the mock has
+  to be removed with an empty-state redesign for the "quotes unavailable"
+  case. That is not a refactor unit of work. STOPPED, per the "if
+  cannot be done without behaviour change, stop" rule. Extraction re-
+  opens after `MOCK_QUOTES` is dealt with.
+
 ---
 
 ## Superseded
