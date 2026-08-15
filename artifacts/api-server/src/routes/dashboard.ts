@@ -17,7 +17,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     accounts.map(async (a) => {
       const balance = parseFloat(a.balance);
       const gbpEquivalent = await toBase(balance, a.currency, baseCurrency);
-      return { id: a.id, name: a.name, currency: a.currency, balance, gbpEquivalent: Math.round(gbpEquivalent * 100) / 100 };
+      return { id: a.id, name: a.name, currency: a.currency, balance, gbpEquivalent: Math.round(gbpEquivalent * 100) / 100, type: a.type };
     })
   );
   const totalCash = accountBreakdown.reduce((s, a) => s + a.gbpEquivalent, 0);

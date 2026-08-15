@@ -29,7 +29,8 @@ export const GetDashboardResponse = zod.object({
   "name": zod.string(),
   "currency": zod.string(),
   "balance": zod.number(),
-  "gbpEquivalent": zod.number()
+  "gbpEquivalent": zod.number(),
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other'])
 })),
   "portfolio": zod.object({
   "totalValueGbp": zod.number(),
@@ -66,6 +67,7 @@ export const ListAccountsResponseItem = zod.object({
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
   "gbpEquivalent": zod.number(),
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other']),
   "isWiseLinked": zod.boolean(),
   "wiseProfileId": zod.string().nullish(),
   "wiseBalanceId": zod.string().nullish(),
@@ -81,7 +83,8 @@ export const ListAccountsResponse = zod.array(ListAccountsResponseItem)
 export const CreateAccountBody = zod.object({
   "name": zod.string(),
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
-  "balance": zod.number()
+  "balance": zod.number(),
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other']).optional()
 })
 
 
@@ -95,7 +98,8 @@ export const UpdateAccountParams = zod.object({
 export const UpdateAccountBody = zod.object({
   "name": zod.string().optional(),
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']).optional(),
-  "balance": zod.number().optional()
+  "balance": zod.number().optional(),
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other']).optional()
 })
 
 export const UpdateAccountResponse = zod.object({
@@ -104,6 +108,7 @@ export const UpdateAccountResponse = zod.object({
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
   "gbpEquivalent": zod.number(),
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other']),
   "isWiseLinked": zod.boolean(),
   "wiseProfileId": zod.string().nullish(),
   "wiseBalanceId": zod.string().nullish(),
@@ -931,6 +936,14 @@ export const DeleteSubscriptionParams = zod.object({
 export const DeleteSubscriptionResponse = zod.object({
   "ok": zod.boolean()
 })
+
+
+/**
+ * @summary Download full data backup as JSON
+ */
+export const DownloadBackupResponse = zod.object({
+
+}).passthrough()
 
 
 /**

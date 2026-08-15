@@ -38,6 +38,7 @@ import type {
   DebtUpdate,
   DisableTwoFaInput,
   DismissSubscriptionBody,
+  DownloadBackup200,
   FxRates,
   GetMarketPricesParams,
   GetMarketQuotesParams,
@@ -3786,6 +3787,83 @@ export const useDeleteSubscription = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteSubscriptionMutationOptions(options));
     }
+
+export const getDownloadBackupUrl = () => {
+
+
+
+
+  return `/api/export/backup`
+}
+
+/**
+ * @summary Download full data backup as JSON
+ */
+export const downloadBackup = async ( options?: RequestInit): Promise<DownloadBackup200> => {
+
+  return customFetch<DownloadBackup200>(getDownloadBackupUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadBackupQueryKey = () => {
+    return [
+    `/api/export/backup`
+    ] as const;
+    }
+
+
+export const getDownloadBackupQueryOptions = <TData = Awaited<ReturnType<typeof downloadBackup>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadBackup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadBackupQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadBackup>>> = ({ signal }) => downloadBackup({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadBackup>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadBackupQueryResult = NonNullable<Awaited<ReturnType<typeof downloadBackup>>>
+export type DownloadBackupQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Download full data backup as JSON
+ */
+
+export function useDownloadBackup<TData = Awaited<ReturnType<typeof downloadBackup>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadBackup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadBackupQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetSettingsCurrencyUrl = () => {
 

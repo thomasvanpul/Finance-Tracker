@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AccountInputCurrency } from './accountInputCurrency';
+import type { AccountInputType } from './accountInputType';
 
 export interface AccountInput {
   name: string;
   currency: AccountInputCurrency;
   balance: number;
+  type?: AccountInputType;
 }

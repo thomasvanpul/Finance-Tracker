@@ -1088,7 +1088,7 @@ components:
     # ── ACCOUNT ──────────────────────────────────────────────────────────────
     Account:
       type: object
-      required: [id, name, currency, balance, gbpEquivalent, isWiseLinked, createdAt]
+      required: [id, name, currency, balance, gbpEquivalent, type, isWiseLinked, createdAt]
       properties:
         id:
           type: integer
@@ -1101,6 +1101,9 @@ components:
           type: number
         gbpEquivalent:
           type: number
+        type:
+          type: string
+          enum: [cash, investment, pension, property, other]
         isWiseLinked:
           type: boolean
         wiseProfileId:
@@ -1123,6 +1126,9 @@ components:
           enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         balance:
           type: number
+        type:
+          type: string
+          enum: [cash, investment, pension, property, other]
 
     AccountUpdate:
       type: object
@@ -1134,6 +1140,9 @@ components:
           enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         balance:
           type: number
+        type:
+          type: string
+          enum: [cash, investment, pension, property, other]
 
     # ── TRANSACTION ──────────────────────────────────────────────────────────
     Transaction:
@@ -1807,7 +1816,7 @@ components:
           type: array
           items:
             type: object
-            required: [id, name, currency, balance, gbpEquivalent]
+            required: [id, name, currency, balance, gbpEquivalent, type]
             properties:
               id:
                 type: integer
@@ -1819,6 +1828,9 @@ components:
                 type: number
               gbpEquivalent:
                 type: number
+              type:
+                type: string
+                enum: [cash, investment, pension, property, other]
         portfolio:
           type: object
           required: [totalValueGbp, totalPlGbp, totalPlPercent]

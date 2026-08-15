@@ -27,12 +27,24 @@ export const AccountCurrency = {
   INR: 'INR',
 } as const;
 
+export type AccountType = typeof AccountType[keyof typeof AccountType];
+
+
+export const AccountType = {
+  cash: 'cash',
+  investment: 'investment',
+  pension: 'pension',
+  property: 'property',
+  other: 'other',
+} as const;
+
 export interface Account {
   id: number;
   name: string;
   currency: AccountCurrency;
   balance: number;
   gbpEquivalent: number;
+  type: AccountType;
   isWiseLinked: boolean;
   /** @nullable */
   wiseProfileId?: string | null;
@@ -61,10 +73,22 @@ export const AccountInputCurrency = {
   INR: 'INR',
 } as const;
 
+export type AccountInputType = typeof AccountInputType[keyof typeof AccountInputType];
+
+
+export const AccountInputType = {
+  cash: 'cash',
+  investment: 'investment',
+  pension: 'pension',
+  property: 'property',
+  other: 'other',
+} as const;
+
 export interface AccountInput {
   name: string;
   currency: AccountInputCurrency;
   balance: number;
+  type?: AccountInputType;
 }
 
 export type AccountUpdateCurrency = typeof AccountUpdateCurrency[keyof typeof AccountUpdateCurrency];
@@ -85,10 +109,22 @@ export const AccountUpdateCurrency = {
   INR: 'INR',
 } as const;
 
+export type AccountUpdateType = typeof AccountUpdateType[keyof typeof AccountUpdateType];
+
+
+export const AccountUpdateType = {
+  cash: 'cash',
+  investment: 'investment',
+  pension: 'pension',
+  property: 'property',
+  other: 'other',
+} as const;
+
 export interface AccountUpdate {
   name?: string;
   currency?: AccountUpdateCurrency;
   balance?: number;
+  type?: AccountUpdateType;
 }
 
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];
@@ -737,28 +773,6 @@ export interface StockQuote {
   analystTargetPrice?: number | null;
   /** @nullable */
   displayName?: string | null;
-  /** @nullable */
-  changePercent?: number | null;
-  /** @nullable */
-  dayHigh?: number | null;
-  /** @nullable */
-  dayLow?: number | null;
-  /** @nullable */
-  volume?: number | null;
-  /** @nullable */
-  previousClose?: number | null;
-  /** @nullable */
-  nextEarningsDate?: string | null;
-  /** @nullable */
-  marketState?: string | null;
-  /** @nullable */
-  postMarketPrice?: number | null;
-  /** @nullable */
-  postMarketChangePercent?: number | null;
-  /** @nullable */
-  preMarketPrice?: number | null;
-  /** @nullable */
-  preMarketChangePercent?: number | null;
 }
 
 export type CurrencySettingsBaseCurrency = typeof CurrencySettingsBaseCurrency[keyof typeof CurrencySettingsBaseCurrency];
@@ -783,12 +797,24 @@ export interface CurrencySettings {
   baseCurrency: CurrencySettingsBaseCurrency;
 }
 
+export type DashboardSummaryAccountBreakdownItemType = typeof DashboardSummaryAccountBreakdownItemType[keyof typeof DashboardSummaryAccountBreakdownItemType];
+
+
+export const DashboardSummaryAccountBreakdownItemType = {
+  cash: 'cash',
+  investment: 'investment',
+  pension: 'pension',
+  property: 'property',
+  other: 'other',
+} as const;
+
 export type DashboardSummaryAccountBreakdownItem = {
   id: number;
   name: string;
   currency: string;
   balance: number;
   gbpEquivalent: number;
+  type: DashboardSummaryAccountBreakdownItemType;
 };
 
 export type DashboardSummaryPortfolio = {
@@ -982,4 +1008,6 @@ export type AddGoalFundsBody = {
 export type DismissSubscriptionBody = {
   description: string;
 };
+
+export type DownloadBackup200 = { [key: string]: unknown };
 

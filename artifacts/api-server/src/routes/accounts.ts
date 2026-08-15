@@ -24,6 +24,7 @@ async function enrichAccount(account: typeof accountsTable.$inferSelect, userId:
     currency: account.currency,
     balance,
     gbpEquivalent: Math.round(gbpEquivalent * 100) / 100,
+    type: account.type,
     isWiseLinked: account.isWiseLinked,
     wiseProfileId: account.wiseProfileId ?? null,
     wiseBalanceId: account.wiseBalanceId ?? null,

@@ -5,6 +5,7 @@
  * Personal Finance Tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { DashboardSummaryAccountBreakdownItemType } from './dashboardSummaryAccountBreakdownItemType';
 
 export type DashboardSummaryAccountBreakdownItem = {
   id: number;
@@ -12,4 +13,5 @@ export type DashboardSummaryAccountBreakdownItem = {
   currency: string;
   balance: number;
   gbpEquivalent: number;
+  type: DashboardSummaryAccountBreakdownItemType;
 };

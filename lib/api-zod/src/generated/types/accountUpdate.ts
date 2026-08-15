@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AccountUpdateCurrency } from './accountUpdateCurrency';
+import type { AccountUpdateType } from './accountUpdateType';
 
 export interface AccountUpdate {
   name?: string;
   currency?: AccountUpdateCurrency;
   balance?: number;
+  type?: AccountUpdateType;
 }

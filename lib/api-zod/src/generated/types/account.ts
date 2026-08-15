@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AccountCurrency } from './accountCurrency';
+import type { AccountType } from './accountType';
 
 export interface Account {
   id: number;
@@ -13,6 +14,7 @@ export interface Account {
   currency: AccountCurrency;
   balance: number;
   gbpEquivalent: number;
+  type: AccountType;
   isWiseLinked: boolean;
   /** @nullable */
   wiseProfileId?: string | null;

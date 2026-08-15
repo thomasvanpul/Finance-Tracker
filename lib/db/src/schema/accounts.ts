@@ -9,6 +9,11 @@ export const accountsTable = pgTable("accounts", {
   name: text("name").notNull(),
   currency: text("currency").notNull().default("GBP"),
   balance: numeric("balance", { precision: 18, scale: 4 }).notNull().default("0"),
+  // cash | investment | pension | property | other. Every existing account
+  // was Wise-linked or a manually-entered liquid account, so the migration
+  // backfills all rows to 'cash' (rationale recorded in the migration's
+  // accompanying commit). Users can reclassify later.
+  type: text("type").notNull().default("cash"),
   isWiseLinked: boolean("is_wise_linked").notNull().default(false),
   wiseProfileId: text("wise_profile_id"),
   wiseBalanceId: text("wise_balance_id").unique(),

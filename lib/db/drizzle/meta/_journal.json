@@ -8,6 +8,13 @@
       "when": 1786772656015,
       "tag": "0000_light_caretaker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786775869520,
+      "tag": "0001_spooky_salo",
+      "breakpoints": true
     }
   ]
 }

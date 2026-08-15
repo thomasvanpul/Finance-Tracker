@@ -53,35 +53,37 @@ interface MobileHomeProps {
 }
 
 // ── Holdings composition (pure, testable) ────────────────────────────────────
-// Residual = netWorth − totalCash − portfolio. See MobileHome for the caveat:
-// netWorth is already net of liabilities, so this is "everything else, minus
-// every debt". Rendered as OTHER only when strictly positive; suppressed at
-// zero or negative so the block field never claims property equity that isn't
-// tracked.
+// Categorises real accounts from the DashboardSummary.accountBreakdown array
+// using each account's declared `type`. No residual; no subtraction. If an
+// account is uncategorised in the DB it defaults to 'cash' (per the C1
+// backfill rule), so nothing lands in `other` unless a user has deliberately
+// set it there. Portfolio positions add to `invested` on top of any
+// investment-typed accounts.
+export type AccountType = "cash" | "investment" | "pension" | "property" | "other";
+
 export interface HoldingsInput {
-  netWorth?: number;
-  totalCash?: number;
+  accountBreakdown?: Array<{ type: AccountType; gbpEquivalent: number }>;
   portfolio?: { totalValueGbp?: number };
 }
+// Bucket keys match the DB column values 1:1 so the loop is `buckets[a.type]`
+// with no translation table.
 export interface Holdings {
-  liquid: number;
-  invested: number;
+  cash: number;
+  investment: number;
+  pension: number;
+  property: number;
   other: number;
-  pension: number | null;
-  showOther: boolean;
 }
 export function computeHoldings(d: HoldingsInput | null | undefined): Holdings {
-  const netWorth = d?.netWorth ?? 0;
-  const totalCash = d?.totalCash ?? 0;
-  const portfolio = d?.portfolio?.totalValueGbp ?? 0;
-  const residual = netWorth - totalCash - portfolio;
-  return {
-    liquid: totalCash,
-    invested: portfolio,
-    other: residual > 0 ? residual : 0,
-    pension: null,
-    showOther: residual > 0,
-  };
+  const buckets: Holdings = { cash: 0, investment: 0, pension: 0, property: 0, other: 0 };
+  for (const a of d?.accountBreakdown ?? []) {
+    buckets[a.type] += a.gbpEquivalent;
+  }
+  // Portfolio positions live in a separate table from accounts. An investment
+  // account itself holds the uninvested cash (part of buckets.investment via
+  // its 'investment' type); the position value is added here.
+  buckets.investment += d?.portfolio?.totalValueGbp ?? 0;
+  return buckets;
 }
 
 export function MobileHome(_props: MobileHomeProps) {
@@ -110,8 +112,7 @@ export function MobileHome(_props: MobileHomeProps) {
   const mtdPct = priorNw > 0 ? (mtdDelta / priorNw) * 100 : 0;
 
   const holdings = computeHoldings(dashboard);
-  const totalCash = holdings.liquid;
-  const portfolioValue = holdings.invested;
+  const totalCash = holdings.cash;
 
   const activeAccounts = dashboard?.accountBreakdown ?? [];
   const currencyCount = new Set(activeAccounts.map((a) => a.currency)).size;
@@ -322,10 +323,11 @@ export function MobileHome(_props: MobileHomeProps) {
         <div style={{ padding: "0 18px" }}>
           {view === "blocks" && (
             <BlocksView
-              other={holdings.other}
-              liquid={holdings.liquid}
-              invested={holdings.invested}
+              property={holdings.property}
+              cash={holdings.cash}
+              invested={holdings.investment}
               pension={holdings.pension}
+              other={holdings.other}
             />
           )}
           {view === "bands" && <PlaceholderPanel />}
@@ -539,38 +541,40 @@ function ViewTab({ label, active, onClick }: { label: string; active: boolean; o
 // box-shadow — value is encoded ONLY by area (concept doc: dimensionality is
 // styling, never data).
 function BlocksView({
-  other,
-  liquid,
+  property,
+  cash,
   invested,
   pension,
+  other,
 }: {
-  other: number;
-  liquid: number;
+  property: number;
+  cash: number;
   invested: number;
-  pension: number | null;
+  pension: number;
+  other: number;
 }) {
   const FIELD_H = 296;
   const AVAILABLE_W = 354;
-  const showOther = other > 0;
-  const topH = showOther ? 230 : 0;
-  const rowH = showOther ? 64 : FIELD_H;
-  const total = other + liquid + invested + (pension ?? 0);
+  // Top block is PROPERTY when > 0 (the "flat" in the design's language).
+  // If no property is tracked, the row of remaining categories grows to fill
+  // the field height — same layout rule as before.
+  const showProperty = property > 0;
+  const topH = showProperty ? 230 : 0;
+  const rowH = showProperty ? 64 : FIELD_H;
+  const total = property + cash + invested + pension + other;
 
-  // Row: LIQUID / INVESTED / PENSION with widths proportional to value share.
-  const rowValues: Array<{ key: string; value: number; label: string; bg: string; fg: string; unknown?: boolean }> = [];
-  if (liquid > 0)
-    rowValues.push({ key: "L", value: liquid, label: "LIQUID", bg: "var(--ft-accent)", fg: "var(--ft-base)" });
+  // Row: CASH / INVESTED / PENSION / OTHER — widths proportional to value.
+  // Each renders only if > 0. `other` is a real category (user-declared),
+  // not a residual.
+  const rowValues: Array<{ key: string; value: number; label: string; bg: string; fg: string }> = [];
+  if (cash > 0)
+    rowValues.push({ key: "C", value: cash, label: "CASH", bg: "var(--ft-accent)", fg: "var(--ft-base)" });
   if (invested > 0)
     rowValues.push({ key: "I", value: invested, label: "INVESTED", bg: "var(--ft-dim)", fg: "var(--ft-base)" });
-  // Always show PENSION (even without data) — the design carries it explicitly.
-  rowValues.push({
-    key: "P",
-    value: pension ?? 0,
-    label: "PENSION",
-    bg: "var(--ft-border)",
-    fg: "var(--ft-text)",
-    unknown: pension == null,
-  });
+  if (pension > 0)
+    rowValues.push({ key: "P", value: pension, label: "PENSION", bg: "var(--ft-border)", fg: "var(--ft-text)" });
+  if (other > 0)
+    rowValues.push({ key: "O", value: other, label: "OTHER", bg: "var(--ft-border)", fg: "var(--ft-text)" });
   const rowTotal = rowValues.reduce((s, r) => s + Math.max(r.value, 0), 0) || 1;
 
   // Blocks narrower than 24px cannot carry a label — collapse into a +n cell.
@@ -604,10 +608,10 @@ function BlocksView({
         boxShadow: "10px -10px 0 0 var(--ft-border)",
         display: "flex",
         flexDirection: "column",
-        gap: showOther ? 2 : 0,
+        gap: showProperty ? 2 : 0,
       }}
     >
-      {showOther && (
+      {showProperty && (
         <div
           style={{
             height: topH,
@@ -627,7 +631,7 @@ function BlocksView({
               letterSpacing: "0.16em",
             }}
           >
-            OTHER · {total > 0 ? Math.round((other / total) * 100) : 0}%
+            PROPERTY · {total > 0 ? Math.round((property / total) * 100) : 0}%
           </span>
           <span
             className="pnum"
@@ -637,7 +641,7 @@ function BlocksView({
               letterSpacing: "-0.03em",
             }}
           >
-            {nfmt(other, { symbol: "£", decimals: 0 })}
+            {nfmt(property, { symbol: "£", decimals: 0 })}
           </span>
         </div>
       )}
@@ -650,7 +654,7 @@ function BlocksView({
               flexGrow: rowRender.length - 1 === i ? 1 : 0,
               background: r.bg,
               color: r.fg,
-              padding: showOther ? "8px 8px" : "14px 14px",
+              padding: showProperty ? "8px 8px" : "14px 14px",
               boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
@@ -671,13 +675,13 @@ function BlocksView({
             <span
               className="pnum"
               style={{
-                fontSize: showOther ? 13 : 21,
+                fontSize: showProperty ? 13 : 21,
                 fontWeight: 600,
                 whiteSpace: "nowrap",
-                letterSpacing: showOther ? undefined : "-0.03em",
+                letterSpacing: showProperty ? undefined : "-0.03em",
               }}
             >
-              {r.unknown ? "—" : nfmt(r.value, { symbol: "£", decimals: 0 })}
+              {nfmt(r.value, { symbol: "£", decimals: 0 })}
             </span>
           </div>
         ))}

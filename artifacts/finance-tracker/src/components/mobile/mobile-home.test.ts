@@ -1,78 +1,85 @@
 import { describe, it, expect } from "vitest";
 import { computeHoldings } from "./MobileHome";
 
-describe("computeHoldings — OTHER block guard", () => {
-  it("residual > 0 exposes OTHER with the residual value", () => {
+describe("computeHoldings — categorises from account.type (no residual)", () => {
+  it("sums per bucket by account type and adds portfolio to invested", () => {
     const h = computeHoldings({
-      netWorth: 118238.66,
-      totalCash: 12260,
+      accountBreakdown: [
+        { type: "cash",       gbpEquivalent: 12260 },
+        { type: "cash",       gbpEquivalent:  4004 },
+        { type: "investment", gbpEquivalent:   690 },
+        { type: "pension",    gbpEquivalent:  7300 },
+        { type: "property",   gbpEquivalent: 94600 },
+        { type: "other",      gbpEquivalent:   150 },
+      ],
       portfolio: { totalValueGbp: 8380 },
-    });
-    expect(h.showOther).toBe(true);
-    expect(h.other).toBeCloseTo(97598.66, 2);
-    expect(h.liquid).toBe(12260);
-    expect(h.invested).toBe(8380);
-    expect(h.pension).toBeNull();
-  });
-
-  it("residual === 0 suppresses OTHER", () => {
-    const h = computeHoldings({
-      netWorth: 20640,
-      totalCash: 12260,
-      portfolio: { totalValueGbp: 8380 },
-    });
-    expect(h.showOther).toBe(false);
-    expect(h.other).toBe(0);
-    // LIQUID and INVESTED still pass through unchanged
-    expect(h.liquid).toBe(12260);
-    expect(h.invested).toBe(8380);
-  });
-
-  it("negative residual (e.g. mortgage exceeds tracked assets) suppresses OTHER", () => {
-    const h = computeHoldings({
-      netWorth: 5000,
-      totalCash: 12260,
-      portfolio: { totalValueGbp: 8380 },
-    });
-    expect(h.showOther).toBe(false);
-    expect(h.other).toBe(0);
-  });
-
-  it("missing dashboard produces zeros and no OTHER", () => {
-    expect(computeHoldings(null)).toEqual({
-      liquid: 0,
-      invested: 0,
-      other: 0,
-      pension: null,
-      showOther: false,
-    });
-    expect(computeHoldings(undefined)).toEqual({
-      liquid: 0,
-      invested: 0,
-      other: 0,
-      pension: null,
-      showOther: false,
-    });
-  });
-
-  it("missing portfolio field treats it as zero", () => {
-    const h = computeHoldings({ netWorth: 12260, totalCash: 12260 });
-    expect(h.invested).toBe(0);
-    expect(h.showOther).toBe(false);
-  });
-
-  it("cash-only account has liquid but no other and no invested", () => {
-    const h = computeHoldings({
-      netWorth: 12260,
-      totalCash: 12260,
-      portfolio: { totalValueGbp: 0 },
     });
     expect(h).toEqual({
-      liquid: 12260,
-      invested: 0,
-      other: 0,
-      pension: null,
-      showOther: false,
+      cash: 16264,
+      investment: 690 + 8380,
+      pension: 7300,
+      property: 94600,
+      other: 150,
     });
+  });
+
+  it("no accounts and no portfolio produces zeros in every bucket", () => {
+    expect(computeHoldings(null)).toEqual({
+      cash: 0, investment: 0, pension: 0, property: 0, other: 0,
+    });
+    expect(computeHoldings(undefined)).toEqual({
+      cash: 0, investment: 0, pension: 0, property: 0, other: 0,
+    });
+  });
+
+  it("cash-only wallet has cash and nothing else", () => {
+    const h = computeHoldings({
+      accountBreakdown: [
+        { type: "cash", gbpEquivalent: 12260 },
+      ],
+    });
+    expect(h).toEqual({
+      cash: 12260, investment: 0, pension: 0, property: 0, other: 0,
+    });
+  });
+
+  it("portfolio positions alone still populate invested", () => {
+    const h = computeHoldings({
+      portfolio: { totalValueGbp: 8380 },
+    });
+    expect(h.investment).toBe(8380);
+    expect(h.cash).toBe(0);
+    expect(h.property).toBe(0);
+  });
+
+  it("investment-typed account and portfolio positions both feed invested", () => {
+    // A brokerage account itself (uninvested cash) is 'investment' typed;
+    // the positions it holds live in the investments table and surface via
+    // portfolio.totalValueGbp. Both add to the same visual bucket.
+    const h = computeHoldings({
+      accountBreakdown: [
+        { type: "investment", gbpEquivalent: 690 },
+      ],
+      portfolio: { totalValueGbp: 8380 },
+    });
+    expect(h.investment).toBe(9070);
+  });
+
+  it("does not compute a residual from netWorth minus cash minus portfolio", () => {
+    // Regression: earlier implementation used
+    //   residual = netWorth - totalCash - portfolio
+    // and labelled the result OTHER, which lied under mortgages, untracked
+    // pensions and empty accounts alike. The new shape has no netWorth or
+    // totalCash inputs at all — only the categorised breakdown.
+    const h = computeHoldings({
+      accountBreakdown: [
+        { type: "cash",     gbpEquivalent: 12260 },
+        { type: "property", gbpEquivalent: 94600 },
+      ],
+      portfolio: { totalValueGbp: 8380 },
+    });
+    // Property is what the DB says, not what's left over after subtracting.
+    expect(h.property).toBe(94600);
+    expect(h.other).toBe(0);
   });
 });
