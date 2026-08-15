@@ -1071,8 +1071,9 @@ export default function Owing() {
 
       {/* ── First-time empty state ── */}
       {!isLoading && (debts ?? []).length === 0 && (
-        <PanelBox padding="40px 24px" style={{ textAlign: "center" }}>
-          <pre style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6, marginBottom: 20 }}>{`  ┌─────────────────────────────────┐
+        <PanelBox padding="40px 24px">
+          <VStack align="center">
+            <pre style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6, marginBottom: 20 }}>{`  ┌─────────────────────────────────┐
   │   IOU LEDGER                    │
   │                                 │
   │   Person          Amount   Age  │
@@ -1080,16 +1081,17 @@ export default function Owing() {
   │   (no entries yet)              │
   │                                 │
   └─────────────────────────────────┘`}</pre>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ft-text)", marginBottom: 6 }}>No IOUs yet</div>
-          <div style={{ fontSize: 12, color: "var(--ft-dim)", marginBottom: 20 }}>Track who owes you, what you owe others, and split bills with the tools above.</div>
-          <HStack gap={10} justify="center">
-            <Button size="sm" onClick={() => setSplitOpen(true)} style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", fontSize: 12 }}>
-              <SplitSquareHorizontal className="w-3.5 h-3.5 mr-1.5" /> Split a Bill
-            </Button>
-            <Button size="sm" onClick={() => setOpen(true)} style={{ background: "var(--ft-blue)", color: "var(--ft-base)", fontSize: 12 }}>
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Add IOU
-            </Button>
-          </HStack>
+            <Text as="div" size={14} weight={700} color="var(--ft-text)" mb={6}>No IOUs yet</Text>
+            <Text as="div" size={12} color="var(--ft-dim)" mb={20}>Track who owes you, what you owe others, and split bills with the tools above.</Text>
+            <HStack gap={10} justify="center">
+              <Button size="sm" onClick={() => setSplitOpen(true)} style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", fontSize: 12 }}>
+                <SplitSquareHorizontal className="w-3.5 h-3.5 mr-1.5" /> Split a Bill
+              </Button>
+              <Button size="sm" onClick={() => setOpen(true)} style={{ background: "var(--ft-blue)", color: "var(--ft-base)", fontSize: 12 }}>
+                <Plus className="w-3.5 h-3.5 mr-1.5" /> Add IOU
+              </Button>
+            </HStack>
+          </VStack>
         </PanelBox>
       )}
 
