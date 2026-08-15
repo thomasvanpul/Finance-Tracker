@@ -1420,7 +1420,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
                 </div>
               ))}
               {tooltip.day.txs.length > 5 && (
-                <div style={{ color: "var(--ft-dim)", fontSize: 8, marginTop: 3 }}>+{tooltip.day.txs.length - 5} more</div>
+                <Text as="div" size={8} color="var(--ft-dim)" mt={3}>+{tooltip.day.txs.length - 5} more</Text>
               )}
             </div>
           )}
@@ -1842,9 +1842,9 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
                 return (
                   <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 10 }}>
                     <div style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 4 }}>{String(p.label ?? "")}</div>
-                    <div style={{ color: "var(--ft-text)", fontWeight: 700, marginBottom: 2 }}>
+                    <Text as="div" weight={700} color="var(--ft-text)" mb={2}>
                       Rate: {d.rate !== null ? `${d.rate}%` : "—"}
-                    </div>
+                    </Text>
                     <Text as="div" size={9} color="var(--ft-green)">Income: <span className="pnum">{formatGbp(d.income)}</span></Text>
                     <Text as="div" size={9} color="var(--ft-red)">Expense: <span className="pnum">{formatGbp(d.expense)}</span></Text>
                   </div>
@@ -1960,9 +1960,9 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
         {/* Category σ breakdown */}
         {catVolatility.length > 0 && (
           <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
+            <MonoLabel as="div" size={8} letterSpacing="0.1em" mb={6}>
               MOST VOLATILE CATEGORIES
-            </div>
+            </MonoLabel>
             {catVolatility.map((r, i) => {
               const col = r.cv < 30 ? "var(--ft-amber)" : "var(--ft-red)";
               return (
