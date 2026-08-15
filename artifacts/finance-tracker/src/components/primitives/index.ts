@@ -1,5 +1,9 @@
 export { MonoLabel } from "./mono-label";
+export { Text } from "./text";
+export type { TextProps } from "./text";
 export { PanelBox } from "./panel-box";
 export { PanelHeader } from "./panel-header";
 export { DataTH } from "./data-th";
 export { DataTD } from "./data-td";
+export { HStack, VStack } from "./stack";
+export { BlockField, figureFits, labelFits } from "./block-field";
