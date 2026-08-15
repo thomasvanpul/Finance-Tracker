@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
 import { nfmt } from "./mobile-format";
 import { computeHoldings } from "./MobileHome";
+import { BlockField } from "@/components/primitives/block-field";
 
 // Full page for the HOLDINGS section that home links to. Same design
 // language as MobileHome:
@@ -138,7 +139,7 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
 
       {/* Block field — same visual language as home's BLOCKS view */}
       <div style={{ padding: "0 18px" }}>
-        <HoldingsBlocks holdings={holdings} />
+        <BlockField holdings={holdings} />
       </div>
 
       {/* Liabilities strip (outlined, no depth) */}
@@ -204,145 +205,6 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
   );
 }
 
-// ── Block field ─────────────────────────────────────────────────────────────
-// Property on top when > 0 (Numeris's "flat" tier). Otherwise the row of
-// CASH / INVESTED / PENSION / OTHER fills the full 296px height. Widths
-// proportional to value share; cells narrower than 24px collapse into a +n
-// cell. Same rules as MobileHome's BlocksView.
-function HoldingsBlocks({
-  holdings,
-}: {
-  holdings: { cash: number; investment: number; pension: number; property: number; other: number };
-}) {
-  const { cash, investment, pension, property, other } = holdings;
-  const FIELD_H = 296;
-  const AVAILABLE_W = 354;
-  const showProperty = property > 0;
-  const topH = showProperty ? 230 : 0;
-  const rowH = showProperty ? 64 : FIELD_H;
-  const total = cash + investment + pension + property + other;
-
-  const rowValues: Array<{ key: string; value: number; label: string; bg: string; fg: string }> = [];
-  if (cash > 0) rowValues.push({ key: "C", value: cash, label: "CASH", bg: "var(--ft-accent)", fg: "var(--ft-base)" });
-  if (investment > 0) rowValues.push({ key: "I", value: investment, label: "INVESTED", bg: "var(--ft-dim)", fg: "var(--ft-base)" });
-  if (pension > 0) rowValues.push({ key: "P", value: pension, label: "PENSION", bg: "var(--ft-border2)", fg: "var(--ft-text)" });
-  if (other > 0) rowValues.push({ key: "O", value: other, label: "OTHER", bg: "var(--ft-muted)", fg: "var(--ft-base)" });
-  const rowTotal = rowValues.reduce((s, r) => s + Math.max(r.value, 0), 0) || 1;
-
-  const withPx = rowValues.map((r) => ({
-    ...r,
-    pxWidth: (Math.max(r.value, 0) / rowTotal) * (AVAILABLE_W - (rowValues.length - 1) * 2),
-  }));
-  const bigEnough = withPx.filter((r) => r.pxWidth >= 24);
-  const collapsed = withPx.filter((r) => r.pxWidth < 24);
-  const collapsedValue = collapsed.reduce((s, r) => s + r.value, 0);
-  const rowRender = collapsed.length
-    ? [
-        ...bigEnough,
-        {
-          key: "collapsed",
-          value: collapsedValue,
-          label: `+${collapsed.length}`,
-          bg: "var(--ft-border)",
-          fg: "var(--ft-text)",
-          pxWidth: (collapsedValue / rowTotal) * (AVAILABLE_W - bigEnough.length * 2),
-        } as (typeof withPx)[0],
-      ]
-    : withPx;
-
-  return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: AVAILABLE_W,
-        height: FIELD_H,
-        boxShadow: "10px -10px 0 0 var(--ft-border)",
-        display: "flex",
-        flexDirection: "column",
-        gap: showProperty ? 2 : 0,
-      }}
-    >
-      {showProperty && (
-        <div
-          style={{
-            height: topH,
-            background: "var(--ft-text)",
-            color: "var(--ft-base)",
-            padding: 14,
-            boxSizing: "border-box",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em" }}>
-            PROPERTY · {total > 0 ? Math.round((property / total) * 100) : 0}%
-          </span>
-          <span className="pnum" style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-0.03em" }}>
-            {nfmt(property, { symbol: "£", decimals: 0 })}
-          </span>
-        </div>
-      )}
-      <div style={{ height: rowH, display: "flex", gap: 2 }}>
-        {(() => {
-          const gapTotal = (rowRender.length - 1) * 2;
-          const nonLastSum = rowRender.slice(0, -1).reduce((s, r) => s + r.pxWidth, 0);
-          const lastDisplayed = Math.max(rowRender.at(-1)?.pxWidth ?? 0, AVAILABLE_W - nonLastSum - gapTotal);
-          return rowRender.map((r, i) => {
-          // Rule (CLAUDE.md): a financial figure is shown in full or not at
-          // all. A tile too narrow to hold its £N,NNN figure gets the label
-          // only. If it can't hold the label either, the label alone gets
-          // hidden — the tile still identifies the bucket by colour + area,
-          // and the exact values live in the sections below.
-          const displayedWidth = i === rowRender.length - 1 ? lastDisplayed : r.pxWidth;
-          const figureText = nfmt(r.value, { symbol: "£", decimals: 0 });
-          const figureFontSize = showProperty ? 13 : 21;
-          const pad = showProperty ? 8 : 14;
-          const requiredForFigure = figureText.length * figureFontSize * 0.6 + pad * 2;
-          const requiredForLabel = r.label.length * 11 * 0.7 + pad * 2;
-          const showFigure = displayedWidth >= requiredForFigure;
-          const showLabel = displayedWidth >= requiredForLabel;
-          return (
-          <div
-            key={r.key}
-            style={{
-              width: `${r.pxWidth}px`,
-              flexGrow: rowRender.length - 1 === i ? 1 : 0,
-              background: r.bg,
-              color: r.fg,
-              padding: showProperty ? 8 : 14,
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: showFigure && showLabel ? "space-between" : "flex-start",
-              overflow: "hidden",
-            }}
-          >
-            {showLabel && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.1em", whiteSpace: "nowrap" }}>
-                {r.label}
-              </span>
-            )}
-            {showFigure && (
-              <span
-                className="pnum"
-                style={{
-                  fontSize: figureFontSize,
-                  fontWeight: 600,
-                  whiteSpace: "nowrap",
-                  letterSpacing: showProperty ? undefined : "-0.03em",
-                }}
-              >
-                {figureText}
-              </span>
-            )}
-          </div>
-        );});
-        })()}
-      </div>
-    </div>
-  );
-}
 
 // ── Per-type section ────────────────────────────────────────────────────────
 function TypeSection({

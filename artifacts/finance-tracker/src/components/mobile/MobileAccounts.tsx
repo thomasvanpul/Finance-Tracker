@@ -2,6 +2,7 @@ import { useListAccounts } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { MobileEmptyState } from "./mobile-ui";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
+import { figureFits, labelFits } from "@/components/primitives/block-field";
 
 // Full page for the ACCOUNTS section that home links to. Same design
 // language as MobileHome:
@@ -193,13 +194,11 @@ function CurrencyBlocks({
     >
       {rowRender.map((c, i) => {
         // Rule (CLAUDE.md): a financial figure — including a percentage —
-        // is shown in full or not at all. Guard the render against a tile
-        // narrower than the label or the percentage text needs.
+        // is shown in full or not at all. figureFits/labelFits is the shared
+        // guard used by BlockField; do not reimplement.
         const pctText = `${total > 0 ? Math.round((c.gbpSum / total) * 100) : 0}%`;
-        const requiredForPct = pctText.length * 15 * 0.6 + 28;
-        const requiredForLabel = c.currency.length * 11 * 0.7 + 28;
-        const showPct = c.pxWidth >= requiredForPct;
-        const showLabel = c.pxWidth >= requiredForLabel;
+        const showPct = figureFits(pctText, c.pxWidth, 15, 14);
+        const showLabel = labelFits(c.currency, c.pxWidth, 11, 14);
         return (
         <div
           key={c.currency}
