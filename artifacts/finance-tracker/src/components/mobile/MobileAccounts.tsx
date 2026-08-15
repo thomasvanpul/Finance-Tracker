@@ -312,7 +312,7 @@ function CurrencySection({
                   {sym}{nfmt(a.balance)} ≈
                 </span>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-                  {nfmt(a.gbpEquivalent)}
+                  £{nfmt(a.gbpEquivalent)}
                 </span>
               </span>
             )}
