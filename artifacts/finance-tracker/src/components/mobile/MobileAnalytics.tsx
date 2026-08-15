@@ -1,12 +1,25 @@
 import { useListTransactions } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
-import { formatGbp } from "@/lib/utils";
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { nfmt } from "./mobile-format";
 
 // Category totals + income/expense split for the current month.
-// Earlier mocks (weekday spend, previous-month comparison, daily-spend
-// heatmap, 6-month history, top merchants) removed — none derive honestly
-// from just this month's transaction list.
+//
+// Design signature devices applied:
+//   - Premium-tier 34px SPEND · £ · MTD headline over an income/spend
+//     mini-bar (single row, two segments, area = share).
+//   - Two-level column header CATEGORY / SHARE / £ per section.
+//   - Per-row proportional bar (area = share of section total); largest
+//     category reads first.
+//   - Zero rows can't appear here (they wouldn't be in the aggregation)
+//     but the loading state renders skeleton figures rather than "£0.00".
+//   - Native currency stays hidden — the aggregation is GBP-equivalent
+//     for cross-currency roll-up. Per-transaction rendering keeps native
+//     in the transactions view.
+
+const BAR_H = 3;
+const AMOUNT_COL_W = 108;
 
 export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
   const [, navigate] = useLocation();
@@ -34,6 +47,8 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
   const incomes = txns.filter((t) => t.type === "income");
   const totalSpend = expenses.reduce((s, t) => s + Math.abs(t.gbpValue), 0);
   const totalIncome = incomes.reduce((s, t) => s + t.gbpValue, 0);
+  const monthLabel = now.toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase();
+  const net = totalIncome - totalSpend;
 
   function byCat(list: typeof txns) {
     const map = new Map<string, number>();
@@ -48,6 +63,12 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
   const spendRows = byCat(expenses);
   const incomeRows = byCat(incomes);
 
+  // For the mini bar: two segments (income green, spend red) with widths
+  // proportional to the larger of the two so both fit on the same rule.
+  const scale = Math.max(totalIncome, totalSpend, 1);
+  const inPct = (totalIncome / scale) * 100;
+  const outPct = (totalSpend / scale) * 100;
+
   return (
     <div
       className="mobile-scroll"
@@ -57,74 +78,118 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
         flexDirection: "column",
         overflowY: "auto",
         paddingBottom: "calc(74px + env(safe-area-inset-bottom, 0px) + 16px)",
+        background: "var(--ft-base)",
+        color: "var(--ft-text)",
       }}
     >
       <MobileScreenHeader title="Analytics" onBack={onBack} />
 
-      <div style={{ padding: "0 16px 4px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em", color: "var(--ft-dim)" }}>
-          {now.toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase()} · £
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.14em" }}>
-              INCOME
-            </div>
-            <div className="pnum" style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ft-green)" }}>
-              {formatGbp(totalIncome)}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.14em" }}>
-              SPEND
-            </div>
-            <div className="pnum" style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-0.02em" }}>
-              {formatGbp(totalSpend)}
-            </div>
-          </div>
-        </div>
-      </div>
+      <HStack paddingX={18} height={32} justify="end" align="center">
+        <MonoLabel size={11} letterSpacing="0.16em">{monthLabel} · MTD</MonoLabel>
+      </HStack>
 
-      <Section title="SPEND BY CATEGORY" rows={spendRows} total={totalSpend} />
-      <Section title="INCOME BY CATEGORY" rows={incomeRows} total={totalIncome} />
+      <VStack paddingX={18} marginBottom={14}>
+        <MonoLabel size={11} letterSpacing="0.16em">NET · £ · MONTH TO DATE</MonoLabel>
+        <HStack align="baseline" gap={4} marginTop={6}>
+          <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+          <Text
+            as="span"
+            size={34}
+            weight={600}
+            letterSpacing="-0.035em"
+            color={net >= 0 ? "var(--ft-text)" : "var(--ft-red)"}
+            numeric
+          >
+            {net < 0 ? "−" : ""}{nfmt(Math.abs(net), { decimals: 2 })}
+          </Text>
+        </HStack>
+        {/* Mini in/out bar */}
+        <VStack marginTop={10} gap={4}>
+          <div style={{ position: "relative", height: BAR_H }}>
+            <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
+            <div style={{ position: "absolute", top: 0, left: 0, height: BAR_H, width: `${inPct}%`, background: "var(--ft-green)" }} />
+          </div>
+          <div style={{ position: "relative", height: BAR_H }}>
+            <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
+            <div style={{ position: "absolute", top: 0, left: 0, height: BAR_H, width: `${outPct}%`, background: "var(--ft-red)" }} />
+          </div>
+        </VStack>
+        <HStack gap={14} marginTop={6} align="baseline">
+          <HStack gap={4} align="baseline">
+            <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">IN</Text>
+            <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
+              +£{nfmt(totalIncome, { decimals: 2 })}
+            </Text>
+          </HStack>
+          <HStack gap={4} align="baseline">
+            <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">OUT</Text>
+            <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
+              −£{nfmt(totalSpend, { decimals: 2 })}
+            </Text>
+          </HStack>
+        </HStack>
+      </VStack>
+
+      <Section title="SPEND BY CATEGORY" rows={spendRows} total={totalSpend} accent="var(--ft-red)" />
+      <Section title="INCOME BY CATEGORY" rows={incomeRows} total={totalIncome} accent="var(--ft-green)" />
     </div>
   );
 }
 
-function Section({ title, rows, total }: { title: string; rows: Array<{ cat: string; amount: number }>; total: number }) {
+interface SectionProps {
+  title: string;
+  rows: Array<{ cat: string; amount: number }>;
+  total: number;
+  accent: string;
+}
+
+function Section({ title, rows, total, accent }: SectionProps) {
   if (!rows.length) return null;
   return (
-    <div style={{ padding: "18px 16px 0" }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em", color: "var(--ft-dim)", marginBottom: 6 }}>
-        {title}
+    <div style={{ marginTop: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "18px 18px 6px",
+          borderBottom: "1px solid var(--ft-border2)",
+        }}
+      >
+        <MonoLabel as="span" size={9}>{title}</MonoLabel>
+        <div style={{ flex: 1 }} />
+        <MonoLabel as="span" size={9}>SHARE · £</MonoLabel>
       </div>
-      {rows.map((r, i) => (
-        <div
-          key={r.cat}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 10,
-            minHeight: 44,
-            borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-            ...(i === rows.length - 1
-              ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
-              : {}),
-            fontSize: 14,
-          }}
-        >
-          <span>
-            {r.cat}
-            <span style={{ marginLeft: 8, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
-              {total > 0 ? `${Math.round((r.amount / total) * 100)}%` : ""}
-            </span>
-          </span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
-            {formatGbp(r.amount)}
-          </span>
-        </div>
-      ))}
+      {rows.map((r) => {
+        const pct = total > 0 ? (r.amount / total) * 100 : 0;
+        return (
+          <div
+            key={r.cat}
+            style={{
+              padding: "10px 18px",
+              borderBottom: "1px solid var(--ft-border)",
+            }}
+          >
+            <HStack justify="between" align="baseline" gap={10}>
+              <Text as="span" size={14}>{r.cat}</Text>
+              <HStack gap={10} align="baseline">
+                <Text as="span" mono size={10} letterSpacing="0.06em" color="var(--ft-dim)" numeric>
+                  {nfmt(pct, { decimals: 0 })}%
+                </Text>
+                <div style={{ width: AMOUNT_COL_W, textAlign: "right" }}>
+                  <Text as="span" mono size={13} weight={600} numeric>
+                    £{nfmt(r.amount, { decimals: 2 })}
+                  </Text>
+                </div>
+              </HStack>
+            </HStack>
+            <div style={{ marginTop: 6, position: "relative", height: 2 }}>
+              <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
+              <div style={{ position: "absolute", inset: 0, width: `${Math.min(100, pct)}%`, background: accent }} />
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
