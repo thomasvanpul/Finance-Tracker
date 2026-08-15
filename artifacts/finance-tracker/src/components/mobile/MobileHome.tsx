@@ -645,8 +645,29 @@ function BlocksView({
           </span>
         </div>
       )}
+      {/* Compute each tile's DISPLAYED width up front. The last tile has
+          flex-grow:1 so it fills the remainder — proportional pxWidth alone
+          would understate it, and we'd hide figures that would in fact fit. */}
       <div style={{ height: rowH, display: "flex", gap: 2 }}>
-        {rowRender.map((r, i) => (
+        {(() => {
+          const gapTotal = (rowRender.length - 1) * 2;
+          const nonLastSum = rowRender.slice(0, -1).reduce((s, r) => s + r.pxWidth, 0);
+          const lastDisplayed = Math.max(rowRender.at(-1)?.pxWidth ?? 0, AVAILABLE_W - nonLastSum - gapTotal);
+          return rowRender.map((r, i) => {
+          // Rule (CLAUDE.md): a financial figure is shown in full or not at
+          // all. A tile that's too narrow to hold its £N,NNN figure gets the
+          // label only — area still encodes the value, and the per-bucket
+          // rows below carry the exact number. Never render "£1…".
+          const displayedWidth = i === rowRender.length - 1 ? lastDisplayed : r.pxWidth;
+          const figureText = nfmt(r.value, { symbol: "£", decimals: 0 });
+          const figureFontSize = showProperty ? 13 : 21;
+          const pad = showProperty ? 8 : 14;
+          // Tabular-nums glyphs average ~0.6em; add slack for the £ and commas.
+          const requiredForFigure = figureText.length * figureFontSize * 0.6 + pad * 2;
+          const requiredForLabel = r.label.length * 11 * 0.7 + pad * 2;
+          const showFigure = displayedWidth >= requiredForFigure;
+          const showLabel = displayedWidth >= requiredForLabel;
+          return (
           <div
             key={r.key}
             style={{
@@ -658,33 +679,38 @@ function BlocksView({
               boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
-              justifyContent: "space-between",
+              justifyContent: showFigure && showLabel ? "space-between" : "flex-start",
               overflow: "hidden",
             }}
           >
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.1em",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {r.label}
-            </span>
-            <span
-              className="pnum"
-              style={{
-                fontSize: showProperty ? 13 : 21,
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-                letterSpacing: showProperty ? undefined : "-0.03em",
-              }}
-            >
-              {nfmt(r.value, { symbol: "£", decimals: 0 })}
-            </span>
+            {showLabel && (
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.1em",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {r.label}
+              </span>
+            )}
+            {showFigure && (
+              <span
+                className="pnum"
+                style={{
+                  fontSize: figureFontSize,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  letterSpacing: showProperty ? undefined : "-0.03em",
+                }}
+              >
+                {figureText}
+              </span>
+            )}
           </div>
-        ))}
+        );});
+        })()}
       </div>
     </div>
   );

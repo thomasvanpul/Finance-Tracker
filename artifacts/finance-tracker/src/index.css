@@ -1325,14 +1325,18 @@ input[type="checkbox"]:checked {
   min-width: 0;
 }
 
-/* pnum (financial numbers): allow wrapping shrink but never clip mid-digit */
+/* pnum (financial numbers) — do NOT ellipsise, do NOT crop.
+   Ellipsis on a number reads as a different, plausible number ("£1…" from
+   "£11,371" reads as "£1"). That's the single-worst defect a finance UI
+   can ship. Rule in CLAUDE.md: a financial figure is shown in full or not
+   at all. If a caller has a size-constrained parent, the caller must
+   guarantee the pnum's width OR skip rendering — .pnum can only refuse
+   to help clip. */
 .pnum {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   display: inline-block;
   vertical-align: bottom;

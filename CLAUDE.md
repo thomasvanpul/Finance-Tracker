@@ -55,6 +55,14 @@ Never point local development at production.
 - The app **cannot hold or convert money.** It can initiate a payment through a
   licensed provider, which the user approves in their own banking app. Never
   design or build an action implying otherwise. MYR and Maybank are read-only.
+- **A financial figure is shown in full or not at all.** A truncated figure that
+  reads as a different, plausible number is the worst class of defect a finance
+  app can ship: `£11,371` clipped to `£1…` reads as £1. Below a width threshold,
+  render the label alone or the value alone — never an ellipsised, half-visible,
+  or CSS-cropped number. Every currency figure and percentage falls under this;
+  it is not enough to remove `text-overflow: ellipsis` if `overflow: hidden` on
+  the parent still crops digits. Callers that put a `.pnum` inside a
+  size-constrained container must guarantee width or skip render.
 
 ## Design rules
 

@@ -195,7 +195,16 @@ function CurrencyBlocks({
         gap: 2,
       }}
     >
-      {rowRender.map((c, i) => (
+      {rowRender.map((c, i) => {
+        // Rule (CLAUDE.md): a financial figure — including a percentage —
+        // is shown in full or not at all. Guard the render against a tile
+        // narrower than the label or the percentage text needs.
+        const pctText = `${total > 0 ? Math.round((c.gbpSum / total) * 100) : 0}%`;
+        const requiredForPct = pctText.length * 15 * 0.6 + 28;
+        const requiredForLabel = c.currency.length * 11 * 0.7 + 28;
+        const showPct = c.pxWidth >= requiredForPct;
+        const showLabel = c.pxWidth >= requiredForLabel;
+        return (
         <div
           key={c.currency}
           style={{
@@ -207,32 +216,36 @@ function CurrencyBlocks({
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
-            justifyContent: "space-between",
+            justifyContent: showPct && showLabel ? "space-between" : "flex-start",
             overflow: "hidden",
           }}
         >
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.16em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {c.currency}
-          </span>
-          <span
-            className="pnum"
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {total > 0 ? Math.round((c.gbpSum / total) * 100) : 0}%
-          </span>
+          {showLabel && (
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.16em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {c.currency}
+            </span>
+          )}
+          {showPct && (
+            <span
+              className="pnum"
+              style={{
+                fontSize: 15,
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {pctText}
+            </span>
+          )}
         </div>
-      ))}
+      );})}
     </div>
   );
 }
