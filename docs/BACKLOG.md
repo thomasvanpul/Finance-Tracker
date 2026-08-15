@@ -163,19 +163,58 @@ mode. Absorbs the four target shapes (222 + 93 + 131 + 53 = 499 direct
 hits across `src`, ~700 including padding/wrap variants). Nothing
 migrated yet — that is E3's job.
 
-### E3 · Migrate remaining pages to the primitives — REPORTED, NOT DONE
-Blocked target ("drop by at least a third") turned out unreachable via
-flex primitives alone (measured: pure-flex on the top 4 pages tops out
-at 8-14% per page). Text-shape re-measurement across the four target
-pages (`investments.tsx`, `analytics.tsx`, `settings.tsx`,
-`transactions.tsx`) put the combined text + flex absorption at ~27%
-theoretical, individual pages 25-29%. Proposed primitive set to close
-the gap: `<Text>` (new, general text primitive with named variants for
-mono/sans + size / color / weight / letterSpacing / textTransform /
-margins / textAlign / lineHeight / whiteSpace / tabular / as) plus a
-tightened `<MonoLabel>` (remove `style` prop; zero call sites use it).
-Absorption estimate reported to user; awaiting go-ahead to build and
-migrate.
+### E3 · Migrate remaining pages to the primitives — DONE
+The primitives family now covers layout, surface, and typography with
+matching call sites across the codebase. Built and migrated in two runs:
+
+Primitives added / tightened:
+- `<Text>` (`f55bd53`) — named-prop typography, no `style?`, `numeric`
+  and `truncate` mutually exclusive at the type level.
+- `<MonoLabel>` — `style?` dropped (zero callers used it).
+- `<BlockField>` + `figureFits` / `labelFits` helpers (`1d0dd60`) — the
+  Stack-flavour extraction of MobileHome BlocksView + MobileNetWorth
+  HoldingsBlocks so the CLAUDE.md truncation guard exists exactly once.
+- `<HStack>` / `<VStack>` first widened with layout-only Phase B props
+  (`shrink`, `height`, `minWidth`, `maxWidth`) in `00c48ff`. Surface
+  and typography props were and stay refused.
+- `<PanelBox>` — `style?` hatch removed (`4fa1390`), then `row`/`gap`
+  removed (`0a28f61`), leaving a surface-only primitive. Its one hatch
+  caller in `owing.tsx` restructured to compose. `<PanelHeader>`'s
+  matching hatch removed in `a2e1d58`.
+
+Migration script generations:
+- v3 (literal-safe text) — `05a4e56` (first pass on 4 target pages),
+  `e31f94b` (literal-ternary passthrough), `b879feb` (sweep 34 remaining
+  pages, nested-brace safety guard added after net-worth-history.tsx
+  broke on a nested `style={{`).
+- v4 (mt/mb passthrough for `layout_with_text`) — per-page with harness
+  proof: `055f032`, `7b7f2a5`, `0ba95ff`, `5f178a1`.
+- Flex v2 (Phase A, 531 containers) `e997856`; flex v3 (Phase B) `00c48ff`.
+- PanelBox composer (`c64bd8a`) — 4 exact-default surfaces migrated; the
+  other 29 exact-default candidates carry blockers (text on container,
+  borderLeft accent, non-default surface) that need markup restructuring
+  or a new primitive — declined for this pass.
+
+Global `style={{` count trajectory:
+
+| point | count | Δ |
+|---|---|---|
+| pre-primitive baseline | 8 867 | — |
+| post-primitive peak | 9 459 | +592 |
+| after E3 pass 1 | 9 219 | −240 |
+| ternary + margin passes | 8 787 | −432 |
+| Phase A flex | 8 256 | −531 |
+| Phase B flex | 8 211 | −45 |
+| PanelBox composes + hatch removals | **8 204** | **−7** |
+
+**Net vs baseline: 663 below.** Primitive call sites across `src`:
+1,242 (HStack/VStack/PanelBox/Text/MonoLabel/BlockField combined). Every
+primitive is now hatch-free.
+
+CLAUDE.md gained the primitives-family hard split rule (`9fa3995`):
+Stack owns layout, PanelBox owns surface, Text/MonoLabel own typography,
+one-offs stay inline, and a prop that's neither layout nor surface nor
+typography goes on no primitive at all.
 
 ### E4 · Break up the oversized pages — IN PROGRESS (this pass)
 Pure extraction, no behaviour change, one commit per file.
@@ -281,6 +320,36 @@ renderer for a decorative avatar is real battery and bundle cost.
   into the dev branch (migration checks, spec generation, integration tests)
   needs a per-step timeout above two minutes, or a warm-up ping to
   `SELECT 1` before the real command, or it will fail spuriously.
+- **G8 · Refactor PERSONA_COLORS into an Accent-keyed map — TODO.**
+  Follow-up to the AccentPanel decision (declined; 6 sites is not a
+  pattern). 19 flex containers in `pages/` set `borderLeft: \`3px solid
+  ${color}\`` where `color` is a persona-derived value from
+  `lib/persona.ts` `PERSONA_COLORS`. If those colours were keyed by an
+  `Accent` type (`"primary" | "positive" | "warning" | …`) instead of a
+  raw hex, callers could route through a stated enum and the AccentPanel
+  proposal would be reopenable with ~15+ real sites — well above the
+  "coincidence" threshold that killed the six-site version.
+  **Do:** define an `Accent` enum, add `personaAccent(personaId): Accent`
+  next to `PERSONA_COLORS`, migrate the 19 sites to consume it.
+  **Done when:** grep for `borderLeft: \`3px solid ${` in `pages/` returns
+  zero; count the accent-enum sites that emerge and revisit AccentPanel.
+- **G9 · DesktopEmptyState primitive — PROPOSAL, needs sampling.**
+  The three `--ft-border2` accent-stripe containers dropped from the
+  AccentPanel scope are all empty states:
+  `cashflow.tsx:950` "NO SCHEDULED EVENTS", `goals.tsx:1499`
+  "NO GOALS DEFINED", `health-score.tsx:1228` achievement backdrop.
+  `<MobileEmptyState>` already exists in `components/mobile/mobile-ui.tsx`
+  with a `label + title + description + optional CTA` shape. Desktop lacks
+  a counterpart. Two empty states in two different files sharing a
+  visual glyph is worth investigating; three across three files starts
+  to look like a real recurring pattern.
+  **Do first (sampling):** grep `pages/` for divs that carry `<pre>` or
+  `<div>No … yet</div>` alongside CTA buttons; count how many desktop
+  empty states already exist inline. If ≥ 10, propose `<DesktopEmptyState>`
+  with a stated prop set + refusals (same shape as MobileEmptyState).
+  If ≤ 5, leave inline — pattern hasn't earned it yet.
+  **Done when:** the sampling report is in `BACKLOG.md` or a new file,
+  and either a proposal is on the table or the entry is marked PARKED.
 
 ---
 
