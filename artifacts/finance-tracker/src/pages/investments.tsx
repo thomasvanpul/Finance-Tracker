@@ -1490,9 +1490,9 @@ function MarketsTab() {
               {detail?.recommendationKey && (
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                   <MonoLabel as="span" size={9}>Consensus:</MonoLabel>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: detail.recommendationKey === "buy" || detail.recommendationKey === "strong_buy" ? "var(--ft-green)" : detail.recommendationKey === "hold" ? "var(--ft-amber)" : "var(--ft-red)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  <Text as="span" mono upper size={13} weight={700} color={detail.recommendationKey === "buy" || detail.recommendationKey === "strong_buy" ? "var(--ft-green)" : detail.recommendationKey === "hold" ? "var(--ft-amber)" : "var(--ft-red)"} letterSpacing="0.04em">
                     {detail.recommendationKey.replace("_", " ")}
-                  </span>
+                  </Text>
                   {detail.analystCount && <Text as="span" mono size={9} color="var(--ft-dim)">({detail.analystCount} analysts)</Text>}
                 </div>
               )}
@@ -1943,7 +1943,7 @@ function MarketsTab() {
                   </div>
                   {q && <span style={{ padding: "2px 6px", fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>{q ? `$${q.price.toFixed(2)}` : "—"}</div>
+                <Text as="div" mono size={18} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? `$${q.price.toFixed(2)}` : "—"}</Text>
                 {q?.low52w && q?.high52w && <div style={{ marginTop: 6 }}><RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /></div>}
               </button>
             );
@@ -1969,7 +1969,7 @@ function MarketsTab() {
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}>
                 <div style={{ position: "absolute", bottom: 0, left: 0, height: 2, width: `${barPct}%`, background: chgColor, opacity: 0.6 }} />
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>{SECTOR_LABELS[ticker] ?? ticker}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>{q ? `$${q.price.toFixed(2)}` : "—"}</div>
+                <Text as="div" mono size={11} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? `$${q.price.toFixed(2)}` : "—"}</Text>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 1 }}>{q ? `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%` : "—"}</div>
               </button>
             );
@@ -2141,7 +2141,7 @@ function MarketsTab() {
                   </div>
                   {q && <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>{priceStr}</div>
+                <Text as="div" mono size={16} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{priceStr}</Text>
                 {q?.marketCap && <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>MCap {fmtCap(q.marketCap)}</div>}
               </button>
             );
@@ -2171,7 +2171,7 @@ function MarketsTab() {
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-blue)" }}>{FOREX_NAMES[ticker] ?? ticker}</div>
                   {q && <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>{q ? q.price.toFixed(4) : "—"}</div>
+                <Text as="div" mono size={18} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? q.price.toFixed(4) : "—"}</Text>
                 {q?.dayLow != null && q?.dayHigh != null && (
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>
                     <Text as="span" color="var(--ft-red)">{q.dayLow.toFixed(4)}</Text> — <Text as="span" color="var(--ft-green)">{q.dayHigh.toFixed(4)}</Text>
@@ -2202,7 +2202,7 @@ function MarketsTab() {
                 onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.12)"; }}
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.12)"; }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>{COMMODITY_NAMES[ticker] ?? ticker}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>{q ? `$${q.price.toFixed(2)}` : "—"}</div>
+                <Text as="div" mono size={18} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? `$${q.price.toFixed(2)}` : "—"}</Text>
                 {q && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 2 }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</div>}
                 {q?.low52w != null && q?.high52w != null && <div style={{ marginTop: 6 }}><RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /></div>}
               </button>
@@ -2231,9 +2231,9 @@ function MarketsTab() {
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(34,211,238,0.12)"; }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-cyan)", marginBottom: 2 }}>{GLOBAL_INDEX_NAMES[ticker] ?? ticker}</div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 4 }}>{ticker}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>
+                <Text as="div" mono size={15} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>
                   {q ? q.price.toLocaleString("en", { maximumFractionDigits: 0 }) : "—"}
-                </div>
+                </Text>
                 {q && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 2 }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</div>}
               </button>
             );
@@ -2421,9 +2421,9 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", background: "rgba(163,113,247,0.06)", border: "1px solid rgba(163,113,247,0.2)" }}>
                       <Text as="span" size={11} color="var(--ft-dim)">DCF Fair Value</Text>
                       <div>
-                        <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: dcfUpside != null && dcfUpside > 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 14 }}>
+                        <Text as="span" mono size={14} weight={700} color={dcfUpside != null && dcfUpside > 0 ? "var(--ft-green)" : "var(--ft-red)"}>
                           {sym}{dcfEst.toFixed(0)}
-                        </span>
+                        </Text>
                         {dcfUpside != null && (
                           <span style={{ marginLeft: 8, fontSize: 11, color: dcfUpside > 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                             {dcfUpside > 0 ? "+" : ""}{dcfUpside.toFixed(1)}% upside
@@ -4358,9 +4358,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                           </Text>
                         )}
                         {alpha !== null && (
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: alpha >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+                          <Text as="span" mono size={10} weight={700} color={alpha >= 0 ? "var(--ft-green)" : "var(--ft-red)"}>
                             α {alpha >= 0 ? "+" : ""}{alpha.toFixed(1)}pp
-                          </span>
+                          </Text>
                         )}
                       </div>
                     )}

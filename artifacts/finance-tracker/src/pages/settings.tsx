@@ -784,9 +784,9 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
               }}
               style={{ width: 36, height: 28, padding: 2, border: "1px solid var(--ft-border2)", background: "var(--ft-raised)", cursor: "pointer" }}
             />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: accentOverride ? "var(--ft-text)" : "var(--ft-dim)" }}>
+            <Text as="span" mono size={11} color={accentOverride ? "var(--ft-text)" : "var(--ft-dim)"}>
               {accentOverride || "Theme default"}
-            </span>
+            </Text>
             {accentOverride && (
               <button onClick={() => {
                 setAccentOverride("");

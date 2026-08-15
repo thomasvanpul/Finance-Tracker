@@ -291,13 +291,13 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
               {" "}of{" "}
               <Text as="span" color="var(--ft-text)">£{total.toFixed(2)}</Text>
             </span>
-            <span style={{ color: Math.abs(remaining) <= 0.005 ? "var(--ft-green)" : remaining < 0 ? "var(--ft-red)" : "var(--ft-amber)", fontWeight: 700 }}>
+            <Text as="span" weight={700} color={Math.abs(remaining) <= 0.005 ? "var(--ft-green)" : remaining < 0 ? "var(--ft-red)" : "var(--ft-amber)"}>
               {Math.abs(remaining) <= 0.005
                 ? "✓ Balanced"
                 : remaining > 0
                 ? `Remaining: £${remaining.toFixed(2)}`
                 : `Over by: £${Math.abs(remaining).toFixed(2)}`}
-            </span>
+            </Text>
           </div>
 
           <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
@@ -1763,7 +1763,7 @@ export default function Transactions() {
             title="Split view (local annotation)"
             style={{ color: splits[String(tx.id)] ? "var(--ft-accent)" : undefined }}
           >
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, color: splits[String(tx.id)] ? "var(--ft-accent)" : "var(--ft-dim)" }}>SL</span>
+            <Text as="span" mono size={9} weight={700} color={splits[String(tx.id)] ? "var(--ft-accent)" : "var(--ft-dim)"}>SL</Text>
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tx.id)} title="Edit transaction">
             <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} />
@@ -2030,9 +2030,9 @@ export default function Transactions() {
                     <div style={{ fontSize: 13, color: "var(--ft-text)", fontWeight: 600 }}>{splitTx.description}</div>
                     <div style={{ fontSize: 11, color: "var(--ft-muted)", marginTop: 2 }}>{formatDate(splitTx.date)} · {splitTx.category}</div>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: splitTx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>
+                  <Text as="div" size={14} weight={700} color={splitTx.type === "income" ? "var(--ft-green)" : "var(--ft-red)"} numeric>
                     {formatNative(Math.abs(splitTx.nativeAmount), splitTx.currency)}
-                  </div>
+                  </Text>
                 </div>
               </div>
 
@@ -2078,9 +2078,9 @@ export default function Transactions() {
                 <div style={{ fontSize: 11, color: "var(--ft-muted)" }}>
                   Total split: <Text as="span" color="var(--ft-text)" numeric>{splitTx.currency} {splitTotal.toFixed(2)}</Text>
                 </div>
-                <div style={{ fontSize: 11, color: splitRemaining === 0 ? "var(--ft-green)" : splitRemaining < 0 ? "var(--ft-red)" : "var(--ft-amber)" }}>
+                <Text as="div" size={11} color={splitRemaining === 0 ? "var(--ft-green)" : splitRemaining < 0 ? "var(--ft-red)" : "var(--ft-amber)"}>
                   {splitRemaining === 0 ? "Balanced" : splitRemaining > 0 ? `Remaining: ${splitTx.currency} ${splitRemaining.toFixed(2)}` : `Over by: ${splitTx.currency} ${Math.abs(splitRemaining).toFixed(2)}`}
-                </div>
+                </Text>
               </div>
 
               <button
@@ -2916,10 +2916,10 @@ export default function Transactions() {
                       const desktopLabel = gd.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
                       return (
                         <div style={{ display: "flex", alignItems: "center", background: isMobile ? "color-mix(in srgb, var(--ft-raised) 80%, var(--ft-base))" : "var(--ft-base)", borderBottom: "1px solid var(--ft-border)", padding: isMobile ? "6px 14px" : "4px 10px 4px 48px", gap: 10, position: "sticky", top: 0, zIndex: 10 }}>
-                          <span style={{ fontSize: isMobile ? 12 : 9, fontFamily: "var(--font-mono)", fontWeight: 700, color: isMobile && (isToday || isYesterday) ? "var(--ft-accent)" : "var(--ft-dim)", letterSpacing: isMobile ? "0.02em" : "0.1em", textTransform: isMobile ? "none" : "uppercase" as const }}>
+                          <Text as="span" mono size={isMobile ? 12 : 9} weight={700} color={isMobile && (isToday || isYesterday) ? "var(--ft-accent)" : "var(--ft-dim)"} letterSpacing={isMobile ? "0.02em" : "0.1em"}>
                             {isMobile ? mobileLabel : desktopLabel}
-                          </span>
-                          <span style={{ fontSize: isMobile ? 11 : 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.06em" }}>{group.txs.length} tx</span>
+                          </Text>
+                          <Text as="span" mono size={isMobile ? 11 : 9} color="var(--ft-dim)" letterSpacing="0.06em">{group.txs.length} tx</Text>
                           <span className="pnum" style={{ fontSize: isMobile ? 12 : 9, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: group.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto", letterSpacing: "0.04em" }}>
                             {group.net >= 0 ? "+" : "−"}{formatGbp(Math.abs(group.net))}
                           </span>
