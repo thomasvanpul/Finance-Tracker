@@ -137,6 +137,12 @@ function CurrencyBlocks({
 }) {
   const AVAILABLE_W = 354;
   const FIELD_H = 132;
+  const GAP = 2;
+  // The +n tile has to be wide enough to hold "+N" text at 15px with 14px
+  // side padding — otherwise it clips (as it did on the accounts page for
+  // a small currency share). 48px is the tightest that keeps "+1" fully
+  // visible in every theme.
+  const COLLAPSED_MIN_W = 48;
   const items = perCurrency.filter((c) => c.gbpSum > 0);
   const sumForRatio = items.reduce((s, c) => s + c.gbpSum, 0) || 1;
 
@@ -145,27 +151,38 @@ function CurrencyBlocks({
   // through accent → dim → border to keep it theme-safe and honest.
   const PALETTE = ["var(--ft-text)", "var(--ft-accent)", "var(--ft-dim)", "var(--ft-border)"];
 
-  const withPx = items.map((c, i) => ({
+  // First pass — proportional widths using the whole field, purely to
+  // decide which cells are big enough to render individually.
+  const provisional = items.map((c, i) => ({
     ...c,
     bg: PALETTE[i % PALETTE.length],
     fg: i < 2 ? "var(--ft-base)" : "var(--ft-text)",
-    pxWidth: (c.gbpSum / sumForRatio) * (AVAILABLE_W - (items.length - 1) * 2),
+    pxWidth: (c.gbpSum / sumForRatio) * (AVAILABLE_W - (items.length - 1) * GAP),
   }));
-  const bigEnough = withPx.filter((c) => c.pxWidth >= 24);
-  const collapsed = withPx.filter((c) => c.pxWidth < 24);
+  const bigEnough = provisional.filter((c) => c.pxWidth >= 24);
+  const collapsed = provisional.filter((c) => c.pxWidth < 24);
   const collapsedGbp = collapsed.reduce((s, c) => s + c.gbpSum, 0);
-  const rowRender = collapsed.length
-    ? [
-        ...bigEnough,
-        {
-          currency: `+${collapsed.length}`,
-          gbpSum: collapsedGbp,
-          bg: "var(--ft-border)",
-          fg: "var(--ft-text)",
-          pxWidth: (collapsedGbp / sumForRatio) * (AVAILABLE_W - bigEnough.length * 2),
-        },
-      ]
-    : withPx;
+
+  // Second pass — once we know how many tiles render, reserve the +n tile's
+  // minimum width first and split what's left across the big cells.
+  let rowRender: Array<typeof provisional[number]>;
+  if (collapsed.length) {
+    const tileCount = bigEnough.length + 1;
+    const bigPool = AVAILABLE_W - (tileCount - 1) * GAP - COLLAPSED_MIN_W;
+    const bigSum = bigEnough.reduce((s, c) => s + c.gbpSum, 0) || 1;
+    rowRender = [
+      ...bigEnough.map((c) => ({ ...c, pxWidth: (c.gbpSum / bigSum) * bigPool })),
+      {
+        currency: `+${collapsed.length}`,
+        gbpSum: collapsedGbp,
+        bg: "var(--ft-border)",
+        fg: "var(--ft-text)",
+        pxWidth: COLLAPSED_MIN_W,
+      },
+    ];
+  } else {
+    rowRender = provisional;
+  }
 
   return (
     <div
