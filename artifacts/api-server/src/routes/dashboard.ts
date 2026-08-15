@@ -4,6 +4,7 @@ import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, 
 import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, getStockPrices } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
+import { monthRange, trailingMonthRanges, localDateString } from "../lib/date-ranges";
 
 const router: IRouter = Router();
 
@@ -48,15 +49,12 @@ router.get("/dashboard", async (req, res): Promise<void> => {
 
   // This month's transactions
   const now = new Date();
-  const monthStr = now.toISOString().slice(0, 7);
-  const dateFrom = `${monthStr}-01`;
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const dateTo = `${monthStr}-${String(lastDay).padStart(2, "0")}`;
+  const thisMonth = monthRange(now);
 
   const txs = await db
     .select()
     .from(transactionsTable)
-    .where(and(eq(transactionsTable.userId, userId), gte(transactionsTable.date, dateFrom), lte(transactionsTable.date, dateTo)));
+    .where(and(eq(transactionsTable.userId, userId), gte(transactionsTable.date, thisMonth.from), lte(transactionsTable.date, thisMonth.to)));
 
   let monthIncome = 0;
   let monthExpenses = 0;
@@ -70,10 +68,10 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const savingsRate = monthIncome > 0 ? (monthNet / monthIncome) * 100 : 0;
 
   // Upcoming 30d for net liquidity
-  const todayStr = now.toISOString().slice(0, 10);
+  const todayStr = localDateString(now);
   const in30 = new Date(now);
   in30.setDate(now.getDate() + 30);
-  const in30Str = in30.toISOString().slice(0, 10);
+  const in30Str = localDateString(in30);
 
   const upcoming = await db
     .select()
@@ -94,14 +92,9 @@ router.get("/dashboard", async (req, res): Promise<void> => {
 
   // Monthly history — last 6 months
   const monthlyHistory: { month: string; income: number; expenses: number; netSavings: number }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const m = d.toISOString().slice(0, 7);
-    const mFrom = `${m}-01`;
-    const mLastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-    const mTo = `${m}-${String(mLastDay).padStart(2, "0")}`;
+  for (const range of trailingMonthRanges(now, 6)) {
     const mTxs = await db.select().from(transactionsTable)
-      .where(and(eq(transactionsTable.userId, userId), gte(transactionsTable.date, mFrom), lte(transactionsTable.date, mTo)));
+      .where(and(eq(transactionsTable.userId, userId), gte(transactionsTable.date, range.from), lte(transactionsTable.date, range.to)));
     let mInc = 0, mExp = 0;
     for (const tx of mTxs) {
       const native = Math.abs(parseFloat(tx.nativeAmount));
@@ -109,7 +102,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       if (tx.type === "income") mInc += gbp;
       else if (tx.type === "expense") mExp += gbp;
     }
-    monthlyHistory.push({ month: m, income: Math.round(mInc * 100) / 100, expenses: Math.round(mExp * 100) / 100, netSavings: Math.round((mInc - mExp) * 100) / 100 });
+    monthlyHistory.push({ month: range.month, income: Math.round(mInc * 100) / 100, expenses: Math.round(mExp * 100) / 100, netSavings: Math.round((mInc - mExp) * 100) / 100 });
   }
 
   // Owing — pending debts only
