@@ -572,9 +572,9 @@ function BlocksView({
   if (invested > 0)
     rowValues.push({ key: "I", value: invested, label: "INVESTED", bg: "var(--ft-dim)", fg: "var(--ft-base)" });
   if (pension > 0)
-    rowValues.push({ key: "P", value: pension, label: "PENSION", bg: "var(--ft-border)", fg: "var(--ft-text)" });
+    rowValues.push({ key: "P", value: pension, label: "PENSION", bg: "var(--ft-border2)", fg: "var(--ft-text)" });
   if (other > 0)
-    rowValues.push({ key: "O", value: other, label: "OTHER", bg: "var(--ft-border)", fg: "var(--ft-text)" });
+    rowValues.push({ key: "O", value: other, label: "OTHER", bg: "var(--ft-muted)", fg: "var(--ft-base)" });
   const rowTotal = rowValues.reduce((s, r) => s + Math.max(r.value, 0), 0) || 1;
 
   // Blocks narrower than 24px cannot carry a label — collapse into a +n cell.

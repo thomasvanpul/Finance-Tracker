@@ -223,8 +223,8 @@ function HoldingsBlocks({
   const rowValues: Array<{ key: string; value: number; label: string; bg: string; fg: string }> = [];
   if (cash > 0) rowValues.push({ key: "C", value: cash, label: "CASH", bg: "var(--ft-accent)", fg: "var(--ft-base)" });
   if (investment > 0) rowValues.push({ key: "I", value: investment, label: "INVESTED", bg: "var(--ft-dim)", fg: "var(--ft-base)" });
-  if (pension > 0) rowValues.push({ key: "P", value: pension, label: "PENSION", bg: "var(--ft-border)", fg: "var(--ft-text)" });
-  if (other > 0) rowValues.push({ key: "O", value: other, label: "OTHER", bg: "var(--ft-border)", fg: "var(--ft-text)" });
+  if (pension > 0) rowValues.push({ key: "P", value: pension, label: "PENSION", bg: "var(--ft-border2)", fg: "var(--ft-text)" });
+  if (other > 0) rowValues.push({ key: "O", value: other, label: "OTHER", bg: "var(--ft-muted)", fg: "var(--ft-base)" });
   const rowTotal = rowValues.reduce((s, r) => s + Math.max(r.value, 0), 0) || 1;
 
   const withPx = rowValues.map((r) => ({
