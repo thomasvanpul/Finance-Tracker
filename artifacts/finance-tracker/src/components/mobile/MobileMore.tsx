@@ -1,19 +1,28 @@
 import { ChevronRight } from "lucide-react";
 import type { AppScreen } from "./MobileApp";
 import { MobileScreenHeader } from "./mobile-ui";
+import { HStack, MonoLabel, Text } from "@/components/primitives";
 
-// The mobile directory. Grouped list of every reachable route. Wired as the
-// FIND destination from the unified nav footer, so its job is to let a
+// The mobile directory — grouped list of every reachable route. Wired as
+// the FIND destination from the unified nav footer; its job is to let a
 // stranger reach any of the ~30 routes in two taps.
 //
-// Earlier version was a widget dashboard (Financial Pulse, Financial Tempo,
-// Compound Growth, F.I.R.E. progress, Purchasing power erosion, Market
-// ticker, Tax Snapshot, Financial Fitness Score). Every one of those
-// depended on fabricated per-account data (BALANCE_HISTORY,
-// MOCK_MONTHLY_PERF, MOCK_OWING_TOTAL, MOCK_UPCOMING_COUNT, MOCK_GOALS).
-// All removed. Once the API can supply the underlying series honestly,
-// individual widgets can come back — but they belong on the pages they
-// summarise, not stacked on the directory.
+// Devices from the financial-screen vocabulary that DON'T apply here and
+// are deliberately left out:
+//   - Number rule / native currency / dotted-means-not-yet-real — this
+//     screen shows no figures.
+//   - BlockField / ticker glyph / initial glyph — no positions, people,
+//     or values on a directory.
+//   - Two-level column headers — a directory is a single-column list.
+//   - Premium 34px headline — nothing to headline; the whole point is the
+//     rows.
+//
+// What DOES carry over:
+//   - Type ladder (mono uppercase group labels, sans row labels).
+//   - Hairline row structure.
+//   - Primitives instead of raw flex divs.
+//   - Route count in the top strip, in the same mono vocabulary as the
+//     "N ACCOUNTS" / "N PENDING" counts on the financial screens.
 
 interface MoreItem {
   key: string;
@@ -106,6 +115,7 @@ export function MobileMore({ onPersonalize, onNavigate }: MobileMoreProps) {
     if (item.inApp) onNavigate(item.inApp);
     else if (item.href) window.location.href = item.href;
   }
+  const totalRoutes = SECTIONS.reduce((s, sec) => s + sec.items.length, 0);
 
   return (
     <div
@@ -116,63 +126,64 @@ export function MobileMore({ onPersonalize, onNavigate }: MobileMoreProps) {
         flexDirection: "column",
         overflowY: "auto",
         paddingBottom: "calc(74px + env(safe-area-inset-bottom, 0px) + 16px)",
+        background: "var(--ft-base)",
+        color: "var(--ft-text)",
       }}
     >
       <MobileScreenHeader title="Find" />
 
-      <div style={{ padding: "0 16px" }}>
-        {SECTIONS.map((s) => (
-          <div key={s.label} style={{ marginBottom: 18 }}>
+      <HStack paddingX={18} height={32} justify="end" align="center">
+        <MonoLabel size={11} letterSpacing="0.16em">
+          {totalRoutes} ROUTES
+        </MonoLabel>
+      </HStack>
+
+      {SECTIONS.map((s) => (
+        <div key={s.label} style={{ marginTop: 14 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              padding: "0 18px 6px",
+              borderBottom: "1px solid var(--ft-border2)",
+            }}
+          >
+            <MonoLabel as="span" size={9}>{s.label}</MonoLabel>
+          </div>
+          {s.items.map((it) => (
             <div
+              key={it.key}
+              onClick={() => go(it)}
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.16em",
-                color: "var(--ft-dim)",
-                marginBottom: 6,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 10,
+                minHeight: 44,
+                padding: "0 18px",
+                borderBottom: "1px solid var(--ft-border)",
+                cursor: "pointer",
+                userSelect: "none",
               }}
             >
-              {s.label}
+              <Text as="span" size={14}>{it.label}</Text>
+              <ChevronRight size={16} style={{ color: "var(--ft-dim)" }} />
             </div>
-            {s.items.map((it, i) => (
-              <div
-                key={it.key}
-                onClick={() => go(it)}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 10,
-                  minHeight: 44,
-                  borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-                  ...(i === s.items.length - 1
-                    ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
-                    : {}),
-                  fontSize: 14,
-                  cursor: "pointer",
-                  userSelect: "none",
-                }}
-              >
-                <span>{it.label}</span>
-                <ChevronRight size={16} style={{ color: "var(--ft-dim)" }} />
-              </div>
-            ))}
-          </div>
-        ))}
-
-        <div
-          onClick={onPersonalize}
-          style={{
-            marginTop: 8,
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ft-dim)",
-            cursor: "pointer",
-            padding: "12px 0",
-          }}
-        >
-          PERSONALISE ›
+          ))}
         </div>
+      ))}
+
+      <div
+        onClick={onPersonalize}
+        style={{
+          marginTop: 20,
+          padding: "12px 18px",
+          cursor: "pointer",
+        }}
+      >
+        <MonoLabel size={11} letterSpacing="0.14em" color="var(--ft-accent)">
+          PERSONALISE ›
+        </MonoLabel>
       </div>
     </div>
   );
