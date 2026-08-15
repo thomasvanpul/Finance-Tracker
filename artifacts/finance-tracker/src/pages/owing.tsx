@@ -277,7 +277,8 @@ function StrategyTab() {
     <VStack gap={16}>
 
       {/* Mode toggle + budget input */}
-      <PanelBox padding="14px 16px" row gap={16}>
+      <PanelBox padding="14px 16px">
+        <HStack wrap align="center" gap={16}>
 
         {/* Mode toggle */}
         <div>
@@ -359,6 +360,7 @@ function StrategyTab() {
             {pendingDebts.length} debt{pendingDebts.length !== 1 ? "s" : ""}
           </div>
         </div>
+        </HStack>
       </PanelBox>
 
       {monthlyBudget < totalMinimums && (
@@ -1010,9 +1012,8 @@ export default function Owing() {
       <PanelBox
         borderTop={`3px solid ${netPosition !== 0 ? (netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-border2)"}`}
         padding="16px 20px"
-        row
-        gap={24}
       >
+        <HStack wrap align="center" gap={24}>
         <div>
           <MonoLabel letterSpacing="0.1em" mb={6}>Net Position</MonoLabel>
           {summary ? (
@@ -1067,6 +1068,7 @@ export default function Owing() {
           </div>
           <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-mono)" }}>this month</div>
         </div>
+        </HStack>
       </PanelBox>
 
       {/* ── First-time empty state ── */}
