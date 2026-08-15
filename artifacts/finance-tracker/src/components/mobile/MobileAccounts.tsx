@@ -240,10 +240,24 @@ function CurrencyBlocks({
 // ── Per-currency section ────────────────────────────────────────────────────
 // Header shows: CURRENCY · N · native subtotal (converted). Rows list every
 // account in that currency, native first then converted per the number rule.
+// Non-cash accounts carry a small mono-uppercase mark (IV / PN / PR / OT) —
+// same treatment as the WISE pill on the desktop accounts page — because the
+// currency grouping alone can't tell you an ISA from a savings account.
+// Cash rows carry nothing: the default is the norm, we mark the exception.
+type AccountRow = { id: number; name: string; balance: number; gbpEquivalent: number; type: "cash" | "investment" | "pension" | "property" | "other" };
+
+const TYPE_MARK: Record<AccountRow["type"], string | null> = {
+  cash: null,
+  investment: "IV",
+  pension: "PN",
+  property: "PR",
+  other: "OT",
+};
+
 function CurrencySection({
   group,
 }: {
-  group: { currency: string; rows: Array<{ id: number; name: string; balance: number; gbpEquivalent: number }>; nativeSum: number; gbpSum: number };
+  group: { currency: string; rows: AccountRow[]; nativeSum: number; gbpSum: number };
 }) {
   const sym = CURRENCY_SYMBOLS[group.currency] ?? group.currency + " ";
   const isGbp = group.currency === "GBP";
@@ -315,7 +329,27 @@ function CurrencySection({
               fontSize: 14,
             }}
           >
-            <span>{a.name}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+              {TYPE_MARK[a.type] && (
+                <span
+                  style={{
+                    fontSize: 9,
+                    padding: "1px 5px",
+                    borderRadius: 2,
+                    background: "var(--ft-raised)",
+                    color: "var(--ft-dim)",
+                    fontFamily: "var(--font-mono)",
+                    fontWeight: 700,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    flexShrink: 0,
+                  }}
+                >
+                  {TYPE_MARK[a.type]}
+                </span>
+              )}
+            </span>
             {isGbp ? (
               <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
                 {nfmt(a.gbpEquivalent)}
