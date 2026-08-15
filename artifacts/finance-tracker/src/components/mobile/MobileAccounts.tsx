@@ -32,9 +32,6 @@ export function MobileAccounts() {
     );
   }
 
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-
   const total = accounts.reduce((s, a) => s + a.gbpEquivalent, 0);
   const currencies = [...new Set(accounts.map((a) => a.currency))].sort((a, b) => {
     // GBP first, then others alphabetical
@@ -68,7 +65,7 @@ export function MobileAccounts() {
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           alignItems: "center",
           height: 44,
           padding: "0 18px",
@@ -77,7 +74,6 @@ export function MobileAccounts() {
           color: "var(--ft-dim)",
         }}
       >
-        <span>{timeStr}</span>
         <span>
           {accounts.length} {accounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
         </span>

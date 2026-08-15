@@ -181,7 +181,7 @@ export function MobileHome(_props: MobileHomeProps) {
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent: "flex-end",
             alignItems: "center",
             height: 44,
             padding: "0 18px",
@@ -190,7 +190,6 @@ export function MobileHome(_props: MobileHomeProps) {
             color: "var(--ft-dim)",
           }}
         >
-          <span>{timeStr}</span>
           <span>NUMERIS</span>
         </div>
         <MobileEmptyState
@@ -223,7 +222,7 @@ export function MobileHome(_props: MobileHomeProps) {
         <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent: "flex-end",
             alignItems: "center",
             height: 44,
             padding: "0 18px",
@@ -232,7 +231,6 @@ export function MobileHome(_props: MobileHomeProps) {
             color: "var(--ft-dim)",
           }}
         >
-          <span>{timeStr}</span>
           <span>LIVE · {activeAccounts.length} ACCOUNTS</span>
         </div>
 
@@ -344,14 +342,16 @@ export function MobileHome(_props: MobileHomeProps) {
               padding: "18px 18px 0",
             }}
           >
+            {/* Outlined glyph — a claim is not material you hold. Compact
+                14x14 marker; the previous 88x19 bar read as an empty input. */}
             <div
               style={{
-                width: 88,
-                height: 19,
+                width: 14,
+                height: 14,
                 borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-red)",
                 boxSizing: "border-box",
                 flex: "none",
-                marginTop: 1,
+                marginTop: 2,
               }}
             />
             <div

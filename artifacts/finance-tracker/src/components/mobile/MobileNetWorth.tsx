@@ -47,7 +47,6 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
   }
 
   const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   const monthShortMixed = now.toLocaleDateString("en-GB", { month: "short" });
 
   const netWorth = data?.netWorth ?? 0;
@@ -93,7 +92,7 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           alignItems: "center",
           height: 32,
           padding: "0 18px",
@@ -102,7 +101,6 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
           color: "var(--ft-dim)",
         }}
       >
-        <span>{timeStr}</span>
         <span>{accounts.length} {accounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}</span>
       </div>
 
