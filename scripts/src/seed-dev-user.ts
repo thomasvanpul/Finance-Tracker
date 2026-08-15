@@ -101,6 +101,7 @@ async function seedAccounts(userId: string): Promise<Record<string, SeededAccoun
     { key: "vanguard", row: { userId, name: "Vanguard ISA",        currency: "GBP", type: "investment", balance: "14200.00",  isWiseLinked: false } },
     { key: "pension",  row: { userId, name: "Aviva SIPP",          currency: "GBP", type: "pension",    balance: "27500.00",  isWiseLinked: false } },
     { key: "flat",     row: { userId, name: "Flat, Kuala Lumpur",  currency: "MYR", type: "property",   balance: "850000.00", isWiseLinked: false } },
+    { key: "misc",     row: { userId, name: "Season ticket loan",  currency: "GBP", type: "other",      balance: "6800.00",   isWiseLinked: false } },
   ] as const;
 
   const inserted = await db
