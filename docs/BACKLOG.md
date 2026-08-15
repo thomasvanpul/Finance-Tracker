@@ -82,17 +82,15 @@ tools.
 
 ## C. Data model — unblocks honest UI
 
-### C1 · `account.type` column — TODO
-The mobile home screen derives a residual (`netWorth − cash − portfolio`) and can
-only label it `OTHER`, because nothing in the schema says whether an account is
-property, pension, cash or investment. This is the one remaining compromise on
-the approved design.
-- **Do:** add a typed column to `accounts`, backfill existing rows, expose it in
-  `DashboardSummary.accountBreakdown`, then have `computeHoldings` categorise
-  from it instead of subtracting.
-- **Done when:** `computeHoldings` no longer computes a residual.
-- **Verify:** `pnpm --filter @workspace/finance-tracker test` — extend
-  `mobile-home.test.ts`, which already covers the residual cases.
+### C1 · `account.type` column — DONE (`0cc7113`)
+`accounts` now carries `type text NOT NULL DEFAULT 'cash'` — 5 values
+(cash / investment / pension / property / other). Migration `0001_spooky_salo`
+backfills every existing row to `cash` (Wise-linked and manually-entered
+liquid accounts). `DashboardSummary.accountBreakdown[].type` exposes it,
+and `computeHoldings` sums per bucket from that field instead of
+subtracting a residual. `BlocksView` renders PROPERTY as the top block and
+CASH / INVESTED / PENSION / OTHER along the bottom row. Six tests replace
+the residual-guard cases with per-bucket coverage.
 
 ### C2 · Gaps the mobile home cannot fill — TODO
 Found during implementation, ranked. Each needs an API field before its UI can
@@ -140,14 +138,16 @@ this section a prerequisite rather than polish: the mobile design language has
 to become shared components, and the desktop cannot absorb them in its current
 state.
 
-### E1 · The `index.css` inline-style font-size hack — TODO
-`[style*="font-size: 36px"] { font-size: 22px !important }` and siblings. Mobile
-typography is a lookup table keyed on serialised inline style text, enforced
-with `!important`. It beats inline styles, is invisible from the component, and
-only catches enumerated pixel values.
-- **Done when:** a real responsive type scale replaces it and the selectors are
-  gone.
-- **Verify:** grep `index.css` for `[style*="font-size` — expect zero.
+### E1 · The `index.css` inline-style font-size hack — DONE (`a774409`)
+All five `[style*="font-size: Xpx"]` attribute-selector caps deleted from
+the mobile amendment. Replaced with `--ft-text-{xs,sm,body,md,lg,xl,hero,premium}`
+CSS custom properties at `:root`, which step one tier down below 768px
+via a single media query. `premium` (34px) is constant across viewports.
+`grep '[style*="font-size' index.css` returns 0. Mobile home uses
+11/12/13/14/17/21/34 — none matched the removed caps — so it reads
+identically at 390px. Callsite migration to the tokens is a follow-up:
+any page that hardcodes 40/36/32/30/28/26/24/22/20/18/16 inline now
+renders at that literal size on mobile too.
 
 ### E2 · Flex-container primitive — TODO
 `docs/STYLE-INVENTORY.md` shapes 2, 8, 9, 10 and 13 are flex row and column
@@ -214,16 +214,21 @@ renderer for a decorative avatar is real battery and bundle cost.
   `--ft-motion-slow` is 320ms, both live on the five primitives. Either bring
   them under the cap or amend the constitution deliberately. Do not resolve it
   by leaving both in place.
-- **G2 · Recharts tooltips.** `accounts.tsx:2892` and `year-review.tsx` 614, 711
-  return arrays from `<Tooltip formatter>`, so those values get no `.pnum`
-  treatment. A `MonoTooltip` component already exists elsewhere.
+- **G2 · Recharts tooltips — DONE (`2fde41e`).** `MonoTooltip` extracted from
+  `analytics.tsx` into `components/mono-tooltip.tsx`; `accounts.tsx:2892` and
+  `year-review.tsx` 614 / 711 now consume it through `<Tooltip content={…}>`
+  instead of the `formatter` array path, so tabular figures and privacy blur
+  apply.
 - **G3 · Dead root `vercel.json`.** Vercel's project root is
   `artifacts/finance-tracker`, so the repo-root file is never read. Confirm no
   second Vercel project points at the repo root before deleting it.
-- **G4 · CORS rejections return 500.** A denied origin is a client error and
-  should be 403; currently every denial looks like a server fault in monitoring.
-- **G5 · `mockup-sandbox` still declares `framer-motion`.** No deploy target, so
-  harmless, but removable.
+- **G4 · CORS rejections return 500 — DONE (`f194d74`).** Already fixed in the
+  cited commit: `class CorsError extends Error` sentinel plus an error middleware
+  right after `cors()` maps it to 403 JSON with no stack. Backlog was stale;
+  no code change this pass.
+- **G5 · `mockup-sandbox` still declares `framer-motion` — DONE (`f194d74`).**
+  Same commit dropped the dep from `artifacts/mockup-sandbox/package.json`.
+  Backlog was stale.
 - **G6 · `sslmode=require` no longer verifies certificates** in newer pg
   clients. Revisit the connection config.
 - **G7 · Neon cold-start on CI.** A cold Neon compute takes ~110s to wake on
