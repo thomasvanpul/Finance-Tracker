@@ -145,9 +145,9 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
           <MonoLabel as="span" size={9} color="var(--ft-accent)" letterSpacing="0.08em">⊕ SPLIT</MonoLabel>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{tx.description}</div>
-            <div style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
+            <Text as="div" mono size={10} color="var(--ft-muted)" mt={2}>
               {tx.date} · GBP {total.toFixed(2)}
-            </div>
+            </Text>
           </div>
           <button
             type="button"
@@ -1346,7 +1346,7 @@ export default function Transactions() {
     <div className="space-y-4">
       {!isEdit && templates.length > 0 && (
         <div>
-          <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Templates</div>
+          <Text as="div" upper size={9} color="var(--ft-dim)" letterSpacing="0.08em" mb={6}>Templates</Text>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
             {templates.map((t) => (
               <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 0 }}>
@@ -2028,7 +2028,7 @@ export default function Transactions() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <div style={{ fontSize: 13, color: "var(--ft-text)", fontWeight: 600 }}>{splitTx.description}</div>
-                    <div style={{ fontSize: 11, color: "var(--ft-muted)", marginTop: 2 }}>{formatDate(splitTx.date)} · {splitTx.category}</div>
+                    <Text as="div" size={11} color="var(--ft-muted)" mt={2}>{formatDate(splitTx.date)} · {splitTx.category}</Text>
                   </div>
                   <Text as="div" size={14} weight={700} color={splitTx.type === "income" ? "var(--ft-green)" : "var(--ft-red)"} numeric>
                     {formatNative(Math.abs(splitTx.nativeAmount), splitTx.currency)}
@@ -2388,21 +2388,21 @@ export default function Transactions() {
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Category</div>
+                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Category</MonoLabel>
                 <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-mono)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
                   <option value="all">All categories</option>
                   {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Account</div>
+                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Account</MonoLabel>
                 <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-mono)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
                   <option value="all">All accounts</option>
                   {allAccounts.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
               </div>
               <div>
-                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Date Range</div>
+                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Date Range</MonoLabel>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
                   {(["Today", "Week", "Month", "Last Mo", "3M", "All"] as const).map((label, i) => {
                     const keys = ["today", "week", "month", "lastmonth", "3m", "all"] as const;
@@ -2420,26 +2420,26 @@ export default function Transactions() {
                     <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 4 }}>TO</div>
+                    <Text as="div" mono size={10} color="var(--ft-dim)" mb={4}>TO</Text>
                     <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
                   </div>
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Amount Range</div>
+                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Amount Range</MonoLabel>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 4 }}>MIN</div>
                     <input type="number" placeholder="0.00" value={amountMin} min="0" step="0.01" onChange={(e) => setAmountMin(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 4 }}>MAX</div>
+                    <Text as="div" mono size={10} color="var(--ft-dim)" mb={4}>MAX</Text>
                     <input type="number" placeholder="∞" value={amountMax} min="0" step="0.01" onChange={(e) => setAmountMax(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
                   </div>
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Tag</div>
+                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Tag</MonoLabel>
                 <input type="text" placeholder="Filter by tag…" value={filterTag} onChange={(e) => setFilterTag(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
               </div>
             </div>
