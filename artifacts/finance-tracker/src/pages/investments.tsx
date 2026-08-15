@@ -57,6 +57,7 @@ import {
   TICK_PERIODS_SET, TICK_INTERVAL_MAP, isUSTicker,
   MOCK_QUOTES, newsScore, timeAgo, fmtCap, fmtNum,
 } from "@/components/investments/markets-data";
+import { Text, MonoLabel } from "@/components/primitives";
 import {
   CandlestickLayer, OHLCTooltip, RangeBar, RecBar, RatingBar,
 } from "@/components/investments/markets-widgets";
@@ -371,7 +372,7 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
             {watchlists.map((wl) => (
               <div key={wl.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--ft-border)", background: activeWl === wl.id ? "rgba(88,166,255,0.08)" : "transparent" }}>
                 <button onClick={() => setActiveWl(wl.id)} style={{ flex: 1, padding: "7px 10px", fontFamily: "var(--font-mono)", fontSize: 10, color: activeWl === wl.id ? "var(--ft-blue)" : "var(--ft-muted)", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontWeight: activeWl === wl.id ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {wl.name} <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>({wl.tickers.length})</span>
+                  {wl.name} <Text as="span" size={9} color="var(--ft-dim)">({wl.tickers.length})</Text>
                 </button>
                 <button onClick={() => deleteWatchlist(wl.id)} title="Delete watchlist" style={{ padding: "4px 6px", background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", flexShrink: 0 }}>
                   <X size={10} />
@@ -408,7 +409,7 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
                               ${q.price.toFixed(2)} <span style={{ color: chgColor }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</span>
                             </span>
                           ) : (
-                            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>click to load</span>
+                            <Text as="span" mono size={9} color="var(--ft-dim)">click to load</Text>
                           )}
                         </button>
                         <button onClick={() => removeTicker(activeList.id, ticker)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: "2px", flexShrink: 0 }}>
@@ -618,13 +619,13 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
           </button>
         </div>
         {/* Metric help text */}
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5 }}>
+        <Text as="div" mono size={9} color="var(--ft-dim)" lineHeight={1.5}>
           {metric === "price" && "Triggers when the live price crosses your target."}
           {metric === "pct_change" && "Triggers when today's % change (vs yesterday's close) crosses your threshold."}
           {metric === "pe" && "Triggers when the trailing P/E ratio crosses your threshold. Requires live quote data."}
-        </div>
+        </Text>
         {tickerAlerts.length === 0 ? (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>No alerts set for {ticker}</div>
+          <Text as="div" mono size={10} color="var(--ft-dim)">No alerts set for {ticker}</Text>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {tickerAlerts.map((a) => {
@@ -1054,7 +1055,7 @@ function MarketsTab() {
               {isExtended && extPrice != null && (
                 <>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", alignSelf: "center" }}>reg close</span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", whiteSpace: "nowrap" }}>${extPrice.toFixed(2)}</span>
+                  <Text as="span" mono size={18} weight={700} color="var(--ft-amber)" nowrap>${extPrice.toFixed(2)}</Text>
                   {extChgPct != null && (
                     <span style={{ padding: "3px 8px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", background: "rgba(245,158,11,0.12)", color: "var(--ft-amber)", border: "1px solid rgba(245,158,11,0.3)" }}>
                       {extChgPct >= 0 ? "▲" : "▼"} {Math.abs(extChgPct).toFixed(2)}%
@@ -1067,7 +1068,7 @@ function MarketsTab() {
               )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 3 }}>
-              {detail?.sector && <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{detail.sector} · {detail.industry}</span>}
+              {detail?.sector && <Text as="span" mono size={10} color="var(--ft-muted)">{detail.sector} · {detail.industry}</Text>}
               {lastQuoteTime && (
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "rgba(255,255,255,0.04)", border: "1px solid var(--ft-border)", padding: "1px 6px" }}>
                   as of {lastQuoteTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -1084,25 +1085,25 @@ function MarketsTab() {
             {q?.dayLow != null && q?.dayHigh != null && (
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>DAY RANGE</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>${q.dayLow.toFixed(2)} — ${q.dayHigh.toFixed(2)}</div>
+                <Text as="div" mono size={11} color="var(--ft-text)">${q.dayLow.toFixed(2)} — ${q.dayHigh.toFixed(2)}</Text>
               </div>
             )}
             {q?.volume != null && (
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>VOLUME</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{(q.volume / 1e6).toFixed(1)}M</div>
+                <Text as="div" mono size={11} color="var(--ft-text)">{(q.volume / 1e6).toFixed(1)}M</Text>
               </div>
             )}
             {q?.marketCap != null && (
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>MKT CAP</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{fmtCap(q.marketCap)}</div>
+                <Text as="div" mono size={11} color="var(--ft-text)">{fmtCap(q.marketCap)}</Text>
               </div>
             )}
             {detail?.nextEarningsDate && (
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>NEXT EARNINGS</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-amber)" }}>{detail.nextEarningsDate}</div>
+                <Text as="div" mono size={11} color="var(--ft-amber)">{detail.nextEarningsDate}</Text>
               </div>
             )}
           </div>
@@ -1202,7 +1203,7 @@ function MarketsTab() {
           </div>
           {isTickPeriod && !isLive && chartData.length === 0 ? (
             <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 11 }}>
-              <span style={{ fontSize: 18 }}>◎</span>
+              <Text as="span" size={18}>◎</Text>
               <span>Awaiting live ticks…</span>
               <span style={{ fontSize: 9, opacity: 0.6 }}>US markets only · powered by Alpaca IEX</span>
             </div>
@@ -1353,10 +1354,10 @@ function MarketsTab() {
         {!tickerTipSeen && !isTickPeriod && (
           <div style={{ border: "1px solid rgba(88,166,255,0.25)", background: "rgba(88,166,255,0.04)", padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
             <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: "4px 20px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.6 }}>
-              <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Click chart</span> → full RSI / MACD / Bollinger analysis</span>
-              <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Hover ⓘ</span> on any stat for explanation</span>
-              <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Click stat value</span> → drill into earnings &amp; analyst data</span>
-              <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Colors:</span> green = bullish signal · amber = caution · red = risk flag</span>
+              <span><Text as="span" weight={600} color="var(--ft-blue)">Click chart</Text> → full RSI / MACD / Bollinger analysis</span>
+              <span><Text as="span" weight={600} color="var(--ft-blue)">Hover ⓘ</Text> on any stat for explanation</span>
+              <span><Text as="span" weight={600} color="var(--ft-blue)">Click stat value</Text> → drill into earnings &amp; analyst data</span>
+              <span><Text as="span" weight={600} color="var(--ft-blue)">Colors:</Text> green = bullish signal · amber = caution · red = risk flag</span>
             </div>
             <button onClick={() => { localStorage.setItem("ft-ticker-tip-seen","1"); setTickerTipSeen(true); }} title="Dismiss" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>✕</button>
           </div>
@@ -1488,41 +1489,41 @@ function MarketsTab() {
             <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
               {detail?.recommendationKey && (
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" }}>Consensus:</span>
+                  <MonoLabel as="span" size={9}>Consensus:</MonoLabel>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: detail.recommendationKey === "buy" || detail.recommendationKey === "strong_buy" ? "var(--ft-green)" : detail.recommendationKey === "hold" ? "var(--ft-amber)" : "var(--ft-red)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                     {detail.recommendationKey.replace("_", " ")}
                   </span>
-                  {detail.analystCount && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>({detail.analystCount} analysts)</span>}
+                  {detail.analystCount && <Text as="span" mono size={9} color="var(--ft-dim)">({detail.analystCount} analysts)</Text>}
                 </div>
               )}
               {detail?.recommendationTrend?.length ? (
                 <>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Current month:</div>
+                  <MonoLabel as="div" size={9} letterSpacing="0.04em">Current month:</MonoLabel>
                   <RecBar trend={detail.recommendationTrend} />
                   {(detail?.targetMedian != null || q?.analystTargetPrice != null) && q?.price != null && (
                     <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 3 }}>
                       {(detail?.targetHigh != null || detail?.targetLow != null) && (
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ minWidth: 56 }}>Range:</span>
-                          <span style={{ color: "var(--ft-red)" }}>${detail.targetLow?.toFixed(0)}</span>
+                          <Text as="span" color="var(--ft-red)">${detail.targetLow?.toFixed(0)}</Text>
                           <span>—</span>
-                          <span style={{ color: "var(--ft-green)" }}>${detail.targetHigh?.toFixed(0)}</span>
+                          <Text as="span" color="var(--ft-green)">${detail.targetHigh?.toFixed(0)}</Text>
                         </div>
                       )}
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-                        Median: <span style={{ color: "var(--ft-amber)", fontWeight: 700 }}>${(detail?.targetMedian ?? q?.analystTargetPrice)?.toFixed(2)}</span>
+                      <Text as="div" mono size={9} color="var(--ft-dim)">
+                        Median: <Text as="span" weight={700} color="var(--ft-amber)">${(detail?.targetMedian ?? q?.analystTargetPrice)?.toFixed(2)}</Text>
                         {(() => {
                           const target = detail?.targetMedian ?? q?.analystTargetPrice;
                           if (target == null || !q?.price) return null;
                           const upside = ((target - q.price) / q.price) * 100;
                           return <span style={{ marginLeft: 6, color: upside >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700 }}>({upside >= 0 ? "+" : ""}{upside.toFixed(1)}%)</span>;
                         })()}
-                      </div>
+                      </Text>
                     </div>
                   )}
                 </>
               ) : (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>No recommendation data</div>
+                <Text as="div" mono size={11} color="var(--ft-dim)">No recommendation data</Text>
               )}
             </div>
           </div>
@@ -1538,7 +1539,7 @@ function MarketsTab() {
             {detail.website && (
               <div style={{ marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                 {detail.country && `${detail.country} · `}{detail.employees != null && `${(detail.employees / 1000).toFixed(0)}k employees · `}
-                <span style={{ color: "var(--ft-accent)" }}>{detail.website}</span>
+                <Text as="span" color="var(--ft-accent)">{detail.website}</Text>
               </div>
             )}
           </div>
@@ -1559,7 +1560,7 @@ function MarketsTab() {
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
                     <div style={{ fontSize: 38, fontFamily: "var(--font-mono)", fontWeight: 700, color: gradeColor, lineHeight: 1 }}>{rating.grade}</div>
                     <div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: gradeColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rating.overall.toFixed(1)}<span style={{ fontSize: 11, color: "var(--ft-dim)" }}>/10</span></div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: gradeColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rating.overall.toFixed(1)}<Text as="span" size={11} color="var(--ft-dim)">/10</Text></div>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>Overall Score</div>
                     </div>
                   </div>
@@ -1652,9 +1653,9 @@ function MarketsTab() {
                           {item.title}
                         </a>
                         <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+                          <Text as="span" mono size={8} color="var(--ft-dim)">
                             {item.publisher} · {timeAgo(item.publishedAt)}
-                          </span>
+                          </Text>
                           {!tldr && (
                             <button
                               onClick={() => fetchTldr(item.link, item.title)}
@@ -1728,8 +1729,8 @@ function MarketsTab() {
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--ft-raised)"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
                   >
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.04em" }}>{ticker}</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{q!.price >= 1000 ? q!.price.toFixed(0) : q!.price >= 10 ? q!.price.toFixed(2) : q!.price.toFixed(4)}</span>
+                    <Text as="span" mono size={10} weight={700} color="var(--ft-accent)" letterSpacing="0.04em">{ticker}</Text>
+                    <Text as="span" mono size={10} color="var(--ft-text)" numeric>{q!.price >= 1000 ? q!.price.toFixed(0) : q!.price >= 10 ? q!.price.toFixed(2) : q!.price.toFixed(4)}</Text>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{up ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>
                   </button>
                 );
@@ -1745,12 +1746,12 @@ function MarketsTab() {
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>◈ Markets — Quick start</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 3, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.65 }}>
-              <div><span style={{ color: "var(--ft-accent)", fontWeight: 600 }}>Search any ticker</span> — stocks, ETFs, indices, crypto (e.g. AAPL, QQQ, ^GSPC, BTC-USD, 0700.HK)</div>
-              <div><span style={{ color: "var(--ft-green)", fontWeight: 600 }}>Click the chart</span> to open full analysis — RSI, MACD, Bollinger Bands, candlestick view with all periods</div>
-              <div><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Tap ⓘ icons</span> on any statistic to understand what it means; tap values to drill into earnings history &amp; analyst ratings</div>
+              <div><Text as="span" weight={600} color="var(--ft-accent)">Search any ticker</Text> — stocks, ETFs, indices, crypto (e.g. AAPL, QQQ, ^GSPC, BTC-USD, 0700.HK)</div>
+              <div><Text as="span" weight={600} color="var(--ft-green)">Click the chart</Text> to open full analysis — RSI, MACD, Bollinger Bands, candlestick view with all periods</div>
+              <div><Text as="span" weight={600} color="var(--ft-blue)">Tap ⓘ icons</Text> on any statistic to understand what it means; tap values to drill into earnings history &amp; analyst ratings</div>
               <div><span style={{ color: "var(--ft-amber)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5.5 1.5a3 3 0 013 3v2l.75 1H1.75L2.5 6.5v-2a3 3 0 013-3z"/><path d="M4.25 9.5a1.25 1.25 0 002.5 0"/></svg>Price alerts</span> — open any ticker and hit the bell icon to get notified when it hits your target</div>
               <div style={{ marginTop: 5, paddingTop: 6, borderTop: "1px solid rgba(210,153,34,0.2)", color: "var(--ft-dim)", fontSize: 9 }}>
-                Track positions → <span style={{ color: "var(--ft-accent)" }}>Portfolio tab</span> &nbsp;·&nbsp; Ranked action items from your full financial picture → <span style={{ color: "var(--ft-accent)" }}>Decisions page</span>
+                Track positions → <Text as="span" color="var(--ft-accent)">Portfolio tab</Text> &nbsp;·&nbsp; Ranked action items from your full financial picture → <Text as="span" color="var(--ft-accent)">Decisions page</Text>
               </div>
             </div>
           </div>
@@ -1846,7 +1847,7 @@ function MarketsTab() {
                             >
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)" }}>{item.ticker}</span>
+                                  <Text as="span" mono size={11} weight={700} color="var(--ft-accent)">{item.ticker}</Text>
                                   {q && <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: chgColor }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</span>}
                                 </div>
                                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>
@@ -1904,7 +1905,7 @@ function MarketsTab() {
         return (
           <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
             <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "var(--ft-dim)" }}>
-              <span style={{ color: "var(--ft-accent)" }}>·</span> Market Movers
+              <Text as="span" color="var(--ft-accent)">·</Text> Market Movers
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
               <div style={{ borderRight: "1px solid var(--ft-border)" }}>
@@ -1922,7 +1923,7 @@ function MarketsTab() {
 
       {/* US ETF strip */}
       <div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><span style={{ color: "var(--ft-green)" }}>·</span> US Market ETFs</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><Text as="span" color="var(--ft-green)">·</Text> US Market ETFs</div>
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {INDEX_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
@@ -1952,7 +1953,7 @@ function MarketsTab() {
 
       {/* Sector performance */}
       <div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><span style={{ color: "var(--ft-amber)" }}>·</span> US Sector Performance (SPDR ETFs)</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><Text as="span" color="var(--ft-amber)">·</Text> US Sector Performance (SPDR ETFs)</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 4 }}>
           {SECTOR_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
@@ -1978,7 +1979,7 @@ function MarketsTab() {
 
       {/* Popular stocks */}
       <div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><span style={{ color: "var(--ft-blue)" }}>·</span> Popular Stocks — tap for full analysis</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}><Text as="span" color="var(--ft-blue)">·</Text> Popular Stocks — tap for full analysis</div>
         {isMobile ? (
           // Mobile compact list — no horizontal scroll needed
           <div style={{ border: "1px solid var(--ft-border)" }}>
@@ -1998,14 +1999,14 @@ function MarketsTab() {
                   onTouchCancel={e => { e.currentTarget.style.background = ""; }}
                   style={{ display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", width: "100%", border: "none", borderBottom: "1px solid var(--ft-border)", background: i % 2 === 0 ? "var(--ft-base)" : "rgba(22,27,34,0.4)", cursor: "pointer", textAlign: "left" }}>
                   <div style={{ padding: "9px 10px", minWidth: 0 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-blue)" }}>{ticker}</span>
+                    <Text as="span" mono size={11} weight={700} color="var(--ft-blue)">{ticker}</Text>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ""}</div>
                   </div>
                   <div style={{ padding: "9px 8px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                     {q ? `$${q.price.toFixed(2)}` : "—"}
                   </div>
                   <div style={{ padding: "9px 10px 9px 4px", minWidth: 68, textAlign: "right" }}>
-                    {q ? <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "1px 4px", background: chg > 0 ? "rgba(63,185,80,0.1)" : chg < 0 ? "rgba(248,81,73,0.1)" : "transparent", color: chgColor }}>{chg > 0 ? "+" : ""}{chg.toFixed(2)}%</span> : <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>—</span>}
+                    {q ? <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "1px 4px", background: chg > 0 ? "rgba(63,185,80,0.1)" : chg < 0 ? "rgba(248,81,73,0.1)" : "transparent", color: chgColor }}>{chg > 0 ? "+" : ""}{chg.toFixed(2)}%</span> : <Text as="span" mono size={10} color="var(--ft-dim)">—</Text>}
                   </div>
                 </button>
               );
@@ -2038,7 +2039,7 @@ function MarketsTab() {
                   <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-green)" }}>{q?.dayHigh != null ? `$${q.dayHigh.toFixed(2)}` : "—"}</div>
                   <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-red)" }}>{q?.dayLow != null ? `$${q.dayLow.toFixed(2)}` : "—"}</div>
                   <div style={{ ...TD, width: 150, minWidth: 150, display: "flex", alignItems: "center", padding: "8px 12px" }}>
-                    {q ? <RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /> : <span style={{ color: "var(--ft-dim)", fontSize: 10 }}>—</span>}
+                    {q ? <RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /> : <Text as="span" size={10} color="var(--ft-dim)">—</Text>}
                   </div>
                   <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-muted)" }}>{fmtCap(q?.marketCap)}</div>
                   <div style={{ ...TD, width: 60, minWidth: 60, textAlign: "right", color: q?.pe ? (q.pe > 40 ? "var(--ft-amber)" : q.pe < 15 ? "var(--ft-green)" : "var(--ft-muted)") : "var(--ft-dim)" }}>{q?.pe ? q.pe.toFixed(1) : "—"}</div>
@@ -2062,7 +2063,7 @@ function MarketsTab() {
         return (
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
-              <span style={{ color: "var(--ft-cyan)" }}>·</span> Top Movers Today
+              <Text as="span" color="var(--ft-cyan)">·</Text> Top Movers Today
             </div>
             <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <div>
@@ -2076,12 +2077,12 @@ function MarketsTab() {
                       onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.15)"; }}
                       onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.15)"; }}>
                       <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-green)" }}>{ticker}</span>
+                        <Text as="span" mono size={11} weight={700} color="var(--ft-green)">{ticker}</Text>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>${q!.price.toFixed(2)}</div>
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-green)" }}>+{q!.changePercent!.toFixed(2)}%</div>
+                        <Text as="div" mono size={10} weight={700} color="var(--ft-green)">+{q!.changePercent!.toFixed(2)}%</Text>
                       </div>
                     </button>
                   ))}
@@ -2098,12 +2099,12 @@ function MarketsTab() {
                       onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(248,81,73,0.15)"; }}
                       onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(248,81,73,0.15)"; }}>
                       <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-red)" }}>{ticker}</span>
+                        <Text as="span" mono size={11} weight={700} color="var(--ft-red)">{ticker}</Text>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>${q!.price.toFixed(2)}</div>
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-red)" }}>{q!.changePercent!.toFixed(2)}%</div>
+                        <Text as="div" mono size={10} weight={700} color="var(--ft-red)">{q!.changePercent!.toFixed(2)}%</Text>
                       </div>
                     </button>
                   ))}
@@ -2117,7 +2118,7 @@ function MarketsTab() {
       {/* Crypto */}
       <div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
-          <span style={{ color: "var(--ft-amber)" }}>·</span> Crypto Markets
+          <Text as="span" color="var(--ft-amber)">·</Text> Crypto Markets
         </div>
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {CRYPTO_MARKET_TICKERS.split(",").map((ticker) => {
@@ -2151,7 +2152,7 @@ function MarketsTab() {
       {/* Forex */}
       <div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
-          <span style={{ color: "var(--ft-blue)" }}>·</span> Forex — Major Pairs
+          <Text as="span" color="var(--ft-blue)">·</Text> Forex — Major Pairs
         </div>
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {FOREX_TICKERS_STR.split(",").map((ticker) => {
@@ -2173,7 +2174,7 @@ function MarketsTab() {
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: q ? "var(--ft-text)" : "var(--ft-dim)" }}>{q ? q.price.toFixed(4) : "—"}</div>
                 {q?.dayLow != null && q?.dayHigh != null && (
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>
-                    <span style={{ color: "var(--ft-red)" }}>{q.dayLow.toFixed(4)}</span> — <span style={{ color: "var(--ft-green)" }}>{q.dayHigh.toFixed(4)}</span>
+                    <Text as="span" color="var(--ft-red)">{q.dayLow.toFixed(4)}</Text> — <Text as="span" color="var(--ft-green)">{q.dayHigh.toFixed(4)}</Text>
                   </div>
                 )}
               </button>
@@ -2185,7 +2186,7 @@ function MarketsTab() {
       {/* Commodities */}
       <div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
-          <span style={{ color: "var(--ft-green)" }}>·</span> Commodities
+          <Text as="span" color="var(--ft-green)">·</Text> Commodities
         </div>
         <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
           {COMMODITY_TICKERS_STR.split(",").map((ticker) => {
@@ -2213,7 +2214,7 @@ function MarketsTab() {
       {/* Global Indices */}
       <div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
-          <span style={{ color: "var(--ft-cyan)" }}>·</span> Global Indices
+          <Text as="span" color="var(--ft-cyan)">·</Text> Global Indices
         </div>
         <div className="ft-five-col" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
           {GLOBAL_INDEX_TICKERS.split(",").map((ticker) => {
@@ -2381,7 +2382,7 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
                   );
                 })}
                 {low52pct != null && high52pct != null && (
-                  <div style={{ fontSize: 12, color: "var(--ft-muted)" }}>52W: <span style={{ color: G }}>{low52pct.toFixed(1)}% above low</span>{" · "}<span style={{ color: R }}>{high52pct.toFixed(1)}% below high</span></div>
+                  <Text as="div" size={12} color="var(--ft-muted)">52W: <span style={{ color: G }}>{low52pct.toFixed(1)}% above low</span>{" · "}<span style={{ color: R }}>{high52pct.toFixed(1)}% below high</span></Text>
                 )}
                 {grahamEst && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
@@ -2418,7 +2419,7 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
                   </div>
                   {dcfEst && (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", background: "rgba(163,113,247,0.06)", border: "1px solid rgba(163,113,247,0.2)" }}>
-                      <span style={{ fontSize: 11, color: "var(--ft-dim)" }}>DCF Fair Value</span>
+                      <Text as="span" size={11} color="var(--ft-dim)">DCF Fair Value</Text>
                       <div>
                         <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: dcfUpside != null && dcfUpside > 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 14 }}>
                           {sym}{dcfEst.toFixed(0)}
@@ -2564,7 +2565,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
           </div>
 
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 6 }}>
-            CURRENT: <span style={{ color: "var(--ft-text)" }}>£{currentPrice.toFixed(2)}</span>
+            CURRENT: <Text as="span" color="var(--ft-text)">£{currentPrice.toFixed(2)}</Text>
           </div>
 
           <div style={{ marginBottom: 10 }}>
@@ -2744,9 +2745,9 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
     return (
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "40px 24px", textAlign: "center" }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ft-text)", marginBottom: 8 }}>No positions to rebalance</div>
-        <div style={{ fontSize: 12, color: "var(--ft-dim)" }}>
+        <Text as="div" size={12} color="var(--ft-dim)">
           Add positions in the Portfolio tab and assign asset classes. The rebalancer groups positions by asset class.
-        </div>
+        </Text>
       </div>
     );
   }
@@ -2763,14 +2764,14 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {!targetSumOk && (
-            <span style={{ fontSize: 11, color: "var(--ft-amber)", fontFamily: "var(--font-mono)" }}>
+            <Text as="span" mono size={11} color="var(--ft-amber)">
               Targets sum: {totalTargetPct.toFixed(1)}% (must equal 100%)
-            </span>
+            </Text>
           )}
           {targetSumOk && (
-            <span style={{ fontSize: 11, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>
+            <Text as="span" mono size={11} color="var(--ft-green)">
               Targets sum: 100% ✓
-            </span>
+            </Text>
           )}
           <button
             onClick={resetToEqualWeight}
@@ -2849,7 +2850,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
                         color: "var(--ft-text)", padding: "2px 5px", borderRadius: 2, outline: "none",
                       }}
                     />
-                    <span style={{ fontSize: 12, color: "var(--ft-muted)" }}>%</span>
+                    <Text as="span" size={12} color="var(--ft-muted)">%</Text>
                   </div>
                 </div>
                 {/* Drift */}
@@ -2859,7 +2860,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
                 {/* Action */}
                 <div style={{ ...RTBD, width: 160, minWidth: 160, textAlign: "right" }}>
                   {row.action === "Hold" ? (
-                    <span style={{ fontSize: 11, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>— HOLD</span>
+                    <Text as="span" mono size={11} color="var(--ft-green)">— HOLD</Text>
                   ) : (
                     <span style={{
                       fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)",
@@ -3030,7 +3031,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
     }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em" }}>· PORTFOLIO INTELLIGENCE</span>
+        <Text as="span" mono size={10} weight={700} color="var(--ft-accent)" letterSpacing="0.08em">· PORTFOLIO INTELLIGENCE</Text>
         <button
           onClick={() => {
             try { sessionStorage.removeItem(AI_COMMENTARY_CACHE_KEY); } catch { /* noop */ }
@@ -3051,9 +3052,9 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
 
       {/* Commentary text */}
       {loading && !commentary && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)", lineHeight: 1.75, letterSpacing: "0.01em" }}>
+        <Text as="div" mono size={12} color="var(--ft-dim)" letterSpacing="0.01em" lineHeight={1.75}>
           Analysing portfolio…
-        </div>
+        </Text>
       )}
       {commentary && (
         <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.75, margin: 0, letterSpacing: "0.01em" }}>
@@ -3178,9 +3179,9 @@ function PortfolioValueOverTimePanel({ snapshots }: PortfolioValueOverTimePanelP
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
         <div className="ft-panel-header">
           <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO VALUE OVER TIME</div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+          <Text as="span" mono size={9} color="var(--ft-dim)">
             {daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked
-          </span>
+          </Text>
         </div>
         <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
           Collecting snapshots… check back tomorrow ({daysTracked} snapshot{daysTracked !== 1 ? "s" : ""} so far)
@@ -3198,9 +3199,9 @@ function PortfolioValueOverTimePanel({ snapshots }: PortfolioValueOverTimePanelP
             {netChange >= 0 ? "▲" : "▼"} {Math.abs(netChange).toFixed(1)}%
           </span>
         </div>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+        <Text as="span" mono size={9} color="var(--ft-dim)">
           {daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked
-        </span>
+        </Text>
       </div>
       <div style={{ padding: "12px 12px 4px" }}>
         <ResponsiveContainer width="100%" height={160}>
@@ -3446,13 +3447,7 @@ function PortfolioPositionsTable({
                     style={{ ...TD, width: 60, cursor: "pointer" }}
                     onClick={() => onDetailOpen(inv.id)}
                   >
-                    <span style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: "var(--ft-accent)",
-                      letterSpacing: "0.04em",
-                    }}>{inv.ticker}</span>
+                    <Text as="span" mono size={12} weight={700} color="var(--ft-accent)" letterSpacing="0.04em">{inv.ticker}</Text>
                   </td>
 
                   {/* NAME */}
@@ -3549,7 +3544,7 @@ function PortfolioPositionsTable({
                         style={deleteConfirmId === inv.id ? { background: "var(--ft-red)", color: "var(--ft-base)" } : undefined}
                       >
                         {deleteConfirmId === inv.id
-                          ? <span style={{ fontSize: 8, fontWeight: 700, fontFamily: "var(--font-mono)" }}>DEL?</span>
+                          ? <Text as="span" mono size={8} weight={700}>DEL?</Text>
                           : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />}
                       </Button>
                     </div>
@@ -3859,13 +3854,13 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           {form.ticker && (() => {
             const ex = detectExchange(form.ticker);
             return ex ? (
-              <div style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>
+              <Text as="div" mono size={10} color="var(--ft-muted)">
                 {ex.label} · {ex.currency}
-              </div>
+              </Text>
             ) : (
-              <div style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>
+              <Text as="div" mono size={10} color="var(--ft-muted)">
                 US market · {form.nativeCurrency}
-              </div>
+              </Text>
             );
           })()}
         </div>
@@ -3894,9 +3889,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           </SelectContent>
         </Select>
         {form.ticker && !form.assetClass && (
-          <div style={{ fontSize: 10, color: "var(--ft-blue)", fontFamily: "var(--font-mono)" }}>
+          <Text as="div" mono size={10} color="var(--ft-blue)">
             Auto-detected: {detectAssetClass(form.ticker)}
-          </div>
+          </Text>
         )}
       </div>
 
@@ -3952,7 +3947,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
       {/* Transaction fees */}
       <div className="space-y-1.5">
-        <Label htmlFor="inv-fees">Transaction Fees ({form.nativeCurrency}) <span style={{ color: "var(--ft-muted)", fontWeight: 400 }}>— optional</span></Label>
+        <Label htmlFor="inv-fees">Transaction Fees ({form.nativeCurrency}) <Text as="span" weight={400} color="var(--ft-muted)">— optional</Text></Label>
         <Input id="inv-fees" type="number" step="0.01" min="0" placeholder="0.00" style={INP}
           value={form.fees} onChange={(e) => setField("fees", e.target.value)} />
       </div>
@@ -3960,10 +3955,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
       {/* Effective cost summary */}
       {effectiveCostPerShare !== null && effectiveCostPerShare > 0 && (
         <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Effective Cost / Share</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-accent)" }}>
+          <MonoLabel as="span" size={10} color="var(--ft-muted)" letterSpacing="0.06em">Effective Cost / Share</MonoLabel>
+          <Text as="span" mono size={13} weight={700} color="var(--ft-accent)">
             {effectiveCostPerShare.toFixed(4)} {form.nativeCurrency}
-          </span>
+          </Text>
         </div>
       )}
     </div>
@@ -4145,11 +4140,11 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                 const inv = investments?.find((i) => i.ticker === a.ticker);
                 return (
                   <div key={a.id} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>
-                    <span style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{a.ticker}</span>
+                    <Text as="span" weight={700} color="var(--ft-amber)">{a.ticker}</Text>
                     {" "}crossed {a.direction === "above" ? "above" : "below"}{" "}
-                    <span style={{ fontWeight: 700 }}>£{a.targetPrice.toFixed(2)}</span>
+                    <Text as="span" weight={700}>£{a.targetPrice.toFixed(2)}</Text>
                     {inv && (
-                      <span style={{ color: "var(--ft-dim)" }}> · current: £{inv.livePrice.toFixed(2)}</span>
+                      <Text as="span" color="var(--ft-dim)"> · current: £{inv.livePrice.toFixed(2)}</Text>
                     )}
                   </div>
                 );
@@ -4325,10 +4320,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>◈ Portfolio — Reading the data</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 20px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.65 }}>
-                  <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>vs S&P 500</span> chart shows your portfolio indexed to 100 — <span style={{ fontWeight: 600 }}>α (alpha)</span> is your outperformance</span>
-                  <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Heat map</span> tile size = portfolio weight · colour = P&amp;L (green up / red down)</span>
-                  <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Asset class column</span> in the table — click to assign ETF / equity / bond / etc. for allocation analysis</span>
-                  <span><span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>Concentration risk</span> &amp; diversification gaps → check the <span style={{ color: "var(--ft-accent)" }}>Decisions page</span> for ranked actions</span>
+                  <span><Text as="span" weight={600} color="var(--ft-blue)">vs S&P 500</Text> chart shows your portfolio indexed to 100 — <Text as="span" weight={600}>α (alpha)</Text> is your outperformance</span>
+                  <span><Text as="span" weight={600} color="var(--ft-blue)">Heat map</Text> tile size = portfolio weight · colour = P&amp;L (green up / red down)</span>
+                  <span><Text as="span" weight={600} color="var(--ft-blue)">Asset class column</Text> in the table — click to assign ETF / equity / bond / etc. for allocation analysis</span>
+                  <span><Text as="span" weight={600} color="var(--ft-blue)">Concentration risk</Text> &amp; diversification gaps → check the <Text as="span" color="var(--ft-accent)">Decisions page</Text> for ranked actions</span>
                 </div>
               </div>
               <button onClick={() => { localStorage.setItem("ft-portfolio-intro-seen","1"); setPortfolioIntroSeen(true); }} title="Dismiss" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>✕</button>
@@ -4358,9 +4353,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                           Portfolio {portReturn >= 0 ? "▲" : "▼"} {Math.abs(portReturn).toFixed(1)}%
                         </span>
                         {spyReturn !== null && (
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                          <Text as="span" mono size={10} color="var(--ft-dim)">
                             SPY {spyReturn >= 0 ? "▲" : "▼"} {Math.abs(spyReturn).toFixed(1)}%
-                          </span>
+                          </Text>
                         )}
                         {alpha !== null && (
                           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: alpha >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
@@ -4408,11 +4403,11 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                     <div style={{ display: "flex", gap: 16, paddingTop: 4, paddingLeft: 4 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <div style={{ width: 16, height: 2, background: "var(--ft-blue)" }} />
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>YOUR PORTFOLIO</span>
+                        <Text as="span" mono size={9} color="var(--ft-dim)">YOUR PORTFOLIO</Text>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <div style={{ width: 16, height: 2, background: "var(--ft-dim)", opacity: 0.6 }} />
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>S&P 500 (SPY)</span>
+                        <Text as="span" mono size={9} color="var(--ft-dim)">S&P 500 (SPY)</Text>
                       </div>
                     </div>
                   </div>
@@ -4427,7 +4422,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
                 <div className="ft-panel-header">
                   <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO ALLOCATION</div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>by position value</span>
+                  <Text as="span" mono size={9} color="var(--ft-dim)">by position value</Text>
                 </div>
                 <div style={{ padding: "8px 12px 0" }}>
                 <ResponsiveContainer width="100%" height={160}>
@@ -4452,7 +4447,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
                 <div className="ft-panel-header">
                   <div className="ft-panel-label"><span className="accent-dot">·</span>UNREALISED P&amp;L</div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>GBP gain / loss</span>
+                  <Text as="span" mono size={9} color="var(--ft-dim)">GBP gain / loss</Text>
                 </div>
                 <div style={{ padding: "8px 12px" }}>
                 <ResponsiveContainer width="100%" height={200}>
@@ -4473,7 +4468,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
             <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
               <div className="ft-panel-header">
                 <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO HEAT MAP</div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Size = weight · Colour = P&L</span>
+                <Text as="span" mono size={9} color="var(--ft-dim)">Size = weight · Colour = P&L</Text>
               </div>
               <div style={{ padding: 8 }}>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
@@ -4517,7 +4512,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
             <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
               <div className="ft-panel-header">
                 <div className="ft-panel-label"><span className="accent-dot">·</span>ASSET CLASS ALLOCATION</div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>By class tag · stored locally</span>
+                <Text as="span" mono size={9} color="var(--ft-dim)">By class tag · stored locally</Text>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center" style={{ padding: "8px 12px" }}>
                 <ResponsiveContainer width="100%" height={150}>
@@ -4654,7 +4649,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
             <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
               <div className="ft-panel-header">
                 <div className="ft-panel-label"><span className="accent-dot">·</span>UPCOMING EARNINGS</div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{upcomingEarnings.length} IN 45 DAYS</span>
+                <Text as="span" mono size={9} color="var(--ft-dim)">{upcomingEarnings.length} IN 45 DAYS</Text>
               </div>
               <div className="flex items-stretch overflow-x-auto" style={{ scrollbarWidth: "thin" }}>
                 {upcomingEarnings.map((e, i) => (
@@ -4697,7 +4692,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
                 <div className="ft-panel-header">
                   <div className="ft-panel-label"><span className="accent-dot">·</span>TAX LOTS</div>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>FIFO ANALYSIS</span>
+                  <Text as="span" mono size={9} color="var(--ft-dim)">FIFO ANALYSIS</Text>
                 </div>
                 <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "var(--font-mono)", minWidth: 700 }}>
@@ -4743,9 +4738,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                   </table>
                 </div>
                 <div style={{ padding: "6px 10px", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 16 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                  <Text as="span" mono size={9} color="var(--ft-dim)">
                     LT = Long-term (&ge;365 days · lower CGT rate) &nbsp;·&nbsp; ST = Short-term (&lt;365 days) &nbsp;·&nbsp; Lots sorted FIFO (oldest first)
-                  </span>
+                  </Text>
                 </div>
               </div>
             );

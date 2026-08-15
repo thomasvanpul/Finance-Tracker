@@ -16,6 +16,7 @@ import {
 // ─── annotation storage ──────────────────────────────────────────────────────
 
 // Helpers, constants, and types extracted to analytics-helpers.ts
+import { Text, MonoLabel } from "@/components/primitives";
 import {
   loadAnnotations, saveAnnotations,
   DOW_LABELS, MONTH_SHORT,
@@ -106,7 +107,7 @@ function PanelHeader({ title, right }: { title: string; right?: React.ReactNode 
   return (
     <div style={{ ...panelHeaderStyle, flexWrap: "wrap", gap: "4px 8px", height: "auto", minHeight: "var(--ft-panel-header-h)", paddingTop: 4, paddingBottom: 4 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1 }}>·</span>
+        <Text as="span" mono size={12} color="var(--ft-accent)" lineHeight={1}>·</Text>
         <span style={ftPanelLabel}>{title}</span>
       </div>
       {right && <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>{right}</div>}
@@ -598,12 +599,12 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 12 }}>·</span>
+            <Text as="span" mono size={12} color="var(--ft-accent)">·</Text>
             <div>
               <div style={{ ...ftLabel, marginBottom: 1 }}>Category</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              <Text as="div" mono upper size={12} weight={700} color="var(--ft-accent)" letterSpacing="0.06em">
                 {category ?? ""}
-              </div>
+              </Text>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -766,12 +767,12 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
       label: "YoY Change",
       value: lastYearSameMonth > 0 ? `${yoyPct > 0 ? "+" : ""}${yoyPct.toFixed(1)}%` : "N/A",
       valueColor: yoyPct > 0 ? "var(--ft-red)" : yoyPct < 0 ? "var(--ft-green)" : "var(--ft-muted)",
-      delta: <span style={{ color: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }}>vs {sameMonthLastYear}</span>,
+      delta: <Text as="span" mono size={9} color="var(--ft-dim)">vs {sameMonthLastYear}</Text>,
     },
     {
       label: "Volatility",
       value: volatility > 0 ? formatGbp(volatility) : "—",
-      delta: <span style={{ color: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }}>σ monthly</span>,
+      delta: <Text as="span" mono size={9} color="var(--ft-dim)">σ monthly</Text>,
     },
     {
       label: "Best Month",
@@ -783,7 +784,7 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
       label: "Savings Rate",
       value: savingsRate !== null ? `${savingsRate}%` : "—",
       valueColor: savingsRate !== null && savingsRate >= 20 ? "var(--ft-green)" : savingsRate !== null && savingsRate >= 0 ? "var(--ft-amber)" : "var(--ft-red)",
-      delta: <span style={{ color: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }}>this month</span>,
+      delta: <Text as="span" mono size={9} color="var(--ft-dim)">this month</Text>,
     },
   ];
 
@@ -941,7 +942,7 @@ function SpendingVelocity({ allExpenses, budgetTotal, range, onRangeChange }: {
                   {(p.payload as TooltipEntry[])?.map((entry, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
                       {entry.color && <div style={{ width: 6, height: 6, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />}
-                      <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>{String(entry.name ?? "")}</span>
+                      <Text as="span" size={9} color="var(--ft-dim)">{String(entry.name ?? "")}</Text>
                       <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{formatGbp(typeof entry.value === "number" ? entry.value : 0)}</span>
                     </div>
                   ))}
@@ -1844,8 +1845,8 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
                     <div style={{ color: "var(--ft-text)", fontWeight: 700, marginBottom: 2 }}>
                       Rate: {d.rate !== null ? `${d.rate}%` : "—"}
                     </div>
-                    <div style={{ color: "var(--ft-green)", fontSize: 9 }}>Income: <span className="pnum">{formatGbp(d.income)}</span></div>
-                    <div style={{ color: "var(--ft-red)", fontSize: 9 }}>Expense: <span className="pnum">{formatGbp(d.expense)}</span></div>
+                    <Text as="div" size={9} color="var(--ft-green)">Income: <span className="pnum">{formatGbp(d.income)}</span></Text>
+                    <Text as="div" size={9} color="var(--ft-red)">Expense: <span className="pnum">{formatGbp(d.expense)}</span></Text>
                   </div>
                 );
               }}
@@ -1942,7 +1943,7 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
             return (
               <div key={d.ym} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, minWidth: 0 }}>
                 <div style={{ width: "100%", height: `${pct}%`, background: barCol, minHeight: 2 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>{d.label}</span>
+                <Text as="span" mono size={7} color="var(--ft-dim)" nowrap>{d.label}</Text>
               </div>
             );
           })}
@@ -1966,7 +1967,7 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
               const col = r.cv < 30 ? "var(--ft-amber)" : "var(--ft-red)";
               return (
                 <div key={r.cat} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < catVolatility.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)" }}>{r.cat}</span>
+                  <Text as="span" mono size={10} color="var(--ft-text)">{r.cat}</Text>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}><span className="pnum">{formatGbp(r.mean)}</span>/mo avg</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>CV <span className="pnum">{r.cv}%</span></span>
@@ -2108,9 +2109,9 @@ function SeasonalityIndex({ expenses }: { expenses: Tx[] }) {
                   {m.label}
                 </div>
                 {m.total > 0 && (
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 6.5, color: "var(--ft-dim)", lineHeight: 1 }}>
+                  <Text as="div" mono size={6.5} color="var(--ft-dim)" lineHeight={1}>
                     {m.idx}
-                  </div>
+                  </Text>
                 )}
               </div>
             );
@@ -2122,7 +2123,7 @@ function SeasonalityIndex({ expenses }: { expenses: Tx[] }) {
             {([["▲ Peak", peak?.label, "var(--ft-red)"], ["▼ Trough", trough?.label, "var(--ft-cyan)"]] as [string, string | undefined, string][]).map(([key, val, col]) => (
               <div key={key} style={{ display: "flex", gap: 4, alignItems: "center" }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: col, fontWeight: 700 }}>{key}</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-text)" }}>{val ?? "—"}</span>
+                <Text as="span" mono size={8} color="var(--ft-text)">{val ?? "—"}</Text>
               </div>
             ))}
           </div>
@@ -2130,7 +2131,7 @@ function SeasonalityIndex({ expenses }: { expenses: Tx[] }) {
             {([["RED", ">120", "var(--ft-red)"], ["AMB", "105–120", "var(--ft-amber)"], ["GRN", "<80", "var(--ft-cyan)"]] as [string, string, string][]).map(([lbl, range, col]) => (
               <div key={lbl} style={{ display: "flex", gap: 3, alignItems: "center" }}>
                 <div style={{ width: 6, height: 6, background: col, opacity: 0.8 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)" }}>{range}</span>
+                <Text as="span" mono size={7} color="var(--ft-dim)">{range}</Text>
               </div>
             ))}
           </div>
@@ -2326,7 +2327,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
         })}
       </div>
       <div style={{ padding: "5px 16px 8px", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 16 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>right column = MoM change vs last month</span>
+        <Text as="span" mono size={7.5} color="var(--ft-dim)">right column = MoM change vs last month</Text>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>income → expenses → net savings</span>
       </div>
     </div>
@@ -2387,9 +2388,9 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
       <PanelHeader
         title="Category Benchmark · UK Avg"
         right={
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+          <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
             ONS Family Spending 2022/23 · 3-month avg
-          </span>
+          </Text>
         }
       />
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -2438,15 +2439,15 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
       <div style={{ padding: "5px 16px 8px", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 14, alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           <div style={{ width: 12, height: 4, background: "var(--ft-border2)", borderRadius: 1 }} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>UK avg</span>
+          <Text as="span" mono size={7.5} color="var(--ft-dim)">UK avg</Text>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           <div style={{ width: 12, height: 4, background: "var(--ft-green)", opacity: 0.8, borderRadius: 1 }} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>under avg</span>
+          <Text as="span" mono size={7.5} color="var(--ft-dim)">under avg</Text>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           <div style={{ width: 12, height: 4, background: "var(--ft-red)", opacity: 0.8, borderRadius: 1 }} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>over avg</span>
+          <Text as="span" mono size={7.5} color="var(--ft-dim)">over avg</Text>
         </div>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>
           {rows[0]?.hasMock ? "demo data — connect accounts to see real comparison" : "3-month rolling avg"}
@@ -2521,9 +2522,9 @@ function SpendingAnomalies({ expenses, isDemo }: { expenses: Tx[]; isDemo: boole
       <PanelHeader
         title="Spending Anomalies"
         right={
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+          <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
             {isMock ? "demo data" : "vs 3-month category baseline · current month"}
-          </span>
+          </Text>
         }
       />
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -2599,7 +2600,7 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader title="Monthly Net Delta · 6M" right={
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>income vs expenses · monthly delta</span>
+        <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">income vs expenses · monthly delta</Text>
       } />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 1, background: "var(--ft-border)", margin: "0 0 1px" }}>
         {data.map((d) => {
@@ -2690,7 +2691,7 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader title="Category Forecast · Next Month" right={
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>weighted 3-month trend projection</span>
+        <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">weighted 3-month trend projection</Text>
       } />
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
@@ -2770,7 +2771,7 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader title="Transaction Size Distribution" right={
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>all-time expenses · count histogram</span>
+        <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">all-time expenses · count histogram</Text>
       } />
       <div style={{ padding: "12px 16px 4px", display: "flex", flexDirection: "column", gap: 6 }}>
         {data.map((d, i) => {
@@ -3548,7 +3549,7 @@ export default function Analytics() {
             flexWrap: "wrap",
           }}>
             <span style={{ color, fontWeight: 700, letterSpacing: "0.06em" }}>{persona.code}</span>
-            <span style={{ color: "var(--ft-text)" }}>{focus.tip}</span>
+            <Text as="span" color="var(--ft-text)">{focus.tip}</Text>
             <span style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
               {focus.highlights.map(h => (
                 <span key={h} style={{ border: "1px solid var(--ft-border)", padding: "1px 6px", fontSize: 9, letterSpacing: "0.04em", color: "var(--ft-dim)" }}>{h}</span>
@@ -3561,7 +3562,7 @@ export default function Analytics() {
       {/* ── Demo mode banner ── */}
       {isDemo && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "5px 14px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
-          <span style={{ color: "var(--ft-amber)", fontWeight: 700 }}>DEMO MODE</span>
+          <Text as="span" weight={700} color="var(--ft-amber)">DEMO MODE</Text>
           <span>Showing sample data · import transactions to see your real analytics</span>
           <a href="/import" style={{ marginLeft: "auto", color: "var(--ft-accent)", textDecoration: "none", fontWeight: 700, flexShrink: 0 }}>IMPORT →</a>
         </div>

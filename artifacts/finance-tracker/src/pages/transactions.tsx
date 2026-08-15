@@ -47,6 +47,7 @@ import { haptic } from "@/lib/haptics";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeDelete } from "@/hooks/use-swipe-delete";
+import { Text, MonoLabel } from "@/components/primitives";
 
 import {
   type TxType, type Currency, type TxForm, type TxFormErrors,
@@ -141,7 +142,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
       >
         {/* Header */}
         <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-accent)" }}>⊕ SPLIT</span>
+          <MonoLabel as="span" size={9} color="var(--ft-accent)" letterSpacing="0.08em">⊕ SPLIT</MonoLabel>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{tx.description}</div>
             <div style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
@@ -288,7 +289,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
             <span style={{ color: "var(--ft-muted)" }}>
               Allocated: <span style={{ color: "var(--ft-text)", fontWeight: 700 }}>£{allocatedSum.toFixed(2)}</span>
               {" "}of{" "}
-              <span style={{ color: "var(--ft-text)" }}>£{total.toFixed(2)}</span>
+              <Text as="span" color="var(--ft-text)">£{total.toFixed(2)}</Text>
             </span>
             <span style={{ color: Math.abs(remaining) <= 0.005 ? "var(--ft-green)" : remaining < 0 ? "var(--ft-red)" : "var(--ft-amber)", fontWeight: 700 }}>
               {Math.abs(remaining) <= 0.005
@@ -1642,7 +1643,7 @@ export default function Transactions() {
                 {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(displayGbp)}
               </div>
               <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center", marginTop: 3 }}>
-                <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", whiteSpace: "nowrap" }}>{formatDate(tx.date)}</span>
+                <Text as="span" mono size={10} color="var(--ft-dim)" nowrap>{formatDate(tx.date)}</Text>
                 <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(tx.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, lineHeight: 0, display: "flex", alignItems: "center" }}>
                   <Edit2 style={{ width: 12, height: 12, color: "var(--ft-muted)" }} />
                 </button>
@@ -1752,7 +1753,7 @@ export default function Transactions() {
         </div>
         <div style={{ width: 128, minWidth: 128, flexShrink: 0, padding: "2px 4px", display: "flex", justifyContent: "flex-end", gap: 2, alignItems: "center" }}>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSplit(tx.id)} title="Split transaction (creates new transactions)">
-            <span style={{ color: "var(--ft-muted)", fontSize: 13 }}>⊕</span>
+            <Text as="span" size={13} color="var(--ft-muted)">⊕</Text>
           </Button>
           <Button
             variant="ghost"
@@ -1790,7 +1791,7 @@ export default function Transactions() {
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
             <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
-              NOTE — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
+              NOTE — <Text as="span" color="var(--ft-muted)">{tx.description}</Text>
             </div>
             <span style={{ fontSize: 8, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.04em", background: "var(--ft-raised)" }} title="Notes are saved locally on this device only and will not sync across browsers or devices">
               device-local
@@ -2075,7 +2076,7 @@ export default function Transactions() {
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 12 }}>
                 <div style={{ fontSize: 11, color: "var(--ft-muted)" }}>
-                  Total split: <span style={{ color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{splitTx.currency} {splitTotal.toFixed(2)}</span>
+                  Total split: <Text as="span" color="var(--ft-text)" numeric>{splitTx.currency} {splitTotal.toFixed(2)}</Text>
                 </div>
                 <div style={{ fontSize: 11, color: splitRemaining === 0 ? "var(--ft-green)" : splitRemaining < 0 ? "var(--ft-red)" : "var(--ft-amber)" }}>
                   {splitRemaining === 0 ? "Balanced" : splitRemaining > 0 ? `Remaining: ${splitTx.currency} ${splitRemaining.toFixed(2)}` : `Over by: ${splitTx.currency} ${Math.abs(splitRemaining).toFixed(2)}`}
@@ -2121,7 +2122,7 @@ export default function Transactions() {
               </p>
             ) : (
               <p style={{ fontSize: 13, color: "var(--ft-muted)", lineHeight: 1.6 }}>
-                Found <span style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{uncategorizedTxs.length}</span>{" "}
+                Found <Text as="span" weight={700} color="var(--ft-amber)">{uncategorizedTxs.length}</Text>{" "}
                 transaction{uncategorizedTxs.length !== 1 ? "s" : ""} without a category.
                 Use AI to suggest categories for all of them?
               </p>
@@ -2153,13 +2154,13 @@ export default function Transactions() {
           {/* TX COUNT */}
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
             <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>TX COUNT</div>
-            <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--ft-text)", lineHeight: 1 }}>
+            <Text as="div" mono size={16} weight={700} color="var(--ft-text)" lineHeight={1} numeric>
               {filtered.length}
-            </div>
+            </Text>
             {hasFilters && (
-              <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>
+              <Text as="div" mono size={10} color="var(--ft-muted)">
                 of {transactions?.length ?? 0}
-              </div>
+              </Text>
             )}
           </div>
           {/* TOTAL IN */}
@@ -2168,7 +2169,7 @@ export default function Transactions() {
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiIncome > 0 ? "var(--ft-green)" : "var(--ft-muted)", lineHeight: 1 }}>
               {formatGbp(kpiIncome)}
             </div>
-            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.04em" }}>income</div>
+            <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">income</Text>
           </div>
           {/* TOTAL OUT */}
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
@@ -2176,7 +2177,7 @@ export default function Transactions() {
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", lineHeight: 1 }}>
               {formatGbp(kpiExpenses)}
             </div>
-            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.04em" }}>expenses</div>
+            <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">expenses</Text>
           </div>
           {/* NET */}
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
@@ -2194,18 +2195,18 @@ export default function Transactions() {
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--ft-text)", lineHeight: 1 }}>
               {filtered.length > 0 ? formatGbp(kpiAvg) : "—"}
             </div>
-            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.04em" }}>per transaction</div>
+            <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">per transaction</Text>
           </div>
           {/* DATE RANGE + ACTIONS */}
           <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 3 }}>
             <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>DATE RANGE</div>
-            <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--ft-muted)", lineHeight: 1.4 }}>
+            <Text as="div" mono size={11} color="var(--ft-muted)" lineHeight={1.4} numeric>
               {kpiDateFrom && kpiDateTo
                 ? kpiDateFrom === kpiDateTo
                   ? kpiDateFrom
                   : `${kpiDateFrom} → ${kpiDateTo}`
                 : "—"}
-            </div>
+            </Text>
             {/* Action buttons stacked — hidden on mobile (use FAB instead) */}
             <div className="ft-hide-mobile" style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
               <button
@@ -2276,12 +2277,12 @@ export default function Transactions() {
       {isMobile && (
         <div style={{ border: "1px solid var(--ft-border)", borderTop: "none", background: "var(--ft-surface)" }}>
           <div style={{ padding: "5px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em" }}>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">
               {kpiDateFrom && kpiDateTo
                 ? kpiDateFrom === kpiDateTo ? kpiDateFrom : `${kpiDateFrom} → ${kpiDateTo}`
                 : "All Transactions"}
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{filtered.length} TX</span>
+            </MonoLabel>
+            <Text as="span" mono size={9} color="var(--ft-dim)">{filtered.length} TX</Text>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
             <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
@@ -2454,7 +2455,7 @@ export default function Transactions() {
           <div style={{ display: "flex", alignItems: "stretch", minWidth: "max-content" }}>
           {/* SEARCH label */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 10px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>SEARCH</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">SEARCH</MonoLabel>
           </div>
           <div style={{ position: "relative", flex: 1, minWidth: 160, display: "flex", alignItems: "center" }}>
             <Search className="absolute left-2.5 w-3 h-3" style={{ color: "var(--ft-dim)", pointerEvents: "none" }} />
@@ -2469,7 +2470,7 @@ export default function Transactions() {
           </div>
           {/* TYPE */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderLeft: "1px solid var(--ft-border)", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>TYPE</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">TYPE</MonoLabel>
           </div>
           <select
             value={filterType}
@@ -2483,7 +2484,7 @@ export default function Transactions() {
           </select>
           {/* CATEGORY */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>CAT</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">CAT</MonoLabel>
           </div>
           <select
             value={filterCategory}
@@ -2495,7 +2496,7 @@ export default function Transactions() {
           </select>
           {/* ACCOUNT */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>ACCT</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">ACCT</MonoLabel>
           </div>
           <select
             value={filterAccount}
@@ -2507,7 +2508,7 @@ export default function Transactions() {
           </select>
           {/* SORT */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>SORT</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">SORT</MonoLabel>
           </div>
           <select
             value={sortBy}
@@ -2521,7 +2522,7 @@ export default function Transactions() {
           </select>
           {/* TAG */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>TAG</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">TAG</MonoLabel>
           </div>
           <div style={{ position: "relative", display: "flex", alignItems: "center", flex: "0 0 90px" }}>
             <input
@@ -2553,7 +2554,7 @@ export default function Transactions() {
         >
           {/* Quick ranges */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 10px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>RANGE</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">RANGE</MonoLabel>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 0, borderRight: "1px solid var(--ft-border)" }}>
             {(["Today", "Week", "Month", "Last Mo", "3M", "All"] as const).map((label, i) => {
@@ -2587,7 +2588,7 @@ export default function Transactions() {
           </div>
           {/* DATE FROM label */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>FROM</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">FROM</MonoLabel>
           </div>
           <input
             type="date"
@@ -2597,7 +2598,7 @@ export default function Transactions() {
           />
           {/* DATE TO label */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>TO</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">TO</MonoLabel>
           </div>
           <input
             type="date"
@@ -2607,7 +2608,7 @@ export default function Transactions() {
           />
           {/* AMOUNT MIN */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>£ MIN</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">£ MIN</MonoLabel>
           </div>
           <input
             type="number"
@@ -2620,7 +2621,7 @@ export default function Transactions() {
           />
           {/* AMOUNT MAX */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>£ MAX</span>
+            <MonoLabel as="span" size={9} letterSpacing="0.10em">£ MAX</MonoLabel>
           </div>
           <input
             type="number"
@@ -2760,9 +2761,9 @@ export default function Transactions() {
               <span className="accent-dot">·</span>
               TRANSACTION LEDGER
             </span>
-            <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>
+            <Text as="span" mono size={10} color="var(--ft-dim)">
               {hasFilters ? `${filtered.length} of ${transactions?.length ?? 0}` : `${filtered.length} entries`}
-            </span>
+            </Text>
             {groupByMerchant && (
               <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY MERCHANT</span>
             )}
