@@ -351,6 +351,62 @@ renderer for a decorative avatar is real battery and bundle cost.
   **Done when:** the sampling report is in `BACKLOG.md` or a new file,
   and either a proposal is on the table or the entry is marked PARKED.
 
+  **Sampling — 2026-08-16.** 36 desktop empty-state sites in `pages/`
+  matched `No .* yet|No matches|No data|No positions`, spanning 13 files
+  (accounts, analytics, business, dashboard, family-finance, investments,
+  net-worth-history, owing, profile, reports, settings, split, subscriptions,
+  transactions, upcoming). Two pages (transactions, accounts) already
+  import `<EmptyState>` from `components/empty-state.tsx` — that primitive
+  exists but is under-adopted. The other 11 pages roll bespoke inline
+  markup that visually diverges (font-mono size 10/11, italic vs. bold
+  label, centred vs. left, "No X yet" vs. "— NO X —" case, with/without
+  CTA button).
+
+  **Above the 10-site threshold.** Proposal follows.
+
+  **G9-P · `<DesktopEmptyState>` proposal.**
+  The existing `EmptyState` covers three of the four properties we need
+  (title, description, action). It is missing the design-language pieces
+  the mobile counterpart carries: a small `label` (uppercase, tracked,
+  above the title — MOBILE-CONCEPT § "Data pill above title") and a
+  refusal to accept anything that lets a caller drift the surface (no
+  `style?`, no `variant?`, no `fill?` — the primitive owns its own frame).
+
+  **Prop set (closed).**
+  - `label: string` — the small caps prefix. Required. This is what
+    routes the primitive to the AccentPanel family in future.
+  - `title: string` — sentence-case single line, ≤ 40 chars.
+  - `description?: string` — one sentence, no CTAs in the copy.
+  - `action?: { label: string; onClick: () => void }` — one CTA max.
+    Two CTAs is a decision, not an empty state.
+  - `minHeight?: string` — for slot-fit only (e.g. inside a fixed table
+    body). No `fill: boolean` toggle.
+
+  **Refusals (up front).**
+  - No `variant`. If two callers want visually different surfaces, that
+    is two primitives, not one primitive with a mode.
+  - No `style` escape hatch. Callers that need a bespoke frame stay
+    inline — this is the primitives-family rule from CLAUDE.md.
+  - No secondary action. A CTA is either the right next step or there
+    is no next step.
+  - No icon prop. Design signature is typographic, not glyph-first —
+    an icon slot invites cargo-culting a wrench for every table.
+
+  **Variant vs. sibling call.** `<MobileEmptyState>` and
+  `<DesktopEmptyState>` are siblings: they share the prop shape but the
+  desktop version lives in a page column, not the whole viewport, and
+  the mobile version bakes in the mobile-scroll padding. One primitive
+  with a `variant="mobile"` toggle would push viewport concerns and the
+  bottom-safe-area padding onto every caller. Keep them siblings.
+
+  **Migration.** Rename the existing `components/empty-state.tsx` export
+  to `<DesktopEmptyState>`, add the `label` prop as required, and
+  migrate the two current callers plus a first tranche of the 11 inline
+  sites (dashboard, investments watchlist, net-worth-history, owing,
+  reports "No data available", settings custom-categories). Rest follow
+  in a second pass; the 800-line file cap keeps each migration commit
+  reviewable.
+
 ---
 
 ## Superseded
