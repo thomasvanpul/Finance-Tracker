@@ -92,40 +92,59 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
         <MonoLabel size={11} letterSpacing="0.16em">NET · £ · MONTH TO DATE</MonoLabel>
         <HStack align="baseline" gap={4} marginTop={6}>
           <Text as="span" size={17} color="var(--ft-dim)">£</Text>
-          <Text
-            as="span"
-            size={34}
-            weight={600}
-            letterSpacing="-0.035em"
-            color={net >= 0 ? "var(--ft-text)" : "var(--ft-red)"}
-            numeric
-          >
-            {net < 0 ? "−" : ""}{nfmt(Math.abs(net), { decimals: 2 })}
-          </Text>
+          {isLoading ? (
+            // Loading — skeleton block per MOBILE-CONCEPT § "Zero and
+            // loading are not the same reading". Never render "£0.00"
+            // while transactions haven't returned.
+            <div style={{ width: 200, height: 34, background: "var(--ft-raised)" }} />
+          ) : (
+            <Text
+              as="span"
+              size={34}
+              weight={600}
+              letterSpacing="-0.035em"
+              color={net >= 0 ? "var(--ft-text)" : "var(--ft-red)"}
+              numeric
+            >
+              {net < 0 ? "−" : ""}{nfmt(Math.abs(net), { decimals: 2 })}
+            </Text>
+          )}
         </HStack>
         {/* Mini in/out bar */}
         <VStack marginTop={10} gap={4}>
           <div style={{ position: "relative", height: BAR_H }}>
             <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
-            <div style={{ position: "absolute", top: 0, left: 0, height: BAR_H, width: `${inPct}%`, background: "var(--ft-green)" }} />
+            {!isLoading && (
+              <div style={{ position: "absolute", top: 0, left: 0, height: BAR_H, width: `${inPct}%`, background: "var(--ft-green)" }} />
+            )}
           </div>
           <div style={{ position: "relative", height: BAR_H }}>
             <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
-            <div style={{ position: "absolute", top: 0, left: 0, height: BAR_H, width: `${outPct}%`, background: "var(--ft-red)" }} />
+            {!isLoading && (
+              <div style={{ position: "absolute", top: 0, left: 0, height: BAR_H, width: `${outPct}%`, background: "var(--ft-red)" }} />
+            )}
           </div>
         </VStack>
         <HStack gap={14} marginTop={6} align="baseline">
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">IN</Text>
-            <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
-              +£{nfmt(totalIncome, { decimals: 2 })}
-            </Text>
+            {isLoading ? (
+              <div style={{ width: 76, height: 12, background: "var(--ft-raised)" }} />
+            ) : (
+              <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
+                +£{nfmt(totalIncome, { decimals: 2 })}
+              </Text>
+            )}
           </HStack>
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">OUT</Text>
-            <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
-              −£{nfmt(totalSpend, { decimals: 2 })}
-            </Text>
+            {isLoading ? (
+              <div style={{ width: 76, height: 12, background: "var(--ft-raised)" }} />
+            ) : (
+              <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
+                −£{nfmt(totalSpend, { decimals: 2 })}
+              </Text>
+            )}
           </HStack>
         </HStack>
       </VStack>
