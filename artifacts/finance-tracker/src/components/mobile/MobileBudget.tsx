@@ -1,15 +1,27 @@
 import { useListBudgets, useListTransactions } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { nfmt } from "./mobile-format";
 
-// Per-category budget vs actual for the current month. Earlier mocks
-// (weekly-spend histogram, mock category set) removed.
+// Per-category budget vs actual for the current month.
+//
+// Design signature devices applied:
+//   - Premium-tier headline (34px): SPENT · £ · MONTH TO DATE, with an
+//     overall proportional bar underneath.
+//   - Every row is a horizontal proportional bar (area = share used).
+//   - Dotted extension past the fill when the row is under budget —
+//     dotted = not-yet-real (the unspent tail).
+//   - Over-budget rows use both a solid --ft-red fill AND the true
+//     minus U+2212 in the label — never colour alone.
+//   - Two-level column header (CATEGORY / SPENT · OF).
 
-function firstOfMonth() {
+const BAR_H = 4;
+
+function firstOfMonth(): string {
   const n = new Date();
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`;
 }
-function today() {
+function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
@@ -24,7 +36,7 @@ export function MobileBudget() {
         <MobileEmptyState
           label="NO BUDGETS"
           title="Nothing to track yet."
-          description="Budgets are set on the desktop for now. Once a category limit exists, the mobile screen shows how each is doing."
+          description="Set a monthly limit for any category and this screen shows how it's doing."
         />
       </div>
     );
@@ -37,6 +49,19 @@ export function MobileBudget() {
     spendByCat.set(k, (spendByCat.get(k) ?? 0) + Math.abs(t.gbpValue));
   }
 
+  type Row = { id: number | string; category: string; spent: number; limit: number; pct: number; over: boolean };
+  const rows: Row[] = budgets.map((b, i) => {
+    const spent = spendByCat.get((b.category ?? "").toLowerCase()) ?? 0;
+    const limit = parseFloat(String(b.monthlyLimit ?? 0)) || 0;
+    const pct = limit > 0 ? (spent / limit) * 100 : 0;
+    return { id: b.id ?? i, category: b.category, spent, limit, pct, over: spent > limit && limit > 0 };
+  });
+
+  const totalSpent = rows.reduce((s, r) => s + r.spent, 0);
+  const totalLimit = rows.reduce((s, r) => s + r.limit, 0);
+  const overallPct = totalLimit > 0 ? (totalSpent / totalLimit) * 100 : 0;
+  const overallOver = totalSpent > totalLimit;
+
   return (
     <div
       className="mobile-scroll"
@@ -46,46 +71,121 @@ export function MobileBudget() {
         flexDirection: "column",
         overflowY: "auto",
         paddingBottom: "calc(74px + env(safe-area-inset-bottom, 0px) + 16px)",
+        background: "var(--ft-base)",
+        color: "var(--ft-text)",
       }}
     >
       <MobileScreenHeader title="Budget" />
 
-      <div style={{ padding: "0 16px" }}>
-        {budgets.map((b, i) => {
-          const spent = spendByCat.get((b.category || "").toLowerCase()) ?? 0;
-          const limit = b.monthlyLimit ?? 0;
-          const pct = limit > 0 ? Math.min(100, Math.round((spent / limit) * 100)) : 0;
-          const over = spent > limit && limit > 0;
-          return (
-            <div
-              key={b.id ?? i}
-              style={{
-                borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-                ...(i === budgets.length - 1
-                  ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
-                  : {}),
-                padding: "10px 0",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
-                <span style={{ fontSize: 14 }}>{b.category}</span>
-                <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: over ? "var(--ft-red)" : "var(--ft-text)" }}>
-                  {formatGbp(spent)} <span style={{ color: "var(--ft-dim)" }}>/ {formatGbp(limit)}</span>
-                </span>
-              </div>
-              <div style={{ height: 4, background: "var(--ft-border)", marginTop: 8 }}>
+      <HStack paddingX={18} height={32} justify="end" align="center">
+        <MonoLabel size={11} letterSpacing="0.16em">
+          {budgets.length} {budgets.length === 1 ? "BUDGET" : "BUDGETS"}
+        </MonoLabel>
+      </HStack>
+
+      <VStack paddingX={18} marginBottom={14}>
+        <MonoLabel size={11} letterSpacing="0.16em">
+          SPENT · £ · MONTH TO DATE
+        </MonoLabel>
+        <HStack align="baseline" gap={4} marginTop={6}>
+          <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+          <Text
+            as="span"
+            size={34}
+            weight={600}
+            letterSpacing="-0.035em"
+            color={overallOver ? "var(--ft-red)" : "var(--ft-text)"}
+            numeric
+          >
+            {nfmt(totalSpent, { decimals: 2 })}
+          </Text>
+          <Text as="span" mono size={13} color="var(--ft-dim)" numeric>
+            / £{nfmt(totalLimit, { decimals: 2 })}
+          </Text>
+        </HStack>
+        <div style={{ marginTop: 10, height: BAR_H, background: "var(--ft-border)", position: "relative", overflow: "hidden" }}>
+          <div
+            style={{
+              width: `${Math.min(100, overallPct)}%`,
+              height: "100%",
+              background: overallOver ? "var(--ft-red)" : overallPct > 80 ? "var(--ft-amber)" : "var(--ft-accent)",
+            }}
+          />
+        </div>
+      </VStack>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "0 18px 6px",
+          borderBottom: "1px solid var(--ft-border2)",
+        }}
+      >
+        <MonoLabel as="span" size={9}>CATEGORY</MonoLabel>
+        <div style={{ flex: 1 }} />
+        <MonoLabel as="span" size={9}>SPENT · OF</MonoLabel>
+      </div>
+
+      {rows.map((r) => {
+        const displayPct = Math.min(100, r.pct);
+        const fillColor = r.over ? "var(--ft-red)" : r.pct > 80 ? "var(--ft-amber)" : "var(--ft-accent)";
+        return (
+          <div
+            key={r.id}
+            style={{
+              padding: "12px 18px",
+              borderBottom: "1px solid var(--ft-border)",
+            }}
+          >
+            <HStack justify="between" align="baseline" gap={10}>
+              <Text as="span" size={14}>{r.category}</Text>
+              <HStack gap={4} align="baseline">
+                <Text
+                  as="span"
+                  mono
+                  size={13}
+                  weight={600}
+                  color={r.over ? "var(--ft-red)" : "var(--ft-text)"}
+                  numeric
+                >
+                  {r.over ? "−" : ""}£{nfmt(r.over ? r.spent - r.limit : r.spent, { decimals: 2 })}
+                </Text>
+                <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
+                  / £{nfmt(r.limit, { decimals: 0 })}
+                </Text>
+              </HStack>
+            </HStack>
+            <div style={{ marginTop: 8, position: "relative", height: BAR_H }}>
+              <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
+              <div style={{ position: "absolute", inset: 0, width: `${displayPct}%`, background: fillColor }} />
+              {!r.over && r.pct < 100 && (
                 <div
                   style={{
-                    width: `${pct}%`,
-                    height: "100%",
-                    background: over ? "var(--ft-red)" : pct > 80 ? "var(--ft-amber)" : "var(--ft-accent)",
+                    position: "absolute",
+                    top: 0,
+                    left: `${displayPct}%`,
+                    right: 0,
+                    height: BAR_H,
+                    borderTop: "1px dotted var(--ft-dim)",
                   }}
                 />
-              </div>
+              )}
             </div>
-          );
-        })}
-      </div>
+            <HStack justify="between" align="baseline" marginTop={4}>
+              <Text as="span" mono size={9} letterSpacing="0.1em" color="var(--ft-dim)">
+                {Math.round(r.pct)}%
+              </Text>
+              {r.over && (
+                <Text as="span" mono size={9} letterSpacing="0.1em" color="var(--ft-red)">
+                  OVER
+                </Text>
+              )}
+            </HStack>
+          </div>
+        );
+      })}
     </div>
   );
 }

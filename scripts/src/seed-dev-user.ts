@@ -18,6 +18,7 @@ import {
   accountsTable,
   transactionsTable,
   subscriptionsTable,
+  budgetsTable,
   upcomingTable,
   debtsTable,
 } from "@workspace/db";
@@ -282,6 +283,19 @@ async function seedDebts(userId: string): Promise<void> {
   console.log("[seed] inserted 2 debts (one each direction)");
 }
 
+async function seedBudgets(userId: string): Promise<void> {
+  await db.insert(budgetsTable).values([
+    { userId, category: "Groceries",       monthlyLimit: "300.00" },
+    { userId, category: "Coffee",          monthlyLimit: "40.00"  },
+    { userId, category: "Eating Out",      monthlyLimit: "150.00" },
+    { userId, category: "Transport",       monthlyLimit: "80.00"  },
+    { userId, category: "Utilities",       monthlyLimit: "100.00" },
+    { userId, category: "Rent / Mortgage", monthlyLimit: "900.00" },
+    { userId, category: "Shopping",        monthlyLimit: "120.00" },
+  ]);
+  console.log("[seed] inserted 7 budgets");
+}
+
 async function main(): Promise<void> {
   assertDevBranch();
   console.log(`[seed] target: dev branch (${DEV_DB_HOST})`);
@@ -299,6 +313,7 @@ async function main(): Promise<void> {
   await seedSubscriptions(userId);
   await seedUpcoming(userId, acc);
   await seedDebts(userId);
+  await seedBudgets(userId);
 
   console.log(`\n[seed] done. sign in as ${SEED_EMAIL} / ${SEED_PASSWORD}`);
   process.exit(0);
