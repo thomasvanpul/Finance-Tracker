@@ -63,156 +63,42 @@ import {
 } from "@/components/investments/markets-widgets";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
-
-type InputMode = "perShare" | "totalCost";
-
-interface InvForm {
-  ticker: string;
-  name: string;
-  buyDate: string;
-  inputMode: InputMode;
-  shares: string;
-  costPricePerShare: string;
-  totalShares: string;
-  totalCost: string;
-  fees: string;
-  nativeCurrency: string;
-  assetClass: AssetClass | "";
-}
-
-type AssetClass = "ETF" | "Stock" | "Bond" | "Crypto" | "Cash" | "Real Estate" | "Other";
-const ASSET_CLASSES: AssetClass[] = ["ETF", "Stock", "Bond", "Crypto", "Cash", "Real Estate", "Other"];
-const LS_CLASSES_KEY = "ft-inv-classes";
-const LS_WATCHLISTS_KEY = "ft-watchlists";
-const LS_REBALANCE_KEY = "ft-rebalance-targets";
-const LS_ALERTS_KEY = "ft-price-alerts";
-type Watchlist = { id: string; name: string; tickers: string[] };
-
-// ── Price Alerts ──────────────────────────────────────────────────────────────
-type AlertMetric = "price" | "pct_change" | "pe";
-
-interface PriceAlert {
-  id: string;
-  ticker: string;
-  metric: AlertMetric;    // "price" is default — backward-compat: absent = "price"
-  targetPrice: number;   // for "price": a price; "pct_change": a % (e.g. 5 = 5%); "pe": a P/E ratio
-  direction: "above" | "below";
-  triggered: boolean;
-  createdAt: string;
-}
-
-function readAlerts(): PriceAlert[] {
-  try { const r = localStorage.getItem(LS_ALERTS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
-}
-
-function writeAlerts(alerts: PriceAlert[]): void {
-  try { localStorage.setItem(LS_ALERTS_KEY, JSON.stringify(alerts)); } catch { /* noop */ }
-}
-
-interface QuoteData {
-  ticker: string;
-  price: number;
-  currency: string;
-  changePercent?: number;
-  pe?: number | null;
-  forwardPe?: number | null;
-  eps?: number | null;
-  low52w?: number | null;
-  high52w?: number | null;
-  marketCap?: number | null;
-  beta?: number | null;
-  dividendYield?: number | null;
-  analystTargetPrice?: number | null;
-  dayHigh?: number | null;
-  dayLow?: number | null;
-  volume?: number | null;
-  previousClose?: number | null;
-  nextEarningsDate?: string | null;
-  marketState?: string | null;
-  postMarketPrice?: number | null;
-  postMarketChangePercent?: number | null;
-  preMarketPrice?: number | null;
-  preMarketChangePercent?: number | null;
-}
-
-type TabId = "portfolio" | "orders" | "derivatives" | "markets" | "rebalance";
-
-// ── Auto-detection helpers ────────────────────────────────────────────────────
-
-const CRYPTO_TICKERS = new Set([
-  "BTC","ETH","BNB","XRP","SOL","ADA","DOGE","DOT","AVAX","MATIC","LINK","UNI","ATOM",
-  "LTC","BCH","XLM","ALGO","VET","FIL","THETA","TRX","EOS","XTZ","NEO","DASH","ZEC",
-  "SHIB","PEPE","FLOKI","WIF","BONK","MEME",
-]);
-
-const ETF_TICKERS = new Set([
-  "VOO","VTI","SPY","QQQ","IVV","VEA","VXUS","BND","VNQ","GLD","SLV","IAU","TLT",
-  "LQD","HYG","AGG","VIG","SCHD","JEPI","JEPQ","VYM","DGRO","ITOT","IEFA","IEMG",
-  "EFA","EEM","VWO","RSP","ARKK","ARKG","ARKW","ARKF","XLK","XLV","XLF","XLE",
-  "SMH","SOXX","NVDL","TQQQ","SQQQ","SH","VGSH","VGIT","VGLT","BSV","BKAG",
-  "VUSA","VWRL","VWRP","CSPX","SWRD","IWDA","EIMI","VDEV","VAPX","ISF","CSP1",
-  "ACWI","URTH","IOO","MOAT","DIVO","NOBL","VT","BNDW",
-]);
-
-const BOND_ETF_TICKERS = new Set(["BND","AGG","TLT","LQD","HYG","MUB","SHY","IEF","BSV","BKAG","VGSH","VGIT","VGLT"]);
-
-interface ExchangeInfo { label: string; currency: string; }
-const EXCHANGE_SUFFIXES: Record<string, ExchangeInfo> = {
-  ".L":  { label: "LSE",        currency: "GBP" },
-  ".TO": { label: "TSX",        currency: "CAD" },
-  ".AX": { label: "ASX",        currency: "AUD" },
-  ".HK": { label: "HKEX",       currency: "HKD" },
-  ".DE": { label: "Xetra",      currency: "EUR" },
-  ".PA": { label: "Euronext Paris", currency: "EUR" },
-  ".AM": { label: "Euronext Amsterdam", currency: "EUR" },
-  ".BR": { label: "Euronext Brussels", currency: "EUR" },
-  ".LS": { label: "Euronext Lisbon", currency: "EUR" },
-  ".MI": { label: "Borsa Italiana", currency: "EUR" },
-  ".MC": { label: "BME Spain",  currency: "EUR" },
-  ".SS": { label: "Shanghai",   currency: "CNY" },
-  ".SZ": { label: "Shenzhen",   currency: "CNY" },
-  ".NS": { label: "NSE India",  currency: "INR" },
-  ".BO": { label: "BSE India",  currency: "INR" },
-  ".T":  { label: "Tokyo",      currency: "JPY" },
-  ".SW": { label: "SIX Swiss",  currency: "CHF" },
-  ".ST": { label: "Stockholm",  currency: "SEK" },
-  ".NZ": { label: "NZX",        currency: "NZD" },
-  ".SG": { label: "SGX",        currency: "SGD" },
-  ".JO": { label: "JSE",        currency: "ZAR" },
-  ".MX": { label: "BMV Mexico", currency: "MXN" },
-  ".SR": { label: "Tadawul",    currency: "SAR" },
-};
-
-function detectExchange(ticker: string): ExchangeInfo & { suffix: string } | null {
-  for (const [suffix, info] of Object.entries(EXCHANGE_SUFFIXES)) {
-    if (ticker.toUpperCase().endsWith(suffix.toUpperCase())) return { ...info, suffix };
-  }
-  return null;
-}
-
-function detectAssetClass(ticker: string): AssetClass {
-  const t = ticker.toUpperCase().split(".")[0];
-  if (CRYPTO_TICKERS.has(t)) return "Crypto";
-  if (BOND_ETF_TICKERS.has(t)) return "Bond";
-  if (ETF_TICKERS.has(t)) return "ETF";
-  if (/^[A-Z]{2,5}\d+$/.test(t)) return "Bond";
-  return "Stock";
-}
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-function makeEmptyInvForm(): InvForm {
-  return {
-    ticker: "", name: "", buyDate: new Date().toISOString().slice(0, 10), inputMode: "perShare",
-    shares: "", costPricePerShare: "", totalShares: "", totalCost: "",
-    fees: "", nativeCurrency: "USD", assetClass: "",
-  };
-}
-const CHART_COLORS = ["var(--ft-blue)", "var(--ft-green)", "var(--ft-amber)", "var(--ft-cyan)", "#79C0FF", "#56D364", "#FF7B72", "#D2A8FF", "#E3B341", "#FF6E40"];
-const CLASS_COLORS: Record<AssetClass, string> = {
-  ETF: "var(--ft-blue)", Stock: "var(--ft-green)", Bond: "var(--ft-amber)", Crypto: "var(--ft-cyan)",
-  Cash: "#E3B341", "Real Estate": "#79C0FF", Other: "var(--ft-dim)",
-};
+// Lifted to ./investments/types.ts — see E4 refactor commit.
+import type {
+  InputMode,
+  InvForm,
+  AssetClass,
+  Watchlist,
+  AlertMetric,
+  PriceAlert,
+  QuoteData,
+  TabId,
+  ExchangeInfo,
+  NewsItem,
+} from "./investments/types";
+import {
+  ASSET_CLASSES,
+  LS_CLASSES_KEY,
+  LS_WATCHLISTS_KEY,
+  LS_REBALANCE_KEY,
+  LS_ALERTS_KEY,
+  CRYPTO_TICKERS,
+  ETF_TICKERS,
+  BOND_ETF_TICKERS,
+  EXCHANGE_SUFFIXES,
+  detectExchange,
+  detectAssetClass,
+  makeEmptyInvForm,
+  CHART_COLORS,
+  CLASS_COLORS,
+  TABS,
+  readAlerts,
+  writeAlerts,
+  readClassMap,
+  writeClassMap,
+  readWatchlists,
+  writeWatchlists,
+} from "./investments/types";
 
 const TH: React.CSSProperties = {
   padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
@@ -221,34 +107,7 @@ const TH: React.CSSProperties = {
   letterSpacing: "0.4px", whiteSpace: "nowrap" as const,
 };
 
-const TABS: { id: TabId; label: string; color: string }[] = [
-  { id: "portfolio", label: "PORTFOLIO", color: "var(--ft-blue)" },
-  { id: "markets", label: "MARKETS", color: "var(--ft-green)" },
-  { id: "orders", label: "ORDERS", color: "var(--ft-amber)" },
-  { id: "derivatives", label: "DERIVATIVES", color: "var(--ft-cyan)" },
-  { id: "rebalance", label: "REBALANCE", color: "var(--ft-accent)" },
-];
-
-// ── Utilities ─────────────────────────────────────────────────────────────────
-
-function readClassMap(): Record<number, AssetClass> {
-  try { const r = localStorage.getItem(LS_CLASSES_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; }
-}
-function writeClassMap(m: Record<number, AssetClass>): void {
-  try { localStorage.setItem(LS_CLASSES_KEY, JSON.stringify(m)); } catch { /* noop */ }
-}
-function readWatchlists(): Watchlist[] {
-  try { const r = localStorage.getItem(LS_WATCHLISTS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
-}
-function writeWatchlists(wls: Watchlist[]): void {
-  try { localStorage.setItem(LS_WATCHLISTS_KEY, JSON.stringify(wls)); } catch { /* noop */ }
-}
-
-
 // ── Markets Tab ───────────────────────────────────────────────────────────────
-
-
-interface NewsItem { title: string; link: string; publisher: string; publishedAt: string; }
 
 // Hook: streams 5s/15s/30s real-time candles via SSE (Alpaca free paper feed)
 function useTickerStream(ticker: string | null, period: string) {
