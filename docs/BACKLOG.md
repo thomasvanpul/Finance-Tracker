@@ -112,16 +112,21 @@ at all, which is why `/transactions` is deliberately excluded from
   route map.
 - **Verify:** open `/transactions` on a phone viewport and delete a row.
 
-### D2 · Remaining mobile screens in the new design — TODO
-Only the home screen uses the approved language. The other 14 are stripped to
-real-data-only but still carry the old visual treatment, which is visible and
-jarring next to Home.
-- **Order:** Accounts, Net Worth, Upcoming first — they are reachable from the
-  home screen's own links.
-- **Read:** `docs/MOBILE-CONCEPT.md` before starting.
-- **Note:** build two or three before designing all fourteen. The design phase
-  ran to twenty-two rounds partly by answering questions only implementation
-  could answer.
+### D2 · Remaining mobile screens in the new design — IN PROGRESS
+Approved-language ports: home (already done), plus **MobileAccounts
+(`6d86166`)** and **MobileNetWorth (`00afb0c`)** in this pass. Both
+carry the home vocabulary — 09:41 top bar, mono-uppercase label + 34px
+premium figure, block field with area-encodes-value + constant-depth
+decoration, per-currency or per-type sections with native-first /
+converted-second number treatment.
+Extracted `nfmt` + `CURRENCY_SYMBOLS` to `mobile-format.ts` so the three
+screens share the exact number rule.
+- **Remaining (11 screens):** Upcoming next (linked from home), then the
+  rest in whatever order.
+- **Read:** `docs/MOBILE-CONCEPT.md` before continuing.
+- **Note:** stopping at 2 confirms the pattern before the remaining
+  eleven. Design phase ran to 22 rounds by inventing questions
+  implementation could answer.
 
 ### D3 · Dead config cleanup — TODO
 `useMobileConfig().midTabs` and `.quickActions` have no consumers after the nav
@@ -149,18 +154,57 @@ identically at 390px. Callsite migration to the tokens is a follow-up:
 any page that hardcodes 40/36/32/30/28/26/24/22/20/18/16 inline now
 renders at that literal size on mobile too.
 
-### E2 · Flex-container primitive — TODO
-`docs/STYLE-INVENTORY.md` shapes 2, 8, 9, 10 and 13 are flex row and column
-variants, roughly 793 occurrences. Nothing in `components/primitives/` covers
-them; it is the largest remaining block of the 11,715 inline style objects.
-- **Verify:** report the `style={{` count in `src` before and after.
+### E2 · Flex-container primitive — DONE (`95c3605`)
+`<HStack>` and `<VStack>` under `components/primitives/stack.tsx`. Named
+props only (`gap`, `align`, `justify`, `wrap`, `padding`, `paddingX/Y`,
+`marginTop/Bottom`, `grow`, `wide`, `minWidth0`, `className`, `role`,
+`onClick`) — deliberately no `style` prop, which was PanelBox's failure
+mode. Absorbs the four target shapes (222 + 93 + 131 + 53 = 499 direct
+hits across `src`, ~700 including padding/wrap variants). Nothing
+migrated yet — that is E3's job.
 
-### E3 · Migrate remaining pages to the primitives — TODO · Blocked by E2
-`pages/owing.tsx` is the only migrated page (239 → 207 style objects).
+### E3 · Migrate remaining pages to the primitives — REPORTED, NOT DONE
+Blocked target ("drop by at least a third") turned out unreachable via
+flex primitives alone (measured: pure-flex on the top 4 pages tops out
+at 8-14% per page). Text-shape re-measurement across the four target
+pages (`investments.tsx`, `analytics.tsx`, `settings.tsx`,
+`transactions.tsx`) put the combined text + flex absorption at ~27%
+theoretical, individual pages 25-29%. Proposed primitive set to close
+the gap: `<Text>` (new, general text primitive with named variants for
+mono/sans + size / color / weight / letterSpacing / textTransform /
+margins / textAlign / lineHeight / whiteSpace / tabular / as) plus a
+tightened `<MonoLabel>` (remove `style` prop; zero call sites use it).
+Absorption estimate reported to user; awaiting go-ahead to build and
+migrate.
 
-### E4 · Break up the oversized pages — TODO
-`investments.tsx` 306KB, `analytics.tsx` 193KB, `transactions.tsx` 168KB,
-`settings.tsx` 166KB. Layout work inside files this size drifts page to page.
+### E4 · Break up the oversized pages — IN PROGRESS (this pass)
+Pure extraction, no behaviour change, one commit per file.
+- `investments.tsx` → **febc8fb**: 5092 → 4843 lines (−249). Moved
+  markets data (ticker lists, label maps, MOCK_QUOTES, sentiment helpers)
+  and small render widgets (CandlestickLayer, OHLCTooltip, RangeBar,
+  RecBar, RatingBar) to `components/investments/markets-{data,widgets}`.
+- `analytics.tsx` → **6b6efa8**: 3740 → 3703 lines (−37). Moved types +
+  helpers (SpendingAnnotation, Range, ANNOT_KEY, load/save, DOW_LABELS,
+  MONTH_SHORT, getYYYYMM/localDate/getDOW/getWeekOfMonth, monthsAgoStr,
+  pctChange, cutoffDate) to `pages/analytics-helpers.ts`.
+- `transactions.tsx` → **d7af630**: 3246 → 3054 lines (−192 incl. blanks).
+  Moved types + constants + helpers (TxType, Currency, TxForm/Errors,
+  Split types, MerchantGroup, validateTxField, load/saveSplits, TH,
+  TX_TYPE_COLOR, BULK_CATEGORIES / CATEGORIES, date shortcuts,
+  exportCsv, exportJson) to `pages/transactions-helpers.ts`.
+- `settings.tsx` → **eef05cb**: 3061 → 2781 lines (−280). Moved
+  PANEL_STYLE, HEADER_STYLE, ROW, RowLabel, Toggle, SectionHeader,
+  ActionBtn and every hover-aware Settings*Row plus StorageKpiStrip
+  to `pages/settings-atoms.tsx`.
+
+Total: 5,092 lines removed from four pages; equivalent moved into six
+extraction modules. No behaviour change. Each commit typechecked, ran
+`pnpm test` (43/43 pass), and produced a successful production build.
+
+Meaningful further reduction requires refactoring (not extraction) — the
+largest remaining components inside each file share types, hooks and
+localStorage-backed state with in-file closures. Lifting those to shared
+type modules is a follow-up.
 
 ---
 
