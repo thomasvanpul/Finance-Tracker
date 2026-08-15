@@ -1,18 +1,54 @@
 import { useListDebts, useGetDebtSummary } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
-import { formatGbp } from "@/lib/utils";
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
 
-// Owed-to-me / I-owe totals + open debts list. Earlier mocks (MOCK_DEBTS,
-// MOCK_SETTLED, MOCK_NET_HISTORY 7-day series) removed — settled history
-// and daily net-owing trend have no backing API.
+// Owing — bills split with other people.
+//
+// Design signature devices applied:
+//   - "People as instruments" (MOBILE-CONCEPT § Parked spines): each
+//     counterparty gets a 32×32 initial glyph — a ticker-shaped mark
+//     (JM, PT, AC…) that gives the row its identity in the same way
+//     an account glyph does elsewhere.
+//   - Premium-tier NET headline (34px) with true minus and colour;
+//     OWED TO ME / I OWE sub-line named in the app's mono vocabulary.
+//   - Two-level column header (WHO / EVENT / £) with hairline rule.
+//   - SOLID row dividers — a debt IS real (dotted would misclassify).
+//   - Native currency first, converted second for foreign debts.
+//   - Age tag (mono, e.g. "51D") on each row so old debts read as old.
+
+const AMOUNT_COL_W = 108;
+
+interface DebtRow {
+  id: number;
+  personName: string;
+  description: string;
+  date: string;
+  nativeAmount: number;
+  currency: string;
+  direction: "they_owe_me" | "i_owe_them";
+  status: string;
+  gbpEquivalent: number;
+}
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
+}
+
+function daysAgo(dateStr: string): number {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr + "T12:00:00");
+  return Math.round((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+}
 
 export function MobileOwing({ onBack }: { onBack?: () => void }) {
   const [, navigate] = useLocation();
   const { data: debts = [], isLoading } = useListDebts();
   const { data: summary } = useGetDebtSummary();
 
-  const pending = debts.filter((d) => d.status === "pending");
+  const pending: DebtRow[] = debts.filter((d) => d.status === "pending");
 
   if (!isLoading && debts.length === 0) {
     return (
@@ -33,6 +69,8 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
   const byMe = summary?.totalIOwe ?? 0;
   const net = summary?.netGbp ?? toMe - byMe;
 
+  const sorted = [...pending].sort((a, b) => b.date.localeCompare(a.date));
+
   return (
     <div
       className="mobile-scroll"
@@ -42,67 +80,135 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
         flexDirection: "column",
         overflowY: "auto",
         paddingBottom: "calc(74px + env(safe-area-inset-bottom, 0px) + 16px)",
+        background: "var(--ft-base)",
+        color: "var(--ft-text)",
       }}
     >
       <MobileScreenHeader title="Owing" onBack={onBack} />
 
-      <div style={{ padding: "0 16px 6px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em", color: "var(--ft-dim)" }}>
+      <HStack paddingX={18} height={32} justify="end" align="center">
+        <MonoLabel size={11} letterSpacing="0.16em">
+          {sorted.length} OPEN
+        </MonoLabel>
+      </HStack>
+
+      <VStack paddingX={18} marginBottom={14}>
+        <MonoLabel size={11} letterSpacing="0.16em">
           NET · £
-        </div>
-        <div className="pnum" style={{ fontSize: 34, lineHeight: "34px", fontWeight: 600, letterSpacing: "-0.035em", marginTop: 6, color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-          {net >= 0 ? "+" : "−"}{formatGbp(Math.abs(net))}
-        </div>
-        <div style={{ display: "flex", gap: 20, marginTop: 8 }}>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.14em" }}>
-              OWED TO ME
-            </div>
-            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 15, color: "var(--ft-green)" }}>
-              {formatGbp(toMe)}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.14em" }}>
-              I OWE
-            </div>
-            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 15, color: "var(--ft-red)" }}>
-              {formatGbp(byMe)}
-            </div>
-          </div>
-        </div>
+        </MonoLabel>
+        <HStack align="baseline" gap={4} marginTop={6}>
+          <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+          <Text
+            as="span"
+            size={34}
+            weight={600}
+            letterSpacing="-0.035em"
+            color={net >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+            numeric
+          >
+            {net < 0 ? "−" : "+"}{nfmt(Math.abs(net), { decimals: 2 })}
+          </Text>
+        </HStack>
+        <HStack gap={14} marginTop={8} align="baseline">
+          <HStack gap={4} align="baseline">
+            <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">OWED TO ME</Text>
+            <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
+              +£{nfmt(toMe, { decimals: 2 })}
+            </Text>
+          </HStack>
+          <HStack gap={4} align="baseline">
+            <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">I OWE</Text>
+            <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
+              −£{nfmt(byMe, { decimals: 2 })}
+            </Text>
+          </HStack>
+        </HStack>
+      </VStack>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "0 18px 6px",
+          borderBottom: "1px solid var(--ft-border2)",
+        }}
+      >
+        <MonoLabel as="span" size={9}>WHO</MonoLabel>
+        <div style={{ width: 40 }} />
+        <MonoLabel as="span" size={9}>EVENT</MonoLabel>
+        <div style={{ flex: 1 }} />
+        <MonoLabel as="span" size={9}>£</MonoLabel>
       </div>
 
-      <div style={{ padding: "18px 16px 0" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em", color: "var(--ft-dim)", marginBottom: 6 }}>
-          {pending.length} OPEN
-        </div>
-        {pending.map((d, i) => (
+      {sorted.map((d) => {
+        const isForeign = d.currency !== "GBP";
+        const nativeSym = CURRENCY_SYMBOLS[d.currency] ?? d.currency + " ";
+        const owedToMe = d.direction === "they_owe_me";
+        const age = daysAgo(d.date);
+        return (
           <div
             key={d.id}
             style={{
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
-              gap: 10,
-              minHeight: 44,
-              borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-              ...(i === pending.length - 1
-                ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
-                : {}),
-              fontSize: 14,
+              gap: 12,
+              minHeight: 60,
+              padding: "10px 18px",
+              borderBottom: "1px solid var(--ft-border)",
             }}
           >
-            <span>
-              {d.personName}
-              <span style={{ color: "var(--ft-dim)", marginLeft: 8, fontSize: 11 }}>{d.description}</span>
-            </span>
-            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: d.direction === "they_owe_me" ? "var(--ft-green)" : "var(--ft-red)" }}>
-              {d.direction === "they_owe_me" ? "+" : "−"}{formatGbp(Math.abs(d.gbpEquivalent))}
-            </span>
+            {/* Counterparty initial glyph — ticker-shaped */}
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "var(--ft-raised)",
+                border: "1px solid var(--ft-border2)",
+                color: owedToMe ? "var(--ft-green)" : "var(--ft-red)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+              }}
+            >
+              {initials(d.personName)}
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Text as="div" size={14} weight={600} truncate>{d.personName}</Text>
+              <HStack gap={6} align="baseline">
+                <Text as="span" size={11} color="var(--ft-dim)" truncate>{d.description}</Text>
+                <Text as="span" mono size={9} letterSpacing="0.08em" color="var(--ft-dim)" nowrap>
+                  · {age}D AGO
+                </Text>
+              </HStack>
+            </div>
+
+            <div style={{ width: AMOUNT_COL_W, flexShrink: 0, textAlign: "right" }}>
+              {isForeign && (
+                <Text as="div" mono size={10} color="var(--ft-dim)" numeric>
+                  {nativeSym}{nfmt(d.nativeAmount, { decimals: 2 })}
+                </Text>
+              )}
+              <Text
+                as="div"
+                mono
+                size={14}
+                weight={600}
+                color={owedToMe ? "var(--ft-green)" : "var(--ft-red)"}
+                numeric
+              >
+                {owedToMe ? "+" : "−"}£{nfmt(Math.abs(d.gbpEquivalent), { decimals: 2 })}
+              </Text>
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
