@@ -925,7 +925,7 @@ function DisplayAndMotionPanel() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 32 }}>115%</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 36, textAlign: "right" }}>{fontScale}%</span>
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>Scales all app text. Larger = more readable, smaller = denser layout.</div>
+          <Text as="div" mono size={9} color="var(--ft-dim)" mt={6}>Scales all app text. Larger = more readable, smaller = denser layout.</Text>
         </div>
       </div>
 
@@ -948,7 +948,7 @@ function DisplayAndMotionPanel() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 30, textAlign: "right" }}>Rich</span>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 32, textAlign: "right" }}>{intensity}</span>
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>Affects particle density and opacity. Some effects require a page refresh.</div>
+          <Text as="div" mono size={9} color="var(--ft-dim)" mt={6}>Affects particle density and opacity. Some effects require a page refresh.</Text>
         </div>
         <SettingsSelectRow title="Theme transition" sub="Animation style when switching themes" value={transition} onChange={setTransitionVal}>
           <option value="instant">Instant</option>
@@ -1304,13 +1304,13 @@ function WardrobePanel() {
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive && isOwned ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>{skin.rarity}</span>
                   </div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, marginBottom: skin.perks.length > 0 ? 5 : 0 }}>{skin.desc}</div>
+                  <Text as="div" mono size={10} color="var(--ft-muted)" lineHeight={1.5} mb={skin.perks.length > 0 ? 5 : 0}>{skin.desc}</Text>
                   {skin.perks.length > 0 && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 6px" }}>
                       {skin.perks.map((perk) => (<span key={perk} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>))}
                     </div>
                   )}
-                  {!isOwned && themeReq && (<div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5, letterSpacing: "0.04em" }}>Requires <span className="pnum">{themeReq.requiredXP.toLocaleString()}</span> XP to unlock</div>)}
+                  {!isOwned && themeReq && (<Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em" mt={5}>Requires <span className="pnum">{themeReq.requiredXP.toLocaleString()}</span> XP to unlock</Text>)}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginTop: 2 }}>
                   {!isOwned && <Lock style={{ width: 10, height: 10, color: "var(--ft-dim)" }} />}
@@ -1359,7 +1359,7 @@ function AiSettingsPanel() {
                   {s.label}
                 </div>
                 <Text as="div" mono size={10} color="var(--ft-muted)" lineHeight={1.5}>{s.desc}</Text>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, letterSpacing: "0.05em" }}>{s.preview}</div>
+                <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.05em" mt={4}>{s.preview}</Text>
               </div>
               <div style={{
                 width: 14, height: 14, borderRadius: "50%", flexShrink: 0,
@@ -1424,11 +1424,11 @@ function WiseAccountRow({ account }: { account: { id: number; name: string; curr
         <Text as="div" mono size={12} weight={500} color="var(--ft-text)">
           {account.name}
         </Text>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>
+        <Text as="div" mono size={10} color="var(--ft-muted)" mt={2}>
           {account.lastSyncedAt
             ? `Last synced ${new Date(account.lastSyncedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`
             : "Never synced"}
-        </div>
+        </Text>
       </div>
       <span style={{
         fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em",
@@ -1454,7 +1454,7 @@ function WiseSyncKpiStrip({ synced, added, updated }: { synced: number; added: n
       {cells.map(c => (
         <div key={c.label} style={{ background: "var(--ft-surface)", padding: "12px 14px", borderTop: `2px solid ${c.color}` }}>
           <Text as="div" mono size={20} weight={700} color="var(--ft-text)" lineHeight={1}>{c.value}</Text>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>{c.label}</div>
+          <Text as="div" mono upper size={9} color="var(--ft-dim)" letterSpacing="0.08em" mt={4}>{c.label}</Text>
         </div>
       ))}
     </div>
@@ -2009,9 +2009,9 @@ function CryptoWalletsPanel() {
                     {wallet.address}
                   </div>
                   {wallet.error ? (
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-red)", marginTop: 2 }}>
+                    <Text as="div" mono size={10} color="var(--ft-red)" mt={2}>
                       ⚠ {wallet.error}
-                    </div>
+                    </Text>
                   ) : wallet.balance != null ? (
                     <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 3 }}>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
@@ -2025,9 +2025,9 @@ function CryptoWalletsPanel() {
                     </div>
                   ) : null}
                   {wallet.lastSynced && (
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+                    <Text as="div" mono size={9} color="var(--ft-dim)" mt={2}>
                       Synced {new Date(wallet.lastSynced).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                    </div>
+                    </Text>
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexShrink: 0, alignItems: "center", paddingTop: 2 }}>
@@ -2199,7 +2199,7 @@ function CategoriesPanel() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>EDIT: {editingCat.toUpperCase()}</div>
 
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 6, letterSpacing: "0.08em" }}>EMOJI</div>
+              <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.08em" mb={6}>EMOJI</Text>
               <input
                 value={emojiInput}
                 onChange={e => setEmojiInput(e.target.value)}
@@ -2209,7 +2209,7 @@ function CategoriesPanel() {
             </div>
 
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 6, letterSpacing: "0.08em" }}>COLOUR</div>
+              <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.08em" mb={6}>COLOUR</Text>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
                 {COMMON_COLORS.map(c => (
                   <div key={c} onClick={() => setColorInput(c)}
@@ -2243,7 +2243,7 @@ function CurrencyKpiStrip({ baseCurrency, pairCount }: { baseCurrency: string; p
       {cells.map(c => (
         <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", borderTop: `2px solid ${c.color}` }}>
           <Text as="div" mono size={22} weight={700} color="var(--ft-text)" lineHeight={1}>{c.value}</Text>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>{c.label}</div>
+          <Text as="div" mono upper size={9} color="var(--ft-dim)" letterSpacing="0.08em" mt={4}>{c.label}</Text>
         </div>
       ))}
     </div>
@@ -2676,7 +2676,7 @@ export default function Settings() {
                   + Add
                 </button>
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 12, letterSpacing: "0.04em" }}>Rules apply when adding transactions and during CSV import.</div>
+              <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em" mt={12}>Rules apply when adding transactions and during CSV import.</Text>
             </div>
           </div>
           <CustomCategoriesPanel />
