@@ -332,8 +332,10 @@ async function seedGoals(userId: string): Promise<void> {
     { userId, name: "New Laptop",         target: "2500.00",  current: "2500.00" }, // completed
     { userId, name: "Down Payment",       target: "60000.00", current: "14700.00", deadline: isoDaysAhead(720), monthlyContribution: "800.00" },
     { userId, name: "Course Fund",        target: "1500.00",  current: "0.00" },    // not started
+    // Overdue — exercises the red days<0 path on MobileGoals.
+    { userId, name: "Wedding Gift",       target: "800.00",   current: "220.00",  deadline: isoDaysAgo(9) },
   ]);
-  console.log("[seed] inserted 5 goals (1 complete, 1 not started)");
+  console.log("[seed] inserted 6 goals (1 complete, 1 not started, 1 overdue)");
 }
 
 async function seedBudgets(userId: string): Promise<void> {
