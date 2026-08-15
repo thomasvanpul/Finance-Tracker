@@ -20,6 +20,7 @@ import {
   subscriptionsTable,
   budgetsTable,
   goalsTable,
+  investmentsTable,
   upcomingTable,
   debtsTable,
 } from "@workspace/db";
@@ -310,6 +311,20 @@ async function seedDebts(userId: string): Promise<void> {
   console.log("[seed] inserted 3 debts (1 foreign)");
 }
 
+async function seedInvestments(userId: string): Promise<void> {
+  // Broad ETF + a couple of blue-chips + one crypto. Live prices come from
+  // the market API — if that provider is offline the P&L stays 0 and the
+  // dashboard reads the cost basis as current value; that's honest.
+  await db.insert(investmentsTable).values([
+    { userId, ticker: "VUSA.L",  name: "Vanguard S&P 500 UCITS",  buyDate: isoDaysAgo(300), shares: "42",  costPricePerShare: "78.20" },
+    { userId, ticker: "VWRL.L",  name: "Vanguard All-World",      buyDate: isoDaysAgo(220), shares: "31",  costPricePerShare: "105.40" },
+    { userId, ticker: "AAPL",    name: "Apple",                   buyDate: isoDaysAgo(180), shares: "8",   costPricePerShare: "184.55" },
+    { userId, ticker: "MSFT",    name: "Microsoft",               buyDate: isoDaysAgo(140), shares: "5",   costPricePerShare: "412.10" },
+    { userId, ticker: "BTC-USD", name: "Bitcoin",                 buyDate: isoDaysAgo(90),  shares: "0.05", costPricePerShare: "58000" },
+  ]);
+  console.log("[seed] inserted 5 investments");
+}
+
 async function seedGoals(userId: string): Promise<void> {
   await db.insert(goalsTable).values([
     { userId, name: "Emergency Fund",     target: "12000.00", current: "8100.00",  deadline: isoDaysAhead(180), monthlyContribution: "500.00" },
@@ -353,6 +368,7 @@ async function main(): Promise<void> {
   await seedDebts(userId);
   await seedBudgets(userId);
   await seedGoals(userId);
+  await seedInvestments(userId);
 
   console.log(`\n[seed] done. sign in as ${SEED_EMAIL} / ${SEED_PASSWORD}`);
   process.exit(0);
