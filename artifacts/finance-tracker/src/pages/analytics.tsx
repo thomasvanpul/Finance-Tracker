@@ -4,6 +4,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useListTransactions, useListBudgets } from "@workspace/api-client-react";
 import { Skeleton as FtSkeleton } from "@/components/skeleton";
 import { ErrorState } from "@/components/error-state";
+import { MonoTooltip, monoTooltipStyle, type TooltipEntry } from "@/components/mono-tooltip";
 import { formatGbp } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS } from "@/lib/persona";
 import {
@@ -28,51 +29,7 @@ function saveAnnotations(a: SpendingAnnotation[]): void {
   localStorage.setItem(ANNOT_KEY, JSON.stringify(a));
 }
 
-// ─── shared tooltip style ────────────────────────────────────────────────────
-
-const monoTooltipStyle: React.CSSProperties = {
-  background: "var(--ft-raised)",
-  border: "1px solid var(--ft-border2)",
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
-  boxShadow: "none",
-  padding: "8px 12px",
-  borderRadius: 3,
-};
-
-type TooltipEntry = { name?: string | number; value?: number | string | (number | string)[]; color?: string };
-
-function MonoTooltip({ active, payload, label, formatter }: {
-  active?: boolean;
-  payload?: TooltipEntry[];
-  label?: string;
-  formatter?: (value: number, name: string) => [string, string];
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={monoTooltipStyle}>
-      {label && (
-        <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          {label}
-        </div>
-      )}
-      {payload.map((entry, i) => {
-        const rawVal = typeof entry.value === "number" ? entry.value : 0;
-        const name = String(entry.name ?? "");
-        const [displayVal, displayName] = formatter ? formatter(rawVal, name) : [formatGbp(rawVal), name];
-        return (
-          <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {entry.color && (
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />
-            )}
-            {displayName && <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>{displayName}</span>}
-            <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{displayVal}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+// MonoTooltip is imported from a shared module — see components/mono-tooltip.tsx.
 
 // ─── custom dot renderer for line charts ─────────────────────────────────────
 

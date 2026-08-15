@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
+import { MonoTooltip, type TooltipEntry } from "@/components/mono-tooltip";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import {
   BarChart,
@@ -610,8 +611,14 @@ function MonthByMonth({ txs, year }: { txs: Tx[]; year: number }) {
               tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
             />
             <Tooltip
-              contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 11 }}
-              formatter={(v: number, name: string) => [formatGbp(v), name]}
+              content={(p) => (
+                <MonoTooltip
+                  active={p.active}
+                  payload={p.payload as TooltipEntry[]}
+                  label={String(p.label ?? "")}
+                  formatter={(v, name) => [formatGbp(v), name]}
+                />
+              )}
             />
             <Bar dataKey="income" fill="var(--ft-green)" opacity={0.8} radius={0} maxBarSize={16} />
             <Bar dataKey="expenses" fill="var(--ft-red)" opacity={0.8} radius={0} maxBarSize={16} />
@@ -707,8 +714,14 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
               tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
             />
             <Tooltip
-              contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 11 }}
-              formatter={(v: number, name: string) => [formatGbp(v), name]}
+              content={(p) => (
+                <MonoTooltip
+                  active={p.active}
+                  payload={p.payload as TooltipEntry[]}
+                  label={String(p.label ?? "")}
+                  formatter={(v, name) => [formatGbp(v), name]}
+                />
+              )}
             />
             <Bar dataKey={`${year} expenses`} fill="var(--ft-red)" opacity={0.85} radius={0} maxBarSize={10} />
             <Bar dataKey={`${year - 1} expenses`} fill="var(--ft-red)" opacity={0.35} radius={0} maxBarSize={10} />

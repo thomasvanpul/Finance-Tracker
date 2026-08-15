@@ -18,6 +18,7 @@ import {
   useGetTransactionSummary,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { MonoTooltip, type TooltipEntry } from "@/components/mono-tooltip";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { Button } from "@/components/ui/button";
@@ -2888,8 +2889,14 @@ export default function Accounts() {
                   <XAxis dataKey="month" tick={{ fill: "#6b7280", fontSize: 10, fontFamily: "var(--font-mono)" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "#6b7280", fontSize: 9, className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `£${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toFixed(0)}`} width={44} />
                   <Tooltip
-                    contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-text)", borderRadius: 2 }}
-                    formatter={(v: number, name: string) => [formatGbp(v), name === "income" ? "Income" : name === "expense" ? "Expenses" : "Net"]}
+                    content={(p) => (
+                      <MonoTooltip
+                        active={p.active}
+                        payload={p.payload as TooltipEntry[]}
+                        label={String(p.label ?? "")}
+                        formatter={(v, name) => [formatGbp(v), name === "income" ? "Income" : name === "expense" ? "Expenses" : "Net"]}
+                      />
+                    )}
                   />
                   <ReferenceLine y={0} stroke="var(--ft-border2)" />
                   <Bar dataKey="income" fill="var(--ft-green)" opacity={0.8} radius={[2, 2, 0, 0]} />
