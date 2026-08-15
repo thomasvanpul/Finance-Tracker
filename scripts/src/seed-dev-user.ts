@@ -253,8 +253,22 @@ async function seedUpcoming(userId: string, acc: Record<string, SeededAccount>):
       currency: "GBP",
       accountId: acc.monzo.id,
     },
+    {
+      // Foreign — exercises the native+converted row rendering on
+      // MobileUpcomingFull. RM 1,250 / month for the KL flat.
+      userId,
+      dueDate: isoDaysAhead(9),
+      description: "MAYBANK PROPERTY TAX",
+      category: "Property",
+      type: "expense",
+      frequency: "one-time",
+      status: "pending",
+      nativeAmount: "1250.00",
+      currency: "MYR",
+      accountId: acc.maybank.id,
+    },
   ]);
-  console.log("[seed] inserted 2 upcoming bills");
+  console.log("[seed] inserted 3 upcoming bills (1 foreign)");
 }
 
 async function seedDebts(userId: string): Promise<void> {
@@ -279,8 +293,20 @@ async function seedDebts(userId: string): Promise<void> {
       direction: "i_owe_them",
       status: "pending",
     },
+    {
+      // Foreign — exercises the native+converted amount treatment on
+      // MobileOwing.
+      userId,
+      personName: "Hui Ling",
+      description: "Shared Airbnb, Penang",
+      date: isoDaysAgo(12),
+      nativeAmount: "620.00",
+      currency: "MYR",
+      direction: "they_owe_me",
+      status: "pending",
+    },
   ]);
-  console.log("[seed] inserted 2 debts (one each direction)");
+  console.log("[seed] inserted 3 debts (1 foreign)");
 }
 
 async function seedBudgets(userId: string): Promise<void> {
