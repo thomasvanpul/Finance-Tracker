@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatGbp } from "@/lib/utils";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -474,13 +474,13 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
       </div>
 
       {/* Table view toggle */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+      <HStack align="center" justify="between" marginBottom={8}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Amortization Schedule</div>
-        <div style={{ display: "flex", gap: 0 }}>
+        <HStack gap={0}>
           <button onClick={() => setViewMode("yearly")} style={TOGGLE_BTN(viewMode === "yearly")}>Year</button>
           <button onClick={() => setViewMode("monthly")} style={TOGGLE_BTN(viewMode === "monthly")}>Month</button>
-        </div>
-      </div>
+        </HStack>
+      </HStack>
 
       {viewMode === "yearly" ? (
         <div className="ft-scroll-x">
@@ -721,7 +721,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
   return (
     <div style={{ marginTop: 16 }}>
       <SectionHeader accentColor="var(--ft-blue)">Interest Rate Scenarios</SectionHeader>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
+      <HStack gap={8} align="center" marginBottom={12}>
         <div style={LABEL_STYLE}>Base rate (%)</div>
         <input
           type="number"
@@ -731,7 +731,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
           onChange={(e) => setBaseRate(Number(e.target.value))}
           style={{ ...INPUT_STYLE, width: 90 }}
         />
-      </div>
+      </HStack>
       <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
         {scenarios.map((delta) => (
           <RateScenarioCard
@@ -838,7 +838,7 @@ function AffordabilityTab() {
         </div>
         <div style={FIELD_STYLE}>
           <div style={LABEL_STYLE}>Buyer type</div>
-          <div style={{ display: "flex", gap: 0 }}>
+          <HStack gap={0}>
             {[{ label: "First-time buyer", value: true }, { label: "Other", value: false }].map(({ label, value }) => (
               <button
                 key={label}
@@ -858,7 +858,7 @@ function AffordabilityTab() {
                 {label}
               </button>
             ))}
-          </div>
+          </HStack>
         </div>
       </div>
 
@@ -975,9 +975,9 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
 
   return (
     <div style={{ border: "1px solid var(--ft-border)", borderLeft: `3px solid ${ltvColor}`, background: "var(--ft-surface)", marginBottom: 8 }}>
-      <div style={{ padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 16 }}>
+      <HStack gap={16} align="start" padding="14px 16px">
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <HStack gap={8} align="center" marginBottom={12}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)" }}>{mortgage.name}</span>
             <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               {mortgage.type === "repayment" ? "Repayment" : "Interest-only"}
@@ -985,9 +985,9 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
             <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 2, background: "var(--ft-raised)", color: ltvColor, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.06em", border: `1px solid ${ltvColor}33` }}>
               LTV <span className="pnum">{ltv.toFixed(1)}</span>%
             </span>
-          </div>
+          </HStack>
           {/* Hero stats row */}
-          <div style={{ display: "flex", gap: 24, alignItems: "flex-end", marginBottom: 14, flexWrap: "wrap" as const }}>
+          <HStack gap={24} align="end" wrap marginBottom={14}>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Monthly Payment</div>
               <Text as="div" mono size={28} weight={700} color="var(--ft-amber)" letterSpacing="-0.025em" lineHeight={1}>
@@ -1018,7 +1018,7 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
                 {formatMonths(remaining)}
               </Text>
             </div>
-          </div>
+          </HStack>
           {/* LTV progress bar */}
           <div style={{ marginBottom: 6 }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4, letterSpacing: "0.06em" }}>
@@ -1068,7 +1068,7 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
             {deleteConfirm ? "DEL?" : "×"}
           </button>
         </div>
-      </div>
+      </HStack>
 
       {expanded && (
         <div style={{ borderTop: "1px solid var(--ft-border)", padding: "12px 14px" }}>
@@ -1150,7 +1150,7 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
           </div>
           <div style={FIELD_STYLE}>
             <div style={LABEL_STYLE}>Type</div>
-            <div style={{ display: "flex", gap: 0 }}>
+            <HStack gap={0}>
               {(["repayment", "interest-only"] as LoanType[]).map((t) => (
                 <button
                   key={t}
@@ -1172,21 +1172,21 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
                   {t}
                 </button>
               ))}
-            </div>
+            </HStack>
           </div>
           <div style={FIELD_STYLE}>
             <div style={LABEL_STYLE}>Extra monthly (£, optional)</div>
             <input type="number" step="0.01" min="0" placeholder="0.00" value={form.extraMonthly} onChange={(e) => setField("extraMonthly", e.target.value)} style={INPUT_STYLE} />
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <HStack gap={8} justify="end">
           <button type="button" onClick={onCancel} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 10, padding: "6px 14px", cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
             Cancel
           </button>
           <button type="submit" style={{ background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "6px 18px", cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
             Add Loan
           </button>
-        </div>
+        </HStack>
       </form>
     </div>
   );

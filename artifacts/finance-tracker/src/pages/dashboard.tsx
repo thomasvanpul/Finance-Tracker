@@ -57,7 +57,7 @@ import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -146,23 +146,23 @@ function SavingsRateKpi() {
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${barColor}`, minHeight: 160, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", minWidth: 0 }}>
+      <HStack align="baseline" justify="between" minWidth0>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>SAVINGS RATE</span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{target}% TARGET</span>
-      </div>
+      </HStack>
 
       {/* Big number */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+      <HStack gap={8} align="baseline" minWidth0>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: barColor, letterSpacing: "-0.02em", lineHeight: 1, flexShrink: 0, whiteSpace: "nowrap" }}>
           {rate}%
         </span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: diff >= 0 ? "var(--ft-green)" : barColor, fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}>
           {diff >= 0 ? `+${diff}pp` : `${diff}pp`}
         </span>
-      </div>
+      </HStack>
 
       {/* Progress bar */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6 }}>
+      <VStack gap={6} justify="end" grow>
         <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.15s ease" }} />
         </div>
@@ -171,7 +171,7 @@ function SavingsRateKpi() {
           <span>{target}% goal</span>
           <span>100%</span>
         </div>
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -228,20 +228,20 @@ function EmergencyFundWidget() {
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${valueColor}`, minHeight: 180, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", minWidth: 0 }}>
+      <HStack align="baseline" justify="between" minWidth0>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>EMERGENCY FUND</span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{TARGET_MONTHS}MO TARGET</span>
-      </div>
+      </HStack>
 
       {/* Big number */}
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, minWidth: 0 }}>
+      <HStack gap={8} align="baseline" minWidth0>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: valueColor, letterSpacing: "-0.02em", lineHeight: 1, flexShrink: 0, whiteSpace: "nowrap" }}>
           {monthsCovered > 0 ? `${monthsCovered.toFixed(1)}` : "—"}
         </span>
         {monthsCovered > 0 && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ft-muted)", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}>months</span>
         )}
-      </div>
+      </HStack>
 
       {/* Meta */}
       <Text as="div" mono size={9} color="var(--ft-dim)">
@@ -250,7 +250,7 @@ function EmergencyFundWidget() {
       </Text>
 
       {/* Progress bar */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6 }}>
+      <VStack gap={6} justify="end" grow>
         <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.15s ease" }} />
         </div>
@@ -258,7 +258,7 @@ function EmergencyFundWidget() {
           <span>0 mo</span>
           <span>{TARGET_MONTHS} mo goal</span>
         </div>
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -316,8 +316,8 @@ export function NetWorthMilestonesWidget() {
         <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.12em">NET WORTH MILESTONES</Text>
         <Text as="span" mono size={9} color="var(--ft-muted)">{reached.length} / {MILESTONES_GBP.length}</Text>
       </div>
-      <div style={{ flex: 1, padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+      <VStack gap={8} padding="10px 14px" grow>
+        <HStack gap={4} wrap>
           {MILESTONES_GBP.map(m => {
             const done = netWorth >= m;
             return (
@@ -332,7 +332,7 @@ export function NetWorthMilestonesWidget() {
               </div>
             );
           })}
-        </div>
+        </HStack>
         {next && (
           <>
             <Text as="div" mono size={9} color="var(--ft-muted)">
@@ -349,7 +349,7 @@ export function NetWorthMilestonesWidget() {
             All milestones reached!
           </div>
         )}
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -472,7 +472,7 @@ function CashFlowPreviewPanel() {
         Cash Flow · 30 Days
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: 14, minWidth: 0 }}>
+      <HStack gap={20} align="end" marginBottom={14} minWidth0>
         <div style={{ minWidth: 0 }}>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: netColor, lineHeight: 1, whiteSpace: "nowrap" }}>
             <AnimatedNet value={net} />
@@ -482,19 +482,19 @@ function CashFlowPreviewPanel() {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
           from <span className="pnum">{formatGbp(startingBalance)}</span>
         </div>
-      </div>
+      </HStack>
 
-      <div style={{ display: "flex", gap: 16, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+      <HStack gap={16} minWidth0>
+        <HStack gap={6} align="center" minWidth0>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Inflows</span>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>+{formatGbp(inflows)}</span>
-        </div>
+        </HStack>
         <div style={{ width: 1, background: "var(--ft-border2)", flexShrink: 0 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Outflows</span>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>-{formatGbp(outflows)}</span>
         </div>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -552,7 +552,7 @@ function SpendingVelocityPanel() {
         Spend Rate
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 14, minWidth: 0, gap: 8 }}>
+      <HStack gap={8} align="end" justify="between" marginBottom={14} minWidth0>
         <div style={{ minWidth: 0 }}>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, whiteSpace: "nowrap" }}>
             <AnimatedSpendRate value={avgDailyThis} /><Text as="span" size={11} weight={400} color="var(--ft-dim)">/day</Text>
@@ -579,7 +579,7 @@ function SpendingVelocityPanel() {
             </span>
           )}
         </div>
-      </div>
+      </HStack>
 
       {/* Sparkline bars — last 14 days */}
       <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 32 }}>
@@ -1548,14 +1548,14 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
                   onTouchStart={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-accent)"; }}
                   onTouchEnd={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-border)"; }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <HStack align="center" justify="between">
                     <Text as="span" mono size={10} weight={700} color="var(--ft-text)" letterSpacing="0.04em">
                       {def?.label ?? id}
                     </Text>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.06em", border: "1px solid color-mix(in srgb, var(--ft-accent) 30%, transparent)", padding: "1px 4px" }}>
                       {isFull ? "FULL" : "HALF"}
                     </span>
-                  </div>
+                  </HStack>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
                     {def?.description ?? ""}
                   </span>
@@ -1600,7 +1600,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
       </button>
 
       {open && (
-        <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start" }}>
+        <HStack gap={8} align="start" marginTop={8}>
           {/* Left — widget list */}
           <div style={{
             width: 220,
@@ -1658,7 +1658,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
               )}
             </div>
           </div>
-        </div>
+        </HStack>
       )}
     </div>
   );
@@ -1741,7 +1741,7 @@ function DashboardKpiBar({
           </button>
         </div>
         {/* Row 2: big net worth + secondary metrics */}
-        <div style={{ display: "flex", alignItems: "stretch" }}>
+        <HStack align="stretch">
           {/* Net worth — hero */}
           <div style={{ flex: 1, padding: "12px 14px", borderRight: "1px solid var(--ft-border)", minHeight: 72, minWidth: 0 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
@@ -1765,23 +1765,23 @@ function DashboardKpiBar({
           {/* Secondary stats column */}
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", padding: "10px 12px 10px 14px", gap: 6, minHeight: 72, maxWidth: "48%", overflow: "hidden" }}>
             {savingsCell && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+              <VStack gap={2} minWidth0>
                 <MonoLabel as="span" size={7} letterSpacing="0.12em">SAVED</MonoLabel>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: savingsCell.valueColor ?? "var(--ft-green)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {savingsCell.value}
                 </span>
-              </div>
+              </VStack>
             )}
             {spendCell && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+              <VStack gap={2} minWidth0>
                 <MonoLabel as="span" size={7} letterSpacing="0.12em">SPEND</MonoLabel>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: spendCell.valueColor ?? "var(--ft-red)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {spendCell.value}
                 </span>
-              </div>
+              </VStack>
             )}
           </div>
-        </div>
+        </HStack>
       </div>
     );
   }
@@ -1943,7 +1943,7 @@ interface TerminalLayoutProps {
 
 function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <VStack gap={6}>
       {/* AI Insights — only shown if AI available */}
       <AiInsightsPanel {...aiInsightsProps} />
 
@@ -1990,7 +1990,7 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
 
       {/* AI Insights strip — rule-based insights below grid */}
       <AiInsightsStrip />
-    </div>
+    </VStack>
   );
 }
 
@@ -2013,11 +2013,11 @@ function RecentTransactionsWidgetInline() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+      <VStack gap={6} padding="10px 12px">
         {[80, 60, 90, 70, 50].map(w => (
           <div key={w} style={{ height: 8, background: "var(--ft-border)", width: `${w}%` }} />
         ))}
-      </div>
+      </VStack>
     );
   }
 
@@ -2152,7 +2152,7 @@ function DashboardOverview() {
   const C = (color: string) => ({ color });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+    <VStack gap={8} marginTop={8}>
 
       {/* Demo mode banner */}
       {isDemo && (
@@ -2180,7 +2180,7 @@ function DashboardOverview() {
               </div>
             </div>
             {income > 0 && (
-              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+              <HStack gap={14} align="start">
                 <div>
                   <div style={{ ...OV_LABEL, marginBottom: 3 }}>THIS MONTH</div>
                   <div className="pnum" style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, ...C(netColor) }}>
@@ -2195,7 +2195,7 @@ function DashboardOverview() {
                     </div>
                   </div>
                 )}
-              </div>
+              </HStack>
             )}
           </div>
           {income > 0 && (
@@ -2275,10 +2275,10 @@ function DashboardOverview() {
             );
             return (
               <div key={tx.id ?? i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 14px", borderBottom: i < txRows.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
-                <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                <VStack minWidth0>
                   <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 10, ...C("var(--ft-text)") }}>{tx.description}</span>
                   <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</span>
-                </div>
+                </VStack>
                 <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
                   {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(Math.abs(tx.gbpValue))}
                 </span>
@@ -2321,7 +2321,7 @@ function DashboardOverview() {
         </Link>
       )}
 
-    </div>
+    </VStack>
   );
 }
 
@@ -2728,10 +2728,7 @@ export default function Dashboard() {
           </div>
 
           {/* Saved Views toolbar */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            marginBottom: 10, flexWrap: "wrap",
-          }}>
+          <HStack gap={8} align="center" wrap marginBottom={10}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginRight: 4 }}>
               VIEWS:
             </span>
@@ -2739,7 +2736,7 @@ export default function Dashboard() {
               <ViewRow key={v.id} view={v} onLoad={handleLoadView} onDelete={handleDeleteView} />
             ))}
             {!isCurrentLayoutSaved && (showViewSave ? (
-              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <HStack gap={4} align="center">
                 <input
                   className="ft-filter-input"
                   value={viewNameInput}
@@ -2755,7 +2752,7 @@ export default function Dashboard() {
                 />
                 <button onClick={handleSaveView} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "3px 9px", cursor: "pointer" }}>Save</button>
                 <button onClick={() => setShowViewSave(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "transparent", border: "1px solid var(--ft-border)", padding: "3px 9px", cursor: "pointer" }}>Cancel</button>
-              </div>
+              </HStack>
             ) : (
               <button
                 onClick={() => setShowViewSave(true)}
@@ -2768,17 +2765,17 @@ export default function Dashboard() {
                 + Save current
               </button>
             ))}
-          </div>
+          </HStack>
 
           {/* AI Insights panel in customize mode too */}
           <AiInsightsPanel {...aiInsightsProps} />
 
           {enabledIds.length === 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "60px 0" }}>
+            <VStack gap={12} align="center" justify="center" padding="60px 0">
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-muted)" }}>
                 No widgets enabled — add one below
               </div>
-            </div>
+            </VStack>
           ) : isMobile ? (
             /* Mobile: compact tile DnD — matches view mode exactly, just adds grip + remove strip */
             <DndContext sensors={mobileSensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOverMobile} onDragEnd={handleDragEndMobile} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) setOrder(preDragOrderRef.current); }}>
@@ -2827,21 +2824,21 @@ export default function Dashboard() {
             <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
               <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                 {/* Left column */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                <VStack gap={10} grow>
                   <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
                     {leftIds.map((id, idx) => (
                       <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} anyDragging={activeId !== null} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
                     ))}
                   </SortableContext>
-                </div>
+                </VStack>
                 {/* Right column */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                <VStack gap={10} grow>
                   <SortableContext items={rightIds} strategy={verticalListSortingStrategy}>
                     {rightIds.map((id, idx) => (
                       <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} anyDragging={activeId !== null} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
                     ))}
                   </SortableContext>
-                </div>
+                </VStack>
               </div>
               <DragOverlay dropAnimation={{ duration: 150, easing: "ease" }}>
                 {activeId ? (
@@ -2918,20 +2915,20 @@ export default function Dashboard() {
                 }}
               >
                 <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <VStack gap={10} grow>
                     <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
                       {leftIds.map(id => (
                         <LongPressDraggableWidget key={id} id={id} anyDragging={activeId !== null} onExpand={() => setExpandedWidgetId(id)} />
                       ))}
                     </SortableContext>
-                  </div>
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                  </VStack>
+                  <VStack gap={10} grow>
                     <SortableContext items={rightIds} strategy={verticalListSortingStrategy}>
                       {rightIds.map(id => (
                         <LongPressDraggableWidget key={id} id={id} anyDragging={activeId !== null} onExpand={() => setExpandedWidgetId(id)} />
                       ))}
                     </SortableContext>
-                  </div>
+                  </VStack>
                 </div>
                 <DragOverlay dropAnimation={{ duration: 150, easing: "ease" }}>
                   {activeId ? (

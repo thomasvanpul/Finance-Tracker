@@ -26,7 +26,7 @@ import {
 import { formatGbp } from "@/lib/utils";
 import type { Transaction } from "@workspace/api-client-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -709,7 +709,7 @@ function BudgetTableRow({
       >
         {/* Left: category + bar + spent/limit */}
         <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+          <HStack gap={6} align="center" marginBottom={5}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: isOver ? "var(--ft-red)" : "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {budget.category}
             </span>
@@ -718,7 +718,7 @@ function BudgetTableRow({
                 {health.label}
               </span>
             )}
-          </div>
+          </HStack>
           {/* Progress bar */}
           <div style={{ height: 4, background: "var(--ft-border)", overflow: "hidden", marginBottom: 5 }}>
             <div style={{ height: "100%", width: `${Math.min(pct * 100, 100)}%`, background: isOver ? "var(--ft-red)" : fillColor, transition: "width 0.1s ease" }} />
@@ -794,7 +794,7 @@ function BudgetTableRow({
     >
       {/* Category */}
       <div style={{ padding: "6px 0 6px 12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+        <HStack gap={6} align="center" minWidth0>
           <div
             style={{
               fontFamily: "var(--font-mono)",
@@ -829,7 +829,7 @@ function BudgetTableRow({
               {health.label}
             </span>
           )}
-        </div>
+        </HStack>
         <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
           {rolloverEnabled && rolloverAccumulated > 0 && (
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-cyan)", letterSpacing: "0.04em" }}>
@@ -1027,7 +1027,7 @@ function BudgetTableRow({
       </div>
 
       {/* Rollover controls */}
-      <div style={{ padding: "6px 8px", display: "flex", flexDirection: "column", gap: 3 }}>
+      <VStack gap={3} padding="6px 8px">
         <button
           onClick={() => onToggleRollover(budget.category)}
           title={rolloverEnabled ? "Disable rollover" : "Enable rollover — unused budget carries to next month"}
@@ -1075,10 +1075,10 @@ function BudgetTableRow({
             Reset
           </button>
         )}
-      </div>
+      </VStack>
 
       {/* Delete */}
-      <div style={{ padding: "6px 10px", display: "flex", justifyContent: "flex-end" }}>
+      <HStack justify="end" padding="6px 10px">
         <button
           onClick={() => onDeleteClick(budget.id)}
           style={{
@@ -1098,7 +1098,7 @@ function BudgetTableRow({
         >
           {deleteConfirmId === budget.id ? "DEL?" : "×"}
         </button>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -1466,7 +1466,7 @@ export default function Budget() {
 
   if (budgetsLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <VStack gap={0}>
         {/* KPI bar skeleton */}
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -1484,15 +1484,15 @@ export default function Budget() {
           {Array.from({ length: 4 }).map((_, i) => (
             isMobile ? (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto", padding: "10px 12px", gap: 8, alignItems: "center", borderBottom: "1px solid var(--ft-border)" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <VStack gap={5}>
                   <FtSkeleton width="55%" height={12} />
                   <FtSkeleton width="100%" height={4} />
                   <FtSkeleton width="45%" height={11} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                </VStack>
+                <VStack gap={4} align="end">
                   <FtSkeleton width={36} height={14} />
                   <FtSkeleton width={60} height={10} />
-                </div>
+                </VStack>
               </div>
             ) : (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 100px 120px 100px 80px 80px 100px 80px", padding: "var(--ft-cell-py) 14px", gap: 8, alignItems: "center", borderBottom: "1px solid var(--ft-border)" }}>
@@ -1508,7 +1508,7 @@ export default function Budget() {
             )
           ))}
         </div>
-      </div>
+      </VStack>
     );
   }
 
@@ -1859,7 +1859,7 @@ export default function Budget() {
               </div>
             }
           />
-          <div style={{ padding: "8px 14px 10px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <HStack gap={6} wrap padding="8px 14px 10px">
             {sortedBudgets.map((b) => {
               const sp = spentByCategory[b.category.toLowerCase()] ?? 0;
               const re = rolloverMap[b.category];
@@ -1880,7 +1880,7 @@ export default function Budget() {
                 />
               );
             })}
-          </div>
+          </HStack>
         </div>
       )}
 
@@ -2163,7 +2163,7 @@ export default function Budget() {
       >
         <PanelHeader title="Add Budget Category" />
         <div style={{ padding: "12px 14px" }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <HStack gap={8} align="end" wrap>
             <div style={{ flex: 2, minWidth: 180 }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4, fontWeight: 600 }}>
                 Category
@@ -2204,7 +2204,7 @@ export default function Budget() {
             >
               Copy Last Month
             </button>
-          </div>
+          </HStack>
         </div>
       </div>
 
@@ -2219,7 +2219,7 @@ export default function Budget() {
         >
           <PanelHeader title={`${MONTH_NAMES[lastMonth - 1]} ${lastMonthYear} Actuals — Confirm to Import`} />
           <div style={{ padding: "12px 14px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, marginBottom: 12 }}>
+            <VStack gap={2} marginBottom={12}>
               {copyCandidates.map((c, i) => (
                 <CopyCandidateRow
                   key={c.category}
@@ -2230,8 +2230,8 @@ export default function Budget() {
                   }}
                 />
               ))}
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
+            </VStack>
+            <HStack gap={8}>
               <button onClick={applyLastMonthActuals} style={BTN_ACCENT}>Apply Selected</button>
               <button
                 onClick={() => { setShowCopyPanel(false); setCopyCandidates([]); }}
@@ -2239,7 +2239,7 @@ export default function Budget() {
               >
                 Cancel
               </button>
-            </div>
+            </HStack>
           </div>
         </div>
       )}
@@ -2256,10 +2256,10 @@ export default function Budget() {
             title="Budget vs Actuals"
             right={
               <div style={{ display: "flex", gap: 12, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <HStack gap={4} align="center">
                   <span style={{ display: "inline-block", width: 8, height: 8, background: "var(--ft-dim)", opacity: 0.4, borderRadius: 0 }} />
                   Budget
-                </span>
+                </HStack>
                 <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ display: "inline-block", width: 8, height: 8, background: "var(--ft-green)", borderRadius: 0 }} />
                   &lt;80%

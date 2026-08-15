@@ -13,7 +13,7 @@ import {
   Clock,
   X,
 } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -858,27 +858,27 @@ function Step2({
       {/* Quick Format Presets */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ ...labelStyle, marginBottom: 8 }}>Quick presets — auto-fill for known banks</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+        <HStack gap={5} wrap>
           {FORMAT_PRESETS.map((p) => (
             <PresetButton key={p.label} preset={p} onApply={onApplyPreset} />
           ))}
-        </div>
+        </HStack>
       </div>
 
       {/* Column mapping */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ ...labelStyle, marginBottom: 8, borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 8 }}>Column mapping</div>
-        <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+        <HStack gap={10} wrap marginBottom={10}>
           <ColSelect field="date" label="Date" />
           <ColSelect field="description" label="Description" />
           <ColSelect field="type" label="Type (income/expense)" />
-        </div>
+        </HStack>
       </div>
 
       {/* Amount format selector */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ ...labelStyle, marginBottom: 8, borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 8 }}>Amount format</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <HStack gap={6} wrap>
           {[
             { v: "signed" as AmountFormat, label: "Single column (+ income, − expense)" },
             { v: "separate" as AmountFormat, label: "Separate debit / credit columns" },
@@ -891,18 +891,18 @@ function Step2({
               onSelect={onAmountFormatChange}
             />
           ))}
-        </div>
+        </HStack>
       </div>
 
       {amountFormat === "signed" ? (
-        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <HStack gap={10} marginBottom={16}>
           <ColSelect field="amount" label="Amount column (signed)" />
-        </div>
+        </HStack>
       ) : (
-        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <HStack gap={10} marginBottom={16}>
           <ColSelect field="credit" label="Credit / income column" />
           <ColSelect field="debit" label="Debit / expense column" />
-        </div>
+        </HStack>
       )}
 
       {/* Preview table */}
@@ -945,7 +945,7 @@ function Step2({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+      <HStack gap={8} marginTop={4}>
         <button onClick={onBack} style={BTN_GHOST}>← Back</button>
         <div style={{ flex: 1 }} />
         <button
@@ -960,7 +960,7 @@ function Step2({
           Build Preview
           <ChevronRight size={12} />
         </button>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -1219,7 +1219,7 @@ function Step3({
       </div>
 
       {/* Footer */}
-      <div style={{ display: "flex", gap: 8, marginTop: 14, alignItems: "center", flexWrap: "wrap" }}>
+      <HStack gap={8} align="center" wrap marginTop={14}>
         <button onClick={onBack} style={BTN_GHOST} disabled={importing}>← Back</button>
         <div style={{ flex: 1 }} />
         <button
@@ -1246,7 +1246,7 @@ function Step3({
             </>
           )}
         </button>
-      </div>
+      </HStack>
     </div>
   );
 }

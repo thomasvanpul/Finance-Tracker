@@ -13,7 +13,7 @@ import {
   getListGoalsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 interface HistoryEntry {
   date: string;
@@ -429,7 +429,7 @@ function GoalCard({
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)", paddingRight: 28, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
             {goal.name}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
+          <HStack gap={6} align="center" wrap marginTop={5}>
             {done ? (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(86,211,100,0.12)", border: "1px solid rgba(86,211,100,0.3)", padding: "2px 8px", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-green)" }}>
                 ACHIEVED <Trophy size={9} style={{ display: "inline", verticalAlign: "middle" }} />
@@ -442,13 +442,13 @@ function GoalCard({
                 {dlInfo.text}
               </span>
             )}
-          </div>
+          </HStack>
         </div>
       </div>
 
       {/* Progress bar + percentage */}
       <div style={{ marginBottom: 10 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+        <HStack align="baseline" justify="between" marginBottom={6}>
           <div>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: done ? "var(--ft-green)" : pct >= 75 ? "var(--ft-green)" : pct >= 40 ? "#e3b341" : "var(--ft-red)" }}>
               {pct.toFixed(0)}%
@@ -463,7 +463,7 @@ function GoalCard({
               / {formatGbp(goal.target)}
             </span>
           </div>
-        </div>
+        </HStack>
         <div style={{ height: 8, background: "var(--ft-border)", overflow: "hidden", position: "relative" }}>
           <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.25s ease" }} />
         </div>
@@ -633,7 +633,7 @@ function GoalCard({
 
               {/* Compound Growth toggle */}
               <div style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: useCompound ? 8 : 0 }}>
+                <HStack gap={8} align="center" justify="between" wrap marginBottom={useCompound ? 8 : 0}>
                   <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.05em" }}>
                     <input
                       type="checkbox"
@@ -644,7 +644,7 @@ function GoalCard({
                     Include investment returns
                   </label>
                   {useCompound && (
-                    <div style={{ display: "flex", gap: 3 }}>
+                    <HStack gap={3}>
                       {[0.04, 0.06, 0.08].map((r) => (
                         <button
                           key={r}
@@ -663,13 +663,13 @@ function GoalCard({
                           {(r * 100).toFixed(0)}%
                         </button>
                       ))}
-                    </div>
+                    </HStack>
                   )}
-                </div>
+                </HStack>
 
                 {useCompound && goalMonthlyRate > 0 && (
                   <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
-                    <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
+                    <HStack gap={12} marginBottom={6}>
                       <div>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>Without returns</div>
                         <Text as="div" mono size={10} weight={600} color="var(--ft-muted)">
@@ -691,7 +691,7 @@ function GoalCard({
                           </div>
                         </div>
                       )}
-                    </div>
+                    </HStack>
                     {interestEarned > 0 && (
                       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>
                         +{formatGbp(interestEarned)} total interest earned
@@ -707,7 +707,7 @@ function GoalCard({
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
                     What if I contributed…
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <HStack gap={6} align="center">
                     <Text as="span" mono size={9} color="var(--ft-dim)">£</Text>
                     <input
                       type="number"
@@ -736,7 +736,7 @@ function GoalCard({
                         insufficient
                       </span>
                     )}
-                  </div>
+                  </HStack>
                   {whatIfDate && whatIfMonthsNeeded !== null && projectedMonths < Infinity && (
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
                       {whatIfMonthsNeeded < projectedMonths
@@ -1196,11 +1196,11 @@ export default function Goals() {
 
   if (goalsLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <VStack gap={16}>
+        <HStack align="center" justify="between">
           <FtSkeleton width={140} height={14} />
           <FtSkeleton width={100} height={28} />
-        </div>
+        </HStack>
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 1, background: "var(--ft-border)", borderTop: "2px solid var(--ft-accent)" }}>
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} style={{ background: "var(--ft-surface)", padding: "12px 16px" }}>
@@ -1212,19 +1212,19 @@ export default function Goals() {
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 20 }}>
-              <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+              <HStack gap={12} marginBottom={12}>
                 <FtSkeleton width={52} height={52} />
                 <div style={{ flex: 1 }}>
                   <FtSkeleton width="70%" height={13} />
                   <div style={{ marginTop: 6 }}><FtSkeleton width="40%" height={9} /></div>
                 </div>
-              </div>
+              </HStack>
               <FtSkeleton width="100%" height={6} />
               <div style={{ marginTop: 10 }}><FtSkeleton width="60%" height={9} /></div>
             </div>
           ))}
         </div>
-      </div>
+      </VStack>
     );
   }
 
@@ -1444,7 +1444,7 @@ export default function Goals() {
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>Accent Color</label>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <HStack gap={8} wrap>
                 {PRESET_COLORS.map((c) => (
                   <button
                     key={c}
@@ -1452,12 +1452,12 @@ export default function Goals() {
                     style={{ width: 22, height: 22, borderRadius: "50%", background: c, border: form.color === c ? "2px solid var(--ft-text)" : "2px solid transparent", cursor: "pointer", outline: form.color === c ? "1px solid var(--ft-accent)" : "none" }}
                   />
                 ))}
-              </div>
+              </HStack>
             </div>
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>Goal Image (optional)</label>
               <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleGoalImageFile(e.target.files?.[0])} />
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <HStack gap={10} align="center">
                 <div
                   onClick={() => imageInputRef.current?.click()}
                   onDragOver={(e) => e.preventDefault()}
@@ -1480,17 +1480,17 @@ export default function Goals() {
                     </button>
                   )}
                 </div>
-              </div>
+              </HStack>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <HStack gap={8}>
             <button onClick={handleSave} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", background: "var(--ft-green)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}>
               Save Goal
             </button>
             <button onClick={() => { setShowForm(false); setForm({ ...EMPTY_FORM }); }} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}>
               Cancel
             </button>
-          </div>
+          </HStack>
         </div>
       )}
 
@@ -1603,7 +1603,7 @@ export default function Goals() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 24 }}>
+          <HStack gap={24}>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Monthly Needed</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-accent)" }}>
@@ -1618,7 +1618,7 @@ export default function Goals() {
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>{unachievedGoals.length} goal{unachievedGoals.length !== 1 ? "s" : ""} in progress</div>
             </div>
-          </div>
+          </HStack>
         </div>
       )}
     </div>

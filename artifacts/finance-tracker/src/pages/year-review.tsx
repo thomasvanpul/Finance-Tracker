@@ -16,7 +16,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -226,7 +226,7 @@ function SpendingHeatmap({ txs, year }: { txs: Tx[]; year: number }) {
           })}
         </div>
         {/* Legend */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
+        <HStack gap={6} align="center" justify="end">
           <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>Low spend</span>
           {[0.1, 0.3, 0.5, 0.7, 0.9].map((v) => (
             <div
@@ -240,7 +240,7 @@ function SpendingHeatmap({ txs, year }: { txs: Tx[]; year: number }) {
             />
           ))}
           <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>High spend</span>
-        </div>
+        </HStack>
       </div>
     </div>
   );
@@ -358,10 +358,10 @@ function MilestoneCard({ item, i, total }: { item: { icon: string; label: string
         cursor: "default",
       }}
     >
-      <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 5 }}>
+      <HStack gap={6} align="center" marginBottom={5}>
         <span style={{ ...{ fontFamily: "var(--font-mono)" }, fontSize: 10, color: item.color }}>{item.icon}</span>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>{item.label}</div>
-      </div>
+      </HStack>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: item.color, marginBottom: 3, fontVariantNumeric: "tabular-nums" }}>
         {item.value}
       </div>
@@ -551,11 +551,11 @@ function CategoryBreakdown({ expenses }: { expenses: Tx[] }) {
             <div style={{ ...label }}>No expense data for this year</div>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <VStack gap={4}>
             {top5.map((row, i) => (
               <CategoryRow key={row.cat} row={row} rank={i} />
             ))}
-          </div>
+          </VStack>
         )}
       </div>
     </div>
@@ -572,10 +572,10 @@ interface LegendDotProps {
 
 function LegendDot({ color, opacity = 1, label_text }: LegendDotProps) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+    <HStack gap={5} align="center">
       <div style={{ width: 8, height: 8, background: color, opacity, flexShrink: 0 }} />
       <span style={{ ...label, fontSize: 9 }}>{label_text}</span>
-    </div>
+    </HStack>
   );
 }
 
@@ -625,10 +625,10 @@ function MonthByMonth({ txs, year }: { txs: Tx[]; year: number }) {
             <Bar dataKey="expenses" fill="var(--ft-red)" opacity={0.8} radius={0} maxBarSize={16} />
           </BarChart>
         </ResponsiveContainer>
-        <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+        <HStack gap={16} marginTop={8}>
           <LegendDot color="var(--ft-green)" label_text="Income" />
           <LegendDot color="var(--ft-red)" label_text="Expenses" />
-        </div>
+        </HStack>
       </div>
     </div>
   );
@@ -679,7 +679,7 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
           return (
             <div key={item.label} style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>{item.label}</div>
-              <div style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
+              <HStack gap={12} align="baseline">
                 <div>
                   <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>{year}</div>
                   <div className="pnum" style={{ ...mono, fontSize: 14, fontWeight: 700, color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(item.curr)}</div>
@@ -689,7 +689,7 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
                   <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>{year - 1}</div>
                   <div className="pnum" style={{ ...mono, fontSize: 11, color: "var(--ft-muted)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(item.prev)}</div>
                 </div>
-              </div>
+              </HStack>
               <div className="pnum" style={{ ...mono, fontSize: 10, color: diffColor, marginTop: 6, fontWeight: 600 }}>
                 {item.diff >= 0 ? "+" : ""}{formatGbp(item.diff)}
                 {diffPct !== null && <span style={{ fontWeight: 400, marginLeft: 5, fontSize: 9 }}>({diffPct >= 0 ? "+" : ""}{diffPct.toFixed(1)}%)</span>}
@@ -730,12 +730,12 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
             <Bar dataKey={`${year - 1} income`} fill="var(--ft-green)" opacity={0.35} radius={0} maxBarSize={10} />
           </BarChart>
         </ResponsiveContainer>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <HStack gap={12} wrap>
           <LegendDot color="var(--ft-red)" opacity={0.85} label_text={`${year} expenses`} />
           <LegendDot color="var(--ft-red)" opacity={0.35} label_text={`${year - 1} expenses`} />
           <LegendDot color="var(--ft-green)" opacity={0.85} label_text={`${year} income`} />
           <LegendDot color="var(--ft-green)" opacity={0.35} label_text={`${year - 1} income`} />
-        </div>
+        </HStack>
       </div>
     </div>
   );
@@ -867,7 +867,7 @@ function StreaksAndFacts({ txs, year }: { txs: Tx[]; year: number }) {
   return (
     <div style={panel}>
       <div style={{ ...secTitle, borderLeft: "3px solid var(--ft-blue)" }}>Data Points &amp; Habits</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <VStack gap={0}>
         {facts.map((f, i) => (
           <HoverRow
             key={f.text}
@@ -884,7 +884,7 @@ function StreaksAndFacts({ txs, year }: { txs: Tx[]; year: number }) {
             <span className="pnum" style={{ ...mono, fontSize: 11, color: "var(--ft-text)" }}>{f.text}</span>
           </HoverRow>
         ))}
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -986,7 +986,7 @@ function ShareableCard({ income, expenses, txCount, year }: {
       padding: "24px 28px",
       marginBottom: 16,
     }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+      <HStack align="start" justify="between" marginBottom={20}>
         <div>
           <div style={{ ...mono, fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>
             NUMERIS · MY YEAR IN NUMBERS
@@ -1001,7 +1001,7 @@ function ShareableCard({ income, expenses, txCount, year }: {
             {savingsRate.toFixed(1)}% savings rate
           </div>
         </div>
-      </div>
+      </HStack>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
         {tiles.map((s) => (
           <ShareTile key={s.text} text={s.text} value={s.value} color={s.color} />
@@ -1164,7 +1164,7 @@ export default function YearReviewPage() {
           fontFamily: "var(--font-mono)",
         }}>
           {/* Progress bar */}
-          <div style={{ display: "flex", gap: 3, padding: "16px 24px 0" }}>
+          <HStack gap={3} padding="16px 24px 0">
             {Array.from({ length: CHAPTER_COUNT }, (_, i) => (
               <div
                 key={i}
@@ -1176,7 +1176,7 @@ export default function YearReviewPage() {
                 }}
               />
             ))}
-          </div>
+          </HStack>
 
           {/* Close */}
           <button
@@ -1274,10 +1274,10 @@ export default function YearReviewPage() {
                   <div style={{ width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", gap: 10 }}>
                     {topCats.map(([cat, amt], i) => (
                       <div key={cat}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <HStack justify="between" marginBottom={4}>
                           <Text as="span" size={13} weight={i === 0 ? 700 : 400} color={i === 0 ? "var(--ft-accent)" : "var(--ft-text)"}>{i === 0 ? "★ " : ""}{cat}</Text>
                           <span className="pnum" style={{ fontSize: 13, color: "var(--ft-muted)" }}>{formatGbp(amt)}</span>
-                        </div>
+                        </HStack>
                         <div style={{ height: 4, background: "var(--ft-border2)", overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${(amt / maxVal) * 100}%`, background: i === 0 ? "var(--ft-accent)" : "var(--ft-border2)", transition: "width 0.25s ease" }} />
                         </div>
@@ -1353,7 +1353,7 @@ export default function YearReviewPage() {
           </div>
 
           {/* Navigation */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, padding: "16px 24px 24px" }}>
+          <HStack gap={16} align="center" justify="center" padding="16px 24px 24px">
             <button
               onClick={() => gotoChapter(chapter - 1)}
               disabled={chapter === 0}
@@ -1367,12 +1367,12 @@ export default function YearReviewPage() {
               disabled={chapter === CHAPTER_COUNT - 1}
               style={{ background: "none", border: "1px solid var(--ft-border)", color: chapter === CHAPTER_COUNT - 1 ? "var(--ft-border2)" : "var(--ft-muted)", width: 36, height: 36, cursor: chapter === CHAPTER_COUNT - 1 ? "default" : "pointer", fontFamily: "var(--font-mono)", fontSize: 16 }}
             >→</button>
-          </div>
+          </HStack>
         </div>
       )}
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
+      <HStack gap={8} align="start" justify="between" wrap marginBottom={20}>
         <div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1 }}>
             YEAR IN REVIEW · {year}
@@ -1381,7 +1381,7 @@ export default function YearReviewPage() {
             your financial year — wrapped
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <HStack gap={6} align="center" wrap>
           {yearTxs.length > 0 && (
             <button
               onClick={() => { setChapter(0); setChapFade(true); setWrappedActive(true); }}
@@ -1402,7 +1402,7 @@ export default function YearReviewPage() {
             </button>
           )}
           {/* Year selector */}
-          <div style={{ display: "flex", gap: 2 }}>
+          <HStack gap={2}>
             {availableYears.map((y) => (
               <button
                 key={y}
@@ -1423,7 +1423,7 @@ export default function YearReviewPage() {
                 {y}
               </button>
             ))}
-          </div>
+          </HStack>
           {yearTxs.length > 0 && (
             <>
               <button
@@ -1461,8 +1461,8 @@ export default function YearReviewPage() {
               </button>
             </>
           )}
-        </div>
-      </div>
+        </HStack>
+      </HStack>
 
       {/* Persona context strip */}
       {(() => {

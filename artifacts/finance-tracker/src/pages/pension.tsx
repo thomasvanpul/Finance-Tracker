@@ -16,7 +16,7 @@ import { TrendingUp, ArrowRight, Target, ShieldCheck, AlertTriangle } from "luci
 import { formatGbp } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { loadPersonaIds } from "@/lib/persona";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -343,7 +343,7 @@ function KpiBar({
 
       {/* Health / monthly income */}
       <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderTop: `2px solid ${trackColor}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+        <HStack gap={6} align="center" marginBottom={6}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
             Monthly Income
           </div>
@@ -355,7 +355,7 @@ function KpiBar({
           }}>
             {trackLabel}
           </span>
-        </div>
+        </HStack>
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: trackColor, lineHeight: 1 }}>
           {formatGbp(Math.round(totalMonthlyIncome))}
         </div>
@@ -451,12 +451,12 @@ function PensionHealthBlock({
             padding: "12px 14px",
             marginBottom: 14,
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <HStack gap={6} align="center" marginBottom={8}>
               <AlertTriangle style={{ width: 12, height: 12, color: "var(--ft-red)", flexShrink: 0 }} />
               <Text as="span" mono upper size={9} weight={700} color="var(--ft-red)" letterSpacing="0.08em">
                 Shortfall Analysis
               </Text>
-            </div>
+            </HStack>
             <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "rgba(248,81,73,0.15)" }}>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Monthly shortfall</div>
@@ -483,14 +483,14 @@ function PensionHealthBlock({
             background: "rgba(88,166,255,0.04)",
             padding: "12px 14px",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <HStack gap={6} align="center" marginBottom={8}>
               <Target style={{ width: 12, height: 12, color: "var(--ft-blue)", flexShrink: 0 }} />
               <Text as="span" mono upper size={9} weight={700} color="var(--ft-blue)" letterSpacing="0.08em">
                 Contribution Optimiser
               </Text>
-            </div>
+            </HStack>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
+              <HStack gap={8} align="center" wrap>
                 <Text as="span" color="var(--ft-dim)">Contribute</Text>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-blue)" }}>
                   {formatGbp(Math.round(extraMonthlyNeeded))}/mo more
@@ -500,7 +500,7 @@ function PensionHealthBlock({
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-green)" }}>
                   {formatGbp(targetMonthlyIncome)}/mo target
                 </span>
-              </div>
+              </HStack>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
                 Total monthly: <span className="pnum">{formatGbp(Math.round(monthlyTotal + extraMonthlyNeeded))}</span> · Annual: <span className="pnum">{formatGbp(Math.round((monthlyTotal + extraMonthlyNeeded) * 12))}</span> · {yearsToRetirement}yr horizon
               </div>
@@ -572,7 +572,7 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 16 }}>
       <PanelHeader color="var(--ft-cyan)">UK State Pension</PanelHeader>
       <div style={{ padding: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, flexWrap: "wrap" as const, gap: 12 }}>
+        <HStack gap={12} align="start" justify="between" wrap marginBottom={14}>
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 4 }}>
               Full New State Pension (2024/25)
@@ -598,7 +598,7 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
               background: "var(--ft-base)",
             }} />
           </button>
-        </div>
+        </HStack>
 
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
           {statePensionCells.map(({ label, value }) => (
@@ -656,11 +656,11 @@ function SensitivityRow({
       onMouseLeave={() => setHovered(false)}
     >
       <td style={{ ...tdStyle, textAlign: "left" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <HStack gap={6} align="center">
           {isSelected && <span style={{ width: 3, height: 14, background: "var(--ft-blue)", flexShrink: 0, display: "inline-block" }} />}
           <span style={{ color: accentColor, fontWeight: isSelected ? 700 : 500 }}>{rate}%</span>
           {isSelected && <Text as="span" size={8} color="var(--ft-blue)" letterSpacing="0.06em">← selected</Text>}
-        </div>
+        </HStack>
       </td>
       <td className="pnum" style={{ ...tdStyle, color: isSelected ? "var(--ft-text)" : "var(--ft-muted)", fontWeight: isSelected ? 700 : 400, fontSize: isSelected ? 12 : 11 }}>
         {fmtPot(Math.round(pot))}
@@ -931,14 +931,14 @@ function IsaSection() {
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 24 }}>
       <PanelHeader color="var(--ft-blue)">ISA Allowance Tracker</PanelHeader>
       <div style={{ padding: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap" as const, gap: 8 }}>
+        <HStack gap={8} align="center" justify="between" wrap marginBottom={14}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>
             {formatTaxYearLabel(taxYear)}
           </div>
           <Text as="div" mono size={9} color={daysLeft <= 30 ? "var(--ft-red)" : daysLeft <= 90 ? "var(--ft-amber)" : "var(--ft-dim)"} letterSpacing="0.06em">
             {daysLeft === 0 ? "TAX YEAR ENDS TODAY" : `${daysLeft} days remaining`}
           </Text>
-        </div>
+        </HStack>
 
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
           {isaCells.map(({ label, value, color }) => (
@@ -962,7 +962,7 @@ function IsaSection() {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <HStack gap={12} align="center">
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", flex: 1 }}>
             ISA contributions this tax year (£)
           </div>
@@ -976,7 +976,7 @@ function IsaSection() {
             style={{ ...numInputStyle, width: 130 }}
             placeholder="0"
           />
-        </div>
+        </HStack>
 
         <div style={{
           marginTop: 12, padding: "8px 12px",
@@ -994,10 +994,10 @@ function IsaSection() {
 
 function ChartLegendDot({ color, label }: { color: string; label: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+    <HStack gap={5} align="center">
       <div style={{ width: 16, height: 2, background: color }} />
       <Text as="span" mono size={8} color="var(--ft-dim)">{label}</Text>
-    </div>
+    </HStack>
   );
 }
 
@@ -1171,7 +1171,7 @@ function PensionSection() {
 
           {/* Retirement age with inline label */}
           <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--ft-border)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <HStack gap={12} align="center" justify="between">
               <div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 500 }}>
                   Retirement Age
@@ -1181,7 +1181,7 @@ function PensionSection() {
                 </div>
               </div>
               <input type="number" min={50} max={90} step={1} value={inputs.retirementAge} onChange={e => set("retirementAge", Number(e.target.value))} style={numInputStyle} />
-            </div>
+            </HStack>
             {/* Retirement age slider */}
             <div style={{ marginTop: 8 }}>
               <input
@@ -1232,14 +1232,14 @@ function PensionSection() {
             </div>
             <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <HStack justify="between">
                   <span style={{ color: "var(--ft-muted)" }}>Your contribution</span>
                   <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{formatGbp(inputs.employeeContrib)}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                </HStack>
+                <HStack justify="between">
                   <Text as="span" color="var(--ft-muted)">Employer match</Text>
                   <span className="pnum" style={{ color: "var(--ft-cyan)", fontWeight: 600 }}>{formatGbp(inputs.employerContrib)}</span>
-                </div>
+                </HStack>
                 <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2, marginBottom: 4 }}>
                   <Text as="span" weight={600} color="var(--ft-text)">Total / mo</Text>
                   <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{formatGbp(monthlyTotal)}</span>
@@ -1251,15 +1251,15 @@ function PensionSection() {
             </div>
             <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <HStack justify="between">
                   <Text as="span" color="var(--ft-muted)">From pension pot</Text>
                   <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{formatGbp(Math.round(monthlyIncomeFromPot))}</span>
-                </div>
+                </HStack>
                 {inputs.includeStatePension && (
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <HStack justify="between">
                     <Text as="span" color="var(--ft-muted)">State pension</Text>
                     <span className="pnum" style={{ color: "var(--ft-cyan)", fontWeight: 700 }}>{formatGbp(Math.round(monthlyStatePension))}</span>
-                  </div>
+                  </HStack>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2 }}>
                   <Text as="span" weight={600} color="var(--ft-text)">Total</Text>

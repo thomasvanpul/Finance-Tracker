@@ -17,7 +17,7 @@ import {
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
@@ -338,7 +338,7 @@ function SectionHeader({ title, right, accentColor = "var(--ft-accent)" }: {
       <Text as="span" mono upper size={8} weight={700} color="var(--ft-dim)" letterSpacing="0.12em">
         {title}
       </Text>
-      {right && <div style={{ display: "flex", alignItems: "center", gap: 6 }}>{right}</div>}
+      {right && <HStack gap={6} align="center">{right}</HStack>}
     </div>
   );
 }
@@ -751,9 +751,9 @@ function CategorySparklineRow({ cat, amount, i, totalExpenses, sparkVals, last3M
         borderRadius: 2,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+      <HStack align="center" justify="between" marginBottom={3}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{cat}</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <HStack gap={10} align="center">
           {sparkVals.length > 0 && (
             <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 16 }}>
               {sparkVals.map((v, si) => (
@@ -765,8 +765,8 @@ function CategorySparklineRow({ cat, amount, i, totalExpenses, sparkVals, last3M
           )}
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>{pct.toFixed(1)}%</span>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color }}> −{formatGbp(amount)}</span>
-        </div>
-      </div>
+        </HStack>
+      </HStack>
       <div style={{ height: 3, background: "var(--ft-border)", overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: color, transition: "width 0.25s ease" }} />
       </div>
@@ -1484,23 +1484,23 @@ export default function Reports() {
       {/* ── Biggest transactions table ── */}
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
         <SectionHeader title="Biggest Transactions" accentColor="var(--ft-accent)" right={
-          <div style={{ display: "flex", gap: 6 }}>
+          <HStack gap={6}>
             <Text as="span" mono size={9} color="var(--ft-dim)">Top 10 by GBP value</Text>
             <button
               onClick={() => exportCsv(biggestTxs as CsvRow[], "Biggest Transactions")}
               style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "1px 6px", cursor: "pointer", borderRadius: 2 }}
             >↓ CSV</button>
-          </div>
+          </HStack>
         } />
         <div className="ft-scroll-x">
           <div style={{ minWidth: 580 }}>
-            <div style={{ display: "flex" }}>
+            <HStack>
               {[["Date","100px"],["Description","1"],["Category","130px"],["Type","90px"],["Amount (GBP)","140px"]].map(([h, w]) => (
                 <div key={h} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, textAlign: h === "Amount (GBP)" ? "right" : "left", borderRight: "1px solid var(--ft-raised)" }}>
                   {h}
                 </div>
               ))}
-            </div>
+            </HStack>
 
             {isLoading ? (
               <div style={{ padding: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>Loading…</div>
@@ -1519,7 +1519,7 @@ export default function Reports() {
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
         <SectionHeader title="Tax Year Export" accentColor="var(--ft-amber)" />
         <div className="ft-filter-bar" style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, background: "var(--ft-surface)", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <HStack gap={8} align="center">
             <Text as="span" mono size={10} color="var(--ft-dim)" letterSpacing="0.04em">TAX YEAR</Text>
             <select
               value={selectedTaxYear}
@@ -1528,7 +1528,7 @@ export default function Reports() {
             >
               {TAX_YEARS.map((yr) => <option key={yr} value={yr}>{formatTaxYear(yr)}</option>)}
             </select>
-          </div>
+          </HStack>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", padding: "4px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderRadius: 2 }}>
             UK Tax Year: 6 April {selectedTaxYear} – 5 April {selectedTaxYear + 1}
           </div>

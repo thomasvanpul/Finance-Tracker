@@ -17,7 +17,7 @@ import { PiggyBank, CalendarCheck, BarChart3, Zap, Star } from "lucide-react";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { Activity } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Persona focus areas ───────────────────────────────────────────────────────
 const PERSONA_HEALTH_FOCUS: Record<string, { label: string; tip: string; keys: string[] }> = {
@@ -223,14 +223,14 @@ function KpiStripCell({ label, value, unit, color }: KpiStripCellProps) {
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+      <HStack gap={4} align="baseline">
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color, lineHeight: 1, letterSpacing: "-0.02em" }}>
           {value}
         </span>
         {unit && (
           <Text as="span" mono size={9} color="var(--ft-dim)">{unit}</Text>
         )}
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -244,10 +244,10 @@ interface ColorLegendItemProps {
 
 function ColorLegendItem({ label, color }: ColorLegendItemProps) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+    <HStack gap={3} align="center">
       <div style={{ width: 6, height: 6, background: color }} />
       <Text as="span" mono size={7} color="var(--ft-dim)">{label}</Text>
-    </div>
+    </HStack>
   );
 }
 
@@ -947,7 +947,7 @@ export default function HealthScore() {
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <VStack gap={0}>
 
       {/* ── Page header ── */}
       <PageHeader
@@ -983,13 +983,13 @@ export default function HealthScore() {
             <div style={{ fontSize: 8, fontWeight: 700, color: personaColor, letterSpacing: "0.12em", marginBottom: 3 }}>
               {persona.code} — FOCUS
             </div>
-            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+            <HStack gap={5} wrap>
               {personaFocus.keys.map(k => (
                 <span key={k} style={{ fontSize: 8, color: personaColor, border: `1px solid ${personaColor}55`, padding: "1px 6px", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
                   {k}
                 </span>
               ))}
-            </div>
+            </HStack>
           </div>
           <div style={{ fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.65, letterSpacing: "0.03em", paddingTop: 1 }}>
             {personaFocus.tip}
@@ -1028,7 +1028,7 @@ export default function HealthScore() {
             <ScoreGauge score={compositeScore} color={color} grade={grade} />
           )}
           {/* Color legend */}
-          <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 6 }}>
+          <HStack gap={4} justify="center" marginTop={6}>
             {[
               { label: "0–39", c: "var(--ft-red)" },
               { label: "40–69", c: "var(--ft-amber)" },
@@ -1037,21 +1037,21 @@ export default function HealthScore() {
             ].map(b => (
               <ColorLegendItem key={b.label} label={b.label} color={b.c} />
             ))}
-          </div>
+          </HStack>
         </div>
 
         {/* Right panel: grade + mini bars */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <VStack gap={16}>
           {/* Grade interpretation */}
           <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, padding: "12px 16px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <HStack align="center" justify="between" marginBottom={6}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>
                 Grade {grade}
               </div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
                 {compositeScore}/100
               </div>
-            </div>
+            </HStack>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color, fontWeight: 700, lineHeight: 1.3 }}>
               {gradeDescription(compositeScore)}
             </div>
@@ -1072,7 +1072,7 @@ export default function HealthScore() {
               <PillarMiniBar key={s.key} label={s.label} score={s.score} weight={s.weight} />
             ))}
           </div>
-        </div>
+        </VStack>
       </div>
 
       {/* ── Score Breakdown (detailed rows, sorted worst-first) ── */}
@@ -1088,11 +1088,11 @@ export default function HealthScore() {
             {subScores.filter(s => s.action).length} improvement{subScores.filter(s => s.action).length !== 1 ? "s" : ""} available
           </span>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <VStack gap={6}>
           {subScores.map((s, i) => (
             <SubScoreRow key={s.key} sub={s} rank={i + 1} />
           ))}
-        </div>
+        </VStack>
       </div>
 
       {/* ── Top Recommendations ── */}
@@ -1167,11 +1167,11 @@ export default function HealthScore() {
                 />
               </AreaChart>
             </ResponsiveContainer>
-            <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 6 }}>
+            <HStack gap={16} justify="center" marginTop={6}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
                 Score saved once per day on visit
               </div>
-            </div>
+            </HStack>
           </div>
         </div>
       )}
@@ -1256,6 +1256,6 @@ export default function HealthScore() {
         Score bands: F &lt;40 · D 40–49 · C 50–59 · B 60–69 · A 70–89 · A+ 90+.{" "}
         Emergency Fund reads from Goals. Budget reads from Budget page. All other inputs are live API data.
       </div>
-    </div>
+    </VStack>
   );
 }

@@ -24,7 +24,7 @@ import type {
 import { PageHeader } from "@/components/page-header";
 import { formatGbp } from "@/lib/utils";
 import { Zap, X, ChevronRight, RefreshCw } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -475,7 +475,7 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore }: D
         >
           {d.detail}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <HStack gap={10} align="center" wrap>
           <Link
             href={d.href}
             style={{
@@ -499,7 +499,7 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore }: D
               {formatGbp(d.annualCost)}/yr impact
             </span>
           )}
-        </div>
+        </HStack>
       </div>
 
       {/* Actions */}
@@ -781,11 +781,11 @@ export default function Decisions() {
           </div>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <VStack gap={1}>
           {active.map((d) => (
             <DecisionRow key={d.id} decision={d} onDismiss={() => dismiss(d.id)} />
           ))}
-        </div>
+        </VStack>
       )}
 
       {/* ── Dismissed ── */}

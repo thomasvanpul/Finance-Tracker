@@ -32,7 +32,7 @@ import {
   ChevronLeft,
   Camera,
 } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── Data model ───────────────────────────────────────────────────────────────
 
@@ -278,7 +278,7 @@ function ReceiptUploadZone({
           onClick={() => window.open(`data:image/jpeg;base64,${receiptImage}`, "_blank")}
           title="Click to view full receipt"
         />
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+        <VStack gap={5}>
           <Text as="span" mono size={9} color="var(--ft-green)">✓ Receipt attached</Text>
           <button
             onClick={onClear}
@@ -292,7 +292,7 @@ function ReceiptUploadZone({
           >
             Replace
           </button>
-        </div>
+        </VStack>
         <input ref={inputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
       </div>
@@ -394,14 +394,14 @@ function ReceiptAnalysisPanel({
 
   if (status === "error") {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <HStack gap={8} align="center">
         <Text as="span" mono size={9} color="var(--ft-red)">
           Error: {error}
         </Text>
         <button onClick={analyze} style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", cursor: "pointer" }}>
           Retry
         </button>
-      </div>
+      </HStack>
     );
   }
 
@@ -417,7 +417,7 @@ function ReceiptAnalysisPanel({
       {analysis.items.length > 0 && (
         <div style={{ marginBottom: 10 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Items found</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <VStack gap={2}>
             {analysis.items.map((item, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)" }}>
                 <Text as="span" color="var(--ft-muted)">{item.name}</Text>
@@ -442,7 +442,7 @@ function ReceiptAnalysisPanel({
               <Text as="span" color="var(--ft-text)">Total</Text>
               <span className="pnum" style={{ color: "var(--ft-text)" }}>£{analysis.total.toFixed(2)}</span>
             </div>
-          </div>
+          </VStack>
         </div>
       )}
 
@@ -450,14 +450,14 @@ function ReceiptAnalysisPanel({
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
         Split suggestions
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <VStack gap={6}>
         {analysis.suggestions.map((sug, i) => (
           <div key={i} style={{
             border: `1px solid ${appliedIdx === i ? "rgba(167,139,250,0.5)" : "var(--ft-border2)"}`,
             background: appliedIdx === i ? "rgba(167,139,250,0.08)" : "var(--ft-base)",
             padding: "8px 10px", borderRadius: 2,
           }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+            <HStack align="center" justify="between" marginBottom={4}>
               <div>
                 <Text as="span" mono size={10} weight={700} color={appliedIdx === i ? "#A78BFA" : "var(--ft-text)"}>
                   {sug.label}
@@ -477,8 +477,8 @@ function ReceiptAnalysisPanel({
               >
                 {appliedIdx === i ? "✓ Applied" : "Apply"}
               </button>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            </HStack>
+            <HStack gap={4} wrap>
               {Object.entries(sug.shares).map(([member, share]) => {
                 const mi = memberIndex(members, member);
                 const col = memberColor(mi >= 0 ? mi : 0);
@@ -489,10 +489,10 @@ function ReceiptAnalysisPanel({
                   </div>
                 );
               })}
-            </div>
+            </HStack>
           </div>
         ))}
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -552,7 +552,7 @@ function ReceiptViewerModal({
             </div>
 
             {scanData.items.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+              <VStack gap={4} marginBottom={10}>
                 {scanData.items.map((item, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, fontFamily: "var(--font-mono)" }}>
                     <span style={{ color: "var(--ft-muted)", flex: 1 }}>{item.name}</span>
@@ -574,7 +574,7 @@ function ReceiptViewerModal({
                     <span>Total</span><span className="pnum">£{scanData.total.toFixed(2)}</span>
                   </div>
                 </div>
-              </div>
+              </VStack>
             )}
 
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
@@ -583,14 +583,14 @@ function ReceiptViewerModal({
             {scanData.suggestions.map((sug, i) => (
               <div key={i} style={{ marginBottom: 8 }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)", marginBottom: 3 }}>{sug.label}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <VStack gap={2}>
                   {Object.entries(sug.shares).map(([member, share]) => (
                     <div key={member} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)" }}>
                       <Text as="span" color="var(--ft-muted)">{member}</Text>
                       <span className="pnum" style={{ color: "var(--ft-text)" }}>£{(share ?? 0).toFixed(2)}</span>
                     </div>
                   ))}
-                </div>
+                </VStack>
               </div>
             ))}
           </div>
@@ -692,7 +692,7 @@ function AddGroupPanel({ onAdd, onCancel }: AddGroupPanelProps) {
 
       <div style={{ marginBottom: 10 }}>
         <label style={LABEL_S}>Add Members (comma-separated)</label>
-        <div style={{ display: "flex", gap: 6 }}>
+        <HStack gap={6}>
           <input
             style={{ ...INPUT_S, flex: 1 }}
             placeholder='e.g. "Thomas, Alice, Bob"'
@@ -720,12 +720,12 @@ function AddGroupPanel({ onAdd, onCancel }: AddGroupPanelProps) {
           >
             Add
           </button>
-        </div>
+        </HStack>
       </div>
 
       <div style={{ marginBottom: 10 }}>
         <label style={LABEL_S}>Or add one at a time</label>
-        <div style={{ display: "flex", gap: 6 }}>
+        <HStack gap={6}>
           <input
             style={{ ...INPUT_S, flex: 1 }}
             placeholder="Person name"
@@ -753,11 +753,11 @@ function AddGroupPanel({ onAdd, onCancel }: AddGroupPanelProps) {
           >
             <Plus style={{ width: 12, height: 12 }} />
           </button>
-        </div>
+        </HStack>
       </div>
 
       {members.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
+        <HStack gap={5} wrap marginBottom={12}>
           {members.map((m, i) => {
             const col = memberColor(i);
             const isYou = m === myName && i === 0 && myName !== "";
@@ -807,7 +807,7 @@ function AddGroupPanel({ onAdd, onCancel }: AddGroupPanelProps) {
               </div>
             );
           })}
-        </div>
+        </HStack>
       )}
 
       {members.length < 2 && (
@@ -1035,7 +1035,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
       {/* Split type picker */}
       <div style={{ marginBottom: 10 }}>
         <label style={LABEL_S}>Split Type</label>
-        <div style={{ display: "flex", gap: 5 }}>
+        <HStack gap={5}>
           {(["equal", "custom", "percentage"] as const).map((t) => (
             <button
               key={t}
@@ -1056,7 +1056,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
               {t}
             </button>
           ))}
-        </div>
+        </HStack>
       </div>
 
       {/* Per-member share inputs */}
@@ -1068,7 +1068,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
             ? "Percentages (%)"
             : "Custom amounts (£)"}
         </label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <VStack gap={4}>
           {group.members.map((m, i) => {
             const col = memberColor(i);
             const displayVal =
@@ -1148,7 +1148,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
               </div>
             );
           })}
-        </div>
+        </VStack>
 
         {splitType !== "equal" && amount > 0 && (
           <div
@@ -1194,7 +1194,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 6 }}>
+      <HStack gap={6}>
         <button
           onClick={handleAdd}
           disabled={!description.trim() || amount <= 0 || !isBalanced}
@@ -1234,7 +1234,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
         >
           Cancel
         </button>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -1279,7 +1279,7 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
         opacity: group.settled ? 0.65 : 1,
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+      <HStack gap={8} align="start" justify="between">
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
@@ -1329,14 +1329,14 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
               {group.members.length} members
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <HStack gap={8} align="center">
             <span className="pnum" style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>
               {formatGbp(total)}
             </span>
             <Text as="span" mono size={9} color="var(--ft-dim)">
               {groupExpenses.length} expense{groupExpenses.length !== 1 ? "s" : ""}
             </Text>
-          </div>
+          </HStack>
           {myBalance !== null && (
             <div style={{ marginTop: 4 }}>
               <span
@@ -1400,7 +1400,7 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
             {deleteConfirm ? "DEL?" : <Trash2 style={{ width: 12, height: 12 }} />}
           </button>
         </div>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -1457,7 +1457,7 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <HStack gap={6} align="center">
             <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {expense.description}
             </span>
@@ -1494,18 +1494,18 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
                 <Camera style={{ width: 11, height: 11 }} />
               </button>
             )}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+          </HStack>
+          <HStack gap={8} align="center" marginTop={2}>
             <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>
               {formatDateShort(expense.date)}
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <HStack gap={4} align="center">
               <MemberAvatar name={expense.paidBy} members={members} size={14} />
               <span style={{ fontSize: 9, color: paidByCol.color, fontFamily: "var(--font-mono)" }}>
                 paid by {expense.paidBy}
               </span>
-            </div>
-          </div>
+            </HStack>
+          </HStack>
         </div>
 
         <div style={{ flexShrink: 0, textAlign: "right" }}>
@@ -1609,7 +1609,7 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
           <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>
             Split breakdown · {expense.splitType}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          <HStack gap={5} wrap>
             {Object.entries(expense.shares).map(([member, share]) => {
               const mi = memberIndex(members, member);
               const col = memberColor(mi >= 0 ? mi : 0);
@@ -1645,7 +1645,7 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
                 </div>
               );
             })}
-          </div>
+          </HStack>
         </div>
       )}
       {viewingReceipt && expense.receiptImage && (
@@ -1760,7 +1760,7 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
       <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--ft-dim)", marginBottom: 6, paddingBottom: 5, borderBottom: "1px solid var(--ft-border)" }}>
         Balances
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 12 }}>
+      <VStack gap={5} marginBottom={12}>
         {group.members.map((m, i) => {
           const bal = Math.round((balances[m] ?? 0) * 100) / 100;
           const col = memberColor(i);
@@ -1814,7 +1814,7 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
             </div>
           );
         })}
-      </div>
+      </VStack>
 
       {/* Transfer instructions */}
       {transfers.length > 0 && (
@@ -2082,12 +2082,12 @@ interface CategoryLegendItemProps {
 
 function CategoryLegendItem({ cat, amt, total }: CategoryLegendItemProps) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+    <HStack gap={4} align="center">
       <div style={{ width: 7, height: 7, borderRadius: 1, background: SUMMARY_CATEGORY_COLORS[cat] ?? "var(--ft-dim)", flexShrink: 0 }} />
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
         {cat} <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{((amt / total) * 100).toFixed(0)}%</span>
       </span>
-    </div>
+    </HStack>
   );
 }
 
@@ -2117,7 +2117,7 @@ function GroupSummaryStats({ group, expenses, myName }: GroupSummaryStatsProps) 
   }, [expenses]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <VStack gap={8}>
       {/* Border-as-gap KPI strip */}
       <div
         className="ft-four-col"
@@ -2167,14 +2167,14 @@ function GroupSummaryStats({ group, expenses, myName }: GroupSummaryStatsProps) 
             ))}
           </div>
           {/* Legend */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px" }}>
+          <HStack gap="4px 14px" wrap>
             {categoryTotals.map(([cat, amt]) => (
               <CategoryLegendItem key={cat} cat={cat} amt={amt} total={total} />
             ))}
-          </div>
+          </HStack>
         </div>
       )}
-    </div>
+    </VStack>
   );
 }
 
@@ -2577,7 +2577,7 @@ export default function SplitPage() {
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <VStack gap={6}>
           {activeGroups.map((g) => (
             <GroupCard
               key={g.id}
@@ -2589,7 +2589,7 @@ export default function SplitPage() {
               onDelete={() => handleDeleteGroup(g.id)}
             />
           ))}
-        </div>
+        </VStack>
 
         {/* Settled groups collapsible */}
         {settledGroups.length > 0 && (
@@ -2620,7 +2620,7 @@ export default function SplitPage() {
               Settled ({settledGroups.length})
             </button>
             {showSettled && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 6 }}>
+              <VStack gap={5} marginTop={6}>
                 {settledGroups.map((g) => (
                   <GroupCard
                     key={g.id}
@@ -2632,7 +2632,7 @@ export default function SplitPage() {
                     onDelete={() => handleDeleteGroup(g.id)}
                   />
                 ))}
-              </div>
+              </VStack>
             )}
           </div>
         )}
@@ -2643,7 +2643,7 @@ export default function SplitPage() {
   // ─── Right panel ───────────────────────────────────────────────────────────
 
   const rightPanel = selectedGroup ? (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
       {/* Group header */}
       <div
         style={{
@@ -2662,16 +2662,16 @@ export default function SplitPage() {
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-text)", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {selectedGroup.name}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-            <div style={{ display: "flex", gap: 3 }}>
+          <HStack gap={8} align="center" minWidth0>
+            <HStack gap={3}>
               {selectedGroup.members.map((m, i) => (
                 <MemberAvatar key={m} name={m} members={selectedGroup.members} size={18} />
               ))}
-            </div>
+            </HStack>
             <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
               {selectedGroup.members.join(" · ")}
             </span>
-          </div>
+          </HStack>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           {!selectedGroup.settled && (
@@ -2906,7 +2906,7 @@ export default function SplitPage() {
         myName={myName}
         onMarkGroupSettled={handleMarkGroupSettled}
       />
-    </div>
+    </VStack>
   ) : (
     <div
       style={{
@@ -2940,7 +2940,7 @@ export default function SplitPage() {
   // and avoid a flicker; we do the logic via inline styles with a responsive breakpoint approach.
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <VStack gap={0}>
       {/* Persona quick-start for Social Finance users */}
       {(() => { const ids = loadPersonaIds(); return ids[0] === "social"; })() && (
         <div style={{ marginBottom: 14 }}><PersonaQuickStart /></div>
@@ -2950,7 +2950,7 @@ export default function SplitPage() {
         title="Group Expenses"
         subtitle="Split bills, track shared costs, settle up with minimum transfers"
         actions={
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <HStack gap={6} align="center">
             <a href="/owing" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent", whiteSpace: "nowrap" }}>
               → Debts
             </a>
@@ -2967,7 +2967,7 @@ export default function SplitPage() {
                 {activeGroups.length} active
               </span>
             )}
-          </div>
+          </HStack>
         }
       />
 
@@ -3105,6 +3105,6 @@ export default function SplitPage() {
           }
         }
       `}</style>
-    </div>
+    </VStack>
   );
 }

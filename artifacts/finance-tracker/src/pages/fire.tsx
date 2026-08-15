@@ -19,7 +19,7 @@ import {
   useGetInvestmentSummary,
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -323,14 +323,14 @@ function SurvivalGauge({ probability, withdrawalRate }: { probability: number; w
         Portfolio Survival (30yr)
       </div>
 
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 10 }}>
+      <HStack gap={6} align="baseline" marginBottom={10}>
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 36, fontWeight: 700, color, lineHeight: 1, letterSpacing: "-0.03em" }}>
           {probability}%
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color, fontWeight: 700, letterSpacing: "0.1em" }}>
           {label}
         </div>
-      </div>
+      </HStack>
 
       <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden", marginBottom: 6 }}>
         <div style={{ height: "100%", width: `${probability}%`, background: color, transition: "width 0.12s ease" }} />
@@ -426,7 +426,7 @@ function CoastCard({ coastFireNeeded, effPortfolio, coastFireGap, hasCoasted, ta
       borderTop: `2px solid ${hasCoasted ? "var(--ft-green)" : "var(--ft-accent)"}`,
       padding: "14px 16px",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+      <HStack align="start" justify="between" marginBottom={10}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "var(--ft-dim)" }}>
           Coast FIRE Number
         </div>
@@ -443,7 +443,7 @@ function CoastCard({ coastFireNeeded, effPortfolio, coastFireGap, hasCoasted, ta
             COASTED ✓
           </span>
         )}
-      </div>
+      </HStack>
 
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: hasCoasted ? "var(--ft-green)" : "var(--ft-accent)", lineHeight: 1, letterSpacing: "-0.025em", marginBottom: 6 }}>
         {formatGbp(coastFireNeeded)}
@@ -553,7 +553,7 @@ function FireVariantCard({ v, effPortfolio }: FireVariantCardProps) {
         cursor: "default",
         transition: "background 0.1s",
       }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+      <HStack align="start" justify="between" marginBottom={8}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: v.color, letterSpacing: "0.07em" }}>
           {v.label}
         </div>
@@ -567,7 +567,7 @@ function FireVariantCard({ v, effPortfolio }: FireVariantCardProps) {
             REACHED ✓
           </span>
         )}
-      </div>
+      </HStack>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: reached ? v.color : "var(--ft-text)", lineHeight: 1, marginBottom: 4, letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
         {formatGbp(v.number)}
       </div>
@@ -834,7 +834,7 @@ export default function Fire() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "var(--ft-dim)", borderLeft: "3px solid var(--ft-amber)", paddingLeft: 8 }}>
             {isMobile ? "FI Progress" : "Progress to Financial Independence"}
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+          <HStack gap={6} align="baseline">
             <span className="pnum" style={{
               fontFamily: "var(--font-mono)",
               fontSize: isMobile ? 34 : 42,
@@ -846,7 +846,7 @@ export default function Fire() {
               {progressPct}%
             </span>
             <Text as="span" mono size={isMobile ? 10 : 11} color="var(--ft-muted)">of FI</Text>
-          </div>
+          </HStack>
         </div>
 
         {/* Main progress track */}
@@ -1070,7 +1070,7 @@ export default function Fire() {
         </div>
 
         {/* Right: chart + survival + coast */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <VStack gap={12}>
 
           {/* Survival + Coast row */}
           <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -1202,10 +1202,10 @@ export default function Fire() {
             </div>
             {/* Legend */}
             <div style={{ padding: "8px 16px 10px", background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 20, flexWrap: "wrap" as const }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <HStack gap={5} align="center">
                 <div style={{ width: 16, height: 2, background: "var(--ft-green)" }} />
                 <Text as="span" mono size={8} color="var(--ft-dim)">Portfolio value</Text>
-              </div>
+              </HStack>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 16, height: 2, background: "var(--ft-accent)", borderTop: "1px dashed var(--ft-accent)" }} />
                 <Text as="span" mono size={8} color="var(--ft-dim)">Total contributions</Text>
@@ -1222,7 +1222,7 @@ export default function Fire() {
               )}
             </div>
           </div>
-        </div>
+        </VStack>
       </div>
 
       {/* ── FIRE VARIANTS ──────────────────────────────────────────────────────── */}

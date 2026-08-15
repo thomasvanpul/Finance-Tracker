@@ -19,7 +19,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -343,7 +343,7 @@ function EventRow({ row }: EventRowProps) {
         {formatShortDate(row.date)}
       </td>
       <td style={{ ...td }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <VStack gap={2}>
           {row.events.map((ev, i) => {
             const isIncome = ev.includes("+");
             return (
@@ -359,7 +359,7 @@ function EventRow({ row }: EventRowProps) {
               </span>
             );
           })}
-        </div>
+        </VStack>
       </td>
       <td className="pnum" style={{
         ...td,
@@ -398,9 +398,9 @@ function MultiplierInput({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <VStack gap={4}>
       <span style={{ ...labelStyle, fontSize: 8 }}>{labelText}</span>
-      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <HStack gap={4} align="center">
         <input
           type="number"
           min={0}
@@ -424,8 +424,8 @@ function MultiplierInput({
           }}
         />
         <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}>%</span>
-      </div>
-    </div>
+      </HStack>
+    </VStack>
   );
 }
 
@@ -459,7 +459,7 @@ interface ScenarioLegendItemProps {
 
 function ScenarioLegendItem({ s, multipliers }: ScenarioLegendItemProps) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <HStack gap={6} align="center">
       <div style={{ width: 24, height: 2, background: SCENARIO_COLORS[s] }} />
       <span style={{ ...mono, fontSize: 10, color: SCENARIO_COLORS[s] }}>
         {s === "optimistic"
@@ -468,7 +468,7 @@ function ScenarioLegendItem({ s, multipliers }: ScenarioLegendItemProps) {
           ? `Pessimistic (income -${multipliers.pessimisticIncomeCut}%, spend +${multipliers.pessimisticExpenseBoost}%)`
           : "Base (3-month avg trend)"}
       </span>
-    </div>
+    </HStack>
   );
 }
 
@@ -587,7 +587,7 @@ export default function CashflowPage() {
         actions={
           <div className="ft-filter-bar" style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {/* Horizon selector */}
-          <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <HStack gap={2} wrap>
             {([30, 60, 90, 180] as Horizon[]).map((h) => (
               <button
                 key={h}
@@ -608,9 +608,9 @@ export default function CashflowPage() {
                 {h}d
               </button>
             ))}
-          </div>
+          </HStack>
           {/* Scenario selector */}
-          <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+          <HStack gap={2} wrap>
             {(["optimistic", "base", "pessimistic"] as Scenario[]).map((s) => (
               <button
                 key={s}
@@ -635,7 +635,7 @@ export default function CashflowPage() {
                   : "BASE"}
               </button>
             ))}
-          </div>
+          </HStack>
           {/* Scenario settings toggle */}
           <button
             onClick={() => setShowSettings((v) => !v)}
@@ -672,25 +672,25 @@ export default function CashflowPage() {
           <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 14 }}>
             SCENARIO MULTIPLIERS
           </div>
-          <div style={{ display: "flex", gap: 32, flexWrap: "wrap", alignItems: "flex-start" }}>
+          <HStack gap={32} align="start" wrap>
             <div>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-green)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
                 Optimistic
               </div>
-              <div style={{ display: "flex", gap: 20 }}>
+              <HStack gap={20}>
                 <MultiplierInput label="Income boost" value={multipliers.optimisticIncomeBoost} onChange={updateMultiplier("optimisticIncomeBoost")} />
                 <MultiplierInput label="Expense cut" value={multipliers.optimisticExpenseCut} onChange={updateMultiplier("optimisticExpenseCut")} />
-              </div>
+              </HStack>
             </div>
             <div style={{ width: 1, background: "var(--ft-border)", alignSelf: "stretch" }} />
             <div>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-red)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
                 Pessimistic
               </div>
-              <div style={{ display: "flex", gap: 20 }}>
+              <HStack gap={20}>
                 <MultiplierInput label="Income cut" value={multipliers.pessimisticIncomeCut} onChange={updateMultiplier("pessimisticIncomeCut")} />
                 <MultiplierInput label="Expense boost" value={multipliers.pessimisticExpenseBoost} onChange={updateMultiplier("pessimisticExpenseBoost")} />
-              </div>
+              </HStack>
             </div>
             <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
@@ -721,7 +721,7 @@ export default function CashflowPage() {
                 Reset to defaults
               </button>
             </div>
-          </div>
+          </HStack>
         </div>
       )}
 

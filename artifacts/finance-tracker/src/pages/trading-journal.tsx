@@ -24,7 +24,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { formatGbp } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -345,7 +345,7 @@ function BarTooltip({ active, payload, label }: { active?: boolean; payload?: { 
 
 function StarRating({ value, onChange }: { value: 1 | 2 | 3 | 4 | 5; onChange: (v: 1 | 2 | 3 | 4 | 5) => void }) {
   return (
-    <div style={{ display: "flex", gap: 3 }}>
+    <HStack gap={3}>
       {([1, 2, 3, 4, 5] as const).map((n) => (
         <button
           key={n}
@@ -365,7 +365,7 @@ function StarRating({ value, onChange }: { value: 1 | 2 | 3 | 4 | 5; onChange: (
           ★
         </button>
       ))}
-    </div>
+    </HStack>
   );
 }
 
@@ -420,11 +420,11 @@ function StreakCell({ streak }: { streak: { type: "win" | "loss" | null; count: 
   return (
     <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 }}>Current Streak</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <HStack gap={6} align="center">
         <div style={{ ...mono, fontSize: 16, fontWeight: 700, color }}>
           <span className="pnum">{streak.count}{isWin ? "W" : "L"}</span>
         </div>
-        <div style={{ display: "flex", gap: 2, alignItems: "flex-end" }}>
+        <HStack gap={2} align="end">
           {Array.from({ length: bars }, (_, i) => (
             <div
               key={i}
@@ -436,8 +436,8 @@ function StreakCell({ streak }: { streak: { type: "win" | "loss" | null; count: 
               }}
             />
           ))}
-        </div>
-      </div>
+        </HStack>
+      </HStack>
       <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{isWin ? "winning" : "losing"} run</div>
     </div>
   );
@@ -509,9 +509,9 @@ function TradeCallouts({ closed }: { closed: Trade[] }) {
             borderLeft: `3px solid ${color}`,
           }}
         >
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+          <HStack gap={8} align="center" marginBottom={6}>
             <span style={{ ...mono, fontSize: 10, color, fontWeight: 700 }}>{icon} {label}</span>
-          </div>
+          </HStack>
           {trade ? (
             <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "4px 12px", alignItems: "baseline" }}>
               <span style={{ ...mono, fontSize: 14, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.02em" }}>{trade.ticker}</span>
@@ -668,7 +668,7 @@ function OpenPositionCard({ trade, onEdit, onDelete }: OpenPositionCardProps) {
           </div>
         )}
       </div>
-      <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
+      <HStack gap={6} marginTop={8}>
         <button
           style={{ ...btnGhost, fontSize: 9, padding: "3px 8px" }}
           onClick={() => onEdit(trade)}
@@ -681,7 +681,7 @@ function OpenPositionCard({ trade, onEdit, onDelete }: OpenPositionCardProps) {
         >
           Delete
         </button>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -766,7 +766,7 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
           <Text as="span" color="var(--ft-blue)">{"★".repeat(trade.execution)}</Text>
         </td>
         <td style={{ ...td, textAlign: "center" }}>
-          <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+          <HStack gap={4} justify="center">
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(trade); }}
               style={{ ...mono, fontSize: 9, padding: "2px 7px", background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", cursor: "pointer" }}
@@ -779,7 +779,7 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
             >
               <Trash2 size={10} />
             </button>
-          </div>
+          </HStack>
         </td>
       </tr>
       {isExpanded && (
@@ -796,7 +796,7 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
                 {trade.tags.length > 0 && (
                   <div style={{ marginBottom: 8 }}>
                     <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 4 }}>TAGS</div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    <HStack gap={4} wrap>
                       {trade.tags.map((tag) => (
                         <span
                           key={tag}
@@ -805,7 +805,7 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
                           {tag}
                         </span>
                       ))}
-                    </div>
+                    </HStack>
                   </div>
                 )}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -914,7 +914,7 @@ function MonthCell({ m }: MonthCellProps) {
           <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: m.pnl > 0 ? "var(--ft-green)" : m.pnl < 0 ? "var(--ft-red)" : "var(--ft-dim)", marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
             <span className="pnum">{m.pnl >= 0 ? "+" : ""}{formatGbp(m.pnl)}</span>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <HStack gap={8}>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>TRADES</div>
               <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)" }}><span className="pnum">{m.count}</span></div>
@@ -925,7 +925,7 @@ function MonthCell({ m }: MonthCellProps) {
                 <span className="pnum">{m.winRate.toFixed(0)}%</span>
               </div>
             </div>
-          </div>
+          </HStack>
         </>
       ) : (
         <div style={{ ...mono, fontSize: 10, color: "var(--ft-border2)" }}>No trades</div>
@@ -1370,7 +1370,7 @@ export default function TradingJournal() {
               </div>
               <div>
                 <label style={labelStyle}>Direction *</label>
-                <div style={{ display: "flex", gap: 0 }}>
+                <HStack gap={0}>
                   {(["long", "short"] as TradeDirection[]).map((d) => (
                     <button
                       key={d}
@@ -1395,11 +1395,11 @@ export default function TradingJournal() {
                       {d}
                     </button>
                   ))}
-                </div>
+                </HStack>
               </div>
               <div>
                 <label style={labelStyle}>Status *</label>
-                <div style={{ display: "flex", gap: 0 }}>
+                <HStack gap={0}>
                   {(["open", "closed"] as TradeStatus[]).map((s) => (
                     <button
                       key={s}
@@ -1422,7 +1422,7 @@ export default function TradingJournal() {
                       {s}
                     </button>
                   ))}
-                </div>
+                </HStack>
               </div>
             </div>
 
@@ -1521,14 +1521,14 @@ export default function TradingJournal() {
               />
             </div>
 
-            <div style={{ display: "flex", gap: 8 }}>
+            <HStack gap={8}>
               <button type="submit" style={btnPrimary}>
                 {editId ? "Update Trade" : "Log Trade"}
               </button>
               <button type="button" style={btnGhost} onClick={handleCancel}>
                 Cancel
               </button>
-            </div>
+            </HStack>
           </form>
         </div>
       )}
@@ -1576,9 +1576,9 @@ export default function TradingJournal() {
               </button>
             )}
           </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <HStack gap={6} align="center" wrap>
             {/* Status filter */}
-            <div style={{ display: "flex", gap: 0 }}>
+            <HStack gap={0}>
               {(["all", "open", "closed"] as const).map((f) => (
                 <button
                   key={f}
@@ -1598,7 +1598,7 @@ export default function TradingJournal() {
                   {f}
                 </button>
               ))}
-            </div>
+            </HStack>
             {/* Setup filter */}
             <select
               style={{ ...mono, fontSize: 9, padding: "3px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: filterSetup !== "all" ? "var(--ft-text)" : "var(--ft-muted)", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}
@@ -1656,7 +1656,7 @@ export default function TradingJournal() {
               value={filterPnlMax}
               onChange={(e) => setFilterPnlMax(e.target.value)}
             />
-          </div>
+          </HStack>
         </div>
 
         {filtered.length === 0 ? (

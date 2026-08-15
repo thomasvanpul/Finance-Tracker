@@ -7,7 +7,7 @@ import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Repeat2 } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -211,7 +211,7 @@ interface SectionHeaderProps {
 
 function SectionHeader({ title, sub, accentColor = "var(--ft-accent)", right }: SectionHeaderProps) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: sub ? 0 : 10, flexWrap: "wrap", gap: 8 }}>
+    <HStack gap={8} align="start" justify="between" wrap marginBottom={sub ? 0 : 10}>
       <div>
         <div style={{
           ...mono,
@@ -233,7 +233,7 @@ function SectionHeader({ title, sub, accentColor = "var(--ft-accent)", right }: 
         )}
       </div>
       {right}
-    </div>
+    </HStack>
   );
 }
 
@@ -427,7 +427,7 @@ function CategoryBreakdown({ patterns }: { patterns: RecurringPattern[] }) {
     .join(", ");
 
   return (
-    <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+    <HStack gap={20} align="start">
       {/* Donut */}
       <div style={{ flexShrink: 0, position: "relative", width: 80, height: 80 }}>
         <div style={{
@@ -449,7 +449,7 @@ function CategoryBreakdown({ patterns }: { patterns: RecurringPattern[] }) {
         </div>
       </div>
       {/* Legend */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+      <VStack gap={2} grow>
         {segments.slice(0, 6).map((s) => (
           <CategoryLegendRow
             key={s.category}
@@ -462,8 +462,8 @@ function CategoryBreakdown({ patterns }: { patterns: RecurringPattern[] }) {
         {segments.length > 6 && (
           <div style={{ ...labelStyle }}>+{segments.length - 6} more categories</div>
         )}
-      </div>
-    </div>
+      </VStack>
+    </HStack>
   );
 }
 
@@ -513,7 +513,7 @@ function CalendarCell({ day, payments, isToday, isPast }: CalendarCellProps) {
         {day}
       </div>
       {hasPayments && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <VStack gap={1}>
           {payments.slice(0, 2).map((p) => (
             <div key={p.id} style={{ ...mono, fontSize: 7, color: "var(--ft-red)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {p.merchantName.slice(0, 8)}
@@ -524,7 +524,7 @@ function CalendarCell({ day, payments, isToday, isPast }: CalendarCellProps) {
               <span className="pnum">{formatGbp(dayTotal)}</span>
             </div>
           )}
-        </div>
+        </VStack>
       )}
     </div>
   );
@@ -570,7 +570,7 @@ function CalendarView({ patterns }: { patterns: RecurringPattern[] }) {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+      <HStack align="baseline" justify="between" marginBottom={10}>
         <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8 }}>
           {today.toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase()} — PAYMENT CALENDAR
         </div>
@@ -579,7 +579,7 @@ function CalendarView({ patterns }: { patterns: RecurringPattern[] }) {
             <span className="pnum">{formatGbp(monthTotal)}</span> due this month
           </div>
         )}
-      </div>
+      </HStack>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 2 }}>
         {DOW_LABELS.map((d) => (
@@ -737,7 +737,7 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
       }}
     >
       {/* Title row */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+      <HStack gap={8} align="start" justify="between">
         <div style={{ ...mono, fontSize: 12, color: "var(--ft-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
           {p.merchantName}
         </div>
@@ -746,10 +746,10 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
             {p.frequency}
           </span>
         </div>
-      </div>
+      </HStack>
 
       {/* Confidence bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <HStack gap={8} align="center">
         <ConfidenceBadge score={p.confidence} />
         <div style={{ flex: 1, height: 2, background: "var(--ft-border)" }}>
           <div style={{
@@ -758,7 +758,7 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
             background: p.confidence >= 80 ? "var(--ft-green)" : p.confidence >= 50 ? "var(--ft-amber)" : "var(--ft-red)",
           }} />
         </div>
-      </div>
+      </HStack>
 
       {/* Amounts + dates */}
       <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -841,7 +841,7 @@ function AutoDetected({
         title="AUTO-DETECTED RECURRING TRANSACTIONS"
         sub="Matched by description + interval + amount within ±10% · Confidence scored 0–100"
         right={
-          <div style={{ display: "flex", gap: 4 }}>
+          <HStack gap={4}>
             {(["cards", "calendar", "category"] as const).map((m) => (
               <button
                 key={m}
@@ -858,7 +858,7 @@ function AutoDetected({
                 {m.toUpperCase()}
               </button>
             ))}
-          </div>
+          </HStack>
         }
       />
 
@@ -1025,7 +1025,7 @@ function RuleTableRow({
           </button>
         </td>
         <td style={{ ...td, textAlign: "right" }}>
-          <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+          <HStack gap={4} justify="end">
             <button
               onClick={() => onStartEdit(rule)}
               style={{ ...BTN_GHOST, fontSize: 8, color: "var(--ft-cyan)", borderColor: "var(--ft-cyan)44", padding: "2px 6px" }}
@@ -1047,7 +1047,7 @@ function RuleTableRow({
             >
               {deleteConfirmId === rule.id ? "Confirm?" : "Del"}
             </button>
-          </div>
+          </HStack>
         </td>
       </tr>
       {isTesting && testMatches.length > 0 && (
@@ -1329,7 +1329,7 @@ function ManualRules({
                               style={{ ...mono, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
                             />
                           </div>
-                          <div style={{ display: "flex", gap: 6 }}>
+                          <HStack gap={6}>
                             <button
                               onClick={() => {
                                 if (!editForm.matchText.trim()) return;
@@ -1344,7 +1344,7 @@ function ManualRules({
                             <button onClick={() => setEditingId(null)} style={{ ...BTN_GHOST, padding: "6px 12px" }}>
                               Cancel
                             </button>
-                          </div>
+                          </HStack>
                         </div>
                       </td>
                     </tr>
@@ -1472,7 +1472,7 @@ function ApplyRules({
         accentColor="var(--ft-green)"
       />
 
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap" }}>
+      <HStack gap={10} align="start" wrap marginBottom={16}>
         <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", alignSelf: "center" }}>
           <span className="pnum">{activeRules.length}</span> active rule{activeRules.length !== 1 ? "s" : ""} · <span className="pnum">{preview.length}</span> un-categorized transaction{preview.length !== 1 ? "s" : ""} would be updated
         </div>
@@ -1505,7 +1505,7 @@ function ApplyRules({
             </div>
           )}
         </div>
-      </div>
+      </HStack>
 
       {showPreview && preview.length > 0 && (
         <div className="ft-scroll-x">
@@ -1607,7 +1607,7 @@ export default function RecurringPage() {
         title="RECURRING RULES"
         subtitle="auto-detect and categorize recurring transactions"
         actions={
-          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <HStack gap={16} align="center">
             <div style={{ textAlign: "right" }}>
               <div style={{ ...labelStyle, marginBottom: 2 }}>Detected patterns</div>
               <Text as="div" mono size={16} weight={700} color="var(--ft-text)">
@@ -1620,7 +1620,7 @@ export default function RecurringPage() {
                 <span className="pnum">{rules.filter((r) => r.isActive).length}</span>
               </Text>
             </div>
-          </div>
+          </HStack>
         }
       />
 

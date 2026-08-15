@@ -4,7 +4,7 @@ import { BotPreview, type Phase } from "@/components/ai-wanderer";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId, type SkinRarity } from "@/lib/bot-skins";
 import { PageHeader } from "@/components/page-header";
 import { Shirt, Lock } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 const RARITY_COLOR: Record<SkinRarity, string> = {
   COMMON: "var(--ft-dim)",
@@ -45,14 +45,14 @@ function RarityBadge({ rarity }: { rarity: SkinRarity }) {
 // Compact perk dot row
 function PerkList({ perks, color }: { perks: string[]; color: string }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 12px" }}>
+    <HStack gap="3px 12px" wrap>
       {perks.map(p => (
         <div key={p} style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ width: 3, height: 3, borderRadius: "50%", background: color, flexShrink: 0 }} />
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>{p}</span>
         </div>
       ))}
-    </div>
+    </HStack>
   );
 }
 
@@ -335,7 +335,7 @@ export default function Wardrobe() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.12em", color: "var(--ft-dim)", marginBottom: 6, textTransform: "uppercase" }}>
                 PHASE
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+              <HStack gap={3} wrap>
                 {PHASE_CYCLE.map(p => (
                   <button
                     key={p}
@@ -358,7 +358,7 @@ export default function Wardrobe() {
                     {p}
                   </button>
                 ))}
-              </div>
+              </HStack>
             </div>
 
             {/* Active skin info */}
@@ -367,12 +367,12 @@ export default function Wardrobe() {
               padding: "10px 14px",
               background: RARITY_BG[activeSkinDef.rarity],
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+              <HStack gap={8} align="center" marginBottom={5}>
                 <Text as="span" mono size={13} weight={700} color="var(--ft-text)">
                   {activeSkinDef.label}
                 </Text>
                 <RarityBadge rarity={activeSkinDef.rarity} />
-              </div>
+              </HStack>
               <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, margin: "0 0 8px" }}>
                 {activeSkinDef.desc}
               </p>
@@ -386,7 +386,7 @@ export default function Wardrobe() {
           </div>
 
           {/* ── Right: Skin list ── */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <VStack gap={0}>
             {/* Header row */}
             <div style={{
               background: "var(--ft-raised)",
@@ -435,7 +435,7 @@ export default function Wardrobe() {
                       animation: `wardrobe-card-in 0.18s ease ${i * 0.04}s both`,
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                    <HStack gap={14} align="start">
                       {/* Mini bot preview */}
                       <div style={{
                         width: 50,
@@ -470,7 +470,7 @@ export default function Wardrobe() {
                       {/* Info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {/* Title row */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5, flexWrap: "wrap" }}>
+                        <HStack gap={7} align="center" wrap marginBottom={5}>
                           <Text as="span" mono size={13} weight={700} color="var(--ft-text)">
                             {skin.label}
                           </Text>
@@ -500,7 +500,7 @@ export default function Wardrobe() {
                               LOCKED
                             </span>
                           )}
-                        </div>
+                        </HStack>
 
                         <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, margin: "0 0 8px" }}>
                           {skin.desc}
@@ -559,7 +559,7 @@ export default function Wardrobe() {
                           <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />
                         )}
                       </div>
-                    </div>
+                    </HStack>
                   </div>
                 );
               })}
@@ -584,7 +584,7 @@ export default function Wardrobe() {
               <span style={{ color: RARITY_COLOR["LEGENDARY"] }}>LEGENDARY</span>{" "}requires full engagement.{" "}
               Pair skins via <a href="/settings" style={{ color: "var(--ft-accent)", textDecoration: "none", borderBottom: "1px solid var(--ft-border2)" }}>Settings → Appearance</a>.
             </div>
-          </div>
+          </VStack>
         </div>
       </div>
     </>

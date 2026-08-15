@@ -75,7 +75,7 @@ import {
   Line,
   ReferenceLine,
 } from "recharts";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 type Currency =
   | "GBP"
@@ -747,7 +747,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
           };
 
           return (
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <VStack gap={14}>
               {/* Notes */}
               <div>
                 <div style={sectionLabel}>Notes</div>
@@ -887,16 +887,16 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
                         +{formatNative(monthlyInterest, currency)}
                       </Text>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <HStack justify="between">
                       <Text as="span" size={9} color="var(--ft-dim)">Annual</Text>
                       <Text as="span" size={9} weight={700} color="var(--ft-green)">
                         +{formatNative(annualInterest, currency)}
                       </Text>
-                    </div>
+                    </HStack>
                   </div>
                 )}
               </div>
-            </div>
+            </VStack>
           );
         })()}
       </div>
@@ -990,10 +990,10 @@ function MonthSpendingRow({ category, total, maxSpend }: MonthSpendingRowProps) 
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
+      <HStack justify="between" marginBottom={2}>
         <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{category}</span>
         <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", flexShrink: 0, whiteSpace: "nowrap", marginLeft: 4 }}>{formatGbp(total)}</span>
-      </div>
+      </HStack>
       <div style={{ height: 3, background: "var(--ft-raised)", borderRadius: 1 }}>
         <div style={{ height: "100%", width: `${pct}%`, background: "var(--ft-red)", borderRadius: 1 }} />
       </div>
@@ -1134,7 +1134,7 @@ function HealthBadges({ accountName: _accountName, balance, stats, lowBalanceThr
   const isLowBalance = lowBalanceThreshold != null && balance >= 0 && balance < lowBalanceThreshold;
 
   return (
-    <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+    <HStack gap={4} align="center" wrap>
       {/* Overdraft warning */}
       {isOverdraft && (
         <span
@@ -1221,7 +1221,7 @@ function HealthBadges({ accountName: _accountName, balance, stats, lowBalanceThr
       {stats.daysSinceLast === null && (
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>no history</span>
       )}
-    </div>
+    </HStack>
   );
 }
 
@@ -1254,10 +1254,10 @@ function KpiCell({ label, value, sub, accent, icon, isFinancial = false }: KpiCe
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <HStack gap={6} align="center">
         <span style={{ color: accent, display: "flex" }}>{icon}</span>
         <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.08em">{label}</Text>
-      </div>
+      </HStack>
       <div
         className={isFinancial ? "pnum" : undefined}
         style={{ fontSize: 18, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}
@@ -1402,13 +1402,13 @@ function AccountTableRow({
               <div style={{ color: "var(--ft-text)", fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {account.name}
               </div>
-              <div style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 3 }}>
+              <HStack gap={5} align="center" marginTop={3}>
                 <Text as="span" mono size={10} weight={700} color="var(--ft-blue)" letterSpacing="0.04em">{account.currency}</Text>
                 <Text as="span" size={10} color="var(--ft-border2)">·</Text>
                 <span style={{ fontSize: 9, padding: "1px 4px", borderRadius: 2, background: "var(--ft-raised)", color: account.isWiseLinked ? "var(--ft-blue)" : "var(--ft-dim)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em" }}>
                   {account.isWiseLinked ? "WISE" : "MANUAL"}
                 </span>
-              </div>
+              </HStack>
             </div>
           ) : (
             <div className="flex items-center gap-2" style={{ minWidth: 0 }}>
@@ -1901,16 +1901,16 @@ export default function Accounts() {
 
   if (isLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <VStack gap={12}>
         {/* Header skeleton */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+        <HStack gap={8} align="center" justify="between" wrap>
           <FtSkeleton width={160} height={16} />
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <HStack gap={8} wrap>
             <FtSkeleton width={90} height={28} />
             <FtSkeleton width={90} height={28} />
             <FtSkeleton width={100} height={28} />
-          </div>
-        </div>
+          </HStack>
+        </HStack>
         {/* Table skeleton */}
         <div style={{ border: "1px solid var(--ft-border)" }}>
           <div style={{ padding: "6px 12px", background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border)" }}>
@@ -1935,7 +1935,7 @@ export default function Accounts() {
             </div>
           ))}
         </div>
-      </div>
+      </VStack>
     );
   }
 
@@ -2273,14 +2273,14 @@ export default function Accounts() {
             {/* Currency exposure section */}
             {currencies.length > 1 && (
               <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--ft-border)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <HStack align="center" justify="between" marginBottom={8}>
                   <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.08em">
                     CURRENCY EXPOSURE — {currencies.length} currencies
                   </Text>
                   <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
                     {baseCurrency} base · <span className="pnum">{formatGbp(totalCash)}</span> total
                   </span>
-                </div>
+                </HStack>
                 {/* Stacked bar */}
                 <div style={{ display: "flex", height: 6, overflow: "hidden", gap: 1, marginBottom: 8 }}>
                   {currencyTotals.map(({ currency, total }, i) => {
@@ -2360,7 +2360,7 @@ export default function Accounts() {
                           );
                         })}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <VStack gap={2}>
                       {[...accounts!]
                         .sort((a, b) => b.gbpEquivalent - a.gbpEquivalent)
                         .slice(0, 5)
@@ -2380,7 +2380,7 @@ export default function Accounts() {
                           +{accounts!.length - 5} more
                         </Text>
                       )}
-                    </div>
+                    </VStack>
                   </div>
 
                   {/* Interest projection */}
@@ -2400,7 +2400,7 @@ export default function Accounts() {
                         <div style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", marginBottom: 6 }}>
                           Interest Projection
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <VStack gap={4}>
                           <div>
                             <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>Monthly</div>
                             <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatGbp(totalMonthly)}</div>
@@ -2412,7 +2412,7 @@ export default function Accounts() {
                           <Text as="div" mono size={9} color="var(--ft-dim)">
                             {apyAccounts.length} account{apyAccounts.length !== 1 ? "s" : ""} with APY
                           </Text>
-                        </div>
+                        </VStack>
                       </div>
                     );
                   })()}
@@ -2423,12 +2423,12 @@ export default function Accounts() {
             {/* NW trend sparkline */}
             {nwHistory.length > 2 && (
               <div style={{ padding: "8px 14px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <HStack align="center" justify="between" marginBottom={4}>
                   <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.08em">Net Worth Trend</Text>
                   <Text as="span" mono size={10} color="var(--ft-muted)">
                     {nwHistory.length} days · {nwHistory[0]?.date?.slice(0, 7)} → {nwHistory.at(-1)?.date?.slice(0, 7)}
                   </Text>
-                </div>
+                </HStack>
                 <ResponsiveContainer width="100%" height={52}>
                   <AreaChart data={nwHistory} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                     <defs>
@@ -2468,7 +2468,7 @@ export default function Accounts() {
           </div>
           {isMobile ? (
             /* Mobile: compact row of action buttons */
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <VStack gap={8}>
               {[
                 { title: "Add manually", action: "Add Account", onClick: openAdd, color: "var(--ft-blue)" },
                 { title: "Sync Wise", action: "Configure", onClick: handleSync, color: "var(--ft-green)" },
@@ -2483,7 +2483,7 @@ export default function Accounts() {
                   <span style={{ fontSize: 10, color, fontWeight: 700, letterSpacing: "0.04em" }}>{action} →</span>
                 </button>
               ))}
-            </div>
+            </VStack>
           ) : (
             <div className="ft-three-col" style={{ display: "grid", gap: 12 }}>
               {[
@@ -2546,7 +2546,7 @@ export default function Accounts() {
             <option value="name-za">Name Z→A</option>
             <option value="currency">Currency</option>
           </select>
-          <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+          <HStack gap={3} wrap>
             {(["all", "wise", "manual"] as const).map((f) => (
               <button
                 key={f}
@@ -2563,7 +2563,7 @@ export default function Accounts() {
                 {f === "all" ? `All (${accounts?.length ?? 0})` : f === "wise" ? `Wise (${accounts?.filter(a => a.isWiseLinked).length ?? 0})` : `Manual (${accounts?.filter(a => !a.isWiseLinked).length ?? 0})`}
               </button>
             ))}
-          </div>
+          </HStack>
         </div>
 
         {/* ── Inline quick-add row ─────────────────────────────── */}
@@ -2812,16 +2812,16 @@ export default function Accounts() {
               {totalOwed > 0 && <div style={{ flex: totalOwed, background: "var(--ft-red)", opacity: 0.8 }} title={`Liabilities: ${formatGbp(totalOwed)}`} />}
             </div>
             <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+              <HStack gap={5} align="center">
                 <div style={{ width: 8, height: 8, background: "var(--ft-green)" }} />
                 <span className="pnum" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>
                   {formatGbp(totalAssets)}
                 </span>
                 <Text as="span" mono size={9} color="var(--ft-dim)">assets</Text>
-              </div>
+              </HStack>
               {totalOwed > 0 && (
                 <>
-                  <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                  <HStack gap={5} align="center">
                     <div style={{ width: 8, height: 8, background: "var(--ft-red)" }} />
                     <span className="pnum" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>
                       -{formatGbp(totalOwed)}
@@ -2829,13 +2829,13 @@ export default function Accounts() {
                     <Text as="span" mono size={9} color="var(--ft-dim)">
                       {overdraftAccounts.length} overdraft acct{overdraftAccounts.length !== 1 ? "s" : ""}
                     </Text>
-                  </div>
-                  <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                  </HStack>
+                  <HStack gap={5} align="center">
                     <Text as="span" mono size={9} color="var(--ft-dim)">net</Text>
                     <span className="pnum" style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: (totalAssets - totalOwed) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                       {formatGbp(totalAssets - totalOwed)}
                     </span>
-                  </div>
+                  </HStack>
                 </>
               )}
               {totalOwed === 0 && (
@@ -2905,14 +2905,14 @@ export default function Accounts() {
                   <Line type="monotone" dataKey="net" stroke="var(--ft-amber)" strokeWidth={1.5} dot={{ r: 2, fill: "var(--ft-amber)" }} />
                 </ComposedChart>
               </ResponsiveContainer>
-              <div style={{ display: "flex", gap: 16, padding: "4px 16px 10px", justifyContent: "center" }}>
+              <HStack gap={16} justify="center" padding="4px 16px 10px">
                 {[["var(--ft-green)", "Income"], ["var(--ft-red)", "Expenses"], ["var(--ft-amber)", "Net"]].map(([color, label]) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                     <div style={{ width: 10, height: 10, background: color, borderRadius: 2 }} />
                     <Text as="span" mono size={10} color="var(--ft-dim)">{label}</Text>
                   </div>
                 ))}
-              </div>
+              </HStack>
             </div>
           )}
         </div>
@@ -2923,7 +2923,7 @@ export default function Accounts() {
             ▼ THIS MONTH — {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase()}
           </div>
           {monthlySummary ? (
-            <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <VStack gap={10} padding="12px 16px">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <MonthlySummaryCell label="INCOME" value={formatGbp(monthlySummary.totalIncome)} color="var(--ft-green)" />
                 <MonthlySummaryCell label="EXPENSES" value={formatGbp(monthlySummary.totalExpenses)} color="var(--ft-red)" />
@@ -2933,7 +2933,7 @@ export default function Accounts() {
               {monthSpending.length > 0 && (
                 <div>
                   <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.06em", marginBottom: 6, textTransform: "uppercase" }}>Top Spending Categories</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <VStack gap={4}>
                     {monthSpending.slice(0, 5).map(({ category, total }) => (
                       <MonthSpendingRow
                         key={category}
@@ -2942,10 +2942,10 @@ export default function Accounts() {
                         maxSpend={monthSpending[0].total}
                       />
                     ))}
-                  </div>
+                  </VStack>
                 </div>
               )}
-            </div>
+            </VStack>
           ) : (
             <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
               NO DATA FOR THIS MONTH — <Text as="span" size={10} color="var(--ft-accent)">transactions will appear here when recorded</Text>
@@ -3011,7 +3011,7 @@ function CurrencyConverter({ fxRates, baseCurrency }: { fxRates: Record<string, 
           — type any currency code
         </span>
       </div>
-      <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <HStack gap={10} align="center" wrap padding="14px 16px">
         <input
           type="number"
           value={amount}
@@ -3065,7 +3065,7 @@ function CurrencyConverter({ fxRates, baseCurrency }: { fxRates: Record<string, 
             {!fromValid ? `Unknown: ${from}` : `Unknown: ${to}`}
           </Text>
         )}
-      </div>
+      </HStack>
     </div>
   );
 }

@@ -57,7 +57,7 @@ import {
   TICK_PERIODS_SET, TICK_INTERVAL_MAP, isUSTicker,
   MOCK_QUOTES, newsScore, timeAgo, fmtCap, fmtNum,
 } from "@/components/investments/markets-data";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import {
   CandlestickLayer, OHLCTooltip, RangeBar, RecBar, RatingBar,
 } from "@/components/investments/markets-widgets";
@@ -595,9 +595,9 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
       <div style={{ padding: "6px 14px", background: "rgba(230,162,60,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
         <Bell size={10} /> Ticker Alerts — {ticker}
       </div>
-      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <VStack gap={10} padding="10px 14px">
         {/* Metric + direction + threshold row */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <HStack gap={6} wrap>
           <select value={metric} onChange={(e) => setMetric(e.target.value as AlertMetric)}
             style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}>
             {(Object.keys(ALERT_METRIC_LABELS) as AlertMetric[]).map((k) => (
@@ -617,7 +617,7 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
             style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-amber)", border: "none", color: "var(--ft-base)", padding: "5px 12px", cursor: "pointer", fontWeight: 700 }}>
             + ADD
           </button>
-        </div>
+        </HStack>
         {/* Metric help text */}
         <Text as="div" mono size={9} color="var(--ft-dim)" lineHeight={1.5}>
           {metric === "price" && "Triggers when the live price crosses your target."}
@@ -627,7 +627,7 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
         {tickerAlerts.length === 0 ? (
           <Text as="div" mono size={10} color="var(--ft-dim)">No alerts set for {ticker}</Text>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <VStack gap={4}>
             {tickerAlerts.map((a) => {
               const isFired = alertTriggered(a, currentPrice);
               return (
@@ -641,9 +641,9 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
                 </div>
               );
             })}
-          </div>
+          </VStack>
         )}
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -915,7 +915,7 @@ function MarketsTab() {
         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)"; }}
         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4, minWidth: 0 }}>
+        <HStack gap={4} align="center" marginBottom={4} minWidth0>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{label}</div>
           {STAT_INFO[label] && (
             <span
@@ -932,7 +932,7 @@ function MarketsTab() {
           {hasDrill(label) && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", marginLeft: "auto", opacity: 0.5, letterSpacing: "0.04em" }}>↗</span>
           )}
-        </div>
+        </HStack>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: color ?? "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
       </div>
     );
@@ -986,10 +986,10 @@ function MarketsTab() {
         />
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <VStack gap={14}>
 
         {/* Back + search + watchlist */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <HStack gap={8} align="center">
           <button
             onClick={() => { setSelectedTicker(null); setWlDropdownOpen(false); }}
             style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 12px", cursor: "pointer", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}
@@ -1030,7 +1030,7 @@ function MarketsTab() {
             style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: alertsOpen ? "var(--ft-amber)" : "var(--ft-surface)", border: "1px solid var(--ft-border)", color: alertsOpen ? "var(--ft-base)" : priceAlerts.some(a => a.ticker === selectedTicker) ? "var(--ft-amber)" : "var(--ft-muted)", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, letterSpacing: "0.06em" }}>
             <Bell size={10} /> ALERTS{priceAlerts.filter(a => a.ticker === selectedTicker).length > 0 ? ` (${priceAlerts.filter(a => a.ticker === selectedTicker).length})` : ""}
           </button>
-        </div>
+        </HStack>
 
         {/* Header */}
         {(() => {
@@ -1041,9 +1041,9 @@ function MarketsTab() {
           const extChgPct = isPostMarket ? q?.postMarketChangePercent : isPreMarket ? q?.preMarketChangePercent : null;
           const extLabel = isPostMarket ? "AH" : isPreMarket ? "PRE" : null;
           return (
-        <div style={{ display: "flex", gap: 14, alignItems: "flex-end", flexWrap: "wrap" }}>
+        <HStack gap={14} align="end" wrap>
           <div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+            <HStack gap={10} align="baseline" wrap>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedTicker}</span>
               {q && <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: isExtended ? "var(--ft-muted)" : "var(--ft-text)", textDecoration: isExtended ? "none" : undefined, whiteSpace: "nowrap" }}>${q.price.toFixed(2)}</span>}
               {q && !isExtended && (
@@ -1066,8 +1066,8 @@ function MarketsTab() {
                   </span>
                 </>
               )}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 3 }}>
+            </HStack>
+            <HStack gap={10} align="center" marginTop={3}>
               {detail?.sector && <Text as="span" mono size={10} color="var(--ft-muted)">{detail.sector} · {detail.industry}</Text>}
               {lastQuoteTime && (
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "rgba(255,255,255,0.04)", border: "1px solid var(--ft-border)", padding: "1px 6px" }}>
@@ -1079,7 +1079,7 @@ function MarketsTab() {
                   {isPostMarket ? "After-hours trading" : "Pre-market trading"}
                 </span>
               )}
-            </div>
+            </HStack>
           </div>
           <div style={{ display: "flex", gap: 20, marginLeft: "auto", flexWrap: "wrap" }}>
             {q?.dayLow != null && q?.dayHigh != null && (
@@ -1107,14 +1107,14 @@ function MarketsTab() {
               </div>
             )}
           </div>
-        </div>
+        </HStack>
           );
         })()}
 
         {/* Price Chart */}
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "12px 12px 4px" }}>
           <div className="ft-chart-controls-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <HStack gap={8} align="center">
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
                 Price Chart
                 {isLive && (
@@ -1169,7 +1169,7 @@ function MarketsTab() {
                   ))}
                 </div>
               )}
-            </div>
+            </HStack>
             <div className="ft-chart-controls-row" style={{ display: "flex", gap: 2, alignItems: "center", overflowX: "auto", scrollbarWidth: "none" as const }}>
               {CHART_PERIODS.map((p, i) => {
                 // Hide tick-period buttons for non-US tickers
@@ -1486,22 +1486,22 @@ function MarketsTab() {
           {/* Analyst Recommendations */}
           <div style={{ border: "1px solid var(--ft-border)" }}>
             <div style={{ padding: "6px 14px", background: "rgba(34,211,238,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-cyan)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Analyst Recommendations</div>
-            <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+            <VStack gap={12} padding={14}>
               {detail?.recommendationKey && (
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <HStack gap={10} align="center">
                   <MonoLabel as="span" size={9}>Consensus:</MonoLabel>
                   <Text as="span" mono upper size={13} weight={700} color={detail.recommendationKey === "buy" || detail.recommendationKey === "strong_buy" ? "var(--ft-green)" : detail.recommendationKey === "hold" ? "var(--ft-amber)" : "var(--ft-red)"} letterSpacing="0.04em">
                     {detail.recommendationKey.replace("_", " ")}
                   </Text>
                   {detail.analystCount && <Text as="span" mono size={9} color="var(--ft-dim)">({detail.analystCount} analysts)</Text>}
-                </div>
+                </HStack>
               )}
               {detail?.recommendationTrend?.length ? (
                 <>
                   <MonoLabel as="div" size={9} letterSpacing="0.04em">Current month:</MonoLabel>
                   <RecBar trend={detail.recommendationTrend} />
                   {(detail?.targetMedian != null || q?.analystTargetPrice != null) && q?.price != null && (
-                    <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 3 }}>
+                    <VStack gap={3} marginTop={4}>
                       {(detail?.targetHigh != null || detail?.targetLow != null) && (
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ minWidth: 56 }}>Range:</span>
@@ -1519,13 +1519,13 @@ function MarketsTab() {
                           return <span style={{ marginLeft: 6, color: upside >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700 }}>({upside >= 0 ? "+" : ""}{upside.toFixed(1)}%)</span>;
                         })()}
                       </Text>
-                    </div>
+                    </VStack>
                   )}
                 </>
               ) : (
                 <Text as="div" mono size={11} color="var(--ft-dim)">No recommendation data</Text>
               )}
-            </div>
+            </VStack>
           </div>
         </div>
 
@@ -1557,13 +1557,13 @@ function MarketsTab() {
                   FT Stock Rating
                 </div>
                 <div style={{ padding: "14px 14px 10px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                  <HStack gap={14} align="center" marginBottom={14}>
                     <div style={{ fontSize: 38, fontFamily: "var(--font-mono)", fontWeight: 700, color: gradeColor, lineHeight: 1 }}>{rating.grade}</div>
                     <div>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: gradeColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rating.overall.toFixed(1)}<Text as="span" size={11} color="var(--ft-dim)">/10</Text></div>
                       <Text as="div" mono size={9} color="var(--ft-dim)" mt={1}>Overall Score</Text>
                     </div>
-                  </div>
+                  </HStack>
                   <RatingBar label="Value" score={rating.value} color="var(--ft-cyan)" />
                   <RatingBar label="Growth" score={rating.growth} color="var(--ft-green)" />
                   <RatingBar label="Quality" score={rating.quality} color="var(--ft-blue)" />
@@ -1584,7 +1584,7 @@ function MarketsTab() {
                 <div style={{ border: "1px solid var(--ft-border)", padding: "14px" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Graham / DCF Valuation</div>
                   {q && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <VStack gap={8}>
                       {(() => {
                         const eps = q.eps ?? 0;
                         const bv = detail?.bookValue ?? 0;
@@ -1592,23 +1592,23 @@ function MarketsTab() {
                         const g = (eps > 0 && bv > 0) ? grahamNumber(eps, bv) : null;
                         const d = (eps > 0) ? dcfValue(eps, gr, 0.10, 15) : null;
                         return (<>
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                          <HStack gap={8} justify="between">
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Graham Number</span>
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: g != null && g > 0 ? (q.price < g ? "var(--ft-green)" : "var(--ft-amber)") : "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{g != null && g > 0 ? `$${g.toFixed(2)}` : "—"}</span>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                          </HStack>
+                          <HStack gap={8} justify="between">
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>DCF Estimate</span>
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: d != null && d > 0 ? (q.price < d ? "var(--ft-green)" : "var(--ft-amber)") : "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{d != null && d > 0 ? `$${d.toFixed(2)}` : "—"}</span>
-                          </div>
+                          </HStack>
                           {g != null && g > 0 && (
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                            <HStack gap={8} justify="between">
                               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Margin of Safety</span>
                               <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: ((g - q.price) / g * 100) > 0 ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>{(((g - q.price) / g) * 100).toFixed(1)}%</span>
-                            </div>
+                            </HStack>
                           )}
                         </>);
                       })()}
-                    </div>
+                    </VStack>
                   )}
                 </div>
               )}
@@ -1641,7 +1641,7 @@ function MarketsTab() {
                 const loadingTldr = tldrLoading[item.link];
                 return (
                   <div key={i} style={{ padding: "10px 14px", borderBottom: i < news.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <HStack gap={10} align="start">
                       <div style={{ flexShrink: 0, marginTop: 2 }}>
                         <span style={{ display: "inline-block", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color: sentColor, background: `${sentColor}18`, padding: "2px 5px", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>{sentLabel}</span>
                       </div>
@@ -1652,7 +1652,7 @@ function MarketsTab() {
                           onMouseLeave={e => { (e.target as HTMLAnchorElement).style.color = "var(--ft-text)"; }}>
                           {item.title}
                         </a>
-                        <div style={{ marginTop: 3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <HStack gap={8} align="center" wrap marginTop={3}>
                           <Text as="span" mono size={8} color="var(--ft-dim)">
                             {item.publisher} · {timeAgo(item.publishedAt)}
                           </Text>
@@ -1670,9 +1670,9 @@ function MarketsTab() {
                               {loadingTldr ? "…" : "AI TLDR →"}
                             </button>
                           )}
-                        </div>
+                        </HStack>
                       </div>
-                    </div>
+                    </HStack>
                     {tldr && (
                       <div style={{
                         marginTop: 6, padding: "6px 10px",
@@ -1690,14 +1690,14 @@ function MarketsTab() {
           )}
         </div>
 
-      </div>
+      </VStack>
       </>
     );
   }
 
   // ── Overview mode ──────────────────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <VStack gap={16}>
 
       {/* ── Scrolling ticker strip (Yahoo Finance style) ── */}
       {(() => {
@@ -1833,7 +1833,7 @@ function MarketsTab() {
                         {weekDate.toLocaleDateString("en-GB", { month: "short", day: "numeric" })} – {weekEnd.toLocaleDateString("en-GB", { day: "numeric" })}
                         {isThisWeek && <span style={{ marginLeft: 6, padding: "1px 4px", background: "rgba(245,158,11,0.15)", color: "var(--ft-amber)", borderRadius: 2, fontSize: 8 }}>THIS WEEK</span>}
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      <VStack gap={5}>
                         {items.map((item) => {
                           const q = qMap.get(item.ticker);
                           const chg = q?.changePercent ?? 0;
@@ -1846,10 +1846,10 @@ function MarketsTab() {
                               style={{ display: "flex", alignItems: "center", gap: 8, background: item.daysUntil <= 3 ? "rgba(245,158,11,0.06)" : "transparent", border: item.daysUntil <= 3 ? "1px solid rgba(245,158,11,0.15)" : "1px solid transparent", borderRadius: 2, padding: "5px 8px", cursor: "pointer", textAlign: "left", width: "100%" }}
                             >
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <HStack gap={5} align="center">
                                   <Text as="span" mono size={11} weight={700} color="var(--ft-accent)">{item.ticker}</Text>
                                   {q && <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: chgColor }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</span>}
-                                </div>
+                                </HStack>
                                 <Text as="div" mono size={9} color="var(--ft-dim)" mt={1}>
                                   {item.date.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric" })}
                                 </Text>
@@ -1860,7 +1860,7 @@ function MarketsTab() {
                             </button>
                           );
                         })}
-                      </div>
+                      </VStack>
                     </div>
                   );
                 })}
@@ -1936,13 +1936,13 @@ function MarketsTab() {
                 onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
                 onTouchEnd={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                <HStack align="start" justify="between" marginBottom={4}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)" }}>{ticker}</div>
                     <Text as="div" mono size={9} color="var(--ft-dim)" mt={1}>{INDEX_LABELS[ticker] ?? ticker}</Text>
                   </div>
                   {q && <span style={{ padding: "2px 6px", fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
-                </div>
+                </HStack>
                 <Text as="div" mono size={18} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? `$${q.price.toFixed(2)}` : "—"}</Text>
                 {q?.low52w && q?.high52w && <div style={{ marginTop: 6 }}><RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /></div>}
               </button>
@@ -2068,7 +2068,7 @@ function MarketsTab() {
             <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <div>
                 <MonoLabel as="div" size={8} color="var(--ft-green)" letterSpacing="0.08em" mb={4}>▲ Top Gainers</MonoLabel>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <VStack gap={2}>
                   {gainers.map(({ ticker, q }) => (
                     <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(63,185,80,0.05)", border: "1px solid rgba(63,185,80,0.15)", padding: "6px 10px", cursor: "pointer", textAlign: "left" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-green)"; }}
@@ -2086,11 +2086,11 @@ function MarketsTab() {
                       </div>
                     </button>
                   ))}
-                </div>
+                </VStack>
               </div>
               <div>
                 <MonoLabel as="div" size={8} color="var(--ft-red)" letterSpacing="0.08em" mb={4}>▼ Top Losers</MonoLabel>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <VStack gap={2}>
                   {losers.map(({ ticker, q }) => (
                     <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(248,81,73,0.05)", border: "1px solid rgba(248,81,73,0.15)", padding: "6px 10px", cursor: "pointer", textAlign: "left" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-red)"; }}
@@ -2108,7 +2108,7 @@ function MarketsTab() {
                       </div>
                     </button>
                   ))}
-                </div>
+                </VStack>
               </div>
             </div>
           </div>
@@ -2134,13 +2134,13 @@ function MarketsTab() {
                 onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-amber)"; }}
                 onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(230,162,60,0.15)"; }}
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(230,162,60,0.15)"; }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                <HStack align="start" justify="between" marginBottom={4}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)" }}>{CRYPTO_NAMES[ticker] ?? ticker}</div>
                     <Text as="div" mono size={8} color="var(--ft-dim)" mt={1}>{ticker.replace("-USD", "")}</Text>
                   </div>
                   {q && <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
-                </div>
+                </HStack>
                 <Text as="div" mono size={16} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{priceStr}</Text>
                 {q?.marketCap && <Text as="div" mono size={8} color="var(--ft-dim)" mt={3}>MCap {fmtCap(q.marketCap)}</Text>}
               </button>
@@ -2167,10 +2167,10 @@ function MarketsTab() {
                 onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-blue)"; }}
                 onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(88,166,255,0.12)"; }}
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(88,166,255,0.12)"; }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                <HStack align="start" justify="between" marginBottom={4}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-blue)" }}>{FOREX_NAMES[ticker] ?? ticker}</div>
                   {q && <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
-                </div>
+                </HStack>
                 <Text as="div" mono size={18} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? q.price.toFixed(4) : "—"}</Text>
                 {q?.dayLow != null && q?.dayHigh != null && (
                   <Text as="div" mono size={8} color="var(--ft-dim)" mt={3}>
@@ -2241,7 +2241,7 @@ function MarketsTab() {
         </div>
       </div>
 
-    </div>
+    </VStack>
   );
 }
 
@@ -2364,7 +2364,7 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
           {q && (
             <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
               <div className="px-3 py-1.5 text-xs font-bold uppercase tracking-wide border-b" style={{ color: "var(--ft-accent)", borderColor: "var(--ft-border)" }}>Valuation Scorecard</div>
-              <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+              <VStack gap={6} padding="8px 12px">
                 {/* Metric rows: label | value | verdict chip */}
                 {[
                   q.pe != null && { label: "P/E (TTM)", val: q.pe.toFixed(1), v: peVerdict(q.pe) },
@@ -2398,7 +2398,7 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
                     <span style={{ fontSize: 11, color: analystUpside >= 0 ? G : R }}>{analystUpside >= 0 ? "+" : ""}{analystUpside.toFixed(1)}%</span>
                   </div>
                 )}
-              </div>
+              </VStack>
               {/* DCF sliders */}
               {q.eps && q.eps > 0 && (
                 <div style={{ borderTop: "1px solid var(--ft-border)", padding: "10px 12px" }}>
@@ -2606,7 +2606,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
             />
           </div>
 
-          <div style={{ display: "flex", gap: 6 }}>
+          <HStack gap={6}>
             <button
               onClick={setAlert}
               style={{
@@ -2630,7 +2630,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
                 REMOVE
               </button>
             )}
-          </div>
+          </HStack>
         </div>,
         document.body
       )}
@@ -2755,14 +2755,14 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
   return (
     <div className="space-y-4">
       {/* Header bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+      <HStack gap={8} align="center" justify="between" wrap>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)" }}>REBALANCING CALCULATOR</div>
           <Text as="div" size={11} color="var(--ft-dim)" mt={2}>
             Set target allocations per asset class · Buy/Sell amounts computed automatically
           </Text>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <HStack gap={10} align="center">
           {!targetSumOk && (
             <Text as="span" mono size={11} color="var(--ft-amber)">
               Targets sum: {totalTargetPct.toFixed(1)}% (must equal 100%)
@@ -2786,8 +2786,8 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
           >
             EQUAL WEIGHT
           </button>
-        </div>
-      </div>
+        </HStack>
+      </HStack>
 
       {/* Table */}
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
@@ -2835,7 +2835,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
                 </div>
                 {/* Target % (editable) */}
                 <div style={{ ...RTBD, width: 120, minWidth: 120, padding: "4px 8px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+                  <HStack gap={4} align="center" justify="end">
                     <input
                       type="number"
                       min={0}
@@ -2851,7 +2851,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
                       }}
                     />
                     <Text as="span" size={12} color="var(--ft-muted)">%</Text>
-                  </div>
+                  </HStack>
                 </div>
                 {/* Drift */}
                 <div style={{ ...RTBD, width: 100, minWidth: 100, textAlign: "right", color: drift, fontWeight: 600 }}>
@@ -3030,7 +3030,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
       marginBottom: 0,
     }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+      <HStack align="center" justify="between" marginBottom={8}>
         <Text as="span" mono size={10} weight={700} color="var(--ft-accent)" letterSpacing="0.08em">· PORTFOLIO INTELLIGENCE</Text>
         <button
           onClick={() => {
@@ -3048,7 +3048,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
             style={{ width: 12, height: 12 }}
           />
         </button>
-      </div>
+      </HStack>
 
       {/* Commentary text */}
       {loading && !commentary && (
@@ -3064,7 +3064,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
 
       {/* Stat chips */}
       {(commentary || loading) && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+        <HStack gap={6} wrap marginTop={10}>
           {[
             `${holdingCount} holding${holdingCount !== 1 ? "s" : ""}`,
             topTicker ? `Top position: ${topTicker} (${topPct.toFixed(1)}%)` : null,
@@ -3088,7 +3088,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
                 {chip}
               </span>
             ))}
-        </div>
+        </HStack>
       )}
     </div>
   );
@@ -3193,12 +3193,12 @@ function PortfolioValueOverTimePanel({ snapshots }: PortfolioValueOverTimePanelP
   return (
     <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
       <div className="ft-panel-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <HStack gap={12} align="center">
           <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO VALUE OVER TIME</div>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: netChangeColor }}>
             {netChange >= 0 ? "▲" : "▼"} {Math.abs(netChange).toFixed(1)}%
           </span>
-        </div>
+        </HStack>
         <Text as="span" mono size={9} color="var(--ft-dim)">
           {daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked
         </Text>
@@ -3515,19 +3515,19 @@ function PortfolioPositionsTable({
 
                   {/* WEIGHT — inline proportional bar */}
                   <td style={{ ...TD, textAlign: "right" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 5 }}>
+                    <HStack gap={5} align="center" justify="end">
                       <div style={{ width: 32, height: 3, background: "var(--ft-raised)", flexShrink: 0 }}>
                         <div style={{ width: `${Math.min(100, weight)}%`, height: "100%", background: "var(--ft-accent)", opacity: 0.7 }} />
                       </div>
                       <span style={{ color: "var(--ft-muted)", fontSize: 10, minWidth: 32, textAlign: "right" }}>
                         {weight.toFixed(1)}%
                       </span>
-                    </div>
+                    </HStack>
                   </td>
 
                   {/* ACTIONS */}
                   <td style={{ ...TD, borderRight: "none", textAlign: "right", padding: "4px 6px" }}>
-                    <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 2 }}>
+                    <HStack gap={2} align="center" justify="end">
                       <PriceAlertPopover
                         ticker={inv.ticker}
                         currentPrice={inv.livePrice}
@@ -3547,7 +3547,7 @@ function PortfolioPositionsTable({
                           ? <Text as="span" mono size={8} weight={700}>DEL?</Text>
                           : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />}
                       </Button>
-                    </div>
+                    </HStack>
                   </td>
                 </tr>
               );
@@ -4041,7 +4041,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
+    <VStack gap="var(--ft-row-gap)">
       {/* KPI Bar — replaces PageHeader on this data page */}
       <div>
         <div style={{ position: "relative" }}>
@@ -4135,7 +4135,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.08em", marginBottom: 5 }}>
               PRICE ALERTS TRIGGERED
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <VStack gap={3}>
               {triggeredAlerts.map((a) => {
                 const inv = investments?.find((i) => i.ticker === a.ticker);
                 return (
@@ -4149,7 +4149,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                   </div>
                 );
               })}
-            </div>
+            </VStack>
           </div>
           <button
             onClick={() => setAlertsBannerDismissed(true)}
@@ -4231,7 +4231,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
       {/* ─── PORTFOLIO TAB ─── */}
       {defaultTab !== "markets" && activeTab === "portfolio" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
+        <VStack gap="var(--ft-row-gap)">
           {/* Persona quick-start for Market Terminal users */}
           {(() => { const ids = loadPersonaIds(); return ids[0] === "market"; })() && <PersonaQuickStart />}
 
@@ -4342,13 +4342,13 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
                 {/* Header */}
                 <div className="ft-panel-header">
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <HStack gap={12} align="center">
                     <div className="ft-panel-label">
                       <span className="accent-dot">·</span>PORTFOLIO vs S&P 500 — INDEXED (100 = START)
                     </div>
                     {/* Return badges */}
                     {benchmarkChartData.length >= 2 && (
-                      <div style={{ display: "flex", gap: 8 }}>
+                      <HStack gap={8}>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: portColor }}>
                           Portfolio {portReturn >= 0 ? "▲" : "▼"} {Math.abs(portReturn).toFixed(1)}%
                         </span>
@@ -4362,11 +4362,11 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                             α {alpha >= 0 ? "+" : ""}{alpha.toFixed(1)}pp
                           </Text>
                         )}
-                      </div>
+                      </HStack>
                     )}
-                  </div>
+                  </HStack>
                   {/* Period selector */}
-                  <div style={{ display: "flex", gap: 2 }}>
+                  <HStack gap={2}>
                     {PERIODS.map((p) => (
                       <button key={p} onClick={() => setHistPeriod(p)} style={{
                         fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "2px 7px",
@@ -4377,7 +4377,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                         transition: "background 0.1s, color 0.1s, border-color 0.1s",
                       }}>{p.toUpperCase()}</button>
                     ))}
-                  </div>
+                  </HStack>
                 </div>
                 {benchmarkChartData.length < 2 ? (
                   <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
@@ -4401,10 +4401,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                       </LineChart>
                     </ResponsiveContainer>
                     <div style={{ display: "flex", gap: 16, paddingTop: 4, paddingLeft: 4 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <HStack gap={5} align="center">
                         <div style={{ width: 16, height: 2, background: "var(--ft-blue)" }} />
                         <Text as="span" mono size={9} color="var(--ft-dim)">YOUR PORTFOLIO</Text>
-                      </div>
+                      </HStack>
                       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                         <div style={{ width: 16, height: 2, background: "var(--ft-dim)", opacity: 0.6 }} />
                         <Text as="span" mono size={9} color="var(--ft-dim)">S&P 500 (SPY)</Text>
@@ -4471,7 +4471,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                 <Text as="span" mono size={9} color="var(--ft-dim)">Size = weight · Colour = P&L</Text>
               </div>
               <div style={{ padding: 8 }}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                <HStack gap={3} wrap>
                   {(investments ?? [])
                     .slice()
                     .sort((a, b) => b.gbpValue - a.gbpValue)
@@ -4502,7 +4502,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                         </button>
                       );
                     })}
-                </div>
+                </HStack>
               </div>
             </div>
           )}
@@ -4745,7 +4745,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               </div>
             );
           })()}
-        </div>
+        </VStack>
       )}
 
       {/* ─── ORDERS TAB ─── */}
@@ -4759,7 +4759,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
       {/* ─── REBALANCE TAB ─── */}
       {defaultTab !== "markets" && activeTab === "rebalance" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
+        <VStack gap="var(--ft-row-gap)">
           <RebalanceTab
             classAllocData={classAllocData}
             totalPortfolioValue={totalClassValue}
@@ -4830,9 +4830,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               </div>
             )}
           </div>
-        </div>
+        </VStack>
       )}
 
-    </div>
+    </VStack>
   );
 }

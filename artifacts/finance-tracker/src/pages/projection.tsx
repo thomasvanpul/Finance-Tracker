@@ -10,7 +10,7 @@ import { formatGbp } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { TrendingUp } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 const MILESTONES = [10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000, 2_000_000];
 const HORIZONS = [5, 10, 20, 30] as const;
@@ -314,7 +314,7 @@ export default function Projection() {
         title="NET WORTH PROJECTION"
         subtitle="compound growth model · three scenarios · milestone tracker"
         actions={
-          <div style={{ display: "flex", gap: 2 }}>
+          <HStack gap={2}>
             {HORIZONS.map(h => (
               <HorizonButton
                 key={h}
@@ -323,19 +323,19 @@ export default function Projection() {
                 onClick={() => setHorizon(h)}
               />
             ))}
-          </div>
+          </HStack>
         }
       />
 
       {/* Controls */}
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-green)", padding: "14px 16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+          <HStack justify="between" marginBottom={10}>
             <span style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>BASE ANNUAL RETURN</span>
             <span style={{ ...mono, fontSize: 14, color: "var(--ft-green)", fontWeight: 700 }}>
               <span className="pnum">{annualRate}</span>%
             </span>
-          </div>
+          </HStack>
           <input type="range" min={0} max={20} step={0.5} value={annualRate}
             onChange={e => setAnnualRate(parseFloat(e.target.value))}
             style={{ width: "100%", accentColor: "var(--ft-green)" }}
@@ -346,20 +346,20 @@ export default function Projection() {
             <span>20% — aggressive</span>
           </div>
           {showScenarios && (
-            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+            <HStack gap={12} marginTop={8}>
               <span style={{ ...mono, fontSize: 9, color: "var(--ft-red)" }}>Bear <span className="pnum">{bearRate}</span>%</span>
               <span style={{ ...mono, fontSize: 9, color: "var(--ft-green)" }}>Base <span className="pnum">{annualRate}</span>%</span>
               <span style={{ ...mono, fontSize: 9, color: "var(--ft-blue)" }}>Bull <span className="pnum">{bullRate}</span>%</span>
-            </div>
+            </HStack>
           )}
         </div>
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-accent)", padding: "14px 16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+          <HStack justify="between" marginBottom={10}>
             <span style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>MONTHLY SAVINGS</span>
             <span style={{ ...mono, fontSize: 14, color: "var(--ft-accent)", fontWeight: 700 }}>
               <span className="pnum">{formatGbp(Math.round(effectiveSavings))}</span>/mo
             </span>
-          </div>
+          </HStack>
           <input type="range" min={-50} max={100} step={5} value={savingsAdj}
             onChange={e => setSavingsAdj(parseInt(e.target.value))}
             style={{ width: "100%", accentColor: "var(--ft-accent)" }}
@@ -420,7 +420,7 @@ export default function Projection() {
 
       {/* Chart */}
       <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-green)", padding: "16px", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <HStack align="center" justify="between" marginBottom={12}>
           <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>
             {horizon}-YEAR NET WORTH TRAJECTORY
           </div>
@@ -430,7 +430,7 @@ export default function Projection() {
           >
             {showScenarios ? "Hide scenarios" : "Show scenarios"}
           </button>
-        </div>
+        </HStack>
         <ResponsiveContainer width="100%" height={320}>
           {showScenarios ? (
             <LineChart data={chartData} margin={{ top: 10, right: 16, left: 10, bottom: 0 }}>
@@ -537,7 +537,7 @@ export default function Projection() {
             <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 8 }}>
               SCENARIO RANGE AT {horizon} YEARS
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <HStack gap={8} align="center">
               <span style={{ ...mono, fontSize: 10, color: "var(--ft-red)", fontWeight: 600 }}>
                 <span className="pnum">{formatGbp(finalBear)}</span>
               </span>
@@ -563,7 +563,7 @@ export default function Projection() {
               <span style={{ ...mono, fontSize: 10, color: "var(--ft-blue)", fontWeight: 600 }}>
                 <span className="pnum">{formatGbp(finalBull)}</span>
               </span>
-            </div>
+            </HStack>
             <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 6, textAlign: "center" }}>
               ▲ baseline <span className="pnum">{formatGbp(finalBase)}</span> · upside: +<span className="pnum">{formatGbp(finalBull - finalBase)}</span> · downside: −<span className="pnum">{formatGbp(finalBase - finalBear)}</span>
             </div>

@@ -4,7 +4,7 @@ import { useListTransactions, useListAccounts, useGetDashboard, useListBudgets, 
 import { formatGbp } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -572,7 +572,7 @@ export default function AiCoach() {
         title="AI Coach"
         subtitle={coachSubtitle}
         actions={
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <HStack gap={8} align="center">
             {messages.length > 0 && (
               <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.05em">
                 {userMsgCount} {userMsgCount === 1 ? "query" : "queries"}
@@ -589,7 +589,7 @@ export default function AiCoach() {
                 <RotateCcw size={10} /> New Chat
               </button>
             )}
-          </div>
+          </HStack>
         }
       />
 
@@ -680,7 +680,7 @@ export default function AiCoach() {
                   <Zap size={10} style={{ color: "var(--ft-amber)" }} />
                   <Text as="span" mono upper size={8} weight={700} color="var(--ft-amber)" letterSpacing="0.12em">Needs Attention</Text>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <VStack gap={4}>
                   {smartInsights.map((item, i) => (
                     <SmartInsightCard
                       key={i}
@@ -690,7 +690,7 @@ export default function AiCoach() {
                       onSend={handleSend}
                     />
                   ))}
-                </div>
+                </VStack>
               </div>
             )}
 
@@ -718,13 +718,13 @@ export default function AiCoach() {
         ) : (
           <div style={{ paddingTop: 8 }}>
             {/* Session divider */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <HStack gap={10} align="center" marginBottom={20}>
               <div style={{ flex: 1, height: 1, background: "var(--ft-border)" }} />
               <Text as="span" mono upper size={8} color="var(--ft-dim)" letterSpacing="0.1em" nowrap>
                 Session — {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
               </Text>
               <div style={{ flex: 1, height: 1, background: "var(--ft-border)" }} />
-            </div>
+            </HStack>
 
             {messages.map((msg, i) => (
               <MessageBubble
@@ -739,11 +739,11 @@ export default function AiCoach() {
                   <BotMessageSquare size={13} style={{ color: "var(--ft-amber)" }} />
                 </div>
                 <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "2px solid var(--ft-amber)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <HStack gap={4} align="center">
                     <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-amber)", display: "inline-block", animation: "pulse 1.2s ease-in-out 0s infinite" }} />
                     <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-amber)", display: "inline-block", animation: "pulse 1.2s ease-in-out 0.2s infinite" }} />
                     <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-amber)", display: "inline-block", animation: "pulse 1.2s ease-in-out 0.4s infinite" }} />
-                  </div>
+                  </HStack>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>Analysing…</span>
                 </div>
               </div>
@@ -762,17 +762,17 @@ export default function AiCoach() {
       {/* Input bar */}
       <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 10, flexShrink: 0 }}>
         {!isEmpty && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <HStack align="center" justify="between" marginBottom={8}>
+            <HStack gap={6} align="center">
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: aiAvailable ? "var(--ft-green)" : "var(--ft-dim)" }} />
               <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
                 {aiAvailable ? "AI ONLINE" : "AI OFFLINE"}
               </Text>
-            </div>
+            </HStack>
             <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.04em">
               {input.length > 0 ? `${input.length} chars` : "Enter ↵ to send · Shift+Enter for newline"}
             </Text>
-          </div>
+          </HStack>
         )}
         <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
           <textarea

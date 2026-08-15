@@ -47,7 +47,7 @@ import { haptic } from "@/lib/haptics";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeDelete } from "@/hooks/use-swipe-delete";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 import {
   type TxType, type Currency, type TxForm, type TxFormErrors,
@@ -300,7 +300,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
             </Text>
           </div>
 
-          <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
+          <HStack gap={8} justify="between">
             <button
               type="button"
               onClick={handleClear}
@@ -317,7 +317,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
             >
               Clear Split
             </button>
-            <div style={{ display: "flex", gap: 8 }}>
+            <HStack gap={8}>
               <button
                 type="button"
                 onClick={onClose}
@@ -354,8 +354,8 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
               >
                 Save
               </button>
-            </div>
-          </div>
+            </HStack>
+          </HStack>
         </div>
       </div>
     </div>
@@ -463,14 +463,14 @@ function TxFeedPreview({ openAdd }: { openAdd: () => void }) {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center", maxWidth: 340, lineHeight: 1.7 }}>
           Transactions appear here as you add them. Import a bank CSV for instant history, or add manually.
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <HStack gap={10}>
           <button onClick={openAdd} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px 20px", cursor: "pointer" }}>
             + Add transaction
           </button>
           <a href="/import" style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "none", color: "var(--ft-accent)", border: "1px solid var(--ft-border2)", padding: "8px 20px", cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
             Import CSV
           </a>
-        </div>
+        </HStack>
       </div>
     </div>
   );
@@ -1237,7 +1237,7 @@ export default function Transactions() {
 
   if (isLoading || isSummaryLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
+      <VStack gap="var(--ft-row-gap)">
         {/* KPI bar skeleton */}
         <div className="ft-scroll-x" style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", minWidth: 640 }}>
@@ -1298,7 +1298,7 @@ export default function Transactions() {
             </div>
           ))}
         </div>
-      </div>
+      </VStack>
     );
   }
 
@@ -1347,7 +1347,7 @@ export default function Transactions() {
       {!isEdit && templates.length > 0 && (
         <div>
           <Text as="div" upper size={9} color="var(--ft-dim)" letterSpacing="0.08em" mb={6}>Templates</Text>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          <HStack gap={4} wrap>
             {templates.map((t) => (
               <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 0 }}>
                 <button
@@ -1386,7 +1386,7 @@ export default function Transactions() {
                 </button>
               </div>
             ))}
-          </div>
+          </HStack>
         </div>
       )}
       <div className="grid grid-cols-2 gap-4">
@@ -1417,7 +1417,7 @@ export default function Transactions() {
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="tx-desc">Description</Label>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <HStack gap={6} align="center">
           <Input
             id="tx-desc"
             placeholder="e.g. Monthly Salary"
@@ -1437,11 +1437,11 @@ export default function Transactions() {
               <Save className="w-3.5 h-3.5" />
             </button>
           )}
-        </div>
+        </HStack>
         {formErrors.description && <div style={ERR_STYLE}>{formErrors.description}</div>}
       </div>
       <div className="space-y-1.5">
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <HStack gap={6} align="center">
           <Label htmlFor="tx-cat">Category</Label>
           {autoCatFilled && (
             <span
@@ -1462,7 +1462,7 @@ export default function Transactions() {
               auto ×
             </span>
           )}
-        </div>
+        </HStack>
         <Input
           id="tx-cat"
           list="tx-categories"
@@ -1612,7 +1612,7 @@ export default function Transactions() {
         }}
       >
         {isMobile ? (
-          <div style={{ display: "flex", flex: 1, alignItems: "center", minWidth: 0, padding: "11px 14px", gap: 12 }}>
+          <HStack gap={12} align="center" padding="11px 14px" grow minWidth0>
             {/* Category avatar circle */}
             <div style={{
               flexShrink: 0, width: 38, height: 38, borderRadius: "50%",
@@ -1642,14 +1642,14 @@ export default function Transactions() {
               <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", color: TX_TYPE_COLOR[tx.type as TxType], whiteSpace: "nowrap" }}>
                 {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(displayGbp)}
               </div>
-              <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center", marginTop: 3 }}>
+              <HStack gap={6} align="center" justify="end" marginTop={3}>
                 <Text as="span" mono size={10} color="var(--ft-dim)" nowrap>{formatDate(tx.date)}</Text>
                 <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(tx.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, lineHeight: 0, display: "flex", alignItems: "center" }}>
                   <Edit2 style={{ width: 12, height: 12, color: "var(--ft-muted)" }} />
                 </button>
-              </div>
+              </HStack>
             </div>
-          </div>
+          </HStack>
         ) : (<>
         <div style={{ width: 36, minWidth: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch" }}>
           <input
@@ -1817,7 +1817,7 @@ export default function Transactions() {
               boxSizing: "border-box",
             }}
           />
-          <div style={{ display: "flex", gap: 6, marginTop: 8, justifyContent: "flex-end" }}>
+          <HStack gap={6} justify="end" marginTop={8}>
             <button
               type="button"
               onClick={() => { clearNote(tx.id); setOpenNoteId(null); }}
@@ -1832,7 +1832,7 @@ export default function Transactions() {
             >
               Save
             </button>
-          </div>
+          </HStack>
         </div>
       )}
       {/* Tag popover — inline below the row */}
@@ -1860,14 +1860,14 @@ export default function Transactions() {
           </div>
           {/* Existing tag chips */}
           {txTags.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+            <HStack gap={4} wrap marginBottom={8}>
               {txTags.map((t) => (
                 <span key={t} style={{ ...TAG_CHIP_STYLE, cursor: "pointer" }} onClick={() => removeTag(tx.id, t)} title="Click to remove">
                   {t}
                   <span style={{ marginLeft: 2, opacity: 0.7 }}>×</span>
                 </span>
               ))}
-            </div>
+            </HStack>
           )}
           {/* Tag input */}
           <div style={{ position: "relative" }}>
@@ -1933,7 +1933,7 @@ export default function Transactions() {
           {!tagInput && tagSuggestionsFiltered.length > 0 && (
             <div style={{ marginTop: 8 }}>
               <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>Suggestions</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              <HStack gap={4} wrap>
                 {tagSuggestionsFiltered.slice(0, 10).map((s) => (
                   <span
                     key={s}
@@ -1943,10 +1943,10 @@ export default function Transactions() {
                     + {s}
                   </span>
                 ))}
-              </div>
+              </HStack>
             </div>
           )}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+          <HStack justify="end" marginTop={8}>
             <button
               type="button"
               onClick={() => setOpenTagId(null)}
@@ -1954,7 +1954,7 @@ export default function Transactions() {
             >
               Done
             </button>
-          </div>
+          </HStack>
         </div>
       )}
     </div>
@@ -1970,7 +1970,7 @@ export default function Transactions() {
   const kpiDateTo = filtered.length > 0 ? filtered.reduce((a, b) => a.date > b.date ? a : b).date : null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--ft-row-gap)" }}>
+    <VStack gap="var(--ft-row-gap)">
       <CsvImportModal
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
@@ -2025,7 +2025,7 @@ export default function Transactions() {
             <form onSubmit={handleSplitSubmit}>
               <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, padding: "10px 14px", marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: "var(--ft-dim)", marginBottom: 4 }}>ORIGINAL TRANSACTION</div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <HStack align="center" justify="between">
                   <div>
                     <div style={{ fontSize: 13, color: "var(--ft-text)", fontWeight: 600 }}>{splitTx.description}</div>
                     <Text as="div" size={11} color="var(--ft-muted)" mt={2}>{formatDate(splitTx.date)} · {splitTx.category}</Text>
@@ -2033,7 +2033,7 @@ export default function Transactions() {
                   <Text as="div" size={14} weight={700} color={splitTx.type === "income" ? "var(--ft-green)" : "var(--ft-red)"} numeric>
                     {formatNative(Math.abs(splitTx.nativeAmount), splitTx.currency)}
                   </Text>
-                </div>
+                </HStack>
               </div>
 
               <div style={{ marginBottom: 12 }}>
@@ -2198,7 +2198,7 @@ export default function Transactions() {
             <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">per transaction</Text>
           </div>
           {/* DATE RANGE + ACTIONS */}
-          <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 3 }}>
+          <VStack gap={3} padding="10px 14px">
             <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>DATE RANGE</div>
             <Text as="div" mono size={11} color="var(--ft-muted)" lineHeight={1.4} numeric>
               {kpiDateFrom && kpiDateTo
@@ -2239,7 +2239,7 @@ export default function Transactions() {
                 {aiCatRunning ? "AI…" : "AI CAT"}
               </button>
             </div>
-          </div>
+          </VStack>
         </div>
       </div>
 
@@ -2368,15 +2368,15 @@ export default function Transactions() {
             onOpenChange={setFilterSheetOpen}
             title="Filter Transactions"
             footer={
-              <div style={{ display: "flex", gap: 8 }}>
+              <HStack gap={8}>
                 {(hasFilters) && (
                   <button type="button" onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); setFilterSheetOpen(false); }} style={{ flex: 1, padding: "11px", fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 3, color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear all</button>
                 )}
                 <button type="button" onClick={() => setFilterSheetOpen(false)} style={{ flex: 2, padding: "11px", fontSize: 13, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 3, color: "var(--ft-base)", fontWeight: 700, cursor: "pointer" }}>Show {filtered.length} results</button>
-              </div>
+              </HStack>
             }
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+            <VStack gap={22}>
               <div>
                 <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Type</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
@@ -2442,7 +2442,7 @@ export default function Transactions() {
                 <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Tag</MonoLabel>
                 <input type="text" placeholder="Filter by tag…" value={filterTag} onChange={(e) => setFilterTag(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
               </div>
-            </div>
+            </VStack>
           </MobileSheet>
         </>
       )}
@@ -2756,7 +2756,7 @@ export default function Transactions() {
       <div style={{ border: "1px solid var(--ft-border)" }}>
         {/* Panel header — Bloomberg · SECTION NAME pattern */}
         <div className="ft-panel-header">
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <HStack gap={8} align="center">
             <span className="ft-panel-label">
               <span className="accent-dot">·</span>
               TRANSACTION LEDGER
@@ -2770,8 +2770,8 @@ export default function Transactions() {
             {groupByDay && !groupByMerchant && (
               <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY DAY</span>
             )}
-          </div>
-          {!isMobile && <div style={{ display: "flex", gap: 4 }}>
+          </HStack>
+          {!isMobile && <HStack gap={4}>
             <button
               type="button"
               onClick={() => { setGroupByDay((v) => !v); if (groupByMerchant) setGroupByMerchant(false); }}
@@ -2824,7 +2824,7 @@ export default function Transactions() {
             >
               PDF
             </button>
-          </div>}
+          </HStack>}
         </div>
 
         <div
@@ -3050,6 +3050,6 @@ export default function Transactions() {
           }}
         />
       )}
-    </div>
+    </VStack>
   );
 }

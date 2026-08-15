@@ -233,7 +233,7 @@ function getFtLocalStorageEntries(): Record<string, string> {
 }
 
 // ── Shared primitives extracted to settings-atoms.tsx ─────────────────────
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import {
   PANEL_STYLE, HEADER_STYLE, ROW,
   RowLabel, Toggle, SectionHeader, ActionBtn,
@@ -267,8 +267,8 @@ function SavingsRateTargetInput() {
   };
 
   return (
-    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <VStack gap={6} marginTop={10}>
+      <HStack gap={8} align="center">
         <input
           type="number"
           min={0}
@@ -288,11 +288,11 @@ function SavingsRateTargetInput() {
           }}
         />
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>%</span>
-      </div>
+      </HStack>
       <Text as="div" mono size={9} color="var(--ft-dim)">
         Saved automatically · used on the dashboard KPI
       </Text>
-    </div>
+    </VStack>
   );
 }
 
@@ -477,22 +477,22 @@ function TerminalProfilePanel() {
                   }}
                 >
                   {/* Code + checkmark row */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <HStack align="center" justify="between" marginBottom={10}>
                     <span style={{ ...mono, fontSize: 9, letterSpacing: "0.14em", color: isSelected ? color : "var(--ft-dim)", border: `1px solid ${isSelected ? color : "var(--ft-border)"}`, padding: "2px 5px", fontWeight: 700 }}>
                       {persona.code}
                     </span>
                     <div style={{ width: 16, height: 16, border: `1px solid ${isSelected ? color : "var(--ft-border2)"}`, background: isSelected ? color : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--ft-base)", flexShrink: 0, transition: "all 0.15s" }}>
                       {isSelected ? "✓" : ""}
                     </div>
-                  </div>
+                  </HStack>
 
                   {/* Glyph + name */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                  <HStack gap={7} align="center" marginBottom={6}>
                     <span style={{ fontSize: 16, color, lineHeight: 1, flexShrink: 0 }}>{glyph}</span>
                     <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: isSelected ? color : "var(--ft-text)", letterSpacing: "0.02em", lineHeight: 1.2 }}>
                       {persona.label}
                     </span>
-                  </div>
+                  </HStack>
 
                   {/* Tagline */}
                   <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5, marginBottom: 12 }}>
@@ -500,14 +500,14 @@ function TerminalProfilePanel() {
                   </div>
 
                   {/* Highlights */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12, flex: 1 }}>
+                  <VStack gap={4} marginBottom={12} grow>
                     {persona.highlights.map((h) => (
                       <div key={h} style={{ display: "flex", alignItems: "flex-start", gap: 5 }}>
                         <span style={{ ...mono, fontSize: 9, color, flexShrink: 0, lineHeight: 1.5 }}>·</span>
                         <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5 }}>{h}</span>
                       </div>
                     ))}
-                  </div>
+                  </VStack>
 
                   {/* Footer stats */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 10, borderTop: `1px solid ${isSelected ? color + "44" : "var(--ft-border)"}` }}>
@@ -529,7 +529,7 @@ function TerminalProfilePanel() {
               <div style={{ ...mono, fontSize: 8, letterSpacing: "0.14em", color: "var(--ft-dim)", textTransform: "uppercase", marginBottom: 8 }}>
                 WHAT YOU'LL SEE — {PERSONAS.find(p => p.id === activePreview)?.label}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <VStack gap={6}>
                 {PERSONA_INSIGHT_PREVIEWS[activePreview].map((preview) => (
                   <div
                     key={preview.page}
@@ -550,7 +550,7 @@ function TerminalProfilePanel() {
                     </span>
                   </div>
                 ))}
-              </div>
+              </VStack>
             </div>
           )}
 
@@ -651,7 +651,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
   const lockedSwatches = SWATCH_DATA.filter(s => !unlockedSwatchIds.has(s.id));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Theme</div>
         <div style={{ padding: "16px", display: "grid", gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(72px, 1fr))" : "repeat(auto-fill, minmax(86px, 1fr))", gap: isMobile ? 8 : 12, background: "var(--ft-surface)" }}>
@@ -707,12 +707,12 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
         )}
         {/* Live preview box — shows hovered swatch on hover, active theme otherwise */}
         <div style={{ padding: "12px 16px", borderTop: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+          <HStack gap={8} align="baseline" marginBottom={8}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Preview</div>
             {hoveredTheme && hoveredTheme !== theme && (
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: previewSwatch.accent, letterSpacing: "0.06em" }}>{previewSwatch.label}</span>
             )}
-          </div>
+          </HStack>
           {(() => {
             const s = previewSwatch;
             return (
@@ -726,12 +726,12 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
                   <div style={{ width: 40, display: "flex", flexDirection: "column", gap: 4 }}>
                     {[0.7,0.5,0.4,0.3].map((o,i) => <div key={i} style={{ height: 6, background: s.muted, opacity: o, borderRadius: 1 }} />)}
                   </div>
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+                  <VStack gap={4} grow>
                     <div style={{ height: 8, background: s.text, opacity: 0.7, borderRadius: 1, width: "80%" }} />
                     <div style={{ height: 5, background: s.accent, borderRadius: 1, width: "45%" }} />
                     <div style={{ height: 5, background: s.muted, opacity: 0.4, borderRadius: 1, width: "65%" }} />
                     <div style={{ height: 5, background: s.muted, opacity: 0.3, borderRadius: 1, width: "50%" }} />
-                  </div>
+                  </VStack>
                 </div>
               </div>
             );
@@ -772,7 +772,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 12, lineHeight: 1.6 }}>
             Override the accent colour for any theme. Persists across sessions.
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14 }}>
+          <HStack gap={8} align="center" marginBottom={14}>
             <input
               type="color"
               value={accentOverride || "#F4A21E"}
@@ -796,8 +796,8 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
                 Reset
               </button>
             )}
-          </div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          </HStack>
+          <HStack gap={6} wrap>
             {ACCENT_PRESETS.map(c => (
               <button key={c} onClick={() => {
                 setAccentOverride(c);
@@ -805,10 +805,10 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
                 document.documentElement.style.setProperty("--ft-accent", c);
               }} aria-label={c} style={{ width: 24, height: 24, background: c, border: accentOverride === c ? "2px solid var(--ft-text)" : "1px solid var(--ft-border)", cursor: "pointer", padding: 0, flexShrink: 0 }} />
             ))}
-          </div>
+          </HStack>
         </div>
       </div>
-    </div>
+    </VStack>
   );
 }
 
@@ -861,16 +861,16 @@ function DisplayAndMotionPanel() {
   const setCents = (v: boolean) => { setShowCents(v); lsSet("nr-show-cents", String(v)); };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Date &amp; Time</div>
         <SectionHeader label="Date format" accent="var(--ft-blue)" />
         {(["DD/MM/YYYY","MM/DD/YYYY","YYYY-MM-DD","D MMM YYYY"] as const).map(fmt => (
           <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <HStack gap={10} align="center">
               <input type="radio" name="date-format" checked={dateFormat === fmt} onChange={() => setDate(fmt)} style={{ accentColor: "var(--ft-accent)" }} />
               <Text as="span" mono size={12} color="var(--ft-text)">{fmt}</Text>
-            </div>
+            </HStack>
             <Text as="span" mono size={11} color="var(--ft-muted)">{datePreviewMap[fmt]}</Text>
           </label>
         ))}
@@ -899,10 +899,10 @@ function DisplayAndMotionPanel() {
         <SectionHeader label="Number format" accent="var(--ft-blue)" />
         {(["1,234.56","1.234,56","1 234.56"] as const).map(fmt => (
           <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <HStack gap={10} align="center">
               <input type="radio" name="num-format" checked={numFormat === fmt} onChange={() => setNum(fmt)} style={{ accentColor: "var(--ft-accent)" }} />
               <Text as="span" mono size={12} color="var(--ft-text)">{fmt}</Text>
-            </div>
+            </HStack>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{numPreviewMap[fmt]}</span>
           </label>
         ))}
@@ -919,12 +919,12 @@ function DisplayAndMotionPanel() {
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Typography</div>
         <SectionHeader label="Font scale" accent="var(--ft-blue)" />
         <div style={{ padding: "12px 14px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <HStack gap={10} align="center">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 28 }}>85%</span>
             <input type="range" min={85} max={115} value={fontScale} onChange={e => setScale(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 32 }}>115%</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 36, textAlign: "right" }}>{fontScale}%</span>
-          </div>
+          </HStack>
           <Text as="div" mono size={9} color="var(--ft-dim)" mt={6}>Scales all app text. Larger = more readable, smaller = denser layout.</Text>
         </div>
       </div>
@@ -942,12 +942,12 @@ function DisplayAndMotionPanel() {
         )}
         <SectionHeader label="Intensity" accent="var(--ft-blue)" />
         <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <HStack gap={10} align="center">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 46 }}>Minimal</span>
             <input type="range" min={0} max={100} value={intensity} onChange={e => setIntensityVal(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 30, textAlign: "right" }}>Rich</span>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 32, textAlign: "right" }}>{intensity}</span>
-          </div>
+          </HStack>
           <Text as="div" mono size={9} color="var(--ft-dim)" mt={6}>Affects particle density and opacity. Some effects require a page refresh.</Text>
         </div>
         <SettingsSelectRow title="Theme transition" sub="Animation style when switching themes" value={transition} onChange={setTransitionVal}>
@@ -956,7 +956,7 @@ function DisplayAndMotionPanel() {
           <option value="slide">Slide (300ms)</option>
         </SettingsSelectRow>
       </div>
-    </div>
+    </VStack>
   );
 }
 
@@ -987,18 +987,18 @@ function PrivacyPanel() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Amount Privacy</div>
         <SettingsToggleRow title="Blur sensitive amounts" sub='Amounts show as "£ ••••" until hovered. Useful in public places.' on={blurAmounts} onChange={setBlur} />
         {blurAmounts && (
           <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 8 }}>Auto-blur delay after hover: <Text as="span" color="var(--ft-accent)">{autoBlurDelay === 0 ? "Immediate" : `${autoBlurDelay}s`}</Text></div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <HStack gap={10} align="center">
               <Text as="span" mono size={9} color="var(--ft-dim)">0s</Text>
               <input type="range" min={0} max={30} value={autoBlurDelay} onChange={e => setDelay(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
               <Text as="span" mono size={9} color="var(--ft-dim)">30s</Text>
-            </div>
+            </HStack>
           </div>
         )}
       </div>
@@ -1014,7 +1014,7 @@ function PrivacyPanel() {
           All privacy settings apply instantly across the app.
         </div>
       </div>
-    </div>
+    </VStack>
   );
 }
 
@@ -1051,7 +1051,7 @@ function DashboardPanel() {
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Dashboard</div>
         <SettingsSelectRow title="Default landing page" sub="Navigate here when opening the app" value={defaultPage} onChange={setPage}>
@@ -1077,7 +1077,7 @@ function DashboardPanel() {
           Changes apply immediately. Use the sidebar ⚙ icon to reorder and pin items.
         </div>
       </div>
-    </div>
+    </VStack>
   );
 }
 
@@ -1160,7 +1160,7 @@ function AdvancedPanel({ toast }: { toast: ReturnType<typeof useToast>["toast"] 
   const usage = getStorageUsage();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Feature Flags</div>
         <SettingsToggleRow title="Beta features" sub='Shows a "BETA" badge on experimental pages' on={beta} onChange={setBetaVal} />
@@ -1179,7 +1179,7 @@ function AdvancedPanel({ toast }: { toast: ReturnType<typeof useToast>["toast"] 
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Storage Usage</div>
         <StorageKpiStrip keyCount={usage.keyCount} sizeKb={usage.sizeKb} nrKeyCount={usage.nrKeyCount} />
       </div>
-    </div>
+    </VStack>
   );
 }
 
@@ -1241,7 +1241,7 @@ function WardrobePanel() {
   const RARITY_COLOR_MAP: Record<string, string> = { COMMON: "var(--ft-dim)", EPIC: "#a855f7", LEGENDARY: "var(--ft-amber, #f59e0b)" };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Bot Skin</div>
         <style>{`
@@ -1265,19 +1265,19 @@ function WardrobePanel() {
             </div>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <HStack align="center" justify="between" marginBottom={6}>
               <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.12em">PHASE</Text>
               <button onClick={() => setAutoPlay(a => !a)} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.06em", color: autoPlay ? "var(--ft-accent)" : "var(--ft-dim)", background: autoPlay ? "var(--ft-accent)15" : "transparent", border: `1px solid ${autoPlay ? "var(--ft-accent)44" : "var(--ft-border)"}`, padding: "2px 6px", cursor: "pointer" }}>
                 {autoPlay ? "AUTO ●" : "AUTO ○"}
               </button>
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+            </HStack>
+            <HStack gap={3} wrap>
               {WARDROBE_PHASES.map(p => (
                 <button key={p} onClick={() => { setAutoPlay(false); setPreviewPhase(p); }} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em", padding: "2px 5px", border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`, background: previewPhase === p ? "var(--ft-accent)15" : "transparent", color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" }}>
                   {p}
                 </button>
               ))}
-            </div>
+            </HStack>
             {(() => {
               const skin = SKINS.find(s => s.id === skinId);
               if (!skin) return null;
@@ -1300,15 +1300,15 @@ function WardrobePanel() {
             return (
               <div key={skin.id} onClick={() => isOwned && pickSkin(skin.id)} style={{ ...ROW, cursor: isOwned ? "pointer" : "not-allowed", opacity: isOwned ? 1 : 0.5, background: isActive && isOwned ? "var(--ft-raised)" : "transparent", borderLeft: isActive && isOwned ? `2px solid ${rarityCol}` : "2px solid transparent", paddingLeft: 12, transition: "background 0.1s", alignItems: "flex-start", paddingTop: 10, paddingBottom: 10 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                  <HStack gap={6} align="center" marginBottom={3}>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive && isOwned ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>{skin.rarity}</span>
-                  </div>
+                  </HStack>
                   <Text as="div" mono size={10} color="var(--ft-muted)" lineHeight={1.5} mb={skin.perks.length > 0 ? 5 : 0}>{skin.desc}</Text>
                   {skin.perks.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "3px 6px" }}>
+                    <HStack gap="3px 6px" wrap>
                       {skin.perks.map((perk) => (<span key={perk} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>))}
-                    </div>
+                    </HStack>
                   )}
                   {!isOwned && themeReq && (<Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em" mt={5}>Requires <span className="pnum">{themeReq.requiredXP.toLocaleString()}</span> XP to unlock</Text>)}
                 </div>
@@ -1323,7 +1323,7 @@ function WardrobePanel() {
           })}
         </div>
       </div>
-    </div>
+    </VStack>
   );
 }
 
@@ -1492,7 +1492,7 @@ function WiseIntegrationPanel() {
   const lastSyncResult = syncMutation.data;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
       {/* Status panel */}
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}>
@@ -1609,7 +1609,7 @@ function WiseIntegrationPanel() {
           )}
         </div>
       )}
-    </div>
+    </VStack>
   );
 }
 
@@ -1658,7 +1658,7 @@ function DigestPanel() {
             Requires <code style={{ color: "var(--ft-accent)" }}>RESEND_API_KEY</code> to be configured on the server.
           </div>
           <SettingsToggleRow title="Enable weekly digest" on={enabled} onChange={toggleEnabled} />
-          <div style={{ display: "flex", gap: 8 }}>
+          <HStack gap={8}>
             <button
               onClick={sendNow}
               disabled={sending}
@@ -1671,7 +1671,7 @@ function DigestPanel() {
             >
               {sending ? "Sending…" : "Send Test Digest Now"}
             </button>
-          </div>
+          </HStack>
         </div>
       </div>
       <div style={PANEL_STYLE}>
@@ -1874,7 +1874,7 @@ function CryptoWalletsPanel() {
   const hasSynced = wallets.some(w => w.balance != null);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
 
       {/* Header panel with wallet list and Sync All */}
       <div style={PANEL_STYLE}>
@@ -1922,7 +1922,7 @@ function CryptoWalletsPanel() {
               New Wallet
             </div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr auto", gap: 8, alignItems: "end" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <VStack gap={4}>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>LABEL</label>
                 <input
                   type="text"
@@ -1931,8 +1931,8 @@ function CryptoWalletsPanel() {
                   placeholder="e.g. Main ETH wallet"
                   style={CRYPTO_INPUT_STYLE}
                 />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              </VStack>
+              <VStack gap={4}>
                 <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>CHAIN</label>
                 <select
                   value={formChain}
@@ -1942,7 +1942,7 @@ function CryptoWalletsPanel() {
                   <option value="ETH">ETH — Ethereum</option>
                   <option value="BTC">BTC — Bitcoin</option>
                 </select>
-              </div>
+              </VStack>
               <button
                 onClick={handleAddWallet}
                 style={{
@@ -1956,7 +1956,7 @@ function CryptoWalletsPanel() {
                 Add
               </button>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <VStack gap={4}>
               <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>ADDRESS</label>
               <input
                 type="text"
@@ -1966,7 +1966,7 @@ function CryptoWalletsPanel() {
                 style={CRYPTO_INPUT_STYLE}
                 onKeyDown={e => { if (e.key === "Enter") handleAddWallet(); }}
               />
-            </div>
+            </VStack>
             {formError && (
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-red)", padding: "4px 0" }}>
                 ⚠ {formError}
@@ -1990,7 +1990,7 @@ function CryptoWalletsPanel() {
             return (
               <div key={wallet.id} style={{ ...ROW, flexWrap: "wrap", gap: 10, alignItems: "flex-start" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                  <HStack gap={8} align="center" marginBottom={3}>
                     <span style={{
                       fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
                       letterSpacing: "0.06em",
@@ -2004,7 +2004,7 @@ function CryptoWalletsPanel() {
                     <Text as="span" mono size={12} weight={600} color="var(--ft-text)">
                       {wallet.label}
                     </Text>
-                  </div>
+                  </HStack>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", wordBreak: "break-all", marginBottom: 2 }}>
                     {wallet.address}
                   </div>
@@ -2013,7 +2013,7 @@ function CryptoWalletsPanel() {
                       ⚠ {wallet.error}
                     </Text>
                   ) : wallet.balance != null ? (
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 3 }}>
+                    <HStack gap={10} align="baseline" marginTop={3}>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
                         {wallet.balance.toFixed(6)} {wallet.chain}
                       </span>
@@ -2022,7 +2022,7 @@ function CryptoWalletsPanel() {
                           ≈ £{valueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}
                         </span>
                       )}
-                    </div>
+                    </HStack>
                   ) : null}
                   {wallet.lastSynced && (
                     <Text as="div" mono size={9} color="var(--ft-dim)" mt={2}>
@@ -2070,7 +2070,7 @@ function CryptoWalletsPanel() {
         <div style={HEADER_STYLE}>
           <Text as="span" color="var(--ft-accent)">·</Text> Price Rates (GBP)
         </div>
-        <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <VStack gap={10} padding="12px 14px">
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
             Override the approximate GBP rate used to calculate fiat values. Stored in localStorage.
           </div>
@@ -2105,7 +2105,7 @@ function CryptoWalletsPanel() {
               Save
             </button>
           </div>
-        </div>
+        </VStack>
       </div>
 
       {/* API info footer */}
@@ -2118,7 +2118,7 @@ function CryptoWalletsPanel() {
       }}>
         ETH balances via Etherscan public API · BTC balances via Blockstream · No API key required · All requests are client-side
       </div>
-    </div>
+    </VStack>
   );
 }
 
@@ -2154,7 +2154,7 @@ function CategoriesPanel() {
   const COMMON_COLORS = ["#00ff88","#f59e0b","#3b82f6","#ef4444","#8b5cf6","#ec4899","#10b981","#06b6d4","#f97316","#6b7280"];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <VStack gap={12}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Category Colours &amp; Icons</div>
         <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
@@ -2210,24 +2210,24 @@ function CategoriesPanel() {
 
             <div>
               <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.08em" mb={6}>COLOUR</Text>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+              <HStack gap={6} wrap marginBottom={8}>
                 {COMMON_COLORS.map(c => (
                   <div key={c} onClick={() => setColorInput(c)}
                     style={{ width: 20, height: 20, borderRadius: "50%", background: c, cursor: "pointer", border: colorInput === c ? "2px solid var(--ft-text)" : "2px solid transparent" }} />
                 ))}
-              </div>
+              </HStack>
               <input type="color" value={colorInput} onChange={e => setColorInput(e.target.value)}
                 style={{ width: "100%", height: 32, background: "transparent", border: "1px solid var(--ft-border)", cursor: "pointer" }} />
             </div>
 
-            <div style={{ display: "flex", gap: 8 }}>
+            <HStack gap={8}>
               <button onClick={saveEdit} style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px", cursor: "pointer", letterSpacing: "0.06em" }}>SAVE</button>
               <button onClick={() => setEditingCat(null)} style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 10, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "8px", cursor: "pointer" }}>CANCEL</button>
-            </div>
+            </HStack>
           </div>
         </div>
       )}
-    </div>
+    </VStack>
   );
 }
 
@@ -2531,7 +2531,7 @@ export default function Settings() {
         {activePanel === "display" && <DisplayAndMotionPanel />}
 
         {activePanel === "currency" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <VStack gap={12}>
             <div style={PANEL_STYLE}>
               <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Base Currency</div>
               <CurrencyKpiStrip baseCurrency={baseCur} pairCount={Object.keys(fxOverrides).filter(k => fxOverrides[k] !== "").length} />
@@ -2578,7 +2578,7 @@ export default function Settings() {
                 <ActionBtn label="Reset to Live Rates" variant="muted" onClick={handleFxReset} />
               </div>
             </div>
-          </div>
+          </VStack>
         )}
 
         {activePanel === "alerts" && (
@@ -2587,38 +2587,38 @@ export default function Settings() {
             <SettingsToggleRow title="Enable smart alerts" sub="Threshold-based notifications on the dashboard" on={alertRules.enabled} onChange={v => setAlertRules(p => ({ ...p, enabled: v }))} />
             <SectionHeader label="Transaction Alerts" accent="var(--ft-amber)" />
             <SettingsInputRow title="Large transaction threshold" sub="Alert when a single transaction exceeds this amount">
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <HStack gap={6} align="center">
                 <Text as="span" mono size={11} color="var(--ft-muted)">£</Text>
                 <Input type="number" min={0} value={alertRules.largeTxThreshold} onChange={e => setAlertRules(p => ({ ...p, largeTxThreshold: Number(e.target.value) }))} className="pnum" style={{ width: 100, fontFamily: "var(--font-mono)", fontSize: 11 }} />
-              </div>
+              </HStack>
             </SettingsInputRow>
             <SettingsInputRow title="Category spike alert" sub="Alert when a category is X% above last month">
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <HStack gap={6} align="center">
                 <Input type="number" min={1} max={500} value={alertRules.categorySpikeAlertPct} onChange={e => setAlertRules(p => ({ ...p, categorySpikeAlertPct: Number(e.target.value) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <Text as="span" mono size={11} color="var(--ft-muted)">% above last month</Text>
-              </div>
+              </HStack>
             </SettingsInputRow>
             <SectionHeader label="Budget Alerts" accent="var(--ft-red)" />
             <SettingsInputRow title="Budget warning threshold" sub="Show warning when budget used above this %">
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <HStack gap={6} align="center">
                 <Input type="number" min={1} max={100} value={alertRules.budgetWarningPct} onChange={e => setAlertRules(p => ({ ...p, budgetWarningPct: Math.min(100, Math.max(1, Number(e.target.value))) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <Text as="span" mono size={11} color="var(--ft-muted)">%</Text>
-              </div>
+              </HStack>
             </SettingsInputRow>
             <SettingsToggleRow title="Overspend warning" sub="Warn when you've exceeded a budget category" on={alertRules.budgetHardStop} onChange={v => setAlertRules(p => ({ ...p, budgetHardStop: v }))} />
             <SectionHeader label="Goal Alerts" accent="var(--ft-green)" />
             <SettingsInputRow title="Months behind alert" sub="Alert when X months behind on a savings goal">
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <HStack gap={6} align="center">
                 <Input type="number" min={1} max={24} value={alertRules.goalBehindMonths} onChange={e => setAlertRules(p => ({ ...p, goalBehindMonths: Math.max(1, Number(e.target.value)) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <Text as="span" mono size={11} color="var(--ft-muted)">months</Text>
-              </div>
+              </HStack>
             </SettingsInputRow>
             <SectionHeader label="Bill Reminders" accent="var(--ft-cyan)" />
             <SettingsInputRow title="Bill reminder days" sub="Remind X days before a bill is due">
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <HStack gap={6} align="center">
                 <Input type="number" min={0} max={30} value={alertRules.billReminderDays} onChange={e => setAlertRules(p => ({ ...p, billReminderDays: Math.max(0, Number(e.target.value)) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <Text as="span" mono size={11} color="var(--ft-muted)">days before</Text>
-              </div>
+              </HStack>
             </SettingsInputRow>
             <SectionHeader label="Goals" accent="var(--ft-blue)" />
             <SettingsInputRow title="Savings Rate Target" sub="Your monthly income % goal to save/invest">
@@ -2631,7 +2631,7 @@ export default function Settings() {
         )}
 
         {activePanel === "rules" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <VStack gap={12}>
           <div style={PANEL_STYLE}>
             <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Auto-Categorization Rules</div>
             <div style={{ padding: "12px 14px" }}>
@@ -2661,7 +2661,7 @@ export default function Settings() {
               ) : (
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", marginBottom: 16, fontStyle: "italic" }}>No rules yet. Add one below.</div>
               )}
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+              <HStack gap={8} align="end" wrap>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>Keyword</div>
                   <Input placeholder="keyword" value={newKeyword} onChange={e => setNewKeyword(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddCatRule(); } }} style={{ fontFamily: "var(--font-mono)", fontSize: 11 }} />
@@ -2675,12 +2675,12 @@ export default function Settings() {
                 <button onClick={handleAddCatRule} disabled={!newKeyword.trim()} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: newKeyword.trim() ? "var(--ft-accent)" : "var(--ft-dim)", background: "transparent", border: `1px solid ${newKeyword.trim() ? "var(--ft-accent)" : "var(--ft-border2)"}`, padding: "7px 16px", cursor: newKeyword.trim() ? "pointer" : "not-allowed", whiteSpace: "nowrap", alignSelf: "flex-end", height: 36 }}>
                   + Add
                 </button>
-              </div>
+              </HStack>
               <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em" mt={12}>Rules apply when adding transactions and during CSV import.</Text>
             </div>
           </div>
           <CustomCategoriesPanel />
-          </div>
+          </VStack>
         )}
 
         {activePanel === "dashboard" && <DashboardPanel />}
@@ -2709,15 +2709,15 @@ export default function Settings() {
         )}
 
         {activePanel === "data" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <VStack gap={12}>
             <div style={PANEL_STYLE}>
               <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Export</div>
               <div style={{ padding: "12px 14px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 10 }}>Download all app data as a JSON file. Includes all local state stored by this app.</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <HStack gap={8} wrap>
                   <ActionBtn label="Export All Data" onClick={handleExportBackup} />
                   <ActionBtn label="Export with Session Data" variant="muted" onClick={handleExportData} />
-                </div>
+                </HStack>
               </div>
             </div>
             <div style={PANEL_STYLE}>
@@ -2734,7 +2734,7 @@ export default function Settings() {
                 ))}
               </div>
             </div>
-          </div>
+          </VStack>
         )}
 
         {activePanel === "advanced" && <AdvancedPanel toast={toast} />}

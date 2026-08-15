@@ -51,7 +51,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 type UpType = "income" | "expense";
 type Freq = "one-time" | "weekly" | "monthly" | "quarterly" | "yearly";
@@ -160,7 +160,7 @@ function ForecastKpiCell({
       borderTop: `2px solid ${isPositive ? "var(--ft-green)" : "var(--ft-red)"}`,
       borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+      <HStack gap={6} align="center" marginBottom={6}>
         <span style={{
           fontSize: 10,
           fontWeight: 700,
@@ -174,7 +174,7 @@ function ForecastKpiCell({
         }}>
           {label}
         </span>
-      </div>
+      </HStack>
       <div style={{ marginBottom: 2 }}>
         <MonoLabel as="span" size={10} letterSpacing="0.4px">
           Net Change
@@ -248,14 +248,14 @@ function UpcomingRow({
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>
             <span className={item.status === "skipped" ? "line-through" : ""}>{item.description}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+          <HStack gap={6} align="center" wrap marginBottom={4}>
             <Text as="span" mono size={10} weight={isOverdue ? 700 : 400} color={isOverdue ? "var(--ft-red)" : "var(--ft-muted)"}>
               {formatDate(item.dueDate)}{isOverdue ? " · OVERDUE" : ""}
             </Text>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "0 4px", background: "var(--ft-raised)", color: "var(--ft-muted)" }}>{item.category}</span>
             {item.frequency !== "once" && <Text as="span" mono size={9} color="var(--ft-dim)">{item.frequency}</Text>}
-          </div>
-          <div style={{ display: "flex", gap: 4 }}>
+          </HStack>
+          <HStack gap={4}>
             <Select value={item.status} onValueChange={(v) => onStatusChange(item.id, v as Status)}>
               <SelectTrigger className="h-6 text-xs" style={{ width: 100, background: sc.bg, border: "none", color: sc.text, borderRadius: 2 }}>
                 <SelectValue />
@@ -266,13 +266,13 @@ function UpcomingRow({
                 <SelectItem value="skipped">Skipped</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </HStack>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, paddingLeft: 8, flexShrink: 0 }}>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: item.type === "income" ? "var(--ft-green)" : "var(--ft-red)" }}>
             {item.type === "income" ? "+" : "-"}{formatGbp(item.gbpEquivalent)}
           </span>
-          <div style={{ display: "flex", gap: 2 }}>
+          <HStack gap={2}>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(item.id)}>
               <Edit2 className="w-3 h-3" style={{ color: "var(--ft-muted)" }} />
             </Button>
@@ -282,7 +282,7 @@ function UpcomingRow({
                 ? <Text as="span" mono size={7} weight={700}>DEL?</Text>
                 : <Trash2 className="w-3 h-3" style={{ color: "var(--ft-red)" }} />}
             </Button>
-          </div>
+          </HStack>
         </div>
       </div>
     );
@@ -745,7 +745,7 @@ export default function Upcoming() {
         title="Upcoming"
         subtitle="Scheduled flows and expected liquidity needs"
         actions={
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <HStack gap={6} align="center">
             {sortedItems.length > 0 && (
               <Button onClick={exportUpcomingCSV} variant="ghost" size="sm" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", border: "1px solid rgba(34,211,238,0.35)", borderRadius: 2, padding: "4px 10px" }}>
                 ↓ CSV
@@ -755,7 +755,7 @@ export default function Upcoming() {
               <Plus className="w-3.5 h-3.5 mr-1.5" />
               Add Item
             </Button>
-          </div>
+          </HStack>
         }
       />
 
@@ -832,7 +832,7 @@ export default function Upcoming() {
                 <div style={{ fontSize: 13, color: "var(--ft-text)", fontFamily: "var(--font-mono)", marginBottom: 6 }}>
                   {markPaidItem.description}
                 </div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <HStack gap={8} align="center" wrap>
                   <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: markPaidItem.type === "income" ? "var(--ft-green)22" : "var(--ft-red)22", color: markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
                     {markPaidItem.type.toUpperCase()}
                   </span>
@@ -842,7 +842,7 @@ export default function Upcoming() {
                   <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto" }}>
                     <span className="pnum">{markPaidItem.type === "income" ? "+" : "-"}{formatGbp(markPaidItem.gbpEquivalent)}</span>
                   </span>
-                </div>
+                </HStack>
                 {!markPaidItem.accountId && (
                   <div style={{ marginTop: 8, fontSize: 10, color: "#E3B341", fontFamily: "var(--font-mono)" }}>
                     No account linked — transaction will not be recorded
@@ -901,7 +901,7 @@ export default function Upcoming() {
             </Text>
           </SummaryKpiCell>
           <SummaryKpiCell label="Overdue" accentColor={overdueCount > 0 ? "var(--ft-red)" : "var(--ft-green)"} borderRight={false}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <HStack gap={6} align="center">
               {overdueCount > 0 ? (
                 <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-red)", lineHeight: 1 }}>
                   {overdueCount} item{overdueCount !== 1 ? "s" : ""}
@@ -911,7 +911,7 @@ export default function Upcoming() {
                   None
                 </Text>
               )}
-            </div>
+            </HStack>
           </SummaryKpiCell>
         </div>
       )}
@@ -1105,7 +1105,7 @@ export default function Upcoming() {
               {hasFilters ? (
                 <Text as="span" mono size={11} color="var(--ft-dim)">No items match the current filters.</Text>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <VStack gap={10} align="center">
                   <pre style={{ fontSize: 9, lineHeight: 1.4, color: "var(--ft-raised)", fontFamily: "var(--font-mono)", textAlign: "left" }}>{
 `  DATE     FLOW        TYPE     AMOUNT
   ───────  ──────────  ───────  ──────
@@ -1114,7 +1114,7 @@ export default function Upcoming() {
                   }</pre>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>No scheduled flows yet</div>
                   <Text as="div" mono size={10} color="var(--ft-dim)">Add bills and income to forecast your cash position.</Text>
-                </div>
+                </VStack>
               )}
             </div>
           </div>

@@ -16,7 +16,7 @@ import {
 // ─── annotation storage ──────────────────────────────────────────────────────
 
 // Helpers, constants, and types extracted to analytics-helpers.ts
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import {
   loadAnnotations, saveAnnotations,
   DOW_LABELS, MONTH_SHORT,
@@ -106,11 +106,11 @@ const td: React.CSSProperties = {
 function PanelHeader({ title, right }: { title: string; right?: React.ReactNode }) {
   return (
     <div style={{ ...panelHeaderStyle, flexWrap: "wrap", gap: "4px 8px", height: "auto", minHeight: "var(--ft-panel-header-h)", paddingTop: 4, paddingBottom: 4 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <HStack gap={6} align="center">
         <Text as="span" mono size={12} color="var(--ft-accent)" lineHeight={1}>·</Text>
         <span style={ftPanelLabel}>{title}</span>
-      </div>
-      {right && <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>{right}</div>}
+      </HStack>
+      {right && <HStack gap={4} align="center" wrap>{right}</HStack>}
     </div>
   );
 }
@@ -607,7 +607,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
               </Text>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <HStack gap={12} align="center">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
               {rangedExpenses.length} tx · <span className="pnum">{formatGbp(totalForCategory)}</span>
             </span>
@@ -620,7 +620,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
             >
               ×
             </button>
-          </div>
+          </HStack>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
@@ -913,15 +913,15 @@ function SpendingVelocity({ allExpenses, budgetTotal, range, onRangeChange }: {
       <PanelHeader
         title="Spending Velocity"
         right={
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <HStack gap={10} align="center">
+            <HStack gap={4} align="center">
               <div style={{ width: 16, height: 1, background: "var(--ft-cyan)", display: "inline-block" }} />
               <div style={{ width: 4, height: 4, background: "var(--ft-cyan)", borderRadius: "50%", display: "inline-block" }} />
               <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>12m avg</span>
-            </div>
+            </HStack>
             <div style={{ width: 1, height: 14, background: "var(--ft-border)" }} />
             <RangeSelector value={range} onChange={onRangeChange} />
-          </div>
+          </HStack>
         }
       />
       <div style={{ padding: "8px 0 8px 0" }}>
@@ -1039,8 +1039,8 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
 
           {/* ── Annotation panel ── */}
           <div style={{ margin: "8px 12px 4px", borderTop: "2px solid var(--ft-border2)", paddingTop: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <HStack align="center" justify="between" marginBottom={6}>
+              <HStack gap={6} align="center">
                 <div style={{ width: 10, height: 10, background: "var(--ft-amber)", opacity: 0.85, flexShrink: 0 }} />
                 <span style={{ ...ftLabel, color: "var(--ft-amber)" }}>Chart Annotations</span>
                 {visibleAnnotations.length > 0 && (
@@ -1048,7 +1048,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
                     {visibleAnnotations.length}
                   </span>
                 )}
-              </div>
+              </HStack>
               {addingMonth === null && (
                 <button
                   onClick={() => { setAddingMonth(thisM); setLabelInput(""); }}
@@ -1059,17 +1059,17 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
                   + Annotate month
                 </button>
               )}
-            </div>
+            </HStack>
 
             {addingMonth !== null && (
               <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-amber)", padding: "10px 12px", marginBottom: 8 }}>
                 <div style={{ ...ftLabel, color: "var(--ft-amber)", marginBottom: 8 }}>Add annotation</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <HStack gap={6} align="center" wrap>
+                  <VStack gap={3}>
                     <span style={{ ...ftLabel, fontSize: 8 }}>Month</span>
                     <input type="month" value={addingMonth} onChange={e => setAddingMonth(e.target.value)}
                       style={{ ...mono, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", outline: "none", borderRadius: 0, height: 28 }} />
-                  </div>
+                  </VStack>
                   <div style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1, minWidth: 120 }}>
                     <span style={{ ...ftLabel, fontSize: 8 }}>Label</span>
                     <input type="text" value={labelInput} onChange={e => setLabelInput(e.target.value)} placeholder="e.g. Bonus received, Holiday spending…" maxLength={48}
@@ -1087,7 +1087,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
                       Cancel
                     </button>
                   </div>
-                </div>
+                </HStack>
                 <div style={{ ...ftLabel, fontSize: 8, marginTop: 6, color: "var(--ft-dim)" }}>
                   Press Enter to save · Esc to cancel · Annotated months appear as dashed lines on the chart above
                 </div>
@@ -1095,7 +1095,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
             )}
 
             {visibleAnnotations.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+              <VStack gap={0}>
                 {visibleAnnotations.map((a, ai) => (
                   <AnnotationRow
                     key={a.id}
@@ -1104,7 +1104,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
                     onDelete={handleDeleteAnnotation}
                   />
                 ))}
-              </div>
+              </VStack>
             ) : (
               <div style={{ ...ftLabel, fontStyle: "italic", padding: "6px 0", color: "var(--ft-dim)" }}>No annotations yet — click "Annotate month" to mark significant events on the chart</div>
             )}
@@ -1115,7 +1115,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
       {/* This Month split panel */}
       <div style={{ ...panelStyle, marginBottom: 0, display: "flex", flexDirection: "column" }}>
         <PanelHeader title="This Month Split" />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "12px 8px" }}>
+        <VStack align="center" justify="center" padding="12px 8px" grow>
           <div style={{ position: "relative", width: 140, height: 140 }}>
             <PieChart width={140} height={140}>
               <Pie data={pieData} cx={65} cy={65} innerRadius={44} outerRadius={62} dataKey="value" strokeWidth={0}>
@@ -1146,7 +1146,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
               />
             ))}
           </div>
-        </div>
+        </VStack>
       </div>
     </div>
   );
@@ -1322,7 +1322,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
       <PanelHeader
         title={`Daily Spend Heatmap · ${CAL_MONTH_NAMES[m]} ${y}`}
         right={
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <HStack gap={4} align="center">
             <button onClick={() => navigateMonth(-1)}
               style={{ ...mono, background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", cursor: "pointer", padding: "2px 7px", fontSize: 12, lineHeight: 1 }}
               onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; }}
@@ -1332,7 +1332,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
               style={{ ...mono, background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", cursor: "pointer", padding: "2px 7px", fontSize: 12, lineHeight: 1 }}
               onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; }}
               onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-muted)"; }}>›</button>
-          </div>
+          </HStack>
         }
       />
       <div style={{ padding: "8px 12px" }}>
@@ -1428,7 +1428,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
 
         </div>{/* end ft-scroll-x */}
         {/* Legend */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+        <HStack gap={10} align="center" wrap marginTop={8}>
           <span style={{ ...ftLabel, fontSize: 8 }}>Intensity:</span>
           {[
             { style: intensityStyle(0), label: "None" },
@@ -1442,7 +1442,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
               <span style={{ ...ftLabel, fontSize: 8 }}>{l.label}</span>
             </div>
           ))}
-        </div>
+        </HStack>
       </div>
     </div>
   );
@@ -1693,10 +1693,10 @@ function RecurringVsOneOff({ expenses }: { expenses: Tx[] }) {
     <div style={{ ...panelStyle, marginBottom: 0 }}>
       <PanelHeader title="Recurring vs One-Off" />
       <div style={{ padding: "10px 12px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+        <HStack justify="between" marginBottom={5}>
           <span style={{ ...mono, fontSize: 11, color: "var(--ft-amber)" }}>Recurring <span className="pnum">{formatGbp(recurring)}</span> (<span className="pnum">{recPct}%</span>)</span>
           <span style={{ ...mono, fontSize: 11, color: "var(--ft-muted)" }}>One-off <span className="pnum">{formatGbp(oneOff)}</span> (<span className="pnum">{100 - recPct}%</span>)</span>
-        </div>
+        </HStack>
         <div style={{ height: 16, background: "var(--ft-border)", overflow: "hidden", display: "flex" }}>
           <div style={{ width: `${recPct}%`, background: "var(--ft-amber)", opacity: 0.85 }} />
           <div style={{ flex: 1, background: "var(--ft-surface)" }} />
@@ -1764,7 +1764,7 @@ function IncomeSourceBreakdown({ allTxs }: { allTxs: Tx[] }) {
       </div>
       <div style={panelStyle}>
         <PanelHeader title="Income Share" />
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "8px 0" }}>
+        <VStack align="center" justify="center" padding="8px 0">
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
               <Pie data={categories.slice(0, 8)} dataKey="total" nameKey="cat" cx="50%" cy="50%" outerRadius={64} innerRadius={30} strokeWidth={0}>
@@ -1778,7 +1778,7 @@ function IncomeSourceBreakdown({ allTxs }: { allTxs: Tx[] }) {
           <div className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", textAlign: "center", marginTop: 4 }}>
             Total: {formatGbp(total)}
           </div>
-        </div>
+        </VStack>
       </div>
     </div>
   );
@@ -1806,17 +1806,17 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
       <PanelHeader
         title="Savings Rate Trend (12 months)"
         right={
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <HStack gap={8} align="center">
             {latestRate !== null && (
               <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: latestRate >= 20 ? "var(--ft-green)" : latestRate >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>
                 <span className="pnum">{latestRate}%</span> this month
               </span>
             )}
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <HStack gap={4} align="center">
               <div style={{ width: 14, height: 1, borderTop: "2px dashed var(--ft-accent)", display: "inline-block" }} />
               <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>target 20%</span>
-            </div>
-          </div>
+            </HStack>
+          </HStack>
         }
       />
       <div style={{ padding: "8px 0 4px 0" }}>
@@ -1932,7 +1932,7 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
           </span>
         }
       />
-      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <VStack gap={12} padding="10px 14px">
         {/* Mini bar chart — 12-month spend bars */}
         <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 56 }}>
           {months.map((d) => {
@@ -1968,16 +1968,16 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
               return (
                 <div key={r.cat} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < catVolatility.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
                   <Text as="span" mono size={10} color="var(--ft-text)">{r.cat}</Text>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <HStack gap={8} align="center">
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}><span className="pnum">{formatGbp(r.mean)}</span>/mo avg</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>CV <span className="pnum">{r.cv}%</span></span>
-                  </div>
+                  </HStack>
                 </div>
               );
             })}
           </div>
         )}
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -2015,13 +2015,13 @@ function IncomeStability({ allTxs }: { allTxs: Tx[] }) {
     <div style={panelStyle}>
       <PanelHeader title="Income Stability (12 months)"
         right={
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <HStack gap={8} align="center">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>CV {cv}%</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: stabilityColor, border: `1px solid ${stabilityColor}44`, padding: "2px 7px", letterSpacing: "0.07em" }}>{stabilityLabel}</span>
-          </div>
+          </HStack>
         }
       />
-      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <VStack gap={10} padding="10px 14px">
         {/* 12M income bar chart */}
         <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 64 }}>
           {months.map((m) => {
@@ -2057,7 +2057,7 @@ function IncomeStability({ allTxs }: { allTxs: Tx[] }) {
             </div>
           ))}
         </div>
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -2089,7 +2089,7 @@ function SeasonalityIndex({ expenses }: { expenses: Tx[] }) {
       <PanelHeader title="Spending Seasonality (12M Index)"
         right={<span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>100 = monthly average · <span className="pnum">{formatGbp(mean)}</span>/mo</span>}
       />
-      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <VStack gap={10} padding="10px 14px">
         {/* Index bar chart */}
         <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 60 }}>
           {indexed.map((m) => {
@@ -2119,24 +2119,24 @@ function SeasonalityIndex({ expenses }: { expenses: Tx[] }) {
         </div>
         {/* Baseline rule */}
         <div style={{ borderTop: "1px dashed var(--ft-border2)", marginTop: -4, paddingTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", gap: 14 }}>
+          <HStack gap={14}>
             {([["▲ Peak", peak?.label, "var(--ft-red)"], ["▼ Trough", trough?.label, "var(--ft-cyan)"]] as [string, string | undefined, string][]).map(([key, val, col]) => (
               <div key={key} style={{ display: "flex", gap: 4, alignItems: "center" }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: col, fontWeight: 700 }}>{key}</span>
                 <Text as="span" mono size={8} color="var(--ft-text)">{val ?? "—"}</Text>
               </div>
             ))}
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          </HStack>
+          <HStack gap={8}>
             {([["RED", ">120", "var(--ft-red)"], ["AMB", "105–120", "var(--ft-amber)"], ["GRN", "<80", "var(--ft-cyan)"]] as [string, string, string][]).map(([lbl, range, col]) => (
               <div key={lbl} style={{ display: "flex", gap: 3, alignItems: "center" }}>
                 <div style={{ width: 6, height: 6, background: col, opacity: 0.8 }} />
                 <Text as="span" mono size={7} color="var(--ft-dim)">{range}</Text>
               </div>
             ))}
-          </div>
+          </HStack>
         </div>
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -2437,10 +2437,10 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
         </tbody>
       </table>
       <div style={{ padding: "5px 16px 8px", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 14, alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <HStack gap={5} align="center">
           <div style={{ width: 12, height: 4, background: "var(--ft-border2)", borderRadius: 1 }} />
           <Text as="span" mono size={7.5} color="var(--ft-dim)">UK avg</Text>
-        </div>
+        </HStack>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
           <div style={{ width: 12, height: 4, background: "var(--ft-green)", opacity: 0.8, borderRadius: 1 }} />
           <Text as="span" mono size={7.5} color="var(--ft-dim)">under avg</Text>
@@ -2611,9 +2611,9 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
             <div key={d.month} style={{ background: "var(--ft-surface)", padding: "10px 10px 8px", display: "flex", flexDirection: "column", gap: 4 }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>{d.month}</div>
               <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 80 }}>
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                <VStack justify="end" grow>
                   <div style={{ height: incH, background: "var(--ft-green)", opacity: 0.7 }} />
-                </div>
+                </VStack>
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                   <div style={{ height: expH, background: "var(--ft-accent)", opacity: 0.7 }} />
                 </div>
@@ -2622,25 +2622,25 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: pos ? "var(--ft-green)" : "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>
                 {pos ? "+" : ""}{formatGbp(d.saved)}
               </div>
-              <div style={{ display: "flex", gap: 4 }}>
+              <HStack gap={4}>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(d.income)}</div>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(d.expenses)}</div>
-              </div>
+              </HStack>
             </div>
           );
         })}
       </div>
-      <div style={{ padding: "4px 16px 8px", display: "flex", gap: 14 }}>
-        <span style={{ display: "flex", gap: 5, alignItems: "center" }}>
+      <HStack gap={14} padding="4px 16px 8px">
+        <HStack gap={5} align="center">
           <span style={{ display: "inline-block", width: 10, height: 4, background: "var(--ft-green)", opacity: 0.7 }} />
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>income</span>
-        </span>
-        <span style={{ display: "flex", gap: 5, alignItems: "center" }}>
+        </HStack>
+        <HStack gap={5} align="center">
           <span style={{ display: "inline-block", width: 10, height: 4, background: "var(--ft-accent)", opacity: 0.7 }} />
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>expenses</span>
-        </span>
+        </HStack>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>delta = net saved / month</span>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -2717,7 +2717,7 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
                 <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-dim)" }}>{formatGbp(r.avg)}</td>
                 <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: fColor }}>{formatGbp(r.forecast)}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", minWidth: 80 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <HStack gap={6} align="center">
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: trendColor, fontWeight: 700 }}>{trendIcon}</span>
                     <div style={{ flex: 1, height: 5, background: "var(--ft-raised)", position: "relative" }}>
                       <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${sparkW}%`, background: fColor, opacity: 0.7 }} />
@@ -2727,7 +2727,7 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
                         {r.changePct > 0 ? "+" : ""}{r.changePct}%
                       </span>
                     )}
-                  </div>
+                  </HStack>
                 </td>
               </tr>
             );
@@ -2773,7 +2773,7 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
       <PanelHeader title="Transaction Size Distribution" right={
         <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">all-time expenses · count histogram</Text>
       } />
-      <div style={{ padding: "12px 16px 4px", display: "flex", flexDirection: "column", gap: 6 }}>
+      <VStack gap={6} padding="12px 16px 4px">
         {data.map((d, i) => {
           const barW = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
           const pct = data.reduce((s, r) => s + r.count, 0) > 0
@@ -2797,8 +2797,8 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
             </div>
           );
         })}
-      </div>
-      <div style={{ padding: "4px 16px 10px", display: "flex", gap: 14, alignItems: "center" }}>
+      </VStack>
+      <HStack gap={14} align="center" padding="4px 16px 10px">
         {[["< £50", "var(--ft-green)"], ["£50–250", "var(--ft-accent)"], ["£250+", "var(--ft-red)"]].map(([l, c]) => (
           <span key={l} style={{ display: "flex", gap: 5, alignItems: "center" }}>
             <span style={{ display: "inline-block", width: 10, height: 4, background: c as string, opacity: 0.75 }} />
@@ -2806,7 +2806,7 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
           </span>
         ))}
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>right column = total spend in bucket</span>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -2883,9 +2883,9 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
             const col = isThisWeek ? "var(--ft-accent)" : isOverAvg ? "var(--ft-amber)" : "var(--ft-muted)";
             return (
               <div key={w.weekStart} style={{ flex: 1, display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 3 }}>
-                <div style={{ flex: 1, display: "flex", alignItems: "flex-end", width: "100%" }}>
+                <HStack align="end" grow wide>
                   <div title={`${w.label}: ${formatGbp(w.total)}`} style={{ width: "100%", height: Math.max(h, w.total > 0 ? 2 : 0), background: col, opacity: isThisWeek ? 1 : 0.6 }} />
-                </div>
+                </HStack>
                 <div style={{ ...mono, fontSize: 7, color: isThisWeek ? "var(--ft-accent)" : "var(--ft-dim)", whiteSpace: "nowrap" as const, overflow: "hidden", textAlign: "center" as const, width: "100%" }}>
                   {isThisWeek ? "NOW" : w.label.split(" ")[1]}
                 </div>
@@ -2967,12 +2967,12 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
       <PanelHeader
         title="Subscription Tracker"
         right={
-          <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
+          <HStack gap={10} align="baseline">
             <span className="pnum" style={{ ...mono, fontSize: 12, fontWeight: 700, color: "var(--ft-red)" }}>
               {formatGbp(totalMonthly)}<span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", fontWeight: 400 }}>/mo</span>
             </span>
             <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}><span className="pnum">{formatGbp(totalAnnual)}</span>/yr</span>
-          </div>
+          </HStack>
         }
       />
       <div style={{ overflowX: "auto" }}>
@@ -3003,12 +3003,12 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
                   <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-dim)" }}>{formatGbp(annualCost)}</td>
                   {!isMobile && (
                     <td style={{ ...td }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <HStack gap={6} align="center">
                         <div style={{ flex: 1, height: 3, background: "var(--ft-border)" }}>
                           <div style={{ height: "100%", width: `${Math.round(sharePct)}%`, background: "var(--ft-red)", opacity: 0.7 }} />
                         </div>
                         <span className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", width: 32, textAlign: "right" }}>{sharePct.toFixed(0)}%</span>
-                      </div>
+                      </HStack>
                     </td>
                   )}
                 </tr>
@@ -3112,7 +3112,7 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
           </div>
         </div>
         {/* Right: micro burn rate chart + runway bar */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <VStack gap={10}>
           <div>
             <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>6-MONTH BURN RATE</div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 48 }}>
@@ -3147,7 +3147,7 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
               ? "Runway is moderate. Aim for 6 months of expenses as your safety net."
               : "Runway is below 3 months. Prioritise cutting discretionary spend."}
           </div>
-        </div>
+        </VStack>
       </div>
     </div>
   );
@@ -3193,17 +3193,17 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader title="Savings Projection" right={
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <HStack gap={8} align="center">
           <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>Return:</span>
           {[3, 5, 7, 10].map(r => (
             <button key={r} onClick={() => setRate(r)} style={{ ...mono, fontSize: 9, padding: "2px 7px", background: rate === r ? "var(--ft-accent)" : "transparent", color: rate === r ? "var(--ft-base)" : "var(--ft-muted)", border: "1px solid var(--ft-border)", cursor: "pointer", fontWeight: rate === r ? 700 : 400 }}>
               {r}%
             </button>
           ))}
-        </div>
+        </HStack>
       } />
-      <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ display: "flex", gap: 20, alignItems: "baseline" }}>
+      <VStack gap={10} padding="10px 14px">
+        <HStack gap={20} align="baseline">
           <div>
             <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>Monthly savings · </span>
             <span className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatGbp(monthlySavings)}</span>
@@ -3215,7 +3215,7 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
           <div>
             <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>at {rate}% p.a.</span>
           </div>
-        </div>
+        </HStack>
         <div style={{ height: 120, position: "relative" }}>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={points} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
@@ -3241,7 +3241,7 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap" as const }}>
+        <HStack gap={14} wrap>
           {[{ label: "Conservative", color: "var(--ft-amber)", v: points[10]?.conservative ?? 0 }, { label: "Current rate", color: "var(--ft-accent)", v: points[10]?.current ?? 0 }, { label: "Optimistic", color: "var(--ft-green)", v: points[10]?.optimistic ?? 0 }].map(s => (
             <div key={s.label} style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <span style={{ display: "inline-block", width: 20, height: 2, background: s.color }} />
@@ -3249,8 +3249,8 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
               <span className="pnum" style={{ ...mono, fontSize: 9, fontWeight: 700, color: s.color }}>{formatGbp(s.v)}</span>
             </div>
           ))}
-        </div>
-      </div>
+        </HStack>
+      </VStack>
     </div>
   );
 }
@@ -3310,7 +3310,7 @@ function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
           ))}
         </div>
         {/* Row list */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <VStack gap={0}>
           {cats.map((c, i) => (
             <div key={c.category} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: i < cats.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
               <div style={{ width: 8, height: 8, background: c.color, flexShrink: 0, opacity: 0.85 }} />
@@ -3322,7 +3322,7 @@ function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
               <span className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", minWidth: 60, textAlign: "right" }}>{formatGbp(c.spend)}</span>
             </div>
           ))}
-        </div>
+        </VStack>
       </div>
     </div>
   );
@@ -3396,12 +3396,12 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
             : null
         }
       />
-      <div style={{ padding: isMobile ? "14px 12px" : "16px 16px", display: "flex", flexDirection: "column" as const, gap: 16 }}>
+      <VStack gap={16} padding={isMobile ? "14px 12px" : "16px 16px"}>
 
         {/* Progress arc + FI number */}
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "200px 1fr", gap: 16, alignItems: "center" }}>
           {/* Gauge (simple progress bar styled as arc approximation) */}
-          <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+          <VStack gap={8}>
             <div style={{ position: "relative", height: 8, background: "var(--ft-border)", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 0, left: 0, height: "100%", width: `${displayPct}%`, background: gaugeColor, transition: "width 0.6s ease" }} />
             </div>
@@ -3421,7 +3421,7 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
                 )}
               </div>
             </div>
-          </div>
+          </VStack>
 
           {/* Key metrics grid */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
@@ -3442,7 +3442,7 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
         <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)", paddingTop: 8, lineHeight: 1.6 }}>
           Based on 4% safe withdrawal rate (25× annual expenses). Assumes 5% real annual portfolio growth. Connect accounts for a more accurate net worth estimate.
         </div>
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -3489,7 +3489,7 @@ export default function Analytics() {
 
   if (isLoading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <VStack gap={0}>
         {/* KPI Bar skeleton */}
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 8 }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -3511,7 +3511,7 @@ export default function Analytics() {
             </div>
           </div>
         ))}
-      </div>
+      </VStack>
     );
   }
 

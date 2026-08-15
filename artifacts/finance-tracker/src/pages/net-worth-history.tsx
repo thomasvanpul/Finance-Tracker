@@ -23,7 +23,7 @@ import {
   Cell,
 } from "recharts";
 import { formatGbp } from "@/lib/utils";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -343,7 +343,7 @@ function AllocationDonut({ slices }: { slices: AllocationSlice[] }) {
   if (total <= 0) return null;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+    <HStack gap={24} align="center">
       <PieChart width={120} height={120}>
         <Pie
           data={slices}
@@ -359,7 +359,7 @@ function AllocationDonut({ slices }: { slices: AllocationSlice[] }) {
           ))}
         </Pie>
       </PieChart>
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <VStack gap={5}>
         {slices.map((sl) => {
           const pct = ((sl.value / total) * 100).toFixed(1);
           return (
@@ -377,8 +377,8 @@ function AllocationDonut({ slices }: { slices: AllocationSlice[] }) {
             </div>
           );
         })}
-      </div>
-    </div>
+      </VStack>
+    </HStack>
   );
 }
 
@@ -840,7 +840,7 @@ export default function NetWorthHistory() {
         title="Net Worth History"
         subtitle="track wealth over time · spot trends · project the future"
         actions={
-          <div style={{ display: "flex", gap: 8 }}>
+          <HStack gap={8}>
             <button
               onClick={() => setShowMilestoneForm((s) => !s)}
               style={{
@@ -873,7 +873,7 @@ export default function NetWorthHistory() {
             >
               {showForm ? "Cancel" : "+ Record Snapshot"}
             </button>
-          </div>
+          </HStack>
         }
       />
 
@@ -1000,14 +1000,14 @@ export default function NetWorthHistory() {
                 </span>
               </div>
             )}
-            <div style={{ display: "flex", gap: 8 }}>
+            <HStack gap={8}>
               <button onClick={handleSnapshot} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "var(--ft-green)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}>
                 Save Snapshot
               </button>
               <button onClick={() => setShowForm(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}>
                 Cancel
               </button>
-            </div>
+            </HStack>
           </div>
         </div>
       )}
@@ -1027,14 +1027,14 @@ export default function NetWorthHistory() {
                 <input type="text" placeholder='"Paid off car loan"' value={msLabel} onChange={(e) => setMsLabel(e.target.value)} style={inputSt} />
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
+            <HStack gap={8}>
               <button onClick={handleAddMilestone} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}>
                 Add
               </button>
               <button onClick={() => setShowMilestoneForm(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}>
                 Cancel
               </button>
-            </div>
+            </HStack>
           </div>
         </div>
       )}
@@ -1055,7 +1055,7 @@ export default function NetWorthHistory() {
             alignItems: "center",
             justifyContent: "space-between",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <HStack gap={16} align="center">
               <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
                 Net Worth Timeline
               </Text>
@@ -1069,7 +1069,7 @@ export default function NetWorthHistory() {
                   <Text as="span" size={8} color="var(--ft-dim)">(linear trend)</Text>
                 </span>
               )}
-            </div>
+            </HStack>
             {/* Period selector */}
             <div style={{ display: "flex", gap: 0, border: "1px solid var(--ft-border)", flexShrink: 0 }}>
               {PERIODS.map((p) => (
@@ -1146,10 +1146,10 @@ export default function NetWorthHistory() {
           </ResponsiveContainer>
 
           <div style={{ display: "flex", gap: 16, marginTop: 8, paddingLeft: 52 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <HStack gap={5} align="center">
               <div style={{ width: 16, height: 2, background: trendColor }} />
               <Text as="span" mono size={8} color="var(--ft-dim)">Net Worth</Text>
-            </div>
+            </HStack>
             {projectionPoints.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 16, height: 1, background: "var(--ft-cyan)", borderTop: "1px dashed var(--ft-cyan)" }} />
@@ -1190,10 +1190,10 @@ export default function NetWorthHistory() {
             </AreaChart>
           </ResponsiveContainer>
           <div style={{ display: "flex", gap: 16, marginTop: 8, paddingLeft: 52 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <HStack gap={5} align="center">
               <div style={{ width: 12, height: 2, background: "var(--ft-green)" }} />
               <Text as="span" mono size={8} color="var(--ft-dim)">Assets</Text>
-            </div>
+            </HStack>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 12, height: 2, background: "var(--ft-red)" }} />
               <Text as="span" mono size={8} color="var(--ft-dim)">Liabilities</Text>
@@ -1304,22 +1304,22 @@ export default function NetWorthHistory() {
                       background: isLatest ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
+                    <HStack align="baseline" justify="between" marginBottom={3}>
                       <Text as="span" mono size={10} weight={isLatest ? 700 : 400} color={isLatest ? "var(--ft-text)" : "var(--ft-muted)"}>
                         {row.label}{isLatest ? " ←" : ""}
                       </Text>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: row.endNW >= 0 ? "var(--ft-text)" : "var(--ft-red)" }}>
                         {formatGbp(row.endNW)}
                       </span>
-                    </div>
-                    <div style={{ display: "flex", gap: 12 }}>
+                    </HStack>
+                    <HStack gap={12}>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: row.momDelta === null ? "var(--ft-dim)" : row.momDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                         {row.momDelta === null ? "—" : `${row.momDelta >= 0 ? "+" : ""}${formatGbp(row.momDelta)}`}
                       </span>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: row.momPct === null ? "var(--ft-dim)" : row.momPct >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                         {row.momPct === null ? "—" : `${row.momPct >= 0 ? "+" : ""}${row.momPct.toFixed(1)}%`}
                       </span>
-                    </div>
+                    </HStack>
                   </div>
                 );
               })}
@@ -1371,7 +1371,7 @@ export default function NetWorthHistory() {
             justifyContent: "space-between",
             gap: isMobile ? 6 : 0,
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <HStack gap={10} align="center">
               <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
                 Target Net Worth
               </Text>
@@ -1380,8 +1380,8 @@ export default function NetWorthHistory() {
                   — {Math.min(100, (currentNW / targetNw) * 100).toFixed(1)}% reached
                 </Text>
               )}
-            </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            </HStack>
+            <HStack gap={8} align="center">
               <input
                 type="number"
                 value={targetInput}
@@ -1400,7 +1400,7 @@ export default function NetWorthHistory() {
                 className="ft-filter-input"
                 style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 10px", width: isMobile ? "100%" : 140, outline: "none" }}
               />
-            </div>
+            </HStack>
           </div>
           {targetNw > 0 && (() => {
             const pct = Math.min(100, (currentNW / targetNw) * 100);
@@ -1421,11 +1421,11 @@ export default function NetWorthHistory() {
             return (
               <div>
                 <div style={{ padding: "12px 16px 0" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, gap: 4, flexWrap: "wrap" }}>
+                  <HStack gap={4} justify="between" wrap marginBottom={6}>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Current: <span className="pnum">{formatGbp(currentNW)}</span></span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Remaining: <span className="pnum">{formatGbp(remaining)}</span></span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Target: <span className="pnum">{formatGbp(targetNw)}</span></span>
-                  </div>
+                  </HStack>
                   <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", position: "relative" }}>
                     <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: pct >= 100 ? "var(--ft-green)" : "var(--ft-accent)", transition: "width 0.25s ease" }} />
                   </div>
@@ -1484,7 +1484,7 @@ export default function NetWorthHistory() {
       {milestones.length > 0 && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
           <PanelHeader color="var(--ft-blue)">Custom Milestones</PanelHeader>
-          <div style={{ display: "flex", flexDirection: "column", gap: 0, padding: "8px 16px 12px" }}>
+          <VStack gap={0} padding="8px 16px 12px">
             {milestones.map((m, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, borderLeft: `3px solid ${m.color ?? "var(--ft-accent)"}`, paddingLeft: 10, padding: "6px 0 6px 10px", borderBottom: "1px solid var(--ft-border)" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", minWidth: 60, flexShrink: 0, whiteSpace: "nowrap" }}>{shortDate(m.date)}</div>
@@ -1503,7 +1503,7 @@ export default function NetWorthHistory() {
                 </button>
               </div>
             ))}
-          </div>
+          </VStack>
         </div>
       )}
 
@@ -1529,11 +1529,11 @@ export default function NetWorthHistory() {
                       background: isConfirming ? "color-mix(in srgb, var(--ft-red) 8%, var(--ft-surface))" : "transparent",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
+                    <HStack align="baseline" justify="between" marginBottom={3}>
                       <Text as="span" mono size={9} color="var(--ft-muted)">
                         {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                       </Text>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <HStack gap={8} align="center">
                         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: e.netWorth >= 0 ? "var(--ft-text)" : "var(--ft-red)" }}>
                           {formatGbp(e.netWorth)}
                         </span>
@@ -1554,9 +1554,9 @@ export default function NetWorthHistory() {
                         >
                           {isConfirming ? "DEL?" : "×"}
                         </button>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      </HStack>
+                    </HStack>
+                    <HStack gap={10} wrap>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>
                         A: {formatGbp(e.totalAssets)}
                       </span>
@@ -1576,7 +1576,7 @@ export default function NetWorthHistory() {
                           {e.note}
                         </span>
                       )}
-                    </div>
+                    </HStack>
                   </div>
                 );
               })}

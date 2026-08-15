@@ -8,7 +8,7 @@ import {
 import { formatGbp } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { FileText, RefreshCw, Loader2, AlertTriangle, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -358,14 +358,14 @@ function BudgetPerfRow({
           <span className="pnum">{formatGbp(budget.monthlyLimit)}</span>
         </span>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <HStack gap={6} align="center">
         <div style={{ flex: 1, height: 5, background: "var(--ft-border2)", borderRadius: 1, overflow: "hidden" }}>
           <div style={{ width: `${Math.min(pct, 100)}%`, height: "100%", background: barColor, borderRadius: 1, transition: "width 0.12s ease" }} />
         </div>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: barColor, minWidth: 32, textAlign: "right", fontWeight: over || warn ? 700 : 400 }}>
           <span className="pnum">{pct.toFixed(0)}%</span>
         </span>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -571,7 +571,7 @@ export default function Briefing() {
         title="Monthly Briefing"
         subtitle={`Intelligence report · ${monthLabel(ym)}`}
         actions={
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <HStack gap={10} align="center">
             {generatedAgo != null && (
               <Text as="span" mono size={9} color="var(--ft-dim)">
                 Generated {generatedAgo < 1 ? "just now" : `${generatedAgo}m ago`}
@@ -595,7 +595,7 @@ export default function Briefing() {
                 : <><RefreshCw size={11} /> {briefing ? "Regenerate" : "Generate Report"}</>
               }
             </button>
-          </div>
+          </HStack>
         }
       />
 
@@ -649,7 +649,7 @@ export default function Briefing() {
 
       {/* Pre-generate: live data summary + CTA */}
       {!briefing && !generating && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <VStack gap={24}>
           {/* KPI snapshot — border-as-gap grid */}
           <div>
             <SectionHeader code="01" title="Current Snapshot" accentColor="var(--ft-accent)" />
@@ -722,12 +722,12 @@ export default function Briefing() {
               Generate Report ▸
             </button>
           </div>
-        </div>
+        </VStack>
       )}
 
       {/* Generating spinner */}
       {generating && (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "64px 0" }}>
+        <VStack gap={20} align="center" padding="64px 0">
           <div style={{ position: "relative", width: 48, height: 48 }}>
             <div style={{ width: 48, height: 48, border: "1px solid var(--ft-border)", borderTop: `2px solid var(--ft-accent)`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -742,12 +742,12 @@ export default function Briefing() {
               Analysing spending, budgets, investments and goals…
             </Text>
           </div>
-        </div>
+        </VStack>
       )}
 
       {/* Generated report */}
       {briefing && !generating && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+        <VStack gap={28}>
 
           {/* Situation header */}
           <div style={{
@@ -756,17 +756,17 @@ export default function Briefing() {
             borderLeft: `4px solid ${rating?.color ?? "var(--ft-accent)"}`,
             overflow: "hidden",
           }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", flexWrap: "wrap", gap: 12 }}>
+            <HStack gap={12} align="center" justify="between" wrap padding="14px 18px">
               <div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 5 }}>Situation Assessment · {monthLabel(ym)}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <HStack gap={10} align="baseline">
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: rating?.color, letterSpacing: "0.04em" }}>
                     {rating?.label}
                   </div>
                   <Text as="div" mono size={9} color="var(--ft-dim)">
                     {briefing.situationRating === "strong" ? "All metrics healthy" : briefing.situationRating === "healthy" ? "Generally on track" : briefing.situationRating === "cautious" ? "Some areas need attention" : "Immediate action required"}
                   </Text>
-                </div>
+                </HStack>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 1, background: "var(--ft-border)" }}>
                 <SituationMetricCell
@@ -785,7 +785,7 @@ export default function Briefing() {
                   color="var(--ft-amber)"
                 />
               </div>
-            </div>
+            </HStack>
             {generatedAgo != null && (
               <div style={{ borderTop: "1px solid var(--ft-border)", padding: "4px 18px", display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-green)", flexShrink: 0 }} />
@@ -815,7 +815,7 @@ export default function Briefing() {
           {/* Spending Analysis */}
           <div>
             <SectionHeader code="03" title="Spending Analysis" accentColor="var(--ft-red)" />
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <VStack gap={12}>
               <NarrativeBox text={briefing.spendingNarrative} icon={TrendingDown} />
               {spendingCatData && (
                 <div style={{ border: "1px solid var(--ft-border)" }}>
@@ -844,14 +844,14 @@ export default function Briefing() {
                   </div>
                 </div>
               )}
-            </div>
+            </VStack>
           </div>
 
           {/* Budget Performance */}
           {budgetsRaw && (budgetsRaw as Budget[]).length > 0 && (
             <div>
               <SectionHeader code="04" title="Budget Performance" accentColor="var(--ft-amber)" />
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <VStack gap={12}>
                 <NarrativeBox text={briefing.budgetNarrative} icon={Shield} />
                 <div style={{ border: "1px solid var(--ft-border)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr auto 90px" : "1fr auto auto 120px", gap: 8, background: "var(--ft-raised)", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", alignItems: "center" }}>
@@ -871,14 +871,14 @@ export default function Briefing() {
                     />
                   ))}
                 </div>
-              </div>
+              </VStack>
             </div>
           )}
 
           {/* Portfolio */}
           <div>
             <SectionHeader code="05" title="Portfolio Update" accentColor="var(--ft-cyan)" />
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <VStack gap={12}>
               <NarrativeBox text={briefing.portfolioNarrative} icon={TrendingUp} />
               {invSummary && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 1, background: "var(--ft-border)" }}>
@@ -891,7 +891,7 @@ export default function Briefing() {
                   {investmentsRaw && (investmentsRaw as Investment[]).length > 0 && (
                     <div style={{ flex: 1, background: "var(--ft-surface)", padding: "14px 16px", borderTop: "2px solid var(--ft-border2)" }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Top Holdings</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      <HStack gap={8} wrap>
                         {(investmentsRaw as Investment[]).slice(0, 6).map(inv => {
                           const totalVal = (invSummary as { totalValueGbp: number }).totalValueGbp;
                           const pct = totalVal > 0 ? ((inv.gbpValue / totalVal) * 100).toFixed(1) : "—";
@@ -903,22 +903,22 @@ export default function Briefing() {
                             </div>
                           );
                         })}
-                      </div>
+                      </HStack>
                     </div>
                   )}
                 </div>
               )}
-            </div>
+            </VStack>
           </div>
 
           {/* Recommendations */}
           <div>
             <SectionHeader code="06" title="Forward Guidance" accentColor="var(--ft-green)" />
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <VStack gap={6}>
               {briefing.recommendations.map((rec, i) => (
                 <RecommendationRow key={i} rec={rec} index={i} />
               ))}
-            </div>
+            </VStack>
           </div>
 
           {/* Risk Register */}
@@ -944,7 +944,7 @@ export default function Briefing() {
             <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
               GENERATED {new Date(briefing.generatedAt).toLocaleString("en-GB")} · POWERED BY GOOGLE GEMINI
             </Text>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <HStack gap={8} align="center">
               <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
                 FINANCE TRACKER · {monthLabel(ym)} REPORT
               </Text>
@@ -964,9 +964,9 @@ export default function Briefing() {
               >
                 <RefreshCw size={8} /> REGENERATE
               </button>
-            </div>
+            </HStack>
           </div>
-        </div>
+        </VStack>
       )}
 
       <style>{`

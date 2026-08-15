@@ -18,7 +18,7 @@ import { useGetDashboard, useListBudgets, useListInvestments, useGetInvestmentSu
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { FlaskConical } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -144,14 +144,14 @@ function SliderRow({
 }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+      <HStack align="baseline" justify="between" marginBottom={6}>
         <label style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.07em", textTransform: "uppercase" as const }}>
           {label}
         </label>
         <span style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
           <span className="pnum">{display}</span>
         </span>
-      </div>
+      </HStack>
       <input
         type="range"
         min={min}
@@ -269,10 +269,10 @@ function InflationKpiTile({ label, value, color, note }: InflationKpiTileProps) 
 
 function InflationLegendItem({ color, label }: { color: string; label: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+    <HStack gap={5} align="center">
       <div style={{ width: 12, height: 2, background: color, borderRadius: 1 }} />
       <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{label}</span>
-    </div>
+    </HStack>
   );
 }
 
@@ -494,7 +494,7 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
           {formulaBlock(
             <>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 10, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>Surplus Impact</div>
-              <div style={{ display: "flex", gap: 20, flexWrap: "wrap" as const }}>
+              <HStack gap={20} wrap>
                 <BigNumber
                   value={`${monthlySurplusDelta >= 0 ? "+" : ""}${formatGbp(monthlySurplusDelta)}`}
                   label="Monthly Surplus Change"
@@ -507,7 +507,7 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
                   color={annualSavingDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
                   size={20}
                 />
-              </div>
+              </HStack>
             </>
           )}
         </div>
@@ -594,7 +594,7 @@ interface ExpenseCategoryRowProps {
 function ExpenseCategoryRow({ c, i, onCutChange }: ExpenseCategoryRowProps) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+      <HStack align="baseline" justify="between" marginBottom={4}>
         <label style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>
           {c.label}
         </label>
@@ -612,7 +612,7 @@ function ExpenseCategoryRow({ c, i, onCutChange }: ExpenseCategoryRowProps) {
             </>
           )}
         </div>
-      </div>
+      </HStack>
       <input
         type="range"
         min={0}
@@ -685,7 +685,7 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
       <SectionTitle label="Expense Cut Calculator" accentColor="var(--ft-green)" />
 
       {/* Quick scenarios */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const, marginBottom: 20 }}>
+      <HStack gap={8} wrap marginBottom={20}>
         {QUICK_SCENARIOS.map((s) => (
           <button
             key={s.label}
@@ -714,7 +714,7 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
         >
           Reset all
         </button>
-      </div>
+      </HStack>
 
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         {/* Sliders */}
@@ -729,11 +729,11 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
           {formulaBlock(
             <>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 10 }}>IMPACT SUMMARY</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <VStack gap={12}>
                 <BigNumber value={formatGbp(totalMonthlySaving)} label="Monthly Saving" color="var(--ft-green)" size={28} />
                 <BigNumber value={formatGbp(annualSaving)} label="Annual Saving" color="var(--ft-green)" size={20} />
                 <BigNumber value={formatGbp(tenYearWealth)} label="10-Year Wealth at 6%" color="var(--ft-accent)" size={18} />
-              </div>
+              </VStack>
             </>
           )}
 
@@ -808,11 +808,11 @@ function LumpSumTab() {
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-border2)", marginBottom: 14 }}>
                 P=<span className="pnum">{formatGbp(principal)}</span>, r=<span className="pnum">{annualRate}%</span>, n=<span className="pnum">{years}</span>yr
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <VStack gap={12}>
                 <BigNumber value={formatGbp(Math.round(fv))} label="Future Value" color="var(--ft-accent)" size={28} />
                 <BigNumber value={`+${formatGbp(Math.round(interestEarned))}`} label="Total Interest Earned" color="var(--ft-green)" size={20} />
                 <BigNumber value={formatGbp(Math.round(monthlyEq))} label="Monthly Equivalent" color="var(--ft-cyan)" size={16} />
-              </div>
+              </VStack>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 6 }}>
                 Monthly equivalent = what you'd need to invest monthly at the same rate to get the same result
               </div>
@@ -935,14 +935,14 @@ function DebtPayoffTab() {
           </ResponsiveContainer>
           {extraPayment > 0 && (
             <div style={{ display: "flex", gap: 16, paddingLeft: 44, marginTop: 6 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <HStack gap={5} align="center">
                 <div style={{ width: 16, height: 2, background: "var(--ft-red)" }} />
                 <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>Minimum payment</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              </HStack>
+              <HStack gap={5} align="center">
                 <div style={{ width: 16, height: 2, background: "var(--ft-green)", borderTop: "1px dashed var(--ft-green)" }} />
                 <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>With extra payment</span>
-              </div>
+              </HStack>
             </div>
           )}
         </div>
@@ -1117,11 +1117,11 @@ function InflationTab() {
               <Line type="monotone" dataKey="investedReal" name="Invested (real)" stroke="var(--ft-cyan)" strokeWidth={2} dot={false} strokeDasharray="5 3" />
             </LineChart>
           </ResponsiveContainer>
-          <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap" as const }}>
+          <HStack gap={16} wrap marginTop={8}>
             <InflationLegendItem color="var(--ft-red)" label="Real value of cash" />
             <InflationLegendItem color="var(--ft-green)" label="Invested (nominal)" />
             <InflationLegendItem color="var(--ft-cyan)" label="Invested (real)" />
-          </div>
+          </HStack>
         </div>
       </div>
 
@@ -1262,7 +1262,7 @@ function PortfolioShockTab() {
         <div style={{ ...mono, fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12, borderLeft: "3px solid var(--ft-blue)", paddingLeft: 8 }}>
           Current Portfolio: <span className="pnum">{formatGbp(totalValue)}</span> · Select a scenario
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+        <HStack gap={8} wrap marginBottom={12}>
           {MARKET_SCENARIOS.map((s, i) => (
             <ScenarioButton
               key={s.label}
@@ -1272,8 +1272,8 @@ function PortfolioShockTab() {
               onClick={() => setSelected(selected === i ? null : i)}
             />
           ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        </HStack>
+        <HStack gap={8} align="center">
           <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}>Custom change %:</span>
           <input
             type="number"
@@ -1282,7 +1282,7 @@ function PortfolioShockTab() {
             step="0.1"
             style={{ width: 80, height: 28, fontSize: 11, ...mono, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "0 8px" }}
           />
-        </div>
+        </HStack>
       </div>
 
       {activeScenario && (

@@ -5,7 +5,7 @@ import { formatGbp } from "@/lib/utils";
 import type { Transaction, UpcomingItem, Subscription } from "@workspace/api-client-react";
 import { Download, Upload, Plus, Bell, BellOff, Calendar, X, Check, AlignJustify, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -507,15 +507,15 @@ function WeekStripDayCell({ dateStr, dayName, dayNum, isToday, events }: WeekStr
         minHeight: 72,
       }}
     >
-      <div style={{ display: "flex", flexDirection: "column", marginBottom: 6 }}>
+      <VStack marginBottom={6}>
         <Text as="span" mono size={8} weight={isToday ? 700 : 400} color={isToday ? "var(--ft-accent)" : "var(--ft-dim)"} letterSpacing="0.07em">
           {dayName}
         </Text>
         <Text as="span" mono size={9} color={isToday ? "var(--ft-accent)" : "var(--ft-muted)"} letterSpacing="0.03em">
           {dayNum}
         </Text>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      </VStack>
+      <VStack gap={3}>
         {events.length === 0 ? (
           <Text as="span" mono size={8} color="var(--ft-border2)">—</Text>
         ) : (
@@ -532,7 +532,7 @@ function WeekStripDayCell({ dateStr, dayName, dayNum, isToday, events }: WeekStr
         {events.length > 4 && (
           <Text as="span" mono size={8} color="var(--ft-dim)">+{events.length - 4} more</Text>
         )}
-      </div>
+      </VStack>
     </div>
   );
 }
@@ -663,10 +663,10 @@ function DayCustomEventRow({ ev, deleteConfirmEvId, onDeleteClick }: DayCustomEv
     >
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: ev.color, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <HStack gap={6} align="center">
           <span style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{ev.title}</span>
           {ev.time && <span style={{ fontSize: 9, color: "var(--ft-accent)", flexShrink: 0 }}>{ev.time}</span>}
-        </div>
+        </HStack>
         {ev.description && <div style={{ fontSize: 8, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>{ev.description}</div>}
       </div>
       <button
@@ -917,10 +917,10 @@ function ThisWeekStrip({ enabledFeeds, feedEventMap }: { enabledFeeds: string[];
     <div className="ft-scroll-x" style={{ marginBottom: 16, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
       <div style={{ minWidth: 480 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 12px 5px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <HStack gap={8} align="center">
             <div style={{ width: 2, height: 10, background: "var(--ft-accent)", flexShrink: 0 }} />
             <Text as="span" mono upper size={9} weight={700} color="var(--ft-accent)" letterSpacing="0.1em">This Week in Markets</Text>
-          </div>
+          </HStack>
           {!hasAny && (
             <Text as="span" mono size={9} color="var(--ft-dim)">No events — enable feeds via Sources</Text>
           )}
@@ -1030,14 +1030,14 @@ function EventForm({
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <label style={lbl}>Color</label>
-          <div style={{ display: "flex", gap: 6 }}>
+          <HStack gap={6}>
             {EVENT_COLORS.map((c) => (
               <button key={c} onClick={() => setColor(c)} style={{ width: 18, height: 18, borderRadius: "50%", background: c, border: color === c ? "2px solid var(--ft-text)" : "2px solid transparent", cursor: "pointer", outline: "none" }} />
             ))}
-          </div>
+          </HStack>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
+      <HStack gap={8}>
         <button
           onClick={() => { if (title.trim() && date) onSave({ title: title.trim(), date, time: time || undefined, description: description || undefined, color }); }}
           disabled={!title.trim() || !date}
@@ -1048,7 +1048,7 @@ function EventForm({
         <button onClick={onCancel} style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "6px 12px", cursor: "pointer" }}>
           Cancel
         </button>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -1208,10 +1208,10 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: 0, minWidth: 268, maxWidth: 320, fontFamily: "var(--font-mono)" }}>
       {/* Header */}
       <div style={{ background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <HStack gap={8} align="center">
           <div style={{ width: 2, height: 14, background: "var(--ft-accent)", flexShrink: 0 }} />
           <Text as="span" size={12} weight={700} color="var(--ft-text)">{displayDate}</Text>
-        </div>
+        </HStack>
         <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 }}>
           <X size={12} />
         </button>
@@ -1399,7 +1399,7 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
                 position: "relative",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
+              <HStack align="center" justify="between" marginBottom={2}>
                 <div style={{
                   fontFamily: "var(--font-mono)", fontSize: 11,
                   fontWeight: 600,
@@ -1415,7 +1415,7 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
                 >
                   <Plus size={8} />
                 </button>
-              </div>
+              </HStack>
 
               {/* Day net total */}
               {(data && (data.totalIncome > 0 || data.totalExpenses > 0)) && (
@@ -1448,7 +1448,7 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
 
               {/* Transaction dots */}
               {(incomeCount > 0 || expenseCount > 0) && (
-                <div style={{ display: "flex", gap: 2, flexWrap: "nowrap", alignItems: "center", marginBottom: 2, marginTop: 1 }}>
+                <HStack gap={2} align="center" marginTop={1} marginBottom={2}>
                   {Array.from({ length: Math.min(incomeCount, 3) }, (_, i) => (
                     <span key={`inc-${i}`} style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-green)", display: "inline-block", flexShrink: 0 }} />
                   ))}
@@ -1458,19 +1458,19 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
                   {(incomeCount + expenseCount) > 3 && (
                     <span style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", lineHeight: 1, flexShrink: 0 }}>+{(incomeCount + expenseCount) - 3}</span>
                   )}
-                </div>
+                </HStack>
               )}
 
               {/* Bills */}
               {billCount > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <VStack gap={1}>
                   {(data?.upcoming ?? []).slice(0, 1).map((bill) => (
                     <div key={bill.id} style={{ background: bill.status === "paid" ? "var(--ft-green)22" : "var(--ft-amber)22", borderRadius: 2, padding: "1px 3px", fontSize: 8, fontFamily: "var(--font-mono)", color: bill.status === "paid" ? "var(--ft-green)" : "var(--ft-amber)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {bill.description.slice(0, 8)}
                     </div>
                   ))}
                   {billCount > 1 && <Text as="div" mono size={8} color="var(--ft-dim)">+{billCount - 1}</Text>}
-                </div>
+                </VStack>
               )}
 
               {paidBillCount > 0 && billCount === paidBillCount && (
@@ -1630,14 +1630,14 @@ function AgendaView({ dayMap, feedEventMap, customEventMap, todayStr, debtEvents
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: ds === todayStr ? "var(--ft-accent)" : "var(--ft-muted)", fontWeight: ds === todayStr ? 700 : 400, minWidth: 100, flexShrink: 0 }}>
                   {ds === todayStr ? "Today" : fmtDay(ds)}
                 </span>
-                <div style={{ display: "flex", gap: 5, flexWrap: "wrap", flex: 1 }}>
+                <HStack gap={5} wrap grow>
                   {dayEvs.slice(0, 4).map((ev, i) => (
                     <span key={i} style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "1px 6px", background: "var(--ft-raised)", border: `1px solid ${ev.color ?? "var(--ft-border)"}`, color: ev.color ?? "var(--ft-muted)", borderRadius: 2 }}>
                       {TYPE_LABELS[ev.type]}
                     </span>
                   ))}
                   {dayEvs.length > 4 && <Text as="span" mono size={9} color="var(--ft-dim)">+{dayEvs.length - 4}</Text>}
-                </div>
+                </HStack>
               </div>
               {dayEvs.map((ev, i) => (
                 <AgendaEventRow
@@ -1949,7 +1949,7 @@ export default function CalendarPage() {
       {/* Controls */}
       <div className="ft-filter-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 }}>
         {/* Left: nav */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <HStack gap={6} align="center">
           {viewMode === "month" && (
             <>
               <button onClick={prevMonth} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 12, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>‹</button>
@@ -1975,7 +1975,7 @@ export default function CalendarPage() {
           >
             Today
           </button>
-        </div>
+        </HStack>
 
         {/* Center: view mode */}
         <div style={{ display: "flex", gap: 1, border: "1px solid var(--ft-border)", overflow: "hidden" }}>
@@ -1995,7 +1995,7 @@ export default function CalendarPage() {
         </div>
 
         {/* Right: actions */}
-        <div style={{ display: "flex", gap: 8 }}>
+        <HStack gap={8}>
           <button
             onClick={() => { setEventFormDate(todayStr); setShowEventForm((v) => !v); setShowSources(false); }}
             style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", color: "var(--ft-text)", background: showEventForm ? "var(--ft-raised)" : "transparent", border: "1px solid var(--ft-border2)", padding: "5px 10px", cursor: "pointer" }}
@@ -2011,7 +2011,7 @@ export default function CalendarPage() {
               <span style={{ background: "var(--ft-accent)", color: "var(--ft-base)", borderRadius: "50%", width: 14, height: 14, display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700 }}>{enabledFeeds.length}</span>
             )}
           </button>
-        </div>
+        </HStack>
       </div>
 
       {/* Event form */}
@@ -2025,11 +2025,11 @@ export default function CalendarPage() {
 
       <ThisWeekStrip enabledFeeds={enabledFeeds} feedEventMap={feedEventMap} />
 
-      <div style={{ marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <HStack gap={12} align="center" justify="between" wrap marginBottom={8}>
         <Legend />
-      </div>
+      </HStack>
 
-      <div style={{ display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+      <HStack gap={12} align="start" wrap>
         {/* Calendar */}
         <div style={{ flex: 1 }}>
           <style>{`.add-event-btn:hover { opacity: 1 !important; }`}</style>
@@ -2108,7 +2108,7 @@ export default function CalendarPage() {
             />
           </div>
         )}
-      </div>
+      </HStack>
     </div>
   );
 }

@@ -27,7 +27,7 @@ import {
   TrendingDown,
   Receipt,
 } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -413,7 +413,7 @@ function InvoiceRow({
           textAlign: "right",
         }}
       >
-        <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
+        <HStack gap={4} justify="end">
           {inv.status !== "paid" && (
             <button
               onClick={() => onMarkPaid(inv.id)}
@@ -452,7 +452,7 @@ function InvoiceRow({
           >
             <Trash2 size={10} />
           </button>
-        </div>
+        </HStack>
       </td>
     </tr>
   );
@@ -1317,10 +1317,10 @@ export default function Business() {
               Monthly Revenue vs Expenses — {yr}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <HStack gap={4} align="center">
                 <div style={{ width: 8, height: 8, background: "var(--ft-green)", opacity: 0.8 }} />
                 <Text as="span" mono size={9} color="var(--ft-dim)">Revenue</Text>
-              </div>
+              </HStack>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ width: 8, height: 8, background: "var(--ft-red)", opacity: 0.7 }} />
                 <Text as="span" mono size={9} color="var(--ft-dim)">Expenses</Text>
@@ -1686,7 +1686,7 @@ export default function Business() {
               />
             </div>
 
-            <div style={{ display: "flex", gap: 8 }}>
+            <HStack gap={8}>
               <button
                 onClick={handleAddInvoice}
                 style={{
@@ -1723,7 +1723,7 @@ export default function Business() {
               >
                 CANCEL
               </button>
-            </div>
+            </HStack>
           </div>
         )}
 
@@ -2005,7 +2005,7 @@ export default function Business() {
         )}
 
         {/* Add custom category */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <HStack gap={8} align="center">
           <input
             style={{
               ...inputStyle,
@@ -2047,7 +2047,7 @@ export default function Business() {
             <Plus size={11} />
             ADD
           </button>
-        </div>
+        </HStack>
       </div>
 
       {/* ─── Data source note ─── */}

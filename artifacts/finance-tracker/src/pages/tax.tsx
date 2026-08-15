@@ -19,7 +19,7 @@ import {
 import { FileText, Plus, Trash2, Download, Info, Clock, CalendarDays, ShieldCheck } from "lucide-react";
 import { FtDropdown } from "@/components/ft-dropdown";
 import type { FtDropdownOption } from "@/components/ft-dropdown";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -461,12 +461,12 @@ function IncomeBandLegendItem({ b, grossSalary, sym: legendSym }: { b: BandSegme
   const pct = (b.amount / grossSalary) * 100;
   const opacity = b.rate === "0%" ? 0.35 : b.rate === "20%" ? 0.7 : b.rate === "40%" ? 0.85 : 1;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+    <HStack gap={5} align="center">
       <div style={{ width: 10, height: 10, background: b.color, opacity, flexShrink: 0 }} />
       <Text as="span" mono size={9} color="var(--ft-dim)">
         {b.rate} · {fmt(b.amount, legendSym)} · {pct.toFixed(0)}%
       </Text>
-    </div>
+    </HStack>
   );
 }
 
@@ -678,11 +678,11 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
                 <IncomeBandBar key={b.label} b={b} grossSalary={grossSalary} sym={sym} />
               ))}
             </div>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" as const }}>
+            <HStack gap={16} wrap>
               {bands.map(b => (
                 <IncomeBandLegendItem key={b.label} b={b} grossSalary={grossSalary} sym={sym} />
               ))}
-            </div>
+            </HStack>
           </div>
         );
       })()}
@@ -690,20 +690,20 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
       {/* Tax year progress + deadlines */}
       <div style={{ display: "grid", gridTemplateColumns: (isMobile || !isCurrentYear) ? "1fr" : "1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
         <div style={{ padding: "14px 16px", borderRight: (!isMobile && isCurrentYear) ? "1px solid var(--ft-border)" : "none", borderBottom: (isMobile && isCurrentYear) ? "1px solid var(--ft-border)" : "none" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <HStack gap={6} align="center" marginBottom={8}>
             <CalendarDays style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
             <MonoLabel as="span" size={8} letterSpacing="0.1em">
               Tax Year Progress — 6 Apr {startYear} to 5 Apr {startYear + 1}
             </MonoLabel>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          </HStack>
+          <HStack align="center" justify="between" marginBottom={6}>
             <Text as="span" mono size={10} color="var(--ft-muted)">
               Day {elapsed} of {totalDays}
             </Text>
             <Text as="span" mono size={11} weight={700} color={progressPct > 80 ? "var(--ft-amber)" : "var(--ft-text)"}>
               {progressPct.toFixed(0)}%
             </Text>
-          </div>
+          </HStack>
           <div style={{ height: 8, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden", marginBottom: 6 }}>
             <div style={{
               height: "100%",
@@ -722,18 +722,18 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
 
         {isCurrentYear && (
           <div style={{ padding: "14px 16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <HStack gap={6} align="center" marginBottom={8}>
               <Clock style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
               <MonoLabel as="span" size={8} letterSpacing="0.1em">
                 Self-Assessment Deadlines
               </MonoLabel>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            </HStack>
+            <VStack gap={6}>
+              <HStack align="center" justify="between">
                 <Text as="span" mono size={10} color="var(--ft-muted)">
                   Paper return
                 </Text>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <HStack gap={8} align="center">
                   <Text as="span" mono size={10} color="var(--ft-dim)">
                     31 Oct {paperSADeadline.getFullYear()}
                   </Text>
@@ -745,13 +745,13 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
                   }}>
                     {now > paperSADeadline ? "PASSED" : `${Math.round((paperSADeadline.getTime() - now.getTime()) / 86400000)}d`}
                   </span>
-                </div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                </HStack>
+              </HStack>
+              <HStack align="center" justify="between">
                 <Text as="span" mono size={10} color="var(--ft-muted)">
                   Online + tax payment
                 </Text>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <HStack gap={8} align="center">
                   <Text as="span" mono size={10} color="var(--ft-dim)">
                     31 Jan {onlineSADeadline.getFullYear()}
                   </Text>
@@ -764,19 +764,19 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
                   }}>
                     {now > onlineSADeadline ? "PASSED" : `${daysToSA}d`}
                   </span>
-                </div>
-              </div>
+                </HStack>
+              </HStack>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2, lineHeight: 1.5 }}>
                 Self-assessment required if: self-employed · income &gt;£100k · untaxed income &gt;£1k
               </div>
-            </div>
+            </VStack>
           </div>
         )}
       </div>
 
       {/* Tax savings row */}
       <div style={{ padding: "12px 16px", background: "var(--ft-surface)", display: "flex", gap: 24, flexWrap: "wrap" as const }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <HStack gap={8} align="center">
           <ShieldCheck style={{ width: 12, height: 12, color: "var(--ft-green)", flexShrink: 0 }} />
           <div>
             <MonoLabel as="span" size={9} letterSpacing="0.08em">
@@ -791,8 +791,8 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
               </span>
             )}
           </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        </HStack>
+        <HStack gap={8} align="center">
           <ShieldCheck style={{ width: 12, height: 12, color: "var(--ft-blue)", flexShrink: 0 }} />
           <div>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
@@ -802,7 +802,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
               25% HMRC top-up
             </span>
           </div>
-        </div>
+        </HStack>
       </div>
     </div>
   );
@@ -1054,7 +1054,7 @@ export default function Tax() {
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
                   ESTIMATED CGT LIABILITY — {selectedYear}
                 </div>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
+                <HStack gap={24} align="end" wrap>
                   <div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
                       {fmt(cgtLowEst, sym)}
@@ -1072,7 +1072,7 @@ export default function Tax() {
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", paddingBottom: 2 }}>
                     on <span className="pnum">{fmt(taxableGains, sym)}</span> taxable gains
                   </div>
-                </div>
+                </HStack>
               </div>
             )}
 

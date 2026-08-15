@@ -28,7 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Plus, Trash2, CheckCheck, HandCoins, TrendingDown, TrendingUp, RefreshCw, SplitSquareHorizontal, Mail, X, Check } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { DataTD, DataTH, MonoLabel, PanelBox, PanelHeader, Text } from "@/components/primitives";
+import { DataTD, DataTH, HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import {
   Dialog,
   DialogContent,
@@ -257,9 +257,9 @@ function StrategyTab() {
 
   if (isLoading) {
     return (
-      <div style={{ padding: "40px 0", display: "flex", justifyContent: "center" }}>
+      <HStack justify="center" padding="40px 0">
         <Skeleton className="h-4 w-40" />
-      </div>
+      </HStack>
     );
   }
 
@@ -274,7 +274,7 @@ function StrategyTab() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <VStack gap={16}>
 
       {/* Mode toggle + budget input */}
       <PanelBox padding="14px 16px" row gap={16}>
@@ -282,7 +282,7 @@ function StrategyTab() {
         {/* Mode toggle */}
         <div>
           <MonoLabel mb={6}>Strategy</MonoLabel>
-          <div style={{ display: "flex" }}>
+          <HStack>
             {(["snowball", "avalanche"] as const).map(m => (
               <button
                 key={m}
@@ -305,7 +305,7 @@ function StrategyTab() {
                 {m === "snowball" ? "⬤ Snowball" : "▲ Avalanche"}
               </button>
             ))}
-          </div>
+          </HStack>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, lineHeight: 1.5 }}>
             {mode === "snowball"
               ? "Pay smallest balance first — motivational wins"
@@ -316,7 +316,7 @@ function StrategyTab() {
         {/* Budget slider */}
         <div style={{ flex: 1, minWidth: 200 }}>
           <MonoLabel mb={6}>Monthly Budget</MonoLabel>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <HStack gap={10} align="center">
             <input
               type="range"
               min={Math.ceil(totalMinimums)}
@@ -343,7 +343,7 @@ function StrategyTab() {
                 outline: "none",
               }}
             />
-          </div>
+          </HStack>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
             Min payments: <span className="pnum">{formatGbp(totalMinimums)}</span> · Extra available: <span className="pnum">{formatGbp(extraAvailable)}</span>
           </div>
@@ -414,7 +414,7 @@ function StrategyTab() {
       {result && (
         <PanelBox>
           <PanelHeader>Payoff Order · APR per Debt</PanelHeader>
-          <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+          <VStack gap={6} padding={10}>
             {result.payoffOrder.map((po, i) => {
               const debt = strategyDebts.find(d => d.id === po.id);
               if (!debt) return null;
@@ -458,7 +458,7 @@ function StrategyTab() {
                     </Text>
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <HStack gap={6} align="center">
                     <MonoLabel as="span" letterSpacing="0.06em">APR</MonoLabel>
                     <input
                       type="number"
@@ -481,7 +481,7 @@ function StrategyTab() {
                       }}
                     />
                     <Text as="span" mono size={9} color="var(--ft-dim)">%</Text>
-                  </div>
+                  </HStack>
 
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-green)" }}>
@@ -494,7 +494,7 @@ function StrategyTab() {
                 </div>
               );
             })}
-          </div>
+          </VStack>
         </PanelBox>
       )}
 
@@ -576,7 +576,7 @@ function StrategyTab() {
           </div>
         </PanelBox>
       )}
-    </div>
+    </VStack>
   );
 }
 
@@ -1082,14 +1082,14 @@ export default function Owing() {
   └─────────────────────────────────┘`}</pre>
           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ft-text)", marginBottom: 6 }}>No IOUs yet</div>
           <div style={{ fontSize: 12, color: "var(--ft-dim)", marginBottom: 20 }}>Track who owes you, what you owe others, and split bills with the tools above.</div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <HStack gap={10} justify="center">
             <Button size="sm" onClick={() => setSplitOpen(true)} style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", fontSize: 12 }}>
               <SplitSquareHorizontal className="w-3.5 h-3.5 mr-1.5" /> Split a Bill
             </Button>
             <Button size="sm" onClick={() => setOpen(true)} style={{ background: "var(--ft-blue)", color: "var(--ft-base)", fontSize: 12 }}>
               <Plus className="w-3.5 h-3.5 mr-1.5" /> Add IOU
             </Button>
-          </div>
+          </HStack>
         </PanelBox>
       )}
 
@@ -1502,7 +1502,7 @@ export default function Owing() {
 
                       {/* Main content */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2, flexWrap: "wrap" }}>
+                        <HStack gap={6} align="center" wrap marginBottom={2}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.personName}</span>
                           {/* Direction badge */}
                           {d.status === "pending" && (
@@ -1567,21 +1567,21 @@ export default function Owing() {
                               Settled
                             </span>
                           )}
-                        </div>
+                        </HStack>
                         <div style={{ fontSize: 11, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
                           {d.description}
                           {d.notes && (
                             <span style={{ color: "var(--ft-dim)", marginLeft: 6 }}>· {d.notes}</span>
                           )}
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 1 }}>
+                        <HStack gap={8} align="center" marginTop={1}>
                           <span style={{ fontSize: 9, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
                             {formatDate(d.date)}
                           </span>
                           <span style={{ fontSize: 9, color: age === "overdue" ? "var(--ft-red)" : age === "old" ? "var(--ft-amber)" : "var(--ft-dim)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
                             {daysOld === 0 ? "today" : `${daysOld}d`}
                           </span>
-                        </div>
+                        </HStack>
                       </div>
 
                       {/* Amount + actions */}
@@ -1595,7 +1595,7 @@ export default function Owing() {
                           </Text>
                         )}
                         {d.status === "pending" && !isSettling && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <HStack gap={4} align="center">
                             <button
                               onClick={() => openSettleForm(d.id, d.personName, d.gbpEquivalent)}
                               style={{
@@ -1620,7 +1620,7 @@ export default function Owing() {
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          </div>
+                          </HStack>
                         )}
                         {d.status === "settled" && (
                           <button
@@ -1645,7 +1645,7 @@ export default function Owing() {
                         gap: 8,
                         flexWrap: "wrap",
                       }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <HStack gap={4} align="center">
                           <button
                             onClick={() => setSettleForm((s) => s ? { ...s, mode: "full", inputValue: s.fullAmount.toFixed(2) } : s)}
                             style={{
@@ -1680,7 +1680,7 @@ export default function Owing() {
                           >
                             Partial
                           </button>
-                        </div>
+                        </HStack>
                         <input
                           type="number"
                           value={settleForm.inputValue}
@@ -2081,7 +2081,7 @@ export default function Owing() {
                         style={{ ...INPUT_STYLE, flex: 1 }}
                       />
                       {splitForm.splitType === "custom" && (
-                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <HStack gap={4} align="center">
                           <Input
                             type="number"
                             placeholder="0.00"
@@ -2108,7 +2108,7 @@ export default function Owing() {
                               ← <span className="pnum">{customRemaining.toFixed(2)}</span>
                             </button>
                           )}
-                        </div>
+                        </HStack>
                       )}
                       {splitForm.splitType === "equal" && splitTotal > 0 && (
                         <span className="text-xs font-mono flex-shrink-0" style={{ color: "var(--ft-green)", minWidth: 70, textAlign: "right" }}>

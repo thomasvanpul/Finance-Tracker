@@ -16,7 +16,7 @@ import {
 import { formatGbp } from "@/lib/utils";
 import { getLevel, getLearnXP } from "@/lib/learn-xp";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 const PANEL: React.CSSProperties = {
   background: "var(--ft-surface)",
@@ -227,7 +227,7 @@ function AuthProviderRow({
         borderBottom: isLast ? undefined : "1px solid var(--ft-border)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <HStack gap={8} align="center">
         <span
           style={{
             width: 7,
@@ -241,7 +241,7 @@ function AuthProviderRow({
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>
           {provider.label}
         </span>
-      </div>
+      </HStack>
       <span
         style={{
           fontFamily: "var(--font-mono)",
@@ -281,7 +281,7 @@ function LoginHistoryRow({
         borderBottom: isLast ? undefined : "1px solid var(--ft-border)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <HStack gap={8} align="center">
         <span style={{
           width: 6, height: 6, borderRadius: "50%",
           background: isCurrent ? "var(--ft-green)" : "var(--ft-border2)",
@@ -294,7 +294,7 @@ function LoginHistoryRow({
             {new Date(entry.ts).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
           </div>
         </div>
-      </div>
+      </HStack>
       {isCurrent && (
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, padding: "1px 6px", background: "rgba(63,185,80,0.12)", color: "var(--ft-green)", border: "1px solid rgba(63,185,80,0.25)", letterSpacing: "0.08em" }}>
           CURRENT
@@ -329,10 +329,10 @@ function PersonaRow({
         {PERSONA_GLYPHS[persona.id]}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 1 }}>
+        <HStack gap={6} align="center" marginBottom={1}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color, letterSpacing: "0.1em", border: `1px solid ${color}55`, padding: "1px 4px" }}>{persona.code}</span>
           <Text as="span" mono size={10} weight={700} color="var(--ft-text)">{persona.label}</Text>
-        </div>
+        </HStack>
         <Text as="div" mono size={9} color="var(--ft-dim)">{persona.tagline}</Text>
       </div>
     </HoverRow>
@@ -817,7 +817,7 @@ export default function Profile() {
       </div>
 
       {/* Avatar + name row */}
-      <div style={{ padding: "14px 14px 0", display: "flex", alignItems: "flex-start", gap: 14 }}>
+      <HStack gap={14} align="start" padding="14px 14px 0">
         {/* Avatar */}
         <div style={{ position: "relative", flexShrink: 0 }}>
           {user?.image ? (
@@ -889,7 +889,7 @@ export default function Profile() {
         {/* Name + email */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {editingName ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <HStack gap={6} align="center" marginBottom={4}>
               <input
                 autoFocus
                 value={nameInput}
@@ -941,9 +941,9 @@ export default function Profile() {
               >
                 <X size={10} />
               </button>
-            </div>
+            </HStack>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
+            <HStack gap={7} align="center" marginBottom={2}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.02em" }}>
                 {user?.name ?? "—"}
               </div>
@@ -964,7 +964,7 @@ export default function Profile() {
               >
                 <Pencil size={10} />
               </button>
-            </div>
+            </HStack>
           )}
           {nameError && (
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", marginBottom: 4 }}>{nameError}</div>
@@ -976,23 +976,23 @@ export default function Profile() {
             uid:{user?.id ? user.id.slice(0, 12) + "…" : "—"} · joined {joinDate}
           </Text>
         </div>
-      </div>
+      </HStack>
 
       {/* XP progress bar + level badge */}
       <div style={{ padding: "10px 14px", borderTop: "1px solid var(--ft-border)", marginTop: 12, background: "var(--ft-raised)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <HStack align="center" justify="between" marginBottom={6}>
+          <HStack gap={8} align="center">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: lvl.color, background: `${lvl.color}18`, border: `1px solid ${lvl.color}40`, padding: "1px 7px", letterSpacing: "0.1em" }}>
               {lvl.name}
             </span>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 700 }}>{totalXP} XP</span>
-          </div>
+          </HStack>
           {lvl.next && (
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
               <span className="pnum">{lvl.next.minXP - totalXP}</span> to {lvl.next.name}
             </span>
           )}
-        </div>
+        </HStack>
         <div style={{ width: "100%", height: 3, background: "var(--ft-border)" }}>
           <div style={{ height: "100%", width: `${lvl.progress}%`, background: lvl.color }} />
         </div>
@@ -1001,7 +1001,7 @@ export default function Profile() {
       {/* Photo editor */}
       {editingImage && (
         <div style={{ margin: "0 14px 14px", padding: "12px 14px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <HStack align="center" justify="between" marginBottom={10}>
             <div style={MONO_LABEL}>Profile Photo</div>
             <button
               onClick={() => { setEditingImage(false); setImageUploadError(""); }}
@@ -1009,7 +1009,7 @@ export default function Profile() {
             >
               <X size={12} />
             </button>
-          </div>
+          </HStack>
 
           <div
             onDragOver={e => e.preventDefault()}
@@ -1053,7 +1053,7 @@ export default function Profile() {
           )}
 
           <div style={{ ...MONO_LABEL, marginBottom: 5 }}>Or paste a URL</div>
-          <div style={{ display: "flex", gap: 6 }}>
+          <HStack gap={6}>
             <input
               value={imageInput.startsWith("data:") ? "" : imageInput}
               onChange={e => { setImageInput(e.target.value); setImageUploadError(""); }}
@@ -1086,7 +1086,7 @@ export default function Profile() {
             >
               {imageSaving ? "…" : "SAVE"}
             </button>
-          </div>
+          </HStack>
           <div style={{ ...MONO_LABEL, marginTop: 5 }}>Leave URL blank to remove photo</div>
         </div>
       )}
@@ -1149,7 +1149,7 @@ export default function Profile() {
       </div>
       <div style={{ background: "var(--ft-surface)" }}>
         {timelineItems.length === 0 ? (
-          <div style={{ padding: "24px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <VStack gap={8} align="center" padding="24px 16px">
             <Clock size={20} color="var(--ft-border2)" />
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center" }}>
               No activity recorded yet
@@ -1157,7 +1157,7 @@ export default function Profile() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", opacity: 0.6, textAlign: "center" }}>
               Events appear as you use the app
             </div>
-          </div>
+          </VStack>
         ) : (
           <div style={{ position: "relative", paddingLeft: 20, padding: "12px 12px 12px 28px" }}>
             <div style={{
@@ -1259,7 +1259,7 @@ export default function Profile() {
       <div style={{ background: "var(--ft-surface)" }}>
         {/* Currency row */}
         <HoverRow style={{ padding: "9px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <HStack gap={8} align="center" justify="between">
             <div>
               <div style={MONO_LABEL}>Base Currency</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>Managed in Settings → Currency</div>
@@ -1270,7 +1270,7 @@ export default function Profile() {
             >
               → Settings
             </a>
-          </div>
+          </HStack>
         </HoverRow>
 
         {/* Amount display */}
@@ -1362,7 +1362,7 @@ export default function Profile() {
         <div style={{ ...HEADER, borderLeft: `3px solid ${primaryColor}`, paddingLeft: 10 }}>
           <span style={{ color: primaryColor }}>{PERSONA_GLYPHS[primary.id]}</span> Terminal Profile
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+        <VStack gap={0}>
           {activePersonas.map((p, i) => (
             <PersonaRow
               key={p.id}
@@ -1378,7 +1378,7 @@ export default function Profile() {
           >
             Manage Terminal Profile in Settings →
           </a>
-        </div>
+        </VStack>
       </div>
     );
   })();
@@ -1430,11 +1430,11 @@ export default function Profile() {
             Delete Account
           </button>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <VStack gap={8}>
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-red)" }}>
               This will permanently delete all your data. Are you sure?
             </p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <HStack gap={8} wrap>
               <button
                 onClick={() => setConfirmDelete(false)}
                 style={{
@@ -1464,8 +1464,8 @@ export default function Profile() {
               >
                 Confirm Delete
               </button>
-            </div>
-          </div>
+            </HStack>
+          </VStack>
         )}
       </div>
     </div>
@@ -1487,18 +1487,18 @@ export default function Profile() {
           <Text as="span" color="var(--ft-amber)">·</Text> Change Password
         </div>
         <form onSubmit={handleChangePassword} style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 12, background: "var(--ft-surface)" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <VStack gap={4}>
             <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Current password</Label>
             <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          </VStack>
+          <VStack gap={4}>
             <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>New password (min 8 characters)</Label>
             <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={8} required />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          </VStack>
+          <VStack gap={4}>
             <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Confirm new password</Label>
             <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} minLength={8} required />
-          </div>
+          </VStack>
           <button
             type="submit"
             disabled={pwdSubmitting}
@@ -1529,19 +1529,19 @@ export default function Profile() {
             </div>
           )}
           {!twoFaEnabled && twoFaStep === "password" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <VStack gap={10}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>Confirm your password to begin setup:</div>
               <Input type="password" placeholder="Current password" value={twoFaPassword} onChange={e => setTwoFaPassword(e.target.value)} />
-              <div style={{ display: "flex", gap: 8 }}>
+              <HStack gap={8}>
                 <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); }} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
                 <button onClick={handle2FaEnable} disabled={twoFaLoading || !twoFaPassword} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "6px 14px", cursor: twoFaLoading || !twoFaPassword ? "not-allowed" : "pointer", opacity: twoFaLoading || !twoFaPassword ? 0.5 : 1 }}>
                   {twoFaLoading ? "…" : "&gt; Continue"}
                 </button>
-              </div>
-            </div>
+              </HStack>
+            </VStack>
           )}
           {!twoFaEnabled && twoFaStep === "qr" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <VStack gap={12}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
                 Open your authenticator app and add a new account manually using the key below, or paste the full URI:
               </div>
@@ -1565,33 +1565,33 @@ export default function Profile() {
                 onChange={e => setTwoFaCode(e.target.value.replace(/\D/g, ""))}
                 style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: "0.3em", textAlign: "center", maxWidth: 160 }}
               />
-              <div style={{ display: "flex", gap: 8 }}>
+              <HStack gap={8}>
                 <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); setTwoFaUri(""); setTwoFaCode(""); }} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
                 <button onClick={handle2FaVerify} disabled={twoFaLoading || twoFaCode.length < 6} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "6px 14px", cursor: twoFaLoading || twoFaCode.length < 6 ? "not-allowed" : "pointer", opacity: twoFaLoading || twoFaCode.length < 6 ? 0.5 : 1 }}>
                   {twoFaLoading ? "Verifying…" : "&gt; Verify &amp; Activate"}
                 </button>
-              </div>
-            </div>
+              </HStack>
+            </VStack>
           )}
           {twoFaEnabled && twoFaStep === "idle" && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+            <HStack gap={10} align="center" justify="between" wrap>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>Your account is protected with TOTP two-factor authentication.</div>
               <button onClick={() => setTwoFaStep("verify-disable")} style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "6px 14px", cursor: "pointer" }}>
                 Disable
               </button>
-            </div>
+            </HStack>
           )}
           {twoFaEnabled && twoFaStep === "verify-disable" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <VStack gap={10}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>Confirm your password to disable 2FA:</div>
               <Input type="password" placeholder="Current password" value={twoFaPassword} onChange={e => setTwoFaPassword(e.target.value)} />
-              <div style={{ display: "flex", gap: 8 }}>
+              <HStack gap={8}>
                 <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); }} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
                 <button onClick={handle2FaDisable} disabled={twoFaLoading || !twoFaPassword} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "6px 14px", cursor: twoFaLoading || !twoFaPassword ? "not-allowed" : "pointer", opacity: twoFaLoading || !twoFaPassword ? 0.5 : 1 }}>
                   {twoFaLoading ? "Disabling…" : "&gt; Disable 2FA"}
                 </button>
-              </div>
-            </div>
+              </HStack>
+            </VStack>
           )}
         </div>
       </div>
@@ -1628,7 +1628,7 @@ export default function Profile() {
         </div>
         <div style={{ background: "var(--ft-surface)" }}>
           {loginHistory.length === 0 ? (
-            <div style={{ padding: "20px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+            <VStack gap={6} align="center" padding="20px 16px">
               <Clock size={18} color="var(--ft-border2)" />
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center" }}>
                 No activity recorded yet
@@ -1636,7 +1636,7 @@ export default function Profile() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", opacity: 0.6, textAlign: "center" }}>
                 Activity is logged when you visit this page
               </div>
-            </div>
+            </VStack>
           ) : loginHistory.map((entry, i) => (
             <LoginHistoryRow
               key={i}
@@ -1659,7 +1659,7 @@ export default function Profile() {
           <span>Amount Privacy</span>
         </div>
         <HoverRow style={{ padding: "10px 14px", borderBottom: blurAmounts ? "1px solid var(--ft-border)" : undefined }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <HStack gap={12} align="center" justify="between">
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Blur sensitive amounts</div>
               <Text as="div" mono size={9} color="var(--ft-muted)">Amounts show as "£ ••••" until hovered. Useful in public places.</Text>
@@ -1671,18 +1671,18 @@ export default function Profile() {
             >
               <span style={{ position: "absolute", top: 2, left: blurAmounts ? 18 : 2, width: 14, height: 14, borderRadius: "50%", background: blurAmounts ? "var(--ft-base)" : "var(--ft-dim)", transition: "left 0.15s" }} />
             </button>
-          </div>
+          </HStack>
         </HoverRow>
         {blurAmounts && (
           <div style={{ padding: "10px 14px", background: "var(--ft-raised)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", marginBottom: 8 }}>
               Auto-blur delay after hover: <span style={{ color: "var(--ft-accent)" }}>{autoBlurDelay === 0 ? "Immediate" : `${autoBlurDelay}s`}</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <HStack gap={10} align="center">
               <Text as="span" mono size={9} color="var(--ft-dim)">0s</Text>
               <input type="range" min={0} max={30} value={autoBlurDelay} onChange={e => handleAutoBlurDelay(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
               <Text as="span" mono size={9} color="var(--ft-dim)">30s</Text>
-            </div>
+            </HStack>
           </div>
         )}
       </div>
@@ -1693,7 +1693,7 @@ export default function Profile() {
           <Text as="span" color="var(--ft-accent)">·</Text> Data Masking
         </div>
         <HoverRow style={{ padding: "10px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <HStack gap={12} align="center" justify="between">
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Transaction descriptions</div>
               <Text as="div" mono size={9} color="var(--ft-muted)">Controls how merchant names and descriptions appear</Text>
@@ -1707,10 +1707,10 @@ export default function Profile() {
               <option value="partial">Partial — last 4</option>
               <option value="full">Full — hover to reveal</option>
             </select>
-          </div>
+          </HStack>
         </HoverRow>
         <HoverRow style={{ padding: "10px 14px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <HStack gap={12} align="center" justify="between">
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Hide amounts when printing</div>
               <Text as="div" mono size={9} color="var(--ft-muted)">Blurs all financial figures in print / PDF export</Text>
@@ -1722,7 +1722,7 @@ export default function Profile() {
             >
               <span style={{ position: "absolute", top: 2, left: hideFromPrint ? 18 : 2, width: 14, height: 14, borderRadius: "50%", background: hideFromPrint ? "var(--ft-base)" : "var(--ft-dim)", transition: "left 0.15s" }} />
             </button>
-          </div>
+          </HStack>
         </HoverRow>
         <div style={{ padding: "6px 14px", background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
           All privacy settings apply instantly across the app.
@@ -1744,7 +1744,7 @@ export default function Profile() {
           <Text as="div" mono size={10} color="var(--ft-muted)">
             Downloads profile, account stats, and locally stored preferences as JSON.
           </Text>
-          <div style={{ display: "flex", gap: 10 }}>
+          <HStack gap={10}>
             <button
               onClick={handleExport}
               style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", background: "transparent", border: "1px solid var(--ft-cyan)", padding: "5px 14px", cursor: "pointer", opacity: 0.9 }}
@@ -1753,7 +1753,7 @@ export default function Profile() {
             >
               ↓ Export as JSON
             </button>
-          </div>
+          </HStack>
           <Text as="div" mono size={9} color="var(--ft-dim)">
             Server-side data (transactions, investments) requires a separate server export and is not included.
           </Text>
@@ -1763,7 +1763,7 @@ export default function Profile() {
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <VStack gap={8}>
       {/* Tab bar */}
       <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--ft-border)", gap: 0, overflowX: "auto", scrollbarWidth: "none" }}>
         {TABS.map(tab => (
@@ -1778,24 +1778,24 @@ export default function Profile() {
 
       {activeTab === "account" && (
         <div className="ft-profile-account-grid" style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 12, alignItems: "start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <VStack gap={10}>
             {identityPanel}
             {activityPanel}
             {sessionPanel}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          </VStack>
+          <VStack gap={10}>
             {prefsPanel}
             {personaPanel}
             {usagePanel}
             {authPanel}
             {dangerPanel}
-          </div>
+          </VStack>
         </div>
       )}
 
       {activeTab === "security" && securityPanel}
 
       {activeTab === "privacy" && privacyPanel}
-    </div>
+    </VStack>
   );
 }

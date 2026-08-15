@@ -1,7 +1,7 @@
 "use client";
 import { useLocation } from "wouter";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 type Tool = {
   href: string;

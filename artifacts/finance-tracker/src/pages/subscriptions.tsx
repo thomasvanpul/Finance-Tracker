@@ -25,7 +25,7 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { CreditCard, Plus, Trash2, Edit2, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -292,31 +292,31 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
           padding: "9px 10px 9px 12px",
         }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+            <HStack gap={6} align="center" marginBottom={3}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {sub.name}
               </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            </HStack>
+            <HStack gap={6} align="center" marginBottom={4}>
               <Text as="span" mono size={10} color="var(--ft-dim)">{sub.category}</Text>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "0px 4px", background: `${freqColor[sub.frequency]}18`, color: freqColor[sub.frequency], letterSpacing: "0.04em", fontWeight: 700 }}>
                 {FREQ_LABELS[sub.frequency]}
               </span>
-            </div>
+            </HStack>
             {estimatedNext && (
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <HStack gap={5} align="center">
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: nextDueColor, fontWeight: nextDueWeight }}>
                   Next: {formatDateShort(estimatedNext)}
                 </span>
                 <DaysUntilBadge dateStr={estimatedNext} />
-              </div>
+              </HStack>
             )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, paddingLeft: 8, flexShrink: 0 }}>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)" }}>
               {formatGbp(toMonthly(sub.amount, sub.frequency))}<Text as="span" mono size={9} weight={400} color="var(--ft-dim)">/mo</Text>
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <HStack gap={4} align="center">
               <button onClick={() => onToggleActive(sub.id)}
                 style={{ padding: "1px 5px", fontSize: 8, fontWeight: 700, fontFamily: "var(--font-mono)", background: statusBg, color: statusColor, border: statusBorder, cursor: "pointer" }}>
                 {status.toUpperCase()}
@@ -330,7 +330,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
                   ? <Text as="span" mono size={7} weight={700}>DEL?</Text>
                   : <Trash2 className="w-3 h-3" style={{ color: "var(--ft-red)" }} />}
               </Button>
-            </div>
+            </HStack>
           </div>
         </div>
         {priceIncreased && (
@@ -433,12 +433,12 @@ function RenewalRow({ sub }: { sub: Subscription & { daysAway: number | null } }
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+          <HStack gap={6} align="center" marginTop={2}>
             <Text as="span" mono size={10} color="var(--ft-muted)">
               {hasDate ? formatDateShort(sub.nextDue!) : "—"}
             </Text>
             {hasDate && <DaysUntilBadge dateStr={sub.nextDue!} />}
-          </div>
+          </HStack>
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", textAlign: "right", flexShrink: 0 }}>
           <span className="pnum">{formatGbp(sub.amount)}</span>
@@ -579,12 +579,12 @@ function CancelCandidateRow({ sub, days, onToggleActive, onDelete }: CancelCandi
       }}
     >
       <div className="flex-1 min-w-0">
-        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+        <HStack gap={6} align="center" minWidth0>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{sub.name}</span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-amber)", whiteSpace: "nowrap", flexShrink: 0 }}>
             Last used {days}d ago
           </span>
-        </div>
+        </HStack>
       </div>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", flexShrink: 0, whiteSpace: "nowrap" }}>{formatGbp(toMonthly(sub.amount, sub.frequency))}/mo</span>
       <button
@@ -1077,7 +1077,7 @@ export default function Subscriptions() {
         title="Subscriptions & Recurring"
         subtitle="Auto-detected recurring charges · manage and track ongoing costs"
         actions={
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <HStack gap={6} align="center">
             <a href="/upcoming" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent" }}>
               → Upcoming
             </a>
@@ -1099,10 +1099,10 @@ export default function Subscriptions() {
             >
               <Plus className="w-3.5 h-3.5 mr-1.5" />Add Subscription
             </Button>
-          </div>
+          </HStack>
         }
         mobileActions={
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <HStack gap={6} align="center">
             <Button
               onClick={exportSubsCSV}
               size="sm"
@@ -1118,7 +1118,7 @@ export default function Subscriptions() {
             >
               <Plus className="w-3 h-3 mr-1" />+ Add
             </Button>
-          </div>
+          </HStack>
         }
       />
 
@@ -1208,7 +1208,7 @@ export default function Subscriptions() {
               {formatGbp(renewingThisWeek.reduce((s, sub) => s + sub.amount, 0))} due
             </span>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 0 }}>
+          <HStack gap={0} wrap>
             {renewingThisWeek.map((sub, i) => (
               <ThisWeekRenewalCard
                 key={sub.id}
@@ -1216,7 +1216,7 @@ export default function Subscriptions() {
                 isLast={i === renewingThisWeek.length - 1}
               />
             ))}
-          </div>
+          </HStack>
         </div>
       )}
 

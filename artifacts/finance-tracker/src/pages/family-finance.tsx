@@ -32,7 +32,7 @@ import {
   PieChart,
   Pie,
 } from "recharts";
-import { Text, MonoLabel } from "@/components/primitives";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -887,20 +887,20 @@ function BudgetRow({
       <div style={{ padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 12, color: pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-text)", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center" }}>
         <span className="pnum">{formatGbp(actual)}</span>
       </div>
-      <div style={{ padding: "8px 12px", display: "flex", alignItems: "center" }}>
+      <HStack align="center" padding="8px 12px">
         <div style={{ width: "100%" }}>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-muted)", marginBottom: 3, fontVariantNumeric: "tabular-nums" }}>
             {Math.round(pct * 100)}%
           </div>
           <ProgressBar pct={pct} color={barCol} height={3} />
         </div>
-      </div>
-      <div style={{ padding: "6px 12px", display: "flex", alignItems: "center" }}>
+      </HStack>
+      <HStack align="center" padding="6px 12px">
         <FtSelect value={b.assignedTo} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onUpdateAssignment(e.target.value)} style={{ fontSize: 10, padding: "2px 6px" }}>
           <option value="shared">Shared</option>
           {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
         </FtSelect>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -965,7 +965,7 @@ function GoalRow({
         <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0 }}>{g.emoji}</span>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+          <HStack gap={8} align="center" marginBottom={5}>
             <Text as="span" mono size={12} weight={600} color="var(--ft-text)">
               {g.name}
             </Text>
@@ -988,7 +988,7 @@ function GoalRow({
                 COMPLETE
               </Text>
             )}
-          </div>
+          </HStack>
           <ProgressBar pct={pct} color={roleCssVar(assignedColor)} height={4} />
         </div>
 
@@ -1035,11 +1035,11 @@ function GoalRow({
               <FtInput value={goalForm.emoji} onChange={(e) => setGoalForm({ ...goalForm, emoji: e.target.value })} placeholder="🏠" style={{ width: 60 }} />
             </FieldRow>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <HStack gap={8}>
             <Btn variant="accent" onClick={onSave}><Check size={11} />Save</Btn>
             <Btn variant="ghost" onClick={onCancel}><X size={11} />Cancel</Btn>
             <Btn variant="danger" onClick={onDelete} style={{ marginLeft: "auto" }}><Trash2 size={11} />Delete</Btn>
-          </div>
+          </HStack>
         </div>
       )}
     </div>
@@ -1068,10 +1068,10 @@ function MemberCard({
   const accentHex = roleCssVar(member.color);
 
   const statRow = (label: string, value: React.ReactNode) => (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+    <HStack gap={8} align="center" justify="between">
       <Text as="span" mono size={10} color="var(--ft-muted)">{label}</Text>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{value}</span>
-    </div>
+    </HStack>
   );
 
   return (
@@ -1092,7 +1092,7 @@ function MemberCard({
         transition: "background 0.1s",
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+      <HStack align="start" justify="between" marginBottom={10}>
         <div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 5 }}>
             {member.name}
@@ -1107,7 +1107,7 @@ function MemberCard({
             <Trash2 size={10} />
           </Btn>
         </div>
-      </div>
+      </HStack>
 
       {/* Thin accent divider */}
       <div style={{ height: 1, background: `${accentHex}33`, marginBottom: 8 }} />
@@ -1718,7 +1718,7 @@ export default function FamilyFinance() {
                 )}
               </div>
             </FieldRow>
-            <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+            <HStack gap={8} marginTop={14}>
               <Btn variant="accent" onClick={submitMemberForm} disabled={!memberForm.name.trim()}>
                 <Check size={11} />
                 {editMemberId ? "Save" : "Add Member"}
@@ -1733,7 +1733,7 @@ export default function FamilyFinance() {
                 <X size={11} />
                 Cancel
               </Btn>
-            </div>
+            </HStack>
           </div>
         )}
       </section>
@@ -2332,7 +2332,7 @@ export default function FamilyFinance() {
             onCta={() => setShowAddTimeline(true)}
           />
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          <VStack gap={0}>
             {timeline.map((entry, idx) => (
               <TimelineRow
                 key={entry.id}
@@ -2342,7 +2342,7 @@ export default function FamilyFinance() {
                 onDelete={deleteTimelineEntry}
               />
             ))}
-          </div>
+          </VStack>
         )}
 
         {/* Add timeline form */}
