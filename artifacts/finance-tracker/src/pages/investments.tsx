@@ -47,6 +47,19 @@ import { ChartAnalysisModal } from "@/components/investments/chart-analysis-moda
 import { StatDrillModal } from "@/components/investments/stat-drill-modal";
 import { FundamentalsTable, DividendTracker } from "@/components/investments/portfolio-tables";
 import { grahamNumber, dcfValue } from "@/components/investments/black-scholes";
+import {
+  POPULAR_TICKERS, INDEX_TICKERS, CRYPTO_MARKET_TICKERS,
+  FOREX_TICKERS_STR, COMMODITY_TICKERS_STR, GLOBAL_INDEX_TICKERS,
+  SECTOR_TICKERS, OVERVIEW_TICKERS,
+  INDEX_LABELS, SECTOR_LABELS, POPULAR_NAMES, CRYPTO_NAMES,
+  FOREX_NAMES, COMMODITY_NAMES, GLOBAL_INDEX_NAMES,
+  CHART_PERIODS, INTRADAY_PERIODS_SET, MULTIDAY_PERIODS_SET,
+  TICK_PERIODS_SET, TICK_INTERVAL_MAP, isUSTicker,
+  MOCK_QUOTES, newsScore, timeAgo, fmtCap, fmtNum,
+} from "@/components/investments/markets-data";
+import {
+  CandlestickLayer, OHLCTooltip, RangeBar, RecBar, RatingBar,
+} from "@/components/investments/markets-widgets";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -230,185 +243,9 @@ function writeWatchlists(wls: Watchlist[]): void {
   try { localStorage.setItem(LS_WATCHLISTS_KEY, JSON.stringify(wls)); } catch { /* noop */ }
 }
 
-// ── Candlestick chart layer (recharts Customized) ────────────────────────────
-function CandlestickLayer(props: Record<string, unknown>) {
-  const xAxisMap = (props.xAxisMap ?? {}) as Record<string, { scale: ((v: string) => number) & { bandwidth?: () => number }; width?: number }>;
-  const yAxisMap = (props.yAxisMap ?? {}) as Record<string, { scale: (v: number) => number }>;
-  const data = (props.data ?? []) as Array<{ label?: string; date?: string; open?: number; high?: number; low?: number; close: number; volume?: number }>;
-  const xAxis = Object.values(xAxisMap)[0];
-  const yAxis = Object.values(yAxisMap)[0];
-  if (!xAxis?.scale || !yAxis?.scale || data.length === 0) return null;
-  const xScale = xAxis.scale;
-  const yScale = yAxis.scale;
-  const bandwidth = xScale.bandwidth ? xScale.bandwidth() : ((xAxis.width ?? 400) / data.length);
-
-  return (
-    <g>
-      {data.map((d, i) => {
-        const label = d.label ?? d.date ?? String(i);
-        const cx = (xScale(label) ?? 0) + bandwidth / 2;
-        const open = d.open ?? d.close;
-        const close = d.close;
-        const high = d.high ?? Math.max(open, close);
-        const low = d.low ?? Math.min(open, close);
-        const isUp = close >= open;
-        const color = isUp ? "#3fb950" : "#f85149";
-        const yHigh = yScale(high);
-        const yLow = yScale(low);
-        const yOpen = yScale(open);
-        const yClose = yScale(close);
-        const bodyTop = Math.min(yOpen, yClose);
-        const bodyBot = Math.max(yOpen, yClose);
-        const bodyH = Math.max(bodyBot - bodyTop, 1);
-        const candleW = Math.max(bandwidth * 0.65, 2);
-        return (
-          <g key={i}>
-            <line x1={cx} y1={yHigh} x2={cx} y2={yLow} stroke={color} strokeWidth={1} />
-            <rect x={cx - candleW / 2} y={bodyTop} width={candleW} height={bodyH} fill={color} stroke={color} strokeWidth={0.5} opacity={0.9} />
-          </g>
-        );
-      })}
-    </g>
-  );
-}
-
-// ── Rich OHLC tooltip ─────────────────────────────────────────────────────────
-function OHLCTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ payload: Record<string, number | undefined> }>; label?: string }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0]?.payload ?? {};
-  const isUp = (d.close ?? 0) >= (d.open ?? d.close ?? 0);
-  return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: "8px 10px", fontFamily: "var(--font-mono)", fontSize: 10, lineHeight: 1.7, minWidth: 130, boxShadow: "0 4px 16px rgba(0,0,0,0.6)" }}>
-      {label && <div style={{ color: "var(--ft-text)", fontSize: 11, fontWeight: 700, marginBottom: 5, borderBottom: "1px solid var(--ft-border)", paddingBottom: 3 }}>{label}</div>}
-      {d.open != null && (
-        <>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Open</span><span style={{ color: "var(--ft-text)", flexShrink: 0, whiteSpace: "nowrap" }}>${d.open.toFixed(2)}</span></div>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>High</span><span style={{ color: "#3fb950", flexShrink: 0, whiteSpace: "nowrap" }}>${(d.high ?? d.close ?? 0).toFixed(2)}</span></div>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Low</span><span style={{ color: "#f85149", flexShrink: 0, whiteSpace: "nowrap" }}>${(d.low ?? d.close ?? 0).toFixed(2)}</span></div>
-        </>
-      )}
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Close</span><span style={{ color: isUp ? "#3fb950" : "#f85149", fontWeight: 700, flexShrink: 0, whiteSpace: "nowrap" }}>${(d.close ?? 0).toFixed(2)}</span></div>
-      {d.volume != null && (
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, color: "var(--ft-dim)", fontSize: 9, marginTop: 3, borderTop: "1px solid var(--ft-border)", paddingTop: 3 }}>
-          <span style={{ flex: 1, minWidth: 0 }}>Volume</span>
-          <span style={{ flexShrink: 0, whiteSpace: "nowrap" }}>{d.volume >= 1e6 ? `${(d.volume / 1e6).toFixed(1)}M` : `${(d.volume / 1e3).toFixed(0)}K`}</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Fallback mock prices shown when live API data isn't available ─────────────
-// Prices approximate as of mid-2026; changePercent simulates a typical trading day.
-const MOCK_QUOTES: Record<string, { price: number; changePercent: number; low52w?: number; high52w?: number }> = {
-  // Index ETFs
-  SPY:  { price: 548.32, changePercent: 0.43, low52w: 482.7,  high52w: 565.1  },
-  QQQ:  { price: 478.91, changePercent: 0.71, low52w: 408.3,  high52w: 498.4  },
-  DIA:  { price: 404.17, changePercent: 0.18, low52w: 360.2,  high52w: 418.9  },
-  IWM:  { price: 208.54, changePercent: -0.34, low52w: 176.2, high52w: 230.1  },
-  VEA:  { price: 52.83,  changePercent: 0.12, low52w: 44.1,  high52w: 55.9   },
-  EEM:  { price: 44.28,  changePercent: -0.21, low52w: 36.8, high52w: 47.3   },
-  // Sectors
-  XLK:  { price: 231.14, changePercent: 0.88  },
-  XLV:  { price: 144.62, changePercent: -0.15 },
-  XLF:  { price: 48.39,  changePercent: 0.54  },
-  XLE:  { price: 87.22,  changePercent: -0.72 },
-  XLY:  { price: 196.55, changePercent: 0.31  },
-  XLP:  { price: 78.44,  changePercent: 0.08  },
-  XLRE: { price: 38.91,  changePercent: -0.19 },
-  XLU:  { price: 70.13,  changePercent: 0.22  },
-  XLI:  { price: 132.78, changePercent: 0.41  },
-  XLB:  { price: 88.67,  changePercent: -0.09 },
-  XLC:  { price: 95.24,  changePercent: 1.12  },
-  // Popular stocks
-  AAPL: { price: 213.49, changePercent: 0.54  },
-  MSFT: { price: 448.28, changePercent: 0.82  },
-  NVDA: { price: 138.85, changePercent: 2.14  },
-  GOOGL:{ price: 182.91, changePercent: 0.37  },
-  META: { price: 591.24, changePercent: 1.03  },
-  AMZN: { price: 204.67, changePercent: 0.61  },
-  TSLA: { price: 247.38, changePercent: -1.42 },
-  AVGO: { price: 191.55, changePercent: 0.78  },
-  ORCL: { price: 164.22, changePercent: 0.45  },
-  NFLX: { price: 732.10, changePercent: 0.94  },
-  AMD:  { price: 168.43, changePercent: 1.67  },
-  JPM:  { price: 248.91, changePercent: 0.29  },
-  V:    { price: 292.17, changePercent: 0.21  },
-  UNH:  { price: 298.44, changePercent: -0.63 },
-  WMT:  { price: 91.28,  changePercent: 0.15  },
-  // Crypto
-  "BTC-USD":  { price: 64433, changePercent: 1.82  },
-  "ETH-USD":  { price: 3512,  changePercent: 2.11  },
-  "SOL-USD":  { price: 178.4, changePercent: 3.24  },
-  "BNB-USD":  { price: 614.8, changePercent: 0.87  },
-  "XRP-USD":  { price: 0.632, changePercent: 1.43  },
-  "DOGE-USD": { price: 0.148, changePercent: -1.21 },
-  // Forex
-  "GBPUSD=X": { price: 1.3302, changePercent: 0.09  },
-  "EURUSD=X": { price: 1.0847, changePercent: -0.14 },
-  "USDJPY=X": { price: 151.84, changePercent: 0.31  },
-  "AUDUSD=X": { price: 0.6561, changePercent: -0.08 },
-  "USDCAD=X": { price: 1.3681, changePercent: 0.12  },
-  "GBPEUR=X": { price: 1.1871, changePercent: 0.22  },
-  // Commodities
-  "GC=F": { price: 2341.8, changePercent: 0.48  },
-  "SI=F": { price: 29.84,  changePercent: 0.73  },
-  "CL=F": { price: 79.12,  changePercent: -1.14 },
-  "NG=F": { price: 2.871,  changePercent: -0.92 },
-  // Global indices
-  "^N225":  { price: 38821, changePercent: 0.53  },
-  "^HSI":   { price: 18924, changePercent: -0.74 },
-  "^GDAXI": { price: 18892, changePercent: 0.41  },
-  "^FCHI":  { price: 7638,  changePercent: 0.28  },
-  "^AXJO":  { price: 8041,  changePercent: 0.17  },
-};
 
 // ── Markets Tab ───────────────────────────────────────────────────────────────
 
-const POPULAR_TICKERS = "AAPL,MSFT,NVDA,GOOGL,META,AMZN,TSLA,AVGO,ORCL,NFLX,AMD,JPM,V,UNH,WMT";
-const INDEX_TICKERS = "SPY,QQQ,DIA,IWM,VEA,EEM";
-const CRYPTO_MARKET_TICKERS = "BTC-USD,ETH-USD,SOL-USD,BNB-USD,XRP-USD,DOGE-USD";
-const FOREX_TICKERS_STR = "GBPUSD=X,EURUSD=X,USDJPY=X,AUDUSD=X,USDCAD=X,GBPEUR=X";
-const COMMODITY_TICKERS_STR = "GC=F,SI=F,CL=F,NG=F";
-const GLOBAL_INDEX_TICKERS = "^N225,^HSI,^GDAXI,^FCHI,^AXJO";
-const SECTOR_TICKERS = "XLK,XLV,XLF,XLE,XLY,XLP,XLRE,XLU,XLI,XLB,XLC";
-const OVERVIEW_TICKERS = [POPULAR_TICKERS, INDEX_TICKERS, SECTOR_TICKERS, CRYPTO_MARKET_TICKERS, FOREX_TICKERS_STR, COMMODITY_TICKERS_STR, GLOBAL_INDEX_TICKERS].join(",");
-
-const INDEX_LABELS: Record<string, string> = {
-  SPY: "S&P 500", QQQ: "NASDAQ 100", DIA: "Dow Jones", IWM: "Russell 2000", VEA: "Developed Mkts", EEM: "Emerging Mkts",
-};
-const SECTOR_LABELS: Record<string, string> = {
-  XLK: "Technology", XLV: "Health Care", XLF: "Financials", XLE: "Energy",
-  XLY: "Cons. Discret.", XLP: "Cons. Staples", XLRE: "Real Estate",
-  XLU: "Utilities", XLI: "Industrials", XLB: "Materials", XLC: "Communication",
-};
-const POPULAR_NAMES: Record<string, string> = {
-  AAPL: "Apple Inc.", MSFT: "Microsoft Corp.", NVDA: "NVIDIA Corp.", GOOGL: "Alphabet Inc.",
-  META: "Meta Platforms", AMZN: "Amazon.com Inc.", TSLA: "Tesla Inc.", AVGO: "Broadcom Inc.",
-  ORCL: "Oracle Corp.", NFLX: "Netflix Inc.", AMD: "Advanced Micro Devices", JPM: "JPMorgan Chase",
-  V: "Visa Inc.", UNH: "UnitedHealth Group", WMT: "Walmart Inc.",
-};
-const CRYPTO_NAMES: Record<string, string> = {
-  "BTC-USD": "Bitcoin", "ETH-USD": "Ethereum", "SOL-USD": "Solana",
-  "BNB-USD": "BNB", "XRP-USD": "XRP", "DOGE-USD": "Dogecoin",
-};
-const FOREX_NAMES: Record<string, string> = {
-  "GBPUSD=X": "GBP / USD", "EURUSD=X": "EUR / USD", "USDJPY=X": "USD / JPY",
-  "AUDUSD=X": "AUD / USD", "USDCAD=X": "USD / CAD", "GBPEUR=X": "GBP / EUR",
-};
-const COMMODITY_NAMES: Record<string, string> = {
-  "GC=F": "Gold ($/oz)", "SI=F": "Silver ($/oz)", "CL=F": "Crude Oil ($/bbl)", "NG=F": "Natural Gas ($/MMBtu)",
-};
-const GLOBAL_INDEX_NAMES: Record<string, string> = {
-  "^N225": "Nikkei 225", "^HSI": "Hang Seng", "^GDAXI": "DAX 40", "^FCHI": "CAC 40", "^AXJO": "ASX 200",
-};
-const CHART_PERIODS = ["5s", "15s", "30s", "1min", "2min", "5min", "15min", "30min", "1h", "1d", "3d", "5d", "1w", "1m", "3m", "6m", "1y", "2y", "5y"];
-const INTRADAY_PERIODS_SET = new Set(["1min", "2min", "5min", "15min", "30min", "1h", "1d", "3d", "5d"]);
-const MULTIDAY_PERIODS_SET = new Set(["3d", "5d"]);
-const TICK_PERIODS_SET = new Set(["5s", "15s", "30s"]);
-const TICK_INTERVAL_MAP: Record<string, number> = { "5s": 5, "15s": 15, "30s": 30 };
-// US equities: no exchange suffix (.L .HK .DE etc) and not a ^INDEX symbol
-const isUSTicker = (ticker: string) => !ticker.includes(".") && !ticker.startsWith("^");
 
 interface NewsItem { title: string; link: string; publisher: string; publishedAt: string; }
 
@@ -444,81 +281,7 @@ function useTickerStream(ticker: string | null, period: string) {
   return { liveCandles, isConnected, isLive: isTickPeriod && isConnected };
 }
 
-const BULL_WORDS = /\b(surge|gain|rally|rise|beat|record|strong|buy|upgrade|outperform|growth|profit|soar|jump|boost|bull|bullish|optimist|recover|rebound)\b/i;
-const BEAR_WORDS = /\b(fall|drop|cut|decline|miss|disappoint|concern|sell|downgrade|underperform|risk|crash|fear|weak|loss|bear|bearish|pessimist|slump|plunge|warn)\b/i;
 
-function newsScore(title: string): "bullish" | "bearish" | "neutral" {
-  const bulls = (title.match(BULL_WORDS) ?? []).length;
-  const bears = (title.match(BEAR_WORDS) ?? []).length;
-  if (bulls > bears) return "bullish";
-  if (bears > bulls) return "bearish";
-  return "neutral";
-}
-
-function timeAgo(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
-function fmtCap(v: number | null | undefined): string {
-  if (!v) return "—";
-  if (v >= 1e12) return `$${(v / 1e12).toFixed(2)}T`;
-  if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
-  if (v >= 1e6) return `$${(v / 1e6).toFixed(0)}M`;
-  return `$${v.toFixed(0)}`;
-}
-
-function fmtNum(v: number | null | undefined, suffix = ""): string {
-  if (v == null) return "—";
-  return `${v}${suffix}`;
-}
-
-function RangeBar({ low52w, high52w, price }: { low52w?: number | null; high52w?: number | null; price: number }) {
-  if (!low52w || !high52w || high52w <= low52w) return <span style={{ color: "var(--ft-dim)", fontSize: 10 }}>—</span>;
-  const pct = Math.max(0, Math.min(100, ((price - low52w) / (high52w - low52w)) * 100));
-  const col = pct > 75 ? "var(--ft-green)" : pct < 25 ? "var(--ft-red)" : "var(--ft-amber)";
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 80 }}>
-      <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>{low52w.toFixed(0)}</span>
-      <div style={{ flex: 1, height: 4, background: "var(--ft-raised)", borderRadius: 2, position: "relative", minWidth: 40 }}>
-        <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${pct}%`, background: col, borderRadius: 2 }} />
-        <div style={{ position: "absolute", top: -2, left: `${pct}%`, transform: "translateX(-50%)", width: 8, height: 8, borderRadius: "50%", background: col, border: "1px solid var(--ft-base)" }} />
-      </div>
-      <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>{high52w.toFixed(0)}</span>
-    </div>
-  );
-}
-
-function RecBar({ trend }: { trend: { strongBuy: number; buy: number; hold: number; sell: number; strongSell: number }[] }) {
-  const t = trend[0] ?? { strongBuy: 0, buy: 0, hold: 0, sell: 0, strongSell: 0 };
-  const total = t.strongBuy + t.buy + t.hold + t.sell + t.strongSell;
-  if (total === 0) return <span style={{ color: "var(--ft-dim)", fontSize: 10 }}>No analyst data</span>;
-  const segs = [
-    { label: "Strong Buy", val: t.strongBuy, color: "var(--ft-green)" },
-    { label: "Buy", val: t.buy, color: "rgba(63,185,80,0.5)" },
-    { label: "Hold", val: t.hold, color: "var(--ft-amber)" },
-    { label: "Sell", val: t.sell, color: "rgba(248,81,73,0.5)" },
-    { label: "Strong Sell", val: t.strongSell, color: "var(--ft-red)" },
-  ];
-  return (
-    <div>
-      <div style={{ display: "flex", height: 10, borderRadius: 2, overflow: "hidden", gap: 1 }}>
-        {segs.map((s) => s.val > 0 && (
-          <div key={s.label} title={`${s.label}: ${s.val}`} style={{ flex: s.val / total, background: s.color, minWidth: 2 }} />
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
-        {segs.map((s) => s.val > 0 && (
-          <span key={s.label} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: s.color }}>
-            {s.label}: {s.val}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── Watchlists Panel ──────────────────────────────────────────────────────────
 
@@ -762,18 +525,6 @@ function computeStockRating(q: QuoteData | null, detail: { pe?: number | null; p
   else grade = "F";
 
   return { value: Math.round(value * 10) / 10, growth: Math.round(growth * 10) / 10, quality: Math.round(quality * 10) / 10, momentum: Math.round(momentum * 10) / 10, overall: Math.round(overall * 10) / 10, grade };
-}
-
-function RatingBar({ label, score, color }: { label: string; score: number; color: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", width: 70, flexShrink: 0 }}>{label}</span>
-      <div style={{ flex: 1, height: 5, background: "var(--ft-raised)", borderRadius: 2, position: "relative" }}>
-        <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${score * 10}%`, background: color, borderRadius: 2 }} />
-      </div>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color, width: 24, textAlign: "right" }}>{score.toFixed(1)}</span>
-    </div>
-  );
 }
 
 // ── Price Alerts Panel ────────────────────────────────────────────────────────
