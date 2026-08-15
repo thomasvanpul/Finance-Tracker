@@ -63,6 +63,17 @@ Never point local development at production.
   it is not enough to remove `text-overflow: ellipsis` if `overflow: hidden` on
   the parent still crops digits. Callers that put a `.pnum` inside a
   size-constrained container must guarantee width or skip render.
+- **The primitives family has a hard split.** `Stack` (HStack / VStack) owns
+  layout — direction, gap, align, justify, wrap, padding, margin, size, flex.
+  `PanelBox` owns surface — background, border, padding, borderTop.
+  Text primitives (`Text`, `MonoLabel`) own typography.
+  If a property is neither layout nor surface (nor typography), it belongs on
+  neither primitive. One-off surface treatments (accent-tinted borders, alert
+  backgrounds) stay as inline styles rather than being folded into a primitive
+  — the family is not obliged to swallow every unique surface, and pretending
+  otherwise is how a primitive becomes a passthrough for div. No primitive
+  carries a `style?` escape hatch, and none of them accepts a prop that leaks
+  across the split.
 
 ## Design rules
 
