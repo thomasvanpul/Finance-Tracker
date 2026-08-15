@@ -161,12 +161,36 @@ export const PERSONAS: Persona[] = [
   },
 ];
 
+// Accent is the closed enum of named accents in the design language.
+// Every colour a caller wants to apply should route through here — a bare
+// hex or `var(--ft-*)` literal at a callsite is a smell.
+export type Accent = "blue" | "green" | "amber" | "violet" | "accent";
+
+export const ACCENTS: Record<Accent, string> = {
+  blue: "var(--ft-blue)",
+  green: "var(--ft-green)",
+  amber: "var(--ft-amber)",
+  violet: "#A78BFA",
+  accent: "var(--ft-accent)",
+};
+
+export const PERSONA_ACCENT: Record<PersonaId, Accent> = {
+  market: "blue",
+  budget: "green",
+  wealth: "amber",
+  social: "violet",
+  full: "accent",
+};
+
+// Kept as-is at the call surface for backward compatibility — every entry
+// now derives from PERSONA_ACCENT + ACCENTS so the mapping is one-way and
+// there is no risk of drift between "persona colour" and "accent token".
 export const PERSONA_COLORS: Record<PersonaId, string> = {
-  market: "var(--ft-blue)",
-  budget: "var(--ft-green)",
-  wealth: "var(--ft-amber)",
-  social: "#A78BFA",
-  full: "var(--ft-accent)",
+  market: ACCENTS[PERSONA_ACCENT.market],
+  budget: ACCENTS[PERSONA_ACCENT.budget],
+  wealth: ACCENTS[PERSONA_ACCENT.wealth],
+  social: ACCENTS[PERSONA_ACCENT.social],
+  full: ACCENTS[PERSONA_ACCENT.full],
 };
 
 export const PERSONA_GLYPHS: Record<PersonaId, string> = {
