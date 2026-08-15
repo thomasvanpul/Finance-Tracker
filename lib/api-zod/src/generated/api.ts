@@ -364,11 +364,12 @@ export const ListInvestmentsResponseItem = zod.object({
   "shares": zod.number(),
   "costPricePerShare": zod.number(),
   "currency": zod.string(),
-  "livePrice": zod.number(),
-  "currentValue": zod.number(),
-  "plGbp": zod.number(),
-  "plPercent": zod.number(),
-  "gbpValue": zod.number(),
+  "priceAvailable": zod.boolean(),
+  "livePrice": zod.number().nullable(),
+  "currentValue": zod.number().nullable(),
+  "plGbp": zod.number().nullable(),
+  "plPercent": zod.number().nullable(),
+  "gbpValue": zod.number().nullable(),
   "createdAt": zod.string()
 })
 export const ListInvestmentsResponse = zod.array(ListInvestmentsResponseItem)
@@ -393,7 +394,8 @@ export const GetInvestmentSummaryResponse = zod.object({
   "totalValueGbp": zod.number(),
   "totalPlGbp": zod.number(),
   "totalPlPercent": zod.number(),
-  "positions": zod.number()
+  "positions": zod.number(),
+  "unavailablePositions": zod.number()
 })
 
 
@@ -420,11 +422,12 @@ export const UpdateInvestmentResponse = zod.object({
   "shares": zod.number(),
   "costPricePerShare": zod.number(),
   "currency": zod.string(),
-  "livePrice": zod.number(),
-  "currentValue": zod.number(),
-  "plGbp": zod.number(),
-  "plPercent": zod.number(),
-  "gbpValue": zod.number(),
+  "priceAvailable": zod.boolean(),
+  "livePrice": zod.number().nullable(),
+  "currentValue": zod.number().nullable(),
+  "plGbp": zod.number().nullable(),
+  "plPercent": zod.number().nullable(),
+  "gbpValue": zod.number().nullable(),
   "createdAt": zod.string()
 })
 

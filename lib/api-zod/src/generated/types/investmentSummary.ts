@@ -11,4 +11,5 @@ export interface InvestmentSummary {
   totalPlGbp: number;
   totalPlPercent: number;
   positions: number;
+  unavailablePositions: number;
 }

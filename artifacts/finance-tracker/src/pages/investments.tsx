@@ -2264,7 +2264,10 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
   if (!inv) return null;
   const q = quoteMap.get(inv.ticker);
   const sym = q?.currency === "GBP" ? "£" : "$";
-  const plColor = inv.plPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+  // G10: unpriced positions render "—" for price-derived fields. Never
+  // colour a P&L badge red on a fabricated −100%.
+  const priced = inv.priceAvailable === true;
+  const plColor = priced && (inv.plPercent ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)";
 
   // Valuation scorecard helpers
   const analystUpside = q?.analystTargetPrice && q?.price
@@ -2293,10 +2296,12 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
     return <span style={{ padding: "1px 5px", borderRadius: 2, fontSize: 10, fontWeight: 700, background: v.bg, color: v.color, fontFamily: "var(--font-mono)" }}>{v.label}</span>;
   }
 
-  const chartData = [
-    { date: inv.buyDate, costBasis: inv.costPricePerShare, value: inv.costPricePerShare },
-    { date: new Date().toISOString().slice(0, 10), costBasis: inv.costPricePerShare, value: inv.livePrice },
-  ];
+  const chartData = priced
+    ? [
+        { date: inv.buyDate, costBasis: inv.costPricePerShare, value: inv.costPricePerShare },
+        { date: new Date().toISOString().slice(0, 10), costBasis: inv.costPricePerShare, value: inv.livePrice ?? inv.costPricePerShare },
+      ]
+    : [];
 
   return (
     <Dialog open={invId !== null} onOpenChange={(o) => !o && onClose()}>
@@ -2306,9 +2311,15 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-lg font-bold font-mono" style={{ color: "var(--ft-blue)" }}>{inv.ticker}</span>
-                <span className="px-2 py-0.5 rounded-sm text-xs font-semibold" style={{ background: inv.plPercent >= 0 ? "rgba(63,185,80,0.15)" : "rgba(248,81,73,0.15)", color: plColor, border: `1px solid ${inv.plPercent >= 0 ? "rgba(63,185,80,0.3)" : "rgba(248,81,73,0.3)"}` }}>
-                  {inv.plPercent >= 0 ? "▲" : "▼"} {Math.abs(inv.plPercent).toFixed(2)}%
-                </span>
+                {priced && inv.plPercent != null ? (
+                  <span className="px-2 py-0.5 rounded-sm text-xs font-semibold" style={{ background: inv.plPercent >= 0 ? "rgba(63,185,80,0.15)" : "rgba(248,81,73,0.15)", color: plColor, border: `1px solid ${inv.plPercent >= 0 ? "rgba(63,185,80,0.3)" : "rgba(248,81,73,0.3)"}` }}>
+                    {inv.plPercent >= 0 ? "▲" : "▼"} {Math.abs(inv.plPercent).toFixed(2)}%
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-sm text-xs font-semibold" style={{ background: "var(--ft-raised)", color: "var(--ft-dim)", border: "1px solid var(--ft-border)" }}>
+                    NO QUOTE
+                  </span>
+                )}
               </div>
               <div className="text-xs" style={{ color: "var(--ft-muted)" }}>{inv.name}</div>
             </div>
@@ -2347,10 +2358,10 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
               {[
                 { label: "Shares", value: String(inv.shares) },
                 { label: "Cost / Share", value: `${sym}${inv.costPricePerShare.toFixed(2)}` },
-                { label: "Live Price", value: `${sym}${inv.livePrice.toFixed(2)}` },
+                { label: "Live Price", value: priced && inv.livePrice != null ? `${sym}${inv.livePrice.toFixed(2)}` : "—" },
                 { label: "Total Cost", value: formatGbp(inv.costPricePerShare * inv.shares) },
-                { label: "Current Value", value: formatGbp(inv.gbpValue) },
-                { label: "Unrealised P&L", value: `${inv.plGbp >= 0 ? "+" : ""}${formatGbp(inv.plGbp)} (${inv.plPercent >= 0 ? "+" : ""}${inv.plPercent.toFixed(2)}%)`, color: plColor },
+                { label: "Current Value", value: priced && inv.gbpValue != null ? formatGbp(inv.gbpValue) : "—" },
+                { label: "Unrealised P&L", value: priced && inv.plGbp != null && inv.plPercent != null ? `${inv.plGbp >= 0 ? "+" : ""}${formatGbp(inv.plGbp)} (${inv.plPercent >= 0 ? "+" : ""}${inv.plPercent.toFixed(2)}%)` : "—", color: priced ? plColor : "var(--ft-dim)" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="px-3 py-2 border-b border-r" style={{ borderColor: "var(--ft-border)" }}>
                   <div className="text-xs mb-0.5" style={{ color: "var(--ft-dim)" }}>{label}</div>
@@ -3429,9 +3440,14 @@ function PortfolioPositionsTable({
               </tr>
             )}
             {filtered.map((inv, i) => {
-              const plColor = inv.plPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)";
-              const plSign = inv.plPercent >= 0 ? "▲" : "▼";
-              const weight = totalValue > 0 ? (inv.gbpValue / totalValue) * 100 : 0;
+              // G10: an unquoted position renders "—" for every price-derived
+              // cell; never colour a P&L cell red or size a weight bar off
+              // a fabricated zero.
+              const priced = inv.priceAvailable === true;
+              const plPct = inv.plPercent ?? 0;
+              const plColor = priced && plPct >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+              const plSign = plPct >= 0 ? "▲" : "▼";
+              const weight = priced && inv.gbpValue != null && totalValue > 0 ? (inv.gbpValue / totalValue) * 100 : 0;
               const rowBg = i % 2 === 0 ? "var(--ft-base)" : `color-mix(in srgb, var(--ft-raised) 30%, transparent)`;
 
               return (
@@ -3472,45 +3488,55 @@ function PortfolioPositionsTable({
 
                   {/* CURRENT PRICE — flash cell */}
                   <FlashCell
-                    value={inv.livePrice}
+                    value={inv.livePrice ?? 0}
                     style={{ ...TD, textAlign: "right", color: "var(--ft-text)", fontWeight: 600 }}
                   >
-                    {inv.livePrice.toFixed(2)}
-                    <span style={{ fontSize: 9, color: "var(--ft-dim)", marginLeft: 3 }}>{inv.currency}</span>
+                    {priced && inv.livePrice != null ? (
+                      <>
+                        {inv.livePrice.toFixed(2)}
+                        <span style={{ fontSize: 9, color: "var(--ft-dim)", marginLeft: 3 }}>{inv.currency}</span>
+                      </>
+                    ) : (
+                      <span style={{ color: "var(--ft-dim)" }}>—</span>
+                    )}
                   </FlashCell>
 
                   {/* VALUE */}
-                  <td style={{ ...TD, textAlign: "right", color: "var(--ft-text)", fontWeight: 600 }} className="pnum">
-                    {formatGbp(inv.gbpValue)}
+                  <td style={{ ...TD, textAlign: "right", color: priced ? "var(--ft-text)" : "var(--ft-dim)", fontWeight: 600 }} className="pnum">
+                    {priced && inv.gbpValue != null ? formatGbp(inv.gbpValue) : "—"}
                   </td>
 
                   {/* P&L — flash cell, colored */}
                   <FlashCell
-                    value={inv.plGbp}
+                    value={inv.plGbp ?? 0}
                     style={{
                       ...TD,
                       textAlign: "right",
-                      color: plColor,
+                      color: priced ? plColor : "var(--ft-dim)",
                       fontWeight: 600,
-                      background: inv.plPercent >= 0 ? "color-mix(in srgb, var(--ft-green) 5%, transparent)" : "color-mix(in srgb, var(--ft-red) 5%, transparent)",
+                      background: priced ? (plPct >= 0 ? "color-mix(in srgb, var(--ft-green) 5%, transparent)" : "color-mix(in srgb, var(--ft-red) 5%, transparent)") : "transparent",
                     }}
                     className="pnum"
                   >
-                    {inv.plGbp >= 0 ? "+" : ""}{formatGbp(inv.plGbp)}
+                    {priced && inv.plGbp != null ? `${inv.plGbp >= 0 ? "+" : ""}${formatGbp(inv.plGbp)}` : "—"}
                   </FlashCell>
 
                   {/* P&L % — directional symbol */}
                   <td style={{ ...TD, textAlign: "right" }}>
-                    <span style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: plColor,
-                      padding: "1px 4px",
-                      background: inv.plPercent >= 0 ? "color-mix(in srgb, var(--ft-green) 12%, transparent)" : "color-mix(in srgb, var(--ft-red) 12%, transparent)",
-                    }} className="pnum">
-                      {plSign} {Math.abs(inv.plPercent).toFixed(2)}%
-                    </span>
+                    {priced && inv.plPercent != null ? (
+                      <span style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: plColor,
+                        padding: "1px 4px",
+                        background: plPct >= 0 ? "color-mix(in srgb, var(--ft-green) 12%, transparent)" : "color-mix(in srgb, var(--ft-red) 12%, transparent)",
+                      }} className="pnum">
+                        {plSign} {Math.abs(inv.plPercent).toFixed(2)}%
+                      </span>
+                    ) : (
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>—</span>
+                    )}
                   </td>
 
                   {/* WEIGHT — inline proportional bar */}
@@ -3530,7 +3556,7 @@ function PortfolioPositionsTable({
                     <HStack gap={2} align="center" justify="end">
                       <PriceAlertPopover
                         ticker={inv.ticker}
-                        currentPrice={inv.livePrice}
+                        currentPrice={inv.livePrice ?? 0}
                         alerts={priceAlerts}
                         onAlertsChange={onAlertsChange}
                       />
@@ -3745,7 +3771,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     const updated = alerts.map((alert) => {
       if (alert.triggered) return alert;
       const inv = investments.find((i) => i.ticker === alert.ticker);
-      if (!inv) return alert;
+      // G10: no live price means no valid alert fire — skip until the
+      // quote returns rather than firing off a fabricated zero.
+      if (!inv || inv.livePrice == null) return alert;
       const q = quoteMap.get(alert.ticker);
       const fired = alertTriggered(alert, inv.livePrice, q?.changePercent, q?.pe);
       if (fired) {
@@ -3967,12 +3995,15 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   const hasPositions = (investments?.length ?? 0) > 0;
 
   // ── Chart data ──
-  const pieData = (investments ?? []).map((inv, i) => ({ name: inv.ticker, value: Math.round(inv.gbpValue * 100) / 100, color: CHART_COLORS[i % CHART_COLORS.length] }));
+  // G10: allocation, class breakdown, and P&L charts exclude unpriced
+  // positions. A pie slice sized off "0" would misrepresent the portfolio.
+  const pricedInvs = (investments ?? []).filter((inv) => inv.priceAvailable === true);
+  const pieData = pricedInvs.map((inv, i) => ({ name: inv.ticker, value: Math.round((inv.gbpValue ?? 0) * 100) / 100, color: CHART_COLORS[i % CHART_COLORS.length] }));
   const classAllocMap: Record<string, number> = {};
-  (investments ?? []).forEach((inv) => { const cls = classMap[inv.id] ?? "Other"; classAllocMap[cls] = (classAllocMap[cls] ?? 0) + inv.gbpValue; });
+  pricedInvs.forEach((inv) => { const cls = classMap[inv.id] ?? "Other"; classAllocMap[cls] = (classAllocMap[cls] ?? 0) + (inv.gbpValue ?? 0); });
   const classAllocData = Object.entries(classAllocMap).filter(([, v]) => v > 0).map(([name, value]) => ({ name: name as AssetClass, value: Math.round(value * 100) / 100 }));
   const totalClassValue = classAllocData.reduce((s, d) => s + d.value, 0);
-  const plData = (investments ?? []).map((inv) => ({ name: inv.ticker, pl: Math.round(inv.plGbp * 100) / 100, fill: inv.plPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)" }));
+  const plData = pricedInvs.map((inv) => ({ name: inv.ticker, pl: Math.round((inv.plGbp ?? 0) * 100) / 100, fill: (inv.plPercent ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }));
 
   const dividendPositions = (investments ?? []).filter((inv) => (quoteMap.get(inv.ticker)?.dividendYield ?? 0) > 0);
   const totalAnnualDividend = dividendPositions.reduce((s, inv) => { const q = quoteMap.get(inv.ticker); return q?.dividendYield ? s + (q.dividendYield / 100) * q.price * inv.shares : s; }, 0);
@@ -3981,13 +4012,13 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   const portBeta = (() => {
     if (!summary || summary.totalValueGbp <= 0) return null;
     let wb = 0, covered = 0;
-    (investments ?? []).forEach((inv) => { const q = quoteMap.get(inv.ticker); if (q?.beta != null) { wb += (inv.gbpValue / summary.totalValueGbp) * q.beta; covered += inv.gbpValue; } });
+    (investments ?? []).forEach((inv) => { const q = quoteMap.get(inv.ticker); if (q?.beta != null && inv.gbpValue != null) { wb += (inv.gbpValue / summary.totalValueGbp) * q.beta; covered += inv.gbpValue; } });
     return covered > 0 ? wb : null;
   })();
 
   const largestPos = summary && summary.totalValueGbp > 0
-    ? (investments ?? []).reduce<{ ticker: string; pct: number } | null>((best, inv) => {
-        const pct = (inv.gbpValue / summary.totalValueGbp) * 100;
+    ? pricedInvs.reduce<{ ticker: string; pct: number } | null>((best, inv) => {
+        const pct = ((inv.gbpValue ?? 0) / summary.totalValueGbp) * 100;
         return !best || pct > best.pct ? { ticker: inv.ticker, pct } : best;
       }, null) : null;
 
@@ -4143,7 +4174,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                     <Text as="span" weight={700} color="var(--ft-amber)">{a.ticker}</Text>
                     {" "}crossed {a.direction === "above" ? "above" : "below"}{" "}
                     <Text as="span" weight={700}>£{a.targetPrice.toFixed(2)}</Text>
-                    {inv && (
+                    {inv && inv.livePrice != null && (
                       <Text as="span" color="var(--ft-dim)"> · current: £{inv.livePrice.toFixed(2)}</Text>
                     )}
                   </div>
@@ -4472,12 +4503,17 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               </div>
               <div style={{ padding: 8 }}>
                 <HStack gap={3} wrap>
-                  {(investments ?? [])
+                  {/* G10: heat map only tiles priced positions. An unquoted
+                      ticker sized off "0" would visually vanish; better to
+                      omit it from the map (the position count above already
+                      surfaces the gap). */}
+                  {pricedInvs
                     .slice()
-                    .sort((a, b) => b.gbpValue - a.gbpValue)
+                    .sort((a, b) => (b.gbpValue ?? 0) - (a.gbpValue ?? 0))
                     .map((inv) => {
-                      const weight = summary.totalValueGbp > 0 ? (inv.gbpValue / summary.totalValueGbp) * 100 : 0;
-                      const pct = inv.plPercent;
+                      const gbpVal = inv.gbpValue ?? 0;
+                      const weight = summary.totalValueGbp > 0 ? (gbpVal / summary.totalValueGbp) * 100 : 0;
+                      const pct = inv.plPercent ?? 0;
                       const bg = pct > 15 ? "rgba(63,185,80,0.85)" : pct > 7 ? "rgba(63,185,80,0.55)" : pct > 2 ? "rgba(63,185,80,0.3)" : pct > -2 ? "rgba(180,180,180,0.18)" : pct > -7 ? "rgba(248,81,73,0.3)" : pct > -15 ? "rgba(248,81,73,0.55)" : "rgba(248,81,73,0.85)";
                       const textColor = Math.abs(pct) > 7 ? "rgba(255,255,255,0.95)" : "var(--ft-text)";
                       const minW = Math.max(44, weight * 3.2);
@@ -4544,7 +4580,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           {/* AI Portfolio Commentary — terminal style */}
           {hasPositions && summary && summary.totalValueGbp > 0 && (
             <AiPortfolioCommentary
-              investments={(investments ?? []).map((inv) => ({ ticker: inv.ticker, gbpValue: inv.gbpValue, quantity: inv.shares }))}
+              investments={pricedInvs.map((inv) => ({ ticker: inv.ticker, gbpValue: inv.gbpValue ?? 0, quantity: inv.shares }))}
               totalValue={summary.totalValueGbp}
             />
           )}
@@ -4816,7 +4852,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                         £{alert.targetPrice.toFixed(2)}
                       </div>
                       <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-muted)", textAlign: "right" }}>
-                        {inv ? `£${inv.livePrice.toFixed(2)}` : "—"}
+                        {inv && inv.livePrice != null ? `£${inv.livePrice.toFixed(2)}` : "—"}
                       </div>
                       <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: statusColor, letterSpacing: "0.06em" }}>
                         {alert.triggered ? "TRIGGERED" : "ACTIVE"}

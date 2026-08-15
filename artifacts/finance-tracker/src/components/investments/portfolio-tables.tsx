@@ -140,7 +140,12 @@ export function DividendTracker({ investments, quoteMap }: DividendTrackerProps)
                 const sym = q.currency === "GBP" ? "£" : "$";
                 const annualPerShare = (q.dividendYield / 100) * q.price;
                 const totalRow = annualPerShare * inv.shares;
-                const gbpRatio = inv.livePrice > 0 ? inv.gbpValue / (inv.livePrice * inv.shares) : 1;
+                // G10: fall back to a 1:1 GBP ratio when the live price is
+                // absent — dividend yield is still meaningful, but we can't
+                // compute a native-vs-GBP conversion ratio without it.
+                const gbpRatio = inv.livePrice != null && inv.livePrice > 0 && inv.gbpValue != null
+                  ? inv.gbpValue / (inv.livePrice * inv.shares)
+                  : 1;
                 return (
                   <tr key={inv.id} style={{ borderBottom: "1px solid rgba(33,38,45,0.6)", background: "var(--ft-base)" }}>
                     <td style={{ padding: "6px 12px", color: "var(--ft-blue)", fontWeight: 700, fontSize: 12 }}>{inv.ticker}</td>

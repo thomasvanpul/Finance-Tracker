@@ -154,8 +154,11 @@ function buildDecisions(
     });
   }
 
+  // G10: skip unpriced positions in decision heuristics. A concentration
+  // or loss alert without a live price would be based on a stale value.
   if (portfolioGbp > 500) {
     investments.forEach((inv) => {
+      if (inv.gbpValue == null) return;
       const pct = portfolioGbp > 0 ? inv.gbpValue / portfolioGbp : 0;
       if (pct > 0.35) {
         out.push({
@@ -172,6 +175,7 @@ function buildDecisions(
   }
 
   investments.forEach((inv) => {
+    if (inv.plPercent == null || inv.gbpValue == null || inv.plGbp == null) return;
     if (inv.plPercent < -20 && inv.gbpValue > 200) {
       out.push({
         id: `loss-${inv.id}`,

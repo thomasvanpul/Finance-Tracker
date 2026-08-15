@@ -23,7 +23,9 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   );
   const totalCash = accountBreakdown.reduce((s, a) => s + a.gbpEquivalent, 0);
 
-  // Investments
+  // Investments — priced positions only (G10). Positions whose live price
+  // the market API cannot supply are excluded from the portfolio total
+  // rather than substituting zero (which read as −100% loss).
   const investments = await db.select().from(investmentsTable).where(eq(investmentsTable.userId, userId));
   let portfolioValueGbp = 0;
   let portfolioCostGbp = 0;
@@ -33,12 +35,12 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     const priceMap = new Map(prices.map((p) => [p.ticker, p]));
 
     for (const inv of investments) {
+      const priceData = priceMap.get(inv.ticker);
+      if (!priceData || typeof priceData.price !== "number" || !Number.isFinite(priceData.price)) continue;
       const shares = parseFloat(inv.shares);
       const costPrice = parseFloat(inv.costPricePerShare);
-      const priceData = priceMap.get(inv.ticker);
-      const livePrice = priceData?.price ?? 0;
-      const currency = priceData?.currency ?? "USD";
-      const currentValue = shares * livePrice;
+      const currency = priceData.currency ?? "USD";
+      const currentValue = shares * priceData.price;
       const costBasis = shares * costPrice;
       portfolioValueGbp += await toBase(currentValue, currency, baseCurrency);
       portfolioCostGbp += await toBase(costBasis, currency, baseCurrency);

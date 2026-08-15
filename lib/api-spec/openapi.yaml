@@ -1350,7 +1350,13 @@ components:
     # ── INVESTMENTS ──────────────────────────────────────────────────────────
     Investment:
       type: object
-      required: [id, ticker, name, buyDate, shares, costPricePerShare, currency, livePrice, currentValue, plGbp, plPercent, gbpValue, createdAt]
+      # priceAvailable is the honesty flag: when the market API cannot supply
+      # a live price for a ticker (rate limit, outage, unknown symbol), all
+      # price-derived fields (livePrice, currentValue, plGbp, plPercent,
+      # gbpValue) come back as null. Consumers MUST render "—" or a skeleton
+      # rather than substituting zero — a fabricated 0 renders as −100.00%
+      # against the cost basis, which is the G10 defect this contract fixes.
+      required: [id, ticker, name, buyDate, shares, costPricePerShare, currency, priceAvailable, livePrice, currentValue, plGbp, plPercent, gbpValue, createdAt]
       properties:
         id:
           type: integer
@@ -1366,16 +1372,18 @@ components:
           type: number
         currency:
           type: string
+        priceAvailable:
+          type: boolean
         livePrice:
-          type: number
+          type: [number, "null"]
         currentValue:
-          type: number
+          type: [number, "null"]
         plGbp:
-          type: number
+          type: [number, "null"]
         plPercent:
-          type: number
+          type: [number, "null"]
         gbpValue:
-          type: number
+          type: [number, "null"]
         createdAt:
           type: string
 
@@ -1410,7 +1418,11 @@ components:
 
     InvestmentSummary:
       type: object
-      required: [totalValueGbp, totalPlGbp, totalPlPercent, positions]
+      # totals sum ONLY positions with priceAvailable=true. unavailablePositions
+      # counts positions whose price the market API could not supply; those are
+      # excluded from every total. Consumers should surface the count so the
+      # user understands the roll-up is partial.
+      required: [totalValueGbp, totalPlGbp, totalPlPercent, positions, unavailablePositions]
       properties:
         totalValueGbp:
           type: number
@@ -1419,6 +1431,8 @@ components:
         totalPlPercent:
           type: number
         positions:
+          type: integer
+        unavailablePositions:
           type: integer
 
     # ── DEBTS ─────────────────────────────────────────────────────────────────

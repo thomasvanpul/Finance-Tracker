@@ -135,8 +135,8 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "investment" as ResultKind,
             primary: inv.ticker,
             secondary: inv.name,
-            tertiary: formatGbp(inv.gbpValue),
-            amountColor: inv.plGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+            tertiary: inv.gbpValue != null ? formatGbp(inv.gbpValue) : "—",
+            amountColor: (inv.plGbp ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)",
             navigateTo: "/investments",
           }))),
         ...((debts ?? [])

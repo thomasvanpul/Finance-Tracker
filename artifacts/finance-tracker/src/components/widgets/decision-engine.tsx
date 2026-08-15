@@ -69,7 +69,11 @@ function buildMiniDecisions(
     out.push({ id: "no-investments", priority: "high", title: "Not invested yet", annualCost: totalCashGbp * 0.05, href: "/portfolio" });
   }
   if (portfolioGbp > 500) {
+    // G10: concentration checks require a live price. Silently skipping
+    // unpriced positions here is correct — they weren't in portfolioGbp
+    // either, so a "% of portfolio" calc would divide by an unrelated total.
     investments.forEach((inv) => {
+      if (inv.gbpValue == null) return;
       const pct = portfolioGbp > 0 ? inv.gbpValue / portfolioGbp : 0;
       if (pct > 0.35) out.push({ id: `conc-${inv.id}`, priority: pct > 0.6 ? "high" : "medium", title: `${inv.ticker} is ${Math.round(pct * 100)}% of portfolio`, href: "/portfolio" });
     });

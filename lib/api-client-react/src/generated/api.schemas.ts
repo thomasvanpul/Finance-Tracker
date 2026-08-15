@@ -422,11 +422,17 @@ export interface Investment {
   shares: number;
   costPricePerShare: number;
   currency: string;
-  livePrice: number;
-  currentValue: number;
-  plGbp: number;
-  plPercent: number;
-  gbpValue: number;
+  priceAvailable: boolean;
+  /** @nullable */
+  livePrice: number | null;
+  /** @nullable */
+  currentValue: number | null;
+  /** @nullable */
+  plGbp: number | null;
+  /** @nullable */
+  plPercent: number | null;
+  /** @nullable */
+  gbpValue: number | null;
   createdAt: string;
 }
 
@@ -451,6 +457,7 @@ export interface InvestmentSummary {
   totalPlGbp: number;
   totalPlPercent: number;
   positions: number;
+  unavailablePositions: number;
 }
 
 export type DebtCurrency = typeof DebtCurrency[keyof typeof DebtCurrency];

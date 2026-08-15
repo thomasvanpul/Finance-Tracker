@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { nfmt } from "./mobile-format";
+import { isPriced } from "@/lib/investments";
 
 // Portfolio total + per-position list.
 //
@@ -27,9 +28,12 @@ interface Position {
   name: string;
   shares: number;
   costPricePerShare: number;
-  gbpValue: number;
-  plGbp: number;
-  plPercent: number;
+  priceAvailable: boolean;
+  livePrice: number | null;
+  currentValue: number | null;
+  gbpValue: number | null;
+  plGbp: number | null;
+  plPercent: number | null;
 }
 
 export function MobileInvestments() {
@@ -53,10 +57,17 @@ export function MobileInvestments() {
   }
 
   const positions: Position[] = investments as Position[];
-  const totalValue = summary?.totalValueGbp ?? positions.reduce((s, i) => s + i.gbpValue, 0);
-  const totalPl = summary?.totalPlGbp ?? positions.reduce((s, i) => s + i.plGbp, 0);
+  const priced = positions.filter(isPriced);
+  const unpricedCount = positions.length - priced.length;
+  // Totals sum priced positions only — never fabricate a zero for an
+  // unquoted ticker (see G10). The API's summary already applies the same
+  // filter, so prefer it when present.
+  const totalValue = summary?.totalValueGbp ?? priced.reduce((s, i) => s + i.gbpValue, 0);
+  const totalPl = summary?.totalPlGbp ?? priced.reduce((s, i) => s + i.plGbp, 0);
   const totalPlPct = summary?.totalPlPercent ?? 0;
-  const sorted = [...positions].sort((a, b) => b.gbpValue - a.gbpValue);
+  const sorted = [...positions].sort(
+    (a, b) => (b.gbpValue ?? -Infinity) - (a.gbpValue ?? -Infinity),
+  );
 
   return (
     <div
@@ -76,6 +87,7 @@ export function MobileInvestments() {
       <HStack paddingX={18} height={32} justify="end" align="center">
         <MonoLabel size={11} letterSpacing="0.16em">
           {sorted.length} {sorted.length === 1 ? "POSITION" : "POSITIONS"}
+          {unpricedCount > 0 ? ` · ${unpricedCount} NO QUOTE` : ""}
         </MonoLabel>
       </HStack>
 
@@ -137,8 +149,10 @@ export function MobileInvestments() {
       </div>
 
       {sorted.map((h) => {
-        const hasPl = h.plGbp !== 0 || h.plPercent !== 0;
-        const plColor = h.plGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+        // G10: unpriced positions render "—" for both P&L and £ — never
+        // "£0.00" or a "0.00%" P&L, which read as real numbers.
+        const priced = isPriced(h);
+        const plColor = priced && h.plGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)";
         return (
           <div
             key={h.id}
@@ -163,7 +177,7 @@ export function MobileInvestments() {
               <Text as="div" size={13} truncate>{h.name}</Text>
             </div>
             <div style={{ width: PL_COL_W, flexShrink: 0, textAlign: "right" }}>
-              {hasPl ? (
+              {priced ? (
                 <Text as="span" mono size={12} weight={600} color={plColor} numeric>
                   {h.plGbp >= 0 ? "+" : "−"}{nfmt(Math.abs(h.plPercent), { decimals: 2 })}%
                 </Text>
@@ -172,9 +186,13 @@ export function MobileInvestments() {
               )}
             </div>
             <div style={{ width: AMOUNT_COL_W, flexShrink: 0, textAlign: "right" }}>
-              <Text as="div" mono size={14} weight={600} numeric>
-                £{nfmt(h.gbpValue, { decimals: 2 })}
-              </Text>
+              {priced ? (
+                <Text as="div" mono size={14} weight={600} numeric>
+                  £{nfmt(h.gbpValue, { decimals: 2 })}
+                </Text>
+              ) : (
+                <Text as="div" mono size={14} color="var(--ft-dim)">—</Text>
+              )}
             </div>
           </div>
         );
