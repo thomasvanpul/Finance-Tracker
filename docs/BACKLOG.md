@@ -32,12 +32,17 @@ against production, and the current one was exposed in a chat transcript.
   and the Railway service variable with the new production string.
 - **Done when:** the old password is rejected and the app still connects.
 
-### A3 · Real migrations — TODO · Blocked by A2
-`lib/db/package.json` has only `push` and `push-force`. No history, no down
-path, and `push-force` applies destructive changes without confirming.
-- **Do:** add `drizzle-kit generate`, generate a baseline against the dev
-  branch, commit the migrations, delete `push-force`.
-- **Verify:** `cd lib/db && pnpm generate` yields no diff on a clean tree.
+### A3 · Real migrations — DONE
+`lib/db/package.json` scripts are `generate` and `migrate`; `push` and
+`push-force` both retired. Baseline migration `0000_light_caretaker.sql`
+lives at `lib/db/drizzle/` with its snapshot and journal, and dev's
+`drizzle.__drizzle_migrations` carries the baseline mark so `migrate`
+skips 0000 and applies from 0001 onward. Verified end-to-end on dev:
+generated a throwaway ALTER, ran migrate, confirmed the column and the
+new row in `__drizzle_migrations`, reverted and re-ran generate to
+`No schema changes, nothing to migrate`. Production has not yet been
+baselined — that is a follow-up when the password rotation (A2) creates
+the natural moment to touch production.
 
 ### A4 · Confirm `dev@bypass.local` is gone from production — TODO
 Code referencing it was removed and deployed; the row was never confirmed.
@@ -77,7 +82,7 @@ tools.
 
 ## C. Data model — unblocks honest UI
 
-### C1 · `account.type` column — TODO · Blocked by A3
+### C1 · `account.type` column — TODO
 The mobile home screen derives a residual (`netWorth − cash − portfolio`) and can
 only label it `OTHER`, because nothing in the schema says whether an account is
 property, pension, cash or investment. This is the one remaining compromise on
@@ -153,7 +158,7 @@ them; it is the largest remaining block of the 11,715 inline style objects.
 ### E3 · Migrate remaining pages to the primitives — TODO · Blocked by E2
 `pages/owing.tsx` is the only migrated page (239 → 207 style objects).
 
-### E4 · Break up the oversized pages — TODO · Blocked by A3
+### E4 · Break up the oversized pages — TODO
 `investments.tsx` 306KB, `analytics.tsx` 193KB, `transactions.tsx` 168KB,
 `settings.tsx` 166KB. Layout work inside files this size drifts page to page.
 
@@ -221,6 +226,12 @@ renderer for a decorative avatar is real battery and bundle cost.
   harmless, but removable.
 - **G6 · `sslmode=require` no longer verifies certificates** in newer pg
   clients. Revisit the connection config.
+- **G7 · Neon cold-start on CI.** A cold Neon compute takes ~110s to wake on
+  the first query. `drizzle-kit push` / `pull` / `migrate` all spin on
+  "Pulling schema from database…" during that time. Any CI job that shells
+  into the dev branch (migration checks, spec generation, integration tests)
+  needs a per-step timeout above two minutes, or a warm-up ping to
+  `SELECT 1` before the real command, or it will fail spuriously.
 
 ---
 
