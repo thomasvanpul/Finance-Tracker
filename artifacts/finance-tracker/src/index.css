@@ -138,6 +138,34 @@
   --radius: 0.125rem; /* near-sharp corners */
 }
 
+/* ── Responsive type scale ─────────────────────────────────────────────────
+   A real ramp. Use these tokens via `font-size: var(--ft-text-hero)` etc.
+   rather than raw pixel numbers, so the same component renders one step down
+   on a phone without an attribute-selector lookup table.
+   `premium` stays constant across viewports — it's the Numeris net-worth
+   hero tier and is deliberately not scaled. Component-callsite migration is
+   a follow-up; the tokens exist so new work can use them, and the mobile
+   amendment no longer inspects inline style strings.
+*/
+:root {
+  --ft-text-xs:      10px;
+  --ft-text-sm:      12px;
+  --ft-text-body:    14px;
+  --ft-text-md:      15px;
+  --ft-text-lg:      17px;
+  --ft-text-xl:      20px;
+  --ft-text-hero:    22px;
+  --ft-text-premium: 34px;
+}
+@media (min-width: 768px) {
+  :root {
+    --ft-text-md:   18px;
+    --ft-text-lg:   22px;
+    --ft-text-xl:   28px;
+    --ft-text-hero: 36px;
+  }
+}
+
 /* ── Motion tokens ──────────────────────────────────────────────────────────
    Use these instead of hardcoded durations so motion stays coherent as themes
    change. Never animate a numeric value itself: a figure that is mid-animation
@@ -812,13 +840,6 @@ input[type="checkbox"]:checked {
     padding: 8px 10px !important;
   }
 
-  /* ── KPI bar value text: cap at 13px in compact 3-col layout ── */
-  .ft-kpi-bar > div [style*="font-size: 16px"],
-  .ft-kpi-bar > a [style*="font-size: 16px"] {
-    font-size: 13px !important;
-    line-height: 1.2 !important;
-  }
-
   /* ── Scroll fade hint: show on mobile inside tables/panels ── */
   .ft-scroll-hint-x::after {
     background: linear-gradient(to right, transparent, var(--ft-base));
@@ -1032,41 +1053,15 @@ input[type="checkbox"]:checked {
     white-space: nowrap;
   }
 
-  /* ── Mobile type scale — 5-tier hierarchy:
-     9-10px labels · 12-13px body · 15-16px section numbers · 20-22px hero · 34px premium hero (net worth)
-     Override inline style="font-size: Xpx" via CSS attribute selectors.
-     !important overrides inline styles per CSS spec.
-     NOTE: React renders fontSize:N as font-size: Npx in HTML attributes.
-     The [style*="fontSize:"] form is dead code — only [style*="font-size:"] matches.
-     34px is intentionally NOT capped — it is the premium hero tier used for net worth on mobile. */
-
-  /* Giant heading → 22px (preserves hero hierarchy vs body text) */
-  [style*="font-size: 36px"], [style*="font-size: 40px"],
-  [style*="font-size: 32px"], [style*="font-size: 30px"] {
-    font-size: 22px !important;
-  }
-
-  /* Large → 20px */
-  [style*="font-size: 28px"], [style*="font-size: 26px"] {
-    font-size: 20px !important;
-  }
-
-  /* Medium-large → 17px */
-  [style*="font-size: 24px"], [style*="font-size: 22px"],
-  [style*="font-size: 20px"] {
-    font-size: 17px !important;
-  }
-
-  /* Slightly large → 15px (covers KPI numbers, balance amounts) */
-  [style*="font-size: 18px"] {
-    font-size: 15px !important;
-  }
-
-  /* KPI cells: tighter cap since they stack densely in grids */
-  .ft-kpi-cell [style*="font-size: 18px"],
-  .ft-kpi-cell [style*="font-size: 20px"] {
-    font-size: 13px !important;
-  }
+  /* ── Mobile type scale ─────────────────────────────────────────────────
+     The responsive `--ft-text-*` tokens defined at :root above shrink one
+     step below 768px, so components that use them (`font-size:
+     var(--ft-text-hero)` etc.) render at the mobile tier automatically.
+     There is no attribute-selector cap on inline `font-size: Xpx` any
+     more — components that hardcode pixel sizes render at those literal
+     sizes on mobile too. Migrate raw pixel values to the token as you
+     touch each page.
+  */
 
   /* Page header title */
   .ft-page-header h1,
