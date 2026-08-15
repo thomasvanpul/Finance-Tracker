@@ -27,7 +27,11 @@ function today(): string {
 
 export function MobileBudget() {
   const { data: budgets = [], isLoading } = useListBudgets();
-  const { data: txns = [] } = useListTransactions({ dateFrom: firstOfMonth(), dateTo: today() });
+  // isLoading here matters — see the zero-vs-loading rule in
+  // docs/MOBILE-CONCEPT.md. A row must not render "0% used" when the
+  // transactions query hasn't returned yet, or "nothing spent" reads the
+  // same as "still fetching".
+  const { data: txns = [], isLoading: txLoading } = useListTransactions({ dateFrom: firstOfMonth(), dateTo: today() });
 
   if (!isLoading && budgets.length === 0) {
     return (
@@ -130,6 +134,7 @@ export function MobileBudget() {
 
       {rows.map((r) => {
         const displayPct = Math.min(100, r.pct);
+        const isZero = r.spent === 0;
         const fillColor = r.over ? "var(--ft-red)" : r.pct > 80 ? "var(--ft-amber)" : "var(--ft-accent)";
         return (
           <div
@@ -141,41 +146,67 @@ export function MobileBudget() {
           >
             <HStack justify="between" align="baseline" gap={10}>
               <Text as="span" size={14}>{r.category}</Text>
-              <HStack gap={4} align="baseline">
-                <Text
-                  as="span"
-                  mono
-                  size={13}
-                  weight={600}
-                  color={r.over ? "var(--ft-red)" : "var(--ft-text)"}
-                  numeric
-                >
-                  {r.over ? "−" : ""}£{nfmt(r.over ? r.spent - r.limit : r.spent, { decimals: 2 })}
-                </Text>
-                <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
-                  / £{nfmt(r.limit, { decimals: 0 })}
-                </Text>
-              </HStack>
+              {txLoading ? (
+                // Loading state: skeleton block. Never "£0.00" while fetching.
+                <div style={{ width: 90, height: 14, background: "var(--ft-raised)" }} />
+              ) : (
+                <HStack gap={4} align="baseline">
+                  <Text
+                    as="span"
+                    mono
+                    size={13}
+                    weight={600}
+                    color={r.over ? "var(--ft-red)" : "var(--ft-text)"}
+                    numeric
+                  >
+                    {r.over ? "−" : ""}£{nfmt(r.over ? r.spent - r.limit : r.spent, { decimals: 2 })}
+                  </Text>
+                  <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
+                    / £{nfmt(r.limit, { decimals: 0 })}
+                  </Text>
+                </HStack>
+              )}
             </HStack>
             <div style={{ marginTop: 8, position: "relative", height: BAR_H }}>
-              <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
-              <div style={{ position: "absolute", inset: 0, width: `${displayPct}%`, background: fillColor }} />
-              {!r.over && r.pct < 100 && (
+              {txLoading ? (
+                // Loading bar: solid raised block, no dotted rule.
+                <div style={{ position: "absolute", inset: 0, background: "var(--ft-raised)" }} />
+              ) : isZero ? (
+                // Zero: no baseline, all-dotted the full width. Distinct from
+                // loading; distinct from a small non-zero fill. See MOBILE-
+                // CONCEPT § "Zero and loading are not the same reading".
                 <div
                   style={{
                     position: "absolute",
                     top: 0,
-                    left: `${displayPct}%`,
+                    left: 0,
                     right: 0,
                     height: BAR_H,
                     borderTop: "1px dotted var(--ft-dim)",
                   }}
                 />
+              ) : (
+                <>
+                  <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
+                  <div style={{ position: "absolute", inset: 0, width: `${displayPct}%`, background: fillColor }} />
+                  {!r.over && r.pct < 100 && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: `${displayPct}%`,
+                        right: 0,
+                        height: BAR_H,
+                        borderTop: "1px dotted var(--ft-dim)",
+                      }}
+                    />
+                  )}
+                </>
               )}
             </div>
             <HStack justify="between" align="baseline" marginTop={4}>
               <Text as="span" mono size={9} letterSpacing="0.1em" color="var(--ft-dim)">
-                {Math.round(r.pct)}%
+                {txLoading ? "…" : `${Math.round(r.pct)}%`}
               </Text>
               {r.over && (
                 <Text as="span" mono size={9} letterSpacing="0.1em" color="var(--ft-red)">

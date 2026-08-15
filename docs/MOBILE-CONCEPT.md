@@ -147,6 +147,28 @@ scheduled rows, forecast values. One rule, on every screen, immediately legible.
 No other finance app can do this consistently because no other finance app knows
 its own future — rent, salary and subscriptions have known dates here.
 
+**Dotted is about existence, not about completion.** A debt IS a real thing
+regardless of whether it has been settled. An expense IS a real thing whether or
+not the money has cleared. The mark says "this event has not happened yet in the
+world" (a future rent payment, a projected balance, an upcoming subscription
+renewal) — never "this happened but is not resolved yet". Reach for dotted on
+"unsettled" and you have picked the wrong signature. Use the appropriate status
+tag (SETTLED / PENDING / OPEN etc.) for completion state.
+
+### 1a. Zero and loading are not the same reading
+A row with a genuinely-zero value (`£0.00`, `0%`, a bar with no fill) must not
+share its rendering with the loading state (skeleton, spinner, absence). The
+zero is real information; the loading is temporary absence. On the dotted
+signature specifically, a bar at 0% shows an all-dotted rule (the whole tail is
+not-yet-real), and its numeric label reads `£0.00` explicitly — not a blank, not
+an em-dash, not the skeleton bar. Loading state renders the row shape but
+replaces the value with a skeleton block, so the eye reads "still coming" rather
+than "zero".
+
+Rule: any screen using the dotted signature at zero must handle both states
+distinctly, and the distinction is the same everywhere — literal zero in the
+label + all-dotted bar for zero; skeleton block + no dotted rule for loading.
+
 ### 2. Every value carries its native currency
 Positions span GBP, MYR and EUR across Wise, Revolut and Maybank. Foreign values
 render as a permanent two-part treatment (native, then converted), everywhere,
