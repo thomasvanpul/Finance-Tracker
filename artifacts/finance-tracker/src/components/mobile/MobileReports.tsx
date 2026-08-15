@@ -1,13 +1,24 @@
 import { useGetTransactionSummary } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
-import { formatGbp } from "@/lib/utils";
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { nfmt } from "./mobile-format";
 
-// 6-month income / expense / net-savings table using real per-month
-// TransactionSummary hooks. Earlier mocks (6-month summaries, category
-// current+prev, best/worst month indices, savings-rate widgets, YTD, 50/30/20,
-// tax, year-end outlook, milestones) removed — those either had no backing
-// API or aggregated fake summaries.
+// 6-month income / expense / net-savings table.
+//
+// Design signature devices applied:
+//   - Premium-tier 34px 6-MONTH NET headline with true minus and colour.
+//   - Two-level column header MONTH / IN / OUT / NET with hairline rule.
+//   - Fixed-width columns so figures align down the screen.
+//   - Current month sits at the bottom with a subtle accent tint on the
+//     label — it's the "still writing itself" row and dotted signature
+//     applies (it's not-yet-complete for the reporting period).
+//   - Loading row shows a skeleton block per figure; per MOBILE-CONCEPT
+//     zero-vs-loading, "still fetching" and "zero" must not share their
+//     visual reading.
+
+const MONTH_COL_W = 60;
+const FIG_COL_W = 92;
 
 function getLast6Months(): string[] {
   const months: string[] = [];
@@ -19,64 +30,105 @@ function getLast6Months(): string[] {
   return months;
 }
 
-function MonthRow({ month, isLast }: { month: string; isLast: boolean }) {
-  const { data } = useGetTransactionSummary({ month });
-  const label = new Date(`${month}-01`).toLocaleString("default", { month: "short", year: "2-digit" });
-  const now = new Date();
-  const isCurrentMonth = month === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+interface MonthRowProps { month: string; isCurrent: boolean }
 
-  if (!data) {
+function MonthRow({ month, isCurrent }: MonthRowProps) {
+  const { data, isLoading } = useGetTransactionSummary({ month });
+  const label = new Date(`${month}-01T12:00:00`).toLocaleString("default", { month: "short", year: "2-digit" });
+  const rowStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 0,
+    padding: "10px 18px",
+    // Current month is not-yet-complete → dotted per the signature.
+    borderBottom: isCurrent ? "1px dotted var(--ft-border)" : "1px solid var(--ft-border)",
+    minHeight: 44,
+  };
+  const labelStyle: React.CSSProperties = { width: MONTH_COL_W, flexShrink: 0 };
+  const figStyle: React.CSSProperties = { width: FIG_COL_W, flexShrink: 0, textAlign: "right" };
+
+  if (isLoading || !data) {
     return (
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "60px 1fr 1fr 1fr",
-          alignItems: "center",
-          gap: 8,
-          padding: "12px 14px",
-          borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-          ...(isLast ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" } : {}),
-        }}
-      >
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>{label}</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "right" }}>—</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "right" }}>—</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "right" }}>—</div>
+      <div style={rowStyle}>
+        <div style={labelStyle}>
+          <Text as="span" mono size={11} color="var(--ft-dim)" letterSpacing="0.06em">{label}</Text>
+        </div>
+        {[0, 1, 2].map((k) => (
+          <div key={k} style={figStyle}>
+            <div style={{ display: "inline-block", width: 60, height: 12, background: "var(--ft-raised)" }} />
+          </div>
+        ))}
       </div>
     );
   }
-
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "60px 1fr 1fr 1fr",
-        alignItems: "center",
-        gap: 8,
-        padding: "12px 14px",
-        borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-        ...(isLast ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" } : {}),
-      }}
-    >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: isCurrentMonth ? "var(--ft-accent)" : "var(--ft-dim)", fontWeight: isCurrentMonth ? 700 : 400 }}>
-        {label}
+    <div style={rowStyle}>
+      <div style={labelStyle}>
+        <Text
+          as="span"
+          mono
+          size={11}
+          letterSpacing="0.06em"
+          weight={isCurrent ? 700 : 400}
+          color={isCurrent ? "var(--ft-accent)" : "var(--ft-dim)"}
+        >
+          {label}
+        </Text>
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-green)", textAlign: "right" }}>
-        {formatGbp(data.totalIncome)}
+      <div style={figStyle}>
+        <Text as="span" mono size={12} color={data.totalIncome > 0 ? "var(--ft-green)" : "var(--ft-dim)"} numeric>
+          {nfmt(data.totalIncome, { decimals: 2 })}
+        </Text>
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-red)", textAlign: "right" }}>
-        {formatGbp(data.totalExpenses)}
+      <div style={figStyle}>
+        <Text as="span" mono size={12} color={data.totalExpenses > 0 ? "var(--ft-red)" : "var(--ft-dim)"} numeric>
+          {nfmt(data.totalExpenses, { decimals: 2 })}
+        </Text>
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: data.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, textAlign: "right" }}>
-        {formatGbp(data.netSavings)}
+      <div style={figStyle}>
+        <Text
+          as="span"
+          mono
+          size={12}
+          weight={700}
+          color={data.netSavings === 0 ? "var(--ft-dim)" : data.netSavings > 0 ? "var(--ft-green)" : "var(--ft-red)"}
+          numeric
+        >
+          {data.netSavings < 0 ? "−" : ""}{nfmt(Math.abs(data.netSavings), { decimals: 2 })}
+        </Text>
       </div>
     </div>
   );
 }
 
+// Six-month roll-up computed by resolving all six queries. Because we can't
+// call hooks in a loop conditionally, this component gets each summary via
+// a dedicated child that reports up. Keeping the whole roll-up honest means
+// waiting until each has data before showing a total — otherwise the
+// headline would flicker as partial data arrived.
+function useSixMonthNet(months: string[]): { net: number | null; ready: boolean } {
+  // Simplest honest read: sum the individual query results. React Query
+  // shares the cache per key, so this doesn't double-fetch after each
+  // MonthRow above already subscribed.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const summaries = months.map((m) => useGetTransactionSummary({ month: m }).data);
+  const ready = summaries.every((s) => s != null);
+  if (!ready) return { net: null, ready: false };
+  const net = summaries.reduce((sum, s) => sum + (s?.netSavings ?? 0), 0);
+  return { net, ready };
+}
+
 export function MobileReports({ onBack }: { onBack?: () => void }) {
   const [, navigate] = useLocation();
   const months = getLast6Months();
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const { net: sixMonthNet, ready } = useSixMonthNet(months);
+
+  // Even when there are no transactions yet, the screen still renders the
+  // roll-up shell (skeleton figures) rather than the empty state — a fresh
+  // user without transactions is a real thing this screen must handle.
+  const nothingAtAll = ready && sixMonthNet === 0;
 
   return (
     <div
@@ -87,45 +139,90 @@ export function MobileReports({ onBack }: { onBack?: () => void }) {
         flexDirection: "column",
         overflowY: "auto",
         paddingBottom: "calc(74px + env(safe-area-inset-bottom, 0px) + 16px)",
+        background: "var(--ft-base)",
+        color: "var(--ft-text)",
       }}
     >
       <MobileScreenHeader title="Reports" onBack={onBack} />
 
-      <div style={{ padding: "0 16px 8px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em", color: "var(--ft-dim)" }}>
-          LAST 6 MONTHS · £
+      <HStack paddingX={18} height={32} justify="end" align="center">
+        <MonoLabel size={11} letterSpacing="0.16em">LAST 6 MONTHS</MonoLabel>
+      </HStack>
+
+      <VStack paddingX={18} marginBottom={14}>
+        <MonoLabel size={11} letterSpacing="0.16em">
+          6-MONTH NET · £
+        </MonoLabel>
+        <HStack align="baseline" gap={4} marginTop={6}>
+          <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+          {ready ? (
+            <Text
+              as="span"
+              size={34}
+              weight={600}
+              letterSpacing="-0.035em"
+              color={sixMonthNet != null && sixMonthNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+              numeric
+            >
+              {sixMonthNet != null && sixMonthNet < 0 ? "−" : ""}{nfmt(Math.abs(sixMonthNet ?? 0), { decimals: 2 })}
+            </Text>
+          ) : (
+            <div style={{ width: 180, height: 34, background: "var(--ft-raised)" }} />
+          )}
+        </HStack>
+      </VStack>
+
+      {/* Column header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0,
+          padding: "0 18px 6px",
+          borderBottom: "1px solid var(--ft-border2)",
+        }}
+      >
+        <div style={{ width: MONTH_COL_W, flexShrink: 0 }}>
+          <MonoLabel as="span" size={9}>MONTH</MonoLabel>
+        </div>
+        <div style={{ width: FIG_COL_W, flexShrink: 0, textAlign: "right" }}>
+          <MonoLabel as="span" size={9}>IN</MonoLabel>
+        </div>
+        <div style={{ width: FIG_COL_W, flexShrink: 0, textAlign: "right" }}>
+          <MonoLabel as="span" size={9}>OUT</MonoLabel>
+        </div>
+        <div style={{ width: FIG_COL_W, flexShrink: 0, textAlign: "right" }}>
+          <MonoLabel as="span" size={9}>NET</MonoLabel>
         </div>
       </div>
 
-      <div style={{ padding: "0 16px" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "60px 1fr 1fr 1fr",
-            gap: 8,
-            padding: "8px 14px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.12em",
-            color: "var(--ft-dim)",
-          }}
-        >
-          <div />
-          <div style={{ textAlign: "right" }}>INCOME</div>
-          <div style={{ textAlign: "right" }}>SPEND</div>
-          <div style={{ textAlign: "right" }}>NET</div>
-        </div>
-        {months.map((m, i) => (
-          <MonthRow key={m} month={m} isLast={i === months.length - 1} />
-        ))}
-      </div>
+      {months.map((m) => (
+        <MonthRow key={m} month={m} isCurrent={m === currentMonthKey} />
+      ))}
 
-      <div style={{ padding: "16px 16px 0", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
-        Months with no transactions show as —{" "}
-        <span onClick={() => navigate("/import")} style={{ color: "var(--ft-accent)", cursor: "pointer" }}>
-          Import transactions ›
-        </span>
-      </div>
+      {nothingAtAll ? (
+        <div style={{ padding: "16px 18px" }}>
+          <MobileEmptyState
+            label="NO ACTIVITY"
+            title="No transactions in the last six months."
+            description="Import a bank statement or log a transaction manually to fill in the roll-up."
+            ctaLabel="Import"
+            onCta={() => navigate("/import")}
+          />
+        </div>
+      ) : (
+        <HStack paddingX={18} marginTop={16} align="baseline">
+          <Text as="span" mono size={11} color="var(--ft-dim)">
+            Current month is still writing —{" "}
+            <span
+              onClick={() => navigate("/import")}
+              style={{ color: "var(--ft-accent)", cursor: "pointer" }}
+            >
+              import transactions ›
+            </span>
+          </Text>
+        </HStack>
+      )}
     </div>
   );
 }
