@@ -57,6 +57,7 @@ import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -243,10 +244,10 @@ function EmergencyFundWidget() {
       </div>
 
       {/* Meta */}
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+      <Text as="div" mono size={9} color="var(--ft-dim)">
         <span className="pnum">{formatGbp(liquidSavings)}</span> liquid
         {avgMonthlyExpenses > 0 && ` · ${formatGbp(avgMonthlyExpenses)}/mo avg`}
-      </div>
+      </Text>
 
       {/* Progress bar */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6 }}>
@@ -312,8 +313,8 @@ export function NetWorthMilestonesWidget() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 140 }}>
       <div style={{ padding: "10px 14px 6px", borderBottom: "1px solid var(--ft-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: "var(--ft-dim)", textTransform: "uppercase" }}>NET WORTH MILESTONES</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>{reached.length} / {MILESTONES_GBP.length}</span>
+        <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.12em">NET WORTH MILESTONES</Text>
+        <Text as="span" mono size={9} color="var(--ft-muted)">{reached.length} / {MILESTONES_GBP.length}</Text>
       </div>
       <div style={{ flex: 1, padding: "10px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
@@ -334,9 +335,9 @@ export function NetWorthMilestonesWidget() {
         </div>
         {next && (
           <>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+            <Text as="div" mono size={9} color="var(--ft-muted)">
               Next: {formatMilestone(next)} · {formatMilestone(Math.round(next - netWorth))} to go
-            </div>
+            </Text>
             <div style={{ height: 4, background: "var(--ft-border)", marginTop: 2 }}>
               <div style={{ height: "100%", width: `${progress}%`, background: "var(--ft-green)", transition: "width 0.15s ease" }} />
             </div>
@@ -554,7 +555,7 @@ function SpendingVelocityPanel() {
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 14, minWidth: 0, gap: 8 }}>
         <div style={{ minWidth: 0 }}>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, whiteSpace: "nowrap" }}>
-            <AnimatedSpendRate value={avgDailyThis} /><span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)" }}>/day</span>
+            <AnimatedSpendRate value={avgDailyThis} /><Text as="span" size={11} weight={400} color="var(--ft-dim)">/day</Text>
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             vs <span className="pnum">{formatGbp(avgDailyPrev)}</span>/day last month
@@ -702,7 +703,7 @@ function AiInsightsStrip() {
   return (
     <div style={{ marginTop: 10 }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
-        <span style={{ color: "var(--ft-accent)" }}>·</span> Insights
+        <Text as="span" color="var(--ft-accent)">·</Text> Insights
       </div>
       <div className="ft-dashboard-insights">
         {insightRows.map(({ label, text }) => (
@@ -886,14 +887,9 @@ function AiInsightsPanel({ netWorth, income, expenses, savingsRate, topCategorie
                 }}
               >
                 <Zap size={10} style={{ color: "var(--ft-accent)", flexShrink: 0, marginTop: 1, opacity: 0.8 }} />
-                <span style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  color: "var(--ft-muted)",
-                  lineHeight: 1.6,
-                }}>
+                <Text as="span" mono size={10} color="var(--ft-muted)" lineHeight={1.6}>
                   {text}
-                </span>
+                </Text>
               </div>
             ))
         }
@@ -996,17 +992,10 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
           background: "var(--ft-raised)",
           gap: 12,
         }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>⤢</span>
-          <span style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "var(--ft-accent)",
-          }}>
+          <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.08em">⤢</Text>
+          <Text as="span" mono upper size={10} weight={700} color="var(--ft-accent)" letterSpacing="0.12em">
             {def?.label ?? id}
-          </span>
+          </Text>
           {def?.description && (
             <span style={{
               fontFamily: "var(--font-mono)",
@@ -1486,12 +1475,12 @@ function WidgetPickerRow({ id, onAdd, onHover }: {
         width: "100%",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: hovered ? "var(--ft-accent)" : "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+      <Text as="div" mono upper size={10} weight={700} color={hovered ? "var(--ft-accent)" : "var(--ft-text)"} letterSpacing="0.06em">
         {def?.label ?? id}
-      </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5 }}>
+      </Text>
+      <Text as="div" mono size={9} color="var(--ft-dim)" lineHeight={1.5}>
         {def?.description ?? ""}
-      </div>
+      </Text>
     </button>
   );
 }
@@ -1530,7 +1519,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
             touchAction: "manipulation",
           }}
         >
-          <span style={{ fontSize: 14, lineHeight: 1 }}>{open ? "−" : "+"}</span>
+          <Text as="span" size={14} lineHeight={1}>{open ? "−" : "+"}</Text>
           {open ? "Close" : `Add widgets (${disabledIds.length})`}
         </button>
         {open && (
@@ -1560,9 +1549,9 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
                   onTouchEnd={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-border)"; }}
                 >
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.04em" }}>
+                    <Text as="span" mono size={10} weight={700} color="var(--ft-text)" letterSpacing="0.04em">
                       {def?.label ?? id}
-                    </span>
+                    </Text>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.06em", border: "1px solid color-mix(in srgb, var(--ft-accent) 30%, transparent)", padding: "1px 4px" }}>
                       {isFull ? "FULL" : "HALF"}
                     </span>
@@ -1606,7 +1595,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
         onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; e.currentTarget.style.color = "var(--ft-accent)"; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ft-border2)"; e.currentTarget.style.color = open ? "var(--ft-accent)" : "var(--ft-dim)"; }}
       >
-        <span style={{ fontSize: 12, lineHeight: 1 }}>{open ? "−" : "+"}</span>
+        <Text as="span" size={12} lineHeight={1}>{open ? "−" : "+"}</Text>
         {open ? "Hide widget picker" : `Add widget (${disabledIds.length} available)`}
       </button>
 
@@ -1649,9 +1638,9 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
               alignItems: "center",
               justifyContent: "space-between",
             }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              <MonoLabel as="span" size={9} letterSpacing="0.06em">
                 Preview — {previewDef?.label ?? "widget"}
-              </span>
+              </MonoLabel>
               {previewId && (
                 <button
                   onClick={() => { onAdd(previewId); setOpen(false); }}
@@ -1777,7 +1766,7 @@ function DashboardKpiBar({
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", padding: "10px 12px 10px 14px", gap: 6, minHeight: 72, maxWidth: "48%", overflow: "hidden" }}>
             {savingsCell && (
               <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" }}>SAVED</span>
+                <MonoLabel as="span" size={7} letterSpacing="0.12em">SAVED</MonoLabel>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: savingsCell.valueColor ?? "var(--ft-green)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {savingsCell.value}
                 </span>
@@ -1785,7 +1774,7 @@ function DashboardKpiBar({
             )}
             {spendCell && (
               <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" }}>SPEND</span>
+                <MonoLabel as="span" size={7} letterSpacing="0.12em">SPEND</MonoLabel>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: spendCell.valueColor ?? "var(--ft-red)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {spendCell.value}
                 </span>
@@ -1854,18 +1843,10 @@ function DashboardKpiBar({
         minWidth: 110,
         gap: 5,
       }}>
-        <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1 }}>·</span>
-        <span style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 9,
-          fontWeight: 700,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: "var(--ft-muted)",
-          whiteSpace: "nowrap",
-        }}>
+        <Text as="span" mono size={12} color="var(--ft-accent)" lineHeight={1}>·</Text>
+        <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.12em" nowrap>
           {dashboardLabel}
-        </span>
+        </Text>
       </div>
 
       {/* KPI cells */}
@@ -2043,9 +2024,9 @@ function RecentTransactionsWidgetInline() {
   if (txs.length === 0) {
     return (
       <div style={{ padding: "16px 12px" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+        <Text as="span" mono size={10} color="var(--ft-dim)">
           No transactions yet
-        </span>
+        </Text>
       </div>
     );
   }
@@ -2088,9 +2069,9 @@ function RecentTransactionsWidgetInline() {
           }}
           className="ft-tx-row"
         >
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+          <Text as="span" mono size={9} color="var(--ft-dim)">
             {tx.date.slice(5).replace("-", "/")}
-          </span>
+          </Text>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {tx.description}
           </span>
@@ -2176,8 +2157,8 @@ function DashboardOverview() {
       {/* Demo mode banner */}
       {isDemo && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 12px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-amber)" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em" }}>DEMO</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Sample data — add accounts and transactions to see your real dashboard</span>
+          <Text as="span" mono size={9} weight={700} color="var(--ft-amber)" letterSpacing="0.1em">DEMO</Text>
+          <Text as="span" mono size={9} color="var(--ft-dim)">Sample data — add accounts and transactions to see your real dashboard</Text>
           <a href="/import" style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", fontWeight: 700, textDecoration: "none", letterSpacing: "0.06em", flexShrink: 0 }}>IMPORT →</a>
         </div>
       )}
@@ -2741,9 +2722,9 @@ export default function Dashboard() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
               <span style={{ color: "var(--ft-accent)" }}>·</span> CUSTOMIZE MODE — drag widgets to rearrange · hover for controls · click [EXIT CUSTOMIZE] when done
             </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+            <Text as="span" mono size={9} color="var(--ft-dim)">
               {enabledIds.length} widget{enabledIds.length !== 1 ? "s" : ""} active
-            </span>
+            </Text>
           </div>
 
           {/* Saved Views toolbar */}
@@ -2831,10 +2812,10 @@ export default function Dashboard() {
                         paddingLeft: 10,
                         gap: 8,
                       }}>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ft-accent)" }}>⠿</span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
+                        <Text as="span" mono size={14} color="var(--ft-accent)">⠿</Text>
+                        <MonoLabel as="span" size={8} color="var(--ft-accent)" letterSpacing="0.1em">
                           {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
-                        </span>
+                        </MonoLabel>
                       </div>
                     </div>
                   );
@@ -2874,10 +2855,10 @@ export default function Dashboard() {
                     cursor: "grabbing",
                     minHeight: 48,
                   }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>⠿</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+                    <Text as="span" mono size={12} color="var(--ft-dim)">⠿</Text>
+                    <MonoLabel as="span" size={10} color="var(--ft-accent)" letterSpacing="0.08em">
                       {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
-                    </span>
+                    </MonoLabel>
                   </div>
                 ) : null}
               </DragOverlay>
@@ -2964,10 +2945,10 @@ export default function Dashboard() {
                       cursor: "grabbing",
                       minHeight: 48,
                     }}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>⠿</span>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+                      <Text as="span" mono size={12} color="var(--ft-dim)">⠿</Text>
+                      <MonoLabel as="span" size={10} color="var(--ft-accent)" letterSpacing="0.08em">
                         {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
-                      </span>
+                      </MonoLabel>
                     </div>
                   ) : null}
                 </DragOverlay>

@@ -21,7 +21,9 @@ import type { ElementType, ReactNode, MouseEventHandler, AriaRole } from "react"
 //   - `truncate` is available for identifier text (names, descriptions) —
 //     NOT for numeric values. Enforced by making them mutually exclusive.
 
-type Weight = 400 | 500 | 600 | 700;
+// CSS accepts 100–900 in 100s plus "normal" | "bold" | number. Keep numeric
+// so callers don't need to think — the migration script emits raw numbers.
+type Weight = number;
 type Align = "left" | "center" | "right";
 
 interface TextBase {

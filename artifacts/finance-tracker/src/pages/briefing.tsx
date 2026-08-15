@@ -8,6 +8,7 @@ import {
 import { formatGbp } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { FileText, RefreshCw, Loader2, AlertTriangle, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -221,7 +222,7 @@ function SectionHeader({ code, title, accentColor }: { code: string; title: stri
         border: "1px solid rgba(79,140,255,0.18)", padding: "1px 5px",
         fontWeight: 700,
       }}>{code}</span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-muted)", letterSpacing: "0.14em", textTransform: "uppercase" }}>{title}</span>
+      <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.14em">{title}</Text>
       <div style={{ flex: 1, height: 1, background: "var(--ft-border2)", marginLeft: 4 }} />
     </div>
   );
@@ -256,12 +257,12 @@ function KeyFindingRow({ finding, index }: { finding: string; index: number }) {
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ width: 36, flexShrink: 0, background: "var(--ft-raised)", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", fontWeight: 700 }}>
+        <Text as="span" mono size={9} weight={700} color="var(--ft-accent)">
           {String(index + 1).padStart(2, "0")}
-        </span>
+        </Text>
       </div>
       <div style={{ padding: "10px 14px", flex: 1 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.65 }}>{finding}</span>
+        <Text as="span" mono size={12} color="var(--ft-text)" lineHeight={1.65}>{finding}</Text>
       </div>
     </div>
   );
@@ -296,7 +297,7 @@ function SpendingCatRow({
       onTouchEnd={() => setHov(false)}
       onTouchCancel={() => setHov(false)}
     >
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{cat}</span>
+      <Text as="span" mono size={11} color="var(--ft-text)">{cat}</Text>
       {!isMobile && (
         <div style={{ height: 4, background: "var(--ft-border2)", borderRadius: 1, overflow: "hidden" }}>
           <div style={{ width: `${barWidth}%`, height: "100%", background: barColor, borderRadius: 1, transition: "width 0.12s ease" }} />
@@ -402,14 +403,14 @@ function RecommendationRow({
       </div>
       <div style={{ padding: "11px 14px", flex: 1 }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 4, lineHeight: 1.5 }}>{rec.action}</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.5 }}>
+        <Text as="div" mono size={10} color="var(--ft-dim)" lineHeight={1.5}>
           <span style={{ color: "var(--ft-accent)", marginRight: 5 }}>↗</span>{rec.impact}
-        </div>
+        </Text>
       </div>
       <div style={{ flexShrink: 0, display: "flex", alignItems: "center", padding: "0 12px" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+        <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
           R{String(index + 1).padStart(2, "0")}
-        </span>
+        </Text>
       </div>
     </div>
   );
@@ -446,7 +447,7 @@ function RiskRow({
           {risk.level}
         </span>
       </div>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.65 }}>{risk.description}</span>
+      <Text as="span" mono size={11} color="var(--ft-text)" lineHeight={1.65}>{risk.description}</Text>
     </div>
   );
 }
@@ -572,9 +573,9 @@ export default function Briefing() {
         actions={
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {generatedAgo != null && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+              <Text as="span" mono size={9} color="var(--ft-dim)">
                 Generated {generatedAgo < 1 ? "just now" : `${generatedAgo}m ago`}
-              </span>
+              </Text>
             )}
             <button
               type="button"
@@ -607,12 +608,12 @@ export default function Briefing() {
           padding: "6px 16px", marginBottom: 16,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
+          <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.08em">
             INTELLIGENCE REPORT
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.08em" }}>
+          </Text>
+          <Text as="span" mono size={9} color="var(--ft-accent)" letterSpacing="0.08em">
             {monthLabel(ym)}
-          </span>
+          </Text>
         </div>
       ) : (
         <div style={{
@@ -737,9 +738,9 @@ export default function Briefing() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", letterSpacing: "0.06em", marginBottom: 4 }}>
               Generating {monthLabel(ym)} Briefing
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+            <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.06em">
               Analysing spending, budgets, investments and goals…
-            </div>
+            </Text>
           </div>
         </div>
       )}
@@ -762,9 +763,9 @@ export default function Briefing() {
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: rating?.color, letterSpacing: "0.04em" }}>
                     {rating?.label}
                   </div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                  <Text as="div" mono size={9} color="var(--ft-dim)">
                     {briefing.situationRating === "strong" ? "All metrics healthy" : briefing.situationRating === "healthy" ? "Generally on track" : briefing.situationRating === "cautious" ? "Some areas need attention" : "Immediate action required"}
-                  </div>
+                  </Text>
                 </div>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 1, background: "var(--ft-border)" }}>
@@ -788,9 +789,9 @@ export default function Briefing() {
             {generatedAgo != null && (
               <div style={{ borderTop: "1px solid var(--ft-border)", padding: "4px 18px", display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-green)", flexShrink: 0 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+                <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
                   Generated {generatedAgo < 1 ? "just now" : `${generatedAgo}m ago`} · Data current as of session load
-                </span>
+                </Text>
               </div>
             )}
           </div>
@@ -836,7 +837,7 @@ export default function Briefing() {
                     />
                   ))}
                   <div style={{ padding: "6px 12px", borderTop: "1px solid var(--ft-border)", background: "var(--ft-raised)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>TOTAL SPEND</span>
+                    <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.08em">TOTAL SPEND</Text>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)" }}>
                       <span className="pnum">{formatGbp(spendingCatData.total)}</span>
                     </span>
@@ -883,9 +884,9 @@ export default function Briefing() {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 1, background: "var(--ft-border)" }}>
                   <div style={{ background: "var(--ft-surface)", padding: "14px 16px", borderTop: "2px solid var(--ft-cyan)", minWidth: isMobile ? 0 : 160, flex: isMobile ? "1 1 100%" : undefined }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Portfolio Value</div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)" }}>
+                    <Text as="div" mono size={18} weight={700} color="var(--ft-text)">
                       <span className="pnum">{formatGbp((invSummary as { totalValueGbp: number }).totalValueGbp)}</span>
-                    </div>
+                    </Text>
                   </div>
                   {investmentsRaw && (investmentsRaw as Investment[]).length > 0 && (
                     <div style={{ flex: 1, background: "var(--ft-surface)", padding: "14px 16px", borderTop: "2px solid var(--ft-border2)" }}>
@@ -940,13 +941,13 @@ export default function Briefing() {
             borderTop: "1px solid var(--ft-border)", paddingTop: 12,
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+            <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
               GENERATED {new Date(briefing.generatedAt).toLocaleString("en-GB")} · POWERED BY GOOGLE GEMINI
-            </span>
+            </Text>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+              <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
                 FINANCE TRACKER · {monthLabel(ym)} REPORT
-              </span>
+              </Text>
               <button
                 type="button"
                 onClick={generate}

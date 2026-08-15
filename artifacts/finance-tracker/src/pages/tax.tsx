@@ -19,6 +19,7 @@ import {
 import { FileText, Plus, Trash2, Download, Info, Clock, CalendarDays, ShieldCheck } from "lucide-react";
 import { FtDropdown } from "@/components/ft-dropdown";
 import type { FtDropdownOption } from "@/components/ft-dropdown";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -462,9 +463,9 @@ function IncomeBandLegendItem({ b, grossSalary, sym: legendSym }: { b: BandSegme
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
       <div style={{ width: 10, height: 10, background: b.color, opacity, flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+      <Text as="span" mono size={9} color="var(--ft-dim)">
         {b.rate} · {fmt(b.amount, legendSym)} · {pct.toFixed(0)}%
-      </span>
+      </Text>
     </div>
   );
 }
@@ -499,7 +500,7 @@ function DisposalRow({ d, sym: disposalSym, deleteConfirmId, onDelete, holdingLa
           style={deleteConfirmId === d.id ? { background: "var(--ft-red)", color: "#fff" } : undefined}
         >
           {deleteConfirmId === d.id
-            ? <span style={{ fontSize: 8, fontWeight: 700, fontFamily: "var(--font-mono)" }}>DEL?</span>
+            ? <Text as="span" mono size={8} weight={700}>DEL?</Text>
             : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />}
         </Button>
       </div>
@@ -691,17 +692,17 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
         <div style={{ padding: "14px 16px", borderRight: (!isMobile && isCurrentYear) ? "1px solid var(--ft-border)" : "none", borderBottom: (isMobile && isCurrentYear) ? "1px solid var(--ft-border)" : "none" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <CalendarDays style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
+            <MonoLabel as="span" size={8} letterSpacing="0.1em">
               Tax Year Progress — 6 Apr {startYear} to 5 Apr {startYear + 1}
-            </span>
+            </MonoLabel>
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+            <Text as="span" mono size={10} color="var(--ft-muted)">
               Day {elapsed} of {totalDays}
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: progressPct > 80 ? "var(--ft-amber)" : "var(--ft-text)" }}>
+            </Text>
+            <Text as="span" mono size={11} weight={700} color={progressPct > 80 ? "var(--ft-amber)" : "var(--ft-text)"}>
               {progressPct.toFixed(0)}%
-            </span>
+            </Text>
           </div>
           <div style={{ height: 8, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden", marginBottom: 6 }}>
             <div style={{
@@ -723,19 +724,19 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
           <div style={{ padding: "14px 16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <Clock style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
+              <MonoLabel as="span" size={8} letterSpacing="0.1em">
                 Self-Assessment Deadlines
-              </span>
+              </MonoLabel>
             </div>
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+                <Text as="span" mono size={10} color="var(--ft-muted)">
                   Paper return
-                </span>
+                </Text>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                  <Text as="span" mono size={10} color="var(--ft-dim)">
                     31 Oct {paperSADeadline.getFullYear()}
-                  </span>
+                  </Text>
                   <span style={{
                     fontFamily: "var(--font-mono)", fontSize: 8, padding: "2px 6px",
                     background: now > paperSADeadline ? "rgba(248,81,73,0.12)" : "rgba(139,148,158,0.1)",
@@ -747,13 +748,13 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+                <Text as="span" mono size={10} color="var(--ft-muted)">
                   Online + tax payment
-                </span>
+                </Text>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                  <Text as="span" mono size={10} color="var(--ft-dim)">
                     31 Jan {onlineSADeadline.getFullYear()}
-                  </span>
+                  </Text>
                   <span style={{
                     fontFamily: "var(--font-mono)", fontSize: 8, padding: "2px 6px",
                     background: daysToSA <= 30 ? "rgba(248,81,73,0.15)" : daysToSA <= 90 ? "rgba(245,158,11,0.12)" : "rgba(139,148,158,0.1)",
@@ -778,9 +779,9 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <ShieldCheck style={{ width: 12, height: 12, color: "var(--ft-green)", flexShrink: 0 }} />
           <div>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+            <MonoLabel as="span" size={9} letterSpacing="0.08em">
               ISA Contributions ({selectedYear})
-            </span>
+            </MonoLabel>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: yearISA > 0 ? "var(--ft-green)" : "var(--ft-dim)", marginLeft: 8 }}>
               {fmt(yearISA, sym)}
             </span>
@@ -1042,7 +1043,7 @@ export default function Tax() {
         {rules.cgtNote && (
           <div className="flex items-start gap-2 px-4 py-2.5 border-b text-xs" style={{ borderColor: "var(--ft-border)", background: "rgba(139,148,158,0.06)" }}>
             <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: rules.noCgt ? "var(--ft-blue)" : "var(--ft-dim)" }} />
-            <span style={{ color: rules.noCgt ? "var(--ft-text)" : "var(--ft-dim)", lineHeight: 1.6 }}>{rules.cgtNote}</span>
+            <Text as="span" color={rules.noCgt ? "var(--ft-text)" : "var(--ft-dim)"} lineHeight={1.6}>{rules.cgtNote}</Text>
           </div>
         )}
 
@@ -1089,9 +1090,9 @@ export default function Tax() {
             {rules.cgtAllowance > 0 && (
               <div className="px-4 py-3 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-base)" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>
+                  <MonoLabel as="span" size={9} letterSpacing="0.08em">
                     CGT Allowance — {selectedYear}
-                  </span>
+                  </MonoLabel>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: netGains > rules.cgtAllowance ? "var(--ft-red)" : "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>
                     <span className="pnum">{fmt(netGains, sym)}</span>{" "}
                     <span style={{ fontWeight: 400, color: "var(--ft-dim)" }}>/ <span className="pnum">{fmt(rules.cgtAllowance, sym)}</span></span>
@@ -1119,7 +1120,7 @@ export default function Tax() {
             <div style={{ padding: "40px 24px", textAlign: "center", background: "var(--ft-base)", borderBottom: "1px solid var(--ft-border)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, color: "var(--ft-border2)", marginBottom: 8, lineHeight: 1 }}>—</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 4 }}>No disposals for {selectedYear}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Record a disposal to calculate your CGT liability</div>
+              <MonoLabel as="div" size={9} letterSpacing="0.08em">Record a disposal to calculate your CGT liability</MonoLabel>
             </div>
           )}
           {yearDisposals.map(d => (
@@ -1163,9 +1164,9 @@ export default function Tax() {
         {rules.shelterLimit > 0 && (
           <div className="px-4 py-3 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-base)" }}>
             <div className="flex items-center justify-between mb-1.5">
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>
+              <MonoLabel as="span" size={9} letterSpacing="0.08em">
                 {rules.shelterName} Allowance Used
-              </span>
+              </MonoLabel>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: shelterPct > 80 ? "var(--ft-amber)" : "var(--ft-blue)", fontVariantNumeric: "tabular-nums" }}>
                 <span className="pnum">{fmt(yearShelterTotal, sym)}</span> / <span className="pnum">{fmt(rules.shelterLimit, sym)}</span>
               </span>
@@ -1250,7 +1251,7 @@ export default function Tax() {
           </div>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 16px", background: "var(--ft-surface)", borderTop: "1px solid var(--ft-border)" }}>
             <Info style={{ width: 13, height: 13, flexShrink: 0, marginTop: 1, color: "var(--ft-dim)" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.6 }}>For information only. Rates may change year to year and vary by individual circumstances. Consult a qualified tax professional for personalised advice.</span>
+            <Text as="span" mono size={9} color="var(--ft-dim)" lineHeight={1.6}>For information only. Rates may change year to year and vary by individual circumstances. Consult a qualified tax professional for personalised advice.</Text>
           </div>
         </div>
       )}
@@ -1293,7 +1294,7 @@ export default function Tax() {
               </div>
               {disposalForm.proceeds && disposalForm.costBasis && (
                 <div style={{ padding: "8px 12px", border: "1px solid var(--ft-border2)", background: "var(--ft-surface)", fontFamily: "var(--font-mono)", fontSize: 11, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", fontSize: 9 }}>Gain / Loss</span>
+                  <Text as="span" upper size={9} color="var(--ft-dim)" letterSpacing="0.06em">Gain / Loss</Text>
                   <span className="pnum" style={{ color: (parseFloat(disposalForm.proceeds) - parseFloat(disposalForm.costBasis)) >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, fontSize: 14 }}>
                     {fmt(parseFloat(disposalForm.proceeds) - parseFloat(disposalForm.costBasis), sym)}
                   </span>

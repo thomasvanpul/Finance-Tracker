@@ -32,6 +32,7 @@ import {
   ChevronLeft,
   Camera,
 } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── Data model ───────────────────────────────────────────────────────────────
 
@@ -278,7 +279,7 @@ function ReceiptUploadZone({
           title="Click to view full receipt"
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>✓ Receipt attached</span>
+          <Text as="span" mono size={9} color="var(--ft-green)">✓ Receipt attached</Text>
           <button
             onClick={onClear}
             style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.05em", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", cursor: "pointer" }}
@@ -314,9 +315,9 @@ function ReceiptUploadZone({
         transition: "border-color 0.15s, background 0.15s",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.05em" }}>
+      <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.05em">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 5 }}><path d="M1 3.5A1.5 1.5 0 012.5 2h.5l.75-1h3.5L8 2h.5A1.5 1.5 0 0110 3.5v5A1.5 1.5 0 018.5 10h-5A1.5 1.5 0 012 8.5v-5z"/><circle cx="6" cy="6" r="1.5"/></svg>Drop receipt photo here or click to upload
-      </div>
+      </Text>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-raised)", marginTop: 4 }}>
         JPEG · PNG · WEBP
       </div>
@@ -394,9 +395,9 @@ function ReceiptAnalysisPanel({
   if (status === "error") {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)" }}>
+        <Text as="span" mono size={9} color="var(--ft-red)">
           Error: {error}
-        </span>
+        </Text>
         <button onClick={analyze} style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", cursor: "pointer" }}>
           Retry
         </button>
@@ -419,7 +420,7 @@ function ReceiptAnalysisPanel({
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {analysis.items.map((item, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)" }}>
-                <span style={{ color: "var(--ft-muted)" }}>{item.name}</span>
+                <Text as="span" color="var(--ft-muted)">{item.name}</Text>
                 <span className="pnum" style={{ color: "var(--ft-text)" }}>£{item.price.toFixed(2)}</span>
               </div>
             ))}
@@ -438,7 +439,7 @@ function ReceiptAnalysisPanel({
               </>
             )}
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2 }}>
-              <span style={{ color: "var(--ft-text)" }}>Total</span>
+              <Text as="span" color="var(--ft-text)">Total</Text>
               <span className="pnum" style={{ color: "var(--ft-text)" }}>£{analysis.total.toFixed(2)}</span>
             </div>
           </div>
@@ -458,9 +459,9 @@ function ReceiptAnalysisPanel({
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
               <div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: appliedIdx === i ? "#A78BFA" : "var(--ft-text)" }}>
+                <Text as="span" mono size={10} weight={700} color={appliedIdx === i ? "#A78BFA" : "var(--ft-text)"}>
                   {sug.label}
-                </span>
+                </Text>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginLeft: 6 }}>
                   {sug.description}
                 </span>
@@ -585,7 +586,7 @@ function ReceiptViewerModal({
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   {Object.entries(sug.shares).map(([member, share]) => (
                     <div key={member} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)" }}>
-                      <span style={{ color: "var(--ft-muted)" }}>{member}</span>
+                      <Text as="span" color="var(--ft-muted)">{member}</Text>
                       <span className="pnum" style={{ color: "var(--ft-text)" }}>£{(share ?? 0).toFixed(2)}</span>
                     </div>
                   ))}
@@ -1332,9 +1333,9 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
             <span className="pnum" style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>
               {formatGbp(total)}
             </span>
-            <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+            <Text as="span" mono size={9} color="var(--ft-dim)">
               {groupExpenses.length} expense{groupExpenses.length !== 1 ? "s" : ""}
-            </span>
+            </Text>
           </div>
           {myBalance !== null && (
             <div style={{ marginTop: 4 }}>
@@ -1807,9 +1808,9 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
                 {bal > 0.005 ? "+" : ""}
                 {formatGbp(bal)}
               </span>
-              <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>
+              <Text as="span" mono size={9} color="var(--ft-dim)">
                 {bal > 0.005 ? "is owed" : bal < -0.005 ? "owes" : "even"}
-              </span>
+              </Text>
             </div>
           );
         })}
@@ -2258,9 +2259,9 @@ function MyNameBar({ myName, onChange, groupMembers }: MyNameBarProps) {
         </>
       ) : (
         <>
-          <span style={{ fontSize: 11, fontWeight: 600, color: myName ? "var(--ft-accent)" : "var(--ft-dim)" }}>
+          <Text as="span" size={11} weight={600} color={myName ? "var(--ft-accent)" : "var(--ft-dim)"}>
             {myName || "— not set —"}
-          </span>
+          </Text>
           <button
             onClick={() => {
               setDraft(myName);
@@ -2570,9 +2571,9 @@ export default function SplitPage() {
     [split]`
             }</pre>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ft-muted)", marginBottom: 4 }}>No groups yet</div>
-            <div style={{ fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.5 }}>
+            <Text as="div" size={10} color="var(--ft-dim)" lineHeight={1.5}>
               Create a group to split bills<br />and track shared costs.
-            </div>
+            </Text>
           </div>
         )}
 
@@ -2864,7 +2865,7 @@ export default function SplitPage() {
   ???    ???         ???      £?.??`
             }</pre>
             <div style={{ fontSize: 11, color: "var(--ft-muted)", marginBottom: 4 }}>No expenses yet</div>
-            <div style={{ fontSize: 10, color: "var(--ft-dim)" }}>Add the first expense to start tracking.</div>
+            <Text as="div" size={10} color="var(--ft-dim)">Add the first expense to start tracking.</Text>
           </div>
         ) : filteredGroupExpenses.length === 0 ? (
           <div
@@ -2929,7 +2930,7 @@ export default function SplitPage() {
       }</pre>
       <div style={{ fontSize: 11, color: "var(--ft-muted)", textAlign: "center", lineHeight: 1.6 }}>
         Select a group from the left panel<br />
-        <span style={{ fontSize: 10, color: "var(--ft-dim)" }}>to view expenses and settle up</span>
+        <Text as="span" size={10} color="var(--ft-dim)">to view expenses and settle up</Text>
       </div>
     </div>
   );

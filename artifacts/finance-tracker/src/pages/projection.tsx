@@ -10,6 +10,7 @@ import { formatGbp } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { TrendingUp } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 const MILESTONES = [10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000, 2_000_000];
 const HORIZONS = [5, 10, 20, 30] as const;

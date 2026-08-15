@@ -1,6 +1,7 @@
 "use client";
 import { useLocation } from "wouter";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
+import { Text, MonoLabel } from "@/components/primitives";
 
 type Tool = {
   href: string;
@@ -84,15 +85,9 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
           }}>
             {tool.tag}
           </div>
-          <div style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            fontWeight: 700,
-            color: "var(--ft-text)",
-            letterSpacing: "0.06em",
-          }}>
+          <Text as="div" mono size={13} weight={700} color="var(--ft-text)" letterSpacing="0.06em">
             {tool.label}
-          </div>
+          </Text>
         </div>
         <div style={{
           fontFamily: "var(--font-mono)",
@@ -137,9 +132,9 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
         alignItems: "center",
         justifyContent: "space-between",
       }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
+        <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.08em">
           {tool.href.replace("/", "").toUpperCase()}
-        </span>
+        </Text>
         <button
           onClick={(e) => { e.stopPropagation(); onLaunch(); }}
           style={{

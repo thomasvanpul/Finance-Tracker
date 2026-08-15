@@ -15,6 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatGbp } from "@/lib/utils";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -394,24 +395,24 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 14 }}>
         <div style={{ background: "var(--ft-surface)", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Repaid</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+          <Text as="div" mono size={16} weight={700} color="var(--ft-text)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatGbp(totalPaid)}</span>
-          </div>
+          </Text>
         </div>
         <div style={{ background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-red)", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Interest</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-red)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+          <Text as="div" mono size={16} weight={700} color="var(--ft-red)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatGbp(totalInterest)}</span>
-          </div>
+          </Text>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", marginTop: 3 }}>
             <span className="pnum">{interestRatio.toFixed(1)}</span>% of total repaid
           </div>
         </div>
         <div style={{ background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-green)", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Principal</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-green)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+          <Text as="div" mono size={16} weight={700} color="var(--ft-green)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatGbp(principal)}</span>
-          </div>
+          </Text>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", marginTop: 3 }}>
             <span className="pnum">{(100 - interestRatio).toFixed(1)}</span>% of total repaid
           </div>
@@ -564,9 +565,9 @@ function OverpaymentScenarioCard({ label, months, interest, color }: Overpayment
     >
       <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color, marginBottom: 2 }}>{formatMonths(months)}</div>
-      <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>
+      <Text as="div" mono size={10} color="var(--ft-red)">
         <span className="pnum">{formatGbp(interest)}</span> interest
-      </div>
+      </Text>
     </div>
   );
 }
@@ -699,10 +700,10 @@ function RateScenarioCard({ rate, delta, principal, termYears, type }: RateScena
       <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: delta === 0 ? "var(--ft-accent)" : "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
         <span className="pnum">{rate.toFixed(1)}</span>%{delta > 0 ? ` (+${delta}%)` : ""}
       </div>
-      <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ft-text)" }}>
+      <Text as="div" mono size={13} weight={700} color="var(--ft-text)">
         <span className="pnum">{formatGbp(monthly)}</span>
-      </div>
-      <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>/ month</div>
+      </Text>
+      <Text as="div" mono size={9} color="var(--ft-dim)">/ month</Text>
     </div>
   );
 }
@@ -989,33 +990,33 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
           <div style={{ display: "flex", gap: 24, alignItems: "flex-end", marginBottom: 14, flexWrap: "wrap" as const }}>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Monthly Payment</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1, letterSpacing: "-0.025em" }}>
+              <Text as="div" mono size={28} weight={700} color="var(--ft-amber)" letterSpacing="-0.025em" lineHeight={1}>
                 <span className="pnum">{formatGbp(monthly)}</span>
-              </div>
+              </Text>
             </div>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Outstanding</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, letterSpacing: "-0.02em" }}>
+              <Text as="div" mono size={18} weight={700} color="var(--ft-text)" letterSpacing="-0.02em" lineHeight={1}>
                 <span className="pnum">{formatGbp(balance)}</span>
-              </div>
+              </Text>
             </div>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Interest</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1, letterSpacing: "-0.02em" }}>
+              <Text as="div" mono size={18} weight={700} color="var(--ft-red)" letterSpacing="-0.02em" lineHeight={1}>
                 <span className="pnum">{formatGbp(totalInterest)}</span>
-              </div>
+              </Text>
             </div>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Rate</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-muted)", lineHeight: 1 }}>
+              <Text as="div" mono size={18} weight={700} color="var(--ft-muted)" lineHeight={1}>
                 <span className="pnum">{mortgage.annualRate}</span>%
-              </div>
+              </Text>
             </div>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Remaining</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-muted)", lineHeight: 1 }}>
+              <Text as="div" mono size={18} weight={700} color="var(--ft-muted)" lineHeight={1}>
                 {formatMonths(remaining)}
-              </div>
+              </Text>
             </div>
           </div>
           {/* LTV progress bar */}

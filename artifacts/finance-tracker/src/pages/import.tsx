@@ -13,6 +13,7 @@ import {
   Clock,
   X,
 } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -394,13 +395,13 @@ function HistoryEntryItem({ entry }: HistoryEntryItemProps) {
       gap: 6,
       justifyContent: "flex-end",
     }}>
-      <span style={{ color: "var(--ft-green)" }}>·</span>
+      <Text as="span" color="var(--ft-green)">·</Text>
       {new Date(entry.date).toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
         year: "2-digit",
       })}
-      <span style={{ color: "var(--ft-border2)" }}>·</span>
+      <Text as="span" color="var(--ft-border2)">·</Text>
       <span className="pnum">{entry.count}</span> tx
     </div>
   );

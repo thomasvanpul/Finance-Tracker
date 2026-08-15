@@ -26,6 +26,7 @@ import {
 import { formatGbp } from "@/lib/utils";
 import type { Transaction } from "@workspace/api-client-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -281,9 +282,9 @@ function HealthSummaryChip({ category, spent: _spent, effectiveLimit: _eff, pct,
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ width: 6, height: 6, background: health.color, borderRadius: 0, flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isOver ? "var(--ft-red)" : "var(--ft-text)", fontWeight: isOver ? 700 : 400, whiteSpace: "nowrap" as const }}>
+      <Text as="span" mono size={10} weight={isOver ? 700 : 400} color={isOver ? "var(--ft-red)" : "var(--ft-text)"} nowrap>
         {category}
-      </span>
+      </Text>
       <div style={{ width: 32, height: 3, background: "var(--ft-border)", borderRadius: 0, overflow: "hidden", flexShrink: 0 }}>
         <div style={{ height: "100%", width: `${Math.min(pct * 100, 100)}%`, background: health.color, borderRadius: 0 }} />
       </div>
@@ -448,7 +449,7 @@ function PanelHeader({
           gap: 6,
         }}
       >
-        <span style={{ color: "var(--ft-accent)" }}>·</span>
+        <Text as="span" color="var(--ft-accent)">·</Text>
         {title}
       </div>
       {right && (
@@ -723,10 +724,10 @@ function BudgetTableRow({
             <div style={{ height: "100%", width: `${Math.min(pct * 100, 100)}%`, background: isOver ? "var(--ft-red)" : fillColor, transition: "width 0.1s ease" }} />
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", display: "flex", gap: 6, alignItems: "baseline" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: isOver ? "var(--ft-red)" : "var(--ft-text)" }}>{formatGbp(spent)}</span>
+            <Text as="span" size={12} weight={700} color={isOver ? "var(--ft-red)" : "var(--ft-text)"}>{formatGbp(spent)}</Text>
             <span>/ {formatGbp(effectiveLimit)}</span>
             {rolloverEnabled && rolloverAccumulated > 0 && (
-              <span style={{ color: "var(--ft-cyan)", fontSize: 9 }}>↻+{formatGbp(rolloverAccumulated)}</span>
+              <Text as="span" size={9} color="var(--ft-cyan)">↻+{formatGbp(rolloverAccumulated)}</Text>
             )}
           </div>
         </div>
@@ -902,12 +903,12 @@ function BudgetTableRow({
           ...heatCellStyle(pct),
         }}
       >
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: isOver ? "var(--ft-red)" : "var(--ft-text)" }}>
+        <Text as="div" mono size={13} weight={700} color={isOver ? "var(--ft-red)" : "var(--ft-text)"}>
           {formatGbp(spent)}
-        </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+        </Text>
+        <Text as="div" mono size={11} color="var(--ft-dim)">
           / {rolloverEnabled ? formatGbp(effectiveLimit) : formatGbp(budget.limit)}
-        </div>
+        </Text>
       </div>
 
       {/* vs Last Month delta */}
@@ -1019,9 +1020,9 @@ function BudgetTableRow({
         }}
       >
         {isOver ? (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", fontWeight: 700, letterSpacing: "0.04em" }}>
+          <Text as="span" mono size={9} weight={700} color="var(--ft-red)" letterSpacing="0.04em">
             OVER {formatGbp(Math.abs(rem))}
-          </span>
+          </Text>
         ) : formatGbp(rem)}
       </div>
 
@@ -1527,9 +1528,9 @@ export default function Budget() {
           <PanelHeader
             title="Budget Monitor"
             right={
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.10em", textTransform: "uppercase" as const }}>
+              <MonoLabel as="span" size={8} letterSpacing="0.10em">
                 NO CATEGORIES DEFINED
-              </span>
+              </MonoLabel>
             }
           />
           <div style={{ padding: "32px 40px", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -1727,7 +1728,7 @@ export default function Budget() {
           },
           {
             label: "Total Spent",
-            value: <span style={{ color: totalSpent > totalBudgeted ? "var(--ft-red)" : "var(--ft-text)" }}>{formatGbp(totalSpent)}</span>,
+            value: <Text as="span" color={totalSpent > totalBudgeted ? "var(--ft-red)" : "var(--ft-text)"}>{formatGbp(totalSpent)}</Text>,
             rawValue: formatGbp(totalSpent),
             color: totalSpent > totalBudgeted ? "var(--ft-red)" : "var(--ft-text)",
             sub: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`,
@@ -1745,7 +1746,7 @@ export default function Budget() {
         />
         <BudgetKpiCell
           label="% Used"
-          value={<span style={{ color: overallPct >= 1 ? "var(--ft-red)" : overallPct >= 0.8 ? "var(--ft-amber)" : "var(--ft-green)" }}>{Math.round(overallPct * 100)}%</span>}
+          value={<Text as="span" color={overallPct >= 1 ? "var(--ft-red)" : overallPct >= 0.8 ? "var(--ft-amber)" : "var(--ft-green)"}>{Math.round(overallPct * 100)}%</Text>}
           sub={overBudgetCount > 0 ? `${overBudgetCount} over limit` : "all within limits"}
           extra={
             <div style={{ marginTop: 5, height: 3, background: "var(--ft-border)", borderRadius: 0, overflow: "hidden" }}>
@@ -1755,7 +1756,7 @@ export default function Budget() {
         />
         <BudgetKpiCell
           label="Days Left"
-          value={<span style={{ color: daysLeft !== null && daysLeft <= 5 ? "var(--ft-amber)" : "var(--ft-text)" }}>{daysLeft !== null ? String(daysLeft) : "—"}</span>}
+          value={<Text as="span" color={daysLeft !== null && daysLeft <= 5 ? "var(--ft-amber)" : "var(--ft-text)"}>{daysLeft !== null ? String(daysLeft) : "—"}</Text>}
           sub={`of ${daysInMonth} in period`}
           extra={daysLeft !== null ? (
             <div style={{ marginTop: 5, height: 3, background: "var(--ft-border)", borderRadius: 0, overflow: "hidden" }}>
@@ -1819,7 +1820,7 @@ export default function Budget() {
           return (
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", border: `1px solid ${color}`, background: "color-mix(in srgb, var(--ft-surface) 90%, transparent)", padding: "4px 10px", display: "flex", gap: 6, alignItems: "center", borderRadius: 0 }}>
               <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
-              <span style={{ letterSpacing: "0.04em" }}>{msg}</span>
+              <Text as="span" letterSpacing="0.04em">{msg}</Text>
             </div>
           );
         })()}
@@ -1851,7 +1852,7 @@ export default function Budget() {
                     <span key={s} style={{ display: "flex", alignItems: "center", gap: 3 }}>
                       <span style={{ display: "inline-block", width: 6, height: 6, background: info.color, borderRadius: 0, flexShrink: 0 }} />
                       <span style={{ color: info.color, fontWeight: 700 }}>{count}</span>
-                      <span style={{ color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", fontSize: 8 }}>{s}</span>
+                      <Text as="span" upper size={8} color="var(--ft-dim)" letterSpacing="0.06em">{s}</Text>
                     </span>
                   );
                 })}
@@ -1914,18 +1915,18 @@ export default function Budget() {
               flexWrap: "wrap",
             }}
           >
-            <span style={{ fontSize: 11, color: "var(--ft-text)" }}>
+            <Text as="span" size={11} color="var(--ft-text)">
               Income:{" "}
               <strong className="pnum" style={{ color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>
                 {formatGbp(monthlyIncome)}
               </strong>
-            </span>
-            <span style={{ fontSize: 11, color: "var(--ft-text)" }}>
+            </Text>
+            <Text as="span" size={11} color="var(--ft-text)">
               Budgeted:{" "}
               <strong className="pnum" style={{ color: "var(--ft-accent)", fontVariantNumeric: "tabular-nums" }}>
                 {formatGbp(totalBudgeted)}
               </strong>
-            </span>
+            </Text>
             <span
               style={{
                 fontSize: 11,
@@ -1987,15 +1988,15 @@ export default function Budget() {
                 <div className="ft-hide-mobile" style={{ display: "flex", gap: 16, fontFamily: "var(--font-mono)", fontSize: 10 }}>
                   <span>
                     <span style={{ color: "var(--ft-dim)", fontSize: 8, textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>on track </span>
-                    <span style={{ color: "var(--ft-green)", fontWeight: 700 }}>{onTrackCount}</span>
+                    <Text as="span" weight={700} color="var(--ft-green)">{onTrackCount}</Text>
                   </span>
                   <span>
-                    <span style={{ color: "var(--ft-dim)", fontSize: 8, textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>at risk </span>
-                    <span style={{ color: atRisk.length > 0 ? "var(--ft-red)" : "var(--ft-dim)", fontWeight: 700 }}>{atRisk.length}</span>
+                    <Text as="span" upper size={8} color="var(--ft-dim)" letterSpacing="0.06em">at risk </Text>
+                    <Text as="span" weight={700} color={atRisk.length > 0 ? "var(--ft-red)" : "var(--ft-dim)"}>{atRisk.length}</Text>
                   </span>
                   {atRisk.length > 0 && (
                     <span>
-                      <span style={{ color: "var(--ft-dim)", fontSize: 8, textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>projected overspend </span>
+                      <Text as="span" upper size={8} color="var(--ft-dim)" letterSpacing="0.06em">projected overspend </Text>
                       <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{formatGbp(totalProjectedOverspend)}</span>
                     </span>
                   )}
@@ -2058,9 +2059,9 @@ export default function Budget() {
           <PanelHeader
             title="Monthly Targets"
             right={
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" as const }}>
+              <MonoLabel as="span" size={8} letterSpacing="0.12em">
                 SORTED BY % USED ▼
-              </span>
+              </MonoLabel>
             }
           />
           {/* Table scroll wrapper — desktop only; mobile renders cards above */}

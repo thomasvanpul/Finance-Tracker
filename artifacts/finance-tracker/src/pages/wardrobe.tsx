@@ -4,6 +4,7 @@ import { BotPreview, type Phase } from "@/components/ai-wanderer";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId, type SkinRarity } from "@/lib/bot-skins";
 import { PageHeader } from "@/components/page-header";
 import { Shirt, Lock } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 const RARITY_COLOR: Record<SkinRarity, string> = {
   COMMON: "var(--ft-dim)",
@@ -246,9 +247,9 @@ export default function Wardrobe() {
               alignItems: "center",
               justifyContent: "space-between",
             }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ft-muted)", fontWeight: 600, textTransform: "uppercase" }}>
+              <Text as="span" mono upper size={9} weight={600} color="var(--ft-muted)" letterSpacing="0.14em">
                 PREVIEW
-              </span>
+              </Text>
               <button
                 onClick={() => setAutoPlay(a => !a)}
                 style={{
@@ -367,9 +368,9 @@ export default function Wardrobe() {
               background: RARITY_BG[activeSkinDef.rarity],
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
+                <Text as="span" mono size={13} weight={700} color="var(--ft-text)">
                   {activeSkinDef.label}
-                </span>
+                </Text>
                 <RarityBadge rarity={activeSkinDef.rarity} />
               </div>
               <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, margin: "0 0 8px" }}>
@@ -397,12 +398,12 @@ export default function Wardrobe() {
               alignItems: "center",
               justifyContent: "space-between",
             }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--ft-muted)", fontWeight: 600, textTransform: "uppercase" }}>
+              <Text as="span" mono upper size={9} weight={600} color="var(--ft-muted)" letterSpacing="0.14em">
                 SELECT SKIN
-              </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+              </Text>
+              <Text as="span" mono size={9} color="var(--ft-dim)">
                 {unlockedCount} / {totalCount} unlocked
-              </span>
+              </Text>
             </div>
 
             {/* Skin cards */}
@@ -470,9 +471,9 @@ export default function Wardrobe() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         {/* Title row */}
                         <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5, flexWrap: "wrap" }}>
-                          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
+                          <Text as="span" mono size={13} weight={700} color="var(--ft-text)">
                             {skin.label}
-                          </span>
+                          </Text>
                           <RarityBadge rarity={skin.rarity} />
                           {isActive && (
                             <span style={{
@@ -578,7 +579,7 @@ export default function Wardrobe() {
                 lineHeight: 1.7,
               }}
             >
-              <span style={{ color: "var(--ft-accent)", fontWeight: 700 }}>COMMON</span>{" "}skins are always unlocked.{" "}
+              <Text as="span" weight={700} color="var(--ft-accent)">COMMON</Text>{" "}skins are always unlocked.{" "}
               <span style={{ color: RARITY_COLOR["EPIC"] }}>EPIC</span>{" "}unlocks via onboarding, savings target, or crypto wallet.{" "}
               <span style={{ color: RARITY_COLOR["LEGENDARY"] }}>LEGENDARY</span>{" "}requires full engagement.{" "}
               Pair skins via <a href="/settings" style={{ color: "var(--ft-accent)", textDecoration: "none", borderBottom: "1px solid var(--ft-border2)" }}>Settings → Appearance</a>.

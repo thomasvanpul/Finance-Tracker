@@ -51,6 +51,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
+import { Text, MonoLabel } from "@/components/primitives";
 
 type UpType = "income" | "expense";
 type Freq = "one-time" | "weekly" | "monthly" | "quarterly" | "yearly";
@@ -175,15 +176,9 @@ function ForecastKpiCell({
         </span>
       </div>
       <div style={{ marginBottom: 2 }}>
-        <span style={{
-          fontSize: 10,
-          color: "var(--ft-dim)",
-          fontFamily: "var(--font-mono)",
-          textTransform: "uppercase",
-          letterSpacing: "0.4px",
-        }}>
+        <MonoLabel as="span" size={10} letterSpacing="0.4px">
           Net Change
-        </span>
+        </MonoLabel>
       </div>
       <div style={{
         fontSize: 14,
@@ -195,24 +190,13 @@ function ForecastKpiCell({
         <span className="pnum">{isPositive ? "+" : ""}{formatGbp(net)}</span>
       </div>
       <div style={{ marginBottom: 2 }}>
-        <span style={{
-          fontSize: 10,
-          color: "var(--ft-dim)",
-          fontFamily: "var(--font-mono)",
-          textTransform: "uppercase",
-          letterSpacing: "0.4px",
-        }}>
+        <MonoLabel as="span" size={10} letterSpacing="0.4px">
           Projected Balance
-        </span>
+        </MonoLabel>
       </div>
-      <div style={{
-        fontSize: 12,
-        fontWeight: 600,
-        fontFamily: "var(--font-mono)",
-        color: projected >= 0 ? "var(--ft-text)" : "var(--ft-red)",
-      }}>
+      <Text as="div" mono size={12} weight={600} color={projected >= 0 ? "var(--ft-text)" : "var(--ft-red)"}>
         <span className="pnum">{formatGbp(projected)}</span>
-      </div>
+      </Text>
     </div>
   );
 }
@@ -265,11 +249,11 @@ function UpcomingRow({
             <span className={item.status === "skipped" ? "line-through" : ""}>{item.description}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isOverdue ? "var(--ft-red)" : "var(--ft-muted)", fontWeight: isOverdue ? 700 : 400 }}>
+            <Text as="span" mono size={10} weight={isOverdue ? 700 : 400} color={isOverdue ? "var(--ft-red)" : "var(--ft-muted)"}>
               {formatDate(item.dueDate)}{isOverdue ? " · OVERDUE" : ""}
-            </span>
+            </Text>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "0 4px", background: "var(--ft-raised)", color: "var(--ft-muted)" }}>{item.category}</span>
-            {item.frequency !== "once" && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "capitalize" }}>{item.frequency}</span>}
+            {item.frequency !== "once" && <Text as="span" mono size={9} color="var(--ft-dim)">{item.frequency}</Text>}
           </div>
           <div style={{ display: "flex", gap: 4 }}>
             <Select value={item.status} onValueChange={(v) => onStatusChange(item.id, v as Status)}>
@@ -295,7 +279,7 @@ function UpcomingRow({
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDelete(item.id)}
               style={deleteConfirmId === item.id ? { background: "var(--ft-red)", color: "#fff" } : undefined}>
               {deleteConfirmId === item.id
-                ? <span style={{ fontSize: 7, fontWeight: 700, fontFamily: "var(--font-mono)" }}>DEL?</span>
+                ? <Text as="span" mono size={7} weight={700}>DEL?</Text>
                 : <Trash2 className="w-3 h-3" style={{ color: "var(--ft-red)" }} />}
             </Button>
           </div>
@@ -321,7 +305,7 @@ function UpcomingRow({
         {index + 2}
       </div>
       <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", fontSize: 11, fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
-        <span style={{ color: "var(--ft-muted)" }}>{formatDate(item.dueDate)}</span>
+        <Text as="span" color="var(--ft-muted)">{formatDate(item.dueDate)}</Text>
         {isOverdue && (
           <span style={{
             fontSize: 9,
@@ -379,7 +363,7 @@ function UpcomingRow({
           style={deleteConfirmId === item.id ? { background: "var(--ft-red)", color: "#fff" } : undefined}
         >
           {deleteConfirmId === item.id
-            ? <span style={{ fontSize: 8, fontWeight: 700, fontFamily: "var(--font-mono)" }}>DEL?</span>
+            ? <Text as="span" mono size={8} weight={700}>DEL?</Text>
             : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />}
         </Button>
       </div>
@@ -902,19 +886,19 @@ export default function Upcoming() {
       {summary && (
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
           <SummaryKpiCell label="30d Outgoings" accentColor="var(--ft-red)">
-            <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-red)", lineHeight: 1 }}>
+            <Text as="div" mono size={14} weight={700} color="var(--ft-red)" lineHeight={1}>
               <span className="pnum">-{formatGbp(summary.committedOutgoings30d)}</span>
-            </div>
+            </Text>
           </SummaryKpiCell>
           <SummaryKpiCell label="30d Income" accentColor="var(--ft-green)">
-            <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-green)", lineHeight: 1 }}>
+            <Text as="div" mono size={14} weight={700} color="var(--ft-green)" lineHeight={1}>
               <span className="pnum">+{formatGbp(summary.expectedIncome30d)}</span>
-            </div>
+            </Text>
           </SummaryKpiCell>
           <SummaryKpiCell label="30d Net" accentColor={isNet30Pos ? "var(--ft-green)" : "var(--ft-red)"}>
-            <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: isNet30Pos ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
+            <Text as="div" mono size={14} weight={700} color={isNet30Pos ? "var(--ft-green)" : "var(--ft-red)"} lineHeight={1}>
               <span className="pnum">{isNet30Pos ? "+" : ""}{formatGbp(net30)}</span>
-            </div>
+            </Text>
           </SummaryKpiCell>
           <SummaryKpiCell label="Overdue" accentColor={overdueCount > 0 ? "var(--ft-red)" : "var(--ft-green)"} borderRight={false}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -923,9 +907,9 @@ export default function Upcoming() {
                   {overdueCount} item{overdueCount !== 1 ? "s" : ""}
                 </span>
               ) : (
-                <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-green)", lineHeight: 1 }}>
+                <Text as="span" mono size={14} weight={700} color="var(--ft-green)" lineHeight={1}>
                   None
-                </span>
+                </Text>
               )}
             </div>
           </SummaryKpiCell>
@@ -1076,9 +1060,9 @@ export default function Upcoming() {
             </button>
           )}
           {hasFilters && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+            <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.06em">
               {filteredItems.length} of {sortedItems.length}
-            </span>
+            </Text>
           )}
         </div>
       )}
@@ -1119,7 +1103,7 @@ export default function Upcoming() {
             <div style={{ width: 36, borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }} />
             <div className="flex-1 text-center" style={{ padding: "28px 16px" }}>
               {hasFilters ? (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>No items match the current filters.</span>
+                <Text as="span" mono size={11} color="var(--ft-dim)">No items match the current filters.</Text>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
                   <pre style={{ fontSize: 9, lineHeight: 1.4, color: "var(--ft-raised)", fontFamily: "var(--font-mono)", textAlign: "left" }}>{
@@ -1129,7 +1113,7 @@ export default function Upcoming() {
   +60d     ???         INCOME   £?.??`
                   }</pre>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>No scheduled flows yet</div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>Add bills and income to forecast your cash position.</div>
+                  <Text as="div" mono size={10} color="var(--ft-dim)">Add bills and income to forecast your cash position.</Text>
                 </div>
               )}
             </div>

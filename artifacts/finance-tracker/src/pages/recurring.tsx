@@ -7,6 +7,7 @@ import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Repeat2 } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -1609,15 +1610,15 @@ export default function RecurringPage() {
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
             <div style={{ textAlign: "right" }}>
               <div style={{ ...labelStyle, marginBottom: 2 }}>Detected patterns</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)" }}>
+              <Text as="div" mono size={16} weight={700} color="var(--ft-text)">
                 <span className="pnum">{patterns.length}</span>
-              </div>
+              </Text>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ ...labelStyle, marginBottom: 2 }}>Active rules</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-accent)" }}>
+              <Text as="div" mono size={16} weight={700} color="var(--ft-accent)">
                 <span className="pnum">{rules.filter((r) => r.isActive).length}</span>
-              </div>
+              </Text>
             </div>
           </div>
         }

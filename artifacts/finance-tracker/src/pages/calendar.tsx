@@ -5,6 +5,7 @@ import { formatGbp } from "@/lib/utils";
 import type { Transaction, UpcomingItem, Subscription } from "@workspace/api-client-react";
 import { Download, Upload, Plus, Bell, BellOff, Calendar, X, Check, AlignJustify, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -507,24 +508,16 @@ function WeekStripDayCell({ dateStr, dayName, dayNum, isToday, events }: WeekStr
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", marginBottom: 6 }}>
-        <span style={{
-          fontFamily: "var(--font-mono)", fontSize: 8,
-          color: isToday ? "var(--ft-accent)" : "var(--ft-dim)",
-          letterSpacing: "0.07em", fontWeight: isToday ? 700 : 400,
-        }}>
+        <Text as="span" mono size={8} weight={isToday ? 700 : 400} color={isToday ? "var(--ft-accent)" : "var(--ft-dim)"} letterSpacing="0.07em">
           {dayName}
-        </span>
-        <span style={{
-          fontFamily: "var(--font-mono)", fontSize: 9,
-          color: isToday ? "var(--ft-accent)" : "var(--ft-muted)",
-          letterSpacing: "0.03em",
-        }}>
+        </Text>
+        <Text as="span" mono size={9} color={isToday ? "var(--ft-accent)" : "var(--ft-muted)"} letterSpacing="0.03em">
           {dayNum}
-        </span>
+        </Text>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         {events.length === 0 ? (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-border2)" }}>—</span>
+          <Text as="span" mono size={8} color="var(--ft-border2)">—</Text>
         ) : (
           events.slice(0, 4).map((ev, j) => {
             const feedColor = PREDEFINED_FEEDS.find((f) => f.id === ev.feedId)?.color ?? "#888";
@@ -537,7 +530,7 @@ function WeekStripDayCell({ dateStr, dayName, dayNum, isToday, events }: WeekStr
           })
         )}
         {events.length > 4 && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>+{events.length - 4} more</span>
+          <Text as="span" mono size={8} color="var(--ft-dim)">+{events.length - 4} more</Text>
         )}
       </div>
     </div>
@@ -889,8 +882,8 @@ function WeekDayCell({ date, dayData, feedEvs, custEvs, onAddEvent }: WeekDayCel
       ))}
       {income > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>+{formatGbp(income)}</div>}
       {expenses > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>-{formatGbp(expenses)}</div>}
-      {billCount > 0 && <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-amber)" }}>↑ {billCount} bill{billCount !== 1 ? "s" : ""}</div>}
-      {subCount > 0 && <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-cyan)" }}>↻ {subCount} sub</div>}
+      {billCount > 0 && <Text as="div" mono size={8} color="var(--ft-amber)">↑ {billCount} bill{billCount !== 1 ? "s" : ""}</Text>}
+      {subCount > 0 && <Text as="div" mono size={8} color="var(--ft-cyan)">↻ {subCount} sub</Text>}
       {!hasAny && <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-border2)", marginTop: "auto" }}>—</div>}
       <button
         onClick={(e) => { e.stopPropagation(); onAddEvent(date); }}
@@ -926,15 +919,15 @@ function ThisWeekStrip({ enabledFeeds, feedEventMap }: { enabledFeeds: string[];
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 12px 5px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 2, height: 10, background: "var(--ft-accent)", flexShrink: 0 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>This Week in Markets</span>
+            <Text as="span" mono upper size={9} weight={700} color="var(--ft-accent)" letterSpacing="0.1em">This Week in Markets</Text>
           </div>
           {!hasAny && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>No events — enable feeds via Sources</span>
+            <Text as="span" mono size={9} color="var(--ft-dim)">No events — enable feeds via Sources</Text>
           )}
           {hasAny && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+            <Text as="span" mono size={9} color="var(--ft-dim)">
               {days.reduce((s, d) => s + d.events.length, 0)} event{days.reduce((s, d) => s + d.events.length, 0) !== 1 ? "s" : ""} this week
-            </span>
+            </Text>
           )}
         </div>
         {/* border-as-gap 7-column strip */}
@@ -1217,7 +1210,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
       <div style={{ background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 2, height: 14, background: "var(--ft-accent)", flexShrink: 0 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ft-text)" }}>{displayDate}</span>
+          <Text as="span" size={12} weight={700} color="var(--ft-text)">{displayDate}</Text>
         </div>
         <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 }}>
           <X size={12} />
@@ -1303,7 +1296,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
       {data.transactions.length === 0 && data.upcoming.length === 0 && data.subscriptions.length === 0 && feedEvents.length === 0 && customEvents.length === 0 && (
         <div style={{ padding: "24px 16px", textAlign: "center" }}>
           <div style={{ fontSize: 18, marginBottom: 6 }}>○</div>
-          <div style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>No activity this day</div>
+          <Text as="div" mono size={10} color="var(--ft-dim)">No activity this day</Text>
         </div>
       )}
     </div>
@@ -1476,7 +1469,7 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
                       {bill.description.slice(0, 8)}
                     </div>
                   ))}
-                  {billCount > 1 && <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>+{billCount - 1}</div>}
+                  {billCount > 1 && <Text as="div" mono size={8} color="var(--ft-dim)">+{billCount - 1}</Text>}
                 </div>
               )}
 
@@ -1557,7 +1550,7 @@ function AgendaView({ dayMap, feedEventMap, customEventMap, todayStr, debtEvents
       }}>
         <CalendarDays size={24} style={{ color: "var(--ft-border2)", marginBottom: 10 }} />
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", marginBottom: 4 }}>No upcoming events in the next 90 days</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-border2)" }}>Add transactions, bills, or enable market data feeds via Sources</div>
+        <Text as="div" mono size={9} color="var(--ft-border2)">Add transactions, bills, or enable market data feeds via Sources</Text>
       </div>
     );
   }
@@ -1612,9 +1605,9 @@ function AgendaView({ dayMap, feedEventMap, customEventMap, todayStr, debtEvents
             display: "flex", alignItems: "center", gap: 8,
           }}>
             <div style={{ width: 2, height: 10, background: "var(--ft-border2)", flexShrink: 0 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600 }}>
+            <Text as="span" mono upper size={8} weight={600} color="var(--ft-muted)" letterSpacing="0.1em">
               {fmtWeekRange(week)}
-            </span>
+            </Text>
           </div>
           {days.map(({ date: ds, events: dayEvs }) => (
             <div key={ds}>
@@ -1643,7 +1636,7 @@ function AgendaView({ dayMap, feedEventMap, customEventMap, todayStr, debtEvents
                       {TYPE_LABELS[ev.type]}
                     </span>
                   ))}
-                  {dayEvs.length > 4 && <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>+{dayEvs.length - 4}</span>}
+                  {dayEvs.length > 4 && <Text as="span" mono size={9} color="var(--ft-dim)">+{dayEvs.length - 4}</Text>}
                 </div>
               </div>
               {dayEvs.map((ev, i) => (
@@ -1697,8 +1690,8 @@ function WeekView({ weekStart, dayMap, feedEventMap, customEventMap, todayStr, s
               style={{ padding: "8px 6px", textAlign: "center", borderRight: "1px solid var(--ft-border)", cursor: "pointer", background: isSelected ? "var(--ft-accent)11" : isToday ? "var(--ft-raised)" : undefined }}
             >
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{dow}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: isToday ? 700 : 400, color: isToday ? "var(--ft-accent)" : "var(--ft-text)", lineHeight: 1.2 }}>{dayNum}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>{month}</div>
+              <Text as="div" mono size={16} weight={isToday ? 700 : 400} color={isToday ? "var(--ft-accent)" : "var(--ft-text)"} lineHeight={1.2}>{dayNum}</Text>
+              <Text as="div" mono size={8} color="var(--ft-dim)">{month}</Text>
             </div>
           );
         })}
@@ -1974,7 +1967,7 @@ export default function CalendarPage() {
             </>
           )}
           {viewMode === "agenda" && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)" }}>Next 90 Days</span>
+            <Text as="span" mono size={11} weight={700} color="var(--ft-text)">Next 90 Days</Text>
           )}
           <button
             onClick={goToToday}

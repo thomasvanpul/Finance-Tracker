@@ -13,6 +13,7 @@ import {
   getListGoalsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Text, MonoLabel } from "@/components/primitives";
 
 interface HistoryEntry {
   date: string;
@@ -179,9 +180,9 @@ function InsightCard({ label, name, value, accentColor }: InsightCardProps) {
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
         {name}
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600 }}>
+      <Text as="div" mono size={10} weight={600}>
         {value}
-      </div>
+      </Text>
     </div>
   );
 }
@@ -671,16 +672,16 @@ function GoalCard({
                     <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
                       <div>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>Without returns</div>
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-muted)" }}>
+                        <Text as="div" mono size={10} weight={600} color="var(--ft-muted)">
                           {projectedDate ? formatMonthYear(projectedDate) : "—"}
-                        </div>
+                        </Text>
                       </div>
                       <div style={{ color: "var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10, alignSelf: "flex-end" }}>→</div>
                       <div>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>With {(annualRate * 100).toFixed(0)}% returns</div>
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-green)" }}>
+                        <Text as="div" mono size={10} weight={700} color="var(--ft-green)">
                           {compoundDate ? formatMonthYear(compoundDate) : "—"}
-                        </div>
+                        </Text>
                       </div>
                       {compoundMonths < Infinity && projectedMonths < Infinity && compoundMonths < projectedMonths && (
                         <div style={{ alignSelf: "flex-end" }}>
@@ -707,7 +708,7 @@ function GoalCard({
                     What if I contributed…
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>£</span>
+                    <Text as="span" mono size={9} color="var(--ft-dim)">£</Text>
                     <input
                       type="number"
                       placeholder={String(Math.ceil(goalMonthlyRate) || "200")}
@@ -724,7 +725,7 @@ function GoalCard({
                         outline: "none",
                       }}
                     />
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>/mo</span>
+                    <Text as="span" mono size={9} color="var(--ft-dim)">/mo</Text>
                     {whatIfDate && (
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color, fontWeight: 700, marginLeft: 8 }}>
                         → {formatMonthYear(whatIfDate)}
@@ -1297,7 +1298,7 @@ export default function Goals() {
             <KpiCell
               label="Total Goals"
               accentTop="var(--ft-accent)"
-              sub={<><span style={{ color: "var(--ft-green)" }}>{achievedGoals.length}</span> done · <span style={{ color: "var(--ft-accent)" }}>{unachievedGoals.length}</span> active</>}
+              sub={<><Text as="span" color="var(--ft-green)">{achievedGoals.length}</Text> done · <Text as="span" color="var(--ft-accent)">{unachievedGoals.length}</Text> active</>}
             >
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{goals.length}</div>
             </KpiCell>
@@ -1337,14 +1338,14 @@ export default function Goals() {
               accentTop={kpiFeasibilityAccent}
             >
               {feasibilityStatus === "none" ? (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>—</div>
+                <Text as="div" mono size={11} color="var(--ft-dim)">—</Text>
               ) : feasibilityStatus === "on-track" ? (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)", letterSpacing: "0.05em" }}>ON TRACK</div>
+                <Text as="div" mono size={13} weight={700} color="var(--ft-green)" letterSpacing="0.05em">ON TRACK</Text>
               ) : feasibilityStatus === "tight" ? (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.05em" }}>TIGHT</div>
+                <Text as="div" mono size={13} weight={700} color="var(--ft-amber)" letterSpacing="0.05em">TIGHT</Text>
               ) : (
                 <div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-red)", letterSpacing: "0.04em" }}>SHORTFALL</div>
+                  <Text as="div" mono size={11} weight={700} color="var(--ft-red)" letterSpacing="0.04em">SHORTFALL</Text>
                   <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", marginTop: 2 }}>{formatGbp(shortfall)}/mo short</div>
                 </div>
               )}
@@ -1370,7 +1371,7 @@ export default function Goals() {
               <InsightCard
                 label="Most Urgent"
                 name={<><GoalIcon emoji={mostUrgent.emoji} color={mostUrgent.color ?? PRESET_COLORS[0]} size={13} /> {mostUrgent.name}</>}
-                value={<span style={{ color: "var(--ft-amber)" }}>{Math.max(daysUntil(mostUrgent.deadline!), 0)}d remaining</span>}
+                value={<Text as="span" color="var(--ft-amber)">{Math.max(daysUntil(mostUrgent.deadline!), 0)}d remaining</Text>}
                 accentColor={mostUrgent.color ?? PRESET_COLORS[0]}
               />
             )}
@@ -1526,9 +1527,9 @@ export default function Goals() {
               </div>
             );
           })()}
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
-            Use <span style={{ color: "var(--ft-accent)" }}>+ Add Goal</span> above to get started, or select a template.
-          </div>
+          <Text as="div" mono size={10} color="var(--ft-dim)" letterSpacing="0.06em">
+            Use <Text as="span" color="var(--ft-accent)">+ Add Goal</Text> above to get started, or select a template.
+          </Text>
         </div>
       )}
 
@@ -1588,12 +1589,12 @@ export default function Goals() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-green)", paddingLeft: 6, marginBottom: 6 }}>
               Portfolio Summary
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
+            <Text as="div" mono size={11} color="var(--ft-muted)">
               <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700, fontSize: 18 }}>{formatGbp(totalSaved)}</span>
-              <span style={{ color: "var(--ft-dim)" }}> saved towards </span>
+              <Text as="span" color="var(--ft-dim)"> saved towards </Text>
               <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700, fontSize: 18 }}>{formatGbp(totalTarget)}</span>
-              <span style={{ color: "var(--ft-dim)" }}> total</span>
-            </div>
+              <Text as="span" color="var(--ft-dim)"> total</Text>
+            </Text>
             <div style={{ height: 3, background: "var(--ft-border)", marginTop: 8, width: "min(240px, 100%)", overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${totalPct}%`, background: "var(--ft-green)" }} />
             </div>

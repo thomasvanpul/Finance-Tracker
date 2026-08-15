@@ -24,6 +24,7 @@ import type {
 import { PageHeader } from "@/components/page-header";
 import { formatGbp } from "@/lib/utils";
 import { Zap, X, ChevronRight, RefreshCw } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -674,12 +675,12 @@ export default function Decisions() {
           borderLeft: "3px solid var(--ft-amber)",
           fontFamily: "var(--font-mono)", fontSize: 9,
         }}>
-          <span style={{ color: "var(--ft-amber)", fontWeight: 700, letterSpacing: "0.1em" }}>
+          <Text as="span" weight={700} color="var(--ft-amber)" letterSpacing="0.1em">
             {activePersona.code}
-          </span>
-          <span style={{ color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+          </Text>
+          <Text as="span" color="var(--ft-dim)" letterSpacing="0.04em">
             Sorted for {activePersona.label} — {personaBoostCategories.join(", ")} actions surfaced first
-          </span>
+          </Text>
           <a href="/settings?panel=terminal-profile" style={{ marginLeft: "auto", color: "var(--ft-dim)", opacity: 0.55, textDecoration: "none", letterSpacing: "0.06em", fontSize: 8 }}
             onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "1"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "0.55"; }}>
@@ -738,8 +739,8 @@ export default function Decisions() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>◈ How the Decision Engine works</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 3, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.65 }}>
               <div>Reads across all your data — accounts, investments, goals, subscriptions, budgets &amp; debts — to surface specific, ranked actions.</div>
-              <div><span style={{ color: "var(--ft-red)", fontWeight: 600 }}>CRITICAL</span> = time-sensitive or high opportunity cost &nbsp;·&nbsp; <span style={{ color: "var(--ft-amber)", fontWeight: 600 }}>HIGH</span> = significant impact &nbsp;·&nbsp; <span style={{ color: "var(--ft-blue)", fontWeight: 600 }}>MEDIUM</span> = worth doing</div>
-              <div><span style={{ color: "var(--ft-accent)", fontWeight: 600 }}>Annual cost</span> is the estimated money left on the table per year if you don't act (e.g. idle cash missing out on 4.5% interest).</div>
+              <div><Text as="span" weight={600} color="var(--ft-red)">CRITICAL</Text> = time-sensitive or high opportunity cost &nbsp;·&nbsp; <Text as="span" weight={600} color="var(--ft-amber)">HIGH</Text> = significant impact &nbsp;·&nbsp; <Text as="span" weight={600} color="var(--ft-blue)">MEDIUM</Text> = worth doing</div>
+              <div><Text as="span" weight={600} color="var(--ft-accent)">Annual cost</Text> is the estimated money left on the table per year if you don't act (e.g. idle cash missing out on 4.5% interest).</div>
               <div>Dismiss any item you've already acted on — it won't reappear unless conditions change. The engine re-evaluates every page load.</div>
             </div>
           </div>

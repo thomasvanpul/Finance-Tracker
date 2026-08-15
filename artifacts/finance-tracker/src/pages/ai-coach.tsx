@@ -4,6 +4,7 @@ import { useListTransactions, useListAccounts, useGetDashboard, useListBudgets, 
 import { formatGbp } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -180,7 +181,7 @@ function MessageBubble({ msg, index }: { msg: Message; index: number }) {
                 <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 10, minWidth: 18, paddingTop: 1, flexShrink: 0, fontWeight: 700 }}>
                   {String(j + 1).padStart(2, "0")}
                 </span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{item.replace(/^\d+\.\s/, "")}</span>
+                <Text as="span" mono size={12}>{item.replace(/^\d+\.\s/, "")}</Text>
               </li>
             ))}
           </ol>
@@ -193,7 +194,7 @@ function MessageBubble({ msg, index }: { msg: Message; index: number }) {
             {items.map((item, j) => (
               <li key={j} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", marginTop: 3, flexShrink: 0, fontSize: 10 }}>▸</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{item.replace(/^[-*•]\s/, "")}</span>
+                <Text as="span" mono size={12}>{item.replace(/^[-*•]\s/, "")}</Text>
               </li>
             ))}
           </ul>
@@ -235,7 +236,7 @@ function MessageBubble({ msg, index }: { msg: Message; index: number }) {
         flexShrink: 0,
       }}>
         {isUser
-          ? <span style={{ color: "var(--ft-blue)", fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: 10, letterSpacing: "0.05em" }}>YOU</span>
+          ? <Text as="span" mono size={10} weight={700} color="var(--ft-blue)" letterSpacing="0.05em">YOU</Text>
           : <BotMessageSquare size={13} style={{ color: "var(--ft-amber)" }} />
         }
       </div>
@@ -573,9 +574,9 @@ export default function AiCoach() {
         actions={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {messages.length > 0 && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.05em" }}>
+              <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.05em">
                 {userMsgCount} {userMsgCount === 1 ? "query" : "queries"}
-              </span>
+              </Text>
             )}
             {messages.length > 0 && (
               <button
@@ -626,12 +627,12 @@ export default function AiCoach() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 6, letterSpacing: "0.02em" }}>
                 Your AI Financial Coach
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.7 }}>
+              <Text as="div" mono size={10} color="var(--ft-dim)" lineHeight={1.7}>
                 {primaryPersona
                   ? `Focused on ${primaryPersona.tagline.toLowerCase()}. I have full access to your spending, budgets, investments, and goals.`
                   : "Ask anything about your finances. I have access to your current month's spending, budgets, and account balances."
                 }
-              </div>
+              </Text>
             </div>
 
             {/* Context-loaded KPI strip — border-as-gap grid */}
@@ -644,18 +645,18 @@ export default function AiCoach() {
                   {dashboard?.thisMonth?.income != null && (
                     <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderTop: `2px solid ${dashboard.thisMonth.income! > 0 ? "var(--ft-green)" : "var(--ft-border2)"}` }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Income</div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: dashboard.thisMonth.income! > 0 ? "var(--ft-green)" : "var(--ft-muted)" }}>
+                      <Text as="div" mono size={15} weight={700} color={dashboard.thisMonth.income! > 0 ? "var(--ft-green)" : "var(--ft-muted)"}>
                         <span className="pnum">{formatGbp(dashboard.thisMonth.income!)}</span>
-                      </div>
+                      </Text>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>this month</div>
                     </div>
                   )}
                   {dashboard?.thisMonth?.expenses != null && (
                     <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderTop: `2px solid ${dashboard.thisMonth.expenses! > 0 ? "var(--ft-red)" : "var(--ft-border2)"}` }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Spent</div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: dashboard.thisMonth.expenses! > 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
+                      <Text as="div" mono size={15} weight={700} color={dashboard.thisMonth.expenses! > 0 ? "var(--ft-red)" : "var(--ft-muted)"}>
                         <span className="pnum">{formatGbp(dashboard.thisMonth.expenses!)}</span>
-                      </div>
+                      </Text>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>this month</div>
                     </div>
                   )}
@@ -677,7 +678,7 @@ export default function AiCoach() {
               <div style={{ width: "100%", maxWidth: 480 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, borderLeft: "3px solid var(--ft-amber)", paddingLeft: 8 }}>
                   <Zap size={10} style={{ color: "var(--ft-amber)" }} />
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-amber)", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700 }}>Needs Attention</span>
+                  <Text as="span" mono upper size={8} weight={700} color="var(--ft-amber)" letterSpacing="0.12em">Needs Attention</Text>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {smartInsights.map((item, i) => (
@@ -696,7 +697,7 @@ export default function AiCoach() {
             {/* Suggested prompts — persona-aware */}
             <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%", maxWidth: 480 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8 }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Suggested queries</span>
+                <MonoLabel as="span" size={8} letterSpacing="0.12em">Suggested queries</MonoLabel>
                 {primaryPersona && (
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", padding: "1px 6px", border: "1px solid var(--ft-accent)", letterSpacing: "0.06em" }}>
                     {primaryPersona.code}
@@ -719,9 +720,9 @@ export default function AiCoach() {
             {/* Session divider */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
               <div style={{ flex: 1, height: 1, background: "var(--ft-border)" }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+              <Text as="span" mono upper size={8} color="var(--ft-dim)" letterSpacing="0.1em" nowrap>
                 Session — {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
-              </span>
+              </Text>
               <div style={{ flex: 1, height: 1, background: "var(--ft-border)" }} />
             </div>
 
@@ -764,13 +765,13 @@ export default function AiCoach() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: aiAvailable ? "var(--ft-green)" : "var(--ft-dim)" }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+              <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
                 {aiAvailable ? "AI ONLINE" : "AI OFFLINE"}
-              </span>
+              </Text>
             </div>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+            <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.04em">
               {input.length > 0 ? `${input.length} chars` : "Enter ↵ to send · Shift+Enter for newline"}
-            </span>
+            </Text>
           </div>
         )}
         <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>

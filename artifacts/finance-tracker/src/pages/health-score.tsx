@@ -17,6 +17,7 @@ import { PiggyBank, CalendarCheck, BarChart3, Zap, Star } from "lucide-react";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { Activity } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Persona focus areas ───────────────────────────────────────────────────────
 const PERSONA_HEALTH_FOCUS: Record<string, { label: string; tip: string; keys: string[] }> = {
@@ -227,7 +228,7 @@ function KpiStripCell({ label, value, unit, color }: KpiStripCellProps) {
           {value}
         </span>
         {unit && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{unit}</span>
+          <Text as="span" mono size={9} color="var(--ft-dim)">{unit}</Text>
         )}
       </div>
     </div>
@@ -245,7 +246,7 @@ function ColorLegendItem({ label, color }: ColorLegendItemProps) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
       <div style={{ width: 6, height: 6, background: color }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)" }}>{label}</span>
+      <Text as="span" mono size={7} color="var(--ft-dim)">{label}</Text>
     </div>
   );
 }
@@ -318,9 +319,9 @@ function LockedAchievementRow({ item, isLast }: LockedAchievementRowProps) {
       <div style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
         {item.name}
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+      <Text as="div" mono size={8} color="var(--ft-dim)" letterSpacing="0.04em">
         {item.condition}
-      </div>
+      </Text>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.06em" }}>
         LOCKED
       </div>
@@ -483,14 +484,14 @@ function SubScoreRow({ sub, rank }: SubScoreRowProps) {
         transition: "background 0.1s",
       }}>
       {/* Rank */}
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center" as const }}>
+      <Text as="div" mono size={10} color="var(--ft-dim)" align="center">
         {rank}
-      </div>
+      </Text>
       {/* Label + weight */}
       <div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", fontWeight: 600 }}>
+        <Text as="div" mono size={10} weight={600} color="var(--ft-text)">
           {sub.label}
-        </div>
+        </Text>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>
           weight: {Math.round(sub.weight * 100)}%
         </div>
@@ -505,7 +506,7 @@ function SubScoreRow({ sub, rank }: SubScoreRowProps) {
         </div>
         {sub.action && sub.pointGain !== undefined && (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>
-            <span style={{ color: "var(--ft-accent)" }}>→</span> {sub.action}{" "}
+            <Text as="span" color="var(--ft-accent)">→</Text> {sub.action}{" "}
             <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 600 }}>+{sub.pointGain} pts</span>
           </div>
         )}
@@ -563,9 +564,9 @@ function AchievementBadge({ achievement }: AchievementBadgeProps) {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", marginBottom: 1 }}>
           {achievement.name}
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+        <Text as="div" mono size={9} color="var(--ft-muted)">
           {achievement.description}
-        </div>
+        </Text>
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textAlign: "right" as const, flexShrink: 0 }}>
         {new Date(achievement.unlockedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
@@ -655,7 +656,7 @@ function RecRow({ rec, rank, priorityLabel, priorityColor }: RecRowProps) {
       </div>
       {/* Impact */}
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)", flexShrink: 0, minWidth: 52, textAlign: "right" as const }}>
-        +{rec.impact}<span style={{ fontSize: 8, color: "var(--ft-dim)", fontWeight: 400 }}> pts</span>
+        +{rec.impact}<Text as="span" size={8} weight={400} color="var(--ft-dim)"> pts</Text>
       </div>
     </div>
   );

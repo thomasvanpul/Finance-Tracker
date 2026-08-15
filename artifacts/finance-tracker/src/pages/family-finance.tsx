@@ -32,6 +32,7 @@ import {
   PieChart,
   Pie,
 } from "recharts";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -965,9 +966,9 @@ function GoalRow({
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-text)" }}>
+            <Text as="span" mono size={12} weight={600} color="var(--ft-text)">
               {g.name}
-            </span>
+            </Text>
             <span style={{
               fontFamily: "var(--font-mono)", fontSize: 9,
               padding: "1px 5px",
@@ -978,18 +979,14 @@ function GoalRow({
               {memberName(g.assignedTo)}
             </span>
             {daysLeft !== null && (
-              <span style={{
-                fontFamily: "var(--font-mono)", fontSize: 9,
-                color: daysLeft < 0 ? "var(--ft-red)" : daysLeft < 30 ? "var(--ft-amber)" : "var(--ft-dim)",
-                fontWeight: daysLeft < 0 ? 700 : 400,
-              }}>
+              <Text as="span" mono size={9} weight={daysLeft < 0 ? 700 : 400} color={daysLeft < 0 ? "var(--ft-red)" : daysLeft < 30 ? "var(--ft-amber)" : "var(--ft-dim)"}>
                 {daysLeft < 0 ? "OVERDUE" : daysLeft === 0 ? "Due today" : `${daysLeft}d left`}
-              </span>
+              </Text>
             )}
             {pct >= 1 && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", fontWeight: 700 }}>
+              <Text as="span" mono size={9} weight={700} color="var(--ft-green)">
                 COMPLETE
-              </span>
+              </Text>
             )}
           </div>
           <ProgressBar pct={pct} color={roleCssVar(assignedColor)} height={4} />
@@ -1072,7 +1069,7 @@ function MemberCard({
 
   const statRow = (label: string, value: React.ReactNode) => (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{label}</span>
+      <Text as="span" mono size={10} color="var(--ft-muted)">{label}</Text>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{value}</span>
     </div>
   );
@@ -1127,7 +1124,7 @@ function MemberCard({
         {statRow("Accounts", (
           linkedAccounts.length > 0
             ? linkedAccounts.map((a) => a.name).join(", ")
-            : <span style={{ color: "var(--ft-dim)" }}>None linked</span>
+            : <Text as="span" color="var(--ft-dim)">None linked</Text>
         ))}
       </div>
     </div>
@@ -1715,9 +1712,9 @@ export default function FamilyFinance() {
                   );
                 })}
                 {accounts.length === 0 && (
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+                  <Text as="span" mono size={11} color="var(--ft-dim)">
                     No accounts available
-                  </span>
+                  </Text>
                 )}
               </div>
             </FieldRow>

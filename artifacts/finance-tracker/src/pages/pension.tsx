@@ -16,6 +16,7 @@ import { TrendingUp, ArrowRight, Target, ShieldCheck, AlertTriangle } from "luci
 import { formatGbp } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { loadPersonaIds } from "@/lib/persona";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -246,9 +247,9 @@ function InputRow({ label, help, children }: {
       }}
     >
       <div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 500 }}>
+        <Text as="div" mono size={11} weight={500} color="var(--ft-text)">
           {label}
-        </div>
+        </Text>
         {help && (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
             {help}
@@ -452,9 +453,9 @@ function PensionHealthBlock({
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <AlertTriangle style={{ width: 12, height: 12, color: "var(--ft-red)", flexShrink: 0 }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+              <Text as="span" mono upper size={9} weight={700} color="var(--ft-red)" letterSpacing="0.08em">
                 Shortfall Analysis
-              </span>
+              </Text>
             </div>
             <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "rgba(248,81,73,0.15)" }}>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px" }}>
@@ -484,18 +485,18 @@ function PensionHealthBlock({
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
               <Target style={{ width: 12, height: 12, color: "var(--ft-blue)", flexShrink: 0 }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-blue)", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>
+              <Text as="span" mono upper size={9} weight={700} color="var(--ft-blue)" letterSpacing="0.08em">
                 Contribution Optimiser
-              </span>
+              </Text>
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
-                <span style={{ color: "var(--ft-dim)" }}>Contribute</span>
+                <Text as="span" color="var(--ft-dim)">Contribute</Text>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-blue)" }}>
                   {formatGbp(Math.round(extraMonthlyNeeded))}/mo more
                 </span>
                 <ArrowRight style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
-                <span style={{ color: "var(--ft-dim)" }}>to hit</span>
+                <Text as="span" color="var(--ft-dim)">to hit</Text>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-green)" }}>
                   {formatGbp(targetMonthlyIncome)}/mo target
                 </span>
@@ -576,10 +577,10 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 4 }}>
               Full New State Pension (2024/25)
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.6 }}>
+            <Text as="div" mono size={9} color="var(--ft-dim)" lineHeight={1.6}>
               £221.20/wk · £11,502/yr · £958/mo (estimate)<br />
               Requires 35 qualifying NI years for full amount · Check via NI record at gov.uk
-            </div>
+            </Text>
           </div>
           <button
             onClick={onToggle}
@@ -658,7 +659,7 @@ function SensitivityRow({
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           {isSelected && <span style={{ width: 3, height: 14, background: "var(--ft-blue)", flexShrink: 0, display: "inline-block" }} />}
           <span style={{ color: accentColor, fontWeight: isSelected ? 700 : 500 }}>{rate}%</span>
-          {isSelected && <span style={{ fontSize: 8, color: "var(--ft-blue)", letterSpacing: "0.06em" }}>← selected</span>}
+          {isSelected && <Text as="span" size={8} color="var(--ft-blue)" letterSpacing="0.06em">← selected</Text>}
         </div>
       </td>
       <td className="pnum" style={{ ...tdStyle, color: isSelected ? "var(--ft-text)" : "var(--ft-muted)", fontWeight: isSelected ? 700 : 400, fontSize: isSelected ? 12 : 11 }}>
@@ -934,13 +935,9 @@ function IsaSection() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>
             {formatTaxYearLabel(taxYear)}
           </div>
-          <div style={{
-            fontFamily: "var(--font-mono)", fontSize: 9,
-            color: daysLeft <= 30 ? "var(--ft-red)" : daysLeft <= 90 ? "var(--ft-amber)" : "var(--ft-dim)",
-            letterSpacing: "0.06em",
-          }}>
+          <Text as="div" mono size={9} color={daysLeft <= 30 ? "var(--ft-red)" : daysLeft <= 90 ? "var(--ft-amber)" : "var(--ft-dim)"} letterSpacing="0.06em">
             {daysLeft === 0 ? "TAX YEAR ENDS TODAY" : `${daysLeft} days remaining`}
-          </div>
+          </Text>
         </div>
 
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
@@ -951,7 +948,7 @@ function IsaSection() {
 
         <div style={{ marginBottom: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", marginBottom: 6 }}>
-            <span style={{ color: "var(--ft-dim)" }}>ISA allowance used</span>
+            <Text as="span" color="var(--ft-dim)">ISA allowance used</Text>
             <span className="pnum" style={{ color: barColor, fontWeight: 700 }}>
               {pct.toFixed(1)}%{pct >= 100 ? " MAXED" : ""}
             </span>
@@ -999,7 +996,7 @@ function ChartLegendDot({ color, label }: { color: string; label: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
       <div style={{ width: 16, height: 2, background: color }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>{label}</span>
+      <Text as="span" mono size={8} color="var(--ft-dim)">{label}</Text>
     </div>
   );
 }
@@ -1010,7 +1007,7 @@ function ContribLegendDot({ color, label }: { color: string; label: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
       <div style={{ width: 10, height: 10, background: color, flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>{label}</span>
+      <Text as="span" mono size={8} color="var(--ft-dim)">{label}</Text>
     </div>
   );
 }
@@ -1146,7 +1143,7 @@ function PensionSection() {
               dashed ? (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <div style={{ width: 16, height: 0, borderTop: "2px dashed var(--ft-cyan)" }} />
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>{label}</span>
+                  <Text as="span" mono size={8} color="var(--ft-dim)">{label}</Text>
                 </div>
               ) : (
                 <ChartLegendDot key={label} color={color} label={label} />
@@ -1240,11 +1237,11 @@ function PensionSection() {
                   <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{formatGbp(inputs.employeeContrib)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--ft-muted)" }}>Employer match</span>
+                  <Text as="span" color="var(--ft-muted)">Employer match</Text>
                   <span className="pnum" style={{ color: "var(--ft-cyan)", fontWeight: 600 }}>{formatGbp(inputs.employerContrib)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2, marginBottom: 4 }}>
-                  <span style={{ color: "var(--ft-text)", fontWeight: 600 }}>Total / mo</span>
+                  <Text as="span" weight={600} color="var(--ft-text)">Total / mo</Text>
                   <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{formatGbp(monthlyTotal)}</span>
                 </div>
               </div>
@@ -1255,17 +1252,17 @@ function PensionSection() {
             <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--ft-muted)" }}>From pension pot</span>
+                  <Text as="span" color="var(--ft-muted)">From pension pot</Text>
                   <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{formatGbp(Math.round(monthlyIncomeFromPot))}</span>
                 </div>
                 {inputs.includeStatePension && (
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ color: "var(--ft-muted)" }}>State pension</span>
+                    <Text as="span" color="var(--ft-muted)">State pension</Text>
                     <span className="pnum" style={{ color: "var(--ft-cyan)", fontWeight: 700 }}>{formatGbp(Math.round(monthlyStatePension))}</span>
                   </div>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2 }}>
-                  <span style={{ color: "var(--ft-text)", fontWeight: 600 }}>Total</span>
+                  <Text as="span" weight={600} color="var(--ft-text)">Total</Text>
                   <span className="pnum" style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{formatGbp(Math.round(totalMonthlyIncome))}</span>
                 </div>
               </div>
@@ -1379,7 +1376,7 @@ export default function Pension() {
       {pensionTip && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-amber)", border: "1px solid rgba(245,158,11,0.35)", background: "rgba(245,158,11,0.06)", padding: "7px 14px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontWeight: 700, flexShrink: 0, letterSpacing: "0.08em" }}>TAX TIP</span>
-          <span style={{ color: "var(--ft-dim)" }}>{pensionTip}</span>
+          <Text as="span" color="var(--ft-dim)">{pensionTip}</Text>
         </div>
       )}
 

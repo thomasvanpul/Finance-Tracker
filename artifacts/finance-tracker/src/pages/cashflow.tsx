@@ -19,6 +19,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -866,7 +867,7 @@ export default function CashflowPage() {
       {/* Area chart */}
       <div style={card}>
         <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8, marginBottom: 12 }}>
-          <span style={{ fontWeight: 700, color: "var(--ft-accent)" }}>BALANCE PROJECTION</span>
+          <Text as="span" weight={700} color="var(--ft-accent)">BALANCE PROJECTION</Text>
           <span style={{ color: "var(--ft-dim)", marginLeft: 12, fontSize: 8 }}>Day-by-day projected cumulative balance · based on 3-month avg trend</span>
         </div>
         <ResponsiveContainer width="100%" height={240}>
@@ -942,7 +943,7 @@ export default function CashflowPage() {
       {/* Events table */}
       <div style={card}>
         <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-blue)", paddingLeft: 8, marginBottom: 12 }}>
-          <span style={{ fontWeight: 700, color: "var(--ft-accent)" }}>SCHEDULED EVENTS</span>
+          <Text as="span" weight={700} color="var(--ft-accent)">SCHEDULED EVENTS</Text>
           <span style={{ color: "var(--ft-dim)", marginLeft: 12, fontSize: 8 }}>Upcoming bills and income within the {horizon}-day horizon</span>
         </div>
         {eventRows.length === 0 ? (
@@ -956,9 +957,9 @@ export default function CashflowPage() {
             <div style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
               NO SCHEDULED EVENTS
             </div>
-            <div style={{ fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.6 }}>
+            <Text as="div" size={10} color="var(--ft-muted)" lineHeight={1.6}>
               No bills, income, or subscription renewals detected in this {horizon}-day window.
-            </div>
+            </Text>
           </div>
         ) : (
           <div className="ft-scroll-x">

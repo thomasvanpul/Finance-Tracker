@@ -28,7 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Plus, Trash2, CheckCheck, HandCoins, TrendingDown, TrendingUp, RefreshCw, SplitSquareHorizontal, Mail, X, Check } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { MonoLabel, PanelBox, PanelHeader, DataTH, DataTD } from "@/components/primitives";
+import { DataTD, DataTH, MonoLabel, PanelBox, PanelHeader, Text } from "@/components/primitives";
 import {
   Dialog,
   DialogContent,
@@ -352,9 +352,9 @@ function StrategyTab() {
         {/* Total balance */}
         <div>
           <MonoLabel mb={6}>Total Balance</MonoLabel>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-red)" }}>
+          <Text as="div" mono size={18} weight={700} color="var(--ft-red)">
             <span className="pnum">{formatGbp(totalBalance)}</span>
-          </div>
+          </Text>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
             {pendingDebts.length} debt{pendingDebts.length !== 1 ? "s" : ""}
           </div>
@@ -379,10 +379,10 @@ function StrategyTab() {
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
           <PanelBox borderTop="2px solid var(--ft-green)" padding="12px 14px">
             <MonoLabel mb={4}>Debt-free in</MonoLabel>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-green)", lineHeight: 1 }}>
+            <Text as="div" mono size={20} weight={700} color="var(--ft-green)" lineHeight={1}>
               {result.months}
               <span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)", marginLeft: 3 }}>mo</span>
-            </div>
+            </Text>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               {Math.floor(result.months / 12)}y {result.months % 12}m
             </div>
@@ -390,9 +390,9 @@ function StrategyTab() {
 
           <PanelBox borderTop="2px solid var(--ft-amber)" padding="12px 14px">
             <MonoLabel mb={4}>Total Interest</MonoLabel>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>
+            <Text as="div" mono size={20} weight={700} color="var(--ft-amber)" lineHeight={1}>
               <span className="pnum">{formatGbp(result.totalInterest)}</span>
-            </div>
+            </Text>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               over {result.months} months
             </div>
@@ -400,9 +400,9 @@ function StrategyTab() {
 
           <PanelBox borderTop={`2px solid ${savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)"}`} padding="12px 14px">
             <MonoLabel mb={4}>vs {mode === "snowball" ? "Avalanche" : "Snowball"}</MonoLabel>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)", lineHeight: 1 }}>
+            <Text as="div" mono size={20} weight={700} color={savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)"} lineHeight={1}>
               {savingsVsAlt >= 0 ? "saves " : "costs "}<span className="pnum">{formatGbp(Math.abs(savingsVsAlt))}</span>
-            </div>
+            </Text>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               {savingsVsAlt >= 0 ? "this strategy is better" : "other strategy saves more"}
             </div>
@@ -453,9 +453,9 @@ function StrategyTab() {
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>
                       {debt.name}
                     </div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                    <Text as="div" mono size={9} color="var(--ft-dim)">
                       Balance: <span className="pnum">{formatGbp(debt.balance)}</span> · Min: <span className="pnum">{formatGbp(debt.minimumPayment)}</span>/mo
-                    </div>
+                    </Text>
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -480,16 +480,16 @@ function StrategyTab() {
                         textAlign: "right",
                       }}
                     />
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>%</span>
+                    <Text as="span" mono size={9} color="var(--ft-dim)">%</Text>
                   </div>
 
                   <div style={{ textAlign: "right" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-green)" }}>
                       Month {po.month}
                     </div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                    <Text as="div" mono size={9} color="var(--ft-dim)">
                       +<span className="pnum">{formatGbp(po.interestPaid)}</span> interest
-                    </div>
+                    </Text>
                   </div>
                 </div>
               );
@@ -557,12 +557,12 @@ function StrategyTab() {
                 {result.amortization.map(row => (
                   <tr key={row.month}>
                     <DataTD>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>M{row.month}</span>
+                      <Text as="span" mono size={10} color="var(--ft-dim)">M{row.month}</Text>
                     </DataTD>
                     {strategyDebts.map(d => (
                       <DataTD key={d.id} mono style={{ color: (row[d.id] ?? 0) === 0 ? "var(--ft-green)" : "var(--ft-text)" }}>
                         {(row[d.id] ?? 0) === 0
-                          ? <span style={{ color: "var(--ft-green)", fontSize: 9 }}>PAID</span>
+                          ? <Text as="span" size={9} color="var(--ft-green)">PAID</Text>
                           : <span className="pnum">{formatGbp(row[d.id] as number)}</span>}
                       </DataTD>
                     ))}
@@ -1323,7 +1323,7 @@ export default function Owing() {
                 className="px-3 py-2 text-xs font-semibold uppercase tracking-wide border-b flex items-center gap-2"
                 style={{ background: "var(--ft-surface)", borderColor: "var(--ft-border)", color: "var(--ft-dim)" }}
               >
-                <span style={{ color: "var(--ft-blue)" }}>⬡</span> Open balances by person
+                <Text as="span" color="var(--ft-blue)">⬡</Text> Open balances by person
               </div>
               <div className="flex flex-wrap gap-2 p-3" style={{ background: "var(--ft-base)" }}>
                 {Object.entries(
@@ -1348,7 +1348,7 @@ export default function Owing() {
                     >
                       {name[0].toUpperCase()}
                     </span>
-                    <span style={{ color: "var(--ft-text)" }}>{name}</span>
+                    <Text as="span" color="var(--ft-text)">{name}</Text>
                     <span className="font-mono font-semibold pnum" style={{ color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                       {net >= 0 ? "+" : ""}{formatGbp(net)}
                     </span>
@@ -1590,9 +1590,9 @@ export default function Owing() {
                           <span className="pnum">{isIowe ? "-" : "+"}{formatGbp(d.gbpEquivalent)}</span>
                         </div>
                         {d.currency !== "GBP" && (
-                          <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                          <Text as="div" mono size={9} color="var(--ft-dim)">
                             <span className="pnum">{formatNative(d.nativeAmount, d.currency)}</span>
-                          </div>
+                          </Text>
                         )}
                         {d.status === "pending" && !isSettling && (
                           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -1865,7 +1865,7 @@ export default function Owing() {
 
             <div className="space-y-1.5">
               <Label style={{ color: "var(--ft-muted)", fontSize: 11 }}>
-                Link to user <span style={{ color: "var(--ft-dim)" }}>(optional — creates a mirror IOU in their account)</span>
+                Link to user <Text as="span" color="var(--ft-dim)">(optional — creates a mirror IOU in their account)</Text>
               </Label>
               <div className="relative">
                 <Input
@@ -1888,7 +1888,7 @@ export default function Owing() {
                     }}
                   >
                     {linkStatus === "checking" && (
-                      <span style={{ color: "var(--ft-dim)" }}>checking...</span>
+                      <Text as="span" color="var(--ft-dim)">checking...</Text>
                     )}
                     {linkStatus === "found" && linkedUser && (
                       <>
@@ -1900,7 +1900,7 @@ export default function Owing() {
                       <span>not registered</span>
                     )}
                     {linkStatus === "invalid" && form.linkedEmail.trim() && (
-                      <span style={{ color: "var(--ft-dim)" }}>enter full email</span>
+                      <Text as="span" color="var(--ft-dim)">enter full email</Text>
                     )}
                   </div>
                 )}
@@ -1919,7 +1919,7 @@ export default function Owing() {
 
             <div className="space-y-1.5">
               <Label style={{ color: "var(--ft-muted)", fontSize: 11 }}>
-                Account <span style={{ color: "var(--ft-dim)" }}>(optional — adjusts balance when settled)</span>
+                Account <Text as="span" color="var(--ft-dim)">(optional — adjusts balance when settled)</Text>
               </Label>
               <Select
                 value={form.accountId || "__none__"}
@@ -2028,9 +2028,9 @@ export default function Owing() {
                 className="flex items-center justify-between px-3 py-2 rounded-sm border text-xs"
                 style={{ background: "rgba(88,166,255,0.06)", borderColor: "rgba(88,166,255,0.2)" }}
               >
-                <span style={{ color: "var(--ft-muted)" }}>
+                <Text as="span" color="var(--ft-muted)">
                   {splitForm.currency} {splitTotal.toFixed(2)} ÷ {splitForm.people.length} people
-                </span>
+                </Text>
                 <span className="font-mono font-bold" style={{ color: "var(--ft-blue)" }}>
                   = {splitForm.currency} {perPersonEqual.toFixed(2)} / person
                 </span>
@@ -2045,9 +2045,9 @@ export default function Owing() {
                   borderColor: customBalanced ? "rgba(74,222,128,0.25)" : customRemaining < 0 ? "rgba(248,113,113,0.25)" : "rgba(88,166,255,0.2)",
                 }}
               >
-                <span style={{ color: "var(--ft-muted)" }}>
+                <Text as="span" color="var(--ft-muted)">
                   Assigned: {splitForm.currency} {customAssigned.toFixed(2)} / {splitForm.currency} {splitTotal.toFixed(2)}
-                </span>
+                </Text>
                 <span className="font-mono font-bold" style={{
                   color: customBalanced ? "var(--ft-green)" : customRemaining < 0 ? "var(--ft-red)" : "var(--ft-blue)",
                 }}>

@@ -18,6 +18,7 @@ import { useGetDashboard, useListBudgets, useListInvestments, useGetInvestmentSu
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { FlaskConical } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

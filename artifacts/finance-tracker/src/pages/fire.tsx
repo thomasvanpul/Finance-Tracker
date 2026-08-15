@@ -19,6 +19,7 @@ import {
   useGetInvestmentSummary,
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -136,7 +137,7 @@ const panelHeaderStyle: React.CSSProperties = {
 function PanelHeader({ children }: { children: React.ReactNode }) {
   return (
     <div style={panelHeaderStyle}>
-      <span style={{ color: "var(--ft-accent)" }}>·</span>
+      <Text as="span" color="var(--ft-accent)">·</Text>
       {children}
     </div>
   );
@@ -166,9 +167,9 @@ function InputRow({ label, help, children }: {
         cursor: "default",
       }}>
       <div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 500 }}>
+        <Text as="div" mono size={11} weight={500} color="var(--ft-text)">
           {label}
-        </div>
+        </Text>
         {help && (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
             {help}
@@ -234,9 +235,9 @@ function KpiCell({ label, value, sub, color }: KpiCellProps) {
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color, lineHeight: 1, letterSpacing: "-0.02em", marginBottom: 3 }}>
         {value}
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+      <Text as="div" mono size={8} color="var(--ft-dim)">
         {sub}
-      </div>
+      </Text>
     </div>
   );
 }
@@ -337,9 +338,9 @@ function SurvivalGauge({ probability, withdrawalRate }: { probability: number; w
 
       <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
         <span>0%</span>
-        <span style={{ color: "var(--ft-red)" }}>50%</span>
-        <span style={{ color: "var(--ft-amber)" }}>75%</span>
-        <span style={{ color: "var(--ft-green)" }}>90%</span>
+        <Text as="span" color="var(--ft-red)">50%</Text>
+        <Text as="span" color="var(--ft-amber)">75%</Text>
+        <Text as="span" color="var(--ft-green)">90%</Text>
         <span>100%</span>
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 8 }}>
@@ -578,9 +579,9 @@ function FireVariantCard({ v, effPortfolio }: FireVariantCardProps) {
           {isFinite(v.years) ? `${v.years.toFixed(1)} yrs away` : "—"}
         </div>
       )}
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5 }}>
+      <Text as="div" mono size={9} color="var(--ft-muted)" lineHeight={1.5}>
         {v.tag}
-      </div>
+      </Text>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, lineHeight: 1.4 }}>
         {v.desc}
       </div>
@@ -844,7 +845,7 @@ export default function Fire() {
             }}>
               {progressPct}%
             </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: isMobile ? 10 : 11, color: "var(--ft-muted)" }}>of FI</span>
+            <Text as="span" mono size={isMobile ? 10 : 11} color="var(--ft-muted)">of FI</Text>
           </div>
         </div>
 
@@ -1063,7 +1064,7 @@ export default function Fire() {
             color: "var(--ft-dim)",
             lineHeight: 1.8,
           }}>
-            <div><span>FIRE =</span> <span style={{ color: "var(--ft-text)" }}>expenses × 12 / {withdrawalRate}%</span></div>
+            <div><span>FIRE =</span> <Text as="span" color="var(--ft-text)">expenses × 12 / {withdrawalRate}%</Text></div>
             <div><span>25×</span> rule at 4% · <span>Trinity study</span></div>
           </div>
         </div>
@@ -1203,20 +1204,20 @@ export default function Fire() {
             <div style={{ padding: "8px 16px 10px", background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 20, flexWrap: "wrap" as const }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 16, height: 2, background: "var(--ft-green)" }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Portfolio value</span>
+                <Text as="span" mono size={8} color="var(--ft-dim)">Portfolio value</Text>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 16, height: 2, background: "var(--ft-accent)", borderTop: "1px dashed var(--ft-accent)" }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Total contributions</span>
+                <Text as="span" mono size={8} color="var(--ft-dim)">Total contributions</Text>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 16, height: 2, background: "var(--ft-amber)", borderTop: "1px dashed var(--ft-amber)" }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>FIRE number</span>
+                <Text as="span" mono size={8} color="var(--ft-dim)">FIRE number</Text>
               </div>
               {crossoverYear !== null && crossoverYear > 0 && (
                 <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <div style={{ width: 2, height: 12, background: "var(--ft-green)", opacity: 0.7 }} />
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Crossover yr {crossoverYear}</span>
+                  <Text as="span" mono size={8} color="var(--ft-dim)">Crossover yr {crossoverYear}</Text>
                 </div>
               )}
             </div>
@@ -1272,13 +1273,13 @@ export default function Fire() {
       {fireNumber > 0 && effPortfolio > 0 && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
           <div style={{ background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)", padding: "0 16px", height: 34, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: "var(--ft-accent)" }}>·</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-muted)" }}>
+            <Text as="span" color="var(--ft-accent)">·</Text>
+            <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
               Return Rate Sensitivity
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+            </Text>
+            <Text as="span" mono size={9} color="var(--ft-dim)">
               — how return rate affects years to FI
-            </span>
+            </Text>
           </div>
           <div className="ft-scroll-x">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>

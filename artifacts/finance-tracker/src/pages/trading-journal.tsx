@@ -24,6 +24,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { formatGbp } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -760,9 +761,9 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
           <StatusBadge status={trade.status} />
         </td>
         <td style={{ ...td, textAlign: "center" }}>
-          <span style={{ color: "var(--ft-accent)" }}>{"★".repeat(trade.confidence)}</span>
+          <Text as="span" color="var(--ft-accent)">{"★".repeat(trade.confidence)}</Text>
           <span style={{ color: "var(--ft-dim)", margin: "0 3px" }}>/</span>
-          <span style={{ color: "var(--ft-blue)" }}>{"★".repeat(trade.execution)}</span>
+          <Text as="span" color="var(--ft-blue)">{"★".repeat(trade.execution)}</Text>
         </td>
         <td style={{ ...td, textAlign: "center" }}>
           <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
@@ -788,7 +789,7 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
               <div style={{ minWidth: 0 }}>
                 <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 4 }}>JOURNAL NOTES</div>
                 <div style={{ ...mono, fontSize: 10, color: "var(--ft-text)", lineHeight: 1.6 }}>
-                  {trade.notes || <span style={{ color: "var(--ft-dim)" }}>No notes recorded.</span>}
+                  {trade.notes || <Text as="span" color="var(--ft-dim)">No notes recorded.</Text>}
                 </div>
               </div>
               <div>

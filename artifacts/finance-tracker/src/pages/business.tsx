@@ -27,6 +27,7 @@ import {
   TrendingDown,
   Receipt,
 } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1231,9 +1232,9 @@ export default function Business() {
       {/* ─── P&L Section ─── */}
       <div style={{ marginBottom: 32 }}>
         <SectionHeader title="Profit & Loss" accentColor="var(--ft-cyan)">
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+          <Text as="span" mono size={9} color="var(--ft-dim)">
             All time
-          </span>
+          </Text>
         </SectionHeader>
 
         {/* P&L KPI strip */}
@@ -1318,11 +1319,11 @@ export default function Business() {
             <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ width: 8, height: 8, background: "var(--ft-green)", opacity: 0.8 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Revenue</span>
+                <Text as="span" mono size={9} color="var(--ft-dim)">Revenue</Text>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ width: 8, height: 8, background: "var(--ft-red)", opacity: 0.7 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Expenses</span>
+                <Text as="span" mono size={9} color="var(--ft-dim)">Expenses</Text>
               </div>
             </div>
           </div>

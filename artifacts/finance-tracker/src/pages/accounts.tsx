@@ -75,6 +75,7 @@ import {
   Line,
   ReferenceLine,
 } from "recharts";
+import { Text, MonoLabel } from "@/components/primitives";
 
 type Currency =
   | "GBP"
@@ -574,13 +575,13 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
           borderBottom: "1px solid var(--ft-raised)",
         }}
       >
-        <span style={{ fontSize: 11, color: "var(--ft-muted)" }}>
+        <Text as="span" size={11} color="var(--ft-muted)">
           Detail view —
-        </span>
-        <span style={{ fontSize: 12, color: "var(--ft-text)", fontWeight: 700 }}>
+        </Text>
+        <Text as="span" size={12} weight={700} color="var(--ft-text)">
           {accountName}
-        </span>
-        <span style={{ fontSize: 11, color: "var(--ft-blue)" }}>{currency}</span>
+        </Text>
+        <Text as="span" size={11} color="var(--ft-blue)">{currency}</Text>
         <span
           style={{
             fontSize: 12,
@@ -696,7 +697,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
         <div>
           <div style={sectionLabel}>Recent Transactions</div>
           {loadingMonthly ? (
-            <div style={{ fontSize: 10, color: "var(--ft-dim)" }}>Loading…</div>
+            <Text as="div" size={10} color="var(--ft-dim)">Loading…</Text>
           ) : recentTxs.length === 0 ? (
             <div
               style={{
@@ -882,15 +883,15 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
                   >
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Monthly</span>
-                      <span style={{ fontSize: 9, color: "var(--ft-green)", fontWeight: 700 }}>
+                      <Text as="span" size={9} weight={700} color="var(--ft-green)">
                         +{formatNative(monthlyInterest, currency)}
-                      </span>
+                      </Text>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Annual</span>
-                      <span style={{ fontSize: 9, color: "var(--ft-green)", fontWeight: 700 }}>
+                      <Text as="span" size={9} color="var(--ft-dim)">Annual</Text>
+                      <Text as="span" size={9} weight={700} color="var(--ft-green)">
                         +{formatNative(annualInterest, currency)}
-                      </span>
+                      </Text>
                     </div>
                   </div>
                 )}
@@ -944,10 +945,10 @@ function RecentTxRow({ tx }: RecentTxRowProps) {
         <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {tx.description}
         </div>
-        <div style={{ fontSize: 9, color: "var(--ft-dim)" }}>
+        <Text as="div" size={9} color="var(--ft-dim)">
           {formatDate(tx.date)}
           {tx.category ? ` · ${tx.category}` : ""}
-        </div>
+        </Text>
       </div>
       <div
         className="pnum"
@@ -1255,7 +1256,7 @@ function KpiCell({ label, value, sub, accent, icon, isFinancial = false }: KpiCe
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ color: accent, display: "flex" }}>{icon}</span>
-        <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>{label}</span>
+        <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.08em">{label}</Text>
       </div>
       <div
         className={isFinancial ? "pnum" : undefined}
@@ -1402,8 +1403,8 @@ function AccountTableRow({
                 {account.name}
               </div>
               <div style={{ display: "flex", gap: 5, alignItems: "center", marginTop: 3 }}>
-                <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-blue)", letterSpacing: "0.04em", fontWeight: 700 }}>{account.currency}</span>
-                <span style={{ fontSize: 10, color: "var(--ft-border2)" }}>·</span>
+                <Text as="span" mono size={10} weight={700} color="var(--ft-blue)" letterSpacing="0.04em">{account.currency}</Text>
+                <Text as="span" size={10} color="var(--ft-border2)">·</Text>
                 <span style={{ fontSize: 9, padding: "1px 4px", borderRadius: 2, background: "var(--ft-raised)", color: account.isWiseLinked ? "var(--ft-blue)" : "var(--ft-dim)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em" }}>
                   {account.isWiseLinked ? "WISE" : "MANUAL"}
                 </span>
@@ -1494,7 +1495,7 @@ function AccountTableRow({
           className="ft-hide-mobile"
           style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 8, fontFamily: "var(--font-mono)" }}
         >
-          {syncLabel ?? <span style={{ color: "var(--ft-dim)" }}>manual</span>}
+          {syncLabel ?? <Text as="span" color="var(--ft-dim)">manual</Text>}
         </div>
 
         {/* Actions */}
@@ -1514,7 +1515,7 @@ function AccountTableRow({
             style={deleteConfirmId === account.id ? { background: "var(--ft-red)", color: "#fff" } : {}}
           >
             {deleteConfirmId === account.id
-              ? <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em" }}>DEL?</span>
+              ? <Text as="span" mono size={9} letterSpacing="0.06em">DEL?</Text>
               : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
             }
           </Button>}
@@ -1548,7 +1549,7 @@ function FxRateCell({ ccy, rate }: FxRateCellProps) {
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-        <span style={{ fontSize: 9, color: "var(--ft-cyan)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.08em" }}>GBP/{ccy}</span>
+        <Text as="span" mono size={9} weight={700} color="var(--ft-cyan)" letterSpacing="0.08em">GBP/{ccy}</Text>
       </div>
       <div className="pnum" style={{ fontSize: 16, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontWeight: 700, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>
         {rate.toFixed(precision)}
@@ -2273,9 +2274,9 @@ export default function Accounts() {
             {currencies.length > 1 && (
               <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--ft-border)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>
+                  <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.08em">
                     CURRENCY EXPOSURE — {currencies.length} currencies
-                  </span>
+                  </Text>
                   <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
                     {baseCurrency} base · <span className="pnum">{formatGbp(totalCash)}</span> total
                   </span>
@@ -2324,14 +2325,14 @@ export default function Accounts() {
               />
               <KpiCell
                 label="Currencies"
-                value={<span style={{ color: "var(--ft-cyan)" }}>{currencies.length}</span>}
+                value={<Text as="span" color="var(--ft-cyan)">{currencies.length}</Text>}
                 sub={currencies.join(" · ")}
                 accent="var(--ft-cyan)"
                 icon={<Activity className="w-3.5 h-3.5" />}
               />
               <KpiCell
                 label="Last Sync"
-                value={<span style={{ color: "var(--ft-text)" }}>{lastSyncLabel}</span>}
+                value={<Text as="span" color="var(--ft-text)">{lastSyncLabel}</Text>}
                 sub={accounts!.filter((a) => !a.lastSyncedAt).length > 0 ? `${accounts!.filter((a) => !a.lastSyncedAt).length} manual` : "all synced"}
                 accent="var(--ft-amber)"
                 icon={<RefreshCw className="w-3.5 h-3.5" />}
@@ -2375,9 +2376,9 @@ export default function Accounts() {
                           );
                         })}
                       {accounts!.length > 5 && (
-                        <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                        <Text as="span" mono size={9} color="var(--ft-dim)">
                           +{accounts!.length - 5} more
-                        </span>
+                        </Text>
                       )}
                     </div>
                   </div>
@@ -2405,12 +2406,12 @@ export default function Accounts() {
                             <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatGbp(totalMonthly)}</div>
                           </div>
                           <div>
-                            <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>Annual</div>
+                            <Text as="div" mono size={9} color="var(--ft-dim)">Annual</Text>
                             <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatGbp(totalAnnual)}</div>
                           </div>
-                          <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                          <Text as="div" mono size={9} color="var(--ft-dim)">
                             {apyAccounts.length} account{apyAccounts.length !== 1 ? "s" : ""} with APY
-                          </div>
+                          </Text>
                         </div>
                       </div>
                     );
@@ -2423,10 +2424,10 @@ export default function Accounts() {
             {nwHistory.length > 2 && (
               <div style={{ padding: "8px 14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>Net Worth Trend</span>
-                  <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>
+                  <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.08em">Net Worth Trend</Text>
+                  <Text as="span" mono size={10} color="var(--ft-muted)">
                     {nwHistory.length} days · {nwHistory[0]?.date?.slice(0, 7)} → {nwHistory.at(-1)?.date?.slice(0, 7)}
-                  </span>
+                  </Text>
                 </div>
                 <ResponsiveContainer width="100%" height={52}>
                   <AreaChart data={nwHistory} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
@@ -2478,7 +2479,7 @@ export default function Accounts() {
                   onClick={onClick}
                   style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: `${color}0A`, border: `1px solid ${color}33`, cursor: "pointer", fontFamily: "var(--font-mono)" }}
                 >
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ft-text)" }}>{title}</span>
+                  <Text as="span" size={11} weight={600} color="var(--ft-text)">{title}</Text>
                   <span style={{ fontSize: 10, color, fontWeight: 700, letterSpacing: "0.04em" }}>{action} →</span>
                 </button>
               ))}
@@ -2713,7 +2714,7 @@ export default function Accounts() {
 
           {accounts && accounts.length > 0 && filteredAccounts.length === 0 && (
             <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
-              NO {accountFilter.toUpperCase()} ACCOUNTS MATCH — <span style={{ color: "var(--ft-accent)" }}>clear filter to show all</span>
+              NO {accountFilter.toUpperCase()} ACCOUNTS MATCH — <Text as="span" color="var(--ft-accent)">clear filter to show all</Text>
             </div>
           )}
 
@@ -2816,7 +2817,7 @@ export default function Accounts() {
                 <span className="pnum" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>
                   {formatGbp(totalAssets)}
                 </span>
-                <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>assets</span>
+                <Text as="span" mono size={9} color="var(--ft-dim)">assets</Text>
               </div>
               {totalOwed > 0 && (
                 <>
@@ -2825,12 +2826,12 @@ export default function Accounts() {
                     <span className="pnum" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>
                       -{formatGbp(totalOwed)}
                     </span>
-                    <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+                    <Text as="span" mono size={9} color="var(--ft-dim)">
                       {overdraftAccounts.length} overdraft acct{overdraftAccounts.length !== 1 ? "s" : ""}
-                    </span>
+                    </Text>
                   </div>
                   <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-                    <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>net</span>
+                    <Text as="span" mono size={9} color="var(--ft-dim)">net</Text>
                     <span className="pnum" style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: (totalAssets - totalOwed) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                       {formatGbp(totalAssets - totalOwed)}
                     </span>
@@ -2838,9 +2839,9 @@ export default function Accounts() {
                 </>
               )}
               {totalOwed === 0 && (
-                <span style={{ fontSize: 9, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>
+                <Text as="span" mono size={9} color="var(--ft-green)">
                   no overdrafts — all accounts positive
-                </span>
+                </Text>
               )}
             </div>
           </div>
@@ -2880,7 +2881,7 @@ export default function Accounts() {
           </div>
           {monthlyFlow.length === 0 ? (
             <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
-              NO TRANSACTION HISTORY — <span style={{ color: "var(--ft-accent)", fontSize: 10 }}>import or add transactions to begin</span>
+              NO TRANSACTION HISTORY — <Text as="span" size={10} color="var(--ft-accent)">import or add transactions to begin</Text>
             </div>
           ) : (
             <div style={{ padding: "12px 0 0" }}>
@@ -2908,7 +2909,7 @@ export default function Accounts() {
                 {[["var(--ft-green)", "Income"], ["var(--ft-red)", "Expenses"], ["var(--ft-amber)", "Net"]].map(([color, label]) => (
                   <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                     <div style={{ width: 10, height: 10, background: color, borderRadius: 2 }} />
-                    <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>{label}</span>
+                    <Text as="span" mono size={10} color="var(--ft-dim)">{label}</Text>
                   </div>
                 ))}
               </div>
@@ -2947,7 +2948,7 @@ export default function Accounts() {
             </div>
           ) : (
             <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
-              NO DATA FOR THIS MONTH — <span style={{ color: "var(--ft-accent)", fontSize: 10 }}>transactions will appear here when recorded</span>
+              NO DATA FOR THIS MONTH — <Text as="span" size={10} color="var(--ft-accent)">transactions will appear here when recorded</Text>
             </div>
           )}
         </div>
@@ -3042,7 +3043,7 @@ function CurrencyConverter({ fxRates, baseCurrency }: { fxRates: Record<string, 
           maxLength={6}
           style={{ ...ccyInputStyle, borderColor: toValid ? "var(--ft-border2)" : "var(--ft-red)" }}
         />
-        <span style={{ fontSize: 18, color: "var(--ft-dim)", fontWeight: 300 }}>=</span>
+        <Text as="span" size={18} weight={300} color="var(--ft-dim)">=</Text>
         <span style={{ fontSize: 18, fontFamily: "var(--font-mono)", fontWeight: 700, color: result !== null ? "var(--ft-green)" : "var(--ft-dim)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {result !== null
             ? result.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 4 })
@@ -3051,18 +3052,18 @@ function CurrencyConverter({ fxRates, baseCurrency }: { fxRates: Record<string, 
         </span>
         {unitRate !== null && (
           <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+            <Text as="span" mono size={10} color="var(--ft-dim)">
               1 {from} = {unitRate.toFixed(4)} {to}
-            </span>
-            <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+            </Text>
+            <Text as="span" mono size={10} color="var(--ft-dim)">
               1 {to} = {(1 / unitRate).toFixed(4)} {from}
-            </span>
+            </Text>
           </div>
         )}
         {(!fromValid || !toValid) && (
-          <span style={{ fontSize: 10, color: "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
+          <Text as="span" mono size={10} color="var(--ft-red)">
             {!fromValid ? `Unknown: ${from}` : `Unknown: ${to}`}
-          </span>
+          </Text>
         )}
       </div>
     </div>

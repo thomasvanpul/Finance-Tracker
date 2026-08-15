@@ -25,6 +25,7 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { CreditCard, Plus, Trash2, Edit2, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -297,7 +298,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
               </span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>{sub.category}</span>
+              <Text as="span" mono size={10} color="var(--ft-dim)">{sub.category}</Text>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "0px 4px", background: `${freqColor[sub.frequency]}18`, color: freqColor[sub.frequency], letterSpacing: "0.04em", fontWeight: 700 }}>
                 {FREQ_LABELS[sub.frequency]}
               </span>
@@ -313,7 +314,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, paddingLeft: 8, flexShrink: 0 }}>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)" }}>
-              {formatGbp(toMonthly(sub.amount, sub.frequency))}<span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", fontWeight: 400 }}>/mo</span>
+              {formatGbp(toMonthly(sub.amount, sub.frequency))}<Text as="span" mono size={9} weight={400} color="var(--ft-dim)">/mo</Text>
             </span>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <button onClick={() => onToggleActive(sub.id)}
@@ -326,7 +327,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDelete(sub.id)}
                 style={deleteConfirmId === sub.id ? { background: "var(--ft-red)", color: "#fff" } : undefined}>
                 {deleteConfirmId === sub.id
-                  ? <span style={{ fontSize: 7, fontWeight: 700, fontFamily: "var(--font-mono)" }}>DEL?</span>
+                  ? <Text as="span" mono size={7} weight={700}>DEL?</Text>
                   : <Trash2 className="w-3 h-3" style={{ color: "var(--ft-red)" }} />}
               </Button>
             </div>
@@ -380,7 +381,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
               <DaysUntilBadge dateStr={estimatedNext} />
             </>
           ) : (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>—</span>
+            <Text as="span" mono size={11} color="var(--ft-dim)">—</Text>
           )}
         </div>
         <div style={{ width: 90, minWidth: 90, padding: "6px 10px", borderRight: "1px solid var(--ft-border)" }}>
@@ -402,7 +403,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
             style={deleteConfirmId === sub.id ? { background: "var(--ft-red)", color: "#fff" } : undefined}
           >
             {deleteConfirmId === sub.id
-              ? <span style={{ fontSize: 8, fontWeight: 700, fontFamily: "var(--font-mono)" }}>DEL?</span>
+              ? <Text as="span" mono size={8} weight={700}>DEL?</Text>
               : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />}
           </Button>
         </div>
@@ -433,9 +434,9 @@ function RenewalRow({ sub }: { sub: Subscription & { daysAway: number | null } }
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+            <Text as="span" mono size={10} color="var(--ft-muted)">
               {hasDate ? formatDateShort(sub.nextDue!) : "—"}
-            </span>
+            </Text>
             {hasDate && <DaysUntilBadge dateStr={sub.nextDue!} />}
           </div>
         </div>
@@ -459,15 +460,15 @@ function RenewalRow({ sub }: { sub: Subscription & { daysAway: number | null } }
       }}
     >
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
+      <Text as="div" mono size={11} color="var(--ft-muted)">
         {hasDate ? formatDateShort(sub.nextDue!) : "—"}
-      </div>
+      </Text>
       <div>
         {hasDate && <DaysUntilBadge dateStr={sub.nextDue!} />}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", textAlign: "right" }}>
         <span className="pnum">{formatGbp(sub.amount)}</span>{" "}
-        <span style={{ color: "var(--ft-dim)", fontSize: 9, fontWeight: 400 }}>{FREQ_LABELS[sub.frequency]}</span>
+        <Text as="span" size={9} weight={400} color="var(--ft-dim)">{FREQ_LABELS[sub.frequency]}</Text>
       </div>
     </div>
   );
@@ -1138,7 +1139,7 @@ export default function Subscriptions() {
         return (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ color: "var(--ft-amber)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>INSIGHT</span>
-            <span style={{ color: "var(--ft-dim)" }}>{msg}</span>
+            <Text as="span" color="var(--ft-dim)">{msg}</Text>
             {couldSave > 0 && (
               <span className="pnum" style={{ marginLeft: "auto", flexShrink: 0, color: "var(--ft-green)", fontSize: 9, border: "1px solid var(--ft-green)", padding: "1px 8px" }}>
                 £{couldSave.toFixed(0)}/mo cancellable
@@ -1200,9 +1201,9 @@ export default function Subscriptions() {
         <div style={{ border: "1px solid rgba(255,123,114,0.35)", borderTop: "2px solid var(--ft-red)", background: "rgba(255,123,114,0.04)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderBottom: "1px solid rgba(255,123,114,0.2)" }}>
             <Calendar size={12} style={{ color: "var(--ft-red)", flexShrink: 0 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-red)" }}>
+            <Text as="span" mono upper size={10} weight={700} color="var(--ft-red)" letterSpacing="0.08em">
               COMING UP THIS WEEK — {renewingThisWeek.length} renewal{renewingThisWeek.length !== 1 ? "s" : ""}
-            </span>
+            </Text>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: "auto" }}>
               {formatGbp(renewingThisWeek.reduce((s, sub) => s + sub.amount, 0))} due
             </span>
@@ -1306,9 +1307,9 @@ export default function Subscriptions() {
       {/* ── Subscription list grouped by renewal date ──────────────────────── */}
       <div style={{ border: "1px solid var(--ft-border)" }}>
         <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 6px 10px", background: "rgba(88,166,255,0.07)", borderBottom: "1px solid rgba(88,166,255,0.18)", gap: 8, borderLeft: "3px solid var(--ft-blue)" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-blue)" }}>
+          <Text as="span" mono upper size={10} weight={700} color="var(--ft-blue)" letterSpacing="0.06em">
             ▼ SUBSCRIPTION LIST — {filteredSubs.length}{filteredSubs.length !== subs.length ? ` of ${subs.length}` : ""} total
-          </span>
+          </Text>
         </div>
 
         {/* Filter bar */}
@@ -1422,9 +1423,9 @@ export default function Subscriptions() {
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px 8px 11px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", borderLeft: "3px solid var(--ft-accent)" }}>
             <Calendar size={12} style={{ color: "var(--ft-accent)" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-accent)" }}>
+            <Text as="span" mono upper size={10} weight={700} color="var(--ft-accent)" letterSpacing="0.08em">
               Renewal Schedule
-            </span>
+            </Text>
           </div>
           {subsByRenewalGroup.map((group) => (
             <div key={group.label}>

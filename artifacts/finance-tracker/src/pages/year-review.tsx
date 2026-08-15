@@ -16,6 +16,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -1202,7 +1203,7 @@ export default function YearReviewPage() {
                 <div style={{ fontSize: 14, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" }}>Your</div>
                 <div style={{ fontSize: 88, fontWeight: 900, color: "var(--ft-accent)", letterSpacing: "-0.04em", lineHeight: 0.9, marginBottom: 8 }}>{year}</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 24 }}>Wrapped</div>
-                <div style={{ fontSize: 11, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>{yearTxs.length} transactions · press → to begin</div>
+                <Text as="div" size={11} color="var(--ft-dim)" letterSpacing="0.04em">{yearTxs.length} transactions · press → to begin</Text>
               </>
             )}
 
@@ -1210,7 +1211,7 @@ export default function YearReviewPage() {
               <>
                 <div style={{ fontSize: 16, color: "var(--ft-dim)", letterSpacing: "0.06em", marginBottom: 16 }}>This year, you earned</div>
                 <div className="pnum" style={{ fontSize: 72, fontWeight: 900, color: "var(--ft-green)", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 12 }}>{formatGbp(totalIncome)}</div>
-                <div style={{ fontSize: 12, color: "var(--ft-muted)" }}>across {yearTxs.filter(t => t.type === "income").length} income transactions</div>
+                <Text as="div" size={12} color="var(--ft-muted)">across {yearTxs.filter(t => t.type === "income").length} income transactions</Text>
                 {wrappedData.biggestIncome && (
                   <div style={{ marginTop: 24, padding: "12px 20px", border: "1px solid var(--ft-border)", maxWidth: 360 }}>
                     <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 4 }}>LARGEST SINGLE INCOME</div>
@@ -1225,11 +1226,11 @@ export default function YearReviewPage() {
               <>
                 <div style={{ fontSize: 16, color: "var(--ft-dim)", letterSpacing: "0.06em", marginBottom: 16 }}>You spent</div>
                 <div className="pnum" style={{ fontSize: 72, fontWeight: 900, color: "var(--ft-red)", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 12 }}>{formatGbp(totalExpenses)}</div>
-                <div style={{ fontSize: 12, color: "var(--ft-muted)" }}>across {yearTxs.filter(t => t.type === "expense").length} expense transactions</div>
+                <Text as="div" size={12} color="var(--ft-muted)">across {yearTxs.filter(t => t.type === "expense").length} expense transactions</Text>
                 {wrappedData.topCatEntry && (
                   <div style={{ marginTop: 24, padding: "12px 20px", border: "1px solid var(--ft-border)", maxWidth: 360 }}>
                     <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 4 }}>TOP SPENDING CATEGORY</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: "var(--ft-red)" }}>{wrappedData.topCatEntry[0]}</div>
+                    <Text as="div" size={18} weight={700} color="var(--ft-red)">{wrappedData.topCatEntry[0]}</Text>
                     <div className="pnum" style={{ fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>{formatGbp(wrappedData.topCatEntry[1])} total</div>
                   </div>
                 )}
@@ -1274,7 +1275,7 @@ export default function YearReviewPage() {
                     {topCats.map(([cat, amt], i) => (
                       <div key={cat}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                          <span style={{ fontSize: 13, fontWeight: i === 0 ? 700 : 400, color: i === 0 ? "var(--ft-accent)" : "var(--ft-text)" }}>{i === 0 ? "★ " : ""}{cat}</span>
+                          <Text as="span" size={13} weight={i === 0 ? 700 : 400} color={i === 0 ? "var(--ft-accent)" : "var(--ft-text)"}>{i === 0 ? "★ " : ""}{cat}</Text>
                           <span className="pnum" style={{ fontSize: 13, color: "var(--ft-muted)" }}>{formatGbp(amt)}</span>
                         </div>
                         <div style={{ height: 4, background: "var(--ft-border2)", overflow: "hidden" }}>
@@ -1296,7 +1297,7 @@ export default function YearReviewPage() {
                       <div style={{ fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-red)", marginBottom: 8 }}>BIGGEST EXPENSE</div>
                       <div className="pnum" style={{ fontSize: 22, fontWeight: 700, color: "var(--ft-red)", marginBottom: 4 }}>{formatGbp(wrappedData.biggestExpense.gbpValue)}</div>
                       <div style={{ fontSize: 10, color: "var(--ft-muted)", marginBottom: 2 }}>{wrappedData.biggestExpense.description}</div>
-                      <div style={{ fontSize: 9, color: "var(--ft-dim)" }}>{wrappedData.biggestExpense.date}</div>
+                      <Text as="div" size={9} color="var(--ft-dim)">{wrappedData.biggestExpense.date}</Text>
                     </div>
                   )}
                   {wrappedData.bestMonthEntry && (
@@ -1316,9 +1317,9 @@ export default function YearReviewPage() {
                 <div style={{ fontSize: 52, fontWeight: 900, color: "var(--ft-amber)", letterSpacing: "0.02em", marginBottom: 12 }}>{wrappedData.topDow}s</div>
                 <div style={{ fontSize: 12, color: "var(--ft-muted)", marginBottom: 28 }}>That's your most active spending day</div>
                 {wrappedData.topCatEntry && (
-                  <div style={{ fontSize: 13, color: "var(--ft-dim)" }}>
-                    Your go-to category: <span style={{ color: "var(--ft-accent)", fontWeight: 700 }}>{wrappedData.topCatEntry[0]}</span>
-                  </div>
+                  <Text as="div" size={13} color="var(--ft-dim)">
+                    Your go-to category: <Text as="span" weight={700} color="var(--ft-accent)">{wrappedData.topCatEntry[0]}</Text>
+                  </Text>
                 )}
               </>
             )}
@@ -1497,9 +1498,9 @@ export default function YearReviewPage() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ft-muted)", marginBottom: 6, fontWeight: 700 }}>
               No transactions recorded for {year}
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+            <Text as="div" mono size={10} color="var(--ft-dim)" letterSpacing="0.06em">
               Import or add transactions to unlock your {year} wrapped report — top categories, biggest moments, and month-by-month breakdown.
-            </div>
+            </Text>
           </div>
           <a
             href="/transactions"

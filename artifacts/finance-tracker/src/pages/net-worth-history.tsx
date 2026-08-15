@@ -23,6 +23,7 @@ import {
   Cell,
 } from "recharts";
 import { formatGbp } from "@/lib/utils";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -218,15 +219,15 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Toolti
         {d.date ? new Date(d.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : ""}
       </div>
       {d.netWorth !== undefined && (
-        <div style={{ color: "var(--ft-text)", fontWeight: 700 }}>
+        <Text as="div" weight={700} color="var(--ft-text)">
           Net Worth: {formatGbp(d.netWorth)}
-        </div>
+        </Text>
       )}
       {d.totalAssets !== undefined && (
-        <div style={{ color: "var(--ft-green)" }}>Assets: {formatGbp(d.totalAssets)}</div>
+        <Text as="div" color="var(--ft-green)">Assets: {formatGbp(d.totalAssets)}</Text>
       )}
       {d.totalLiabilities !== undefined && d.totalLiabilities > 0 && (
-        <div style={{ color: "var(--ft-red)" }}>Liabilities: {formatGbp(d.totalLiabilities)}</div>
+        <Text as="div" color="var(--ft-red)">Liabilities: {formatGbp(d.totalLiabilities)}</Text>
       )}
       {d.note && (
         <div style={{ color: "var(--ft-muted)", marginTop: 4, fontSize: 9 }}>Note: {d.note}</div>
@@ -367,12 +368,12 @@ function AllocationDonut({ slices }: { slices: AllocationSlice[] }) {
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", minWidth: 70 }}>
                 {sl.name}
               </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", fontWeight: 600 }}>
+              <Text as="span" mono size={10} weight={600} color="var(--ft-text)">
                 {formatGbp(sl.value)}
-              </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+              </Text>
+              <Text as="span" mono size={9} color="var(--ft-muted)">
                 {pct}%
-              </span>
+              </Text>
             </div>
           );
         })}
@@ -416,7 +417,7 @@ function MilestoneRow({ m, isHit, currentNW }: { m: { value: number; date: strin
         {isHit ? `Reached ${shortDate(m.date)}` : "Not yet reached"}
       </div>
       {isHit && (
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>✓</span>
+        <Text as="span" mono size={9} color="var(--ft-green)">✓</Text>
       )}
     </div>
   );
@@ -886,7 +887,7 @@ export default function NetWorthHistory() {
               {formatGbp(currentNW)}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-              {cagr !== null ? <span style={{ color: "var(--ft-cyan)" }}>{cagr >= 0 ? "+" : ""}{cagr.toFixed(1)}% CAGR</span> : "as of today"}
+              {cagr !== null ? <Text as="span" color="var(--ft-cyan)">{cagr >= 0 ? "+" : ""}{cagr.toFixed(1)}% CAGR</Text> : "as of today"}
             </div>
           </div>
 
@@ -961,9 +962,9 @@ export default function NetWorthHistory() {
             alignItems: "center",
             justifyContent: "space-between",
           }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-muted)" }}>
+            <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
               Record Today&apos;s Net Worth
-            </span>
+            </Text>
             {liveAssets > 0 && (
               <button
                 onClick={autoFillFromLiveData}
@@ -1055,9 +1056,9 @@ export default function NetWorthHistory() {
             justifyContent: "space-between",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-muted)" }}>
+              <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
                 Net Worth Timeline
-              </span>
+              </Text>
               {projectedIn12Months !== null && (
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                   Projected 12m:{" "}
@@ -1065,7 +1066,7 @@ export default function NetWorthHistory() {
                     {formatGbp(projectedIn12Months)}
                   </span>
                   {" "}
-                  <span style={{ color: "var(--ft-dim)", fontSize: 8 }}>(linear trend)</span>
+                  <Text as="span" size={8} color="var(--ft-dim)">(linear trend)</Text>
                 </span>
               )}
             </div>
@@ -1147,12 +1148,12 @@ export default function NetWorthHistory() {
           <div style={{ display: "flex", gap: 16, marginTop: 8, paddingLeft: 52 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 16, height: 2, background: trendColor }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Net Worth</span>
+              <Text as="span" mono size={8} color="var(--ft-dim)">Net Worth</Text>
             </div>
             {projectionPoints.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 16, height: 1, background: "var(--ft-cyan)", borderTop: "1px dashed var(--ft-cyan)" }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Projected</span>
+                <Text as="span" mono size={8} color="var(--ft-dim)">Projected</Text>
               </div>
             )}
           </div>
@@ -1191,11 +1192,11 @@ export default function NetWorthHistory() {
           <div style={{ display: "flex", gap: 16, marginTop: 8, paddingLeft: 52 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 12, height: 2, background: "var(--ft-green)" }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Assets</span>
+              <Text as="span" mono size={8} color="var(--ft-dim)">Assets</Text>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 12, height: 2, background: "var(--ft-red)" }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>Liabilities</span>
+              <Text as="span" mono size={8} color="var(--ft-dim)">Liabilities</Text>
             </div>
           </div>
           </div>
@@ -1257,11 +1258,11 @@ export default function NetWorthHistory() {
                 </div>
                 {latestEntry.totalAssets > 0 && (
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 8 }}>
-                    Leverage ratio: <span style={{ color: "var(--ft-text)" }}>
+                    Leverage ratio: <Text as="span" color="var(--ft-text)">
                       {latestEntry.totalLiabilities > 0
                         ? `${((latestEntry.totalLiabilities / latestEntry.totalAssets) * 100).toFixed(1)}% of assets are financed`
                         : "Debt-free"}
-                    </span>
+                    </Text>
                   </div>
                 )}
               </div>
@@ -1283,12 +1284,12 @@ export default function NetWorthHistory() {
             alignItems: "center",
             justifyContent: "space-between",
           }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-muted)" }}>
+            <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
               Monthly Breakdown
-            </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+            </Text>
+            <Text as="span" mono size={9} color="var(--ft-dim)">
               End-of-month · last {monthlyStats.length} months
-            </span>
+            </Text>
           </div>
           {isMobile ? (
             <div>
@@ -1304,9 +1305,9 @@ export default function NetWorthHistory() {
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isLatest ? "var(--ft-text)" : "var(--ft-muted)", fontWeight: isLatest ? 700 : 400 }}>
+                      <Text as="span" mono size={10} weight={isLatest ? 700 : 400} color={isLatest ? "var(--ft-text)" : "var(--ft-muted)"}>
                         {row.label}{isLatest ? " ←" : ""}
-                      </span>
+                      </Text>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: row.endNW >= 0 ? "var(--ft-text)" : "var(--ft-red)" }}>
                         {formatGbp(row.endNW)}
                       </span>
@@ -1371,13 +1372,13 @@ export default function NetWorthHistory() {
             gap: isMobile ? 6 : 0,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-muted)" }}>
+              <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
                 Target Net Worth
-              </span>
+              </Text>
               {targetNw > 0 && currentNW > 0 && (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                <Text as="span" mono size={9} color="var(--ft-dim)">
                   — {Math.min(100, (currentNW / targetNw) * 100).toFixed(1)}% reached
-                </span>
+                </Text>
               )}
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1529,9 +1530,9 @@ export default function NetWorthHistory() {
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+                      <Text as="span" mono size={9} color="var(--ft-muted)">
                         {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                      </span>
+                      </Text>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: e.netWorth >= 0 ? "var(--ft-text)" : "var(--ft-red)" }}>
                           {formatGbp(e.netWorth)}

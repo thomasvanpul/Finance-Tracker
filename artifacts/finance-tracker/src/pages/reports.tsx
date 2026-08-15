@@ -17,6 +17,7 @@ import {
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
+import { Text, MonoLabel } from "@/components/primitives";
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
@@ -265,7 +266,7 @@ function TrendTooltip({ active, payload, label }: {
       <div style={{ color: "var(--ft-muted)", marginBottom: 6, fontSize: 9 }}>{label}</div>
       {payload.map((p) => (
         <div key={p.name} style={{ display: "flex", justifyContent: "space-between", gap: 16, color: p.color, marginBottom: 2 }}>
-          <span style={{ color: "var(--ft-dim)" }}>{p.name}</span>
+          <Text as="span" color="var(--ft-dim)">{p.name}</Text>
           <span className="pnum">{p.value < 0 ? "−" : ""}{formatGbp(Math.abs(p.value))}</span>
         </div>
       ))}
@@ -287,7 +288,7 @@ function DonutTooltip({ active, payload }: {
       fontFamily: "var(--font-mono)",
       fontSize: 10,
     }}>
-      <span style={{ color: "var(--ft-muted)" }}>{p.name}: </span>
+      <Text as="span" color="var(--ft-muted)">{p.name}: </Text>
       <span className="pnum" style={{ color: "var(--ft-text)" }}>{formatGbp(p.value)}</span>
     </div>
   );
@@ -334,9 +335,9 @@ function SectionHeader({ title, right, accentColor = "var(--ft-accent)" }: {
       alignItems: "center",
       justifyContent: "space-between",
     }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" as const }}>
+      <Text as="span" mono upper size={8} weight={700} color="var(--ft-dim)" letterSpacing="0.12em">
         {title}
-      </span>
+      </Text>
       {right && <div style={{ display: "flex", alignItems: "center", gap: 6 }}>{right}</div>}
     </div>
   );
@@ -1184,14 +1185,14 @@ export default function Reports() {
           {/* Custom date range — hidden on mobile to save space */}
           {!isMobile && (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>From</span>
+              <Text as="span" mono size={10} color="var(--ft-dim)">From</Text>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => { setDateFrom(e.target.value); setActiveQuick("Custom"); }}
                 style={{ height: 26, padding: "0 6px", fontSize: 11, fontFamily: "var(--font-mono)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)", outline: "none" }}
               />
-              <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>To</span>
+              <Text as="span" mono size={10} color="var(--ft-dim)">To</Text>
               <input
                 type="date"
                 value={dateTo}
@@ -1330,7 +1331,7 @@ export default function Reports() {
       {reportType === "income-statement" && (
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
           <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-            <SectionHeader title="Income Statement" accentColor="var(--ft-green)" right={<span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>monthly breakdown</span>} />
+            <SectionHeader title="Income Statement" accentColor="var(--ft-green)" right={<Text as="span" mono size={9} color="var(--ft-dim)">monthly breakdown</Text>} />
             <IncomeStatementTable rows={monthlyHistory} />
           </div>
           <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
@@ -1484,7 +1485,7 @@ export default function Reports() {
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
         <SectionHeader title="Biggest Transactions" accentColor="var(--ft-accent)" right={
           <div style={{ display: "flex", gap: 6 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Top 10 by GBP value</span>
+            <Text as="span" mono size={9} color="var(--ft-dim)">Top 10 by GBP value</Text>
             <button
               onClick={() => exportCsv(biggestTxs as CsvRow[], "Biggest Transactions")}
               style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "1px 6px", cursor: "pointer", borderRadius: 2 }}
@@ -1519,7 +1520,7 @@ export default function Reports() {
         <SectionHeader title="Tax Year Export" accentColor="var(--ft-amber)" />
         <div className="ft-filter-bar" style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, background: "var(--ft-surface)", flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>TAX YEAR</span>
+            <Text as="span" mono size={10} color="var(--ft-dim)" letterSpacing="0.04em">TAX YEAR</Text>
             <select
               value={selectedTaxYear}
               onChange={(e) => { setSelectedTaxYear(Number(e.target.value)); setTaxYearError(null); }}
@@ -1539,7 +1540,7 @@ export default function Reports() {
             {taxYearDownloading ? "Downloading…" : `↓ Download CSV (${formatTaxYear(selectedTaxYear)})`}
           </button>
           {taxYearError && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-red)" }}>{taxYearError}</span>
+            <Text as="span" mono size={11} color="var(--ft-red)">{taxYearError}</Text>
           )}
           <div style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
             Columns: Date · Description · Amount · Type · Category · Account · Notes

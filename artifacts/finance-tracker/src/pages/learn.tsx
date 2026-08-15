@@ -1,4 +1,5 @@
 import { LearnTab } from "@/components/investments/learn-tab";
+import { Text, MonoLabel } from "@/components/primitives";
 
 export default function Learn() {
   return (

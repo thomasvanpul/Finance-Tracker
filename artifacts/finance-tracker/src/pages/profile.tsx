@@ -16,6 +16,7 @@ import {
 import { formatGbp } from "@/lib/utils";
 import { getLevel, getLearnXP } from "@/lib/learn-xp";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
+import { Text, MonoLabel } from "@/components/primitives";
 
 const PANEL: React.CSSProperties = {
   background: "var(--ft-surface)",
@@ -199,7 +200,7 @@ function UsageStorageRow({
         borderBottom: isLast ? undefined : "1px solid var(--ft-border)",
       }}
     >
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{label}</span>
+      <Text as="span" mono size={10} color="var(--ft-muted)">{label}</Text>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: note ? "var(--ft-dim)" : "var(--ft-text)", fontWeight: 700 }}>
         {note ?? value}
       </span>
@@ -330,9 +331,9 @@ function PersonaRow({
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 1 }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color, letterSpacing: "0.1em", border: `1px solid ${color}55`, padding: "1px 4px" }}>{persona.code}</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)" }}>{persona.label}</span>
+          <Text as="span" mono size={10} weight={700} color="var(--ft-text)">{persona.label}</Text>
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{persona.tagline}</div>
+        <Text as="div" mono size={9} color="var(--ft-dim)">{persona.tagline}</Text>
       </div>
     </HoverRow>
   );
@@ -971,9 +972,9 @@ export default function Profile() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 2 }}>
             {user?.email ?? "—"}
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+          <Text as="div" mono size={9} color="var(--ft-dim)">
             uid:{user?.id ? user.id.slice(0, 12) + "…" : "—"} · joined {joinDate}
-          </div>
+          </Text>
         </div>
       </div>
 
@@ -1217,12 +1218,12 @@ export default function Profile() {
   const sessionPanel = (
     <div style={PANEL}>
       <div style={HEADER}>
-        <span style={{ color: "var(--ft-accent)" }}>·</span> Session
+        <Text as="span" color="var(--ft-accent)">·</Text> Session
       </div>
       <div style={{ background: "var(--ft-surface)", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
-            Signed in as <span style={{ color: "var(--ft-text)" }}>{user?.email ?? "—"}</span>
+            Signed in as <Text as="span" color="var(--ft-text)">{user?.email ?? "—"}</Text>
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
             Sign out on this device only. Other sessions remain active.
@@ -1253,7 +1254,7 @@ export default function Profile() {
   const prefsPanel = (
     <div style={PANEL}>
       <div style={HEADER}>
-        <span style={{ color: "var(--ft-accent)" }}>·</span> Preferences
+        <Text as="span" color="var(--ft-accent)">·</Text> Preferences
       </div>
       <div style={{ background: "var(--ft-surface)" }}>
         {/* Currency row */}
@@ -1483,7 +1484,7 @@ export default function Profile() {
       {/* Change Password */}
       <div style={PANEL}>
         <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-amber)", paddingLeft: 10 }}>
-          <span style={{ color: "var(--ft-amber)" }}>·</span> Change Password
+          <Text as="span" color="var(--ft-amber)">·</Text> Change Password
         </div>
         <form onSubmit={handleChangePassword} style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 12, background: "var(--ft-surface)" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1511,7 +1512,7 @@ export default function Profile() {
       {/* Two-Factor Authentication */}
       <div style={PANEL}>
         <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 10 }}>
-          <span style={{ color: "var(--ft-cyan)" }}>·</span> Two-Factor Authentication
+          <Text as="span" color="var(--ft-cyan)">·</Text> Two-Factor Authentication
           <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, padding: "1px 6px", background: twoFaEnabled ? "rgba(63,185,80,0.15)" : "rgba(255,255,255,0.05)", color: twoFaEnabled ? "var(--ft-green)" : "var(--ft-dim)", border: `1px solid ${twoFaEnabled ? "rgba(63,185,80,0.3)" : "var(--ft-border)"}` }}>
             {twoFaEnabled ? "● ON" : "○ OFF"}
           </span>
@@ -1556,7 +1557,7 @@ export default function Profile() {
                   </button>
                 </div>
               )}
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>Then enter the 6-digit code from your app to verify:</div>
+              <Text as="div" mono size={10} color="var(--ft-dim)">Then enter the 6-digit code from your app to verify:</Text>
               <Input
                 placeholder="000000"
                 maxLength={6}
@@ -1597,12 +1598,12 @@ export default function Profile() {
 
       {/* Sessions */}
       <div style={PANEL}>
-        <div style={HEADER}><span style={{ color: "var(--ft-accent)" }}>·</span> Sessions</div>
+        <div style={HEADER}><Text as="span" color="var(--ft-accent)">·</Text> Sessions</div>
         <div style={{ padding: "12px 14px", background: "var(--ft-surface)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>Current device</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>
-              <span style={{ color: "var(--ft-green)" }}>●</span> Active now · {/Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop"}
+              <Text as="span" color="var(--ft-green)">●</Text> Active now · {/Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop"}
             </div>
           </div>
           <button
@@ -1661,7 +1662,7 @@ export default function Profile() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Blur sensitive amounts</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>Amounts show as "£ ••••" until hovered. Useful in public places.</div>
+              <Text as="div" mono size={9} color="var(--ft-muted)">Amounts show as "£ ••••" until hovered. Useful in public places.</Text>
             </div>
             <button
               onClick={() => handleBlurAmounts(!blurAmounts)}
@@ -1678,9 +1679,9 @@ export default function Profile() {
               Auto-blur delay after hover: <span style={{ color: "var(--ft-accent)" }}>{autoBlurDelay === 0 ? "Immediate" : `${autoBlurDelay}s`}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>0s</span>
+              <Text as="span" mono size={9} color="var(--ft-dim)">0s</Text>
               <input type="range" min={0} max={30} value={autoBlurDelay} onChange={e => handleAutoBlurDelay(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>30s</span>
+              <Text as="span" mono size={9} color="var(--ft-dim)">30s</Text>
             </div>
           </div>
         )}
@@ -1689,13 +1690,13 @@ export default function Profile() {
       {/* Data Masking */}
       <div style={PANEL}>
         <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-muted)", paddingLeft: 10 }}>
-          <span style={{ color: "var(--ft-accent)" }}>·</span> Data Masking
+          <Text as="span" color="var(--ft-accent)">·</Text> Data Masking
         </div>
         <HoverRow style={{ padding: "10px 14px", borderBottom: "1px solid var(--ft-border)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Transaction descriptions</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>Controls how merchant names and descriptions appear</div>
+              <Text as="div" mono size={9} color="var(--ft-muted)">Controls how merchant names and descriptions appear</Text>
             </div>
             <select
               value={maskMode}
@@ -1712,7 +1713,7 @@ export default function Profile() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Hide amounts when printing</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>Blurs all financial figures in print / PDF export</div>
+              <Text as="div" mono size={9} color="var(--ft-muted)">Blurs all financial figures in print / PDF export</Text>
             </div>
             <button
               onClick={() => handleHideFromPrint(!hideFromPrint)}
@@ -1740,9 +1741,9 @@ export default function Profile() {
               <DataExportCell key={label} label={label} value={value} />
             ))}
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+          <Text as="div" mono size={10} color="var(--ft-muted)">
             Downloads profile, account stats, and locally stored preferences as JSON.
-          </div>
+          </Text>
           <div style={{ display: "flex", gap: 10 }}>
             <button
               onClick={handleExport}
@@ -1753,9 +1754,9 @@ export default function Profile() {
               ↓ Export as JSON
             </button>
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+          <Text as="div" mono size={9} color="var(--ft-dim)">
             Server-side data (transactions, investments) requires a separate server export and is not included.
-          </div>
+          </Text>
         </div>
       </div>
     </div>
