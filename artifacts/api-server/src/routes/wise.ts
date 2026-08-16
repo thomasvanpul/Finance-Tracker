@@ -1,129 +1,98 @@
+// Wise endpoints, now backed by the per-user connection model.
+//
+// These two routes exist to keep the existing frontend working during
+// the transition (`useGetWiseStatus`, `useSyncWiseTransactions` in
+// settings.tsx and accounts.tsx). Behaviour and response shapes are
+// preserved; the token no longer comes from WISE_API_TOKEN.
+//
+// The historical env-var fallback for Thomas's own token is gone: the
+// whole point of the H series is to stop the app being a personal
+// integration wearing product clothes. Keeping the fallback would
+// perpetuate the exact anti-pattern H exists to remove and would
+// require a second code path that reads the same field two different
+// ways. Reconnect via POST /connections { provider: "wise",
+// credential: "…" } and this route reads from there.
+
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
-import { db, accountsTable, transactionsTable } from "@workspace/db";
+import { db, connectionsTable, type Connection } from "@workspace/db";
 import { GetWiseStatusResponse, SyncWiseTransactionsResponse } from "@workspace/api-zod";
-import { checkConnection, listProfiles, listBalances, getStatement } from "../lib/wise";
+import { runConnectionSync } from "../lib/connection-sync";
+import { AdapterError } from "../adapters";
 import { logger } from "../lib/logger";
-// toBase / getBaseCurrency imports removed with the dead gbpEquivalent
-// computation below — the value is derived on read in enrichAccount now.
 
 const router: IRouter = Router();
 
+async function getWiseConnection(userId: string): Promise<Connection | null> {
+  const [row] = await db
+    .select()
+    .from(connectionsTable)
+    .where(and(eq(connectionsTable.userId, userId), eq(connectionsTable.provider, "wise")));
+  return row ?? null;
+}
+
 router.get("/wise/status", async (req, res): Promise<void> => {
-  const configured = Boolean(process.env.WISE_API_TOKEN);
-  if (!configured) {
-    res.json(GetWiseStatusResponse.parse({ configured: false, connected: false, profileName: null, error: null }));
+  const userId = (req as any).userId as string;
+  const connection = await getWiseConnection(userId);
+  if (!connection) {
+    // Preserve the WiseStatus shape: `configured: false` now means
+    // "no wise connection exists for this user" rather than "env var
+    // not set on server".
+    res.json(
+      GetWiseStatusResponse.parse({
+        configured: false,
+        connected: false,
+        profileName: null,
+        error: null,
+      }),
+    );
     return;
   }
-  const result = await checkConnection();
-  if (result.connected) {
-    res.json(GetWiseStatusResponse.parse({ configured: true, connected: true, profileName: result.profileName, error: null }));
-  } else {
-    res.json(GetWiseStatusResponse.parse({ configured: true, connected: false, profileName: null, error: result.error }));
-  }
+  res.json(
+    GetWiseStatusResponse.parse({
+      configured: true,
+      connected: connection.status === "active",
+      profileName: connection.label,
+      error: connection.lastError,
+    }),
+  );
 });
 
-// Fetches all balances across the user's Wise profile(s), creates/updates matching
-// accounts, then pulls the last 90 days of transactions for each balance.
 router.post("/wise/sync", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
-
-  if (!process.env.WISE_API_TOKEN) {
-    res.status(400).json({ error: "WISE_API_TOKEN is not configured on the server." });
+  const connection = await getWiseConnection(userId);
+  if (!connection) {
+    res.status(400).json({
+      error:
+        "No Wise connection. Add one via POST /connections with " +
+        '{ "provider": "wise", "credential": "<your-wise-token>" }.',
+    });
     return;
   }
 
   try {
-    const profiles = await listProfiles();
-    const personalProfile = profiles.find((p) => p.type === "personal") ?? profiles[0];
-    if (!personalProfile) {
-      res.status(400).json({ error: "No Wise profile found for this token." });
+    const summary = await runConnectionSync(connection);
+    res.json(
+      SyncWiseTransactionsResponse.parse({
+        synced: summary.transactionsAdded + summary.transactionsUpdated,
+        added: summary.transactionsAdded,
+        updated: summary.transactionsUpdated,
+      }),
+    );
+  } catch (err) {
+    if (err instanceof AdapterError) {
+      await db
+        .update(connectionsTable)
+        .set({
+          status: err.kind === "auth" ? "revoked" : "error",
+          lastError: err.message,
+        })
+        .where(eq(connectionsTable.id, connection.id));
+      res.status(400).json({ error: err.message });
       return;
     }
-
-    const balances = await listBalances(personalProfile.id);
-
-    let totalSynced = 0;
-    let totalAdded = 0;
-    let totalUpdated = 0;
-
-    const intervalEnd = new Date();
-    const intervalStart = new Date();
-    intervalStart.setDate(intervalStart.getDate() - 90);
-
-    for (const balance of balances) {
-      // gbpEquivalent used to be computed here but the value was never
-      // stored — dead computation. The value is derived on read in
-      // enrichAccount from the live FX rate.
-      const [account] = await db
-        .insert(accountsTable)
-        .values({
-          name: `Wise (${balance.currency})`,
-          currency: balance.amount.currency,
-          balance: String(balance.amount.value),
-          isWiseLinked: true,
-          wiseProfileId: String(personalProfile.id),
-          wiseBalanceId: String(balance.id),
-          lastSyncedAt: new Date(),
-          userId,
-        })
-        .onConflictDoUpdate({
-          target: accountsTable.wiseBalanceId,
-          set: {
-            balance: String(balance.amount.value),
-            lastSyncedAt: new Date(),
-          },
-        })
-        .returning();
-
-      const transactions = await getStatement(
-        personalProfile.id,
-        balance.id,
-        balance.currency,
-        intervalStart,
-        intervalEnd
-      );
-
-      for (const tx of transactions) {
-        const nativeAmount = tx.amount.value;
-        const type = nativeAmount > 0 ? "income" : "expense";
-        const description = tx.details.merchant?.name ?? tx.details.description ?? tx.details.type;
-
-        const existing = await db
-          .select()
-          .from(transactionsTable)
-          .where(and(eq(transactionsTable.externalId, tx.referenceNumber), eq(transactionsTable.userId, userId)));
-
-        if (existing.length > 0) {
-          await db
-            .update(transactionsTable)
-            .set({ nativeAmount: String(Math.abs(nativeAmount)), type })
-            .where(and(eq(transactionsTable.externalId, tx.referenceNumber), eq(transactionsTable.userId, userId)));
-          totalUpdated++;
-        } else {
-          await db.insert(transactionsTable).values({
-            date: tx.date.slice(0, 10),
-            description,
-            type,
-            category: "Other",
-            accountId: account.id,
-            nativeAmount: String(Math.abs(nativeAmount)),
-            currency: tx.amount.currency,
-            source: "wise",
-            externalId: tx.referenceNumber,
-            userId,
-          });
-          totalAdded++;
-        }
-        totalSynced++;
-      }
-    }
-
-    logger.info({ totalSynced, totalAdded, totalUpdated }, "Wise sync complete");
-    res.json(SyncWiseTransactionsResponse.parse({ synced: totalSynced, added: totalAdded, updated: totalUpdated }));
-  } catch (err: any) {
-    logger.error({ err: err?.message }, "Wise sync failed");
-    res.status(500).json({ error: err?.message ?? "Wise sync failed" });
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, "wise sync failed");
+    res.status(500).json({ error: "Wise sync failed" });
   }
 });
 
