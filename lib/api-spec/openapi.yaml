@@ -1086,6 +1086,32 @@ paths:
         "200":
           description: Updated
 
+  /settings/persona:
+    get:
+      operationId: getSettingsPersona
+      tags: [settings]
+      summary: Get the current user's persona
+      responses:
+        "200":
+          description: Persona
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonaSettings"
+    put:
+      operationId: updateSettingsPersona
+      tags: [settings]
+      summary: Set the current user's persona
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonaSettings"
+      responses:
+        "200":
+          description: Updated
+
   # ── SETTINGS (password + 2FA) ───────────────────────────────────────────────
   /settings/password:
     post:
@@ -2020,6 +2046,17 @@ components:
         baseCurrency:
           type: string
           enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
+
+    PersonaSettings:
+      type: object
+      required: [persona]
+      properties:
+        persona:
+          type: string
+          enum: [market, budget, wealth, social, full]
+          description: |
+            Which product face the user sees. See lib/persona.ts on the
+            frontend for what each id enables/disables.
 
     # ── DASHBOARD ─────────────────────────────────────────────────────────────
     DashboardSummary:

@@ -898,6 +898,29 @@ export interface CurrencySettings {
   baseCurrency: CurrencySettingsBaseCurrency;
 }
 
+/**
+ * Which product face the user sees. See lib/persona.ts on the
+frontend for what each id enables/disables.
+
+ */
+export type PersonaSettingsPersona = typeof PersonaSettingsPersona[keyof typeof PersonaSettingsPersona];
+
+
+export const PersonaSettingsPersona = {
+  market: 'market',
+  budget: 'budget',
+  wealth: 'wealth',
+  social: 'social',
+  full: 'full',
+} as const;
+
+export interface PersonaSettings {
+  /** Which product face the user sees. See lib/persona.ts on the
+  frontend for what each id enables/disables.
+   */
+  persona: PersonaSettingsPersona;
+}
+
 export type DashboardSummaryAccountBreakdownItemType = typeof DashboardSummaryAccountBreakdownItemType[keyof typeof DashboardSummaryAccountBreakdownItemType];
 
 

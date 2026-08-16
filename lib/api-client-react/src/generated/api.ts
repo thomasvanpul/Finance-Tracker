@@ -59,6 +59,7 @@ import type {
   InvestmentUpdate,
   ListTransactionsParams,
   OkResult,
+  PersonaSettings,
   StockPrice,
   StockQuote,
   Subscription,
@@ -4304,6 +4305,154 @@ export const useUpdateSettingsCurrency = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateSettingsCurrencyMutationOptions(options));
+    }
+
+export const getGetSettingsPersonaUrl = () => {
+
+
+
+
+  return `/api/settings/persona`
+}
+
+/**
+ * @summary Get the current user's persona
+ */
+export const getSettingsPersona = async ( options?: RequestInit): Promise<PersonaSettings> => {
+
+  return customFetch<PersonaSettings>(getGetSettingsPersonaUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSettingsPersonaQueryKey = () => {
+    return [
+    `/api/settings/persona`
+    ] as const;
+    }
+
+
+export const getGetSettingsPersonaQueryOptions = <TData = Awaited<ReturnType<typeof getSettingsPersona>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsPersona>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSettingsPersonaQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSettingsPersona>>> = ({ signal }) => getSettingsPersona({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSettingsPersona>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSettingsPersonaQueryResult = NonNullable<Awaited<ReturnType<typeof getSettingsPersona>>>
+export type GetSettingsPersonaQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current user's persona
+ */
+
+export function useGetSettingsPersona<TData = Awaited<ReturnType<typeof getSettingsPersona>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsPersona>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSettingsPersonaQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateSettingsPersonaUrl = () => {
+
+
+
+
+  return `/api/settings/persona`
+}
+
+/**
+ * @summary Set the current user's persona
+ */
+export const updateSettingsPersona = async (personaSettings: PersonaSettings, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUpdateSettingsPersonaUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      personaSettings,)
+  }
+);}
+
+
+
+
+export const getUpdateSettingsPersonaMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsPersona>>, TError,{data: BodyType<PersonaSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSettingsPersona>>, TError,{data: BodyType<PersonaSettings>}, TContext> => {
+
+const mutationKey = ['updateSettingsPersona'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSettingsPersona>>, {data: BodyType<PersonaSettings>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateSettingsPersona(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSettingsPersonaMutationResult = NonNullable<Awaited<ReturnType<typeof updateSettingsPersona>>>
+    export type UpdateSettingsPersonaMutationBody = BodyType<PersonaSettings>
+    export type UpdateSettingsPersonaMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set the current user's persona
+ */
+export const useUpdateSettingsPersona = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsPersona>>, TError,{data: BodyType<PersonaSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSettingsPersona>>,
+        TError,
+        {data: BodyType<PersonaSettings>},
+        TContext
+      > => {
+      return useMutation(getUpdateSettingsPersonaMutationOptions(options));
     }
 
 export const getChangePasswordUrl = () => {

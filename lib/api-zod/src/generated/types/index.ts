@@ -75,6 +75,8 @@ export * from './investmentUpdate';
 export * from './listTransactionsParams';
 export * from './listTransactionsType';
 export * from './okResult';
+export * from './personaSettings';
+export * from './personaSettingsPersona';
 export * from './stockPrice';
 export * from './stockQuote';
 export * from './subscription';

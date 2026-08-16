@@ -24,3 +24,21 @@ export async function setBaseCurrency(userId: string, currency: string): Promise
     .set({ baseCurrency: currency })
     .where(eq(appSettingsTable.userId, userId));
 }
+
+// Persona (F1). Server does not know the runtime meaning of each id
+// — validation is a string-set check. Frontend owns the semantics.
+export const VALID_PERSONAS = ["market", "budget", "wealth", "social", "full"] as const;
+export type PersonaId = (typeof VALID_PERSONAS)[number];
+
+export async function getPersona(userId: string): Promise<PersonaId> {
+  const row = await ensureSettings(userId);
+  return (row.persona as PersonaId) ?? "full";
+}
+
+export async function setPersona(userId: string, persona: PersonaId): Promise<void> {
+  await ensureSettings(userId);
+  await db
+    .update(appSettingsTable)
+    .set({ persona })
+    .where(eq(appSettingsTable.userId, userId));
+}

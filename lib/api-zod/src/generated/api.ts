@@ -1026,6 +1026,22 @@ export const UpdateSettingsCurrencyBody = zod.object({
 
 
 /**
+ * @summary Get the current user's persona
+ */
+export const GetSettingsPersonaResponse = zod.object({
+  "persona": zod.enum(['market', 'budget', 'wealth', 'social', 'full']).describe('Which product face the user sees. See lib\/persona.ts on the\nfrontend for what each id enables\/disables.\n')
+})
+
+
+/**
+ * @summary Set the current user's persona
+ */
+export const UpdateSettingsPersonaBody = zod.object({
+  "persona": zod.enum(['market', 'budget', 'wealth', 'social', 'full']).describe('Which product face the user sees. See lib\/persona.ts on the\nfrontend for what each id enables\/disables.\n')
+})
+
+
+/**
  * @summary Change the app password (requires current password)
  */
 export const changePasswordBodyNewPasswordMin = 8;
