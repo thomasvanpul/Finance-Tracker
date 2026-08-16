@@ -52,6 +52,14 @@ Never point local development at production.
   `NODE_ENV`, so it silently disabled itself. Security defaults fail closed.
 - Nothing sensitive in a served directory. `artifacts/finance-tracker/static/`
   is Vite's `publicDir` and `public/` is the build `outDir`. Both are public.
+- **No emoji anywhere in the UI, including flags.** Currency and country
+  identity is carried by purpose-drawn SVG icons, never by emoji — they render
+  differently on every platform, cannot be themed, ignore the type ladder, and
+  read as decoration in a product whose whole visual argument is that it is an
+  instrument. Known sources: a currency-to-emoji map duplicated in
+  `components/widgets/net-worth.tsx` and `accounts-summary.tsx`, and the
+  market-hours city list in `components/layout.tsx`.
+
 - The app **cannot hold or convert money.** It can initiate a payment through a
   licensed provider, which the user approves in their own banking app. Never
   design or build an action implying otherwise. MYR and Maybank are read-only.

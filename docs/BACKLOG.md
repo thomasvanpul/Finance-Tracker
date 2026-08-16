@@ -446,3 +446,20 @@ renderer for a decorative avatar is real battery and bundle cost.
 `docs/BACKLOG-old.md` holds the previous version. Section 6 of that file (the
 persona-driven mobile home) was superseded by the design work recorded in
 `docs/MOBILE-CONCEPT.md`; its useful parts are now F1 and D2.
+
+### D4 · Replace flag emoji with drawn currency icons — TODO
+Emoji flags are in use for currency and market identity. They render
+differently on every platform, cannot be themed, ignore the type ladder, and
+read as decoration in a product arguing that it is an instrument. "No emoji"
+was already a stated rule; these predate it.
+
+Sources: the currency-to-emoji map duplicated in
+`components/widgets/net-worth.tsx:36` and `accounts-summary.tsx:7`, and the
+market-hours city list in `components/layout.tsx:223-233`.
+
+- **Do:** one shared icon set as inline SVG, sized to the type ladder and
+  monochrome-or-restrained enough to survive all 11 themes including `arctic`.
+  Cover at least GBP, USD, EUR, MYR, SGD plus the market-hours cities. Delete
+  the duplicated map — one source.
+- **Verify:** grep the codebase for emoji ranges, expect zero; harness capture
+  of a multi-currency screen in `arctic` and a saturated theme.

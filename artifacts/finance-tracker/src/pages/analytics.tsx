@@ -164,7 +164,12 @@ interface AnalyticsKpiCellProps {
   accentColor?: string;
 }
 
-function AnalyticsKpiCell({ label, value, delta, valueColor, accentColor = "var(--ft-accent)" }: AnalyticsKpiCellProps) {
+function AnalyticsKpiCell({ label, value, delta, valueColor, accentColor: _accentColor }: AnalyticsKpiCellProps) {
+  // accentColor was a decorative rainbow stripe (per-cell red/amber/blue/
+  // muted). CLAUDE.md § Anti-Vibe Constitution bans "rainbow ratings" —
+  // colour is not encoding rank, so drop the prop's effect and let the
+  // hairline structure carry the boundary. Prop kept accepted so the
+  // callsite doesn't have to change until the pilot is folded in.
   const isMobile = useIsMobile();
   const [hov, setHov] = React.useState(false);
   return (
@@ -173,7 +178,7 @@ function AnalyticsKpiCell({ label, value, delta, valueColor, accentColor = "var(
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
         padding: isMobile ? "8px 10px" : "var(--ft-metric-py) 12px",
-        borderTop: `2px solid ${accentColor}`,
+        borderTop: "1px solid var(--ft-border)",
         minWidth: 0,
       }}
       onMouseEnter={() => setHov(true)}
@@ -183,7 +188,10 @@ function AnalyticsKpiCell({ label, value, delta, valueColor, accentColor = "var(
       onTouchCancel={() => setHov(false)}
     >
       <div style={{ ...ftLabel, marginBottom: isMobile ? 2 : 4, fontSize: isMobile ? 8 : 9 }}>{label}</div>
-      <div className="pnum" style={{ ...mono, fontSize: isMobile ? 15 : 18, fontWeight: 700, color: valueColor ?? "var(--ft-text)", letterSpacing: "-0.01em", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      {/* No overflow: hidden / text-overflow: ellipsis on a financial
+          figure — the constitution forbids clipping numbers. Overflow
+          visibly so the layout regression is signal. */}
+      <div className="pnum" style={{ ...mono, fontSize: isMobile ? 15 : 18, fontWeight: 700, color: valueColor ?? "var(--ft-text)", letterSpacing: "-0.01em", marginBottom: 2 }}>
         {value}
       </div>
       <div style={{ minHeight: isMobile ? 12 : 14 }}>{delta}</div>
@@ -800,12 +808,6 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
           value={c.value}
           delta={c.delta}
           valueColor={c.valueColor}
-          accentColor={
-            c.label === "Highest Category" || c.label === "Best Month" ? "var(--ft-blue)"
-            : c.label === "Savings Rate" ? "var(--ft-green)"
-            : c.label === "YoY Change" ? "var(--ft-amber)"
-            : "var(--ft-accent)"
-          }
         />
       ))}
     </div>
@@ -852,7 +854,6 @@ function KpiStrip({ expenses, range, onRangeChange }: { expenses: Tx[]; range: R
     { label: "Transactions", value: String(ranged.length), sub: <span style={{ ...ftLabel }}>in range</span> },
   ];
 
-  const kpiAccentColors = ["var(--ft-red)", "var(--ft-amber)", "var(--ft-red)", "var(--ft-blue)", "var(--ft-muted)"];
   return (
     <div style={{ ...panelStyle, marginBottom: 8 }}>
       <PanelHeader title="Spend Summary" right={<RangeSelector value={range} onChange={onRangeChange} />} />
@@ -860,13 +861,12 @@ function KpiStrip({ expenses, range, onRangeChange }: { expenses: Tx[]; range: R
         className="ft-kpi-bar"
         style={{ display: "grid", gap: 1, background: "var(--ft-border)", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : `repeat(${tiles.length}, 1fr)` }}
       >
-        {tiles.map((t, i) => (
+        {tiles.map((t) => (
           <AnalyticsKpiCell
             key={t.label}
             label={t.label}
             value={t.value}
             delta={t.sub}
-            accentColor={kpiAccentColors[i] ?? "var(--ft-accent)"}
           />
         ))}
       </div>
