@@ -106,6 +106,49 @@ async function signIn(context: BrowserContext): Promise<void> {
 // to https://financetracker.work (a prod-only workaround) and therefore gets
 // blocked by the api-server's dev CORS check.
 async function interceptApiRequests(context: BrowserContext): Promise<void> {
+  // FX-null override: rewrite every "converted" field on non-GBP rows to null.
+  // Used to visually verify the null-FX display path. Set SCREENSHOT_NULL_FOREIGN_FX=1.
+  const nullForeignFx = process.env.SCREENSHOT_NULL_FOREIGN_FX === "1";
+  const stripForeignFx = (obj: unknown): unknown => {
+    if (Array.isArray(obj)) return obj.map(stripForeignFx);
+    if (obj && typeof obj === "object") {
+      const rec = obj as Record<string, unknown>;
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(rec)) out[k] = stripForeignFx(v);
+      const cur = typeof rec.currency === "string" ? rec.currency : null;
+      if (cur && cur !== "GBP") {
+        for (const key of ["gbpEquivalent", "gbpValue"]) {
+          if (key in out) out[key] = null;
+        }
+      }
+      return out;
+    }
+    return obj;
+  };
+  const rewriteDashboardCount = (root: unknown): unknown => {
+    if (!root || typeof root !== "object") return root;
+    const rec = root as Record<string, unknown>;
+    if (Array.isArray(rec.accountBreakdown)) {
+      const rows = rec.accountBreakdown as Array<Record<string, unknown>>;
+      const count = rows.filter((a) => a.gbpEquivalent === null).length;
+      if (count > 0) {
+        rec.unconvertibleAccounts = count;
+        // Recompute totals from stripped breakdown so headline matches what
+        // the server would emit under real null-FX (server skips nulls).
+        const totalCash = rows.reduce<number>((s, a) => {
+          const v = a.gbpEquivalent;
+          return typeof v === "number" ? s + v : s;
+        }, 0);
+        rec.totalCash = Math.round(totalCash * 100) / 100;
+        const portfolioValueGbp = typeof (rec.portfolio as any)?.totalValueGbp === "number"
+          ? (rec.portfolio as any).totalValueGbp as number
+          : 0;
+        rec.netWorth = Math.round((totalCash + portfolioValueGbp) * 100) / 100;
+      }
+    }
+    return rec;
+  };
+
   await context.route(`${FRONTEND}/api/**`, async (route) => {
     const request = route.request();
     const targetUrl = request.url().replace(FRONTEND, API_BASE);
@@ -129,7 +172,17 @@ async function interceptApiRequests(context: BrowserContext): Promise<void> {
       const rest = value.slice(value.indexOf("=") + 1).split(";")[0];
       await context.addCookies([{ name, value: rest, domain: "localhost", path: "/", secure: false, sameSite: "Lax" }]);
     }
-    const body = await response.body();
+    let body = await response.body();
+    let contentType = response.headers()["content-type"] ?? "";
+    if (nullForeignFx && contentType.includes("application/json") && response.status() === 200) {
+      try {
+        const parsed = JSON.parse(body.toString("utf-8"));
+        const rewritten = rewriteDashboardCount(stripForeignFx(parsed));
+        body = Buffer.from(JSON.stringify(rewritten), "utf-8");
+      } catch {
+        // leave body untouched if not JSON
+      }
+    }
     if (dbg && response.status() >= 400) {
       console.log(`[intercept] ${response.status()} ${targetUrl}`);
     }
@@ -137,7 +190,7 @@ async function interceptApiRequests(context: BrowserContext): Promise<void> {
       status: response.status(),
       headers: Object.fromEntries(
         response.headersArray()
-          .filter((h) => h.name.toLowerCase() !== "set-cookie")
+          .filter((h) => h.name.toLowerCase() !== "set-cookie" && h.name.toLowerCase() !== "content-length")
           .map((h) => [h.name, h.value]),
       ),
       body,
