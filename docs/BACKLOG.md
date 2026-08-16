@@ -110,13 +110,15 @@ amount, not just `pendingCount`); FX moves; Wise connectivity status for the
 
 ## D. Mobile
 
-### D1 · Port delete to `MobileTransactions`, then cover `/transactions` — TODO
-`pages/transactions.tsx` has `useSwipeDelete`; the mobile screen has no delete
-at all, which is why `/transactions` is deliberately excluded from
-`MOBILE_ROUTES`.
-- **Done when:** delete works on the mobile screen and `/transactions` is in the
-  route map.
-- **Verify:** open `/transactions` on a phone viewport and delete a row.
+### D1 · Port delete to `MobileTransactions`, then cover `/transactions` — DONE
+The `MobileTransactions.tsx` screen was deleted in an earlier orphan
+cleanup, so /transactions now falls through to `pages/transactions.tsx`.
+That page already implements swipe-to-delete for phone viewports:
+`useSwipeDelete(() => handleDelete(tx.id))` runs per row at line 1585,
+and the DELETE reveal button + swipe transform are gated on `isMobile`
+(lines 1588–1611). Verified against source 2026-08-16. No screen or
+route change required; `/transactions` reaches phone users through the
+desktop page's mobile branches.
 
 ### D2 · Remaining mobile screens in the new design — IN PROGRESS
 Approved-language ports: home (already done), plus **MobileAccounts
