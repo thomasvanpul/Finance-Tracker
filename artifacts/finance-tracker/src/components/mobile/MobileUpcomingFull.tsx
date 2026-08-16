@@ -25,7 +25,7 @@ interface UpcomingItem {
   type: "income" | "expense";
   nativeAmount: number;
   currency: string;
-  gbpEquivalent: number;
+  gbpEquivalent: number | null;
   status: string;
 }
 
@@ -180,10 +180,12 @@ export function MobileUpcomingFull({ onBack }: { onBack?: () => void }) {
                 mono
                 size={14}
                 weight={600}
-                color={isIncome ? "var(--ft-green)" : "var(--ft-red)"}
+                color={it.gbpEquivalent == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-red)"}
                 numeric
               >
-                {isIncome ? "+" : "−"}£{nfmt(Math.abs(it.gbpEquivalent), { decimals: 2 })}
+                {it.gbpEquivalent == null
+                  ? "—"
+                  : `${isIncome ? "+" : "−"}£${nfmt(Math.abs(it.gbpEquivalent), { decimals: 2 })}`}
               </Text>
             </div>
           </div>

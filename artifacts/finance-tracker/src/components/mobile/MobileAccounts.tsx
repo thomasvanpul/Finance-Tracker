@@ -34,7 +34,11 @@ export function MobileAccounts() {
     );
   }
 
-  const total = accounts.reduce((s, a) => s + a.gbpEquivalent, 0);
+  // Totals skip unconvertible accounts; nativeSum is currency-scoped so
+  // it always tallies real balances. gbpSum drops the FX-missing rows;
+  // the per-currency section header still cites `rows.length` so the
+  // account count is honest even when the GBP total is under-stated.
+  const total = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
   const currencies = [...new Set(accounts.map((a) => a.currency))].sort((a, b) => {
     // GBP first, then others alphabetical
     if (a === "GBP") return -1;
@@ -44,7 +48,7 @@ export function MobileAccounts() {
   const perCurrency = currencies.map((cur) => {
     const rows = accounts.filter((a) => a.currency === cur);
     const nativeSum = rows.reduce((s, a) => s + a.balance, 0);
-    const gbpSum = rows.reduce((s, a) => s + a.gbpEquivalent, 0);
+    const gbpSum = rows.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
     return { currency: cur, rows, nativeSum, gbpSum };
   });
 
@@ -220,7 +224,7 @@ function CurrencyBlocks({
 // same treatment as the WISE pill on the desktop accounts page — because the
 // currency grouping alone can't tell you an ISA from a savings account.
 // Cash rows carry nothing: the default is the norm, we mark the exception.
-type AccountRow = { id: number; name: string; balance: number; gbpEquivalent: number; type: "cash" | "investment" | "pension" | "property" | "other" };
+type AccountRow = { id: number; name: string; balance: number; gbpEquivalent: number | null; type: "cash" | "investment" | "pension" | "property" | "other" };
 
 const TYPE_MARK: Record<AccountRow["type"], string | null> = {
   cash: null,
@@ -313,15 +317,17 @@ function CurrencySection({
             </HStack>
             {isGbp ? (
               <Text as="span" mono size={13} numeric>
-                {nfmt(a.gbpEquivalent)}
+                {a.gbpEquivalent == null ? "—" : nfmt(a.gbpEquivalent)}
               </Text>
             ) : (
+              // Foreign row: native amount stays honest on the left;
+              // "≈ —" replaces the GBP figure when FX is unavailable.
               <HStack gap={10} align="baseline">
                 <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
                   {sym}{nfmt(a.balance)} ≈
                 </Text>
-                <Text as="span" mono size={13} numeric>
-                  £{nfmt(a.gbpEquivalent)}
+                <Text as="span" mono size={13} color={a.gbpEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
+                  {a.gbpEquivalent == null ? "—" : `£${nfmt(a.gbpEquivalent)}`}
                 </Text>
               </HStack>
             )}

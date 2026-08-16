@@ -197,7 +197,7 @@ function TypeSection({
   label: string;
   total: number;
   netWorth: number;
-  rows: Array<{ id: number; name: string; balance: number; gbpEquivalent: number; currency: string }>;
+  rows: Array<{ id: number; name: string; balance: number; gbpEquivalent: number | null; currency: string }>;
   note?: string;
 }) {
   const pct = netWorth > 0 ? Math.round((total / netWorth) * 100) : 0;
@@ -255,8 +255,10 @@ function TypeSection({
               }}
             >
               <Text as="span" size={14}>{a.name}</Text>
-              <Text as="span" mono size={13} numeric>
-                £{nfmt(a.gbpEquivalent)}
+              <Text as="span" mono size={13} color={a.gbpEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
+                {a.gbpEquivalent == null
+                  ? (a.currency === "GBP" ? "—" : `${a.currency} ${nfmt(a.balance)}`)
+                  : `£${nfmt(a.gbpEquivalent)}`}
               </Text>
             </div>
           ))}

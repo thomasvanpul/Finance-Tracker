@@ -49,6 +49,7 @@ export function MobileBudget() {
   const spendByCat = new Map<string, number>();
   for (const t of txns) {
     if (t.type !== "expense") continue;
+    if (t.gbpValue == null) continue;
     const k = (t.category || "Uncategorised").toLowerCase();
     spendByCat.set(k, (spendByCat.get(k) ?? 0) + Math.abs(t.gbpValue));
   }

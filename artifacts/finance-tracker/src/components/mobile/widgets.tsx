@@ -127,8 +127,8 @@ export function AccountsWidget() {
             flexShrink: 0,
           }}>
             <div style={{ fontSize: 11, color: "var(--ft-dim)", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{acc.name}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)" }}>
-              {privacy ? "••••" : formatGbp(acc.gbpEquivalent)}
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: acc.gbpEquivalent == null ? "var(--ft-dim)" : "var(--ft-text)" }}>
+              {privacy ? "••••" : acc.gbpEquivalent == null ? "—" : formatGbp(acc.gbpEquivalent)}
             </div>
             {acc.currency !== "GBP" && (
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginTop: 2 }}>
@@ -200,8 +200,10 @@ export function UpcomingWidget() {
               <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.description}</div>
               <div style={{ fontSize: 11, color: "var(--ft-dim)", textTransform: "capitalize" }}>{it.category}</div>
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
-              {isIncome ? "+" : "−"}{formatGbp(it.gbpEquivalent)}
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: it.gbpEquivalent == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
+              {it.gbpEquivalent == null
+                ? "—"
+                : `${isIncome ? "+" : "−"}${formatGbp(it.gbpEquivalent)}`}
             </div>
           </div>
         );

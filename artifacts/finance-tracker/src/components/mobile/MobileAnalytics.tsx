@@ -45,14 +45,17 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
 
   const expenses = txns.filter((t) => t.type === "expense");
   const incomes = txns.filter((t) => t.type === "income");
-  const totalSpend = expenses.reduce((s, t) => s + Math.abs(t.gbpValue), 0);
-  const totalIncome = incomes.reduce((s, t) => s + t.gbpValue, 0);
+  // Analytics summary skips unconvertible transactions — cross-currency
+  // aggregation needs a GBP figure and there's no honest fallback.
+  const totalSpend = expenses.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
+  const totalIncome = incomes.reduce((s, t) => s + (t.gbpValue ?? 0), 0);
   const monthLabel = now.toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase();
   const net = totalIncome - totalSpend;
 
   function byCat(list: typeof txns) {
     const map = new Map<string, number>();
     for (const t of list) {
+      if (t.gbpValue == null) continue;
       const k = t.category || "Uncategorised";
       map.set(k, (map.get(k) ?? 0) + Math.abs(t.gbpValue));
     }

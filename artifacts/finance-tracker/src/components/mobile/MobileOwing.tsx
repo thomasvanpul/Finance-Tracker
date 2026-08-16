@@ -29,7 +29,7 @@ interface DebtRow {
   currency: string;
   direction: "they_owe_me" | "i_owe_them";
   status: string;
-  gbpEquivalent: number;
+  gbpEquivalent: number | null;
 }
 
 function initials(name: string): string {
@@ -200,10 +200,12 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
                 mono
                 size={14}
                 weight={600}
-                color={owedToMe ? "var(--ft-green)" : "var(--ft-red)"}
+                color={d.gbpEquivalent == null ? "var(--ft-dim)" : owedToMe ? "var(--ft-green)" : "var(--ft-red)"}
                 numeric
               >
-                {owedToMe ? "+" : "−"}£{nfmt(Math.abs(d.gbpEquivalent), { decimals: 2 })}
+                {d.gbpEquivalent == null
+                  ? "—"
+                  : `${owedToMe ? "+" : "−"}£${nfmt(Math.abs(d.gbpEquivalent), { decimals: 2 })}`}
               </Text>
             </div>
           </div>

@@ -65,7 +65,7 @@ interface MobileHomeProps {
 export type AccountType = "cash" | "investment" | "pension" | "property" | "other";
 
 export interface HoldingsInput {
-  accountBreakdown?: Array<{ type: AccountType; gbpEquivalent: number }>;
+  accountBreakdown?: Array<{ type: AccountType; gbpEquivalent: number | null }>;
   portfolio?: { totalValueGbp?: number };
 }
 // Bucket keys match the DB column values 1:1 so the loop is `buckets[a.type]`
@@ -80,6 +80,12 @@ export interface Holdings {
 export function computeHoldings(d: HoldingsInput | null | undefined): Holdings {
   const buckets: Holdings = { cash: 0, investment: 0, pension: 0, property: 0, other: 0 };
   for (const a of d?.accountBreakdown ?? []) {
+    // Skip accounts whose FX conversion is unavailable; the block-
+    // field visualisation below reads each bucket as a proportion, so
+    // a fabricated 0 would shrink the wrong bucket. Total shown on
+    // the NET WORTH headline (dashboard.netWorth) already matches
+    // this skip-based sum.
+    if (a.gbpEquivalent == null) continue;
     buckets[a.type] += a.gbpEquivalent;
   }
   // Portfolio positions live in a separate table from accounts. An investment
@@ -536,16 +542,18 @@ function SectionHeader({
 type DailyBalance = { day: number; balance: number; future: boolean };
 
 function buildDailyBalances(
-  txns: Array<{ date: string; gbpValue: number; type: string }>,
+  txns: Array<{ date: string; gbpValue: number | null; type: string }>,
   now: Date,
   currentBalance: number,
 ): DailyBalance[] {
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const today = now.getDate();
   // Compute the balance at the START of the current month by rolling back
-  // today's balance through all this-month transactions.
+  // today's balance through all this-month transactions. Skip rows whose
+  // FX is unavailable — including a fabricated 0 in monthNet would
+  // shift the rolled-back start balance and skew the whole curve.
   const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthTxns = txns.filter((t) => t.date.startsWith(thisMonthPrefix));
+  const monthTxns = txns.filter((t) => t.date.startsWith(thisMonthPrefix) && t.gbpValue != null) as Array<{ date: string; gbpValue: number; type: string }>;
   const monthNet = monthTxns.reduce((s, t) => {
     const signed = t.type === "expense" ? -Math.abs(t.gbpValue) : Math.abs(t.gbpValue);
     return s + signed;
@@ -653,7 +661,7 @@ type Acct = {
   name: string;
   currency: string;
   balance: number;
-  gbpEquivalent: number;
+  gbpEquivalent: number | null;
 };
 
 function AccountsList({ accounts }: { accounts: Acct[] }) {
@@ -687,16 +695,18 @@ function AccountsList({ accounts }: { accounts: Acct[] }) {
           <Text as="span" size={14}>{a.name}</Text>
           {a.currency === "GBP" ? (
             <Text as="span" mono size={13} numeric>
-              {nfmt(a.gbpEquivalent)}
+              {a.gbpEquivalent == null ? "—" : nfmt(a.gbpEquivalent)}
             </Text>
           ) : (
+            // Foreign account row: native amount always honest; the
+            // "≈" line drops to "—" when the FX rate is unavailable.
             <HStack gap={10} align="baseline">
               <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
                 {(CURRENCY_SYMBOLS[a.currency] ?? a.currency + " ") +
                   nfmt(a.balance)} ≈
               </Text>
-              <Text as="span" mono size={13} numeric>
-                {nfmt(a.gbpEquivalent)}
+              <Text as="span" mono size={13} color={a.gbpEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
+                {a.gbpEquivalent == null ? "—" : nfmt(a.gbpEquivalent)}
               </Text>
             </HStack>
           )}
