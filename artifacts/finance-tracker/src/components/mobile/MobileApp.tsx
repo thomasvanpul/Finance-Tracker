@@ -6,7 +6,6 @@ import { MobileMore } from "./MobileMore";
 import { MobileAccounts } from "./MobileAccounts";
 import { MobileGoals } from "./MobileGoals";
 import { MobileInvestments } from "./MobileInvestments";
-import { MobilePersonalize } from "./MobilePersonalize";
 import { MobileAnalytics } from "./MobileAnalytics";
 import { MobileSubscriptions } from "./MobileSubscriptions";
 import { MobileOwing } from "./MobileOwing";
@@ -14,7 +13,6 @@ import { MobileReports } from "./MobileReports";
 import { MobileNetWorth } from "./MobileNetWorth";
 import { MobileSettings } from "./MobileSettings";
 import { MobileUpcomingFull } from "./MobileUpcomingFull";
-import { MobileConfigProvider } from "@/contexts/mobile-config-context";
 
 // AppScreen is the enum of mobile screen renderings. It is DECOUPLED from
 // MobileTab (which now names the four footer slots only). Old code that
@@ -26,7 +24,6 @@ export type AppScreen =
   | "goals"
   | "investments"
   | "more"
-  | "personalize"
   | "analytics"
   | "subscriptions"
   | "owing"
@@ -42,7 +39,6 @@ export const SCREEN_TO_PATH: Record<AppScreen, string> = {
   goals: "/goals",
   investments: "/investments",
   more: "/more",
-  personalize: "/personalize",
   analytics: "/analytics",
   subscriptions: "/subscriptions",
   owing: "/owing",
@@ -89,8 +85,7 @@ function MobileAppInner() {
         {screen === "budget"        && <MobileBudget />}
         {screen === "goals"         && <MobileGoals />}
         {screen === "investments"   && <MobileInvestments />}
-        {screen === "more"          && <MobileMore onPersonalize={() => navigateToScreen("personalize")} onNavigate={navigateToScreen} />}
-        {screen === "personalize"   && <MobilePersonalize />}
+        {screen === "more"          && <MobileMore onNavigate={navigateToScreen} />}
         {screen === "analytics"     && <MobileAnalytics onBack={goBack} />}
         {screen === "subscriptions" && <MobileSubscriptions onBack={goBack} />}
         {screen === "owing"         && <MobileOwing onBack={goBack} />}
@@ -105,9 +100,5 @@ function MobileAppInner() {
 }
 
 export function MobileApp() {
-  return (
-    <MobileConfigProvider>
-      <MobileAppInner />
-    </MobileConfigProvider>
-  );
+  return <MobileAppInner />;
 }

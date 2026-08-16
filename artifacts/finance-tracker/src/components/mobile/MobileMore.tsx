@@ -37,7 +37,6 @@ interface MoreSection {
 }
 
 interface MobileMoreProps {
-  onPersonalize: () => void;
   onNavigate: (screen: AppScreen) => void;
 }
 
@@ -110,7 +109,7 @@ const SECTIONS: MoreSection[] = [
   },
 ];
 
-export function MobileMore({ onPersonalize, onNavigate }: MobileMoreProps) {
+export function MobileMore({ onNavigate }: MobileMoreProps) {
   function go(item: MoreItem) {
     if (item.inApp) onNavigate(item.inApp);
     else if (item.href) window.location.href = item.href;
@@ -173,18 +172,6 @@ export function MobileMore({ onPersonalize, onNavigate }: MobileMoreProps) {
         </div>
       ))}
 
-      <div
-        onClick={onPersonalize}
-        style={{
-          marginTop: 20,
-          padding: "12px 18px",
-          cursor: "pointer",
-        }}
-      >
-        <MonoLabel size={11} letterSpacing="0.14em" color="var(--ft-accent)">
-          PERSONALISE ›
-        </MonoLabel>
-      </div>
     </div>
   );
 }
