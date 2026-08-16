@@ -32,6 +32,7 @@ import { THEME_REWARDS, getLearnXP } from "@/lib/learn-xp";
 import { ThemeRewardsPanel } from "@/components/investments/learn-tab";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId } from "@/lib/bot-skins";
 import { BotPreview, type Phase } from "@/components/ai-wanderer";
+import { ConnectionsPanel } from "./settings-connections";
 
 const WARDROBE_PHASES: Phase[] = ["idle", "sitting", "coffee", "thinking", "dancing", "complaining", "tired", "jumping", "lying"];
 
@@ -47,7 +48,7 @@ type NavItem =
   | "currency" | "alerts" | "rules" | "dashboard" | "tx-defaults"
   | "widgets" | "data" | "advanced"
   | "shortcuts" | "ai"
-  | "wise" | "crypto-wallets" | "digest"
+  | "connections" | "wise" | "crypto-wallets" | "digest"
   | "categories";
 
 interface AlertRules {
@@ -159,7 +160,8 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
   {
     label: "Integrations",
     items: [
-      { id: "wise",           label: "Wise" },
+      { id: "connections",    label: "Connections" },
+      { id: "wise",           label: "Wise (legacy)" },
       { id: "crypto-wallets", label: "Crypto Wallets" },
       { id: "digest",         label: "Weekly Digest" },
     ],
@@ -2260,7 +2262,11 @@ export default function Settings() {
   const [activePanel, setActivePanel] = useState<NavItem>(() => {
     try {
       const p = new URLSearchParams(window.location.search).get("panel");
-      if (p === "terminal-profile") return "terminal-profile";
+      // Any known nav id in ?panel= wins. Prior code only allowed
+      // "terminal-profile"; widened so screenshot harnesses can pick
+      // any tab (e.g. ?panel=connections) without dispatching events.
+      const allIds = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id));
+      if (p && (allIds as string[]).includes(p)) return p as NavItem;
     } catch {}
     return "appearance";
   });
@@ -2738,6 +2744,8 @@ export default function Settings() {
         )}
 
         {activePanel === "advanced" && <AdvancedPanel toast={toast} />}
+
+        {activePanel === "connections" && <ConnectionsPanel />}
 
         {activePanel === "wise" && <WiseIntegrationPanel />}
 

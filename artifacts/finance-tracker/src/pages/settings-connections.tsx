@@ -1,0 +1,428 @@
+// Desktop Connections panel. Lives in settings under the Integrations
+// group. Uses the settings-atoms primitives; does not introduce a modal
+// dialog (the Add flow is an inline expandable row so no dependency on
+// the existing Dialog primitive and no restyle of the surrounding page).
+//
+// Contract:
+//   - List:    label, status, lastSyncedAt, lastError. Never a credential.
+//   - Add:     provider select + password-type input, POST /connections.
+//              Surface the 400 message — it is the adapter's, safe to show.
+//   - Sync:    POST /connections/:id/sync, counts as a toast.
+//              Failure surfaces {error, kind}; "auth" gets a Reconnect
+//              affordance, others get Retry.
+//   - Delete:  confirm text says imported accounts + transactions survive.
+//   - No view-credential affordance. The API cannot serve one and a mask
+//     would be a UI contract the backend cannot honour.
+
+import { useState } from "react";
+import {
+  useListConnections,
+  useCreateConnection,
+  useDeleteConnection,
+  useSyncConnection,
+  getListConnectionsQueryKey,
+  type Connection,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { HStack, Text, VStack } from "@/components/primitives";
+import { PANEL_STYLE, HEADER_STYLE, ROW, RowLabel, ActionBtn } from "./settings-atoms";
+
+// Providers the user can add through this UI. As H3/H4 adapters land
+// they get appended here — no other frontend change needed.
+const PROVIDERS: { id: string; label: string; hint: string }[] = [
+  { id: "wise", label: "Wise", hint: "Personal API token from Wise → Settings → API tokens" },
+];
+
+const STATUS_COLORS: Record<string, string> = {
+  active: "var(--ft-green)",
+  pending: "var(--ft-amber)",
+  error: "var(--ft-red)",
+  revoked: "var(--ft-red)",
+};
+
+function StatusPill({ status }: { status: string }) {
+  const color = STATUS_COLORS[status] ?? "var(--ft-muted)";
+  return (
+    <span
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        letterSpacing: "0.08em",
+        fontWeight: 700,
+        color,
+        border: `1px solid ${color}44`,
+        padding: "2px 8px",
+        background: `${color}11`,
+        textTransform: "uppercase",
+      }}
+    >
+      {status}
+    </span>
+  );
+}
+
+function formatTs(ts: Date | string | null | undefined): string {
+  if (ts == null) return "Never";
+  const d = typeof ts === "string" ? new Date(ts) : ts;
+  return d.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function ConnectionRow({ connection }: { connection: Connection }) {
+  const [hov, setHov] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  const syncMutation = useSyncConnection();
+  const deleteMutation = useDeleteConnection();
+
+  const handleSync = async () => {
+    try {
+      const result = await syncMutation.mutateAsync({ id: connection.id });
+      toast({
+        title: `${connection.label} synced`,
+        description:
+          `${result.accountsUpserted} account${result.accountsUpserted !== 1 ? "s" : ""} · ` +
+          `${result.transactionsAdded} new · ${result.transactionsUpdated} updated`,
+      });
+      qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
+    } catch (err: unknown) {
+      // Adapter's error text is safe to surface — it is written for the user.
+      const msg = err instanceof Error ? err.message : String(err);
+      toast({ title: "Sync failed", description: msg, variant: "destructive" });
+      qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: connection.id });
+      toast({
+        title: `${connection.label} removed`,
+        description: "Imported accounts and transactions stay. Reconnect any time.",
+      });
+      qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast({ title: "Delete failed", description: msg, variant: "destructive" });
+    }
+  };
+
+  // status === "revoked" is the auth-failed state — surface a stronger
+  // "Reconnect" prompt instead of a plain retry.
+  const isAuthFail = connection.status === "revoked";
+  const syncBusy = syncMutation.isPending;
+
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        ...ROW,
+        flexDirection: "column",
+        alignItems: "stretch",
+        gap: 10,
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+        transition: "background 0.1s",
+      }}
+    >
+      {/* Top row: label + status pill + provider tag */}
+      <HStack align="center" gap={10} justify="between">
+        <VStack gap={2} minWidth0>
+          <Text as="div" mono size={12} weight={600} color="var(--ft-text)">
+            {connection.label}
+          </Text>
+          <Text as="div" mono size={10} color="var(--ft-muted)">
+            {connection.provider.toUpperCase()} · Last synced {formatTs(connection.lastSyncedAt)}
+          </Text>
+        </VStack>
+        <StatusPill status={connection.status} />
+      </HStack>
+
+      {/* Error banner (present when the last sync or an adapter step failed) */}
+      {connection.lastError && (
+        <div
+          style={{
+            padding: "6px 10px",
+            border: "1px solid var(--ft-red)44",
+            background: "var(--ft-red)11",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10.5,
+            color: "var(--ft-red)",
+            letterSpacing: "0.03em",
+          }}
+        >
+          {connection.lastError}
+        </div>
+      )}
+
+      {/* Action row */}
+      <HStack gap={8} wrap>
+        {isAuthFail ? (
+          <ActionBtn
+            label={syncBusy ? "RETRYING…" : "RECONNECT"}
+            variant="accent"
+            onClick={handleSync}
+            disabled={syncBusy}
+          />
+        ) : (
+          <ActionBtn
+            label={syncBusy ? "SYNCING…" : connection.lastError ? "RETRY" : "SYNC NOW"}
+            variant="accent"
+            onClick={handleSync}
+            disabled={syncBusy}
+          />
+        )}
+        {confirmDelete ? (
+          <>
+            <ActionBtn
+              label={deleteMutation.isPending ? "REMOVING…" : "CONFIRM REMOVE"}
+              variant="danger"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            />
+            <ActionBtn
+              label="CANCEL"
+              variant="muted"
+              onClick={() => setConfirmDelete(false)}
+            />
+            <Text as="span" mono size={10} color="var(--ft-dim)" letterSpacing="0.04em">
+              Imported accounts and transactions survive
+            </Text>
+          </>
+        ) : (
+          <ActionBtn label="REMOVE" variant="muted" onClick={() => setConfirmDelete(true)} />
+        )}
+      </HStack>
+    </div>
+  );
+}
+
+function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
+  const [provider, setProvider] = useState<string>(PROVIDERS[0]?.id ?? "");
+  const [credential, setCredential] = useState("");
+  const [label, setLabel] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { toast } = useToast();
+  const createMutation = useCreateConnection();
+  const qc = useQueryClient();
+
+  const providerMeta = PROVIDERS.find((p) => p.id === provider);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    if (credential.trim().length === 0) {
+      setErrorMessage("Credential is required");
+      return;
+    }
+    try {
+      const created = await createMutation.mutateAsync({
+        data: {
+          provider,
+          credential: credential.trim(),
+          label: label.trim() ? label.trim() : undefined,
+        },
+      });
+      toast({
+        title: "Connection added",
+        description: `${created.label} · validated with ${provider}`,
+      });
+      qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
+      setCredential("");
+      setLabel("");
+      onCreated();
+    } catch (err: unknown) {
+      // Surface the adapter's own message. It is written for the user
+      // and does not include the credential.
+      const msg = err instanceof Error ? err.message : String(err);
+      setErrorMessage(msg);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, background: "var(--ft-surface)" }}>
+      <HStack gap={10} align="end" wrap>
+        <div style={{ flex: "0 0 140px", minWidth: 140 }}>
+          <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
+            Provider
+          </Text>
+          <select
+            value={provider}
+            onChange={(e) => setProvider(e.target.value)}
+            style={{
+              width: "100%",
+              marginTop: 4,
+              padding: "6px 8px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              background: "var(--ft-raised)",
+              border: "1px solid var(--ft-border2)",
+              color: "var(--ft-text)",
+            }}
+          >
+            {PROVIDERS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
+            Credential
+          </Text>
+          <input
+            type="password"
+            autoComplete="off"
+            value={credential}
+            onChange={(e) => setCredential(e.target.value)}
+            placeholder={providerMeta?.hint ?? "Provider secret"}
+            style={{
+              width: "100%",
+              marginTop: 4,
+              padding: "6px 8px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              background: "var(--ft-raised)",
+              border: "1px solid var(--ft-border2)",
+              color: "var(--ft-text)",
+            }}
+          />
+        </div>
+        <div style={{ flex: "0 0 180px", minWidth: 140 }}>
+          <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
+            Label <span style={{ color: "var(--ft-muted)", textTransform: "none" }}>(optional)</span>
+          </Text>
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Auto from provider"
+            style={{
+              width: "100%",
+              marginTop: 4,
+              padding: "6px 8px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              background: "var(--ft-raised)",
+              border: "1px solid var(--ft-border2)",
+              color: "var(--ft-text)",
+            }}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={createMutation.isPending}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--ft-accent)",
+            background: "transparent",
+            border: "1px solid var(--ft-accent)",
+            padding: "7px 18px",
+            cursor: createMutation.isPending ? "not-allowed" : "pointer",
+            opacity: createMutation.isPending ? 0.6 : 1,
+            letterSpacing: "0.04em",
+          }}
+        >
+          {createMutation.isPending ? "VALIDATING…" : "&gt; VALIDATE + ADD"}
+        </button>
+      </HStack>
+      {errorMessage && (
+        <div
+          style={{
+            padding: "6px 10px",
+            border: "1px solid var(--ft-red)44",
+            background: "var(--ft-red)11",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10.5,
+            color: "var(--ft-red)",
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
+      <Text as="div" mono size={9} letterSpacing="0.04em" color="var(--ft-dim)">
+        The credential is validated against {providerMeta?.label ?? provider} before it is stored,
+        encrypted at rest with AES-256-GCM, and never returned to this page or anywhere else.
+      </Text>
+    </form>
+  );
+}
+
+export function ConnectionsPanel() {
+  const { data: connections = [], isLoading } = useListConnections();
+  const [showAdd, setShowAdd] = useState(false);
+
+  return (
+    <VStack gap={12}>
+      <div style={PANEL_STYLE}>
+        <div style={HEADER_STYLE}>
+          <Text as="span" color="var(--ft-accent)">·</Text> Connections
+        </div>
+
+        {isLoading ? (
+          <div
+            style={{
+              padding: "14px 16px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--ft-dim)",
+              fontStyle: "italic",
+            }}
+          >
+            Loading…
+          </div>
+        ) : connections.length === 0 ? (
+          <div style={{ ...ROW, background: "var(--ft-surface)" }}>
+            <RowLabel
+              title="No connections yet"
+              sub="Add one below to pull balances and transactions automatically. Credentials are encrypted at rest and never leave the server."
+            />
+          </div>
+        ) : (
+          connections.map((c) => <ConnectionRow key={c.id} connection={c} />)
+        )}
+
+        {/* Add-connection expander */}
+        <div style={{ borderTop: "1px solid var(--ft-border)" }}>
+          {!showAdd ? (
+            <div style={{ ...ROW, background: "var(--ft-surface)", justifyContent: "space-between" }}>
+              <RowLabel
+                title="Add a connection"
+                sub="Paste a provider token. Validated against the provider before it is stored."
+              />
+              <ActionBtn label="ADD" variant="accent" onClick={() => setShowAdd(true)} />
+            </div>
+          ) : (
+            <AddConnectionForm onCreated={() => setShowAdd(false)} />
+          )}
+        </div>
+
+        {/* Trailing note — mirrors docs/CREDENTIAL-ENCRYPTION.md boundaries */}
+        <div
+          style={{
+            padding: "8px 14px",
+            background: "var(--ft-raised)",
+            borderTop: "1px solid var(--ft-border)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            color: "var(--ft-dim)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          Credentials are AES-256-GCM at rest. Deleting a connection deletes the credential;
+          imported accounts and transactions survive.
+        </div>
+      </div>
+    </VStack>
+  );
+}

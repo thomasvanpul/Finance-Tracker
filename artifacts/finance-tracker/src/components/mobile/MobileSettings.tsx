@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
-import { useGetSettingsCurrency } from "@workspace/api-client-react";
+import {
+  useGetSettingsCurrency,
+  useListConnections,
+  useCreateConnection,
+  useDeleteConnection,
+  useSyncConnection,
+  getListConnectionsQueryKey,
+  type Connection,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { useToast } from "@/hooks/use-toast";
 
 // Mobile settings — configuration, not a financial instrument.
 //
@@ -187,6 +197,8 @@ export function MobileSettings({ onBack }: { onBack?: () => void }) {
           <NotifRow label="Monthly report" sub="First of each month" on={notifMonthly} onToggle={() => setNotifMonthly(n => !n)} />
         </Section>
 
+        <ConnectionsSection />
+
         <Section title="Data & Sync">
           <SettingsRow label="Background sync" sub="Refresh every 30 minutes">
             <Toggle on={sync} onToggle={() => setSync(s => !s)} />
@@ -293,6 +305,357 @@ function ChipButton({ active, onClick, children }: { active: boolean; onClick: (
         background: active ? "var(--ft-accent)" : "var(--ft-raised)",
         border: active ? "1px solid var(--ft-accent)" : "1px solid var(--ft-border)",
         color: active ? "var(--ft-base)" : "var(--ft-dim)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── Connections (mobile) ────────────────────────────────────────────────────
+// Same contract as the desktop panel: list, sync, delete, add. No
+// credential is ever rendered. Add form is inline (no modal) to fit the
+// mobile scroll flow.
+
+const MOBILE_PROVIDERS: { id: string; label: string; hint: string }[] = [
+  { id: "wise", label: "Wise", hint: "Wise → Settings → API tokens" },
+];
+
+const MOBILE_STATUS_COLORS: Record<string, string> = {
+  active: "var(--ft-green)",
+  pending: "var(--ft-amber)",
+  error: "var(--ft-red)",
+  revoked: "var(--ft-red)",
+};
+
+function formatMobileTs(ts: Date | string | null | undefined): string {
+  if (ts == null) return "Never";
+  const d = typeof ts === "string" ? new Date(ts) : ts;
+  return d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function ConnectionsSection() {
+  const { data: connections = [], isLoading } = useListConnections();
+  const [showAdd, setShowAdd] = useState(false);
+
+  return (
+    <Section title="Connections">
+      {isLoading ? (
+        <div style={{ padding: "13px 18px", borderBottom: "1px solid var(--ft-border)" }}>
+          <div style={{ fontSize: 11, color: "var(--ft-dim)", fontStyle: "italic" }}>
+            Loading…
+          </div>
+        </div>
+      ) : connections.length === 0 ? (
+        <div style={{ padding: "13px 18px", borderBottom: "1px solid var(--ft-border)" }}>
+          <Text as="div" size={12} weight={500} mb={2}>No connections yet</Text>
+          <div style={{ fontSize: 11, color: "var(--ft-dim)", fontStyle: "italic" }}>
+            Add one to pull balances and transactions automatically. Credentials are encrypted at rest.
+          </div>
+        </div>
+      ) : (
+        connections.map((c) => <MobileConnectionRow key={c.id} connection={c} />)
+      )}
+
+      {showAdd ? (
+        <MobileAddConnectionForm onDone={() => setShowAdd(false)} />
+      ) : (
+        <button
+          onClick={() => setShowAdd(true)}
+          style={{
+            width: "100%",
+            padding: "13px 18px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            background: "none",
+            border: "none",
+            borderBottom: "1px solid var(--ft-border)",
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+        >
+          <VStack gap={2} grow minWidth0>
+            <Text as="div" size={13} weight={500}>Add a connection</Text>
+            <Text as="div" size={11} color="var(--ft-dim)">
+              Paste a provider token. Validated before it is stored.
+            </Text>
+          </VStack>
+          <Text as="span" mono size={11} weight={700} letterSpacing="0.08em" color="var(--ft-accent)">
+            + ADD
+          </Text>
+        </button>
+      )}
+    </Section>
+  );
+}
+
+function MobileConnectionRow({ connection }: { connection: Connection }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const syncMutation = useSyncConnection();
+  const deleteMutation = useDeleteConnection();
+
+  const color = MOBILE_STATUS_COLORS[connection.status] ?? "var(--ft-muted)";
+  const isAuthFail = connection.status === "revoked";
+
+  const handleSync = async () => {
+    try {
+      const r = await syncMutation.mutateAsync({ id: connection.id });
+      toast({
+        title: `${connection.label} synced`,
+        description: `${r.accountsUpserted} acct · ${r.transactionsAdded} new · ${r.transactionsUpdated} upd`,
+      });
+      qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast({ title: "Sync failed", description: msg, variant: "destructive" });
+      qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: connection.id });
+      toast({
+        title: `${connection.label} removed`,
+        description: "Imported accounts and transactions stay.",
+      });
+      qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast({ title: "Delete failed", description: msg, variant: "destructive" });
+    }
+  };
+
+  return (
+    <div style={{ padding: "13px 18px", borderBottom: "1px solid var(--ft-border)" }}>
+      <HStack align="center" gap={10} justify="between">
+        <VStack gap={2} grow minWidth0>
+          <Text as="div" size={13} weight={500}>{connection.label}</Text>
+          <Text as="div" mono size={10} color="var(--ft-dim)" letterSpacing="0.04em">
+            {connection.provider.toUpperCase()} · {formatMobileTs(connection.lastSyncedAt)}
+          </Text>
+        </VStack>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 9,
+            letterSpacing: "0.08em",
+            fontWeight: 700,
+            color,
+            border: `1px solid ${color}44`,
+            padding: "2px 6px",
+            background: `${color}11`,
+            textTransform: "uppercase",
+            flexShrink: 0,
+          }}
+        >
+          {connection.status}
+        </span>
+      </HStack>
+      {connection.lastError && (
+        <div
+          style={{
+            marginTop: 6,
+            padding: "6px 8px",
+            border: "1px solid var(--ft-red)44",
+            background: "var(--ft-red)11",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--ft-red)",
+          }}
+        >
+          {connection.lastError}
+        </div>
+      )}
+      <HStack gap={8} marginTop={8} wrap>
+        <MobileChip
+          onClick={handleSync}
+          disabled={syncMutation.isPending}
+          accent
+        >
+          {syncMutation.isPending
+            ? "…"
+            : isAuthFail
+              ? "Reconnect"
+              : connection.lastError
+                ? "Retry"
+                : "Sync now"}
+        </MobileChip>
+        {confirmDelete ? (
+          <>
+            <MobileChip onClick={handleDelete} disabled={deleteMutation.isPending} danger>
+              {deleteMutation.isPending ? "…" : "Confirm remove"}
+            </MobileChip>
+            <MobileChip onClick={() => setConfirmDelete(false)}>Cancel</MobileChip>
+            <Text as="span" mono size={9} letterSpacing="0.04em" color="var(--ft-dim)">
+              Accounts + transactions survive
+            </Text>
+          </>
+        ) : (
+          <MobileChip onClick={() => setConfirmDelete(true)}>Remove</MobileChip>
+        )}
+      </HStack>
+    </div>
+  );
+}
+
+function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
+  const [provider, setProvider] = useState<string>(MOBILE_PROVIDERS[0]?.id ?? "");
+  const [credential, setCredential] = useState("");
+  const [label, setLabel] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const createMutation = useCreateConnection();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const providerMeta = MOBILE_PROVIDERS.find((p) => p.id === provider);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    if (credential.trim().length === 0) {
+      setErrorMessage("Credential is required");
+      return;
+    }
+    try {
+      const created = await createMutation.mutateAsync({
+        data: { provider, credential: credential.trim(), label: label.trim() || undefined },
+      });
+      toast({ title: "Connection added", description: `${created.label} · validated with ${provider}` });
+      qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
+      setCredential("");
+      setLabel("");
+      onDone();
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10, borderBottom: "1px solid var(--ft-border)" }}>
+      <VStack gap={4}>
+        <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">Provider</Text>
+        <select
+          value={provider}
+          onChange={(e) => setProvider(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border2)",
+            color: "var(--ft-text)",
+          }}
+        >
+          {MOBILE_PROVIDERS.map((p) => (
+            <option key={p.id} value={p.id}>{p.label}</option>
+          ))}
+        </select>
+      </VStack>
+      <VStack gap={4}>
+        <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">Credential</Text>
+        <input
+          type="password"
+          autoComplete="off"
+          value={credential}
+          onChange={(e) => setCredential(e.target.value)}
+          placeholder={providerMeta?.hint ?? "Provider secret"}
+          style={{
+            width: "100%",
+            padding: "10px 10px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border2)",
+            color: "var(--ft-text)",
+          }}
+        />
+      </VStack>
+      <VStack gap={4}>
+        <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
+          Label <span style={{ color: "var(--ft-muted)", textTransform: "none" }}>(optional)</span>
+        </Text>
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="Auto from provider"
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            fontFamily: "var(--font-mono)",
+            fontSize: 13,
+            background: "var(--ft-raised)",
+            border: "1px solid var(--ft-border2)",
+            color: "var(--ft-text)",
+          }}
+        />
+      </VStack>
+      {errorMessage && (
+        <div
+          style={{
+            padding: "6px 8px",
+            border: "1px solid var(--ft-red)44",
+            background: "var(--ft-red)11",
+            fontFamily: "var(--font-mono)",
+            fontSize: 10.5,
+            color: "var(--ft-red)",
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
+      <HStack gap={8} wrap>
+        <MobileChip type="submit" disabled={createMutation.isPending} accent>
+          {createMutation.isPending ? "Validating…" : "Validate + add"}
+        </MobileChip>
+        <MobileChip onClick={onDone}>Cancel</MobileChip>
+      </HStack>
+      <Text as="div" mono size={9} letterSpacing="0.04em" color="var(--ft-dim)">
+        Validated against {providerMeta?.label ?? provider} before storing. AES-256-GCM at rest. Never returned.
+      </Text>
+    </form>
+  );
+}
+
+function MobileChip({
+  children,
+  onClick,
+  disabled,
+  accent,
+  danger,
+  type,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  accent?: boolean;
+  danger?: boolean;
+  type?: "submit" | "button";
+}) {
+  const color = danger ? "var(--ft-red)" : accent ? "var(--ft-accent)" : "var(--ft-muted)";
+  return (
+    <button
+      type={type ?? "button"}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        fontWeight: 600,
+        padding: "8px 12px",
+        background: "transparent",
+        border: `1px solid ${color}`,
+        color,
+        letterSpacing: "0.04em",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        minHeight: 36,
       }}
     >
       {children}
