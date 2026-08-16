@@ -18,6 +18,7 @@ import exportRouter from "./export";
 import digestRouter from "./digest";
 import receiptRouter from "./receipt";
 import connectionsRouter from "./connections";
+import enableBankingRouter from "./enable-banking";
 
 const router: IRouter = Router();
 
@@ -34,6 +35,7 @@ router.use(investmentsRouter);
 router.use(marketRouter);
 router.use(wiseRouter);
 router.use(connectionsRouter);
+router.use(enableBankingRouter);
 router.use(importRouter);
 router.use(debtsRouter);
 router.use(settingsRouter);
