@@ -34,7 +34,7 @@ function categoryColor(cat: string): string {
 type TxType = "all" | "income" | "expense" | "transfer";
 const TYPE_FILTERS: TxType[] = ["all", "income", "expense", "transfer"];
 
-type TxRecord = { id: number; type: string; date: string; description: string; category: string; gbpValue: number; accountName: string };
+type TxRecord = { id: number; type: string; date: string; description: string; category: string; gbpValue: number | null; accountName: string };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -70,8 +70,8 @@ function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "1px 5px", border: `1px solid ${categoryColor(tx.category)}40`, color: categoryColor(tx.category), flexShrink: 0, maxWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {tx.category}
       </span>
-      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", flexShrink: 0, width: 72, textAlign: "right" }}>
-        {TYPE_PREFIX[tx.type]}{formatGbp(tx.gbpValue)}
+      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: tx.gbpValue == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", flexShrink: 0, width: 72, textAlign: "right" }}>
+        {tx.gbpValue == null ? "—" : `${TYPE_PREFIX[tx.type]}${formatGbp(tx.gbpValue)}`}
       </span>
     </div>
   );
@@ -241,7 +241,7 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
               {(["income", "expense", "transfer"] as const).map(type => {
                 const count = typeCounts[type] ?? 0;
-                const total = allTransactions.filter(t => t.type === type).reduce((s, t) => s + t.gbpValue, 0);
+                const total = allTransactions.filter(t => t.type === type).reduce((s, t) => s + (t.gbpValue ?? 0), 0);
                 return (
                   <TxSummaryCard key={type} type={type} count={count} total={total} />
                 );

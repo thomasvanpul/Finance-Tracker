@@ -180,17 +180,17 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
   // Income comparison
   const thisIncome = thisMonthTxs
     .filter((tx) => tx.type === "income")
-    .reduce((s, tx) => s + tx.gbpValue, 0);
+    .reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
   const lastIncome = lastMonthTxs
     .filter((tx) => tx.type === "income")
-    .reduce((s, tx) => s + tx.gbpValue, 0);
+    .reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
 
   // Category expense totals
   const thisCats = thisMonthTxs
     .filter((tx) => tx.type === "expense")
     .reduce<Record<string, number>>((acc, tx) => {
       const cat = tx.category || "Other";
-      acc[cat] = (acc[cat] ?? 0) + tx.gbpValue;
+      acc[cat] = (acc[cat] ?? 0) + (tx.gbpValue ?? 0);
       return acc;
     }, {});
 
@@ -198,7 +198,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
     .filter((tx) => tx.type === "expense")
     .reduce<Record<string, number>>((acc, tx) => {
       const cat = tx.category || "Other";
-      acc[cat] = (acc[cat] ?? 0) + tx.gbpValue;
+      acc[cat] = (acc[cat] ?? 0) + (tx.gbpValue ?? 0);
       return acc;
     }, {});
 

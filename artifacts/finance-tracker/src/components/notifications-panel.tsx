@@ -115,6 +115,7 @@ export function useAlerts() {
     if (budgets.length > 0 && monthTxs) {
       const spent: Record<string, number> = {};
       for (const tx of monthTxs) {
+        if (tx.gbpValue == null) continue;
         const key = tx.category.toLowerCase();
         spent[key] = (spent[key] ?? 0) + tx.gbpValue;
       }
@@ -142,6 +143,9 @@ export function useAlerts() {
 
     if (recentTxs) {
       for (const tx of recentTxs) {
+        // A "large transaction" alert needs a magnitude to compare;
+        // unconvertible rows can't be judged large or small.
+        if (tx.gbpValue == null) continue;
         if (tx.gbpValue > alertRules.largeTxThreshold) {
           result.push({
             id: `large-tx-${tx.id}`,
@@ -164,7 +168,9 @@ export function useAlerts() {
             id: `upcoming-${item.id}`,
             level: "warn",
             title: `Due soon: ${item.description}`,
-            detail: `${formatGbp(item.gbpEquivalent)} due ${item.dueDate}`,
+            detail: item.gbpEquivalent == null
+              ? `Due ${item.dueDate} — GBP not available`
+              : `${formatGbp(item.gbpEquivalent)} due ${item.dueDate}`,
           });
         }
       }
@@ -178,7 +184,7 @@ export function useAlerts() {
         return daysSince > 90;
       });
       if (overdueDebts.length > 0) {
-        const total = overdueDebts.reduce((s, d) => s + d.gbpEquivalent, 0);
+        const total = overdueDebts.reduce((s, d) => s + (d.gbpEquivalent ?? 0), 0);
         result.push({
           id: `overdue-debts-${overdueDebts.length}`,
           level: "warn",
@@ -223,6 +229,7 @@ export function useAlerts() {
 
       for (const tx of allTxs) {
         if (tx.type !== "expense") continue;
+        if (tx.gbpValue == null) continue;
         const txMonth = tx.date.slice(0, 7);
         const key = tx.description.toLowerCase().trim();
         if (!byMerchant[key]) byMerchant[key] = { amounts: [], thisMonthAmt: null };
@@ -794,7 +801,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                   <option value="">— select account —</option>
                   {(accounts ?? []).map((a) => (
                     <option key={a.id} value={String(a.id)}>
-                      {a.name} ({formatGbp(a.gbpEquivalent)})
+                      {a.name} ({a.gbpEquivalent == null ? "—" : formatGbp(a.gbpEquivalent)})
                     </option>
                   ))}
                 </select>

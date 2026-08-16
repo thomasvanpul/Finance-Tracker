@@ -39,7 +39,7 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
     const txs = (txData ?? []) as Tx[];
     const accs = accounts ?? [];
 
-    const totalCash = accs.reduce((s, a) => s + a.gbpEquivalent, 0);
+    const totalCash = accs.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
 
     // Monthly expense totals for last 3 full months
     const monthExpenses: number[] = [];
@@ -47,7 +47,7 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
       const ym = monthsAgo(i);
       const total = txs
         .filter(t => t.type === "expense" && t.date.startsWith(ym))
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .reduce((s, t) => s + (t.gbpValue ?? 0), 0);
       monthExpenses.push(total);
     }
 
@@ -65,11 +65,11 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
     const daysTotal = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
     const thisMonthSoFar = txs
       .filter(t => t.type === "expense" && t.date.startsWith(thisYm))
-      .reduce((s, t) => s + t.gbpValue, 0);
+      .reduce((s, t) => s + (t.gbpValue ?? 0), 0);
     const thisMonthProjected = daysInMonth > 0 ? (thisMonthSoFar / daysInMonth) * daysTotal : 0;
     const lastMonthTotal = txs
       .filter(t => t.type === "expense" && t.date.startsWith(lastYm))
-      .reduce((s, t) => s + t.gbpValue, 0);
+      .reduce((s, t) => s + (t.gbpValue ?? 0), 0);
 
     const burnDelta = lastMonthTotal > 0 ? thisMonthProjected - lastMonthTotal : null;
     const burnPct = lastMonthTotal > 0 ? Math.round(((thisMonthProjected - lastMonthTotal) / lastMonthTotal) * 100) : null;

@@ -105,7 +105,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "transaction" as ResultKind,
             primary: tx.description,
             secondary: tx.category,
-            tertiary: `${formatDate(tx.date)} · ${tx.type === "income" ? "+" : "-"}${formatGbp(tx.gbpValue)}`,
+            tertiary: `${formatDate(tx.date)} · ${tx.gbpValue == null ? "—" : (tx.type === "income" ? "+" : "-") + formatGbp(tx.gbpValue)}`,
             amountColor:
               tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
             navigateTo: `/transactions?q=${encodeURIComponent(tx.description)}`,
@@ -151,7 +151,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "iou" as ResultKind,
             primary: d.personName,
             secondary: d.description,
-            tertiary: formatGbp(d.gbpEquivalent),
+            tertiary: d.gbpEquivalent == null ? "—" : formatGbp(d.gbpEquivalent),
             navigateTo: "/owing",
           }))),
         ...((goals ?? [])

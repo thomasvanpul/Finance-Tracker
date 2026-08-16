@@ -179,7 +179,7 @@ type RecentTxRowProps = {
   description: string | null | undefined;
   date: string | undefined;
   category: string;
-  gbpValue: number;
+  gbpValue: number | null;
   type: string;
   isLast: boolean;
 };
@@ -239,9 +239,9 @@ function RecentTxRow({ description, date, category, gbpValue, type, isLast }: Re
         </div>
       </div>
       <span className="pnum" style={{
-        ...MONO, fontSize: 14, fontWeight: 700, color: col, flexShrink: 0, letterSpacing: "-0.02em",
+        ...MONO, fontSize: 14, fontWeight: 700, color: gbpValue == null ? "var(--ft-dim)" : col, flexShrink: 0, letterSpacing: "-0.02em",
       }}>
-        {sign}{formatGbp(Math.abs(gbpValue))}
+        {gbpValue == null ? "—" : `${sign}${formatGbp(Math.abs(gbpValue))}`}
       </span>
     </div>
   );
@@ -406,8 +406,8 @@ export function CompactNetWorth() {
 // accounts-summary: FULL WIDTH — account list card
 export function CompactAccountsSummary() {
   const { data: accounts = [] } = useListAccounts({});
-  const total = useMemo(() => accounts.reduce((s, a) => s + a.gbpEquivalent, 0), [accounts]);
-  const sorted = useMemo(() => [...accounts].sort((a, b) => b.gbpEquivalent - a.gbpEquivalent).slice(0, 5), [accounts]);
+  const total = useMemo(() => accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0), [accounts]);
+  const sorted = useMemo(() => [...accounts].sort((a, b) => (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity)).slice(0, 5), [accounts]);
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-cyan)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34 }}>
@@ -432,8 +432,8 @@ export function CompactAccountsSummary() {
             <div style={{ ...MONO, ...CLIP, fontSize: 13, color: "var(--ft-text)", fontWeight: 500 }}>{acc.name}</div>
             <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: 2 }}>{acc.currency}</div>
           </div>
-          <span className="pnum" style={{ ...MONO, fontSize: 15, fontWeight: 700, color: acc.gbpEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)", letterSpacing: "-0.02em", flexShrink: 0 }}>
-            {formatGbp(acc.gbpEquivalent)}
+          <span className="pnum" style={{ ...MONO, fontSize: 15, fontWeight: 700, color: acc.gbpEquivalent == null ? "var(--ft-dim)" : acc.gbpEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)", letterSpacing: "-0.02em", flexShrink: 0 }}>
+            {acc.gbpEquivalent == null ? "—" : formatGbp(acc.gbpEquivalent)}
           </span>
         </div>
       ))}
@@ -488,7 +488,7 @@ export function CompactSpendingBreakdown() {
   const { data: txs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const top2 = useMemo(() => {
     const map: Record<string, number> = {};
-    txs.forEach(t => { map[t.category] = (map[t.category] ?? 0) + Math.abs(t.gbpValue); });
+    txs.forEach(t => { map[t.category] = (map[t.category] ?? 0) + Math.abs(t.gbpValue ?? 0); });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 2);
   }, [txs]);
   const top = top2[0] ?? null;
@@ -538,7 +538,7 @@ export function CompactBudgetTracker() {
   const { data: txs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const { over, total, worstPct } = useMemo(() => {
     const spend: Record<string, number> = {};
-    txs.forEach(t => { spend[t.category] = (spend[t.category] ?? 0) + Math.abs(t.gbpValue); });
+    txs.forEach(t => { spend[t.category] = (spend[t.category] ?? 0) + Math.abs(t.gbpValue ?? 0); });
     let over = 0; let total = 0; let worstPct = 0;
     budgets.forEach(b => {
       total++;
@@ -591,7 +591,7 @@ export function CompactSubscriptionTracker() {
   const { data: upcoming = [] } = useListUpcoming();
   const { total, count } = useMemo(() => {
     const subs = upcoming.filter(u => u.type === "expense" && (u.frequency === "monthly" || u.frequency === "yearly" || u.frequency === "weekly" || u.frequency === "quarterly"));
-    return { total: subs.reduce((s, u) => s + u.gbpEquivalent, 0), count: subs.length };
+    return { total: subs.reduce((s, u) => s + (u.gbpEquivalent ?? 0), 0), count: subs.length };
   }, [upcoming]);
   return (
     <Tile
@@ -664,7 +664,7 @@ export function CompactMarketSnapshot() {
 export function CompactRecurringDetector() {
   const { data: upcoming = [] } = useListUpcoming();
   const recurring = useMemo(() => upcoming.filter(u => u.frequency && u.frequency !== "one-time"), [upcoming]);
-  const totalOut = useMemo(() => recurring.filter(u => u.type === "expense").reduce((s, u) => s + u.gbpEquivalent, 0), [recurring]);
+  const totalOut = useMemo(() => recurring.filter(u => u.type === "expense").reduce((s, u) => s + (u.gbpEquivalent ?? 0), 0), [recurring]);
   return (
     <Tile
       label="RECURRING"
@@ -703,7 +703,7 @@ export function CompactTransactionCalendar() {
   const monthStart = useMemo(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`, [now]);
   const { data: txs = [] } = useListTransactions({ dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const today = now.toISOString().slice(0, 10);
-  const todaySpend = txs.filter(t => t.date === today && t.type === "expense").reduce((s, t) => s + Math.abs(t.gbpValue), 0);
+  const todaySpend = txs.filter(t => t.date === today && t.type === "expense").reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
   return (
     <Tile
       label="TODAY"
@@ -741,8 +741,8 @@ export function CompactMonthComparison() {
   const prevEnd = useMemo(() => monthStart, [monthStart]);
   const { data: thisTxs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const { data: prevTxs = [] } = useListTransactions({ type: "expense", dateFrom: prevMonth, dateTo: prevEnd } as Parameters<typeof useListTransactions>[0]);
-  const thisTotal = useMemo(() => thisTxs.reduce((s, t) => s + Math.abs(t.gbpValue), 0), [thisTxs]);
-  const prevTotal = useMemo(() => prevTxs.reduce((s, t) => s + Math.abs(t.gbpValue), 0), [prevTxs]);
+  const thisTotal = useMemo(() => thisTxs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0), [thisTxs]);
+  const prevTotal = useMemo(() => prevTxs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0), [prevTxs]);
   const delta = thisTotal - prevTotal;
   const color = delta <= 0 ? "var(--ft-green)" : "var(--ft-red)";
   const sign = delta >= 0 ? "+" : "";
@@ -767,7 +767,7 @@ export function CompactSpendingForecast() {
   const forecast = useMemo(() => {
     const d = now.getDate();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const spent = txs.reduce((s, t) => s + Math.abs(t.gbpValue), 0);
+    const spent = txs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
     return d > 0 ? (spent / d) * daysInMonth : 0;
   }, [txs, now]);
   return (
@@ -785,7 +785,7 @@ export function CompactSpendingForecast() {
 export function CompactDailySpend() {
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const { data: todayTxs = [] } = useListTransactions({ type: "expense", dateFrom: today } as Parameters<typeof useListTransactions>[0]);
-  const todaySpend = useMemo(() => todayTxs.reduce((s, t) => s + Math.abs(t.gbpValue), 0), [todayTxs]);
+  const todaySpend = useMemo(() => todayTxs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0), [todayTxs]);
   return (
     <Tile
       label="TODAY SPEND"
@@ -804,7 +804,7 @@ export function CompactTopMerchants() {
   const { data: txs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const top = useMemo(() => {
     const map: Record<string, number> = {};
-    txs.forEach(t => { const m = t.description ?? "Unknown"; map[m] = (map[m] ?? 0) + Math.abs(t.gbpValue); });
+    txs.forEach(t => { const m = t.description ?? "Unknown"; map[m] = (map[m] ?? 0) + Math.abs(t.gbpValue ?? 0); });
     return Object.entries(map).sort((a, b) => b[1] - a[1])[0] ?? null;
   }, [txs]);
   return (
@@ -822,14 +822,14 @@ export function CompactTopMerchants() {
 export function CompactCashFlowPreview() {
   const { data: accounts = [] } = useListAccounts({});
   const { data: upcoming = [] } = useListUpcoming();
-  const balance = useMemo(() => accounts.reduce((s, a) => s + a.gbpEquivalent, 0), [accounts]);
+  const balance = useMemo(() => accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0), [accounts]);
   const now = useMemo(() => new Date(), []);
   const in30 = useMemo(() => new Date(now.getTime() + 30 * 86400000), [now]);
   const { inflows, outflows } = useMemo(() => {
     const pending = upcoming.filter(u => { const d = new Date(u.dueDate); return d >= now && d <= in30 && u.status === "pending"; });
     return {
-      inflows: pending.filter(u => u.type === "income").reduce((s, u) => s + u.gbpEquivalent, 0),
-      outflows: pending.filter(u => u.type === "expense").reduce((s, u) => s + u.gbpEquivalent, 0),
+      inflows: pending.filter(u => u.type === "income").reduce((s, u) => s + (u.gbpEquivalent ?? 0), 0),
+      outflows: pending.filter(u => u.type === "expense").reduce((s, u) => s + (u.gbpEquivalent ?? 0), 0),
     };
   }, [upcoming, now, in30]);
   const net = inflows - outflows;
@@ -853,7 +853,7 @@ export function CompactSpendingVelocity() {
   const monthStart = useMemo(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`, [now]);
   const { data: txs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const dailyRate = useMemo(() => {
-    const total = txs.reduce((s, t) => s + Math.abs(t.gbpValue), 0);
+    const total = txs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
     return now.getDate() > 0 ? total / now.getDate() : 0;
   }, [txs, now]);
   return (
@@ -892,13 +892,13 @@ export function CompactEmergencyFund() {
   const { data: accounts = [] } = useListAccounts({});
   const { data: allTxs = [] } = useListTransactions({});
   const { months, color } = useMemo(() => {
-    const liquid = accounts.reduce((s, a) => s + a.gbpEquivalent, 0);
+    const liquid = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
     const now = new Date();
     const expenses: number[] = [];
     for (let i = 1; i <= 3; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const tot = allTxs.filter(t => t.type === "expense" && t.date.startsWith(ym)).reduce((s, t) => s + Math.abs(t.gbpValue), 0);
+      const tot = allTxs.filter(t => t.type === "expense" && t.date.startsWith(ym)).reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
       if (tot > 0) expenses.push(tot);
     }
     const avg = expenses.length ? expenses.reduce((s, v) => s + v, 0) / expenses.length : 0;
@@ -950,12 +950,12 @@ export function CompactDecisionEngine() {
   const { data: goals = [] } = useListGoals();
   const { count } = useMemo(() => {
     let count = 0;
-    const totalCash = accounts.reduce((s, a) => s + a.gbpEquivalent, 0);
+    const totalCash = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
     if (totalCash > 5000) count++;
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
     const spend: Record<string, number> = {};
-    txs.filter(t => t.date >= monthStart).forEach(t => { spend[t.category] = (spend[t.category] ?? 0) + Math.abs(t.gbpValue); });
+    txs.filter(t => t.date >= monthStart).forEach(t => { spend[t.category] = (spend[t.category] ?? 0) + Math.abs(t.gbpValue ?? 0); });
     budgets.forEach(b => { if ((spend[b.category] ?? 0) > b.monthlyLimit) count++; });
     goals.forEach(g => { if (g.deadline && g.current < g.target) { const days = (new Date(g.deadline).getTime() - now.getTime()) / 86400000; if (days < 180) count++; } });
     return { count };

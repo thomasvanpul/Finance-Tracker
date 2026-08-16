@@ -326,7 +326,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const spent = (txs ?? []).reduce<Record<string, number>>((acc, tx) => {
     const key = tx.category?.toLowerCase();
-    acc[key] = (acc[key] ?? 0) + tx.gbpValue;
+    acc[key] = (acc[key] ?? 0) + (tx.gbpValue ?? 0);
     return acc;
   }, {});
 

@@ -191,7 +191,7 @@ export function SmartAlertsWidget() {
       const spent: Record<string, number> = {};
       for (const tx of monthTxs) {
         const key = tx.category.toLowerCase();
-        spent[key] = (spent[key] ?? 0) + tx.gbpValue;
+        spent[key] = (spent[key] ?? 0) + (tx.gbpValue ?? 0);
       }
       for (const budget of budgets) {
         const key = budget.category.toLowerCase();
@@ -217,6 +217,7 @@ export function SmartAlertsWidget() {
 
     if (recentTxs) {
       for (const tx of recentTxs) {
+        if (tx.gbpValue == null) continue;
         if (tx.gbpValue > alertRules.largeTxThreshold) {
           result.push({
             id: `large-tx-${tx.id}`,
@@ -239,7 +240,9 @@ export function SmartAlertsWidget() {
             id: `upcoming-${item.id}`,
             level: "warn",
             title: `Due soon: ${item.description}`,
-            detail: `${formatGbp(item.gbpEquivalent)} due ${item.dueDate}`,
+            detail: item.gbpEquivalent == null
+              ? `Due ${item.dueDate} — GBP not available`
+              : `${formatGbp(item.gbpEquivalent)} due ${item.dueDate}`,
           });
         }
       }
@@ -253,7 +256,7 @@ export function SmartAlertsWidget() {
         return daysSince > 90;
       });
       if (overdueDebts.length > 0) {
-        const total = overdueDebts.reduce((s, d) => s + d.gbpEquivalent, 0);
+        const total = overdueDebts.reduce((s, d) => s + (d.gbpEquivalent ?? 0), 0);
         result.push({
           id: `overdue-debts-${overdueDebts.length}`,
           level: "warn",

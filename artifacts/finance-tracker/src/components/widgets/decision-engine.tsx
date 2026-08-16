@@ -55,7 +55,7 @@ function buildMiniDecisions(
   debts: Debt[],
 ): MiniDecision[] {
   const out: MiniDecision[] = [];
-  const totalCashGbp = accounts.reduce((s, a) => s + a.gbpEquivalent, 0);
+  const totalCashGbp = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
   const portfolioGbp = summary?.totalValueGbp ?? 0;
   const totalWealth = totalCashGbp + portfolioGbp;
   const cashRatio = totalWealth > 0 ? totalCashGbp / totalWealth : 1;
@@ -101,14 +101,14 @@ function buildMiniDecisions(
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const spendByCategory: Record<string, number> = {};
   transactions.filter((t) => t.date >= monthStart && t.type === "expense").forEach((t) => {
-    spendByCategory[t.category] = (spendByCategory[t.category] ?? 0) + Math.abs(t.gbpValue);
+    spendByCategory[t.category] = (spendByCategory[t.category] ?? 0) + Math.abs(t.gbpValue ?? 0);
   });
   budgets.forEach((b) => {
     const over = (spendByCategory[b.category] ?? 0) - b.monthlyLimit;
     if (over > 0) out.push({ id: `budget-${b.id}`, priority: over > b.monthlyLimit * 0.5 ? "high" : "medium", title: `${b.category} budget exceeded by ${formatGbp(over)}`, annualCost: over * 12, href: "/budget" });
   });
   const debtsPending = debts.filter((d) => d.direction === "they_owe_me" && d.status === "pending");
-  const totalOwed = debtsPending.reduce((s, d) => s + d.gbpEquivalent, 0);
+  const totalOwed = debtsPending.reduce((s, d) => s + (d.gbpEquivalent ?? 0), 0);
   if (totalOwed > 50) out.push({ id: "debts-owed", priority: totalOwed > 500 ? "high" : "medium", title: `${formatGbp(totalOwed)} owed to you`, href: "/owing" });
 
   return out.sort((a, b) => {

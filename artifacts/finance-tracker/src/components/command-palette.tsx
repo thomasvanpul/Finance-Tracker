@@ -211,7 +211,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
         section: "transactions" as CommandSection,
         icon: tx.type === "income" ? "↑" : "↓",
         title: tx.description,
-        shortcut: (tx.type === "income" ? "+" : "-") + formatGbp(tx.gbpValue) + " · " + tx.date.slice(0, 10),
+        shortcut: (tx.gbpValue == null ? "—" : (tx.type === "income" ? "+" : "-") + formatGbp(tx.gbpValue)) + " · " + tx.date.slice(0, 10),
         action: navTo("/transactions"),
       });
     }

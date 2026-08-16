@@ -22,9 +22,9 @@ function getMonthPrefix(offsetMonths: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function rankMerchants(expenses: { description: string; gbpValue: number }[]): { name: string; total: number }[] {
+function rankMerchants(expenses: { description: string; gbpValue: number | null }[]): { name: string; total: number }[] {
   const totals = expenses.reduce<Record<string, number>>((acc, tx) => {
-    acc[tx.description] = (acc[tx.description] ?? 0) + tx.gbpValue;
+    acc[tx.description] = (acc[tx.description] ?? 0) + (tx.gbpValue ?? 0);
     return acc;
   }, {});
   return Object.entries(totals)
@@ -117,7 +117,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
   const limit = isExpanded ? 8 : 5;
   const topMerchants = thisRanked.slice(0, limit);
 
-  const monthlyTotal = thisMonthExpenses.reduce((s, tx) => s + tx.gbpValue, 0);
+  const monthlyTotal = thisMonthExpenses.reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
   const maxTotal = topMerchants[0]?.total ?? 0;
 
   const otherTotal = thisRanked.slice(8).reduce((s, m) => s + m.total, 0);
@@ -127,7 +127,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
     ...(otherTotal > 0 ? [{ name: "Other", value: otherTotal, color: "var(--ft-border2)" }] : []),
   ];
 
-  const prevMonthTotal = lastMonthExpenses.reduce((s, tx) => s + tx.gbpValue, 0);
+  const prevMonthTotal = lastMonthExpenses.reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
   const totalDelta = monthlyTotal - prevMonthTotal;
   const totalDeltaColor = totalDelta <= 0 ? "var(--ft-green)" : "var(--ft-red)";
 

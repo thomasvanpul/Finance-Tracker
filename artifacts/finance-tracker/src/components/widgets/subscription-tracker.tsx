@@ -135,7 +135,7 @@ type SubscriptionRowItem = {
   description: string;
   dueDate: string;
   frequency: string;
-  gbpEquivalent: number;
+  gbpEquivalent: number | null;
   status?: string;
 };
 
@@ -146,7 +146,7 @@ type SubscriptionRowProps = {
 
 function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
   const [hov, setHov] = useState(false);
-  const monthly = toMonthly(item.gbpEquivalent, item.frequency);
+  const monthly = toMonthly(item.gbpEquivalent ?? 0, item.frequency);
   const daysUntil = Math.ceil(
     (new Date(item.dueDate).getTime() - Date.now()) / 86400000
   );
@@ -294,7 +294,7 @@ export function SubscriptionTrackerWidget() {
   });
 
   const monthlyTotal = subs.reduce(
-    (s, item) => s + toMonthly(item.gbpEquivalent, item.frequency),
+    (s, item) => s + toMonthly(item.gbpEquivalent ?? 0, item.frequency),
     0
   );
   const yearlyTotal = monthlyTotal * 12;

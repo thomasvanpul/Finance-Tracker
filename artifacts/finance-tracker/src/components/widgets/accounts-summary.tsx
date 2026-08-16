@@ -22,7 +22,7 @@ function formatNative(amount: number, currency: string): string {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 type AccountRowProps = {
-  acct: { id: number | string; name: string; currency: string; balance: number; gbpEquivalent: number };
+  acct: { id: number | string; name: string; currency: string; balance: number; gbpEquivalent: number | null };
   maxGbp: number;
   share: number;
   totalCash: number;
@@ -32,8 +32,10 @@ type AccountRowProps = {
 
 function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
   const [hov, setHov] = useState(false);
-  const barPct = maxGbp > 0 ? (Math.abs(acct.gbpEquivalent) / maxGbp) * 100 : 0;
-  const isNeg = acct.gbpEquivalent < 0;
+  // Balance bar reads 0-width for unconvertible accounts — comparing
+  // magnitude across currencies needs a GBP figure to normalise.
+  const barPct = acct.gbpEquivalent != null && maxGbp > 0 ? (Math.abs(acct.gbpEquivalent) / maxGbp) * 100 : 0;
+  const isNeg = acct.gbpEquivalent != null && acct.gbpEquivalent < 0;
 
   return (
     <tr
@@ -84,8 +86,8 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
           {acct.currency !== "GBP" ? formatNative(acct.balance, acct.currency) : "—"}
         </span>
       </td>
-      <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isNeg ? "var(--ft-red)" : "var(--ft-green)" }}>
-        <span className="pnum">{formatGbp(acct.gbpEquivalent)}</span>
+      <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: acct.gbpEquivalent == null ? "var(--ft-dim)" : isNeg ? "var(--ft-red)" : "var(--ft-green)" }}>
+        {acct.gbpEquivalent == null ? "—" : <span className="pnum">{formatGbp(acct.gbpEquivalent)}</span>}
       </td>
       {isExpanded && (
         <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
@@ -135,13 +137,14 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const accounts = d?.accountBreakdown ?? [];
-  const maxGbp = accounts.length > 0 ? Math.max(...accounts.map(a => Math.abs(a.gbpEquivalent))) : 1;
+  const maxGbp = accounts.length > 0 ? Math.max(...accounts.map(a => Math.abs(a.gbpEquivalent ?? 0))) : 1;
 
   const sorted = [...accounts].sort((a, b) => {
     let diff = 0;
     if (sort === "name") diff = a.name.localeCompare(b.name);
     else if (sort === "balance") diff = a.balance - b.balance;
-    else diff = a.gbpEquivalent - b.gbpEquivalent;
+    // GBP sort: unconvertible sinks to the bottom (desc) via -Infinity.
+    else diff = (a.gbpEquivalent ?? -Infinity) - (b.gbpEquivalent ?? -Infinity);
     return sortDir === "desc" ? -diff : diff;
   });
 
@@ -209,7 +212,8 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
             </tr>
           ) : (
             sorted.map((acct, i) => {
-              const share = d!.totalCash > 0 ? (acct.gbpEquivalent / d!.totalCash) * 100 : 0;
+              // Share % needs a GBP figure to compute against the base total.
+              const share = d!.totalCash > 0 && acct.gbpEquivalent != null ? (acct.gbpEquivalent / d!.totalCash) * 100 : 0;
               return (
                 <AccountRow
                   key={acct.id}

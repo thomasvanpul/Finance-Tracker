@@ -14,13 +14,13 @@ type Period = "7D" | "1M" | "3M" | "ALL";
 type CurrencyGroup = { currency: string; nativeTotal: number; gbpTotal: number; share: number };
 
 function buildCurrencyGroups(
-  accountBreakdown: { currency: string; balance: number; gbpEquivalent: number }[],
+  accountBreakdown: { currency: string; balance: number; gbpEquivalent: number | null }[],
   totalCash: number
 ): CurrencyGroup[] {
   const map = new Map<string, { native: number; gbp: number }>();
   for (const acct of accountBreakdown) {
     const prev = map.get(acct.currency) ?? { native: 0, gbp: 0 };
-    map.set(acct.currency, { native: prev.native + acct.balance, gbp: prev.gbp + acct.gbpEquivalent });
+    map.set(acct.currency, { native: prev.native + acct.balance, gbp: prev.gbp + (acct.gbpEquivalent ?? 0) });
   }
   return Array.from(map.entries())
     .map(([currency, { native, gbp }]) => ({
@@ -283,7 +283,7 @@ function BreakdownCell({ label, value, color, isLast }: BreakdownCellProps) {
 }
 
 type AccountTableRowProps = {
-  acct: { id: number | string; name: string; currency: string; balance: number; gbpEquivalent: number };
+  acct: { id: number | string; name: string; currency: string; balance: number; gbpEquivalent: number | null };
   isFirst: boolean;
 };
 
@@ -308,8 +308,8 @@ function AccountTableRow({ acct, isFirst }: AccountTableRowProps) {
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "7px 8px 7px 0", textAlign: "right" }}>
         <span className="pnum">{acct.currency !== "GBP" ? acct.balance.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}</span>
       </td>
-      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-accent)", textAlign: "right", padding: "7px 0" }}>
-        <span className="pnum">{formatGbp(acct.gbpEquivalent)}</span>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: acct.gbpEquivalent == null ? "var(--ft-dim)" : "var(--ft-accent)", textAlign: "right", padding: "7px 0" }}>
+        {acct.gbpEquivalent == null ? "—" : <span className="pnum">{formatGbp(acct.gbpEquivalent)}</span>}
       </td>
     </tr>
   );
