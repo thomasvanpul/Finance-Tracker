@@ -291,3 +291,91 @@ tabular and right-aligned.
 changeable. Scope of what onboarding sets is still open — see below.
 
 **Desktop.** Must be brought in line. Not yet specified.
+
+---
+
+## Desktop port — what carries and what does not (16 Aug 2026)
+
+Recorded after the two-page pilot on `pages/investments.tsx` and
+`pages/analytics.tsx`. The `desktop and phone are one product` rule in
+TARGET-PRODUCT.md means the mobile language must ship on desktop too;
+this section is the specification for how each device translates so the
+next port doesn't rediscover the same friction.
+
+### Ports directly
+
+- **Hairline structure** (1px `--ft-border` grid lines between KPI cells,
+  between rows, at panel edges). Reads correctly at 1440px because the
+  hairline is a structural device, not a proportional one.
+- **The number rule** — separators, tabular figures, two decimals for
+  facts, no decimals for shapes, true minus, native-first — is width-
+  independent and carries across without change.
+- **Primitives** — HStack / VStack / Text / MonoLabel — carry across.
+  The same `<HStack align="baseline" justify="between">` used on
+  MobileHome works for the KPI header on `/portfolio`.
+- **Type ladder as a *shape*** — one primary figure per pane, plus
+  secondary rows — carries. The mobile home has one 34px NET WORTH,
+  everything else at 11–14px; the desktop equivalent needs one
+  primary cell (Portfolio Value on `/portfolio`) and the rest at
+  secondary weight. Before the pilot, all six KPI cells ran at
+  `clamp(13px, 1.4vw, 18px)` — no ladder, nothing to fix on.
+- **The "no fabricated number" invariant** — no truncation, no
+  ellipsised figures, no synthesised zeros — is a shared constraint,
+  not a language choice, and applies identically on both viewports.
+  The pilot found live truncation violations on both pages
+  (`.ft-kpi-bar-cell-value` in index.css; `AnalyticsKpiCell` value
+  span in `pages/analytics.tsx`). Both fixed in the same pass.
+
+### Ports with `min(vw, cap)` scaling
+
+- **The premium tier figure.** Mobile fixes NET WORTH at 34px against a
+  390px column; that same 34px on a 240px-wide KPI cell inside a 1200px
+  content area reads *smaller* than it does on the phone. Use
+  `clamp(24px, 3.2vw, 34px)` for the primary tier so a 1440px desktop
+  gets 46px worth of screen and mobile stays at 34px. Do not carry
+  absolute pixel sizes across viewports without a clamp.
+- **Column widths on aligned tables.** Mobile fixes them because it
+  knows the container; desktop tables live inside a page column of
+  variable width. Use `minmax()` on grid tracks or explicit `min-width`
+  on the label / percentage / figure columns so the layout can't crush
+  a currency figure below its readable width.
+
+### Does NOT port
+
+- **Two-level column headers** — the mobile pattern of stacking
+  `SPEND BY CATEGORY` above a `SHARE · £` sub-header row works because a
+  phone table has three columns of known meaning. The desktop
+  positions table has ten (TICKER, NAME, SHARES, AVG COST, CURRENT,
+  VALUE, P&L, P&L %, WEIGHT, ACTIONS). Stacking a `native · converted`
+  header under every currency-bearing column fragments the horizontal
+  read. Two-level headers stay a phone-only device unless the desktop
+  table has ≤4 columns.
+- **Block fields sized for a phone.** `BlockField` in
+  `components/primitives/block-field.tsx` fixes `AVAILABLE_W = 354` and
+  `FIELD_H = 132` — numbers chosen for 390px. Dropping the same block
+  field into a 1200px column either stretches every tile into a hero
+  card or leaves 850px of empty gutter on the right. Two paths for
+  desktop: (a) add a `preferredWidth` prop that lets each caller choose,
+  or (b) build a desktop-only block field that composes over a wider
+  grid. Do not ship the mobile component into a desktop pane unchanged.
+- **`READING THE DATA` and its cousins.** The amber-tinted onboarding
+  banner on `/investments` (`◈ Portfolio — Reading the data` at line
+  ~2221) exists because desktop distrusts the reader. Mobile does not
+  carry these. Delete on port; do not add new ones. Tone divergence
+  isn't fixable via the primitives family — it lives in copy.
+- **Rainbow-coloured KPI accent stripes.** `AnalyticsKpiCell.accentColor`
+  was a per-cell red/amber/blue/muted stripe — the constitution's
+  "rainbow ratings" pattern. Colour was not encoding rank. Deleted in
+  the pilot; do not reintroduce. Colour on desktop is semantic
+  (`--ft-green` for positive P&L, `--ft-red` for negative) or absent.
+
+### Test-lock on the invariants
+
+The three shared constraints — no truncation on financial figures, no
+fabricated zero, no ellipsised numbers — apply on both viewports. When
+`components/primitives/*` grows a new primitive, add a regression test
+that renders it at both 390px and 1440px and asserts no `overflow:
+hidden + text-overflow: ellipsis` on a `.pnum` descendant. The pilot
+found the truncation defects by reading CSS; the next one should be
+caught by tests.
+
