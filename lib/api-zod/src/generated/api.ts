@@ -20,6 +20,7 @@ export const HealthCheckResponse = zod.object({
  * @summary Get full dashboard summary
  */
 export const GetDashboardResponse = zod.object({
+  "unconvertibleAccounts": zod.number(),
   "baseCurrency": zod.string(),
   "netLiquidity": zod.number(),
   "netWorth": zod.number(),

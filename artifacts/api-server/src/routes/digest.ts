@@ -120,26 +120,30 @@ router.post("/send", async (req: Request, res: Response): Promise<void> => {
 
     const baseCurrency = await getBaseCurrency(userId);
 
-    // Convert each transaction's nativeAmount to base currency
-    const converted = await Promise.all(
-      weekTxs.map(async (tx: Transaction) => {
-        const native = Math.abs(parseFloat(tx.nativeAmount));
-        const base = await toBase(native, tx.currency, baseCurrency);
-        return { ...tx, baseValue: base };
-      })
-    );
+    // Convert each transaction's nativeAmount to base currency. Rows
+    // whose FX leg is unavailable are dropped from the digest rather
+    // than pulling week totals onto a fabricated number.
+    const converted = (
+      await Promise.all(
+        weekTxs.map(async (tx: Transaction) => {
+          const native = Math.abs(parseFloat(tx.nativeAmount));
+          const base = await toBase(native, tx.currency, baseCurrency);
+          return base == null ? null : { ...tx, baseValue: base };
+        })
+      )
+    ).filter((row): row is Transaction & { baseValue: number } => row !== null);
 
     const weekIncome = converted
-      .filter((t: Transaction & { baseValue: number }) => t.type === "income")
-      .reduce((s: number, t: Transaction & { baseValue: number }) => s + t.baseValue, 0);
+      .filter((t) => t.type === "income")
+      .reduce((s, t) => s + t.baseValue, 0);
 
     const weekExpenses = converted
-      .filter((t: Transaction & { baseValue: number }) => t.type === "expense")
-      .reduce((s: number, t: Transaction & { baseValue: number }) => s + t.baseValue, 0);
+      .filter((t) => t.type === "expense")
+      .reduce((s, t) => s + t.baseValue, 0);
 
     // Top categories by expense in base currency
     const catMap: Record<string, number> = {};
-    for (const tx of converted.filter((t: Transaction & { baseValue: number }) => t.type === "expense")) {
+    for (const tx of converted.filter((t) => t.type === "expense")) {
       catMap[tx.category] = (catMap[tx.category] ?? 0) + tx.baseValue;
     }
     const topCategories = Object.entries(catMap)

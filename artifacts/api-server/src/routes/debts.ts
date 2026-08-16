@@ -31,7 +31,10 @@ async function enrichDebt(item: typeof debtsTable.$inferSelect, userId: string) 
     status: item.status,
     notes: item.notes ?? null,
     accountId: item.accountId ?? null,
-    gbpEquivalent: Math.round(gbpEquivalent * 100) / 100,
+    // toBase returns null when the FX rate is unavailable. Coerce
+    // null → 0 at this boundary until the API surface is widened —
+    // frontend follow-up commit renders "—" instead of £0.
+    gbpEquivalent: gbpEquivalent == null ? 0 : Math.round(gbpEquivalent * 100) / 100,
     createdAt: item.createdAt.toISOString(),
     linkedEmail: item.linkedEmail ?? null,
     linkedUserId: item.linkedUserId ?? null,
@@ -84,6 +87,9 @@ router.get("/debts/summary", async (req, res): Promise<void> => {
 
   for (const item of items) {
     const gbp = await toBase(parseFloat(item.nativeAmount), item.currency, baseCurrency);
+    // Skip debts whose FX leg is unavailable. A fabricated conversion
+    // would pull a totals figure that the UI has no way to caveat.
+    if (gbp == null) continue;
     if (item.direction === "they_owe_me") totalOwedToMe += gbp;
     else totalIOwe += gbp;
   }

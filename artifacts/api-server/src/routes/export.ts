@@ -88,14 +88,18 @@ router.get("/export/tax-year/:year", async (req, res): Promise<void> => {
   for (const tx of txs) {
     const native = parseFloat(tx.nativeAmount);
     const gbp = await toBase(Math.abs(native), tx.currency, baseCurrency);
-    const amount = tx.type === "expense" ? -gbp : gbp;
+    // Empty string in the Amount column when FX is unavailable — an
+    // exported spreadsheet full of fabricated conversions would poison
+    // the user's own accounting downstream.
+    const amount =
+      gbp == null ? "" : ((tx.type === "expense" ? -gbp : gbp).toFixed(2));
     const accountName = accountMap.get(tx.accountId) ?? "Unknown";
 
     rows.push(
       [
         tx.date,
         tx.description,
-        amount.toFixed(2),
+        amount,
         tx.type,
         tx.category,
         accountName,

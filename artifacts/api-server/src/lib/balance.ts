@@ -46,7 +46,21 @@ export async function adjustAccountBalance(
     delta = nativeAmount;
   } else {
     const gbp = await toGbp(nativeAmount, currency);
-    delta = await gbpTo(gbp, acct.currency);
+    const converted = gbp == null ? null : await gbpTo(gbp, acct.currency);
+    if (converted == null) {
+      // Either leg of the FX conversion is unavailable. Refuse to apply
+      // a fabricated delta — this used to silently substitute (via the
+      // deleted rate fallbacks) and then quietly move the account's
+      // balance by a wrong amount. Better to leave the balance untouched
+      // and log; the transaction row itself still records the native
+      // amount honestly.
+      logger.warn(
+        { accountId, currency, targetCurrency: acct.currency },
+        "adjustAccountBalance: FX rate unavailable, skipping balance update",
+      );
+      return;
+    }
+    delta = converted;
   }
 
   if (txType === "expense") delta = -delta;

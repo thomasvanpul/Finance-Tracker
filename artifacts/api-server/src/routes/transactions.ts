@@ -22,7 +22,13 @@ async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, acco
   const nativeAmount = parseFloat(tx.nativeAmount);
   const baseCurrency = await getBaseCurrency(userId);
   const rawGbp = await toBase(Math.abs(nativeAmount), tx.currency, baseCurrency);
-  const gbpValue = tx.type === "expense" ? -rawGbp : rawGbp;
+  // Coerce null → 0 at the API boundary until the OpenAPI contract
+  // widens gbpValue to nullable. Follow-up commit updates the frontend
+  // consumers to render "—" instead of £0.
+  const gbpValue =
+    rawGbp == null
+      ? 0
+      : Math.round((tx.type === "expense" ? -rawGbp : rawGbp) * 100) / 100;
   return {
     id: tx.id,
     date: tx.date,
@@ -33,7 +39,7 @@ async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, acco
     accountName: accountMap.get(tx.accountId) ?? "Unknown",
     nativeAmount,
     currency: tx.currency,
-    gbpValue: Math.round(gbpValue * 100) / 100,
+    gbpValue,
     source: tx.source,
     externalId: tx.externalId ?? null,
     createdAt: tx.createdAt.toISOString(),
@@ -120,6 +126,7 @@ router.get("/transactions/summary", async (req, res): Promise<void> => {
   for (const tx of txs) {
     const native = parseFloat(tx.nativeAmount);
     const gbp = await toBase(Math.abs(native), tx.currency, baseCurrency);
+    if (gbp == null) continue;
     if (tx.type === "income") totalIncome += gbp;
     else if (tx.type === "expense") totalExpenses += gbp;
   }

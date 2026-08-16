@@ -874,6 +874,7 @@ export type DashboardSummaryMonthlyHistoryItem = {
 };
 
 export interface DashboardSummary {
+  unconvertibleAccounts: number;
   baseCurrency: string;
   netLiquidity: number;
   netWorth: number;

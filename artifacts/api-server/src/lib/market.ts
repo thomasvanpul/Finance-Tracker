@@ -4,7 +4,21 @@ import { logger } from "./logger";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const YahooFinance = require("yahoo-finance2").default;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const yahooFinance: any = new YahooFinance({ suppressNotices: ["yahooSurvey", "ripHistorical"] });
+let yahooFinance: any = new YahooFinance({ suppressNotices: ["yahooSurvey", "ripHistorical"] });
+
+// Test seam. Vitest cannot cleanly mock a top-level `require(...)` call —
+// vi.mock intercepts ES imports, not CommonJS require paths — so tests
+// that need to force a Yahoo failure (see fx-honesty.test.ts) call
+// __setYahooForTesting(stub) to inject an object whose .quote()
+// method throws. Production code never touches this.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function __setYahooForTesting(stub: any): void {
+  yahooFinance = stub;
+  // Bust every cache so the injected failure surfaces immediately.
+  fxCache = null;
+  quoteCache.clear();
+  stockCache.clear();
+}
 
 export type FxRatesData = {
   base: string;
@@ -43,6 +57,16 @@ export async function getFxRates(): Promise<FxRatesData> {
   const now = Date.now();
   if (fxCache && now - fxCache.ts < CACHE_TTL_MS) return fxCache.data;
 
+  // Only real Yahoo prices land in this map. If a fetch fails, the
+  // currency is simply absent from rates — consumers see undefined and
+  // must render "—" or the native amount alone. Previously this file
+  // carried 11 hardcoded fallbacks (USD: 1.27, EUR: 1.17, MYR: 5.95,
+  // …) that silently substituted for missing rates and set updatedAt
+  // to now, so the app asserted freshness for fabricated data. Every
+  // converted figure in the product ran through this — a violation of
+  // CLAUDE.md's "never show a number the API did not supply" that was
+  // worse than the mobile MOCK_QUOTES defect ever was, because it lied
+  // in aggregate rather than per-ticker.
   const rates: Record<string, number> = {};
   await Promise.all(
     Object.entries(FX_PAIRS).map(async ([ccy, symbol]) => {
@@ -53,53 +77,44 @@ export async function getFxRates(): Promise<FxRatesData> {
           rates[ccy] = price;
         }
       } catch (err) {
-        logger.warn({ err, symbol }, "FX rate fetch failed, using fallback");
+        logger.warn({ err, symbol }, "FX rate fetch failed — currency omitted from response");
       }
     })
   );
-
-  // Fallbacks if fetch fails
-  if (!rates.USD) rates.USD = 1.27;
-  if (!rates.EUR) rates.EUR = 1.17;
-  if (!rates.MYR) rates.MYR = 5.95;
-  if (!rates.CNY) rates.CNY = 9.20;
-  if (!rates.JPY) rates.JPY = 193;
-  if (!rates.AUD) rates.AUD = 1.95;
-  if (!rates.CAD) rates.CAD = 1.73;
-  if (!rates.SGD) rates.SGD = 1.70;
-  if (!rates.HKD) rates.HKD = 9.92;
-  if (!rates.THB) rates.THB = 43.5;
-  if (!rates.INR) rates.INR = 106;
 
   const data: FxRatesData = { base: "GBP", rates, updatedAt: new Date().toISOString() };
   fxCache = { data, ts: now };
   return data;
 }
 
-export async function toGbp(amount: number, currency: string): Promise<number> {
+export async function toGbp(amount: number, currency: string): Promise<number | null> {
   if (currency === "GBP") return amount;
   const fx = await getFxRates();
   const rate = fx.rates[currency];
-  if (!rate) return amount;
+  if (!rate) return null;
   return amount / rate;
 }
 
-export async function toBase(amount: number, fromCurrency: string, baseCurrency: string): Promise<number> {
+export async function toBase(amount: number, fromCurrency: string, baseCurrency: string): Promise<number | null> {
   if (fromCurrency === baseCurrency) return amount;
   const fx = await getFxRates();
-  // Convert fromCurrency → GBP → baseCurrency
+  // Convert fromCurrency → GBP → baseCurrency. If either leg is missing,
+  // return null. Previously this returned the amount unchanged, which
+  // treated the native figure as if it were already in the target
+  // currency — a total lie on top of the fabricated-rate lie above.
   const fromRate = fromCurrency === "GBP" ? 1 : fx.rates[fromCurrency];
   const toRate = baseCurrency === "GBP" ? 1 : fx.rates[baseCurrency];
-  if (!fromRate || !toRate) return amount;
+  if (!fromRate || !toRate) return null;
   return (amount / fromRate) * toRate;
 }
 
-/** Convert a GBP amount to the target currency using live FX rates. */
-export async function gbpTo(gbpAmount: number, targetCurrency: string): Promise<number> {
+/** Convert a GBP amount to the target currency using live FX rates.
+ *  Returns null when the target's rate is not available. */
+export async function gbpTo(gbpAmount: number, targetCurrency: string): Promise<number | null> {
   if (targetCurrency === "GBP") return gbpAmount;
   const fx = await getFxRates();
   const rate = fx.rates[targetCurrency];
-  if (!rate) return gbpAmount;
+  if (!rate) return null;
   return gbpAmount * rate;
 }
 
@@ -287,8 +302,13 @@ export async function getStockQuotes(tickers: string[]): Promise<StockQuoteData[
         quoteCache.set(ticker, { data, ts: now });
         results.push(data);
       } catch (err) {
-        logger.warn({ err, ticker }, "Stock quote fetch failed");
-        results.push({ ticker, price: 0, currency: "USD", updatedAt: new Date().toISOString(), pe: null, forwardPe: null, eps: null, high52w: null, low52w: null, marketCap: null, beta: null, dividendYield: null, analystTargetPrice: null, displayName: null, changePercent: null, dayHigh: null, dayLow: null, volume: null, previousClose: null, nextEarningsDate: null, marketState: null, postMarketPrice: null, postMarketChangePercent: null, preMarketPrice: null, preMarketChangePercent: null });
+        // Omit the ticker rather than push a fabricated entry. The old
+        // behaviour returned { price: 0, currency: "USD", ... } which
+        // read as a legit £0 position on every consumer — G10's
+        // finite-price check treats 0 as valid. Silent omission lets the
+        // caller notice the ticker went missing (Map.get returns
+        // undefined) and render "—" instead.
+        logger.warn({ err, ticker }, "Stock quote fetch failed — omitting ticker from response");
       }
     })
   );
@@ -325,8 +345,11 @@ export async function getStockPrices(tickers: string[]): Promise<StockPriceData[
         stockCache.set(ticker, { data, ts: now });
         results.push(data);
       } catch (err) {
-        logger.warn({ err, ticker }, "Stock price fetch failed");
-        results.push({ ticker, price: 0, currency: "USD", updatedAt: new Date().toISOString() });
+        // Same rule as getStockQuotes: omit the ticker rather than
+        // substitute a fabricated £0. Callers (enrichInvestment via
+        // fetchPriceContext) see the ticker missing from the Map and
+        // handle it as "no live price" — the G10 path is already there.
+        logger.warn({ err, ticker }, "Stock price fetch failed — omitting ticker from response");
       }
     })
   );

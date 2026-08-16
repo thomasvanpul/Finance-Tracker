@@ -1845,8 +1845,15 @@ components:
     # ── DASHBOARD ─────────────────────────────────────────────────────────────
     DashboardSummary:
       type: object
-      required: [baseCurrency, netLiquidity, netWorth, totalCash, accountBreakdown, portfolio, thisMonth, owing]
+      required: [baseCurrency, netLiquidity, netWorth, totalCash, unconvertibleAccounts, accountBreakdown, portfolio, thisMonth, owing]
       properties:
+        # Count of accounts whose FX rate was unavailable at request time.
+        # Their balance is NOT included in totalCash/netWorth/netLiquidity
+        # (the server dropped them from the aggregation) so the UI can
+        # name the gap ("2 accounts unconverted") rather than silently
+        # under-report the total.
+        unconvertibleAccounts:
+          type: integer
         baseCurrency:
           type: string
         netLiquidity:

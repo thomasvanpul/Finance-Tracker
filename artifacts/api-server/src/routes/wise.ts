@@ -4,8 +4,8 @@ import { db, accountsTable, transactionsTable } from "@workspace/db";
 import { GetWiseStatusResponse, SyncWiseTransactionsResponse } from "@workspace/api-zod";
 import { checkConnection, listProfiles, listBalances, getStatement } from "../lib/wise";
 import { logger } from "../lib/logger";
-import { toBase } from "../lib/market";
-import { getBaseCurrency } from "../lib/app-settings-db";
+// toBase / getBaseCurrency imports removed with the dead gbpEquivalent
+// computation below — the value is derived on read in enrichAccount now.
 
 const router: IRouter = Router();
 
@@ -51,11 +51,10 @@ router.post("/wise/sync", async (req, res): Promise<void> => {
     const intervalStart = new Date();
     intervalStart.setDate(intervalStart.getDate() - 90);
 
-    const baseCurrency = await getBaseCurrency(userId);
-
     for (const balance of balances) {
-      const gbpEquivalent = await toBase(balance.amount.value, balance.amount.currency, baseCurrency);
-
+      // gbpEquivalent used to be computed here but the value was never
+      // stored — dead computation. The value is derived on read in
+      // enrichAccount from the live FX rate.
       const [account] = await db
         .insert(accountsTable)
         .values({

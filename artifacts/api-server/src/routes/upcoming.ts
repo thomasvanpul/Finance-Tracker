@@ -33,7 +33,8 @@ async function enrichUpcoming(item: typeof upcomingTable.$inferSelect, accountMa
     status: item.status,
     nativeAmount,
     currency: item.currency,
-    gbpEquivalent: Math.round(gbpEquivalent * 100) / 100,
+    // Coerce null → 0 at the API boundary; follow-up commit renders "—".
+    gbpEquivalent: gbpEquivalent == null ? 0 : Math.round(gbpEquivalent * 100) / 100,
     accountId: item.accountId ?? null,
     accountName: item.accountId ? (accountMap.get(item.accountId) ?? null) : null,
     createdAt: item.createdAt.toISOString(),
@@ -81,6 +82,7 @@ router.get("/upcoming/summary", async (req, res): Promise<void> => {
   let expectedIncome30d = 0;
   for (const item of items) {
     const gbp = await toBase(parseFloat(item.nativeAmount), item.currency, baseCurrency);
+    if (gbp == null) continue;
     if (item.type === "expense") committedOutgoings30d += gbp;
     else if (item.type === "income") expectedIncome30d += gbp;
   }

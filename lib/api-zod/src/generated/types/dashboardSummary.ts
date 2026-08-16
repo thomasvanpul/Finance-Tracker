@@ -12,6 +12,7 @@ import type { DashboardSummaryPortfolio } from './dashboardSummaryPortfolio';
 import type { DashboardSummaryThisMonth } from './dashboardSummaryThisMonth';
 
 export interface DashboardSummary {
+  unconvertibleAccounts: number;
   baseCurrency: string;
   netLiquidity: number;
   netWorth: number;
