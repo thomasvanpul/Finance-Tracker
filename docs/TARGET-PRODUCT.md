@@ -144,3 +144,33 @@ polish — it is the prerequisite for keeping the two platforms in step.
 "preview" in a 10px label. Any screen showing fabricated numbers breaks the
 "everything has to fully work" requirement more seriously than a missing
 feature does, because it is indistinguishable from working.
+
+---
+
+## Persona resolves the "finance app vs stock tracker" question — 16 Aug 2026
+
+The tension: a personal finance app needs bank data, which needs either developer
+credentials or KYB, and neither is something a non-technical person will do. But
+the same person would happily use a stock tracker, because **manual entry is
+fatal for transactions and completely fine for holdings** — transactions happen
+daily and forever, holdings change a few times a year. Type in four tickers once
+and the app updates itself from the market forever.
+
+That is also the retention mechanism this project has been missing since the
+design rounds: a budget shows the same numbers tomorrow, a portfolio moves
+overnight without the user touching it.
+
+**Persona is the resolution, and it is already designed.** `lib/persona.ts` has
+five: market, budget, wealth, social, full. The same product presents as a stock
+tracker or as a multi-currency finance app depending on who is holding it. There
+is no need to choose between them.
+
+**But persona is not persisted.** It is absent from the schema entirely — eight
+components consume it, nothing stores it per user. So it cannot survive a login,
+cannot drive onboarding, and cannot decide what a new user is asked to connect.
+
+**Consequence for the connection layer:** a market-persona user should never be
+asked to connect a bank. They should be asked to add holdings. Enable Banking's
+KYB requirement therefore stops being a blocker for most users, because most
+users do not need a bank connection at all — which reorders the whole of section
+H against F1.
