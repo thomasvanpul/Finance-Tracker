@@ -761,6 +761,28 @@ export interface StockQuote {
   currency: string;
   updatedAt: string;
   /** @nullable */
+  changePercent?: number | null;
+  /** @nullable */
+  previousClose?: number | null;
+  /** @nullable */
+  dayHigh?: number | null;
+  /** @nullable */
+  dayLow?: number | null;
+  /** @nullable */
+  volume?: number | null;
+  /** @nullable */
+  nextEarningsDate?: string | null;
+  /** @nullable */
+  marketState?: string | null;
+  /** @nullable */
+  postMarketPrice?: number | null;
+  /** @nullable */
+  postMarketChangePercent?: number | null;
+  /** @nullable */
+  preMarketPrice?: number | null;
+  /** @nullable */
+  preMarketChangePercent?: number | null;
+  /** @nullable */
   pe?: number | null;
   /** @nullable */
   forwardPe?: number | null;

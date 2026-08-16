@@ -1783,6 +1783,35 @@ components:
           type: string
         updatedAt:
           type: string
+        # Change percent vs. the previous close. The server has always
+        # returned this from regularMarketChangePercent, but the schema
+        # omitted it — zod .parse() then stripped it on the way out,
+        # so every consumer read "—" for %-change even when Yahoo had
+        # a real value. Added 2026-08-16 so MarketPane on the home
+        # screen and the marquee on /investments show real numbers
+        # rather than fabricated or absent ones.
+        changePercent:
+          type: ["number", "null"]
+        previousClose:
+          type: ["number", "null"]
+        dayHigh:
+          type: ["number", "null"]
+        dayLow:
+          type: ["number", "null"]
+        volume:
+          type: ["number", "null"]
+        nextEarningsDate:
+          type: ["string", "null"]
+        marketState:
+          type: ["string", "null"]
+        postMarketPrice:
+          type: ["number", "null"]
+        postMarketChangePercent:
+          type: ["number", "null"]
+        preMarketPrice:
+          type: ["number", "null"]
+        preMarketChangePercent:
+          type: ["number", "null"]
         pe:
           type: ["number", "null"]
         forwardPe:

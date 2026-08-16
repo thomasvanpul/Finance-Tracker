@@ -11,6 +11,7 @@ import type { AppScreen } from "./MobileApp";
 import { MobileEmptyState } from "./mobile-ui";
 import { BlockField } from "@/components/primitives/block-field";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { MarketPane } from "./MarketPane";
 
 // ── Number rule (docs/MOBILE-CONCEPT.md § Approved 13 Aug 2026, second pass) ──
 // Separators always. Two decimals for facts. No decimals for shapes.
@@ -338,6 +339,11 @@ export function MobileHome(_props: MobileHomeProps) {
         <div style={{ padding: "0 18px" }}>
           <AccountsList accounts={activeAccounts} />
         </div>
+
+        {/* Markets pane — the only element that differs tomorrow morning
+            without the user doing anything. Scoped to holdings + implied
+            FX pairs; renders nothing when the user has neither. */}
+        <MarketPane onOpenInvestments={() => navigate("/investments")} />
 
         {/* Coming section */}
         <SectionHeader
