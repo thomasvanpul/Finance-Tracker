@@ -4,6 +4,7 @@ import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
 import { nfmt } from "./mobile-format";
 import { computeHoldings } from "./MobileHome";
 import { BlockField } from "@/components/primitives/block-field";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // Full page for the HOLDINGS section that home links to. Same design
 // language as MobileHome:
@@ -90,52 +91,39 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
       <MobileScreenHeader title="Holdings" onBack={onBack} />
 
       {/* Top bar (below the screen header so the mobile chrome sits together) */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          height: 32,
-          padding: "0 18px",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          color: "var(--ft-dim)",
-        }}
-      >
-        <span>{accounts.length} {accounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}</span>
-      </div>
+      <HStack justify="end" align="center" height={32} paddingX={18}>
+        <Text as="span" mono size={11} color="var(--ft-dim)">
+          {accounts.length} {accounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
+        </Text>
+      </HStack>
 
       {/* Net worth headline */}
-      <div style={{ padding: "4px 18px 18px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em", color: "var(--ft-dim)" }}>
-          NET WORTH
-        </div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 6 }}>
-          <span style={{ fontSize: 17, color: "var(--ft-dim)" }}>£</span>
-          <span
-            className="pnum"
-            style={{
-              fontSize: 34,
-              lineHeight: "34px",
-              fontWeight: 600,
-              letterSpacing: "-0.035em",
-            }}
+      <VStack padding="4px 18px 18px">
+        <MonoLabel size={11} letterSpacing="0.16em">NET WORTH</MonoLabel>
+        <HStack align="baseline" gap={4} marginTop={6}>
+          <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+          <Text
+            as="span"
+            size={34}
+            weight={600}
+            lineHeight="34px"
+            letterSpacing="-0.035em"
+            numeric
           >
             {nfmt(netWorth)}
-          </span>
-        </div>
-        <div
-          className="pnum"
-          style={{
-            marginTop: 6,
-            fontFamily: "var(--font-mono)",
-            fontSize: 12,
-            color: mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-          }}
+          </Text>
+        </HStack>
+        <Text
+          as="div"
+          mono
+          size={12}
+          mt={6}
+          color={mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+          numeric
         >
           {nfmt(mtdDelta, { sign: true, symbol: "£" })} · {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
-        </div>
-      </div>
+        </Text>
+      </VStack>
 
       {/* Block field — same visual language as home's BLOCKS view */}
       <div style={{ padding: "0 18px" }}>
@@ -144,18 +132,11 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
 
       {/* Liabilities strip (outlined, no depth) */}
       {owedByMe > 0 && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 12,
-            padding: "18px 18px 0",
-          }}
-        >
+        <HStack align="start" gap={12} padding="18px 18px 0">
           {/* Outlined glyph — a claim is not material you hold, per
               MOBILE-CONCEPT.md §"Liabilities are outlined with no depth".
-              Compact square so it reads as a decorative marker beside the
-              CLAIMED label; the previous 88x19 bar read as an empty input. */}
+              One-off surface treatment (border-only marker) stays inline;
+              primitives own layout and typography, not decorative squares. */}
           <div
             style={{
               width: 14,
@@ -168,18 +149,17 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
               marginTop: 2,
             }}
           />
-          <div
-            className="pnum"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              lineHeight: "16px",
-              color: "var(--ft-red)",
-            }}
+          <Text
+            as="div"
+            mono
+            size={11}
+            lineHeight="16px"
+            color="var(--ft-red)"
+            numeric
           >
             CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount} {pendingCount === 1 ? "DEBT" : "DEBTS"}
-          </div>
-        </div>
+          </Text>
+        </HStack>
       )}
 
       {/* Per-type sections */}
@@ -221,6 +201,10 @@ function TypeSection({
   note?: string;
 }) {
   const pct = netWorth > 0 ? Math.round((total / netWorth) * 100) : 0;
+  // Border-top on the section is a one-off surface treatment (a divider
+  // between sections in the vertical column). Kept inline per the
+  // primitives-family rule — Stack owns layout, PanelBox owns surface,
+  // and there is no "divider" primitive.
   return (
     <div
       style={{
@@ -231,31 +215,28 @@ function TypeSection({
         borderTopColor: "var(--ft-border)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em", color: "var(--ft-dim)" }}>
+      <HStack align="baseline" justify="between" gap={10}>
+        <MonoLabel as="span" size={11} letterSpacing="0.16em">
           {label} · {pct}%
-        </span>
-        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}>
+        </MonoLabel>
+        <Text as="span" mono size={13} weight={600} numeric>
           £{nfmt(total)}
-        </span>
-      </div>
+        </Text>
+      </HStack>
 
       {note && (
-        <div
-          style={{
-            marginTop: 6,
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ft-dim)",
-          }}
-        >
+        <Text as="div" mono size={11} color="var(--ft-dim)" mt={6}>
           {note}
-        </div>
+        </Text>
       )}
 
       {rows.length > 0 && (
         <div style={{ marginTop: 6 }}>
           {rows.map((a, i) => (
+            // Row uses inline styles for the borders + minHeight (surface
+            // + layout mixed); HStack alone can't express a rule between
+            // siblings, and adding that prop would push surface concerns
+            // into the layout primitive. Inline stays.
             <div
               key={a.id}
               style={{
@@ -273,10 +254,10 @@ function TypeSection({
                 fontSize: 14,
               }}
             >
-              <span>{a.name}</span>
-              <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
+              <Text as="span" size={14}>{a.name}</Text>
+              <Text as="span" mono size={13} numeric>
                 £{nfmt(a.gbpEquivalent)}
-              </span>
+              </Text>
             </div>
           ))}
         </div>
