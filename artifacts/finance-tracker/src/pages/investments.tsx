@@ -1145,23 +1145,35 @@ interface KpiCell {
   value: string;
   delta?: string;
   deltaPositive?: boolean | null; // null = neutral
+  /** Elevate to the premium tier (34px, spans 2 cols). One per bar max —
+   *  the type ladder from MobileHome has exactly one primary figure. */
+  primary?: boolean;
 }
 
 function InvKpiBar({ cells, style }: { cells: KpiCell[]; style?: React.CSSProperties }) {
   const isMobile = useIsMobile();
+  // Grid template accounts for primary cells (span 2). On desktop that
+  // means (n + primaryCount) column tracks so 1fr math still lines up.
+  const primaryCount = cells.filter((c) => c.primary).length;
+  const desktopCols = cells.length + primaryCount;
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : `repeat(${cells.length}, 1fr)`,
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : `repeat(${desktopCols}, 1fr)`,
         borderBottom: "1px solid var(--ft-border)",
         ...style,
       } as React.CSSProperties}
     >
       {cells.map((cell, i) => {
         const isLastOdd = isMobile && i === cells.length - 1 && cells.length % 2 === 1;
+        const gridStyle = cell.primary
+          ? (isMobile ? { gridColumn: "span 2" } : undefined)
+          : isLastOdd
+            ? { gridColumn: "span 2" }
+            : undefined;
         return (
-        <div key={cell.label} className="ft-kpi-bar-cell" style={isLastOdd ? { gridColumn: "span 2" } : undefined}>
+        <div key={cell.label} className={`ft-kpi-bar-cell${cell.primary ? " is-primary" : ""}`} style={gridStyle}>
           <div className="ft-kpi-bar-cell-label">{cell.label}</div>
           <div className="ft-kpi-bar-cell-value pnum">{cell.value}</div>
           {cell.delta != null && (
@@ -1900,6 +1912,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
       value: formatGbp(summary.totalValueGbp),
       delta: investments && investments.length > 0 ? `${investments.length} position${investments.length !== 1 ? "s" : ""}` : undefined,
       deltaPositive: null,
+      primary: true,
     },
     {
       label: "TOTAL P&L",

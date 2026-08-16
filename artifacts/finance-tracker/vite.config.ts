@@ -110,15 +110,25 @@ return {
             changeOrigin: true,
             secure: true,
             configure: (proxy) => {
-              proxy.on("proxyReq", (proxyReq) => {
-                proxyReq.setHeader("origin", "https://financetracker.work");
-                proxyReq.setHeader("referer", "https://financetracker.work/");
-                // Restore __Secure- prefix so Railway recognises the cookies it set
-                const cookie = proxyReq.getHeader("cookie");
-                if (cookie && typeof cookie === "string") {
-                  proxyReq.setHeader("cookie", cookie.replace(/\bbetter-auth\./g, "__Secure-better-auth."));
-                }
-              });
+              // Request rewrites are for a REMOTE https API only: spoof the
+              // production origin past its CORS allow-list, and restore the
+              // __Secure- cookie prefix the remote host expects. Against a local
+              // http API both are harmful — the spoofed origin is rejected by the
+              // dev CORS check and surfaces as 403 on sign-in.
+              if (apiUrl.startsWith("https://")) {
+                proxy.on("proxyReq", (proxyReq) => {
+                  proxyReq.setHeader("origin", "https://financetracker.work");
+                  proxyReq.setHeader("referer", "https://financetracker.work/");
+                  const cookie = proxyReq.getHeader("cookie");
+                  if (cookie && typeof cookie === "string") {
+                    proxyReq.setHeader("cookie", cookie.replace(/\bbetter-auth\./g, "__Secure-better-auth."));
+                  }
+                });
+              }
+              // Response normalisation applies to BOTH targets. better-auth marks
+              // session cookies Secure + SameSite=None, which a browser on
+              // http://localhost silently discards — you would sign in and appear
+              // logged out immediately.
               proxy.on("proxyRes", (proxyRes) => {
                 const cookies = proxyRes.headers["set-cookie"];
                 if (cookies) {

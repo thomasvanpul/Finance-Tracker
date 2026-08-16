@@ -1409,10 +1409,23 @@ input[type="checkbox"]:checked {
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   color: var(--ft-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
+  /* No overflow: hidden or text-overflow: ellipsis. CLAUDE.md forbids
+     truncating a financial figure — a clipped "£11,371" reading as "£1"
+     is the worst defect a finance app can ship. Overflow visibly rather
+     than lying about the number; the layout regression is the signal
+     that the grid needs wider cells, not a narrower figure. */
+}
+/* Primary tier (mobile premium 34px, one per KPI bar). Used to elevate
+   the headline figure — Portfolio Value on /investments, Net Worth on
+   /net-worth — so the type ladder from MobileHome carries across. */
+.ft-kpi-bar-cell.is-primary {
+  grid-column: span 2;
+}
+.ft-kpi-bar-cell.is-primary .ft-kpi-bar-cell-value {
+  font-size: clamp(24px, 3.2vw, 34px);
+  letter-spacing: -0.035em;
+  font-weight: 600;
+  line-height: 1.05;
 }
 .ft-kpi-bar-cell-delta {
   font-family: var(--font-mono);
