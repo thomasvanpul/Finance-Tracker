@@ -13,7 +13,8 @@ export interface Account {
   name: string;
   currency: AccountCurrency;
   balance: number;
-  gbpEquivalent: number;
+  /** @nullable */
+  gbpEquivalent: number | null;
   type: AccountType;
   isWiseLinked: boolean;
   /** @nullable */

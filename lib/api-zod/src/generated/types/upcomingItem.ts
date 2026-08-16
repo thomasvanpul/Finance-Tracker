@@ -20,7 +20,8 @@ export interface UpcomingItem {
   status: UpcomingItemStatus;
   nativeAmount: number;
   currency: UpcomingItemCurrency;
-  gbpEquivalent: number;
+  /** @nullable */
+  gbpEquivalent: number | null;
   /** @nullable */
   accountId?: number | null;
   /** @nullable */

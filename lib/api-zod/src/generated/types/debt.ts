@@ -22,7 +22,8 @@ export interface Debt {
   notes?: string | null;
   /** @nullable */
   accountId?: number | null;
-  gbpEquivalent: number;
+  /** @nullable */
+  gbpEquivalent: number | null;
   createdAt: string;
   /** @nullable */
   linkedEmail?: string | null;

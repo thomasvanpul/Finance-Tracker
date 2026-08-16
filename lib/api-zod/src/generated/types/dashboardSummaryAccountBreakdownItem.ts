@@ -12,6 +12,7 @@ export type DashboardSummaryAccountBreakdownItem = {
   name: string;
   currency: string;
   balance: number;
-  gbpEquivalent: number;
+  /** @nullable */
+  gbpEquivalent: number | null;
   type: DashboardSummaryAccountBreakdownItemType;
 };

@@ -1099,8 +1099,12 @@ components:
           enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         balance:
           type: number
+        # Nullable: toBase returns null when the FX rate for this
+        # account's currency is unavailable. Consumers render the native
+        # amount alone (never "£0" or a bare dash where a native figure
+        # exists).
         gbpEquivalent:
-          type: number
+          type: ["number", "null"]
         type:
           type: string
           enum: [cash, investment, pension, property, other]
@@ -1168,8 +1172,11 @@ components:
           type: number
         currency:
           type: string
+        # Nullable: null when the transaction's FX rate is unavailable.
+        # Sign follows the transaction type (expense = negative). Rows
+        # render the native amount alone (never £0 or a bare dash).
         gbpValue:
-          type: number
+          type: ["number", "null"]
         source:
           type: string
           enum: [manual, wise, csv]
@@ -1259,8 +1266,10 @@ components:
         currency:
           type: string
           enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
+        # Nullable: null when FX for this upcoming item's currency is
+        # unavailable. Rows render the native amount alone.
         gbpEquivalent:
-          type: number
+          type: ["number", "null"]
         accountId:
           type: ["integer", "null"]
         accountName:
@@ -1463,8 +1472,10 @@ components:
           type: ["string", "null"]
         accountId:
           type: ["integer", "null"]
+        # Nullable: null when the debt's FX rate is unavailable. Rows
+        # render the native amount alone.
         gbpEquivalent:
-          type: number
+          type: ["number", "null"]
         createdAt:
           type: string
         linkedEmail:
@@ -1877,7 +1888,7 @@ components:
               balance:
                 type: number
               gbpEquivalent:
-                type: number
+                type: ["number", "null"]
               type:
                 type: string
                 enum: [cash, investment, pension, property, other]
