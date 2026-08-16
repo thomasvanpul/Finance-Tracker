@@ -475,3 +475,38 @@ market-hours city list in `components/layout.tsx:223-233`.
   the duplicated map — one source.
 - **Verify:** grep the codebase for emoji ranges, expect zero; harness capture
   of a multi-currency screen in `arctic` and a saturated theme.
+
+---
+
+## H. Connection layer — how data actually gets in
+
+The finding that reframed F2: `WISE_API_TOKEN` is a **server env var, not a
+per-user field**. The one working auto-sync in the app syncs Thomas's own Wise
+account for every user. It is a personal integration wearing the product's
+clothes, and no stranger can ever connect their own.
+
+Of three acquisition paths, only CSV import is genuinely multi-tenant.
+
+A personal finance app spanning Wise, Revolut, a Malaysian bank and a broker
+will never have one acquisition method. The architecture should stop pretending
+otherwise: one connection model, several adapters, each user connecting whatever
+their institution supports.
+
+### H1 · Connection model + encrypted credential storage — TODO
+Per-user connections with credentials encrypted at rest. This is the first time
+the app stores other people's bank credentials; treat it accordingly.
+
+### H2 · Wise adapter, per-user — TODO · Blocked by H1
+Move `WISE_API_TOKEN` from the environment to a user-supplied credential.
+
+### H3 · Further token adapters — TODO · Blocked by H2
+Revolut Business, IBKR, Alpaca, Coinbase, Kraken all issue user-generated
+read-only keys. The user authorises directly with their provider, so no
+regulatory burden falls on this app — and it works for strangers today.
+
+### H4 · Open banking as one adapter — TODO · Blocked by H1
+Enable Banking behind the same interface. See `docs/OPEN-BANKING.md`.
+
+### H5 · File import as a first-class connection — TODO · Blocked by H1
+Already handles Revolut, Monzo and Maybank. The only path that will ever work
+for Malaysia, so it is permanent, not a stopgap.
