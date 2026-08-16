@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { MobileEmptyState } from "./mobile-ui";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
 import { figureFits, labelFits } from "@/components/primitives/block-field";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // Full page for the ACCOUNTS section that home links to. Same design
 // language as MobileHome:
@@ -63,50 +64,31 @@ export function MobileAccounts() {
       }}
     >
       {/* Top bar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          height: 44,
-          padding: "0 18px",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          color: "var(--ft-dim)",
-        }}
-      >
-        <span>
+      <HStack justify="end" align="center" height={44} paddingX={18}>
+        <Text as="span" mono size={11} color="var(--ft-dim)">
           {accounts.length} {accounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
-        </span>
-      </div>
+        </Text>
+      </HStack>
 
       {/* Headline */}
-      <div style={{ padding: "4px 18px 18px" }}>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            color: "var(--ft-dim)",
-          }}
-        >
+      <VStack padding="4px 18px 18px">
+        <MonoLabel size={11} letterSpacing="0.16em">
           TOTAL · £ · {currencies.length} {currencies.length === 1 ? "CURRENCY" : "CURRENCIES"}
-        </div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 6 }}>
-          <span style={{ fontSize: 17, color: "var(--ft-dim)" }}>£</span>
-          <span
-            className="pnum"
-            style={{
-              fontSize: 34,
-              lineHeight: "34px",
-              fontWeight: 600,
-              letterSpacing: "-0.035em",
-            }}
+        </MonoLabel>
+        <HStack align="baseline" gap={4} marginTop={6}>
+          <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+          <Text
+            as="span"
+            size={34}
+            weight={600}
+            lineHeight="34px"
+            letterSpacing="-0.035em"
+            numeric
           >
             {nfmt(total)}
-          </span>
-        </div>
-      </div>
+          </Text>
+        </HStack>
+      </VStack>
 
       {/* Currency exposure block field — area encodes GBP share per currency */}
       <div style={{ padding: "0 18px" }}>
@@ -216,28 +198,14 @@ function CurrencyBlocks({
           }}
         >
           {showLabel && (
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.16em",
-                whiteSpace: "nowrap",
-              }}
-            >
+            <MonoLabel as="span" size={11} letterSpacing="0.16em" color="inherit">
               {c.currency}
-            </span>
+            </MonoLabel>
           )}
           {showPct && (
-            <span
-              className="pnum"
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-              }}
-            >
+            <Text as="span" size={15} weight={600} nowrap numeric>
               {pctText}
-            </span>
+            </Text>
           )}
         </div>
       );})}
@@ -279,44 +247,25 @@ function CurrencySection({
         borderTopColor: "var(--ft-border)",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: 10,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            color: "var(--ft-dim)",
-          }}
-        >
+      <HStack align="baseline" justify="between" gap={10}>
+        <MonoLabel as="span" size={11} letterSpacing="0.16em">
           {group.currency} · {group.rows.length} {group.rows.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
-        </span>
+        </MonoLabel>
         {isGbp ? (
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}>
+          <Text as="span" mono size={13} weight={600} numeric>
             £{nfmt(group.gbpSum)}
-          </span>
+          </Text>
         ) : (
-          <span
-            style={{ display: "flex", gap: 6, alignItems: "baseline" }}
-          >
-            <span
-              className="pnum"
-              style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}
-            >
+          <HStack gap={6} align="baseline">
+            <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
               {sym}{nfmt(group.nativeSum)} ≈
-            </span>
-            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}>
+            </Text>
+            <Text as="span" mono size={13} weight={600} numeric>
               £{nfmt(group.gbpSum)}
-            </span>
-          </span>
+            </Text>
+          </HStack>
         )}
-      </div>
+      </HStack>
 
       <div style={{ marginTop: 6 }}>
         {group.rows.map((a, i) => (
@@ -337,9 +286,13 @@ function CurrencySection({
               fontSize: 14,
             }}
           >
-            <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+            <HStack align="center" gap={8} minWidth0>
+              <Text as="span" truncate>{a.name}</Text>
               {TYPE_MARK[a.type] && (
+                // Type mark pill — one-off surface (background pill with
+                // typography inside). Kept as a single span so line-height
+                // stays tied to font-size 9 (splitting into pill-wrapper +
+                // Text made the pill visibly taller in the AFTER render).
                 <span
                   style={{
                     fontSize: 9,
@@ -357,23 +310,20 @@ function CurrencySection({
                   {TYPE_MARK[a.type]}
                 </span>
               )}
-            </span>
+            </HStack>
             {isGbp ? (
-              <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
+              <Text as="span" mono size={13} numeric>
                 {nfmt(a.gbpEquivalent)}
-              </span>
+              </Text>
             ) : (
-              <span style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-                <span
-                  className="pnum"
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}
-                >
+              <HStack gap={10} align="baseline">
+                <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
                   {sym}{nfmt(a.balance)} ≈
-                </span>
-                <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
+                </Text>
+                <Text as="span" mono size={13} numeric>
                   £{nfmt(a.gbpEquivalent)}
-                </span>
-              </span>
+                </Text>
+              </HStack>
             )}
           </div>
         ))}
