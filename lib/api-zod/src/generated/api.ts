@@ -651,6 +651,54 @@ export const SyncWiseTransactionsResponse = zod.object({
 
 
 /**
+ * @summary List the current user's connections. Credentials are never returned.
+ */
+export const ListConnectionsResponseItem = zod.object({
+  "id": zod.number(),
+  "provider": zod.string().describe('Provider slug (e.g. \"wise\")'),
+  "label": zod.string(),
+  "status": zod.enum(['pending', 'active', 'error', 'revoked']),
+  "lastSyncedAt": zod.coerce.date().nullish(),
+  "lastError": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}).describe('Per-user provider connection. Credentials are encrypted at rest and\nMUST NEVER appear on this shape or on any shape returned by a\nconnection endpoint. If you add a field here, verify no test in\nconnections.test.ts fires because you leaked a secret.\n')
+export const ListConnectionsResponse = zod.array(ListConnectionsResponseItem)
+
+
+/**
+ * @summary Create a connection. Adapter validates the credential before it is stored.
+ */
+export const CreateConnectionBody = zod.object({
+  "provider": zod.string().describe('Provider slug (e.g. \"wise\")'),
+  "credential": zod.string().describe('The provider secret. Sent once at connection time, encrypted\nimmediately, and never returned. Do NOT log or echo.\n'),
+  "label": zod.string().optional().describe('Optional user-supplied label. If omitted, the adapter suggests one.')
+})
+
+
+/**
+ * @summary Delete a connection. Also deletes the encrypted credential.
+ */
+export const DeleteConnectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Run the provider sync for this connection.
+ */
+export const SyncConnectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SyncConnectionResponse = zod.object({
+  "connectionId": zod.number(),
+  "accountsUpserted": zod.number(),
+  "transactionsAdded": zod.number(),
+  "transactionsUpdated": zod.number()
+})
+
+
+/**
  * @summary Import transactions from a bank-exported CSV file (Revolut or Maybank)
  */
 export const ImportCsvQueryParams = zod.object({

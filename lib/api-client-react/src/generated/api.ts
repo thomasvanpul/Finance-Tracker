@@ -26,7 +26,11 @@ import type {
   AddGoalFundsBody,
   Budget,
   ChangePasswordInput,
+  Connection,
+  ConnectionSyncFailure,
+  ConnectionSyncResult,
   CreateBudgetBody,
+  CreateConnectionInput,
   CreateGoalBody,
   CreateSubscriptionBody,
   CsvImportResult,
@@ -39,6 +43,7 @@ import type {
   DisableTwoFaInput,
   DismissSubscriptionBody,
   DownloadBackup200,
+  ErrorResponse,
   FxRates,
   GetMarketPricesParams,
   GetMarketQuotesParams,
@@ -2615,6 +2620,294 @@ export const useSyncWiseTransactions = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSyncWiseTransactionsMutationOptions(options));
+    }
+
+export const getListConnectionsUrl = () => {
+
+
+
+
+  return `/api/connections`
+}
+
+/**
+ * @summary List the current user's connections. Credentials are never returned.
+ */
+export const listConnections = async ( options?: RequestInit): Promise<Connection[]> => {
+
+  return customFetch<Connection[]>(getListConnectionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListConnectionsQueryKey = () => {
+    return [
+    `/api/connections`
+    ] as const;
+    }
+
+
+export const getListConnectionsQueryOptions = <TData = Awaited<ReturnType<typeof listConnections>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListConnectionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listConnections>>> = ({ signal }) => listConnections({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listConnections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListConnectionsQueryResult = NonNullable<Awaited<ReturnType<typeof listConnections>>>
+export type ListConnectionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current user's connections. Credentials are never returned.
+ */
+
+export function useListConnections<TData = Awaited<ReturnType<typeof listConnections>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listConnections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListConnectionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateConnectionUrl = () => {
+
+
+
+
+  return `/api/connections`
+}
+
+/**
+ * @summary Create a connection. Adapter validates the credential before it is stored.
+ */
+export const createConnection = async (createConnectionInput: CreateConnectionInput, options?: RequestInit): Promise<Connection> => {
+
+  return customFetch<Connection>(getCreateConnectionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createConnectionInput,)
+  }
+);}
+
+
+
+
+export const getCreateConnectionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConnection>>, TError,{data: BodyType<CreateConnectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createConnection>>, TError,{data: BodyType<CreateConnectionInput>}, TContext> => {
+
+const mutationKey = ['createConnection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createConnection>>, {data: BodyType<CreateConnectionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createConnection(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof createConnection>>>
+    export type CreateConnectionMutationBody = BodyType<CreateConnectionInput>
+    export type CreateConnectionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a connection. Adapter validates the credential before it is stored.
+ */
+export const useCreateConnection = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createConnection>>, TError,{data: BodyType<CreateConnectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createConnection>>,
+        TError,
+        {data: BodyType<CreateConnectionInput>},
+        TContext
+      > => {
+      return useMutation(getCreateConnectionMutationOptions(options));
+    }
+
+export const getDeleteConnectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/connections/${id}`
+}
+
+/**
+ * @summary Delete a connection. Also deletes the encrypted credential.
+ */
+export const deleteConnection = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteConnectionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteConnectionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteConnection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteConnection>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteConnection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteConnection>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteConnection(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteConnection>>>
+
+    export type DeleteConnectionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a connection. Also deletes the encrypted credential.
+ */
+export const useDeleteConnection = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteConnection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteConnection>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteConnectionMutationOptions(options));
+    }
+
+export const getSyncConnectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/connections/${id}/sync`
+}
+
+/**
+ * @summary Run the provider sync for this connection.
+ */
+export const syncConnection = async (id: number, options?: RequestInit): Promise<ConnectionSyncResult> => {
+
+  return customFetch<ConnectionSyncResult>(getSyncConnectionUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSyncConnectionMutationOptions = <TError = ErrorType<ConnectionSyncFailure | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncConnection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncConnection>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['syncConnection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncConnection>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  syncConnection(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof syncConnection>>>
+
+    export type SyncConnectionMutationError = ErrorType<ConnectionSyncFailure | ErrorResponse>
+
+    /**
+ * @summary Run the provider sync for this connection.
+ */
+export const useSyncConnection = <TError = ErrorType<ConnectionSyncFailure | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncConnection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncConnection>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSyncConnectionMutationOptions(options));
     }
 
 export const getImportCsvUrl = (params: ImportCsvParams,) => {

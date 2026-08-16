@@ -21,6 +21,7 @@ tags:
   - name: budgets
   - name: goals
   - name: subscriptions
+  - name: connections
 
 paths:
   /healthz:
@@ -629,6 +630,99 @@ paths:
               schema:
                 $ref: "#/components/schemas/WiseSyncResult"
 
+  # ── CONNECTIONS ───────────────────────────────────────────────────────────
+  # Per-user provider connections. Credentials are encrypted at rest and
+  # NEVER appear in a response body — see docs/CREDENTIAL-ENCRYPTION.md.
+  /connections:
+    get:
+      operationId: listConnections
+      tags: [connections]
+      summary: List the current user's connections. Credentials are never returned.
+      responses:
+        "200":
+          description: List of connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connection"
+    post:
+      operationId: createConnection
+      tags: [connections]
+      summary: Create a connection. Adapter validates the credential before it is stored.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConnectionInput"
+      responses:
+        "201":
+          description: Connection created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Connection"
+        "400":
+          description: Invalid input or the provider rejected the credential
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /connections/{id}:
+    delete:
+      operationId: deleteConnection
+      tags: [connections]
+      summary: Delete a connection. Also deletes the encrypted credential.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /connections/{id}/sync:
+    post:
+      operationId: syncConnection
+      tags: [connections]
+      summary: Run the provider sync for this connection.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionSyncResult"
+        "400":
+          description: Adapter reported a typed failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectionSyncFailure"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   # ── IMPORT (CSV) ─────────────────────────────────────────────────────────────
   /import/csv:
     post:
@@ -1078,6 +1172,80 @@ paths:
 
 components:
   schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    Connection:
+      type: object
+      required: [id, provider, label, status, createdAt]
+      description: |
+        Per-user provider connection. Credentials are encrypted at rest and
+        MUST NEVER appear on this shape or on any shape returned by a
+        connection endpoint. If you add a field here, verify no test in
+        connections.test.ts fires because you leaked a secret.
+      properties:
+        id:
+          type: integer
+        provider:
+          type: string
+          description: Provider slug (e.g. "wise")
+        label:
+          type: string
+        status:
+          type: string
+          enum: [pending, active, error, revoked]
+        lastSyncedAt:
+          type: ["string", "null"]
+          format: date-time
+        lastError:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateConnectionInput:
+      type: object
+      required: [provider, credential]
+      properties:
+        provider:
+          type: string
+          description: Provider slug (e.g. "wise")
+        credential:
+          type: string
+          description: |
+            The provider secret. Sent once at connection time, encrypted
+            immediately, and never returned. Do NOT log or echo.
+        label:
+          type: string
+          description: Optional user-supplied label. If omitted, the adapter suggests one.
+
+    ConnectionSyncResult:
+      type: object
+      required: [connectionId, accountsUpserted, transactionsAdded, transactionsUpdated]
+      properties:
+        connectionId:
+          type: integer
+        accountsUpserted:
+          type: integer
+        transactionsAdded:
+          type: integer
+        transactionsUpdated:
+          type: integer
+
+    ConnectionSyncFailure:
+      type: object
+      required: [error, kind]
+      properties:
+        error:
+          type: string
+        kind:
+          type: string
+          enum: [auth, rate_limit, network, provider, invalid_response]
+
     HealthStatus:
       type: object
       required: [status]

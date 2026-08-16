@@ -5,6 +5,74 @@
  * Personal Finance Tracker API
  * OpenAPI spec version: 0.1.0
  */
+export interface ErrorResponse {
+  error: string;
+}
+
+export type ConnectionStatus = typeof ConnectionStatus[keyof typeof ConnectionStatus];
+
+
+export const ConnectionStatus = {
+  pending: 'pending',
+  active: 'active',
+  error: 'error',
+  revoked: 'revoked',
+} as const;
+
+/**
+ * Per-user provider connection. Credentials are encrypted at rest and
+MUST NEVER appear on this shape or on any shape returned by a
+connection endpoint. If you add a field here, verify no test in
+connections.test.ts fires because you leaked a secret.
+
+ */
+export interface Connection {
+  id: number;
+  /** Provider slug (e.g. "wise") */
+  provider: string;
+  label: string;
+  status: ConnectionStatus;
+  /** @nullable */
+  lastSyncedAt?: string | null;
+  /** @nullable */
+  lastError?: string | null;
+  createdAt: string;
+}
+
+export interface CreateConnectionInput {
+  /** Provider slug (e.g. "wise") */
+  provider: string;
+  /** The provider secret. Sent once at connection time, encrypted
+  immediately, and never returned. Do NOT log or echo.
+   */
+  credential: string;
+  /** Optional user-supplied label. If omitted, the adapter suggests one. */
+  label?: string;
+}
+
+export interface ConnectionSyncResult {
+  connectionId: number;
+  accountsUpserted: number;
+  transactionsAdded: number;
+  transactionsUpdated: number;
+}
+
+export type ConnectionSyncFailureKind = typeof ConnectionSyncFailureKind[keyof typeof ConnectionSyncFailureKind];
+
+
+export const ConnectionSyncFailureKind = {
+  auth: 'auth',
+  rate_limit: 'rate_limit',
+  network: 'network',
+  provider: 'provider',
+  invalid_response: 'invalid_response',
+} as const;
+
+export interface ConnectionSyncFailure {
+  error: string;
+  kind: ConnectionSyncFailureKind;
+}
+
 export interface HealthStatus {
   status: string;
 }

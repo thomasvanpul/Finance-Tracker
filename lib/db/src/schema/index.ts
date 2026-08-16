@@ -8,3 +8,4 @@ export * from "./app-settings";
 export * from "./budgets";
 export * from "./goals";
 export * from "./subscriptions";
+export * from "./connections";

@@ -17,6 +17,7 @@ import subscriptionsRouter from "./subscriptions";
 import exportRouter from "./export";
 import digestRouter from "./digest";
 import receiptRouter from "./receipt";
+import connectionsRouter from "./connections";
 
 const router: IRouter = Router();
 
@@ -32,6 +33,7 @@ router.use(upcomingRouter);
 router.use(investmentsRouter);
 router.use(marketRouter);
 router.use(wiseRouter);
+router.use(connectionsRouter);
 router.use(importRouter);
 router.use(debtsRouter);
 router.use(settingsRouter);
