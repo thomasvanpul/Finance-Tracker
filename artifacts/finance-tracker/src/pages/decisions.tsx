@@ -579,7 +579,6 @@ function SummaryKpiCell({ label, value, valueColor }: SummaryKpiCellProps) {
 export default function Decisions() {
   const [dismissed, setDismissed] = useState<Set<string>>(loadDismissed);
   const [showDismissed, setShowDismissed] = useState(false);
-  const [decisionsIntroSeen, setDecisionsIntroSeen] = useState(() => !!localStorage.getItem("ft-decisions-intro-seen"));
 
   const { data: accounts = [] } = useListAccounts();
   const { data: transactions = [] } = useListTransactions({ type: "expense" });
@@ -724,37 +723,6 @@ export default function Decisions() {
           />
         </div>
       </div>
-
-      {/* ── How it works tip ── */}
-      {!decisionsIntroSeen && (
-        <div
-          style={{
-            border: "1px solid rgba(210,153,34,0.35)",
-            borderLeft: "3px solid var(--ft-amber)",
-            background: "rgba(210,153,34,0.04)",
-            padding: "12px 14px",
-            marginBottom: 16,
-            display: "flex",
-            gap: 10,
-            alignItems: "flex-start",
-          }}
-        >
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>◈ How the Decision Engine works</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 3, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.65 }}>
-              <div>Reads across all your data — accounts, investments, goals, subscriptions, budgets &amp; debts — to surface specific, ranked actions.</div>
-              <div><Text as="span" weight={600} color="var(--ft-red)">CRITICAL</Text> = time-sensitive or high opportunity cost &nbsp;·&nbsp; <Text as="span" weight={600} color="var(--ft-amber)">HIGH</Text> = significant impact &nbsp;·&nbsp; <Text as="span" weight={600} color="var(--ft-blue)">MEDIUM</Text> = worth doing</div>
-              <div><Text as="span" weight={600} color="var(--ft-accent)">Annual cost</Text> is the estimated money left on the table per year if you don't act (e.g. idle cash missing out on 4.5% interest).</div>
-              <div>Dismiss any item you've already acted on — it won't reappear unless conditions change. The engine re-evaluates every page load.</div>
-            </div>
-          </div>
-          <button
-            onClick={() => { localStorage.setItem("ft-decisions-intro-seen","1"); setDecisionsIntroSeen(true); }}
-            title="Dismiss"
-            style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}
-          >✕</button>
-        </div>
-      )}
 
       {/* ── Decision list ── */}
       {active.length > 0 && (

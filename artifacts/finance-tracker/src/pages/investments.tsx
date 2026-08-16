@@ -1512,7 +1512,6 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   const [alertsBannerDismissed, setAlertsBannerDismissed] = useState(false);
   const [histPeriod, setHistPeriod] = useState<"3m" | "6m" | "1y" | "all">("all");
   const [tickerFilter, setTickerFilter] = useState("");
-  const [portfolioIntroSeen, setPortfolioIntroSeen] = useState(() => !!localStorage.getItem("ft-portfolio-intro-seen"));
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const isMobile = useIsMobile();
 
@@ -2224,22 +2223,6 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               <div style={{ marginTop: 10, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", opacity: 0.6 }}>
                 US &amp; UK stocks · ETFs · crypto · bonds · mutual funds
               </div>
-            </div>
-          )}
-
-          {/* First-time portfolio tip */}
-          {hasPositions && !portfolioIntroSeen && (
-            <div style={{ border: "1px solid rgba(210,153,34,0.35)", background: "rgba(210,153,34,0.04)", padding: "11px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>◈ Portfolio — Reading the data</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 20px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.65 }}>
-                  <span><Text as="span" weight={600} color="var(--ft-blue)">vs S&P 500</Text> chart shows your portfolio indexed to 100 — <Text as="span" weight={600}>α (alpha)</Text> is your outperformance</span>
-                  <span><Text as="span" weight={600} color="var(--ft-blue)">Heat map</Text> tile size = portfolio weight · colour = P&amp;L (green up / red down)</span>
-                  <span><Text as="span" weight={600} color="var(--ft-blue)">Asset class column</Text> in the table — click to assign ETF / equity / bond / etc. for allocation analysis</span>
-                  <span><Text as="span" weight={600} color="var(--ft-blue)">Concentration risk</Text> &amp; diversification gaps → check the <Text as="span" color="var(--ft-accent)">Decisions page</Text> for ranked actions</span>
-                </div>
-              </div>
-              <button onClick={() => { localStorage.setItem("ft-portfolio-intro-seen","1"); setPortfolioIntroSeen(true); }} title="Dismiss" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>✕</button>
             </div>
           )}
 

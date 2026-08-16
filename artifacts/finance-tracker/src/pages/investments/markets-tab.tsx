@@ -473,8 +473,6 @@ export function MarketsTab() {
   const [showSMA200, setShowSMA200] = useState(false);
   const [showVolume, setShowVolume] = useState(false);
   const [chartType, setChartType] = useState<"area" | "line" | "candle">("area");
-  const [marketIntroSeen, setMarketIntroSeen] = useState(() => !!localStorage.getItem("ft-markets-intro-seen"));
-  const [tickerTipSeen, setTickerTipSeen] = useState(() => !!localStorage.getItem("ft-ticker-tip-seen"));
   const isMobile = useIsMobile();
 
   const addTickerToWatchlist = (ticker: string, wlId: string) => {
@@ -1149,19 +1147,6 @@ export function MarketsTab() {
           />
         )}
 
-        {/* First-time ticker tip */}
-        {!tickerTipSeen && !isTickPeriod && (
-          <div style={{ border: "1px solid rgba(88,166,255,0.25)", background: "rgba(88,166,255,0.04)", padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <div style={{ flex: 1, display: "flex", flexWrap: "wrap", gap: "4px 20px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.6 }}>
-              <span><Text as="span" weight={600} color="var(--ft-blue)">Click chart</Text> → full RSI / MACD / Bollinger analysis</span>
-              <span><Text as="span" weight={600} color="var(--ft-blue)">Hover ⓘ</Text> on any stat for explanation</span>
-              <span><Text as="span" weight={600} color="var(--ft-blue)">Click stat value</Text> → drill into earnings &amp; analyst data</span>
-              <span><Text as="span" weight={600} color="var(--ft-blue)">Colors:</Text> green = bullish signal · amber = caution · red = risk flag</span>
-            </div>
-            <button onClick={() => { localStorage.setItem("ft-ticker-tip-seen","1"); setTickerTipSeen(true); }} title="Dismiss" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>✕</button>
-          </div>
-        )}
-
         {/* Key Statistics */}
         <div style={{ border: "1px solid var(--ft-border)" }}>
           <div style={{ padding: "6px 14px", background: "rgba(88,166,255,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Key Statistics</div>
@@ -1560,25 +1545,6 @@ export function MarketsTab() {
           </div>
         );
       })()}
-
-      {/* First-visit markets intro banner */}
-      {!marketIntroSeen && (
-        <div style={{ border: "1px solid rgba(210,153,34,0.35)", background: "rgba(210,153,34,0.04)", padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>◈ Markets — Quick start</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 3, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.65 }}>
-              <div><Text as="span" weight={600} color="var(--ft-accent)">Search any ticker</Text> — stocks, ETFs, indices, crypto (e.g. AAPL, QQQ, ^GSPC, BTC-USD, 0700.HK)</div>
-              <div><Text as="span" weight={600} color="var(--ft-green)">Click the chart</Text> to open full analysis — RSI, MACD, Bollinger Bands, candlestick view with all periods</div>
-              <div><Text as="span" weight={600} color="var(--ft-blue)">Tap ⓘ icons</Text> on any statistic to understand what it means; tap values to drill into earnings history &amp; analyst ratings</div>
-              <div><span style={{ color: "var(--ft-amber)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}><svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5.5 1.5a3 3 0 013 3v2l.75 1H1.75L2.5 6.5v-2a3 3 0 013-3z"/><path d="M4.25 9.5a1.25 1.25 0 002.5 0"/></svg>Price alerts</span> — open any ticker and hit the bell icon to get notified when it hits your target</div>
-              <div style={{ marginTop: 5, paddingTop: 6, borderTop: "1px solid rgba(210,153,34,0.2)", color: "var(--ft-dim)", fontSize: 9 }}>
-                Track positions → <Text as="span" color="var(--ft-accent)">Portfolio tab</Text> &nbsp;·&nbsp; Ranked action items from your full financial picture → <Text as="span" color="var(--ft-accent)">Decisions page</Text>
-              </div>
-            </div>
-          </div>
-          <button onClick={() => { localStorage.setItem("ft-markets-intro-seen","1"); setMarketIntroSeen(true); }} title="Dismiss" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", flexShrink: 0, lineHeight: 1 }}>✕</button>
-        </div>
-      )}
 
       {/* Search bar */}
       <form onSubmit={handleSearch} style={{ display: "flex", gap: 6 }}>
