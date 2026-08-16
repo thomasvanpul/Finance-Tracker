@@ -38,10 +38,13 @@ export async function runConnectionSync(connection: Connection): Promise<SyncSum
   let transactionsUpdated = 0;
 
   for (const acct of adapterAccounts) {
-    // Match a Wise-linked (or provider-linked) account by
-    // wiseBalanceId. When we onboard non-Wise providers we'll need a
-    // generic external-id column on accounts — flagged as follow-up.
-    // For today, Wise is the only provider so this stays.
+    // Upsert on the provider-agnostic (userId, externalProvider,
+    // externalId) triple added in migration 0003. Wise-specific
+    // wise_balance_id / wise_profile_id continue to be written for
+    // backwards compatibility with the frontend and route code that
+    // still reads them; the migration backfilled existing Wise rows so
+    // the new unique index picks up the duplicate correctly.
+    const isWise = connection.provider === "wise";
     const [row] = await db
       .insert(accountsTable)
       .values({
@@ -49,13 +52,15 @@ export async function runConnectionSync(connection: Connection): Promise<SyncSum
         name: acct.label,
         currency: acct.currency,
         balance: acct.balance,
-        isWiseLinked: connection.provider === "wise",
-        wiseProfileId: acct.providerMeta.profileId ?? null,
-        wiseBalanceId: connection.provider === "wise" ? acct.externalId : null,
+        isWiseLinked: isWise,
+        wiseProfileId: isWise ? acct.providerMeta.profileId ?? null : null,
+        wiseBalanceId: isWise ? acct.externalId : null,
+        externalProvider: connection.provider,
+        externalId: acct.externalId,
         lastSyncedAt: new Date(),
       })
       .onConflictDoUpdate({
-        target: accountsTable.wiseBalanceId,
+        target: [accountsTable.userId, accountsTable.externalProvider, accountsTable.externalId],
         set: {
           balance: acct.balance,
           lastSyncedAt: new Date(),

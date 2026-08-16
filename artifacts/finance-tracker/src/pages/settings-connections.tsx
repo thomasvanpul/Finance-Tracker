@@ -28,11 +28,58 @@ import { useToast } from "@/hooks/use-toast";
 import { HStack, Text, VStack } from "@/components/primitives";
 import { PANEL_STYLE, HEADER_STYLE, ROW, RowLabel, ActionBtn } from "./settings-atoms";
 
-// Providers the user can add through this UI. As H3/H4 adapters land
-// they get appended here — no other frontend change needed.
-const PROVIDERS: { id: string; label: string; hint: string }[] = [
-  { id: "wise", label: "Wise", hint: "Personal API token from Wise → Settings → API tokens" },
+// Providers the user can add through this UI. Multi-field providers
+// list every field they need; the form joins the values as JSON and
+// sends the JSON string as `credential`. Single-field providers get
+// a single free-text password input.
+//
+// This list is the single source of truth on the frontend. Backend
+// registration lives in artifacts/api-server/src/adapters/index.ts;
+// keep them in sync (or expose a GET /connections/providers endpoint
+// once the list stops fitting on one screen).
+interface CredentialField {
+  key: string;
+  label: string;
+  hint: string;
+}
+interface ProviderMeta {
+  id: string;
+  label: string;
+  fields: CredentialField[];
+}
+const PROVIDERS: ProviderMeta[] = [
+  {
+    id: "wise",
+    label: "Wise",
+    fields: [{ key: "token", label: "Personal API token", hint: "Wise → Settings → API tokens" }],
+  },
+  {
+    id: "alpaca",
+    label: "Alpaca",
+    fields: [
+      { key: "keyId",  label: "API Key ID", hint: "Alpaca Dashboard → Your API Keys → Key ID" },
+      { key: "secret", label: "API Secret", hint: "Shown once at key creation" },
+    ],
+  },
+  {
+    id: "kraken",
+    label: "Kraken",
+    fields: [
+      { key: "apiKey",     label: "API Key",     hint: "Kraken → Settings → API" },
+      { key: "privateKey", label: "Private Key", hint: "Base64 string shown at key creation" },
+    ],
+  },
 ];
+
+// Compose the credential string. Single-field providers submit the raw
+// value; multi-field providers submit a JSON object keyed by field.key
+// which the adapter parses.
+function composeCredential(fields: CredentialField[], values: Record<string, string>): string {
+  if (fields.length === 1) return values[fields[0]!.key] ?? "";
+  const obj: Record<string, string> = {};
+  for (const f of fields) obj[f.key] = values[f.key] ?? "";
+  return JSON.stringify(obj);
+}
 
 const STATUS_COLORS: Record<string, string> = {
   active: "var(--ft-green)",
@@ -207,27 +254,33 @@ function ConnectionRow({ connection }: { connection: Connection }) {
 
 function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
   const [provider, setProvider] = useState<string>(PROVIDERS[0]?.id ?? "");
-  const [credential, setCredential] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({});
   const [label, setLabel] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
   const createMutation = useCreateConnection();
   const qc = useQueryClient();
 
-  const providerMeta = PROVIDERS.find((p) => p.id === provider);
+  const providerMeta = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]!;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
-    if (credential.trim().length === 0) {
-      setErrorMessage("Credential is required");
-      return;
+    // Every field must be non-empty. The adapter will validate again
+    // (and reject wrong values); this is just to avoid a round-trip
+    // for the obvious mistake.
+    for (const f of providerMeta.fields) {
+      if (!values[f.key] || values[f.key]!.trim().length === 0) {
+        setErrorMessage(`${f.label} is required`);
+        return;
+      }
     }
+    const credential = composeCredential(providerMeta.fields, values);
     try {
       const created = await createMutation.mutateAsync({
         data: {
           provider,
-          credential: credential.trim(),
+          credential,
           label: label.trim() ? label.trim() : undefined,
         },
       });
@@ -236,7 +289,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
         description: `${created.label} · validated with ${provider}`,
       });
       qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
-      setCredential("");
+      setValues({});
       setLabel("");
       onCreated();
     } catch (err: unknown) {
@@ -245,6 +298,17 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
       const msg = err instanceof Error ? err.message : String(err);
       setErrorMessage(msg);
     }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    marginTop: 4,
+    padding: "6px 8px",
+    fontFamily: "var(--font-mono)",
+    fontSize: 12,
+    background: "var(--ft-raised)",
+    border: "1px solid var(--ft-border2)",
+    color: "var(--ft-text)",
   };
 
   return (
@@ -256,47 +320,29 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
           </Text>
           <select
             value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            style={{
-              width: "100%",
-              marginTop: 4,
-              padding: "6px 8px",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              background: "var(--ft-raised)",
-              border: "1px solid var(--ft-border2)",
-              color: "var(--ft-text)",
-            }}
+            onChange={(e) => { setProvider(e.target.value); setValues({}); setErrorMessage(null); }}
+            style={inputStyle}
           >
             {PROVIDERS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
+              <option key={p.id} value={p.id}>{p.label}</option>
             ))}
           </select>
         </div>
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
-            Credential
-          </Text>
-          <input
-            type="password"
-            autoComplete="off"
-            value={credential}
-            onChange={(e) => setCredential(e.target.value)}
-            placeholder={providerMeta?.hint ?? "Provider secret"}
-            style={{
-              width: "100%",
-              marginTop: 4,
-              padding: "6px 8px",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              background: "var(--ft-raised)",
-              border: "1px solid var(--ft-border2)",
-              color: "var(--ft-text)",
-            }}
-          />
-        </div>
+        {providerMeta.fields.map((f) => (
+          <div key={f.key} style={{ flex: 1, minWidth: 220 }}>
+            <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
+              {f.label}
+            </Text>
+            <input
+              type="password"
+              autoComplete="off"
+              value={values[f.key] ?? ""}
+              onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+              placeholder={f.hint}
+              style={inputStyle}
+            />
+          </div>
+        ))}
         <div style={{ flex: "0 0 180px", minWidth: 140 }}>
           <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
             Label <span style={{ color: "var(--ft-muted)", textTransform: "none" }}>(optional)</span>
@@ -306,16 +352,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Auto from provider"
-            style={{
-              width: "100%",
-              marginTop: 4,
-              padding: "6px 8px",
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              background: "var(--ft-raised)",
-              border: "1px solid var(--ft-border2)",
-              color: "var(--ft-text)",
-            }}
+            style={inputStyle}
           />
         </div>
         <button
@@ -351,8 +388,8 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
         </div>
       )}
       <Text as="div" mono size={9} letterSpacing="0.04em" color="var(--ft-dim)">
-        The credential is validated against {providerMeta?.label ?? provider} before it is stored,
-        encrypted at rest with AES-256-GCM, and never returned to this page or anywhere else.
+        Validated against {providerMeta.label} before it is stored. AES-256-GCM at rest.
+        Never returned to this page or anywhere else.
       </Text>
     </form>
   );

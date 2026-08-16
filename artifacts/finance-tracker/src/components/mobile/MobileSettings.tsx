@@ -317,9 +317,38 @@ function ChipButton({ active, onClick, children }: { active: boolean; onClick: (
 // credential is ever rendered. Add form is inline (no modal) to fit the
 // mobile scroll flow.
 
-const MOBILE_PROVIDERS: { id: string; label: string; hint: string }[] = [
-  { id: "wise", label: "Wise", hint: "Wise → Settings → API tokens" },
+interface MobileCredentialField { key: string; label: string; hint: string; }
+interface MobileProviderMeta { id: string; label: string; fields: MobileCredentialField[]; }
+const MOBILE_PROVIDERS: MobileProviderMeta[] = [
+  {
+    id: "wise",
+    label: "Wise",
+    fields: [{ key: "token", label: "Personal API token", hint: "Wise → Settings → API tokens" }],
+  },
+  {
+    id: "alpaca",
+    label: "Alpaca",
+    fields: [
+      { key: "keyId",  label: "API Key ID", hint: "Alpaca → Your API Keys" },
+      { key: "secret", label: "API Secret", hint: "Shown once at key creation" },
+    ],
+  },
+  {
+    id: "kraken",
+    label: "Kraken",
+    fields: [
+      { key: "apiKey",     label: "API Key",     hint: "Kraken → Settings → API" },
+      { key: "privateKey", label: "Private Key", hint: "Base64 shown at key creation" },
+    ],
+  },
 ];
+
+function composeMobileCredential(fields: MobileCredentialField[], values: Record<string, string>): string {
+  if (fields.length === 1) return values[fields[0]!.key] ?? "";
+  const obj: Record<string, string> = {};
+  for (const f of fields) obj[f.key] = values[f.key] ?? "";
+  return JSON.stringify(obj);
+}
 
 const MOBILE_STATUS_COLORS: Record<string, string> = {
   active: "var(--ft-green)",
@@ -505,34 +534,47 @@ function MobileConnectionRow({ connection }: { connection: Connection }) {
 
 function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
   const [provider, setProvider] = useState<string>(MOBILE_PROVIDERS[0]?.id ?? "");
-  const [credential, setCredential] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({});
   const [label, setLabel] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const createMutation = useCreateConnection();
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const providerMeta = MOBILE_PROVIDERS.find((p) => p.id === provider);
+  const providerMeta = MOBILE_PROVIDERS.find((p) => p.id === provider) ?? MOBILE_PROVIDERS[0]!;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
-    if (credential.trim().length === 0) {
-      setErrorMessage("Credential is required");
-      return;
+    for (const f of providerMeta.fields) {
+      if (!values[f.key] || values[f.key]!.trim().length === 0) {
+        setErrorMessage(`${f.label} is required`);
+        return;
+      }
     }
+    const credential = composeMobileCredential(providerMeta.fields, values);
     try {
       const created = await createMutation.mutateAsync({
-        data: { provider, credential: credential.trim(), label: label.trim() || undefined },
+        data: { provider, credential, label: label.trim() || undefined },
       });
       toast({ title: "Connection added", description: `${created.label} · validated with ${provider}` });
       qc.invalidateQueries({ queryKey: getListConnectionsQueryKey() });
-      setCredential("");
+      setValues({});
       setLabel("");
       onDone();
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : String(err));
     }
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "10px 10px",
+    fontFamily: "var(--font-mono)",
+    fontSize: 13,
+    background: "var(--ft-raised)",
+    border: "1px solid var(--ft-border2)",
+    color: "var(--ft-text)",
   };
 
   return (
@@ -541,41 +583,27 @@ function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
         <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">Provider</Text>
         <select
           value={provider}
-          onChange={(e) => setProvider(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "8px 10px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            background: "var(--ft-raised)",
-            border: "1px solid var(--ft-border2)",
-            color: "var(--ft-text)",
-          }}
+          onChange={(e) => { setProvider(e.target.value); setValues({}); setErrorMessage(null); }}
+          style={inputStyle}
         >
           {MOBILE_PROVIDERS.map((p) => (
             <option key={p.id} value={p.id}>{p.label}</option>
           ))}
         </select>
       </VStack>
-      <VStack gap={4}>
-        <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">Credential</Text>
-        <input
-          type="password"
-          autoComplete="off"
-          value={credential}
-          onChange={(e) => setCredential(e.target.value)}
-          placeholder={providerMeta?.hint ?? "Provider secret"}
-          style={{
-            width: "100%",
-            padding: "10px 10px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            background: "var(--ft-raised)",
-            border: "1px solid var(--ft-border2)",
-            color: "var(--ft-text)",
-          }}
-        />
-      </VStack>
+      {providerMeta.fields.map((f) => (
+        <VStack key={f.key} gap={4}>
+          <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">{f.label}</Text>
+          <input
+            type="password"
+            autoComplete="off"
+            value={values[f.key] ?? ""}
+            onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+            placeholder={f.hint}
+            style={inputStyle}
+          />
+        </VStack>
+      ))}
       <VStack gap={4}>
         <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
           Label <span style={{ color: "var(--ft-muted)", textTransform: "none" }}>(optional)</span>
@@ -585,15 +613,7 @@ function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Auto from provider"
-          style={{
-            width: "100%",
-            padding: "8px 10px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            background: "var(--ft-raised)",
-            border: "1px solid var(--ft-border2)",
-            color: "var(--ft-text)",
-          }}
+          style={inputStyle}
         />
       </VStack>
       {errorMessage && (
@@ -617,7 +637,7 @@ function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
         <MobileChip onClick={onDone}>Cancel</MobileChip>
       </HStack>
       <Text as="div" mono size={9} letterSpacing="0.04em" color="var(--ft-dim)">
-        Validated against {providerMeta?.label ?? provider} before storing. AES-256-GCM at rest. Never returned.
+        Validated against {providerMeta.label} before storing. AES-256-GCM at rest. Never returned.
       </Text>
     </form>
   );

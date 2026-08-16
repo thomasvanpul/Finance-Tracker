@@ -22,6 +22,13 @@
       "when": 1786889819349,
       "tag": "0002_faulty_hobgoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786892954937,
+      "tag": "0003_bent_richard_fisk",
+      "breakpoints": true
     }
   ]
 }

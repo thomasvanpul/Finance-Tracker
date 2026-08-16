@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 function stubFetch(handler: (url: string, init?: RequestInit) => Response): void {
-  globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = vi.fn(async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const url = typeof input === "string" ? input : input.toString();
     return handler(url, init);
   }) as unknown as typeof fetch;
