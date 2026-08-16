@@ -266,7 +266,19 @@ A short questionnaire infers persona, panes, view rendering, density and theme.
 choose the whole register — `market` is the dense terminal, `budget` is plain
 English with larger type and obvious entry points.
 
-### F2 · Open banking — TODO · needs a human conversation first
+### F2 · Open banking — TODO · research done, see `docs/OPEN-BANKING.md`
+**GoCardless Bank Account Data is closed to new signups** — the earlier
+recommendation is void. Provider decision is now Enable Banking, whose
+Restricted Production gives real production data on accounts you link yourself,
+self-serve and free, with no company or contract required. That is exactly this
+project's situation: one user, his own accounts.
+
+Sequence: sandbox first, then Restricted Production with the real Wise and
+Revolut accounts, then public signup only when there is a reason to pay for KYB
+and wait 4-12 weeks for certification. Malaysia is out of scope for any
+provider; Maybank stays manual.
+
+### F2-old · Superseded note
 Data must arrive by itself; manual CSV import is the reason a non-technical user
 would never complete onboarding. UK providers: TrueLayer, Plaid, GoCardless.
 The AIS agent route is roughly 4–6 weeks against about a year for direct
