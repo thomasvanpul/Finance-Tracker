@@ -47,9 +47,10 @@ export function MobileBudget() {
   }
 
   const spendByCat = new Map<string, number>();
+  let unconvertibleExpenses = 0;
   for (const t of txns) {
     if (t.type !== "expense") continue;
-    if (t.gbpValue == null) continue;
+    if (t.gbpValue == null) { unconvertibleExpenses += 1; continue; }
     const k = (t.category || "Uncategorised").toLowerCase();
     spendByCat.set(k, (spendByCat.get(k) ?? 0) + Math.abs(t.gbpValue));
   }
@@ -108,6 +109,11 @@ export function MobileBudget() {
             / £{nfmt(totalLimit, { decimals: 2 })}
           </Text>
         </HStack>
+        {unconvertibleExpenses > 0 && (
+          <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
+            {unconvertibleExpenses} expense{unconvertibleExpenses !== 1 ? "s" : ""} no FX — not in total
+          </Text>
+        )}
         <div style={{ marginTop: 10, height: BAR_H, background: "var(--ft-border)", position: "relative", overflow: "hidden" }}>
           <div
             style={{

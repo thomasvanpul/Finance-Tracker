@@ -146,11 +146,11 @@ type SubscriptionRowProps = {
 
 function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
   const [hov, setHov] = useState(false);
-  const monthly = toMonthly(item.gbpEquivalent ?? 0, item.frequency);
+  const monthly = item.gbpEquivalent == null ? null : toMonthly(item.gbpEquivalent, item.frequency);
   const daysUntil = Math.ceil(
     (new Date(item.dueDate).getTime() - Date.now()) / 86400000
   );
-  const sharePct = monthlyTotal > 0 ? (monthly / monthlyTotal) * 100 : 0;
+  const sharePct = monthly != null && monthlyTotal > 0 ? (monthly / monthlyTotal) * 100 : 0;
 
   return (
     <div
@@ -247,10 +247,10 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
                 fontWeight: 600,
-                color: "var(--ft-cyan)",
+                color: monthly == null ? "var(--ft-dim)" : "var(--ft-cyan)",
               }}
             >
-              −{formatGbp(monthly)}
+              {monthly == null ? "—" : `−${formatGbp(monthly)}`}
             </span>
             <span
               style={{
@@ -263,7 +263,7 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
             </span>
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
-            {sharePct.toFixed(0)}% of total
+            {monthly == null ? "no FX" : `${sharePct.toFixed(0)}% of total`}
           </div>
         </div>
       </div>
@@ -298,6 +298,7 @@ export function SubscriptionTrackerWidget() {
     0
   );
   const yearlyTotal = monthlyTotal * 12;
+  const subsWithoutFx = subs.filter((item) => item.gbpEquivalent == null).length;
 
   // Count urgencies
   const urgentCount = subs.filter((item) => {
@@ -367,6 +368,9 @@ export function SubscriptionTrackerWidget() {
                 }}
               >
                 {subs.length} subscription{subs.length !== 1 ? "s" : ""}
+                {subsWithoutFx > 0 && (
+                  <span style={{ color: "var(--ft-amber)" }}> · {subsWithoutFx} no FX</span>
+                )}
               </div>
             </div>
 

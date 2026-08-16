@@ -55,6 +55,7 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
   const mtdDelta = data?.thisMonth.netSavings ?? 0;
   const priorNw = netWorth - mtdDelta;
   const mtdPct = priorNw > 0 ? (mtdDelta / priorNw) * 100 : 0;
+  const unconvertibleAccounts = data?.unconvertibleAccounts ?? 0;
 
   const holdings = computeHoldings(data);
   const owedByMe = data?.owing.totalIOwe ?? 0;
@@ -123,6 +124,11 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
         >
           {nfmt(mtdDelta, { sign: true, symbol: "£" })} · {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
         </Text>
+        {unconvertibleAccounts > 0 && (
+          <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
+            {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
+          </Text>
+        )}
       </VStack>
 
       {/* Block field — same visual language as home's BLOCKS view */}

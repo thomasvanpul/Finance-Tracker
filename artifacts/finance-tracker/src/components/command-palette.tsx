@@ -201,7 +201,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
         section: "accounts" as CommandSection,
         icon: "▣",
         title: acct.name,
-        shortcut: formatGbp(acct.gbpEquivalent ?? 0),
+        shortcut: acct.gbpEquivalent == null ? "—" : formatGbp(acct.gbpEquivalent),
         action: navTo("/accounts"),
       });
     }

@@ -39,6 +39,7 @@ export function MobileAccounts() {
   // the per-currency section header still cites `rows.length` so the
   // account count is honest even when the GBP total is under-stated.
   const total = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+  const unconvertibleAccounts = accounts.filter((a) => a.gbpEquivalent == null).length;
   const currencies = [...new Set(accounts.map((a) => a.currency))].sort((a, b) => {
     // GBP first, then others alphabetical
     if (a === "GBP") return -1;
@@ -92,6 +93,11 @@ export function MobileAccounts() {
             {nfmt(total)}
           </Text>
         </HStack>
+        {unconvertibleAccounts > 0 && (
+          <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
+            {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
+          </Text>
+        )}
       </VStack>
 
       {/* Currency exposure block field — area encodes GBP share per currency */}
@@ -241,6 +247,8 @@ function CurrencySection({
 }) {
   const sym = CURRENCY_SYMBOLS[group.currency] ?? group.currency + " ";
   const isGbp = group.currency === "GBP";
+  const nullCount = group.rows.filter((a) => a.gbpEquivalent == null).length;
+  const allNull = nullCount === group.rows.length && group.rows.length > 0;
   return (
     <div
       style={{
@@ -264,8 +272,8 @@ function CurrencySection({
             <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
               {sym}{nfmt(group.nativeSum)} ≈
             </Text>
-            <Text as="span" mono size={13} weight={600} numeric>
-              £{nfmt(group.gbpSum)}
+            <Text as="span" mono size={13} weight={600} color={allNull ? "var(--ft-dim)" : undefined} numeric>
+              {allNull ? "—" : `£${nfmt(group.gbpSum)}`}
             </Text>
           </HStack>
         )}

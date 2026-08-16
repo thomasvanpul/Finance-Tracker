@@ -270,7 +270,12 @@ export function useAlerts() {
       for (const rule of balanceRules) {
         const acct = accounts.find((a) => a.id === rule.accountId);
         if (!acct) continue;
-        const balance = acct.gbpEquivalent ?? 0;
+        // Skip low-balance alert when FX is unknown — a null gbpEquivalent
+        // would coerce to £0 and fire "below threshold" on an account that
+        // may hold real money in native currency. The rule threshold is
+        // expressed in GBP; we can't compare without a GBP figure.
+        if (acct.gbpEquivalent == null) continue;
+        const balance = acct.gbpEquivalent;
         if (balance < rule.threshold) {
           result.push({
             id: `balance-alert-${rule.accountId}`,

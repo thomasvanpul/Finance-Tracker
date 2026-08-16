@@ -236,8 +236,8 @@ export function RecentTxnsWidget({ onViewAll }: { onViewAll: () => void }) {
               <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description || tx.category || "Transaction"}</div>
               <div style={{ fontSize: 11, color: "var(--ft-dim)", textTransform: "capitalize" }}>{tx.category || "Uncategorised"}</div>
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
-              {isIncome ? "+" : "−"}{formatGbp(tx.gbpValue ?? 0)}
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: tx.gbpValue == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
+              {tx.gbpValue == null ? "—" : `${isIncome ? "+" : "−"}${formatGbp(tx.gbpValue)}`}
             </div>
           </div>
         );

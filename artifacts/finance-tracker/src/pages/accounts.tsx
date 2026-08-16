@@ -1009,7 +1009,7 @@ function MonthSpendingRow({ category, total, maxSpend }: MonthSpendingRowProps) 
 
 interface CurrencyExposureRowProps {
   currency: string;
-  total: number;
+  total: number | null;
   totalCash: number;
   acctCount: number;
   colorIndex: number;
@@ -1020,7 +1020,7 @@ const ACCT_EXPOSURE_COLORS = ACCT_COLORS;
 
 function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex }: CurrencyExposureRowProps) {
   const [hov, setHov] = React.useState(false);
-  const pct = totalCash > 0 ? (total / totalCash) * 100 : 0;
+  const pct = total != null && totalCash > 0 ? (total / totalCash) * 100 : 0;
   const color = ACCT_EXPOSURE_COLORS[colorIndex % ACCT_EXPOSURE_COLORS.length];
   return (
     <div
@@ -1039,11 +1039,11 @@ function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex
       <span style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "var(--font-mono)", width: 32, flexShrink: 0 }}>
         {currency}
       </span>
-      <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-        {formatGbp(total)}
+      <span className="pnum" style={{ fontSize: 10, color: total == null ? "var(--ft-dim)" : "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+        {total == null ? "—" : formatGbp(total)}
       </span>
       <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", marginLeft: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>
-        {pct.toFixed(0)}% · {acctCount}a
+        {total == null ? `no FX · ${acctCount}a` : `${pct.toFixed(0)}% · ${acctCount}a`}
       </span>
     </div>
   );
@@ -2241,10 +2241,12 @@ export default function Accounts() {
         // skips unconvertible entries. A bar segment that's short
         // because its rate is missing is a truer picture than one
         // that appears zero-width.
-        const currencyTotals = currencies.map(c => ({
-          currency: c,
-          total: accounts!.filter(a => a.currency === c).reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0),
-        })).sort((a, b) => b.total - a.total);
+        const currencyTotals = currencies.map(c => {
+          const rows = accounts!.filter(a => a.currency === c);
+          const allNull = rows.length > 0 && rows.every(a => a.gbpEquivalent == null);
+          const total = allNull ? null : rows.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+          return { currency: c, total };
+        }).sort((a, b) => (b.total ?? -Infinity) - (a.total ?? -Infinity));
 
         return (
           <div style={{ border: "1px solid var(--ft-border)" }}>
@@ -2311,12 +2313,12 @@ export default function Accounts() {
                 {/* Stacked bar */}
                 <div style={{ display: "flex", height: 6, overflow: "hidden", gap: 1, marginBottom: 8 }}>
                   {currencyTotals.map(({ currency, total }, i) => {
-                    const pct = totalCash > 0 ? (total / totalCash) * 100 : 0;
+                    const pct = total != null && totalCash > 0 ? (total / totalCash) * 100 : 0;
                     return (
                       <div
                         key={currency}
                         style={{ width: `${pct}%`, background: ACCT_COLORS[i % ACCT_COLORS.length], minWidth: pct > 1 ? 3 : 0 }}
-                        title={`${currency}: ${pct.toFixed(1)}% · ${formatGbp(total)}`}
+                        title={total == null ? `${currency}: no FX` : `${currency}: ${pct.toFixed(1)}% · ${formatGbp(total)}`}
                       />
                     );
                   })}

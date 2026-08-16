@@ -125,6 +125,7 @@ export function MobileHome(_props: MobileHomeProps) {
 
   const activeAccounts = dashboard?.accountBreakdown ?? [];
   const currencyCount = new Set(activeAccounts.map((a) => a.currency)).size;
+  const unconvertibleAccounts = dashboard?.unconvertibleAccounts ?? 0;
 
   const owedByMe = dashboard?.owing.totalIOwe ?? 0;
   const pendingCount = dashboard?.owing.pendingCount ?? 0;
@@ -250,6 +251,11 @@ export function MobileHome(_props: MobileHomeProps) {
             {nfmt(mtdDelta, { sign: true, symbol: "£" })} ·{" "}
             {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
           </Text>
+          {unconvertibleAccounts > 0 && (
+            <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
+              {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
+            </Text>
+          )}
         </VStack>
 
         {/* Holdings header + BLOCKS / BANDS / RING switcher */}

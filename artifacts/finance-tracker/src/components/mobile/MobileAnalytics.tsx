@@ -49,6 +49,7 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
   // aggregation needs a GBP figure and there's no honest fallback.
   const totalSpend = expenses.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
   const totalIncome = incomes.reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+  const unconvertibleTxs = txns.filter((t) => t.gbpValue == null).length;
   const monthLabel = now.toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase();
   const net = totalIncome - totalSpend;
 
@@ -150,6 +151,11 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
             )}
           </HStack>
         </HStack>
+        {unconvertibleTxs > 0 && (
+          <Text as="div" mono size={10} mt={6} color="var(--ft-amber)" letterSpacing="0.06em">
+            {unconvertibleTxs} tx no FX — not in total
+          </Text>
+        )}
       </VStack>
 
       <Section title="SPEND BY CATEGORY" rows={spendRows} total={totalSpend} accent="var(--ft-red)" />
