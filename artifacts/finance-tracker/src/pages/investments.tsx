@@ -55,7 +55,7 @@ import {
   FOREX_NAMES, COMMODITY_NAMES, GLOBAL_INDEX_NAMES,
   CHART_PERIODS, INTRADAY_PERIODS_SET, MULTIDAY_PERIODS_SET,
   TICK_PERIODS_SET, TICK_INTERVAL_MAP, isUSTicker,
-  MOCK_QUOTES, newsScore, timeAgo, fmtCap, fmtNum,
+  newsScore, timeAgo, fmtCap, fmtNum,
 } from "@/components/investments/markets-data";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 import {
@@ -106,6 +106,18 @@ const TH: React.CSSProperties = {
   borderRight: "1px solid var(--ft-border)", textTransform: "uppercase" as const,
   letterSpacing: "0.4px", whiteSpace: "nowrap" as const,
 };
+
+// Colour + label for a change-percent value. Returns "—" and a neutral
+// colour when the API didn't supply the value — never a fabricated zero
+// coloured green like it's a real flat day.
+function pctColor(chg: number | null | undefined): string {
+  if (chg == null) return "var(--ft-dim)";
+  return chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+}
+function pctLabel(chg: number | null | undefined, decimals = 2): string {
+  if (chg == null) return "—";
+  return `${chg >= 0 ? "+" : ""}${chg.toFixed(decimals)}%`;
+}
 
 // ── Markets Tab ───────────────────────────────────────────────────────────────
 
@@ -257,15 +269,14 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
                   {activeList.tickers.map((ticker) => {
                     const q = qMap.get(ticker);
-                    const chg = q?.changePercent ?? 0;
-                    const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+                    const chg = q?.changePercent;
                     return (
                       <div key={ticker} style={{ display: "flex", alignItems: "center", padding: "7px 10px", borderBottom: "1px solid var(--ft-border)", borderRight: "1px solid var(--ft-border)", gap: 6 }}>
                         <button onClick={() => onSelectTicker(ticker)} style={{ flex: 1, background: "transparent", border: "none", cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                           <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-blue)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{ticker}</span>
                           {q ? (
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)" }}>
-                              ${q.price.toFixed(2)} <span style={{ color: chgColor }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</span>
+                              ${q.price.toFixed(2)} <span style={{ color: pctColor(chg) }}>{pctLabel(chg)}</span>
                             </span>
                           ) : (
                             <Text as="span" mono size={9} color="var(--ft-dim)">click to load</Text>
@@ -541,29 +552,20 @@ function MarketsTab() {
     setWlDropdownOpen(false);
   };
 
-  // Always load overview quotes — refresh every 30 s so prices stay current
-  const { data: overviewQuotes } = useGetMarketQuotes(
+  // Always load overview quotes — refresh every 30 s so prices stay current.
+  // No mock fallback: when the API returns nothing, callers must show an
+  // empty state; when a real quote is missing changePercent, callers must
+  // render "—" for the percent field. Fabricating either would violate
+  // CLAUDE.md's "never show a number the API did not supply".
+  const { data: overviewQuotes, isLoading: overviewLoading } = useGetMarketQuotes(
     { tickers: OVERVIEW_TICKERS },
     { query: { queryKey: getGetMarketQuotesQueryKey({ tickers: OVERVIEW_TICKERS }), refetchInterval: 30_000 } }
   );
-  const qMap = useMemo(() => {
-    const live = new Map<string, QuoteData>(overviewQuotes?.map((q) => [q.ticker, q as QuoteData]) ?? []);
-    if (live.size === 0) {
-      // API returned nothing — inject full mock data
-      for (const [ticker, mock] of Object.entries(MOCK_QUOTES)) {
-        live.set(ticker, { ticker, price: mock.price, changePercent: mock.changePercent, low52w: mock.low52w, high52w: mock.high52w } as unknown as QuoteData);
-      }
-    } else {
-      // API returned prices but changePercent may be null (market closed / partial key)
-      // Supplement with mock values so the UI always shows realistic change percentages
-      for (const [ticker, q] of live.entries()) {
-        if (q.changePercent == null && MOCK_QUOTES[ticker] != null) {
-          live.set(ticker, { ...q, changePercent: MOCK_QUOTES[ticker].changePercent } as QuoteData);
-        }
-      }
-    }
-    return live;
-  }, [overviewQuotes]);
+  const qMap = useMemo(
+    () => new Map<string, QuoteData>(overviewQuotes?.map((q) => [q.ticker, q as QuoteData]) ?? []),
+    [overviewQuotes],
+  );
+  const quotesUnavailable = !overviewLoading && qMap.size === 0;
 
   // When a custom ticker is selected that's not in overview
   const needCustomQuote = !!selectedTicker && !qMap.has(selectedTicker);
@@ -682,8 +684,8 @@ function MarketsTab() {
   // ── Detail view ────────────────────────────────────────────────────────────
   if (selectedTicker) {
     const q = selectedQuote;
-    const chg = q?.changePercent ?? 0;
-    const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+    const chg = q?.changePercent ?? null;
+    const chgColor = pctColor(chg);
     const isIntraday = INTRADAY_PERIODS_SET.has(chartPeriod) || isTickPeriod;
     // Tick periods use SSE candles; all others use the REST history
     const rawCandles = isTickPeriod ? liveCandles : (history ?? []);
@@ -906,9 +908,13 @@ function MarketsTab() {
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "-0.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedTicker}</span>
               {q && <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: isExtended ? "var(--ft-muted)" : "var(--ft-text)", textDecoration: isExtended ? "none" : undefined, whiteSpace: "nowrap" }}>${q.price.toFixed(2)}</span>}
               {q && !isExtended && (
-                <span style={{ padding: "3px 8px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor, border: `1px solid ${chg >= 0 ? "rgba(63,185,80,0.3)" : "rgba(248,81,73,0.3)"}`, whiteSpace: "nowrap" }}>
-                  {chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%
-                </span>
+                chg == null ? (
+                  <span style={{ padding: "3px 8px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", background: "var(--ft-raised)", color: "var(--ft-dim)", border: "1px solid var(--ft-border)", whiteSpace: "nowrap" }}>—</span>
+                ) : (
+                  <span style={{ padding: "3px 8px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor, border: `1px solid ${chg >= 0 ? "rgba(63,185,80,0.3)" : "rgba(248,81,73,0.3)"}`, whiteSpace: "nowrap" }}>
+                    {chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%
+                  </span>
+                )
               )}
               {/* Extended hours price shown prominently when market is pre/post */}
               {isExtended && extPrice != null && (
@@ -1558,10 +1564,31 @@ function MarketsTab() {
   return (
     <VStack gap={16}>
 
+      {/* Quotes unavailable — the market-quotes endpoint returned an empty
+          set (rate-limit, provider outage, or partial API key). Every
+          section below correctly renders "—" per row, but a single banner
+          up top names the shared cause instead of leaving the user to
+          infer it from a wall of dashes. */}
+      {quotesUnavailable && (
+        <div style={{ border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-amber)", background: "var(--ft-surface)", padding: "12px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <div style={{ flex: 1 }}>
+            <MonoLabel as="div" size={10} letterSpacing="0.12em" color="var(--ft-amber)">
+              QUOTES UNAVAILABLE
+            </MonoLabel>
+            <Text as="div" size={12} color="var(--ft-muted)" mt={4}>
+              The market data provider did not return any quotes. Prices and change percentages read "—" throughout Markets until the next refresh (30&nbsp;s).
+            </Text>
+          </div>
+        </div>
+      )}
+
       {/* ── Scrolling ticker strip (Yahoo Finance style) ── */}
       {(() => {
         const STRIP_TICKERS = ["SPY","QQQ","DIA","BTC-USD","GC=F","GBPUSD=X","^N225","^GDAXI","XLK","AAPL","NVDA","TSLA","MSFT","META","AMZN"];
-        const items = STRIP_TICKERS.map(t => ({ ticker: t, q: qMap.get(t) })).filter(x => x.q != null);
+        // Only tickers with a real live price AND changePercent scroll.
+        // A fabricated "0.00%" on the marquee would be the loudest kind
+        // of lie we could tell (moving, coloured, front-and-centre).
+        const items = STRIP_TICKERS.map(t => ({ ticker: t, q: qMap.get(t) })).filter(x => x.q != null && x.q.changePercent != null);
         if (items.length === 0) return null;
         const doubled = [...items, ...items];
         return (
@@ -1576,7 +1603,8 @@ function MarketsTab() {
             `}</style>
             <div className="ft-ticker-track">
               {doubled.map(({ ticker, q }, i) => {
-                const chg = q!.changePercent ?? 0;
+                // Filtered above to guarantee changePercent is present.
+                const chg = q!.changePercent!;
                 const up = chg >= 0;
                 const col = up ? "var(--ft-green)" : "var(--ft-red)";
                 const label = INDEX_LABELS[ticker] ?? SECTOR_LABELS[ticker] ?? POPULAR_NAMES[ticker] ?? CRYPTO_NAMES[ticker] ?? FOREX_NAMES[ticker] ?? ticker;
@@ -1695,8 +1723,7 @@ function MarketsTab() {
                       <VStack gap={5}>
                         {items.map((item) => {
                           const q = qMap.get(item.ticker);
-                          const chg = q?.changePercent ?? 0;
-                          const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+                          const chg = q?.changePercent ?? null;
                           const urgency = item.daysUntil === 0 ? "TODAY" : item.daysUntil === 1 ? "TOMORROW" : `${item.daysUntil}d`;
                           return (
                             <button
@@ -1707,7 +1734,7 @@ function MarketsTab() {
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <HStack gap={5} align="center">
                                   <Text as="span" mono size={11} weight={700} color="var(--ft-accent)">{item.ticker}</Text>
-                                  {q && <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: chgColor }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</span>}
+                                  {q && <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: pctColor(chg) }}>{pctLabel(chg)}</span>}
                                 </HStack>
                                 <Text as="div" mono size={9} color="var(--ft-dim)" mt={1}>
                                   {item.date.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric" })}
@@ -1786,8 +1813,8 @@ function MarketsTab() {
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {INDEX_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
-            const chg = q?.changePercent ?? 0;
-            const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+            const chg = q?.changePercent ?? null;
+            const chgColor = pctColor(chg);
             return (
               <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
@@ -1800,7 +1827,13 @@ function MarketsTab() {
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)" }}>{ticker}</div>
                     <Text as="div" mono size={9} color="var(--ft-dim)" mt={1}>{INDEX_LABELS[ticker] ?? ticker}</Text>
                   </div>
-                  {q && <span style={{ padding: "2px 6px", fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
+                  {q && (
+                    chg == null ? (
+                      <span style={{ padding: "2px 6px", fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", background: "var(--ft-raised)", color: "var(--ft-dim)" }}>—</span>
+                    ) : (
+                      <span style={{ padding: "2px 6px", fontSize: 10, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>
+                    )
+                  )}
                 </HStack>
                 <Text as="div" mono size={18} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? `$${q.price.toFixed(2)}` : "—"}</Text>
                 {q?.low52w && q?.high52w && <div style={{ marginTop: 6 }}><RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /></div>}
@@ -1816,9 +1849,9 @@ function MarketsTab() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 4 }}>
           {SECTOR_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
-            const chg = q?.changePercent ?? 0;
-            const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
-            const barPct = Math.min(100, Math.abs(chg) * 10);
+            const chg = q?.changePercent ?? null;
+            const chgColor = pctColor(chg);
+            const barPct = chg == null ? 0 : Math.min(100, Math.abs(chg) * 10);
             return (
               <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px", position: "relative", overflow: "hidden", cursor: "pointer", textAlign: "left" }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; }}
@@ -1829,7 +1862,7 @@ function MarketsTab() {
                 <div style={{ position: "absolute", bottom: 0, left: 0, height: 2, width: `${barPct}%`, background: chgColor, opacity: 0.6 }} />
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>{SECTOR_LABELS[ticker] ?? ticker}</div>
                 <Text as="div" mono size={11} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? `$${q.price.toFixed(2)}` : "—"}</Text>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 1 }}>{q ? `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%` : "—"}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 1 }}>{q ? pctLabel(chg) : "—"}</div>
               </button>
             );
           })}
@@ -1849,8 +1882,8 @@ function MarketsTab() {
             </div>
             {POPULAR_TICKERS.split(",").map((ticker, i) => {
               const q = qMap.get(ticker);
-              const chg = q?.changePercent ?? 0;
-              const chgColor = chg > 0 ? "var(--ft-green)" : chg < 0 ? "var(--ft-red)" : "var(--ft-dim)";
+              const chg = q?.changePercent ?? null;
+              const chgColor = pctColor(chg);
               return (
                 <button key={ticker} onClick={() => setSelectedTicker(ticker)}
                   onTouchStart={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
@@ -1865,7 +1898,7 @@ function MarketsTab() {
                     {q ? `$${q.price.toFixed(2)}` : "—"}
                   </div>
                   <div style={{ padding: "9px 10px 9px 4px", minWidth: 68, textAlign: "right" }}>
-                    {q ? <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "1px 4px", background: chg > 0 ? "rgba(63,185,80,0.1)" : chg < 0 ? "rgba(248,81,73,0.1)" : "transparent", color: chgColor }}>{chg > 0 ? "+" : ""}{chg.toFixed(2)}%</span> : <Text as="span" mono size={10} color="var(--ft-dim)">—</Text>}
+                    {q && chg != null ? <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "1px 4px", background: chg > 0 ? "rgba(63,185,80,0.1)" : chg < 0 ? "rgba(248,81,73,0.1)" : "transparent", color: chgColor }}>{pctLabel(chg)}</span> : <Text as="span" mono size={10} color="var(--ft-dim)">—</Text>}
                   </div>
                 </button>
               );
@@ -1881,8 +1914,8 @@ function MarketsTab() {
             </HStack>
             {POPULAR_TICKERS.split(",").map((ticker, i) => {
               const q = qMap.get(ticker);
-              const chg = q?.changePercent ?? 0;
-              const chgColor = chg > 0 ? "var(--ft-green)" : chg < 0 ? "var(--ft-red)" : "var(--ft-dim)";
+              const chg = q?.changePercent ?? null;
+              const chgColor = pctColor(chg);
               const TD: React.CSSProperties = { padding: "8px 10px", fontSize: 11, fontFamily: "var(--font-mono)", borderBottom: "1px solid var(--ft-border)", borderRight: "1px solid var(--ft-border)", fontVariantNumeric: "tabular-nums", background: i % 2 === 0 ? "var(--ft-base)" : "rgba(22,27,34,0.4)" };
               return (
                 <button key={ticker} onClick={() => setSelectedTicker(ticker)} style={{ display: "flex", minWidth: 980, width: "100%", cursor: "pointer", border: "none", background: "transparent" }}
@@ -1893,7 +1926,7 @@ function MarketsTab() {
                   <div style={{ ...TD, flex: 1, minWidth: 130, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" }}>{POPULAR_NAMES[ticker] ?? ticker}</div>
                   <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-text)", fontWeight: 600 }}>{q ? `$${q.price.toFixed(2)}` : "—"}</div>
                   <div style={{ ...TD, width: 80, minWidth: 80, textAlign: "right" }}>
-                    {q ? <span style={{ padding: "1px 4px", fontSize: 10, fontWeight: 700, background: chg > 0 ? "rgba(63,185,80,0.1)" : chg < 0 ? "rgba(248,81,73,0.1)" : "transparent", color: chgColor }}>{chg > 0 ? "+" : ""}{chg.toFixed(2)}%</span> : "—"}
+                    {q && chg != null ? <span style={{ padding: "1px 4px", fontSize: 10, fontWeight: 700, background: chg > 0 ? "rgba(63,185,80,0.1)" : chg < 0 ? "rgba(248,81,73,0.1)" : "transparent", color: chgColor }}>{pctLabel(chg)}</span> : "—"}
                   </div>
                   <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-green)" }}>{q?.dayHigh != null ? `$${q.dayHigh.toFixed(2)}` : "—"}</div>
                   <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-red)" }}>{q?.dayLow != null ? `$${q.dayLow.toFixed(2)}` : "—"}</div>
@@ -1982,8 +2015,8 @@ function MarketsTab() {
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {CRYPTO_MARKET_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
-            const chg = q?.changePercent ?? 0;
-            const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+            const chg = q?.changePercent ?? null;
+            const chgColor = pctColor(chg);
             const priceStr = q ? (q.price >= 1000 ? `$${q.price.toLocaleString("en", { maximumFractionDigits: 0 })}` : q.price >= 1 ? `$${q.price.toFixed(2)}` : `$${q.price.toFixed(5)}`) : "—";
             return (
               <button key={ticker} onClick={() => setSelectedTicker(ticker)}
@@ -1998,7 +2031,10 @@ function MarketsTab() {
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)" }}>{CRYPTO_NAMES[ticker] ?? ticker}</div>
                     <Text as="div" mono size={8} color="var(--ft-dim)" mt={1}>{ticker.replace("-USD", "")}</Text>
                   </div>
-                  {q && <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
+                  {q && (chg == null
+                    ? <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: "var(--ft-raised)", color: "var(--ft-dim)" }}>—</span>
+                    : <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>
+                  )}
                 </HStack>
                 <Text as="div" mono size={16} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{priceStr}</Text>
                 {q?.marketCap && <Text as="div" mono size={8} color="var(--ft-dim)" mt={3}>MCap {fmtCap(q.marketCap)}</Text>}
@@ -2016,8 +2052,8 @@ function MarketsTab() {
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {FOREX_TICKERS_STR.split(",").map((ticker) => {
             const q = qMap.get(ticker);
-            const chg = q?.changePercent ?? 0;
-            const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+            const chg = q?.changePercent ?? null;
+            const chgColor = pctColor(chg);
             return (
               <button key={ticker} onClick={() => setSelectedTicker(ticker)}
                 style={{ background: "rgba(88,166,255,0.04)", border: "1px solid rgba(88,166,255,0.12)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
@@ -2028,7 +2064,10 @@ function MarketsTab() {
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(88,166,255,0.12)"; }}>
                 <HStack align="start" justify="between" marginBottom={4}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-blue)" }}>{FOREX_NAMES[ticker] ?? ticker}</div>
-                  {q && <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>}
+                  {q && (chg == null
+                    ? <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: "var(--ft-raised)", color: "var(--ft-dim)" }}>—</span>
+                    : <span style={{ padding: "2px 5px", fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", background: chg >= 0 ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)", color: chgColor }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</span>
+                  )}
                 </HStack>
                 <Text as="div" mono size={18} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? q.price.toFixed(4) : "—"}</Text>
                 {q?.dayLow != null && q?.dayHigh != null && (
@@ -2050,8 +2089,8 @@ function MarketsTab() {
         <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
           {COMMODITY_TICKERS_STR.split(",").map((ticker) => {
             const q = qMap.get(ticker);
-            const chg = q?.changePercent ?? 0;
-            const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+            const chg = q?.changePercent ?? null;
+            const chgColor = pctColor(chg);
             return (
               <button key={ticker} onClick={() => setSelectedTicker(ticker)}
                 style={{ background: "rgba(63,185,80,0.04)", border: "1px solid rgba(63,185,80,0.12)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
@@ -2062,7 +2101,7 @@ function MarketsTab() {
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.12)"; }}>
                 <Text as="div" mono size={9} color="var(--ft-dim)" mb={4}>{COMMODITY_NAMES[ticker] ?? ticker}</Text>
                 <Text as="div" mono size={18} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? `$${q.price.toFixed(2)}` : "—"}</Text>
-                {q && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 2 }}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</div>}
+                {q && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 2 }}>{pctLabel(chg)}</div>}
                 {q?.low52w != null && q?.high52w != null && <div style={{ marginTop: 6 }}><RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /></div>}
               </button>
             );
@@ -2078,8 +2117,8 @@ function MarketsTab() {
         <div className="ft-five-col" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
           {GLOBAL_INDEX_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
-            const chg = q?.changePercent ?? 0;
-            const chgColor = chg >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+            const chg = q?.changePercent ?? null;
+            const chgColor = pctColor(chg);
             return (
               <button key={ticker} onClick={() => setSelectedTicker(ticker)}
                 style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.12)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
@@ -2093,7 +2132,10 @@ function MarketsTab() {
                 <Text as="div" mono size={15} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>
                   {q ? q.price.toLocaleString("en", { maximumFractionDigits: 0 }) : "—"}
                 </Text>
-                {q && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 2 }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</div>}
+                {q && (chg == null
+                  ? <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-dim)", marginTop: 2 }}>—</div>
+                  : <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 2 }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</div>
+                )}
               </button>
             );
           })}

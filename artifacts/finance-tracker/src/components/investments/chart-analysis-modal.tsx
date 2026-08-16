@@ -216,7 +216,7 @@ function ToggleBtn({ label, active, color, onClick }: { label: string; active: b
 interface ChartAnalysisModalProps {
   ticker: string;
   price: number;
-  changePercent: number;
+  changePercent: number | null;
   history: StockHistoryPoint[];
   period: string;
   onPeriodChange: (p: string) => void;
@@ -236,7 +236,10 @@ export function ChartAnalysisModal({
 
   const enriched = useMemo(() => enrichData(history), [history]);
 
-  const chgColor = changePercent >= 0 ? "#3fb950" : "#f85149";
+  // G10/MOCK_QUOTES: changePercent can be null when the provider didn't
+  // supply a percent for this ticker. Neutral colour + "—" label rather
+  // than a fabricated 0.00%.
+  const chgColor = changePercent == null ? "#8b949e" : changePercent >= 0 ? "#3fb950" : "#f85149";
   const firstClose = enriched[0]?.close ?? 0;
   const lastClose = enriched[enriched.length - 1]?.close ?? 0;
   const periodReturn = firstClose > 0 ? ((lastClose - firstClose) / firstClose) * 100 : 0;
@@ -261,7 +264,7 @@ export function ChartAnalysisModal({
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "#58a6ff", letterSpacing: "-0.01em" }}>{ticker}</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "#e6edf3" }}>${price.toFixed(2)}</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: chgColor, padding: "2px 6px", background: `${chgColor}18`, border: `1px solid ${chgColor}44` }}>
-              {changePercent >= 0 ? "▲" : "▼"} {Math.abs(changePercent).toFixed(2)}%
+              {changePercent == null ? "—" : `${changePercent >= 0 ? "▲" : "▼"} ${Math.abs(changePercent).toFixed(2)}%`}
             </span>
             {enriched.length > 0 && (
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: periodReturn >= 0 ? "#3fb950" : "#f85149", marginLeft: 6 }}>
