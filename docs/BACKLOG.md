@@ -44,14 +44,20 @@ new row in `__drizzle_migrations`, reverted and re-ran generate to
 baselined — that is a follow-up when the password rotation (A2) creates
 the natural moment to touch production.
 
-### A4 · Confirm `dev@bypass.local` is gone from production — TODO
-Code referencing it was removed and deployed; the row was never confirmed.
-- **Verify:** query the production `user` table for that email, expect zero
-  rows. If present, delete it and its `session` and `account` rows.
+### A4 · dev@bypass.local in production — CONFIRMED PRESENT, needs deletion
+Verified 16 Aug 2026 by read-only query against production: the row exists,
+created 2026-07-19. Production has 3 users; one of them is this.
 
----
+The code path that used it was removed and deployed weeks ago, so it is not
+currently exploitable — but it is a leftover credential row in the database of
+an app intended for public signup.
 
-## B. Hosting — the Railway subscription is ending
+- **Do:** delete the row and its `session` and `account` rows. A human runs
+  this against production; it is the one destructive production action on the
+  list and should not be run unattended.
+- **Note:** `lib/db/.env.production.backup` was stale after the Neon password
+  rotation and has been corrected. That is why the first attempt reported an
+  auth failure rather than a result.
 
 ### B1 · Rehost the API server — TODO · needs a human for signup
 Railway runs `artifacts/api-server` only. The database is Neon and is
