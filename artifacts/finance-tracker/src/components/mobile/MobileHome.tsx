@@ -10,6 +10,7 @@ import {
 import type { AppScreen } from "./MobileApp";
 import { MobileEmptyState } from "./mobile-ui";
 import { BlockField } from "@/components/primitives/block-field";
+import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
 // ── Number rule (docs/MOBILE-CONCEPT.md § Approved 13 Aug 2026, second pass) ──
 // Separators always. Two decimals for facts. No decimals for shapes.
@@ -179,20 +180,9 @@ export function MobileHome(_props: MobileHomeProps) {
           flexDirection: "column",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            height: 44,
-            padding: "0 18px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ft-dim)",
-          }}
-        >
-          <span>NUMERIS</span>
-        </div>
+        <HStack justify="end" align="center" height={44} paddingX={18}>
+          <Text as="span" mono size={11} color="var(--ft-dim)">NUMERIS</Text>
+        </HStack>
         <MobileEmptyState
           label="NO ACCOUNTS"
           title="Nothing to show yet."
@@ -220,78 +210,43 @@ export function MobileHome(_props: MobileHomeProps) {
       className="mobile-scroll"
     >
         {/* Top bar (44px, JetBrains Mono, dim) */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            height: 44,
-            padding: "0 18px",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ft-dim)",
-          }}
-        >
-          <span>LIVE · {activeAccounts.length} ACCOUNTS</span>
-        </div>
+        <HStack justify="end" align="center" height={44} paddingX={18}>
+          <Text as="span" mono size={11} color="var(--ft-dim)">
+            LIVE · {activeAccounts.length} ACCOUNTS
+          </Text>
+        </HStack>
 
         {/* Net worth headline */}
-        <div style={{ padding: "4px 18px 18px" }}>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.16em",
-              color: "var(--ft-dim)",
-            }}
-          >
-            NET WORTH
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: 4,
-              marginTop: 6,
-            }}
-          >
-            <span style={{ fontSize: 17, color: "var(--ft-dim)" }}>£</span>
-            <span
-              className="pnum"
-              style={{
-                fontSize: 34,
-                lineHeight: "34px",
-                fontWeight: 600,
-                letterSpacing: "-0.035em",
-              }}
+        <VStack padding="4px 18px 18px">
+          <MonoLabel size={11} letterSpacing="0.16em">NET WORTH</MonoLabel>
+          <HStack align="baseline" gap={4} marginTop={6}>
+            <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+            <Text
+              as="span"
+              size={34}
+              weight={600}
+              lineHeight="34px"
+              letterSpacing="-0.035em"
+              numeric
             >
               {nfmt(netWorth)}
-            </span>
-          </div>
-          <div
-            className="pnum"
-            style={{
-              marginTop: 6,
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              color:
-                mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-            }}
+            </Text>
+          </HStack>
+          <Text
+            as="div"
+            mono
+            size={12}
+            mt={6}
+            color={mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+            numeric
           >
             {nfmt(mtdDelta, { sign: true, symbol: "£" })} ·{" "}
             {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
-          </div>
-        </div>
+          </Text>
+        </VStack>
 
         {/* Holdings header + BLOCKS / BANDS / RING switcher */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 18px 10px",
-          }}
-        >
+        <HStack align="center" justify="between" padding="0 18px 10px">
           <a
             onClick={(e) => {
               e.preventDefault();
@@ -311,12 +266,12 @@ export function MobileHome(_props: MobileHomeProps) {
           >
             HOLDINGS ›
           </a>
-          <div style={{ display: "flex", alignItems: "center", height: 44, gap: 2 }}>
+          <HStack align="center" height={44} gap={2}>
             <ViewTab label="BLOCKS" active={view === "blocks"} onClick={() => setView("blocks")} />
             <ViewTab label="BANDS" active={view === "bands"} onClick={() => setView("bands")} />
             <ViewTab label="RING" active={view === "ring"} onClick={() => setView("ring")} />
-          </div>
-        </div>
+          </HStack>
+        </HStack>
 
         {/* Chart area — one of BLOCKS / BANDS / RING */}
         <div style={{ padding: "0 18px" }}>
@@ -327,16 +282,9 @@ export function MobileHome(_props: MobileHomeProps) {
 
         {/* Claimed (liabilities are outlined, no depth) */}
         {owedByMe > 0 && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 12,
-              padding: "18px 18px 0",
-            }}
-          >
-            {/* Outlined glyph — a claim is not material you hold. Compact
-                14x14 marker; the previous 88x19 bar read as an empty input. */}
+          <HStack align="start" gap={12} padding="18px 18px 0">
+            {/* Outlined glyph — a claim is not material you hold. One-off
+                surface (border-only marker) stays inline. */}
             <div
               style={{
                 width: 14,
@@ -347,19 +295,18 @@ export function MobileHome(_props: MobileHomeProps) {
                 marginTop: 2,
               }}
             />
-            <div
-              className="pnum"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                lineHeight: "16px",
-                color: "var(--ft-red)",
-              }}
+            <Text
+              as="div"
+              mono
+              size={11}
+              lineHeight="16px"
+              color="var(--ft-red)"
+              numeric
             >
               CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount}{" "}
               {pendingCount === 1 ? "DEBT" : "DEBTS"}
-            </div>
-          </div>
+            </Text>
+          </HStack>
         )}
 
         {/* Cashflow section — only when there is anything to plot */}
@@ -428,17 +375,9 @@ export function MobileHome(_props: MobileHomeProps) {
             borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
           }}
         >
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.16em",
-              color: "var(--ft-dim)",
-              marginBottom: 4,
-            }}
-          >
+          <MonoLabel size={11} letterSpacing="0.16em" mb={4}>
             ELSEWHERE IN NUMERIS
-          </div>
+          </MonoLabel>
           <ElsewhereRow
             label="Investments"
             valueLabel={
@@ -550,6 +489,8 @@ function SectionHeader({
   onLink: () => void;
 }) {
   return (
+    // Border-top + margin are one-off surface (section divider). Inline
+    // stays — no divider primitive.
     <div
       style={{
         marginTop: 24,
@@ -557,23 +498,10 @@ function SectionHeader({
         borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            letterSpacing: "0.16em",
-            color: "var(--ft-dim)",
-          }}
-        >
+      <HStack align="baseline" justify="between">
+        <MonoLabel as="span" size={11} letterSpacing="0.16em">
           {label}
-        </span>
+        </MonoLabel>
         <a
           onClick={(e) => {
             e.preventDefault();
@@ -593,7 +521,7 @@ function SectionHeader({
         >
           {link}
         </a>
-      </div>
+      </HStack>
     </div>
   );
 }
@@ -731,8 +659,10 @@ function AccountsList({ accounts }: { accounts: Acct[] }) {
     );
   }
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <VStack>
       {accounts.map((a, i) => (
+        // Row borders are one-off dividers between siblings. Inline
+        // stays; primitives don't own row rules.
         <div
           key={a.id}
           style={{
@@ -748,41 +678,25 @@ function AccountsList({ accounts }: { accounts: Acct[] }) {
             fontSize: 14,
           }}
         >
-          <span>{a.name}</span>
+          <Text as="span" size={14}>{a.name}</Text>
           {a.currency === "GBP" ? (
-            <span
-              className="pnum"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 13,
-              }}
-            >
+            <Text as="span" mono size={13} numeric>
               {nfmt(a.gbpEquivalent)}
-            </span>
+            </Text>
           ) : (
-            <span style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
-              <span
-                className="pnum"
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 12,
-                  color: "var(--ft-dim)",
-                }}
-              >
+            <HStack gap={10} align="baseline">
+              <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
                 {(CURRENCY_SYMBOLS[a.currency] ?? a.currency + " ") +
                   nfmt(a.balance)} ≈
-              </span>
-              <span
-                className="pnum"
-                style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}
-              >
+              </Text>
+              <Text as="span" mono size={13} numeric>
                 {nfmt(a.gbpEquivalent)}
-              </span>
-            </span>
+              </Text>
+            </HStack>
           )}
         </div>
       ))}
-    </div>
+    </VStack>
   );
 }
 
@@ -800,7 +714,7 @@ function UpcomingList({
     );
   }
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <VStack>
       {bills.map((b, i) => {
         const due = new Date(b.nextDue + "T12:00:00");
         const dueStr = due.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
@@ -819,23 +733,16 @@ function UpcomingList({
               fontSize: 14,
             }}
           >
-            <span>
+            <Text as="span" size={14}>
               {b.name} · {dueStr}
-            </span>
-            <span
-              className="pnum"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 13,
-                color: "var(--ft-red)",
-              }}
-            >
+            </Text>
+            <Text as="span" mono size={13} color="var(--ft-red)" numeric>
               {nfmt(-b.amount, { symbol: b.currency === "GBP" ? "£" : "" })}
-            </span>
+            </Text>
           </div>
         );
       })}
-    </div>
+    </VStack>
   );
 }
 
@@ -851,6 +758,9 @@ function ElsewhereRow({
   valueColor: string;
   onClick: () => void;
 }) {
+  // Kept as an <a> (not HStack) because the row is a link — semantic HTML
+  // matters even for imperative onClick. Border-bottom + no-underline are
+  // one-off surface on the link. Text primitives own the two children.
   return (
     <a
       onClick={(e) => {
@@ -869,16 +779,8 @@ function ElsewhereRow({
         cursor: "pointer",
       }}
     >
-      <span>{label}</span>
-      <span
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          color: valueColor,
-        }}
-      >
-        {valueLabel}
-      </span>
+      <Text as="span" size={14}>{label}</Text>
+      <Text as="span" mono size={11} color={valueColor}>{valueLabel}</Text>
     </a>
   );
 }
