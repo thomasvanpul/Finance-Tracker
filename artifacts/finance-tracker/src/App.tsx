@@ -13,6 +13,7 @@ import { PrivacyProvider } from "@/contexts/privacy-context";
 import { CategoryProvider } from "@/contexts/category-context";
 import { Onboarding } from "@/components/onboarding";
 import { isOnboardingComplete } from "@/lib/persona";
+import { hydratePersonaFromServer } from "@/lib/persona-sync";
 import NotFound from "@/pages/not-found";
 import { useIsMobile, MOBILE_BREAKPOINT } from "@/hooks/use-mobile";
 import { MobileApp, MOBILE_ROUTES } from "@/components/mobile/MobileApp";
@@ -198,6 +199,12 @@ function Router() {
 
 function OnboardingGate({ children }: { children: React.ReactNode }) {
   const [done, setDone] = useState(() => isOnboardingComplete());
+  // Hydrate persona from server once per mount. If the user finished
+  // onboarding on another device, this mirrors that choice locally so
+  // every synchronous loadPersonaIds() reader sees the truth.
+  useEffect(() => {
+    if (done) void hydratePersonaFromServer();
+  }, [done]);
   if (!done) {
     return <Onboarding onComplete={() => setDone(true)} />;
   }

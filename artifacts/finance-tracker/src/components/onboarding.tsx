@@ -1,543 +1,393 @@
 "use client";
 import { useState } from "react";
-import { PERSONAS, applyPersonas, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_INSIGHT_PREVIEWS, PERSONA_BG, type PersonaId } from "@/lib/persona";
+import { applyPersonas, type PersonaId } from "@/lib/persona";
+import { savePersonaToServer } from "@/lib/persona-sync";
 
-
-const ASCII: Record<PersonaId, string> = {
-  market:  "╔══════════╗\n║  ▲ ▲ ▲   ║\n║  MKTS    ║\n╚══════════╝",
-  budget:  "╔══════════╗\n║ [███░░░] ║\n║  BUDGET  ║\n╚══════════╝",
-  wealth:  "╔══════════╗\n║  /  /  / ║\n║  GROWTH  ║\n╚══════════╝",
-  social:  "╔══════════╗\n║ A ⟷ B ⟷C║\n║  SPLIT   ║\n╚══════════╝",
-  full:    "╔══════════╗\n║ ≡ ALL ≡  ║\n║ TERMINAL ║\n╚══════════╝",
-};
+// Onboarding questionnaire — F1b.
+//
+// Three questions. Never asks "which persona are you?"; asks about what
+// the user actually wants to see, then derives the persona. The
+// derivation table is short enough to keep in one function
+// (`inferPersona`) so a future edit can see all the rules at once
+// rather than tracing scattered scoring code.
+//
+// Rules the derivation obeys (from the F1 brief):
+//   1. If the user picks investments AND nothing else in Q1 → market.
+//      A market-persona user must never be pushed to connect a bank.
+//   2. If Q3 says "show everything", the answer is full — full is the
+//      "I want all the tools" persona, and it always wins over Q1.
+//   3. Skip button = full. Anyone who wants out gets the same thing
+//      as an existing user: every widget visible, every nav item.
 
 interface OnboardingProps {
   onComplete: () => void;
 }
 
-export function Onboarding({ onComplete }: OnboardingProps) {
-  const [selected, setSelected] = useState<Set<PersonaId>>(new Set());
-  const [hoveredId, setHoveredId] = useState<PersonaId | null>(null);
-  const [step, setStep] = useState<"pick" | "confirm">("pick");
-  const [launching, setLaunching] = useState(false);
+type TrackChoice = "market" | "budget" | "wealth" | "social";
+type BankChoice = "yes" | "no" | "later";
+type VisibilityChoice = "focused" | "everything";
 
-  function toggle(id: PersonaId) {
-    if (id === "full") {
-      setSelected(new Set(["full"]));
-      return;
-    }
-    setSelected((prev) => {
+const TRACK_OPTIONS: { id: TrackChoice; label: string; sub: string }[] = [
+  { id: "market", label: "Investments and market prices", sub: "Live prices, portfolio P&L, earnings calendar" },
+  { id: "budget", label: "Day-to-day spending",           sub: "Where the money goes each month" },
+  { id: "wealth", label: "Net worth over time",           sub: "Long-term growth, goals, savings rate" },
+  { id: "social", label: "Money owed between people",     sub: "Split expenses, settle debts" },
+];
+
+const BANK_OPTIONS: { id: BankChoice; label: string; sub: string }[] = [
+  { id: "yes",   label: "Yes",     sub: "Import balances and transactions" },
+  { id: "no",    label: "No",      sub: "Investments only — I'll add my own tickers" },
+  { id: "later", label: "Not sure", sub: "Decide later" },
+];
+
+const VISIBILITY_OPTIONS: { id: VisibilityChoice; label: string; sub: string }[] = [
+  { id: "focused",    label: "Focused",    sub: "Only the tools I need. Everything else stays out of the way." },
+  { id: "everything", label: "Everything", sub: "Show me every tool. I want the full terminal." },
+];
+
+// Deriving the persona. Kept table-shaped so the rules are legible.
+export function inferPersona(
+  tracks: TrackChoice[],
+  _bank: BankChoice | null,
+  visibility: VisibilityChoice | null,
+): PersonaId {
+  // Visibility "everything" always wins — full is the "show all tools" persona.
+  if (visibility === "everything") return "full";
+  // No signal → full. Skipping already returns full elsewhere; this
+  // catches "clicked continue without selecting anything".
+  if (tracks.length === 0) return "full";
+  // Multiple domains → full. From the brief: "does not mention
+  // budgeting gets market". By contrast, "mentions investments AND
+  // budgeting" is not market; the app needs to show both, and the
+  // simplest way is full.
+  if (tracks.length > 1) return "full";
+  // Exactly one selection maps 1:1 to a persona.
+  return tracks[0]!;
+}
+
+export function Onboarding({ onComplete }: OnboardingProps) {
+  const [tracks, setTracks] = useState<Set<TrackChoice>>(new Set());
+  const [bank, setBank] = useState<BankChoice | null>(null);
+  const [visibility, setVisibility] = useState<VisibilityChoice | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  function toggleTrack(id: TrackChoice) {
+    setTracks((prev) => {
       const next = new Set(prev);
-      next.delete("full");
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
   }
 
-  function handleLaunch() {
-    const ids = selected.size > 0 ? Array.from(selected) : (["full"] as PersonaId[]);
-    setLaunching(true);
-    setTimeout(() => {
-      applyPersonas(ids);
-      onComplete();
-    }, 900);
-  }
-
-  function handleSkip() {
-    applyPersonas(["full"]);
+  async function finish(persona: PersonaId) {
+    setSubmitting(true);
+    // Local application first — user should see their landing page even
+    // if the server write fails (offline / rate limit). Server write is
+    // best-effort; savePersonaToServer swallows the error and logs.
+    applyPersonas([persona]);
+    await savePersonaToServer(persona);
     onComplete();
   }
 
-  const selectedPersonas = PERSONAS.filter((p) => selected.has(p.id));
-  const canLaunch = selected.size > 0;
+  function handleSkip() {
+    void finish("full");
+  }
+
+  function handleContinue() {
+    const persona = inferPersona(Array.from(tracks), bank, visibility);
+    void finish(persona);
+  }
 
   return (
     <div
       style={{
         position: "fixed",
         inset: 0,
-        background: "var(--ft-base, #0a0a0f)",
+        background: "var(--ft-base)",
+        color: "var(--ft-text)",
         zIndex: 99999,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
       }}
     >
-      {/* Scanline overlay */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)",
-          pointerEvents: "none",
-          zIndex: 1,
-        }}
-      />
-
       {/* Top bar */}
       <div
         style={{
-          position: "relative",
-          zIndex: 2,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "12px 24px",
-          borderBottom: "1px solid var(--ft-border, rgba(255,255,255,0.08))",
-          background: "rgba(0,0,0,0.3)",
+          borderBottom: "1px solid var(--ft-border)",
+          background: "var(--ft-surface)",
           flexShrink: 0,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 13,
-              fontWeight: 900,
-              letterSpacing: "0.15em",
-              color: "var(--ft-text, #e8e8e8)",
-            }}
-          >
-            FINANCETRACKER
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 900, letterSpacing: "0.15em" }}>
+            NUMERIS
           </div>
           <div
             style={{
-              fontFamily: "var(--font-mono, monospace)",
+              fontFamily: "var(--font-mono)",
               fontSize: 9,
-              color: "var(--ft-dim, #666)",
+              color: "var(--ft-dim)",
               letterSpacing: "0.12em",
               padding: "2px 6px",
-              border: "1px solid var(--ft-border, rgba(255,255,255,0.08))",
+              border: "1px solid var(--ft-border)",
             }}
           >
-            INIT·v2
+            INIT · v3
           </div>
         </div>
         <button
           onClick={handleSkip}
+          disabled={submitting}
           style={{
             background: "none",
-            border: "1px solid var(--ft-border, rgba(255,255,255,0.08))",
-            color: "var(--ft-dim, #666)",
-            fontFamily: "var(--font-mono, monospace)",
+            border: "1px solid var(--ft-border)",
+            color: "var(--ft-dim)",
+            fontFamily: "var(--font-mono)",
             fontSize: 9,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            padding: "4px 10px",
-            cursor: "pointer",
+            padding: "6px 12px",
+            cursor: submitting ? "not-allowed" : "pointer",
+            opacity: submitting ? 0.5 : 1,
           }}
         >
-          Skip → Full Access
+          Skip → Full
         </button>
       </div>
 
-      {/* Main content */}
+      {/* Body */}
       <div
         style={{
-          position: "relative",
-          zIndex: 2,
           flex: 1,
           overflowY: "auto",
-          padding: "32px 24px 24px",
+          padding: "40px 24px 32px",
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 32, maxWidth: 560 }}>
-          <div
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 9,
-              letterSpacing: "0.2em",
-              color: "var(--ft-accent, #ef4444)",
-              textTransform: "uppercase",
-              marginBottom: 12,
-            }}
-          >
-            ◈ Terminal Initialization
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 22,
-              fontWeight: 700,
-              color: "var(--ft-text, #e8e8e8)",
-              letterSpacing: "0.02em",
-              margin: 0,
-              marginBottom: 10,
-              lineHeight: 1.2,
-            }}
-          >
-            How do you use finance?
-          </h1>
-          <p
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 11,
-              color: "var(--ft-dim, #888)",
-              lineHeight: 1.7,
-              margin: 0,
-            }}
-          >
-            Select one or more profiles. The terminal will configure your navigation,
-            default page, and layout. You can change this anytime in Settings.
-          </p>
-        </div>
-
-        {/* Persona grid */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-            gap: 12,
-            width: "100%",
-            maxWidth: 900,
-            marginBottom: 28,
-          }}
-        >
-          {PERSONAS.map((persona) => {
-            const isSelected = selected.has(persona.id);
-            const isHovered = hoveredId === persona.id;
-            const color = PERSONA_COLORS[persona.id];
-            const bg = PERSONA_BG[persona.id];
-            const glyph = PERSONA_GLYPHS[persona.id];
-
-            return (
-              <button
-                key={persona.id}
-                onClick={() => toggle(persona.id)}
-                onMouseEnter={() => setHoveredId(persona.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                style={{
-                  background: isSelected ? bg : "var(--ft-surface, rgba(255,255,255,0.03))",
-                  border: `1px solid ${isSelected ? color : "var(--ft-border, rgba(255,255,255,0.08))"}`,
-                  borderTop: `2px solid ${isSelected ? color : (isHovered ? color : "var(--ft-border, rgba(255,255,255,0.08))")}`,
-                  borderRadius: 2,
-                  padding: "16px 18px",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "border-color 0.15s, background 0.15s, transform 0.1s",
-                  transform: isHovered && !isSelected ? "translateY(-1px)" : "none",
-                  position: "relative",
-                  outline: "none",
-                }}
-              >
-                {/* Selection indicator */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 10,
-                    right: 12,
-                    width: 16,
-                    height: 16,
-                    border: `1px solid ${isSelected ? color : "var(--ft-border2, rgba(255,255,255,0.12))"}`,
-                    background: isSelected ? color : "transparent",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 10,
-                    color: isSelected ? "#fff" : "transparent",
-                    transition: "all 0.15s",
-                    borderRadius: 1,
-                    flexShrink: 0,
-                  }}
-                >
-                  ✓
-                </div>
-
-                {/* Code badge */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono, monospace)",
-                      fontSize: 16,
-                      color,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {glyph}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono, monospace)",
-                      fontSize: 8,
-                      color: isSelected ? color : "var(--ft-dim, #666)",
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      border: `1px solid ${isSelected ? color : "var(--ft-border, rgba(255,255,255,0.08))"}`,
-                      padding: "1px 5px",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {persona.code}
-                  </span>
-                </div>
-
-                {/* Title */}
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: isSelected ? color : "var(--ft-text, #e8e8e8)",
-                    marginBottom: 4,
-                    letterSpacing: "0.02em",
-                    transition: "color 0.15s",
-                    paddingRight: 20,
-                  }}
-                >
-                  {persona.label}
-                </div>
-
-                {/* Tagline */}
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 9,
-                    color: "var(--ft-dim, #666)",
-                    marginBottom: 12,
-                    letterSpacing: "0.04em",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {persona.tagline}
-                </div>
-
-                {/* Description */}
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 10,
-                    color: "var(--ft-muted, #999)",
-                    lineHeight: 1.65,
-                    marginBottom: 14,
-                  }}
-                >
-                  {persona.description}
-                </div>
-
-                {/* Feature list */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 12 }}>
-                  {persona.highlights.map((h) => (
-                    <div
-                      key={h}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 7,
-                        fontFamily: "var(--font-mono, monospace)",
-                        fontSize: 9,
-                        color: isSelected ? "var(--ft-muted, #999)" : "var(--ft-dim, #666)",
-                        transition: "color 0.15s",
-                      }}
-                    >
-                      <span style={{ color, flexShrink: 0, fontSize: 8 }}>›</span>
-                      {h}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Page count badge */}
-                <div style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 8,
-                  color: isSelected ? color : "var(--ft-dim, #555)",
-                  border: `1px solid ${isSelected ? color + "60" : "rgba(255,255,255,0.06)"}`,
-                  padding: "2px 7px",
-                  letterSpacing: "0.1em",
-                  transition: "all 0.15s",
-                  opacity: 0.85,
-                }}>
-                  {persona.id === "full" ? "ALL" : persona.visibleHrefs.length} {persona.id === "full" ? "PAGES" : persona.visibleHrefs.length === 1 ? "PAGE" : "PAGES"}
-                </div>
-
-                {/* ASCII art (shown when selected) */}
-                {isSelected && (
-                  <pre
-                    style={{
-                      fontFamily: "var(--font-mono, monospace)",
-                      fontSize: 7,
-                      color,
-                      opacity: 0.35,
-                      position: "absolute",
-                      bottom: 10,
-                      right: 12,
-                      margin: 0,
-                      lineHeight: 1.4,
-                      pointerEvents: "none",
-                    }}
-                  >
-                    {ASCII[persona.id]}
-                  </pre>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Insight preview — shown when hovering a persona card */}
-        {hoveredId && (
-          <div
-            style={{
-              width: "100%",
-              maxWidth: 900,
-              marginBottom: 16,
-              background: "var(--ft-surface, rgba(255,255,255,0.03))",
-              border: `1px solid ${PERSONA_COLORS[hoveredId]}44`,
-              borderLeft: `3px solid ${PERSONA_COLORS[hoveredId]}`,
-              padding: "12px 16px",
-            }}
-          >
-            <div style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 8, letterSpacing: "0.14em", color: PERSONA_COLORS[hoveredId], textTransform: "uppercase", marginBottom: 8, fontWeight: 700 }}>
-              {PERSONA_GLYPHS[hoveredId]} {PERSONAS.find(p => p.id === hoveredId)?.label} — What you'll see
+        <div style={{ width: "100%", maxWidth: 640, display: "flex", flexDirection: "column", gap: 32 }}>
+          <header>
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.2em",
+                color: "var(--ft-accent)",
+                textTransform: "uppercase",
+                marginBottom: 8,
+              }}
+            >
+              Setup · 3 questions
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              {PERSONA_INSIGHT_PREVIEWS[hoveredId].map((preview) => (
-                <div key={preview.page} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 9, letterSpacing: "0.12em", color: PERSONA_COLORS[hoveredId], border: `1px solid ${PERSONA_COLORS[hoveredId]}44`, padding: "2px 6px", flexShrink: 0, lineHeight: 1.6, fontWeight: 700 }}>
-                    {preview.page.toUpperCase()}
-                  </span>
-                  <span style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 9, color: "var(--ft-dim, #888)", lineHeight: 1.6 }}>
-                    {preview.msg}
-                  </span>
-                </div>
+            <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
+              Let's shape the app around what you're here to do.
+            </h1>
+            <p style={{ marginTop: 8, color: "var(--ft-dim)", fontSize: 13, lineHeight: 1.5 }}>
+              You can change any of this later in Settings. Skip if you'd rather see everything.
+            </p>
+          </header>
+
+          {/* Q1 */}
+          <Question
+            index={1}
+            label="What do you mostly want to track?"
+            sub="Pick any that apply. If you pick only one, the app will focus on it."
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {TRACK_OPTIONS.map((o) => (
+                <ChoiceRow
+                  key={o.id}
+                  selected={tracks.has(o.id)}
+                  onClick={() => toggleTrack(o.id)}
+                  label={o.label}
+                  sub={o.sub}
+                  ariaLabel={`Track ${o.label}`}
+                />
               ))}
             </div>
-          </div>
-        )}
+          </Question>
 
-        {/* Selection summary + Launch */}
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 900,
-            background: "var(--ft-surface, rgba(255,255,255,0.03))",
-            border: "1px solid var(--ft-border, rgba(255,255,255,0.08))",
-            borderTop: `2px solid ${canLaunch ? "var(--ft-accent, #ef4444)" : "var(--ft-border, rgba(255,255,255,0.08))"}`,
-            padding: "14px 18px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-            flexWrap: "wrap",
-            transition: "border-color 0.12s",
-          }}
-        >
-          <div>
-            {canLaunch ? (
-              <div>
-                <div
-                  style={{
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: 9,
-                    color: "var(--ft-dim, #666)",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    marginBottom: 4,
-                  }}
-                >
-                  Configuring for:
-                </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {selectedPersonas.map((p) => (
-                    <span
-                      key={p.id}
-                      style={{
-                        fontFamily: "var(--font-mono, monospace)",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: PERSONA_COLORS[p.id],
-                        padding: "2px 7px",
-                        border: `1px solid ${PERSONA_COLORS[p.id]}`,
-                        background: PERSONA_BG[p.id],
-                      }}
-                    >
-                      {PERSONA_GLYPHS[p.id]} {p.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  fontFamily: "var(--font-mono, monospace)",
-                  fontSize: 10,
-                  color: "var(--ft-dim, #666)",
-                }}
-              >
-                Select at least one profile to continue.
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={handleLaunch}
-            disabled={!canLaunch || launching}
-            style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              padding: "10px 28px",
-              background: canLaunch
-                ? (launching ? "rgba(239,68,68,0.15)" : "var(--ft-accent, #ef4444)")
-                : "transparent",
-              border: `1px solid ${canLaunch ? "var(--ft-accent, #ef4444)" : "var(--ft-border, rgba(255,255,255,0.08))"}`,
-              color: canLaunch ? "#fff" : "var(--ft-dim, #666)",
-              cursor: canLaunch ? "pointer" : "not-allowed",
-              transition: "all 0.15s",
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              borderRadius: 2,
-            }}
+          {/* Q2 */}
+          <Question
+            index={2}
+            label="Do you plan to connect a bank account?"
+            sub="If no, we'll skip the bank connection prompts and focus on holdings you enter yourself."
           >
-            {launching ? (
-              <>
-                <span
-                  style={{
-                    display: "inline-block",
-                    animation: "spin 1s linear infinite",
-                    fontSize: 12,
-                  }}
-                >
-                  ◌
-                </span>
-                Initializing…
-              </>
-            ) : (
-              <>Initialize Terminal →</>
-            )}
-          </button>
-        </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {BANK_OPTIONS.map((o) => (
+                <PillRow
+                  key={o.id}
+                  selected={bank === o.id}
+                  onClick={() => setBank(o.id)}
+                  label={o.label}
+                  sub={o.sub}
+                  ariaLabel={`Bank plan: ${o.label}`}
+                />
+              ))}
+            </div>
+          </Question>
 
-        {/* Footer */}
-        <div
-          style={{
-            marginTop: 16,
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 9,
-            color: "var(--ft-dim, #555)",
-            textAlign: "center",
-            letterSpacing: "0.06em",
-          }}
-        >
-          Your choice only affects navigation — all data and features remain fully accessible.
-          Change anytime in Settings → Terminal Profile.
+          {/* Q3 */}
+          <Question
+            index={3}
+            label="How much of the app do you want visible?"
+            sub="Focused hides the tools you didn't ask for. Everything shows the full terminal."
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {VISIBILITY_OPTIONS.map((o) => (
+                <ChoiceRow
+                  key={o.id}
+                  selected={visibility === o.id}
+                  onClick={() => setVisibility(o.id)}
+                  label={o.label}
+                  sub={o.sub}
+                  ariaLabel={`Visibility: ${o.label}`}
+                />
+              ))}
+            </div>
+          </Question>
+
+          {/* Continue */}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <button
+              onClick={handleContinue}
+              disabled={submitting}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--ft-accent)",
+                color: "var(--ft-accent)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                padding: "10px 22px",
+                cursor: submitting ? "not-allowed" : "pointer",
+                opacity: submitting ? 0.5 : 1,
+              }}
+            >
+              {submitting ? "Launching…" : "Continue →"}
+            </button>
+          </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────
+
+function Question({ index, label, sub, children }: {
+  index: number;
+  label: string;
+  sub: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.12em",
+            color: "var(--ft-accent)",
+            fontWeight: 700,
+          }}
+        >
+          Q{index}
+        </span>
+        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{label}</h2>
+      </div>
+      <p style={{ margin: "0 0 12px", color: "var(--ft-dim)", fontSize: 12 }}>{sub}</p>
+      {children}
+    </section>
+  );
+}
+
+function ChoiceRow({ selected, onClick, label, sub, ariaLabel }: {
+  selected: boolean;
+  onClick: () => void;
+  label: string;
+  sub: string;
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      aria-label={ariaLabel}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "12px 14px",
+        background: selected ? "color-mix(in srgb, var(--ft-accent) 12%, var(--ft-surface))" : "var(--ft-surface)",
+        border: `1px solid ${selected ? "var(--ft-accent)" : "var(--ft-border)"}`,
+        color: "var(--ft-text)",
+        cursor: "pointer",
+        textAlign: "left",
+        fontFamily: "inherit",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 16,
+          height: 16,
+          border: `1px solid ${selected ? "var(--ft-accent)" : "var(--ft-border2)"}`,
+          background: selected ? "var(--ft-accent)" : "transparent",
+          flexShrink: 0,
+          display: "grid",
+          placeItems: "center",
+          color: "var(--ft-base)",
+          fontSize: 10,
+          fontWeight: 900,
+        }}
+      >
+        {selected ? "×" : ""}
+      </span>
+      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+        <span style={{ fontSize: 11, color: "var(--ft-dim)" }}>{sub}</span>
+      </span>
+    </button>
+  );
+}
+
+function PillRow({ selected, onClick, label, sub, ariaLabel }: {
+  selected: boolean;
+  onClick: () => void;
+  label: string;
+  sub: string;
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      aria-label={ariaLabel}
+      style={{
+        flex: "1 1 180px",
+        minWidth: 160,
+        padding: "12px 14px",
+        background: selected ? "color-mix(in srgb, var(--ft-accent) 12%, var(--ft-surface))" : "var(--ft-surface)",
+        border: `1px solid ${selected ? "var(--ft-accent)" : "var(--ft-border)"}`,
+        color: "var(--ft-text)",
+        cursor: "pointer",
+        textAlign: "left",
+        fontFamily: "inherit",
+      }}
+    >
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 11, color: "var(--ft-dim)" }}>{sub}</div>
+    </button>
   );
 }
