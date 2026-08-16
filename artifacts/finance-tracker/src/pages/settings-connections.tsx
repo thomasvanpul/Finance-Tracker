@@ -27,6 +27,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { HStack, Text, VStack } from "@/components/primitives";
 import { PANEL_STYLE, HEADER_STYLE, ROW, RowLabel, ActionBtn } from "./settings-atoms";
+import { loadPersonaIds, type PersonaId } from "@/lib/persona";
 
 // Providers the user can add through this UI. Multi-field providers
 // list every field they need; the form joins the values as JSON and
@@ -42,20 +43,29 @@ interface CredentialField {
   label: string;
   hint: string;
 }
+// `kind` decides which personas see the provider. Market persona sees
+// only broker/exchange providers — the F1 brief calls this out
+// specifically: a market-persona user must never be pushed to
+// connect a bank. Kind → persona mapping lives in
+// `providersForPersona()` below.
+type ProviderKind = "bank" | "broker" | "exchange";
 interface ProviderMeta {
   id: string;
   label: string;
+  kind: ProviderKind;
   fields: CredentialField[];
 }
 const PROVIDERS: ProviderMeta[] = [
   {
     id: "wise",
     label: "Wise",
+    kind: "bank",
     fields: [{ key: "token", label: "Personal API token", hint: "Wise → Settings → API tokens" }],
   },
   {
     id: "alpaca",
     label: "Alpaca",
+    kind: "broker",
     fields: [
       { key: "keyId",  label: "API Key ID", hint: "Alpaca Dashboard → Your API Keys → Key ID" },
       { key: "secret", label: "API Secret", hint: "Shown once at key creation" },
@@ -64,12 +74,37 @@ const PROVIDERS: ProviderMeta[] = [
   {
     id: "kraken",
     label: "Kraken",
+    kind: "exchange",
     fields: [
       { key: "apiKey",     label: "API Key",     hint: "Kraken → Settings → API" },
       { key: "privateKey", label: "Private Key", hint: "Base64 string shown at key creation" },
     ],
   },
 ];
+
+// Which provider kinds each persona sees. Rules mirror F1's intent:
+//   market  — pure holdings tracker, never a bank.
+//   budget  — spending/transactions; brokers and exchanges are noise.
+//   wealth  — cares about both; net worth needs bank + broker.
+//   social  — split expenses need a bank to settle from; brokers are noise.
+//   full    — everything.
+// Keep this table one function so a future edit sees every rule at once.
+export function providersForPersona(persona: PersonaId): ProviderMeta[] {
+  const kinds: Record<PersonaId, ProviderKind[]> = {
+    market: ["broker", "exchange"],
+    budget: ["bank"],
+    wealth: ["bank", "broker", "exchange"],
+    social: ["bank"],
+    full:   ["bank", "broker", "exchange"],
+  };
+  const allowed = new Set(kinds[persona]);
+  return PROVIDERS.filter((p) => allowed.has(p.kind));
+}
+
+function currentPersona(): PersonaId {
+  const ids = loadPersonaIds();
+  return (ids[0] as PersonaId) ?? "full";
+}
 
 // Compose the credential string. Single-field providers submit the raw
 // value; multi-field providers submit a JSON object keyed by field.key
@@ -253,7 +288,13 @@ function ConnectionRow({ connection }: { connection: Connection }) {
 }
 
 function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
-  const [provider, setProvider] = useState<string>(PROVIDERS[0]?.id ?? "");
+  // Persona-gated provider list. Market users never see banks; budget/
+  // social users never see brokers. `currentPersona()` reads localStorage
+  // synchronously — that mirrors what every other persona reader does
+  // today. If a user changes persona at runtime, this form re-mounts on
+  // its parent expander toggle so no live-update wiring is needed here.
+  const visibleProviders = providersForPersona(currentPersona());
+  const [provider, setProvider] = useState<string>(visibleProviders[0]?.id ?? "");
   const [values, setValues] = useState<Record<string, string>>({});
   const [label, setLabel] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -261,11 +302,16 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
   const createMutation = useCreateConnection();
   const qc = useQueryClient();
 
-  const providerMeta = PROVIDERS.find((p) => p.id === provider) ?? PROVIDERS[0]!;
+  const providerMeta =
+    visibleProviders.find((p) => p.id === provider) ?? visibleProviders[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    if (!providerMeta) {
+      setErrorMessage("No providers available for this persona");
+      return;
+    }
     // Every field must be non-empty. The adapter will validate again
     // (and reject wrong values); this is just to avoid a round-trip
     // for the obvious mistake.
@@ -323,12 +369,12 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
             onChange={(e) => { setProvider(e.target.value); setValues({}); setErrorMessage(null); }}
             style={inputStyle}
           >
-            {PROVIDERS.map((p) => (
+            {visibleProviders.map((p) => (
               <option key={p.id} value={p.id}>{p.label}</option>
             ))}
           </select>
         </div>
-        {providerMeta.fields.map((f) => (
+        {providerMeta?.fields.map((f) => (
           <div key={f.key} style={{ flex: 1, minWidth: 220 }}>
             <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
               {f.label}
@@ -388,7 +434,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
         </div>
       )}
       <Text as="div" mono size={9} letterSpacing="0.04em" color="var(--ft-dim)">
-        Validated against {providerMeta.label} before it is stored. AES-256-GCM at rest.
+        Validated against {providerMeta?.label ?? provider} before it is stored. AES-256-GCM at rest.
         Never returned to this page or anywhere else.
       </Text>
     </form>

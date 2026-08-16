@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { useToast } from "@/hooks/use-toast";
+import { loadPersonaIds, type PersonaId as MobilePersonaId } from "@/lib/persona";
 
 // Mobile settings — configuration, not a financial instrument.
 //
@@ -318,16 +319,24 @@ function ChipButton({ active, onClick, children }: { active: boolean; onClick: (
 // mobile scroll flow.
 
 interface MobileCredentialField { key: string; label: string; hint: string; }
-interface MobileProviderMeta { id: string; label: string; fields: MobileCredentialField[]; }
+type MobileProviderKind = "bank" | "broker" | "exchange";
+interface MobileProviderMeta {
+  id: string;
+  label: string;
+  kind: MobileProviderKind;
+  fields: MobileCredentialField[];
+}
 const MOBILE_PROVIDERS: MobileProviderMeta[] = [
   {
     id: "wise",
     label: "Wise",
+    kind: "bank",
     fields: [{ key: "token", label: "Personal API token", hint: "Wise → Settings → API tokens" }],
   },
   {
     id: "alpaca",
     label: "Alpaca",
+    kind: "broker",
     fields: [
       { key: "keyId",  label: "API Key ID", hint: "Alpaca → Your API Keys" },
       { key: "secret", label: "API Secret", hint: "Shown once at key creation" },
@@ -336,12 +345,29 @@ const MOBILE_PROVIDERS: MobileProviderMeta[] = [
   {
     id: "kraken",
     label: "Kraken",
+    kind: "exchange",
     fields: [
       { key: "apiKey",     label: "API Key",     hint: "Kraken → Settings → API" },
       { key: "privateKey", label: "Private Key", hint: "Base64 shown at key creation" },
     ],
   },
 ];
+
+// Persona → provider-kind filter. Mirrors the desktop rules in
+// settings-connections.tsx. Kept independently so the two files can
+// diverge if the mobile UX ever needs to; if you change one, change
+// the other on purpose, not accidentally.
+function mobileProvidersForPersona(persona: MobilePersonaId): MobileProviderMeta[] {
+  const kinds: Record<MobilePersonaId, MobileProviderKind[]> = {
+    market: ["broker", "exchange"],
+    budget: ["bank"],
+    wealth: ["bank", "broker", "exchange"],
+    social: ["bank"],
+    full:   ["bank", "broker", "exchange"],
+  };
+  const allowed = new Set(kinds[persona]);
+  return MOBILE_PROVIDERS.filter((p) => allowed.has(p.kind));
+}
 
 function composeMobileCredential(fields: MobileCredentialField[], values: Record<string, string>): string {
   if (fields.length === 1) return values[fields[0]!.key] ?? "";
@@ -533,7 +559,9 @@ function MobileConnectionRow({ connection }: { connection: Connection }) {
 }
 
 function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
-  const [provider, setProvider] = useState<string>(MOBILE_PROVIDERS[0]?.id ?? "");
+  const persona: MobilePersonaId = (loadPersonaIds()[0] as MobilePersonaId) ?? "full";
+  const visibleProviders = mobileProvidersForPersona(persona);
+  const [provider, setProvider] = useState<string>(visibleProviders[0]?.id ?? "");
   const [values, setValues] = useState<Record<string, string>>({});
   const [label, setLabel] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -541,11 +569,15 @@ function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const providerMeta = MOBILE_PROVIDERS.find((p) => p.id === provider) ?? MOBILE_PROVIDERS[0]!;
+  const providerMeta = visibleProviders.find((p) => p.id === provider) ?? visibleProviders[0];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    if (!providerMeta) {
+      setErrorMessage("No providers available for this persona");
+      return;
+    }
     for (const f of providerMeta.fields) {
       if (!values[f.key] || values[f.key]!.trim().length === 0) {
         setErrorMessage(`${f.label} is required`);
@@ -586,12 +618,12 @@ function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
           onChange={(e) => { setProvider(e.target.value); setValues({}); setErrorMessage(null); }}
           style={inputStyle}
         >
-          {MOBILE_PROVIDERS.map((p) => (
+          {visibleProviders.map((p) => (
             <option key={p.id} value={p.id}>{p.label}</option>
           ))}
         </select>
       </VStack>
-      {providerMeta.fields.map((f) => (
+      {providerMeta?.fields.map((f) => (
         <VStack key={f.key} gap={4}>
           <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">{f.label}</Text>
           <input
@@ -637,7 +669,7 @@ function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
         <MobileChip onClick={onDone}>Cancel</MobileChip>
       </HStack>
       <Text as="div" mono size={9} letterSpacing="0.04em" color="var(--ft-dim)">
-        Validated against {providerMeta.label} before storing. AES-256-GCM at rest. Never returned.
+        Validated against {providerMeta?.label ?? provider} before storing. AES-256-GCM at rest. Never returned.
       </Text>
     </form>
   );

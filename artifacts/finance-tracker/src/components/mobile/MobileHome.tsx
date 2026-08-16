@@ -12,6 +12,7 @@ import { MobileEmptyState } from "./mobile-ui";
 import { BlockField } from "@/components/primitives/block-field";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { MarketPane } from "./MarketPane";
+import { loadPersonaIds, type PersonaId } from "@/lib/persona";
 
 // ── Number rule (docs/MOBILE-CONCEPT.md § Approved 13 Aug 2026, second pass) ──
 // Separators always. Two decimals for facts. No decimals for shapes.
@@ -191,13 +192,34 @@ export function MobileHome(_props: MobileHomeProps) {
         <HStack justify="end" align="center" height={44} paddingX={18}>
           <Text as="span" mono size={11} color="var(--ft-dim)">NUMERIS</Text>
         </HStack>
-        <MobileEmptyState
-          label="NO ACCOUNTS"
-          title="Nothing to show yet."
-          description="Numeris reads Wise and Revolut, or you can add an account by hand. Once one is connected the home screen fills in on its own."
-          ctaLabel="Add an account"
-          onCta={() => navigate("/accounts")}
-        />
+        {(() => {
+          // Persona-aware empty state (F1c). A market-persona user
+          // must never be asked to connect a bank — the entire point
+          // of that persona is holdings-only, no bank machinery. So
+          // the CTA sends them to /investments to add a ticker.
+          // Every other persona lands on the connections panel.
+          const persona: PersonaId = (loadPersonaIds()[0] as PersonaId) ?? "full";
+          if (persona === "market") {
+            return (
+              <MobileEmptyState
+                label="NO HOLDINGS"
+                title="Add your first holding."
+                description="Type a ticker and Numeris tracks it from the market. No bank connection needed — enter a few tickers once and the home screen fills in whenever prices move."
+                ctaLabel="Add a holding"
+                onCta={() => navigate("/investments")}
+              />
+            );
+          }
+          return (
+            <MobileEmptyState
+              label="NO ACCOUNTS"
+              title="Nothing to show yet."
+              description="Connect a bank account or add one by hand. Once one is connected the home screen fills in on its own."
+              ctaLabel="Connect an account"
+              onCta={() => navigate("/settings?panel=connections")}
+            />
+          );
+        })()}
       </div>
     );
   }
