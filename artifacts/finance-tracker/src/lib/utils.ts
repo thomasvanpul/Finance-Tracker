@@ -30,6 +30,35 @@ export function formatGbp(value: number): string {
   return formatCurrency(Object.is(value, -0) ? 0 : value, getBaseCurrency());
 }
 
+// Render a nullable base-currency figure. Null (FX unavailable) becomes
+// "—" per the app-wide "no fabricated number" rule. Never fall through
+// to formatGbp(x ?? 0), which reintroduces the fabricated-zero defect
+// that this whole thread of commits is removing. Consumers with access
+// to the native amount should prefer showing that alone rather than
+// this dash — a row that reads "RM 4,120.00 · —" is honest, "£0" is not.
+export function formatGbpOrDash(value: number | null | undefined): string {
+  if (value == null) return "—";
+  return formatGbp(value);
+}
+
+// Sum a nullable series of base-currency figures, returning the total
+// and a count of items excluded because their FX conversion was missing.
+// Callers with a non-zero `unconvertible` count MUST caveat the total —
+// a "net worth" that silently omits an account is its own kind of lie.
+export function sumConvertible<T>(
+  list: readonly T[],
+  get: (item: T) => number | null | undefined,
+): { total: number; unconvertible: number } {
+  let total = 0;
+  let unconvertible = 0;
+  for (const item of list) {
+    const v = get(item);
+    if (v == null) unconvertible += 1;
+    else total += v;
+  }
+  return { total, unconvertible };
+}
+
 export function formatNative(value: number, currency: string): string {
   const v = Object.is(value, -0) ? 0 : value;
   return (

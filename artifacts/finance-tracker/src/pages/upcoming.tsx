@@ -16,7 +16,7 @@ import {
   getGetDashboardQueryKey,
   getListTransactionsQueryKey,
 } from "@workspace/api-client-react";
-import { formatGbp, formatDate } from "@/lib/utils";
+import { formatGbp, formatNative, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,7 +77,7 @@ interface MarkPaidItem {
   nativeAmount: number;
   currency: string;
   accountId: number | null | undefined;
-  gbpEquivalent: number;
+  gbpEquivalent: number | null;
 }
 
 function makeEmptyUpForm(): UpForm {
@@ -104,7 +104,7 @@ const STATUS_COLORS: Record<Status, { bg: string; text: string }> = {
 };
 
 function computeForecast(
-  items: Array<{ status: string; type: string; dueDate: string; gbpEquivalent: number }>,
+  items: Array<{ status: string; type: string; dueDate: string; gbpEquivalent: number | null }>,
   days: number
 ): number {
   const cutoff = new Date();
@@ -114,6 +114,9 @@ function computeForecast(
   return items.reduce((sum, item) => {
     if (item.status !== "pending") return sum;
     if (item.dueDate > cutoffStr) return sum;
+    // Skip items whose FX is unavailable — forecast is under-stated
+    // rather than fabricated. Caveat surfaced on the summary cell.
+    if (item.gbpEquivalent == null) return sum;
     return sum + (item.type === "income" ? item.gbpEquivalent : -item.gbpEquivalent);
   }, 0);
 }
@@ -211,7 +214,7 @@ interface UpcomingRowProps {
     category: string;
     frequency: string;
     type: string;
-    gbpEquivalent: number;
+    gbpEquivalent: number | null;
     status: string;
     nativeAmount: number;
     currency: string;
@@ -269,8 +272,10 @@ function UpcomingRow({
           </HStack>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, paddingLeft: 8, flexShrink: 0 }}>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: item.type === "income" ? "var(--ft-green)" : "var(--ft-red)" }}>
-            {item.type === "income" ? "+" : "-"}{formatGbp(item.gbpEquivalent)}
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: item.gbpEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)" }}>
+            {item.gbpEquivalent == null
+              ? formatNative(Math.abs(item.nativeAmount), item.currency)
+              : `${item.type === "income" ? "+" : "-"}${formatGbp(item.gbpEquivalent)}`}
           </span>
           <HStack gap={2}>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(item.id)}>
@@ -337,8 +342,10 @@ function UpcomingRow({
           {item.type.toUpperCase()}
         </span>
       </div>
-      <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: item.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-        <span className="pnum">{item.type === "income" ? "+" : "-"}{formatGbp(item.gbpEquivalent)}</span>
+      <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: item.gbpEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+        {item.gbpEquivalent == null
+          ? <span>{formatNative(Math.abs(item.nativeAmount), item.currency)}</span>
+          : <span className="pnum">{item.type === "income" ? "+" : "-"}{formatGbp(item.gbpEquivalent)}</span>}
       </div>
       <div style={{ width: 120, minWidth: 120, padding: "5px 12px", borderRight: "1px solid var(--ft-raised)" }}>
         <Select value={item.status} onValueChange={(v) => onStatusChange(item.id, v as Status)}>
@@ -482,6 +489,10 @@ export default function Upcoming() {
       const dayItems = items.filter((i) => i.dueDate === dayStr);
       if (dayItems.length > 0) {
         dayItems.forEach((item) => {
+          // Cashflow projection skips unconvertible items — a
+          // fabricated 0 would still fire the chart bend where none
+          // exists. The bend disappears; the line continues.
+          if (item.gbpEquivalent == null) return;
           running += item.type === "income" ? item.gbpEquivalent : -item.gbpEquivalent;
         });
         const label = d <= 7 ? `+${d}d` : d <= 30 ? `W${Math.ceil(d / 7)}` : `M${d <= 60 ? 2 : 3}`;
@@ -538,7 +549,9 @@ export default function Upcoming() {
       `"${item.category.replace(/"/g, '""')}"`,
       item.frequency,
       item.type,
-      item.gbpEquivalent.toFixed(2),
+      // Empty cell (not "0.00") when FX unavailable — downstream
+      // spreadsheet won't sum unconvertible items into totals.
+      item.gbpEquivalent == null ? "" : item.gbpEquivalent.toFixed(2),
       item.status,
     ].join(","));
     const csv = [header, ...rows].join("\n");
@@ -839,8 +852,10 @@ export default function Upcoming() {
                   <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>
                     {markPaidItem.category}
                   </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto" }}>
-                    <span className="pnum">{markPaidItem.type === "income" ? "+" : "-"}{formatGbp(markPaidItem.gbpEquivalent)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: markPaidItem.gbpEquivalent == null ? "var(--ft-dim)" : markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto" }}>
+                    {markPaidItem.gbpEquivalent == null
+                      ? <span>{formatNative(Math.abs(markPaidItem.nativeAmount), markPaidItem.currency)}</span>
+                      : <span className="pnum">{markPaidItem.type === "income" ? "+" : "-"}{formatGbp(markPaidItem.gbpEquivalent)}</span>}
                   </span>
                 </HStack>
                 {!markPaidItem.accountId && (

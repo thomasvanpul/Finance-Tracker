@@ -700,13 +700,13 @@ export default function HealthScore() {
     if (!monthTxs) return map;
     monthTxs.forEach((tx: Transaction) => {
       const key = tx.category.toLowerCase();
-      map[key] = (map[key] ?? 0) + tx.gbpValue;
+      map[key] = (map[key] ?? 0) + (tx.gbpValue ?? 0);
     });
     return map;
   }, [monthTxs]);
 
   const totalPendingDebt = useMemo(
-    () => (debts ?? []).filter((d: Debt) => d.status === "pending").reduce((s: number, d: Debt) => s + d.gbpEquivalent, 0),
+    () => (debts ?? []).filter((d: Debt) => d.status === "pending").reduce((s: number, d: Debt) => s + (d.gbpEquivalent ?? 0), 0),
     [debts]
   );
 

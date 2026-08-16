@@ -1188,7 +1188,7 @@ export default function Budget() {
     if (!expenseTxs) return map;
     expenseTxs.forEach((tx: Transaction) => {
       const key = tx.category.toLowerCase();
-      map[key] = (map[key] ?? 0) + tx.gbpValue;
+      map[key] = (map[key] ?? 0) + (tx.gbpValue ?? 0);
     });
     return map;
   }, [expenseTxs]);
@@ -1198,7 +1198,7 @@ export default function Budget() {
     if (!lastMonthTxs) return map;
     lastMonthTxs.forEach((tx: Transaction) => {
       const key = tx.category.toLowerCase();
-      map[key] = (map[key] ?? 0) + tx.gbpValue;
+      map[key] = (map[key] ?? 0) + (tx.gbpValue ?? 0);
     });
     return map;
   }, [lastMonthTxs]);
@@ -1272,7 +1272,7 @@ export default function Budget() {
   // ── Total spent ──────────────────────────────────────────────────────────────
 
   const totalSpent = useMemo(
-    () => expenseTxs?.reduce((s: number, tx: Transaction) => s + tx.gbpValue, 0) ?? 0,
+    () => expenseTxs?.reduce((s: number, tx: Transaction) => s + (tx.gbpValue ?? 0), 0) ?? 0,
     [expenseTxs]
   );
 
@@ -1410,7 +1410,7 @@ export default function Budget() {
     lastMonthTxs.forEach((tx: Transaction) => {
       if (!tx.date.startsWith(`${lastMonthYear}-${String(lastMonth).padStart(2, "0")}`)) return;
       const key = tx.category;
-      map[key] = (map[key] ?? 0) + tx.gbpValue;
+      map[key] = (map[key] ?? 0) + (tx.gbpValue ?? 0);
     });
     const candidates: CopyCandidate[] = Object.entries(map)
       .filter(([, total]) => total > 0)

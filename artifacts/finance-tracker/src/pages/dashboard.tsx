@@ -47,7 +47,7 @@ import { COMPACT_WIDGET_COMPONENTS, COMPACT_WIDGET_FULL_WIDTH } from "@/componen
 import { OnboardingWizard } from "@/components/onboarding-wizard";
 import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { formatGbp } from "@/lib/utils";
+import { formatGbp, formatNative } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS } from "@/lib/persona";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
 import { Zap, RefreshCw } from "lucide-react";
@@ -182,13 +182,16 @@ function EmergencyFundWidget() {
   const { data: accounts } = useListAccounts({});
   const { data: allTxs } = useListTransactions({});
 
-  // Sum all accounts as liquid savings (the Account schema has no type field)
+  // Sum all accounts as liquid savings (the Account schema has no type
+  // field). Unconvertible accounts fall out — the dashboard's own
+  // netWorth already reports the honest total; this local sum drives
+  // secondary widgets that consume liquidSavings as an input.
   const liquidSavings = useMemo(() => {
-    return (accounts ?? []).reduce((s, a) => s + a.gbpEquivalent, 0);
+    return (accounts ?? []).reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
   }, [accounts]);
 
   const avgMonthlyExpenses = useMemo(() => {
-    const txs = (allTxs ?? []) as { type: string; gbpValue: number; date: string }[];
+    const txs = (allTxs ?? []) as { type: string; gbpValue: number | null; date: string }[];
     const expenses = txs.filter(t => t.type === "expense");
     if (expenses.length === 0) return 0;
 
@@ -200,7 +203,7 @@ function EmergencyFundWidget() {
       const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const total = expenses
         .filter(t => t.date.startsWith(ym))
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .reduce((s, t) => s + (t.gbpValue ?? 0), 0);
       monthTotals.push(total);
     }
     const nonZero = monthTotals.filter(v => v > 0);
@@ -437,7 +440,7 @@ function CashFlowPreviewPanel() {
   const { data: upcoming } = useListUpcoming();
 
   const startingBalance = useMemo(
-    () => (accounts ?? []).reduce((sum, a) => sum + a.gbpEquivalent, 0),
+    () => (accounts ?? []).reduce((sum, a) => sum + (a.gbpEquivalent ?? 0), 0),
     [accounts]
   );
 
@@ -449,12 +452,14 @@ function CashFlowPreviewPanel() {
       const due = new Date(item.dueDate);
       return due >= now && due <= in30Days && item.status === "pending";
     });
+    // Skip FX-unavailable upcoming items in the 30d roll-up; the
+    // native-column detail views elsewhere still show the row.
     const inflows = items
       .filter(i => i.type === "income")
-      .reduce((s, i) => s + i.gbpEquivalent, 0);
+      .reduce((s, i) => s + (i.gbpEquivalent ?? 0), 0);
     const outflows = items
       .filter(i => i.type === "expense")
-      .reduce((s, i) => s + i.gbpEquivalent, 0);
+      .reduce((s, i) => s + (i.gbpEquivalent ?? 0), 0);
     return { inflows, outflows };
   }, [upcoming]);
 
@@ -512,13 +517,13 @@ function SpendingVelocityPanel() {
   const dayOfMonth = now.getDate();
 
   const avgDailyThis = useMemo(() => {
-    const total = (thisTxs ?? []).reduce((s, t) => s + t.gbpValue, 0);
+    const total = (thisTxs ?? []).reduce((s, t) => s + (t.gbpValue ?? 0), 0);
     return dayOfMonth > 0 ? total / dayOfMonth : 0;
   }, [thisTxs, dayOfMonth]);
 
   const avgDailyPrev = useMemo(() => {
     const daysInPrev = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
-    const total = (prevTxs ?? []).reduce((s, t) => s + t.gbpValue, 0);
+    const total = (prevTxs ?? []).reduce((s, t) => s + (t.gbpValue ?? 0), 0);
     return daysInPrev > 0 ? total / daysInPrev : 0;
   }, [prevTxs]);
 
@@ -531,7 +536,7 @@ function SpendingVelocityPanel() {
       const ds = d.toISOString().slice(0, 10);
       const dayTotal = (thisTxs ?? [])
         .filter(t => t.date === ds)
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .reduce((s, t) => s + (t.gbpValue ?? 0), 0);
       result.push({ label: formatDayLabel(ds), amount: dayTotal });
     }
     return result;
@@ -647,9 +652,11 @@ function AiInsightsStrip() {
   const insight1 = useMemo(() => {
     if (!thisTxs || !prevTxs) return null;
 
-    // Top category this month
+    // Top category this month. Skip unconvertible rows — a "top
+    // category" produced by fabricated zeros would be nonsense.
     const catMap: Record<string, number> = {};
     for (const t of thisTxs) {
+      if (t.gbpValue == null) continue;
       catMap[t.category] = (catMap[t.category] ?? 0) + t.gbpValue;
     }
     const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
@@ -657,6 +664,7 @@ function AiInsightsStrip() {
 
     const prevCatMap: Record<string, number> = {};
     for (const t of prevTxs) {
+      if (t.gbpValue == null) continue;
       prevCatMap[t.category] = (prevCatMap[t.category] ?? 0) + t.gbpValue;
     }
 
@@ -672,6 +680,7 @@ function AiInsightsStrip() {
 
     const dayMap: Record<string, number> = {};
     for (const t of thisTxs) {
+      if (t.gbpValue == null) continue;
       dayMap[t.date] = (dayMap[t.date] ?? 0) + t.gbpValue;
     }
     const best = Object.entries(dayMap).sort((a, b) => b[1] - a[1])[0];
@@ -688,7 +697,9 @@ function AiInsightsStrip() {
       return item.type === "expense" && item.status === "pending" && due >= now && due <= sevenDays;
     });
     if (bills.length === 0) return "No upcoming bills due in the next 7 days.";
-    const total = bills.reduce((s, b) => s + b.gbpEquivalent, 0);
+    // Sum only bills whose FX we have; the sentence still cites all N
+    // bills so nothing vanishes from the count.
+    const total = bills.reduce((s, b) => s + (b.gbpEquivalent ?? 0), 0);
     return `${bills.length} recurring bill${bills.length !== 1 ? "s" : ""} totalling ${formatGbp(total)} due in the next 7 days.`;
   }, [upcoming]);
 
@@ -2068,8 +2079,12 @@ function RecentTransactionsWidgetInline() {
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {tx.description}
           </span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-            {TYPE_PREFIX[tx.type]}{formatGbp(tx.gbpValue)}
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: tx.gbpValue == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+            {/* Native amount alone when FX unavailable; the row still
+                shows its type + description on the left. */}
+            {tx.gbpValue == null
+              ? formatNative(Math.abs(tx.nativeAmount), tx.currency)
+              : `${TYPE_PREFIX[tx.type]}${formatGbp(tx.gbpValue)}`}
           </span>
         </div>
       ))}
@@ -2129,10 +2144,13 @@ function DashboardOverview() {
   const sortedAccounts = useMemo(() =>
     isDemo
       ? DEMO_ACCOUNTS
-      : [...accounts].sort((a, b) => b.gbpEquivalent - a.gbpEquivalent).slice(0, 6),
+      // Unconvertible accounts sort to the bottom (-Infinity) of the
+      // desc sort — the top-6 slice still surfaces the largest real
+      // holdings, without shuffling.
+      : [...accounts].sort((a, b) => (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity)).slice(0, 6),
     [accounts, isDemo]
   );
-  const txRows = useMemo(() => (isDemo ? DEMO_TX_ROWS : recentTxs.slice(0, 6)) as Array<{ id: string | number; description: string; gbpValue: number; type: string; date: string; category?: string }>, [recentTxs, isDemo]);
+  const txRows = useMemo(() => (isDemo ? DEMO_TX_ROWS : recentTxs.slice(0, 6)) as Array<{ id: string | number; description: string; gbpValue: number | null; type: string; date: string; category?: string }>, [recentTxs, isDemo]);
   const upcomingBills = useMemo(() =>
     isDemo
       ? DEMO_BILLS
@@ -2221,8 +2239,10 @@ function DashboardOverview() {
                 <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: isMobile ? 13 : 11, fontWeight: isMobile ? 500 : 400, ...C("var(--ft-text)") }}>{acc.name}</div>
                 <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)"), letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: isMobile ? 2 : 0 }}>{(acc as any).currency ?? ""}</div>
               </div>
-              <span className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.gbpEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
-                {formatGbp(acc.gbpEquivalent)}
+              <span className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.gbpEquivalent == null ? "var(--ft-dim)" : acc.gbpEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
+                {/* "—" for unconvertible accounts; the currency label
+                    above still names the account's own currency. */}
+                {acc.gbpEquivalent == null ? "—" : formatGbp(acc.gbpEquivalent)}
               </span>
             </div>
           ))}
@@ -2261,8 +2281,10 @@ function DashboardOverview() {
                   <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 13, fontWeight: 500, ...C("var(--ft-text)"), marginBottom: 2 }}>{tx.description}</div>
                   <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</div>
                 </div>
-                <span className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(txTypeColor), flexShrink: 0 }}>
-                  {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(Math.abs(tx.gbpValue))}
+                <span className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(tx.gbpValue == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0 }}>
+                  {tx.gbpValue == null
+                    ? "—"
+                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatGbp(Math.abs(tx.gbpValue))}`}
                 </span>
               </div>
             );
@@ -2272,8 +2294,10 @@ function DashboardOverview() {
                   <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 10, ...C("var(--ft-text)") }}>{tx.description}</span>
                   <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</span>
                 </VStack>
-                <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
-                  {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}{formatGbp(Math.abs(tx.gbpValue))}
+                <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(tx.gbpValue == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
+                  {tx.gbpValue == null
+                    ? "—"
+                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatGbp(Math.abs(tx.gbpValue))}`}
                 </span>
               </div>
             );
@@ -2592,8 +2616,10 @@ export default function Dashboard() {
     const savingsRate = dashData.thisMonth?.savingsRate ?? 0;
     const netSavings = dashData.thisMonth?.netSavings ?? 0;
 
-    // MoM delta: compare current month expenses to previous
-    const prevExpenses = (prevMonthTxs ?? []).reduce((s, t) => s + t.gbpValue, 0);
+    // MoM delta: compare current month expenses to previous. Skip
+    // unconvertible rows from the prev-month sum; if enough rows drop
+    // out the delta is understated, which the KPI accepts silently.
+    const prevExpenses = (prevMonthTxs ?? []).reduce((s, t) => s + (t.gbpValue ?? 0), 0);
     const momDelta = prevExpenses > 0 ? ((expenses - prevExpenses) / prevExpenses) * 100 : 0;
     const momSign = momDelta >= 0 ? "+" : "";
     const momColor = momDelta > 5 ? "var(--ft-red)" : momDelta < -5 ? "var(--ft-green)" : "var(--ft-amber)";
@@ -2654,6 +2680,7 @@ export default function Dashboard() {
 
     const catMap: Record<string, number> = {};
     for (const t of (monthTxs ?? [])) {
+      if (t.gbpValue == null) continue;
       catMap[t.category] = (catMap[t.category] ?? 0) + t.gbpValue;
     }
     const topCategories = Object.entries(catMap)

@@ -557,8 +557,11 @@ export default function Profile() {
 
   const txList = transactions ?? [];
   const txCount = txList.length;
-  const totalVolume = txList.reduce((sum, t) => sum + Math.abs(t.gbpValue), 0);
-  const largestTx = txList.reduce<number>((max, t) => Math.max(max, Math.abs(t.gbpValue)), 0);
+  // Profile stats skip unconvertible transactions; "total volume"
+  // and "largest" only sum figures the FX layer could actually
+  // stand behind.
+  const totalVolume = txList.reduce((sum, t) => sum + (t.gbpValue == null ? 0 : Math.abs(t.gbpValue)), 0);
+  const largestTx = txList.reduce<number>((max, t) => t.gbpValue == null ? max : Math.max(max, Math.abs(t.gbpValue)), 0);
 
   const categoryMap: Record<string, number> = {};
   for (const t of txList) {
@@ -582,9 +585,12 @@ export default function Profile() {
 
   const hundredthTx = txList.length >= 100 ? sortedByDate[99] : null;
 
-  const largestTxEntry = txList.reduce<typeof txList[0] | null>((best, t) =>
-    best === null || Math.abs(t.gbpValue) > Math.abs(best.gbpValue) ? t : best, null
-  );
+  const largestTxEntry = txList.reduce<typeof txList[0] | null>((best, t) => {
+    // Only compare rows that have a GBP value to compare.
+    if (t.gbpValue == null) return best;
+    if (best === null || best.gbpValue == null) return t;
+    return Math.abs(t.gbpValue) > Math.abs(best.gbpValue) ? t : best;
+  }, null);
 
   function handleSignOut() {
     authClient.signOut().then(() => {
@@ -775,7 +781,7 @@ export default function Profile() {
     });
   }
 
-  if (largestTxEntry) {
+  if (largestTxEntry && largestTxEntry.gbpValue != null) {
     timelineItems.push({
       date: new Date(largestTxEntry.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
       label: `Largest transaction — ${formatGbp(Math.abs(largestTxEntry.gbpValue))}`,

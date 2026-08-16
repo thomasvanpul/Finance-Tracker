@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { useListTransactions, useListUpcoming, useListSubscriptions, useListDebts, useListGoals } from "@workspace/api-client-react";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
-import { formatGbp } from "@/lib/utils";
+import { formatGbp, formatNative } from "@/lib/utils";
 import type { Transaction, UpcomingItem, Subscription } from "@workspace/api-client-react";
 import { Download, Upload, Plus, Bell, BellOff, Calendar, X, Check, AlignJustify, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -710,8 +710,10 @@ function DayTxRow({ tx }: DayTxRowProps) {
         <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description}</div>
         {tx.category && <div style={{ fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>{tx.category}</div>}
       </div>
-      <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
-        {tx.type === "income" ? "+" : "−"}{formatGbp(tx.gbpValue)}
+      <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: tx.gbpValue == null ? "var(--ft-dim)" : tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+        {tx.gbpValue == null
+          ? "—"
+          : `${tx.type === "income" ? "+" : "−"}${formatGbp(tx.gbpValue)}`}
       </span>
     </div>
   );
@@ -741,8 +743,8 @@ function DayBillRow({ item }: DayBillRowProps) {
         <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.description}</div>
         <div style={{ fontSize: 8, color: item.status === "paid" ? "var(--ft-green)" : "var(--ft-amber)", marginTop: 1 }}>{item.status?.toUpperCase()}</div>
       </div>
-      <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: item.status === "paid" ? "var(--ft-green)" : "var(--ft-amber)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
-        {formatGbp(item.gbpEquivalent)}
+      <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: item.gbpEquivalent == null ? "var(--ft-dim)" : item.status === "paid" ? "var(--ft-green)" : "var(--ft-amber)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+        {item.gbpEquivalent == null ? "—" : formatGbp(item.gbpEquivalent)}
       </span>
     </div>
   );
@@ -811,7 +813,7 @@ function SummaryStripCell({ label, value, color, sub, accentBorderColor }: Summa
 
 // ─── AgendaEvent type (used by AgendaView + AgendaEventRow) ──────────────────
 
-type AgendaEvent = { date: string; type: "tx" | "bill" | "sub" | "custom" | "feed" | "debt" | "goal"; label: string; amount?: number; amountColor?: string; color?: string };
+type AgendaEvent = { date: string; type: "tx" | "bill" | "sub" | "custom" | "feed" | "debt" | "goal"; label: string; amount?: number | null; amountColor?: string; color?: string };
 
 // ─── AgendaEventRow sub-component ────────────────────────────────────────────
 
@@ -845,8 +847,8 @@ function AgendaEventRow({ ev, typeBadgeColors, typeLabels }: AgendaEventRowProps
       </span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.label}</span>
       {ev.amount !== undefined && (
-        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: ev.amountColor ?? "var(--ft-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
-          {formatGbp(ev.amount)}
+        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: ev.amount == null ? "var(--ft-dim)" : ev.amountColor ?? "var(--ft-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+          {ev.amount == null ? "—" : formatGbp(ev.amount)}
         </span>
       )}
     </div>
@@ -1720,8 +1722,8 @@ function SummaryStrip({ transactions, upcoming, year, month }: { transactions: T
   const prefix = toYYYYMM(year, month);
   const monthTx = transactions.filter((t) => t.date.startsWith(prefix));
   const monthBills = upcoming.filter((u) => u.dueDate.startsWith(prefix));
-  const income = monthTx.filter((t) => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-  const expenses = monthTx.filter((t) => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+  const income = monthTx.filter((t) => t.type === "income").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+  const expenses = monthTx.filter((t) => t.type === "expense").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
   const net = income - expenses;
   const billsPaid = monthBills.filter((u) => u.status === "paid").length;
   const billsPending = monthBills.filter((u) => u.status === "pending").length;
@@ -1790,6 +1792,9 @@ export default function CalendarPage() {
     for (const tx of transactions) {
       const d = ensureDay(tx.date);
       d.transactions.push(tx);
+      // Row still appears on the calendar day; the day-total just
+      // excludes unconvertible rows rather than fabricating a 0.
+      if (tx.gbpValue == null) continue;
       if (tx.type === "income") d.totalIncome += tx.gbpValue;
       else if (tx.type === "expense") d.totalExpenses += tx.gbpValue;
       d.net = d.totalIncome - d.totalExpenses;
@@ -1903,8 +1908,14 @@ export default function CalendarPage() {
   function handleExport() {
     const allEvs: Array<{ date: string; title: string; description?: string }> = [
       ...customEvents.map((e) => ({ date: e.date, title: e.title, description: e.description })),
-      ...transactions.map((t) => ({ date: t.date, title: `${t.type === "income" ? "+" : "-"}${formatGbp(t.gbpValue)} ${t.description}` })),
-      ...upcoming.map((u) => ({ date: u.dueDate, title: `Bill: ${u.description} ${formatGbp(u.gbpEquivalent)}` })),
+      // Calendar export: show native amount if GBP conversion missing
+      // rather than a bare title with no figure.
+      ...transactions.map((t) => ({ date: t.date, title: t.gbpValue == null
+        ? `${formatNative(Math.abs(t.nativeAmount), t.currency)} ${t.description}`
+        : `${t.type === "income" ? "+" : "-"}${formatGbp(t.gbpValue)} ${t.description}` })),
+      ...upcoming.map((u) => ({ date: u.dueDate, title: u.gbpEquivalent == null
+        ? `Bill: ${u.description} ${formatNative(Math.abs(u.nativeAmount), u.currency)}`
+        : `Bill: ${u.description} ${formatGbp(u.gbpEquivalent)}` })),
     ];
     for (const feed of PREDEFINED_FEEDS) {
       if (enabledFeeds.includes(feed.id)) allEvs.push(...feed.events);

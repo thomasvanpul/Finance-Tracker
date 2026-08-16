@@ -1056,7 +1056,7 @@ function MemberCard({
   onDelete,
 }: {
   member: FamilyMember;
-  accounts: { id: number; name: string; currency: string; balance: number; gbpEquivalent: number }[];
+  accounts: { id: number; name: string; currency: string; balance: number; gbpEquivalent: number | null }[];
   monthlyIncome: number;
   onEdit: () => void;
   onDelete: () => void;
@@ -1064,7 +1064,7 @@ function MemberCard({
   const [hovered, setHovered] = useState<boolean>(false);
   const linkedAccounts = accounts.filter((a) => member.accountIds.includes(String(a.id)));
   const memberIncome = (member.incomeShare / 100) * monthlyIncome;
-  const linkedBalance = linkedAccounts.reduce((s, a) => s + a.gbpEquivalent, 0);
+  const linkedBalance = linkedAccounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
   const accentHex = roleCssVar(member.color);
 
   const statRow = (label: string, value: React.ReactNode) => (

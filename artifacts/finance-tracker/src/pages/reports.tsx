@@ -982,6 +982,9 @@ export default function Reports() {
     let inc = 0;
     let exp = 0;
     for (const tx of list) {
+      // Skip FX-unavailable rows; the reports view is a summary, not a
+      // ledger — dropping the row is truer than summing 0.
+      if (tx.gbpValue == null) continue;
       if (tx.type === "income") inc += tx.gbpValue;
       else if (tx.type === "expense") exp += tx.gbpValue;
     }
@@ -993,6 +996,7 @@ export default function Reports() {
     const list = priorTxData ?? [];
     let inc = 0, exp = 0;
     for (const tx of list) {
+      if (tx.gbpValue == null) continue;
       if (tx.type === "income") inc += tx.gbpValue;
       else if (tx.type === "expense") exp += tx.gbpValue;
     }
@@ -1009,6 +1013,7 @@ export default function Reports() {
     const expenseTxs = txList.filter((tx) => tx.type === "expense");
     const totals: Record<string, number> = {};
     for (const tx of expenseTxs) {
+      if (tx.gbpValue == null) continue;
       const cat = tx.category || "Other";
       totals[cat] = (totals[cat] ?? 0) + tx.gbpValue;
     }
@@ -1028,7 +1033,12 @@ export default function Reports() {
   }, [dashboard, dateFrom, dateTo]);
 
   const biggestTxs = useMemo(() => {
-    return [...txList].sort((a, b) => b.gbpValue - a.gbpValue).slice(0, 10);
+    // "Biggest transactions" requires a GBP value to compare across
+    // currencies; unconvertible rows fall out rather than sort as £0.
+    return [...txList]
+      .filter((tx): tx is typeof tx & { gbpValue: number } => tx.gbpValue != null)
+      .sort((a, b) => b.gbpValue - a.gbpValue)
+      .slice(0, 10);
   }, [txList]);
 
   const kpiTiles: KpiTile[] = [
@@ -1096,6 +1106,7 @@ export default function Reports() {
     const sums = [0, 0, 0, 0, 0, 0, 0];
     for (const tx of txList) {
       if (tx.type !== "expense") continue;
+      if (tx.gbpValue == null) continue;
       const d = new Date(tx.date);
       let dow = d.getDay();
       dow = dow === 0 ? 6 : dow - 1;
@@ -1121,6 +1132,7 @@ export default function Reports() {
           if (tx.type !== "expense") continue;
           if ((tx.category || "Other") !== cat) continue;
           if (tx.date.slice(0, 7) !== m.month) continue;
+          if (tx.gbpValue == null) continue;
           sum += tx.gbpValue;
         }
         return sum;

@@ -384,6 +384,7 @@ export default function AiCoach() {
     const map = new Map<string, number>();
     for (const tx of transactions) {
       if (!tx.date.startsWith(thisMonth) || tx.type !== "expense") continue;
+      if (tx.gbpValue == null) continue;
       map.set(tx.category, (map.get(tx.category) ?? 0) + tx.gbpValue);
     }
     return [...map.entries()]
@@ -396,6 +397,7 @@ export default function AiCoach() {
     const map = new Map<string, number>();
     for (const tx of transactions) {
       if (!tx.date.startsWith(lastMonth) || tx.type !== "expense") continue;
+      if (tx.gbpValue == null) continue;
       map.set(tx.category, (map.get(tx.category) ?? 0) + tx.gbpValue);
     }
     return [...map.entries()]
@@ -489,6 +491,7 @@ export default function AiCoach() {
       const spendMap = new Map<string, number>();
       for (const tx of transactions) {
         if (tx.type !== "expense" || !tx.date.startsWith(thisM)) continue;
+        if (tx.gbpValue == null) continue;
         spendMap.set(tx.category, (spendMap.get(tx.category) ?? 0) + tx.gbpValue);
       }
       for (const b of budgets as Array<{ id: number; category: string; monthlyLimit: number }>) {

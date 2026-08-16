@@ -105,7 +105,9 @@ function buildDecisions(
 ): Decision[] {
   const out: Decision[] = [];
 
-  const totalCashGbp = accounts.reduce((s, a) => s + a.gbpEquivalent, 0);
+  // Decision engine works off GBP totals; unconvertible accounts are
+  // excluded — a fabricated 0 would fire spurious "idle cash" alerts.
+  const totalCashGbp = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
   const portfolioGbp = summary?.totalValueGbp ?? 0;
   const totalWealth = totalCashGbp + portfolioGbp;
   const cashRatio = totalWealth > 0 ? totalCashGbp / totalWealth : 1;
@@ -126,7 +128,9 @@ function buildDecisions(
   }
 
   accounts.forEach((a) => {
-    if (a.gbpEquivalent > 10000) {
+    // Idle-cash alert needs a GBP figure; skip accounts whose FX
+    // conversion is unavailable rather than risk a fabricated £0 trip.
+    if (a.gbpEquivalent != null && a.gbpEquivalent > 10000) {
       const annualCost = a.gbpEquivalent * 0.045;
       out.push({
         id: `idle-account-${a.id}`,
@@ -277,6 +281,7 @@ function buildDecisions(
   );
   const spendByCategory: Record<string, number> = {};
   thisMonthTx.forEach((t) => {
+    if (t.gbpValue == null) return;
     spendByCategory[t.category] = (spendByCategory[t.category] ?? 0) + Math.abs(t.gbpValue);
   });
 
@@ -297,7 +302,10 @@ function buildDecisions(
     }
   });
 
-  const debtsPending = debts.filter((d) => d.direction === "they_owe_me" && d.status === "pending");
+  // Debt roll-ups skip unconvertible entries and reduce their `count`
+  // sentences accordingly; a per-debt line item that reads "£0" would
+  // look like a settled or nil debt when it's neither.
+  const debtsPending = debts.filter((d) => d.direction === "they_owe_me" && d.status === "pending" && d.gbpEquivalent != null) as Array<Debt & { gbpEquivalent: number }>;
   const totalOwedToMe = debtsPending.reduce((s, d) => s + d.gbpEquivalent, 0);
   if (debtsPending.length > 0 && totalOwedToMe > 50) {
     const oldest = debtsPending.sort((a, b) => a.date.localeCompare(b.date))[0];
@@ -313,7 +321,7 @@ function buildDecisions(
     });
   }
 
-  const myDebts = debts.filter((d) => d.direction === "i_owe_them" && d.status === "pending");
+  const myDebts = debts.filter((d) => d.direction === "i_owe_them" && d.status === "pending" && d.gbpEquivalent != null) as Array<Debt & { gbpEquivalent: number }>;
   const totalIOwe = myDebts.reduce((s, d) => s + d.gbpEquivalent, 0);
   if (myDebts.length > 0 && totalIOwe > 100) {
     out.push({

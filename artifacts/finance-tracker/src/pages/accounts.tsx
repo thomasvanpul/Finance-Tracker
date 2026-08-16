@@ -526,6 +526,10 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
     acctMonthlyTxs
       .filter((t) => t.type === "expense")
       .forEach((t) => {
+        // Transactions whose FX conversion is unavailable are excluded
+        // from category totals — a fabricated 0 would silently under-
+        // report the category, worse than omitting the row.
+        if (t.gbpValue == null) return;
         const cat = t.category || "Uncategorised";
         map.set(cat, (map.get(cat) ?? 0) + Math.abs(t.gbpValue));
       });
@@ -915,7 +919,7 @@ interface RecentTxRowProps {
     category: string;
     nativeAmount: number;
     currency: string;
-    gbpValue: number;
+    gbpValue: number | null;
   };
 }
 
@@ -1277,7 +1281,7 @@ interface AccountRowProps {
     name: string;
     currency: string;
     balance: number;
-    gbpEquivalent: number;
+    gbpEquivalent: number | null;
     isWiseLinked: boolean;
     lastSyncedAt?: string | null;
   };
@@ -1468,12 +1472,14 @@ function AccountTableRow({
           )}
         </div>
 
-        {/* Base currency balance */}
+        {/* Base currency balance — "—" (not £0) when FX is missing.
+            The native balance column above still shows the honest
+            figure in the account's own currency. */}
         <div
           className="pnum"
-          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.gbpEquivalent < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...privacyStyle }}
+          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.gbpEquivalent == null ? "var(--ft-dim)" : account.gbpEquivalent < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...privacyStyle }}
         >
-          {formatGbp(account.gbpEquivalent)}
+          {account.gbpEquivalent == null ? "—" : formatGbp(account.gbpEquivalent)}
         </div>
 
         {/* Health */}
@@ -1592,7 +1598,7 @@ function MonthlySummaryCell({ label, value, color }: MonthlySummaryCellProps) {
 // ─── CSV export ──────────────────────────────────────────────────────────────
 
 function exportAccountsCSV(
-  accounts: { name: string; currency: string; balance: number; gbpEquivalent: number; isWiseLinked: boolean }[],
+  accounts: { name: string; currency: string; balance: number; gbpEquivalent: number | null; isWiseLinked: boolean }[],
   meta: Record<string, AccountMeta>
 ) {
   const rows = [
@@ -1603,7 +1609,10 @@ function exportAccountsCSV(
         a.name,
         a.currency,
         a.balance.toFixed(2),
-        a.gbpEquivalent.toFixed(2),
+        // Empty cell — not "0.00" — when the FX conversion was not
+        // available. A downstream spreadsheet reading "0.00" would sum
+        // it into user totals; blank keeps the accounting honest.
+        a.gbpEquivalent == null ? "" : a.gbpEquivalent.toFixed(2),
         a.isWiseLinked ? "Wise" : "Manual",
         m?.targetBalance != null ? m.targetBalance.toFixed(2) : "",
         m?.apy != null ? m.apy.toFixed(2) : "",
@@ -1695,6 +1704,9 @@ export default function Accounts() {
   const monthlyFlow = useMemo(() => {
     const monthMap = new Map<string, { income: number; expense: number }>();
     (healthTxs ?? []).forEach((tx) => {
+      // Skip FX-unavailable transactions from the monthly cash-flow
+      // roll-up; a fabricated 0 would silently under-report the month.
+      if (tx.gbpValue == null) return;
       const month = tx.date.slice(0, 7);
       const cur = monthMap.get(month) ?? { income: 0, expense: 0 };
       if (tx.type === "income") cur.income += tx.gbpValue;
@@ -1719,6 +1731,7 @@ export default function Accounts() {
     (healthTxs ?? [])
       .filter((tx) => tx.type === "expense" && tx.date.startsWith(thisMonth))
       .forEach((tx) => {
+        if (tx.gbpValue == null) return;
         const cat = tx.category || "Other";
         map.set(cat, (map.get(cat) ?? 0) + Math.abs(tx.gbpValue));
       });
@@ -1749,8 +1762,11 @@ export default function Accounts() {
       const q = accountSearch.toLowerCase();
       list = list.filter((a) => a.name.toLowerCase().includes(q) || a.currency.toLowerCase().includes(q));
     }
-    if (accountSort === "balance-high") list = [...list].sort((a, b) => b.gbpEquivalent - a.gbpEquivalent);
-    else if (accountSort === "balance-low") list = [...list].sort((a, b) => a.gbpEquivalent - b.gbpEquivalent);
+    // Sort by GBP equivalent — unconvertible accounts sink to the
+    // bottom of a descending sort, top of an ascending one, so a
+    // rate-outage doesn't shuffle real balances.
+    if (accountSort === "balance-high") list = [...list].sort((a, b) => (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity));
+    else if (accountSort === "balance-low") list = [...list].sort((a, b) => (a.gbpEquivalent ?? Infinity) - (b.gbpEquivalent ?? Infinity));
     else if (accountSort === "name-az") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
     else if (accountSort === "name-za") list = [...list].sort((a, b) => b.name.localeCompare(a.name));
     else if (accountSort === "currency") list = [...list].sort((a, b) => a.currency.localeCompare(b.currency));
@@ -2107,7 +2123,9 @@ export default function Accounts() {
       {(() => {
         const pid = loadPersonaIds()[0];
         if (!pid || pid === "full") return null;
-        const totalCash = (accounts ?? []).reduce((s, a) => s + a.gbpEquivalent, 0);
+        // Persona strip totals skip unconvertible accounts; message
+        // just reads a slightly lower figure rather than lying via 0.
+        const totalCash = (accounts ?? []).reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
         const portfolio = (dashData as { portfolio?: { totalValueGbp?: number } } | undefined)?.portfolio?.totalValueGbp ?? 0;
         const msgs: Record<string, string | null> = {
           market:  totalCash > 0 ? `${formatGbp(totalCash)} cash available — allocate surplus to investment positions via Portfolio.` : null,
@@ -2175,7 +2193,11 @@ export default function Accounts() {
 
       {/* ── KPI Bar ─────────────────────────────────────────────── */}
       {(accounts?.length ?? 0) > 0 && (() => {
-        const totalCash = accounts!.reduce((s, a) => s + a.gbpEquivalent, 0);
+        // KPI bar total: skip unconvertible accounts. If any exist,
+        // the KPI cell below appends " · N NO FX" so the total isn't
+        // silently lower than the underlying holdings.
+        const totalCash = accounts!.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+        const unconvertibleCount = accounts!.filter(a => a.gbpEquivalent == null).length;
         const currencies = [...new Set(accounts!.map(a => a.currency))] as string[];
         const lastSync = accounts!
           .map(a => a.lastSyncedAt)
@@ -2215,10 +2237,13 @@ export default function Accounts() {
           return withTx.sort((a, b) => b.lastTxDate.localeCompare(a.lastTxDate))[0];
         })();
 
-        // Currency breakdown for allocation bar
+        // Currency breakdown for allocation bar — per-currency sum
+        // skips unconvertible entries. A bar segment that's short
+        // because its rate is missing is a truer picture than one
+        // that appears zero-width.
         const currencyTotals = currencies.map(c => ({
           currency: c,
-          total: accounts!.filter(a => a.currency === c).reduce((s, a) => s + a.gbpEquivalent, 0),
+          total: accounts!.filter(a => a.currency === c).reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0),
         })).sort((a, b) => b.total - a.total);
 
         return (
@@ -2233,12 +2258,14 @@ export default function Accounts() {
                 label="Total Cash"
                 value={<span className="pnum" style={{ color: totalCash < 0 ? "var(--ft-red)" : "var(--ft-green)" }}>{formatGbp(totalCash)}</span>}
                 sub={
-                  nwDelta !== null
-                    ? <span style={{ color: nwDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                        {nwDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        <span className="pnum">{nwDelta >= 0 ? "+" : ""}{formatGbp(nwDelta)}</span> vs yesterday
-                      </span>
-                    : <span style={{ color: "var(--ft-dim)" }}>{accounts!.length} account{accounts!.length !== 1 ? "s" : ""}</span>
+                  unconvertibleCount > 0
+                    ? <span style={{ color: "var(--ft-amber)" }}>{unconvertibleCount} account{unconvertibleCount !== 1 ? "s" : ""} without FX — not in total</span>
+                    : nwDelta !== null
+                      ? <span style={{ color: nwDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                          {nwDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          <span className="pnum">{nwDelta >= 0 ? "+" : ""}{formatGbp(nwDelta)}</span> vs yesterday
+                        </span>
+                      : <span style={{ color: "var(--ft-dim)" }}>{accounts!.length} account{accounts!.length !== 1 ? "s" : ""}</span>
                 }
                 accent="var(--ft-green)"
                 icon={<DollarSign className="w-3.5 h-3.5" />}
@@ -2350,8 +2377,13 @@ export default function Accounts() {
                     <div style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", marginBottom: 6 }}>
                       Account Allocation
                     </div>
+                    {/* Allocation bar and list — unconvertible accounts
+                        omitted from the visualisation; they can't be
+                        expressed as a % of a GBP total they don't have
+                        a rate for. The KPI cell above surfaces the count. */}
                     <div style={{ display: "flex", height: 4, borderRadius: 0, overflow: "hidden", gap: 1, marginBottom: 5 }}>
                       {[...accounts!]
+                        .filter((a): a is typeof a & { gbpEquivalent: number } => a.gbpEquivalent != null)
                         .sort((a, b) => b.gbpEquivalent - a.gbpEquivalent)
                         .map((a, i) => {
                           const pct = totalCash > 0 ? (a.gbpEquivalent / totalCash) * 100 : 0;
@@ -2362,6 +2394,7 @@ export default function Accounts() {
                     </div>
                     <VStack gap={2}>
                       {[...accounts!]
+                        .filter((a): a is typeof a & { gbpEquivalent: number } => a.gbpEquivalent != null)
                         .sort((a, b) => b.gbpEquivalent - a.gbpEquivalent)
                         .slice(0, 5)
                         .map((a, i) => {
@@ -2383,11 +2416,13 @@ export default function Accounts() {
                     </VStack>
                   </div>
 
-                  {/* Interest projection */}
+                  {/* Interest projection — needs GBP figures to
+                      project. An account whose FX is missing is
+                      excluded rather than projected as £0/month. */}
                   {(() => {
-                    const apyAccounts = accounts!.filter((a) => {
+                    const apyAccounts = accounts!.filter((a): a is typeof a & { gbpEquivalent: number } => {
                       const m = accountMeta[a.name];
-                      return m?.apy && m.apy > 0 && a.gbpEquivalent > 0;
+                      return !!(m?.apy && m.apy > 0 && a.gbpEquivalent != null && a.gbpEquivalent > 0);
                     });
                     if (apyAccounts.length === 0) return null;
                     const totalMonthly = apyAccounts.reduce((s, a) => {
@@ -2774,8 +2809,9 @@ export default function Accounts() {
                   ...privacyStyle,
                 }}
               >
+                {/* Table footer total: skips unconvertible entries. */}
                 {formatGbp(
-                  filteredAccounts.reduce((sum, a) => sum + a.gbpEquivalent, 0)
+                  filteredAccounts.reduce((sum, a) => sum + (a.gbpEquivalent ?? 0), 0)
                 )}
               </div>
               <div
@@ -2798,8 +2834,11 @@ export default function Accounts() {
 
       {/* ── Net Owing Strip ─────────────────────────────────────── */}
       {(accounts?.length ?? 0) > 0 && (() => {
-        const overdraftAccounts = accounts!.filter(a => a.gbpEquivalent < 0);
-        const positiveAccounts = accounts!.filter(a => a.gbpEquivalent >= 0);
+        // Balance sheet: sign requires a GBP value, so unconvertible
+        // accounts fall into neither the overdraft nor the assets side
+        // of this strip. The KPI cell above surfaces the count.
+        const overdraftAccounts = accounts!.filter((a): a is typeof a & { gbpEquivalent: number } => a.gbpEquivalent != null && a.gbpEquivalent < 0);
+        const positiveAccounts = accounts!.filter((a): a is typeof a & { gbpEquivalent: number } => a.gbpEquivalent != null && a.gbpEquivalent >= 0);
         const totalOwed = overdraftAccounts.reduce((s, a) => s + Math.abs(a.gbpEquivalent), 0);
         const totalAssets = positiveAccounts.reduce((s, a) => s + a.gbpEquivalent, 0);
         return (

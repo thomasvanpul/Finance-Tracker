@@ -705,8 +705,13 @@ export default function Subscriptions() {
   // ── Detection ──
   const detected = useMemo((): DetectedCandidate[] => {
     if (!txs) return [];
+    // Recurring detection needs a GBP amount to spot pattern amounts;
+    // FX-unavailable rows are excluded from the input entirely rather
+    // than skewing the detector.
     return detectRecurring(
-      txs.map(t => ({ description: t.description, date: t.date, gbpValue: t.gbpValue, type: t.type })),
+      txs
+        .filter((t): t is typeof t & { gbpValue: number } => t.gbpValue != null)
+        .map(t => ({ description: t.description, date: t.date, gbpValue: t.gbpValue, type: t.type })),
       dismissed,
     );
   }, [txs, dismissed]);
@@ -721,13 +726,15 @@ export default function Subscriptions() {
     const map = new Map<number, { date: string; amount: number; prevAmount: number | null }>();
     if (!txs) return map;
     for (const sub of subs) {
+      // "Last tx" for a subscription needs a GBP amount to display;
+      // rows without a conversion don't count as the last known charge.
       const matches = txs
-        .filter(t => t.description.toLowerCase().includes(sub.name.toLowerCase()) && t.type === "expense")
+        .filter(t => t.description.toLowerCase().includes(sub.name.toLowerCase()) && t.type === "expense" && t.gbpValue != null)
         .sort((a, b) => b.date.localeCompare(a.date));
       if (matches.length > 0) {
         map.set(sub.id, {
           date: matches[0].date,
-          amount: matches[0].gbpValue,
+          amount: matches[0].gbpValue!,
           prevAmount: matches.length > 1 ? matches[1].gbpValue : null,
         });
       }

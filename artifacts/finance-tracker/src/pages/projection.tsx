@@ -254,8 +254,8 @@ export default function Projection() {
   const { startNetWorth, avgMonthlySavings } = useMemo(() => {
     const nw = dash?.netWorth ?? 0;
     if (!recentTxs || recentTxs.length === 0) return { startNetWorth: nw, avgMonthlySavings: 500 };
-    const income = recentTxs.filter(t => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-    const expenses = recentTxs.filter(t => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+    const income = recentTxs.filter(t => t.type === "income").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+    const expenses = recentTxs.filter(t => t.type === "expense").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
     return { startNetWorth: nw, avgMonthlySavings: Math.max(0, (income - expenses) / 3) };
   }, [dash, recentTxs]);
 

@@ -215,18 +215,24 @@ function StrategyTab() {
   }
 
   const strategyDebts = useMemo<StrategyDebt[]>(() => {
-    return pendingDebts.map(d => {
-      const apr = aprOverrides[d.id] ?? 20;
-      const balance = d.gbpEquivalent;
-      const minimumPayment = Math.max(balance * 0.02, 1);
-      return {
-        id: d.id,
-        name: `${d.personName} — ${d.description}`,
-        balance,
-        apr,
-        minimumPayment,
-      };
-    });
+    // Payoff strategies need a GBP balance to sort against APR. Debts
+    // whose FX conversion is unavailable are excluded rather than run
+    // through as £0 (which would produce a spurious "already paid off"
+    // priority ordering).
+    return pendingDebts
+      .filter((d): d is typeof d & { gbpEquivalent: number } => d.gbpEquivalent != null)
+      .map(d => {
+        const apr = aprOverrides[d.id] ?? 20;
+        const balance = d.gbpEquivalent;
+        const minimumPayment = Math.max(balance * 0.02, 1);
+        return {
+          id: d.id,
+          name: `${d.personName} — ${d.description}`,
+          balance,
+          apr,
+          minimumPayment,
+        };
+      });
   }, [pendingDebts, aprOverrides]);
 
   const totalBalance = useMemo(() => strategyDebts.reduce((s, d) => s + d.balance, 0), [strategyDebts]);
@@ -590,7 +596,7 @@ function csvField(val: string | number | undefined): string {
   return s;
 }
 
-async function exportDebtsCSV(debts: Array<{ personName: string; description: string; date: string; direction: string; nativeAmount: number; currency: string; gbpEquivalent: number; status: string; notes?: string | null }>) {
+async function exportDebtsCSV(debts: Array<{ personName: string; description: string; date: string; direction: string; nativeAmount: number; currency: string; gbpEquivalent: number | null; status: string; notes?: string | null }>) {
   const { shareOrDownload } = await import("@/lib/native-share");
   const header = ["Person", "Description", "Date", "Direction", "Amount", "Currency", "GBP", "Status", "Notes"];
   const lines = [
@@ -602,7 +608,9 @@ async function exportDebtsCSV(debts: Array<{ personName: string; description: st
       d.direction === "i_owe_them" ? "I Owe" : "Owed to Me",
       Math.abs(d.nativeAmount).toFixed(2),
       d.currency,
-      d.gbpEquivalent.toFixed(2),
+      // Empty cell (not "0.00") when FX is unavailable — a downstream
+      // spreadsheet reading 0.00 would sum it into totals.
+      d.gbpEquivalent == null ? "" : d.gbpEquivalent.toFixed(2),
       d.status,
       d.notes ?? "",
     ].map(csvField).join(",")),
@@ -897,9 +905,9 @@ export default function Owing() {
         case "date-oldest":
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case "amount-high":
-          return b.gbpEquivalent - a.gbpEquivalent;
+          return (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity);
         case "amount-low":
-          return a.gbpEquivalent - b.gbpEquivalent;
+          return (a.gbpEquivalent ?? Infinity) - (b.gbpEquivalent ?? Infinity);
         case "name-az":
           return a.personName.localeCompare(b.personName);
         default:
@@ -1332,6 +1340,10 @@ export default function Owing() {
               <div className="flex flex-wrap gap-2 p-3" style={{ background: "var(--ft-base)" }}>
                 {Object.entries(
                   pending.reduce((acc, d) => {
+                    // Skip debts whose FX conversion is unavailable —
+                    // a per-person net that includes fabricated zeros
+                    // would misrepresent the direction of the balance.
+                    if (d.gbpEquivalent == null) return acc;
                     const key = d.personName;
                     if (!acc[key]) acc[key] = 0;
                     acc[key] += d.direction === "they_owe_me" ? d.gbpEquivalent : -d.gbpEquivalent;
@@ -1588,20 +1600,25 @@ export default function Owing() {
                         </HStack>
                       </div>
 
-                      {/* Amount + actions */}
+                      {/* Amount + actions — native amount is always
+                          honest; GBP line drops to "—" when FX missing.
+                          Settle button is disabled until we know a GBP
+                          amount to record against the account. */}
                       <VStack gap={4} align="end" shrink={false}>
-                        <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: amountColor }}>
-                          <span className="pnum">{isIowe ? "-" : "+"}{formatGbp(d.gbpEquivalent)}</span>
+                        <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: d.gbpEquivalent == null ? "var(--ft-dim)" : amountColor }}>
+                          {d.gbpEquivalent == null
+                            ? <span>—</span>
+                            : <span className="pnum">{isIowe ? "-" : "+"}{formatGbp(d.gbpEquivalent)}</span>}
                         </div>
                         {d.currency !== "GBP" && (
                           <Text as="div" mono size={9} color="var(--ft-dim)">
                             <span className="pnum">{formatNative(d.nativeAmount, d.currency)}</span>
                           </Text>
                         )}
-                        {d.status === "pending" && !isSettling && (
+                        {d.status === "pending" && !isSettling && d.gbpEquivalent != null && (
                           <HStack gap={4} align="center">
                             <button
-                              onClick={() => openSettleForm(d.id, d.personName, d.gbpEquivalent)}
+                              onClick={() => openSettleForm(d.id, d.personName, d.gbpEquivalent!)}
                               style={{
                                 display: "flex",
                                 alignItems: "center",

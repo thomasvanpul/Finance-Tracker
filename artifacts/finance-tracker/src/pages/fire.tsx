@@ -613,7 +613,7 @@ export default function Fire() {
 
   const defaultMonthlyExpenses = useMemo(() => {
     if (!recentTxs || recentTxs.length === 0) return 2000;
-    const total = recentTxs.reduce((sum, t) => sum + t.gbpValue, 0);
+    const total = recentTxs.reduce((sum, t) => sum + (t.gbpValue ?? 0), 0);
     return Math.round(total / 3);
   }, [recentTxs]);
 
