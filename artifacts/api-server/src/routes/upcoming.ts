@@ -33,8 +33,9 @@ async function enrichUpcoming(item: typeof upcomingTable.$inferSelect, accountMa
     status: item.status,
     nativeAmount,
     currency: item.currency,
-    // Coerce null → 0 at the API boundary; follow-up commit renders "—".
-    gbpEquivalent: gbpEquivalent == null ? 0 : Math.round(gbpEquivalent * 100) / 100,
+    // Null passes through per the widened API contract; consumers
+    // render the native amount alone.
+    gbpEquivalent: gbpEquivalent == null ? null : Math.round(gbpEquivalent * 100) / 100,
     accountId: item.accountId ?? null,
     accountName: item.accountId ? (accountMap.get(item.accountId) ?? null) : null,
     createdAt: item.createdAt.toISOString(),

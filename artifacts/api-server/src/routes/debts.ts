@@ -31,10 +31,9 @@ async function enrichDebt(item: typeof debtsTable.$inferSelect, userId: string) 
     status: item.status,
     notes: item.notes ?? null,
     accountId: item.accountId ?? null,
-    // toBase returns null when the FX rate is unavailable. Coerce
-    // null → 0 at this boundary until the API surface is widened —
-    // frontend follow-up commit renders "—" instead of £0.
-    gbpEquivalent: gbpEquivalent == null ? 0 : Math.round(gbpEquivalent * 100) / 100,
+    // Null passes through per the widened API contract; consumers
+    // render the native amount alone.
+    gbpEquivalent: gbpEquivalent == null ? null : Math.round(gbpEquivalent * 100) / 100,
     createdAt: item.createdAt.toISOString(),
     linkedEmail: item.linkedEmail ?? null,
     linkedUserId: item.linkedUserId ?? null,

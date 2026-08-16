@@ -17,11 +17,9 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // gap through unconvertibleCount so the UI can name it rather than
   // quietly under-report the total.
   const accounts = await db.select().from(accountsTable).where(eq(accountsTable.userId, userId));
-  // The internal null-return from toBase is honest; the API surface
-  // still declares gbpEquivalent as `number`, so we coerce null → 0 at
-  // the boundary and surface the gap via unconvertibleAccounts. Follow-
-  // up commit will mark gbpEquivalent nullable in OpenAPI and update the
-  // ~40 frontend consumers to render "—" instead of the 0 they show now.
+  // Null passes through per the widened API contract; consumers render
+  // the native amount alone. Aggregations skip nulls; unconvertibleAccounts
+  // surfaces the gap so totals can be caveated in the UI.
   let unconvertibleAccounts = 0;
   const accountBreakdown = await Promise.all(
     accounts.map(async (a) => {
@@ -33,20 +31,12 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         name: a.name,
         currency: a.currency,
         balance,
-        gbpEquivalent: gbpEquivalent == null ? 0 : Math.round(gbpEquivalent * 100) / 100,
+        gbpEquivalent: gbpEquivalent == null ? null : Math.round(gbpEquivalent * 100) / 100,
         type: a.type,
       };
     })
   );
-  // Sum only the accounts that actually converted. The zero above is a
-  // response-shape coercion, not a real balance, so we recompute the
-  // total from the original toBase results by re-checking convertibility
-  // via the currency map. Simpler to redo the toBase pass — cache hits
-  // make this cheap on the second lap.
-  const convertibleTotalPairs = await Promise.all(
-    accounts.map(async (a) => await toBase(parseFloat(a.balance), a.currency, baseCurrency)),
-  );
-  const totalCash = convertibleTotalPairs.reduce<number>((s, v) => s + (v ?? 0), 0);
+  const totalCash = accountBreakdown.reduce<number>((s, a) => s + (a.gbpEquivalent ?? 0), 0);
 
   // Investments — priced positions only (G10). Positions whose live price
   // the market API cannot supply are excluded from the portfolio total

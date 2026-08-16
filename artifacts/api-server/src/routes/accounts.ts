@@ -23,12 +23,10 @@ async function enrichAccount(account: typeof accountsTable.$inferSelect, userId:
     name: account.name,
     currency: account.currency,
     balance,
-    // toBase returns null when the FX rate is unavailable. OpenAPI
-    // still declares gbpEquivalent as `number`, so coerce null → 0 at
-    // the boundary and log. Follow-up commit widens the API contract
-    // and updates ~40 frontend consumers to render "—" per the
-    // app-wide "no fabricated number" rule.
-    gbpEquivalent: gbpEquivalent == null ? 0 : Math.round(gbpEquivalent * 100) / 100,
+    // toBase returns null when the FX rate is unavailable; that null
+    // now passes all the way to consumers (OpenAPI declares this field
+    // nullable). Displays render the native amount alone.
+    gbpEquivalent: gbpEquivalent == null ? null : Math.round(gbpEquivalent * 100) / 100,
     type: account.type,
     isWiseLinked: account.isWiseLinked,
     wiseProfileId: account.wiseProfileId ?? null,

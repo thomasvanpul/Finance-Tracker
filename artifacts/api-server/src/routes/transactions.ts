@@ -22,12 +22,11 @@ async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, acco
   const nativeAmount = parseFloat(tx.nativeAmount);
   const baseCurrency = await getBaseCurrency(userId);
   const rawGbp = await toBase(Math.abs(nativeAmount), tx.currency, baseCurrency);
-  // Coerce null → 0 at the API boundary until the OpenAPI contract
-  // widens gbpValue to nullable. Follow-up commit updates the frontend
-  // consumers to render "—" instead of £0.
+  // Null passes through per the widened API contract; consumers
+  // render the native amount alone.
   const gbpValue =
     rawGbp == null
-      ? 0
+      ? null
       : Math.round((tx.type === "expense" ? -rawGbp : rawGbp) * 100) / 100;
   return {
     id: tx.id,
