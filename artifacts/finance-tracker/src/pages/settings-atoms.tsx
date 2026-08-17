@@ -226,7 +226,25 @@ export function SettingsNavItemRow({ label, visible, onChange }: { label: string
   );
 }
 
-export function SettingsWidgetRow({ label, span, description, enabled, onToggle }: { label: string; span: string; description: string; enabled: boolean; onToggle: () => void }) {
+export function SettingsWidgetRow({
+  label,
+  span,
+  description,
+  enabled,
+  onToggle,
+  recommended = false,
+}: {
+  label: string;
+  span: string;
+  description: string;
+  enabled: boolean;
+  onToggle: () => void;
+  // Item 13: whether this widget is in the active persona's
+  // recommended set. Rendered as a small mono tag next to the size
+  // label so the user can see at a glance which widgets the persona
+  // pre-selected without having to compare against the on/off toggle.
+  recommended?: boolean;
+}) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -244,6 +262,22 @@ export function SettingsWidgetRow({ label, span, description, enabled, onToggle 
           <span style={{ marginLeft: 8, fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
             {span === "full" ? "FULL WIDTH" : "HALF"}
           </span>
+          {recommended && (
+            <span
+              style={{
+                marginLeft: 8,
+                fontSize: 9,
+                fontFamily: "var(--font-mono)",
+                color: "var(--ft-accent)",
+                letterSpacing: "0.08em",
+                border: "1px solid var(--ft-accent)44",
+                padding: "1px 5px",
+                textTransform: "uppercase",
+              }}
+            >
+              For your persona
+            </span>
+          )}
         </div>
         <div style={{ fontSize: 11, color: "var(--ft-muted)" }}>{description}</div>
       </div>

@@ -304,6 +304,16 @@ export function personaOnboardingFollowUp(persona: PersonaId): string {
 
 export const LS_ONBOARDING_FOLLOWUP_KEY = "nr-onboarding-followup";
 
+// The widget IDs a persona ships enabled by default (the "recommended
+// for you" set). Used by the widget catalogue in Settings > Widgets
+// to sort persona-recommended widgets to the top of an otherwise full
+// registry. Nothing is hidden — the user always sees every widget, in
+// keeping with the persona system's transparency contract (a persona
+// is a starting point, not a lock). See item 13.
+export function widgetIdsForPersona(persona: PersonaId): readonly string[] {
+  return PERSONA_WIDGETS[persona].enabled;
+}
+
 // Event fired whenever the active persona changes. Consumers that
 // render persona-derived UI (KPI content, nav, empty state, default
 // landing) listen for this via useActivePersona() (see persona-hook.ts).

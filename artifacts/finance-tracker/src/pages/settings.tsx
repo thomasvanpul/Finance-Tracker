@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getAiStyle, setAiStylePref, type AiStyle } from "@/components/ai-agent";
 import { loadCatRules, saveCatRules, type CatRule } from "@/lib/auto-cat";
-import { PERSONAS, loadPersonaIds, applyPersonas, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_INSIGHT_PREVIEWS, PERSONA_BG, type PersonaId } from "@/lib/persona";
+import { PERSONAS, loadPersonaIds, applyPersonas, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_INSIGHT_PREVIEWS, PERSONA_BG, widgetIdsForPersona, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { loadSidebarConfig, saveSidebarConfig } from "@/lib/sidebar-config";
 import {
@@ -2720,16 +2720,31 @@ export default function Settings() {
           <div style={PANEL_STYLE}>
             <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Dashboard Widgets</div>
             <div style={{ padding: "0" }}>
-              {WIDGET_REGISTRY.map(w => (
-                <SettingsWidgetRow
-                  key={w.id}
-                  label={w.label}
-                  span={w.defaultSpan}
-                  description={w.description}
-                  enabled={isEnabled(w.id)}
-                  onToggle={() => toggle(w.id)}
-                />
-              ))}
+              {(() => {
+                // Item 13: persona-varied catalogue ordering. Nothing is
+                // hidden — the user always sees every widget so a market
+                // persona who wants a Budget Tracker can still find it.
+                // But persona-recommended widgets sort to the top so the
+                // catalogue matches the persona's mental model at a
+                // glance. The mono tag on each recommended row makes the
+                // reason for the ordering legible.
+                const recommendedSet = new Set(widgetIdsForPersona(persona));
+                const sorted = [
+                  ...WIDGET_REGISTRY.filter(w => recommendedSet.has(w.id)),
+                  ...WIDGET_REGISTRY.filter(w => !recommendedSet.has(w.id)),
+                ];
+                return sorted.map(w => (
+                  <SettingsWidgetRow
+                    key={w.id}
+                    label={w.label}
+                    span={w.defaultSpan}
+                    description={w.description}
+                    enabled={isEnabled(w.id)}
+                    onToggle={() => toggle(w.id)}
+                    recommended={recommendedSet.has(w.id)}
+                  />
+                ));
+              })()}
             </div>
             <div style={{ padding: "10px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
               Enabled widgets appear on the Dashboard page. Changes save automatically.
