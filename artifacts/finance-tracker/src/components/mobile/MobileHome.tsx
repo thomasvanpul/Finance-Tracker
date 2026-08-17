@@ -13,6 +13,7 @@ import { BlockField } from "@/components/primitives/block-field";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { MarketPane } from "./MarketPane";
 import { loadPersonaIds, type PersonaId } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 
 // ── Number rule (docs/MOBILE-CONCEPT.md § Approved 13 Aug 2026, second pass) ──
 // Separators always. Two decimals for facts. No decimals for shapes.
@@ -127,6 +128,7 @@ export function MobileHome(_props: MobileHomeProps) {
   const activeAccounts = dashboard?.accountBreakdown ?? [];
   const currencyCount = new Set(activeAccounts.map((a) => a.currency)).size;
   const unconvertibleAccounts = dashboard?.unconvertibleAccounts ?? 0;
+  const persona = useActivePersona();
 
   const owedByMe = dashboard?.owing.totalIOwe ?? 0;
   const pendingCount = dashboard?.owing.pendingCount ?? 0;
@@ -246,39 +248,89 @@ export function MobileHome(_props: MobileHomeProps) {
           </Text>
         </HStack>
 
-        {/* Net worth headline */}
-        <VStack padding="4px 18px 18px">
-          <MonoLabel size={11} letterSpacing="0.16em">NET WORTH</MonoLabel>
-          <HStack align="baseline" gap={4} marginTop={6}>
-            <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+        {/* Headline (P2·9). Market persona gets PORTFOLIO VALUE +
+            24H delta, matching the same argument as the desktop
+            KPI bar: a market user opens the app to see the market
+            moved, and net worth doesn't tell them that. Every
+            other persona keeps NET WORTH + since-1st-of-month
+            (the existing headline shape). */}
+        {persona === "market" ? (
+          <VStack padding="4px 18px 18px">
+            <MonoLabel size={11} letterSpacing="0.16em">PORTFOLIO</MonoLabel>
+            <HStack align="baseline" gap={4} marginTop={6}>
+              <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+              <Text
+                as="span"
+                size={34}
+                weight={600}
+                lineHeight="34px"
+                letterSpacing="-0.035em"
+                numeric
+              >
+                {nfmt(dashboard?.portfolio.totalValueGbp ?? 0)}
+              </Text>
+            </HStack>
+            {/* 24h delta. Uses dashData.portfolio.dayChange* from P1b.
+                Null → render "—", never a fabricated zero. */}
+            {(() => {
+              const dGbp = dashboard?.portfolio.dayChangeGbp ?? null;
+              const dPct = dashboard?.portfolio.dayChangePercent ?? null;
+              if (dGbp == null) {
+                return (
+                  <Text as="div" mono size={12} mt={6} color="var(--ft-dim)">
+                    24H · —
+                  </Text>
+                );
+              }
+              const col = dGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+              return (
+                <Text as="div" mono size={12} mt={6} color={col} numeric>
+                  {nfmt(dGbp, { sign: true, symbol: "£" })}
+                  {dPct != null && ` · ${nfmt(dPct, { sign: true })}%`}
+                  {" · 24H"}
+                </Text>
+              );
+            })()}
+            {unconvertibleAccounts > 0 && (
+              <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
+                {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
+              </Text>
+            )}
+          </VStack>
+        ) : (
+          <VStack padding="4px 18px 18px">
+            <MonoLabel size={11} letterSpacing="0.16em">NET WORTH</MonoLabel>
+            <HStack align="baseline" gap={4} marginTop={6}>
+              <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+              <Text
+                as="span"
+                size={34}
+                weight={600}
+                lineHeight="34px"
+                letterSpacing="-0.035em"
+                numeric
+              >
+                {nfmt(netWorth)}
+              </Text>
+            </HStack>
             <Text
-              as="span"
-              size={34}
-              weight={600}
-              lineHeight="34px"
-              letterSpacing="-0.035em"
+              as="div"
+              mono
+              size={12}
+              mt={6}
+              color={mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
               numeric
             >
-              {nfmt(netWorth)}
+              {nfmt(mtdDelta, { sign: true, symbol: "£" })} ·{" "}
+              {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
             </Text>
-          </HStack>
-          <Text
-            as="div"
-            mono
-            size={12}
-            mt={6}
-            color={mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-            numeric
-          >
-            {nfmt(mtdDelta, { sign: true, symbol: "£" })} ·{" "}
-            {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
-          </Text>
-          {unconvertibleAccounts > 0 && (
-            <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
-              {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
-            </Text>
-          )}
-        </VStack>
+            {unconvertibleAccounts > 0 && (
+              <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
+                {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
+              </Text>
+            )}
+          </VStack>
+        )}
 
         {/* Holdings header + BLOCKS / BANDS / RING switcher */}
         <HStack align="center" justify="between" padding="0 18px 10px">
