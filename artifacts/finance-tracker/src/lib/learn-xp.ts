@@ -111,3 +111,32 @@ export function getLearnXP(): number {
     return ids.reduce((sum, id) => sum + (TOPIC_XP[id] ?? 0), 0);
   } catch { return 0; }
 }
+
+// F5 maintenance-XP amounts. Named constants so a grep for XP_
+// finds every earning event, and so no rule of the form
+// "if user did X, +N XP" hides inside a component.
+export const XP_PER_CAT_RULE = 25;
+export const XP_PER_COMPLETED_GOAL = 50;
+export const XP_PER_SYNCED_PROVIDER = 100;
+
+// XP earned from auto-categorisation rules the user has set. Reads
+// the same localStorage key auto-cat.ts writes to. One-time per
+// rule id — deleting a rule removes its XP (fine: XP is derived
+// from state, not a cumulative counter, so gaming by add/delete
+// nets zero).
+const CAT_RULES_KEY = "nr-cat-rules";
+export function getCatRulesXP(): number {
+  try {
+    const raw = localStorage.getItem(CAT_RULES_KEY);
+    const rules = raw ? (JSON.parse(raw) as unknown[]) : [];
+    return rules.length * XP_PER_CAT_RULE;
+  } catch { return 0; }
+}
+
+// Sum of all locally-derivable XP (learn topics + cat rules). API-
+// derived XP (goals reached, providers synced) is added by
+// useTotalXP() in hooks/use-total-xp.ts so this pure module has
+// no react-query dependency.
+export function getMaintenanceLocalXP(): number {
+  return getLearnXP() + getCatRulesXP();
+}

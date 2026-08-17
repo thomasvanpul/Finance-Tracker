@@ -29,7 +29,8 @@ import { Check, Lock } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
 import { useWidgets, WIDGET_REGISTRY } from "@/contexts/widgets-context";
-import { THEME_REWARDS, getLearnXP } from "@/lib/learn-xp";
+import { THEME_REWARDS } from "@/lib/learn-xp";
+import { useTotalXP } from "@/hooks/use-total-xp";
 import { ThemeRewardsPanel } from "@/components/investments/learn-tab";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId } from "@/lib/bot-skins";
 import { BotPreview, type Phase } from "@/components/ai-wanderer";
@@ -661,7 +662,9 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
   const isMobile = useIsMobile();
   const [hoveredTheme, setHoveredTheme] = useState<FintrackTheme | null>(null);
   const [accentOverride, setAccentOverride] = useState(() => ls("nr-accent-override", ""));
-  const learnXP = getLearnXP();
+  // F5: total XP composes learn topics + cat rules (local) with
+  // completed goals + synced providers (API). Themes gate on total.
+  const learnXP = useTotalXP().total;
   const previewId = hoveredTheme ?? theme;
   const previewSwatch = SWATCH_DATA.find(x => x.id === previewId)!;
 
@@ -1232,7 +1235,9 @@ function WardrobePanel() {
   const [blinking, setBlinking] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
   const phaseIdxRef = useRef(0);
-  const learnXP = getLearnXP();
+  // F5: skin unlocks chain through theme unlocks. Total XP drives
+  // the theme threshold, so wardrobe reads the same composed total.
+  const learnXP = useTotalXP().total;
 
   useEffect(() => {
     const id = setInterval(() => {
