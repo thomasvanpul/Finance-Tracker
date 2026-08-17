@@ -1039,7 +1039,12 @@ function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex
       <span style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "var(--font-mono)", width: 32, flexShrink: 0 }}>
         {currency}
       </span>
-      <span className="pnum" style={{ fontSize: 10, color: total == null ? "var(--ft-dim)" : "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+      {/* No overflow:hidden + text-overflow:ellipsis on a .pnum —
+          clips digits. If the currency total is very long the row
+          wraps to the next column of the auto-fill grid or the
+          share-percentage on the right slides; either is honest.
+          A clipped £11,371→£1… is not. */}
+      <span className="pnum" style={{ fontSize: 10, color: total == null ? "var(--ft-dim)" : "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
         {total == null ? "—" : formatGbp(total)}
       </span>
       <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", marginLeft: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -1240,7 +1245,12 @@ interface KpiCellProps {
   isFinancial?: boolean;
 }
 
-function KpiCell({ label, value, sub, accent, icon, isFinancial = false }: KpiCellProps) {
+function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false }: KpiCellProps) {
+  // The `accent` prop is deliberately ignored (renamed `_accent`).
+  // Rainbow per-cell colour was decoration; per docs/MOBILE-CONCEPT.md
+  // § Desktop port, colour is semantic or absent. Icon renders in
+  // --ft-dim across every KPI cell so the row reads as a single
+  // strip, not five coloured tiles.
   const [hov, setHov] = React.useState(false);
   return (
     <div
@@ -1259,12 +1269,16 @@ function KpiCell({ label, value, sub, accent, icon, isFinancial = false }: KpiCe
       onMouseLeave={() => setHov(false)}
     >
       <HStack gap={6} align="center">
-        <span style={{ color: accent, display: "flex" }}>{icon}</span>
+        <span style={{ color: "var(--ft-dim)", display: "flex" }}>{icon}</span>
         <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.08em">{label}</Text>
       </HStack>
+      {/* No overflow:hidden + text-overflow:ellipsis on the .pnum
+          value — "A financial figure is shown in full or not at all"
+          (CLAUDE.md). Font-size clamp allows shrink instead of clip
+          when the figure is very wide. */}
       <div
         className={isFinancial ? "pnum" : undefined}
-        style={{ fontSize: 18, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}
+        style={{ fontSize: "clamp(14px, 1.3vw, 18px)", fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap", minWidth: 0 }}
       >
         {value}
       </div>
