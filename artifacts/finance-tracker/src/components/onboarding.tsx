@@ -1,6 +1,11 @@
 "use client";
 import { useState } from "react";
-import { applyPersonas, type PersonaId } from "@/lib/persona";
+import {
+  applyPersonas,
+  personaOnboardingFollowUp,
+  LS_ONBOARDING_FOLLOWUP_KEY,
+  type PersonaId,
+} from "@/lib/persona";
 import { savePersonaToServer } from "@/lib/persona-sync";
 
 // Onboarding questionnaire — F1b.
@@ -86,6 +91,18 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     // if the server write fails (offline / rate limit). Server write is
     // best-effort; savePersonaToServer swallows the error and logs.
     applyPersonas([persona]);
+    // Item 12: onboarding follow-up destination. Persona's real default
+    // page is often empty until data arrives (Portfolio, Dashboard,
+    // Net Worth) — dropping the user there before they've added a
+    // connection or account shows them the empty state instead of the
+    // app. Set a one-shot key that DefaultPageRedirector reads before
+    // the persona default, then clears. Only set for personas that
+    // route somewhere other than their default page.
+    const followUp = personaOnboardingFollowUp(persona);
+    const persistedDefault = localStorage.getItem("nr-default-page");
+    if (followUp !== persistedDefault) {
+      localStorage.setItem(LS_ONBOARDING_FOLLOWUP_KEY, followUp);
+    }
     await savePersonaToServer(persona);
     onComplete();
   }

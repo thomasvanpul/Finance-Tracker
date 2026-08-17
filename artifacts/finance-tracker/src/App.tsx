@@ -12,7 +12,7 @@ import { TickersProvider } from "@/contexts/tickers-context";
 import { PrivacyProvider } from "@/contexts/privacy-context";
 import { CategoryProvider } from "@/contexts/category-context";
 import { Onboarding } from "@/components/onboarding";
-import { isOnboardingComplete } from "@/lib/persona";
+import { isOnboardingComplete, LS_ONBOARDING_FOLLOWUP_KEY } from "@/lib/persona";
 import { hydratePersonaFromServer } from "@/lib/persona-sync";
 import NotFound from "@/pages/not-found";
 import { useIsMobile, MOBILE_BREAKPOINT } from "@/hooks/use-mobile";
@@ -69,6 +69,23 @@ function DefaultPageRedirector() {
   useEffect(() => {
     if (sessionStorage.getItem("ft-initial-redirect-done")) return;
     sessionStorage.setItem("ft-initial-redirect-done", "1");
+    // Item 12: one-shot onboarding follow-up destination. If onboarding
+    // just wrote a follow-up key (e.g. /accounts for a budget-persona
+    // user who needs to add a bank), route there once and clear the
+    // key. On the second app open the user lands on the persona's real
+    // default page.
+    const followUp = localStorage.getItem(LS_ONBOARDING_FOLLOWUP_KEY);
+    if (followUp) {
+      localStorage.removeItem(LS_ONBOARDING_FOLLOWUP_KEY);
+      if (window.location.pathname === (import.meta.env.BASE_URL.replace(/\/$/, "") || "/")) {
+        const isMobileFu = window.innerWidth < MOBILE_BREAKPOINT;
+        if (!isMobileFu || MOBILE_ROUTES.has(followUp)) {
+          sessionStorage.setItem("ft-active-default-page", followUp);
+          navigate(followUp);
+          return;
+        }
+      }
+    }
     const page = localStorage.getItem("nr-default-page");
     if (!page || page === "/") return;
     if (window.location.pathname !== (import.meta.env.BASE_URL.replace(/\/$/, "") || "/")) return;
