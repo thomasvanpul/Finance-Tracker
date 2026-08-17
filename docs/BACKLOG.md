@@ -504,7 +504,26 @@ Revolut Business, IBKR, Alpaca, Coinbase, Kraken all issue user-generated
 read-only keys. The user authorises directly with their provider, so no
 regulatory burden falls on this app — and it works for strangers today.
 
-### H4 · Open banking as one adapter — TODO · Blocked by H1
+### H4 · Open banking as one adapter — PARKED (decided 16 Aug 2026)
+Code-complete and unit-tested against a stub; see `docs/H4-ENABLE-BANKING.md`.
+**Parked deliberately, not abandoned.**
+
+Reason: Restricted Production covers only accounts the developer personally
+links, so it cannot onboard a single user. Full production needs a contract,
+KYB, a company and 4-12 weeks with bank certification on the critical path.
+Signing up would have removed Thomas's own CSV burden and validated the adapter
+against the real API, but that is personal convenience plus code validation, not
+product progress.
+
+**What replaced it:** the persona work. A market-persona user types in a few
+holdings, needs no bank connection at all, and their screen still changes
+overnight because prices come from the market. That is the onboarding path for
+non-technical users, and it exists today.
+
+Bank connections are a power-user feature until there is a business reason to
+pay for KYB. Revive this when public signup has a reason to exist — the adapter
+will be waiting, though it will need testing against the live API at that point
+since it has only ever run against a stub.
 Enable Banking behind the same interface. See `docs/OPEN-BANKING.md`.
 
 ### H5 · File import as a first-class connection — TODO · Blocked by H1
