@@ -11,7 +11,11 @@ services:
     # instead, which needs no write access outside the workspace.
     buildCommand: npx --yes pnpm@11.12.0 install --frozen-lockfile && npx --yes pnpm@11.12.0 --filter @workspace/api-server run build
     startCommand: npx --yes pnpm@11.12.0 --filter @workspace/api-server run start
-    healthCheckPath: /api/accounts
+    # /api/accounts sits behind requireAuth and returns 401, which Render reads
+    # as unhealthy — the first deploy timed out that way while the server was up
+    # and answering on port 10000. /api/healthz is mounted before requireAuth in
+    # app.ts and returns 200 unauthenticated.
+    healthCheckPath: /api/healthz
     envVars:
       # Render injects PORT itself — do not set it.
       # Render's default was Node 24.14.1, which is fine. Pinning is only
