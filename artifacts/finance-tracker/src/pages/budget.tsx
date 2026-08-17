@@ -231,9 +231,13 @@ function BudgetKpiCell({ label, value, sub, extra, isPriv = false }: BudgetKpiCe
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.10em", textTransform: "uppercase" as const, marginBottom: 4, fontWeight: 600 }}>
         {label}
       </div>
+      {/* clamp() on font-size per docs/MOBILE-CONCEPT.md § Desktop
+          port: primary tier scales with column width. Prevents a
+          6-digit figure from pushing the cell wider than its
+          neighbours on a narrow desktop. */}
       <div
         className={isPriv ? "pnum" : undefined}
-        style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}
+        style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(14px, 1.4vw, 18px)", fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}
       >
         {value}
       </div>

@@ -787,10 +787,13 @@ interface SummaryStripCellProps {
   value: string;
   color: string;
   sub: string;
+  /** @deprecated Ignored. Rainbow accent stripes were dropped per
+   * docs/MOBILE-CONCEPT.md § Desktop port. Kept in the prop shape
+   * so callers don't need updating in this pass. */
   accentBorderColor?: string;
 }
 
-function SummaryStripCell({ label, value, color, sub, accentBorderColor }: SummaryStripCellProps) {
+function SummaryStripCell({ label, value, color, sub, accentBorderColor: _accentBorderColor }: SummaryStripCellProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -799,13 +802,15 @@ function SummaryStripCell({ label, value, color, sub, accentBorderColor }: Summa
           ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
           : "var(--ft-surface)",
         transition: "background 0.1s",
-        borderTop: accentBorderColor ? `2px solid ${accentBorderColor}` : undefined,
       }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{label}</div>
-      <div className="pnum" style={{ fontSize: 15, fontFamily: "var(--font-mono)", fontWeight: 700, color, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{value}</div>
+      {/* clamp() + whiteSpace nowrap. Semantic colour on the .pnum
+          value (green income, red expenses, etc.) is kept — that IS
+          rank encoding, unlike the stripped decorative borderTop. */}
+      <div className="pnum" style={{ fontSize: "clamp(12px, 1.1vw, 15px)", fontFamily: "var(--font-mono)", fontWeight: 700, color, lineHeight: 1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{value}</div>
       <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginTop: 2 }}>{sub}</div>
     </div>
   );

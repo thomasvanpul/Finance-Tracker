@@ -2035,11 +2035,15 @@ interface StatCellProps {
 }
 
 function StatCell({ label, value, color, sub }: StatCellProps) {
+  // Rainbow borderTop stripe removed per docs/MOBILE-CONCEPT.md
+  // § Desktop port: "Colour was not encoding rank. Deleted in the
+  // pilot; do not reintroduce." The value colour still uses the
+  // caller-supplied `color` — that IS semantic (own-share blue,
+  // paid amber, etc.). The border is just decoration.
   return (
     <div
       style={{
         background: "var(--ft-surface)",
-        borderTop: `2px solid ${color}`,
         padding: "10px 12px",
       }}
     >
@@ -2055,14 +2059,17 @@ function StatCell({ label, value, color, sub }: StatCellProps) {
       >
         {label}
       </div>
+      {/* clamp() on font-size + whiteSpace nowrap; the .pnum lock is
+          already in place so overflow rules can't creep in here. */}
       <div
         className="pnum"
         style={{
-          fontSize: 16,
+          fontSize: "clamp(13px, 1.2vw, 16px)",
           fontWeight: 700,
           fontFamily: "var(--font-mono)",
           color,
           lineHeight: 1,
+          whiteSpace: "nowrap",
         }}
       >
         {value}
