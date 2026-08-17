@@ -1463,16 +1463,31 @@ function WiseAccountRow({ account }: { account: { id: number; name: string; curr
 
 // ── Wise Sync KPI Strip ─────────────────────��─────────────────────────────────
 function WiseSyncKpiStrip({ synced, added, updated }: { synced: number; added: number; updated: number }) {
-  const cells: { value: React.ReactNode; label: string; color: string }[] = [
-    { value: <span className="pnum">{synced}</span>, label: "Total synced", color: "var(--ft-accent)" },
-    { value: <span className="pnum">{added}</span>, label: "New transactions", color: "var(--ft-green)" },
-    { value: <span className="pnum">{updated}</span>, label: "Updated", color: "var(--ft-blue)" },
+  // Desktop port: per-cell accent stripes deleted (Total / New /
+  // Updated aren't rank-ordered or +/- — they're three counters).
+  // clamp() on the primary tier + whiteSpace:nowrap so a large
+  // count can't wrap.
+  const cells: { value: React.ReactNode; label: string }[] = [
+    { value: <span className="pnum">{synced}</span>, label: "Total synced" },
+    { value: <span className="pnum">{added}</span>, label: "New transactions" },
+    { value: <span className="pnum">{updated}</span>, label: "Updated" },
   ];
   return (
     <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
       {cells.map(c => (
-        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "12px 14px", borderTop: `2px solid ${c.color}` }}>
-          <Text as="div" mono size={20} weight={700} color="var(--ft-text)" lineHeight={1}>{c.value}</Text>
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "12px 14px" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              color: "var(--ft-text)",
+              lineHeight: 1,
+              fontSize: "clamp(16px, 1.6vw, 20px)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {c.value}
+          </div>
           <Text as="div" mono upper size={9} color="var(--ft-dim)" letterSpacing="0.08em" mt={4}>{c.label}</Text>
         </div>
       ))}
