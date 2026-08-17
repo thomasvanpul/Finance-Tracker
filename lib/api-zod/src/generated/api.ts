@@ -50,7 +50,13 @@ export const GetDashboardResponse = zod.object({
   "totalOwedToMe": zod.number(),
   "totalIOwe": zod.number(),
   "netGbp": zod.number(),
-  "pendingCount": zod.number()
+  "pendingCount": zod.number(),
+  // C2-4: top pending counterparties for the mobile home strip.
+  "topPending": zod.array(zod.object({
+    "name": zod.string(),
+    "amountGbp": zod.number(),
+    "direction": zod.enum(["they_owe_me", "i_owe_them"]),
+  })).optional()
 }),
   "monthlyHistory": zod.array(zod.object({
   "month": zod.string(),

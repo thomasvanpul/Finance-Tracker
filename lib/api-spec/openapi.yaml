@@ -2141,6 +2141,24 @@ components:
               type: number
             pendingCount:
               type: integer
+            # C2-4: top pending counterparties (up to 3) so the mobile
+            # home CLAIMED strip can name names, not just a count.
+            # Sourced from legacy debts + F4 shared-expense
+            # participants where the current user is either payer or
+            # linked participant and the row is still outstanding.
+            topPending:
+              type: array
+              items:
+                type: object
+                required: [name, amountGbp, direction]
+                properties:
+                  name:
+                    type: string
+                  amountGbp:
+                    type: number
+                  direction:
+                    type: string
+                    enum: [they_owe_me, i_owe_them]
         monthlyHistory:
           type: array
           items:

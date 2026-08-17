@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { and, eq, gte, lte, inArray } from "drizzle-orm";
-import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable, nwSnapshotsTable } from "@workspace/db";
+import { and, eq, gte, lte, inArray, ne } from "drizzle-orm";
+import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable, nwSnapshotsTable, sharedExpensesTable, sharedExpenseParticipantsTable, userTable } from "@workspace/db";
 import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, getStockPrices } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
@@ -294,12 +294,80 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const pendingDebts = await db.select().from(debtsTable).where(and(eq(debtsTable.userId, userId), eq(debtsTable.status, "pending")));
   let totalOwedToMe = 0;
   let totalIOwe = 0;
+  // C2-4: per-counterparty detail so the mobile home CLAIMED line
+  // can name the top few debts instead of only showing a count.
+  // Sources: legacy debts (personName) + F4 shared_expense_participants
+  // where this user is a linked participant AND still outstanding.
+  // Both funnel into the same shape.
+  interface OwingRow { name: string; amountGbp: number; direction: "they_owe_me" | "i_owe_them" }
+  const owingRows: OwingRow[] = [];
   for (const d of pendingDebts) {
     const gbp = await toBase(parseFloat(d.nativeAmount), d.currency, baseCurrency);
     if (gbp == null) continue;
     if (d.direction === "they_owe_me") totalOwedToMe += gbp;
     else totalIOwe += gbp;
+    owingRows.push({ name: d.personName, amountGbp: gbp, direction: d.direction as OwingRow["direction"] });
   }
+  // F4 shared expenses: as PARTICIPANT (I owe on someone else's bill),
+  // outstanding shares are money I owe. Only outstanding — requested
+  // and acknowledged are already in flight or done.
+  const myParticipations = await db
+    .select({
+      participant: sharedExpenseParticipantsTable,
+      expense: sharedExpensesTable,
+    })
+    .from(sharedExpenseParticipantsTable)
+    .innerJoin(sharedExpensesTable, eq(sharedExpenseParticipantsTable.sharedExpenseId, sharedExpensesTable.id))
+    .where(and(
+      eq(sharedExpenseParticipantsTable.linkedUserId, userId),
+      eq(sharedExpenseParticipantsTable.status, "outstanding"),
+      ne(sharedExpensesTable.userId, userId),
+    ));
+  for (const row of myParticipations) {
+    const gbp = await toBase(parseFloat(row.participant.shareAmount), row.expense.currency, baseCurrency);
+    if (gbp == null) continue;
+    totalIOwe += gbp;
+    // Look up the payer's name via the user table for a legible label.
+    const [payer] = await db.select({ name: userTable.name }).from(userTable).where(eq(userTable.id, row.expense.userId));
+    owingRows.push({
+      name: `${payer?.name ?? "Payer"} · ${row.expense.description}`,
+      amountGbp: gbp,
+      direction: "i_owe_them",
+    });
+  }
+  // Also as PAYER: outstanding participants who owe me.
+  const myPayerExpenses = await db.select().from(sharedExpensesTable).where(eq(sharedExpensesTable.userId, userId));
+  if (myPayerExpenses.length > 0) {
+    const expenseIds = myPayerExpenses.map((e) => e.id);
+    const outstandingOwed = await db
+      .select()
+      .from(sharedExpenseParticipantsTable)
+      .where(and(
+        inArray(sharedExpenseParticipantsTable.sharedExpenseId, expenseIds),
+        eq(sharedExpenseParticipantsTable.status, "outstanding"),
+        eq(sharedExpenseParticipantsTable.isPayer, "false"),
+      ));
+    for (const p of outstandingOwed) {
+      const expense = myPayerExpenses.find((e) => e.id === p.sharedExpenseId);
+      if (!expense) continue;
+      const gbp = await toBase(parseFloat(p.shareAmount), expense.currency, baseCurrency);
+      if (gbp == null) continue;
+      totalOwedToMe += gbp;
+      owingRows.push({
+        name: `${p.name} · ${expense.description}`,
+        amountGbp: gbp,
+        direction: "they_owe_me",
+      });
+    }
+  }
+
+  // Top 3 by absolute amount — enough for a home-screen strip without
+  // spilling. Client can request the full list from /shared-expenses
+  // or /debts.
+  const topPending = owingRows
+    .sort((a, b) => b.amountGbp - a.amountGbp)
+    .slice(0, 3)
+    .map((r) => ({ name: r.name, amountGbp: Math.round(r.amountGbp * 100) / 100, direction: r.direction }));
 
   res.json(
     GetDashboardResponse.parse({
@@ -326,7 +394,8 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         totalOwedToMe: Math.round(totalOwedToMe * 100) / 100,
         totalIOwe: Math.round(totalIOwe * 100) / 100,
         netGbp: Math.round((totalOwedToMe - totalIOwe) * 100) / 100,
-        pendingCount: pendingDebts.length,
+        pendingCount: owingRows.length,
+        topPending,
       },
       monthlyHistory,
     })

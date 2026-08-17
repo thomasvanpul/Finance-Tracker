@@ -146,6 +146,11 @@ export function MobileHome(_props: MobileHomeProps) {
 
   const owedByMe = dashboard?.owing.totalIOwe ?? 0;
   const pendingCount = dashboard?.owing.pendingCount ?? 0;
+  // C2-4: top counterparties (up to 3) for the CLAIMED strip. When
+  // the API returns them we list names; if the endpoint is old
+  // (deployed API one commit behind), we fall back to the count-only
+  // rendering below. Both cases coexist.
+  const topPending = dashboard?.owing.topPending ?? [];
 
   const activeSubs = subs.filter((s) => s.active);
   const upcomingBills = activeSubs
@@ -401,33 +406,46 @@ export function MobileHome(_props: MobileHomeProps) {
           {view === "ring" && <RingView holdings={holdings} />}
         </div>
 
-        {/* Claimed (liabilities are outlined, no depth) */}
+        {/* Claimed (liabilities are outlined, no depth).
+            C2-4: when the API supplies topPending, list up to 3
+            counterparties by name + amount underneath the total.
+            If not (older API), only the count line renders. */}
         {owedByMe > 0 && (
-          <HStack align="start" gap={12} padding="18px 18px 0">
-            {/* Outlined glyph — a claim is not material you hold. One-off
-                surface (border-only marker) stays inline. */}
-            <div
-              style={{
-                width: 14,
-                height: 14,
-                borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-red)",
-                boxSizing: "border-box",
-                flex: "none",
-                marginTop: 2,
-              }}
-            />
-            <Text
-              as="div"
-              mono
-              size={11}
-              lineHeight="16px"
-              color="var(--ft-red)"
-              numeric
-            >
-              CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount}{" "}
-              {pendingCount === 1 ? "DEBT" : "DEBTS"}
-            </Text>
-          </HStack>
+          <VStack gap={4} padding="18px 18px 0">
+            <HStack align="start" gap={12}>
+              <div
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-red)",
+                  boxSizing: "border-box",
+                  flex: "none",
+                  marginTop: 2,
+                }}
+              />
+              <Text
+                as="div"
+                mono
+                size={11}
+                lineHeight="16px"
+                color="var(--ft-red)"
+                numeric
+              >
+                CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount}{" "}
+                {pendingCount === 1 ? "DEBT" : "DEBTS"}
+              </Text>
+            </HStack>
+            {topPending.filter((p) => p.direction === "i_owe_them").slice(0, 3).map((p) => (
+              <HStack key={`${p.name}-${p.amountGbp}`} align="baseline" justify="between" padding="0 0 0 26px">
+                <Text as="span" size={11} color="var(--ft-muted)" truncate>
+                  {p.name}
+                </Text>
+                <Text as="span" mono size={11} color="var(--ft-red)" numeric>
+                  {nfmt(-p.amountGbp, { symbol: "£" })}
+                </Text>
+              </HStack>
+            ))}
+          </VStack>
         )}
 
         {/* Cashflow section — only when there is anything to plot */}

@@ -959,11 +959,19 @@ export type DashboardSummaryThisMonth = {
   savingsRate: number;
 };
 
+export type DashboardSummaryOwingTopPendingItem = {
+  name: string;
+  amountGbp: number;
+  direction: "they_owe_me" | "i_owe_them";
+};
+
 export type DashboardSummaryOwing = {
   totalOwedToMe: number;
   totalIOwe: number;
   netGbp: number;
   pendingCount: number;
+  /** C2-4: top pending counterparties for the mobile home strip. */
+  topPending?: DashboardSummaryOwingTopPendingItem[];
 };
 
 export type DashboardSummaryMonthlyHistoryComposition = {
