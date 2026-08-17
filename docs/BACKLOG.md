@@ -43,7 +43,11 @@ new row in `__drizzle_migrations`, reverted and re-ran generate to
 baselined — that is a follow-up when the password rotation (A2) creates
 the natural moment to touch production.
 
-### A4 · dev@bypass.local in production — CONFIRMED PRESENT, needs deletion
+### A4 · dev@bypass.local in production — DONE (16 Aug 2026)
+Deleted by Thomas; verified absent by read-only query. It had 319 live session
+rows. **The safety list is now clear.**
+
+### A4-old · superseded
 Verified 16 Aug 2026 by read-only query against production: the row exists,
 created 2026-07-19. Production has 3 users; one of them is this.
 
@@ -97,7 +101,11 @@ subtracting a residual. `BlocksView` renders PROPERTY as the top block and
 CASH / INVESTED / PENSION / OTHER along the bottom row. Six tests replace
 the residual-guard cases with per-bucket coverage.
 
-### C2 · Gaps the mobile home cannot fill — TODO
+### C2 · Gaps the mobile home cannot fill — DONE
+Three of four were already satisfiable from existing data and needed wiring only:
+pension, upcoming income, split detail. Only asset-composition history needed a
+table (nw_snapshots); past months without a snapshot render dotted rather than
+backfilled from current values.
 Found during implementation, ranked. Each needs an API field before its UI can
 be honest: pension balance; 12-month asset-composition history (for the BANDS
 and RING renderings); discretionary budget total and spend-to-date; upcoming
@@ -217,7 +225,10 @@ Stack owns layout, PanelBox owns surface, Text/MonoLabel own typography,
 one-offs stay inline, and a prop that's neither layout nor surface nor
 typography goes on no primitive at all.
 
-### E4 · Break up the oversized pages — IN PROGRESS (this pass)
+### E4 · Break up the oversized pages — PARTIAL
+investments.tsx 4,874 -> 2,743 via the MarketsTab extraction. The other three
+(analytics, transactions, settings) had only pure-extraction passes; their large
+components share closures and need real refactoring, not moves.
 Pure extraction, no behaviour change, one commit per file.
 - `investments.tsx` → **febc8fb**: 5092 → 4843 lines (−249). Moved
   markets data (ticker lists, label maps, MOCK_QUOTES, sentiment helpers)
@@ -304,7 +315,13 @@ adapters. H4 (Enable Banking) is code-complete and parked because
 Restricted Production only covers accounts the developer personally
 links; see `docs/OPEN-BANKING.md` and `docs/H4-ENABLE-BANKING.md`.
 
-### F3 · Market, FX and news — PARTIAL (`57091ab`)
+### F3 · Market, FX and news — DONE (`57091ab`, news commit)
+MarketPane ships position-relevant prices and FX. News built and filtered to held
+tickers and currencies. **Measured survival on a real 47-item Yahoo pull: 0% for a
+budget persona, 2.1% market, 6.4% full analyst.** The filter works; a general feed
+is near-worthless once it is applied, and per-ticker fetching is already 100%
+relevant by construction. Ringgit-anchored news needs a Malaysian source
+(Bernama, The Star, Bank Negara) — not built.
 Mobile home MarketPane ships live prices for tickers the user
 already holds and FX pairs for held foreign currencies. News feed
 is not built.
@@ -327,7 +344,11 @@ Bank-payment initiation (TrueLayer, F4's "one level under moving
 money") is deliberately NOT built here. That is a separate decision
 gated on FCA-related work; see `docs/TARGET-PRODUCT.md` § Payments.
 
-### F5 · Progression — TODO
+### F5 · Progression — DONE
+Four earning events, all maintenance or position. Locked by 35 assertions that grep
+the XP module for banned concepts and require every amount to be a named XP_*
+constant. Refusals: never spending, never frequency, never debt, no streaks, no
+feature or data gating, cosmetic unlocks only.
 `lib/learn-xp.ts` and `lib/bot-skins.ts` still decoration; no
 event stream wires user actions to XP.
 
@@ -557,6 +578,10 @@ will be waiting, though it will need testing against the live API at that point
 since it has only ever run against a stub.
 Enable Banking behind the same interface. See `docs/OPEN-BANKING.md`.
 
-### H5 · File import as a first-class connection — TODO · Blocked by H1
+### H5 · File import as a first-class connection — DONE (`836faf2`)
+Dedup is sha256 over userId|accountId|date|description|signedAmount|ordinal, where
+ordinal is the position within the group of otherwise-identical rows in that
+import. Four reissue cases tested including row-removal, which leaves one stale
+row rather than duplicating or dropping history.
 Already handles Revolut, Monzo and Maybank. The only path that will ever work
 for Malaysia, so it is permanent, not a stopgap.
