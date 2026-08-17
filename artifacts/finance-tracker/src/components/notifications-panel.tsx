@@ -319,6 +319,11 @@ export function useAlerts() {
     //     large enough to matter (thresholds TBD) that changes.
     if (currentUserId && sharedExpenses.length > 0) {
       for (const expense of sharedExpenses as SharedExpense[]) {
+        // Defensive guard: if the API is old or the payload is
+        // malformed, participants may be missing. Skip silently
+        // rather than crash — the notification panel absolutely
+        // cannot bring down the whole layout.
+        if (!Array.isArray(expense?.participants)) continue;
         const isPayer = expense.userId === currentUserId;
         if (isPayer) {
           // Payer-side: participants who requested settlement need

@@ -43,6 +43,7 @@ const Tax            = lazy(() => import("@/pages/tax"));
 const Mortgage       = lazy(() => import("@/pages/mortgage"));
 const Calendar       = lazy(() => import("@/pages/calendar"));
 const Split          = lazy(() => import("@/pages/split"));
+const SharedExpenses = lazy(() => import("@/pages/shared-expenses"));
 const CashFlow       = lazy(() => import("@/pages/cashflow"));
 const YearReview     = lazy(() => import("@/pages/year-review"));
 const Import         = lazy(() => import("@/pages/import"));
@@ -223,6 +224,7 @@ function Router() {
         <Route path="/mortgage" component={Mortgage} />
         <Route path="/calendar" component={Calendar} />
         <Route path="/split" component={Split} />
+        <Route path="/shared" component={SharedExpenses} />
         <Route path="/recurring" component={Recurring} />
         <Route path="/learn" component={Learn} />
         <Route path="/cashflow" component={CashFlow} />

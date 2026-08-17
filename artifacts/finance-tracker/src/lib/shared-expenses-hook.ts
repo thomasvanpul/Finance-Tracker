@@ -46,7 +46,7 @@ const KEY = ["shared-expenses"] as const;
 export function useListSharedExpenses() {
   return useQuery({
     queryKey: KEY,
-    queryFn: async () => customFetch<SharedExpense[]>("/shared-expenses"),
+    queryFn: async () => customFetch<SharedExpense[]>("/api/shared-expenses"),
   });
 }
 
@@ -70,7 +70,7 @@ export function useCreateSharedExpense() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateSharedExpenseInput) =>
-      customFetch<SharedExpense>("/shared-expenses", {
+      customFetch<SharedExpense>("/api/shared-expenses", {
         method: "POST",
         body: JSON.stringify(input),
       }),
@@ -91,7 +91,7 @@ export function useParticipantSettlementAction() {
       action: PayerAction | "request";
       note?: string;
     }) => {
-      const url = `/shared-expenses/${input.expenseId}/participants/${input.participantId}/${input.action}`;
+      const url = `/api/shared-expenses/${input.expenseId}/participants/${input.participantId}/${input.action}`;
       await customFetch(url, {
         method: "POST",
         body: input.note != null ? JSON.stringify({ note: input.note }) : undefined,
@@ -107,7 +107,7 @@ export function useDeleteSharedExpense() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      await customFetch(`/shared-expenses/${id}`, { method: "DELETE" });
+      await customFetch(`/api/shared-expenses/${id}`, { method: "DELETE" });
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: KEY });
