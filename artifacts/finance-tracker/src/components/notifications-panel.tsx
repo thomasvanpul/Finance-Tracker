@@ -9,8 +9,31 @@ import {
   useListAccounts,
 } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
-import { PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_FOCUS } from "@/lib/persona";
+import { PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_FOCUS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
+
+// Persona → allowed AlertKind. Read like a table. If a kind is
+// missing for a persona it's dropped from the notifications panel.
+//
+//   market  → balance + transaction + market. No budget nag, no bill,
+//             no goal — market users are here for holdings.
+//   budget  → the day-to-day: budget, transaction, bill, balance.
+//             No market alerts.
+//   wealth  → big-picture: goal, balance, market. Drop budget/transaction
+//             — a wealth user does not want a "coffee anomaly" ping.
+//   social  → debt + bill + balance. Splits need to settle from a bank.
+//   full    → every kind.
+export function alertKindsForPersona(persona: PersonaId): Set<AlertKind> {
+  switch (persona) {
+    case "market": return new Set(["balance", "transaction", "market"]);
+    case "budget": return new Set(["budget", "transaction", "bill", "balance"]);
+    case "wealth": return new Set(["goal", "balance", "market"]);
+    case "social": return new Set(["debt", "bill", "balance"]);
+    case "full":
+    default:
+      return new Set(["budget", "transaction", "bill", "debt", "goal", "balance", "market"]);
+  }
+}
 
 const BALANCE_ALERTS_KEY = "ft-balance-alerts";
 
@@ -36,9 +59,24 @@ export function saveBalanceAlertRules(rules: BalanceAlertRule[]): void {
   } catch {}
 }
 
+// Alert `kind` gates which persona sees which alerts. Table lives in
+// alertKindsForPersona() at the bottom of this file. Adding a new
+// kind: add it here, tag emitters below, add it to the persona
+// table. If tagged with a kind that no persona accepts, the alert is
+// dead code by construction.
+export type AlertKind =
+  | "budget"       // budget-exceeded / budget-approaching
+  | "transaction"  // large-tx, anomaly detection
+  | "bill"         // upcoming payment due
+  | "debt"         // IOU overdue
+  | "goal"         // savings goal achieved / savings-rate praise
+  | "balance"      // low account balance
+  | "market";      // portfolio-side (none today; reserved)
+
 export interface Alert {
   id: string;
   level: "info" | "warn" | "critical" | "success";
+  kind: AlertKind;
   title: string;
   detail: string;
 }
@@ -128,6 +166,7 @@ export function useAlerts() {
           result.push({
             id: `budget-critical-${key}`,
             level: "critical",
+            kind: "budget",
             title: `${budget.category} budget exceeded`,
             detail: `${formatGbp(total)} spent of ${formatGbp(budget.monthlyLimit)} limit (${Math.round(pct * 100)}%)`,
           });
@@ -135,6 +174,7 @@ export function useAlerts() {
           result.push({
             id: `budget-warn-${key}`,
             level: "warn",
+            kind: "budget",
             title: `${budget.category} budget at ${Math.round(pct * 100)}%`,
             detail: `${formatGbp(total)} of ${formatGbp(budget.monthlyLimit)} used`,
           });
@@ -151,6 +191,7 @@ export function useAlerts() {
           result.push({
             id: `large-tx-${tx.id}`,
             level: "info",
+            kind: "transaction",
             title: `Large transaction: ${tx.description}`,
             detail: `${formatGbp(tx.gbpValue)} on ${tx.date} — ${tx.accountName}`,
           });
@@ -168,6 +209,7 @@ export function useAlerts() {
           result.push({
             id: `upcoming-${item.id}`,
             level: "warn",
+            kind: "bill",
             title: `Due soon: ${item.description}`,
             detail: item.gbpEquivalent == null
               ? `Due ${item.dueDate} — GBP not available`
@@ -189,6 +231,7 @@ export function useAlerts() {
         result.push({
           id: `overdue-debts-${overdueDebts.length}`,
           level: "warn",
+          kind: "debt",
           title: `${overdueDebts.length} IOU${overdueDebts.length > 1 ? "s" : ""} older than 90 days`,
           detail: `${formatGbp(total)} in long-outstanding debts — consider settling`,
         });
@@ -202,6 +245,7 @@ export function useAlerts() {
         result.push({
           id: `goal-achieved-${g.id}`,
           level: "success",
+          kind: "goal",
           title: `Goal achieved: ${g.name}`,
           detail: `${formatGbp(current)} saved — target of ${formatGbp(target)} reached`,
         });
@@ -215,6 +259,7 @@ export function useAlerts() {
       result.push({
         id: "savings-positive",
         level: "success",
+        kind: "goal",
         title: "Savings on track",
         detail: `${Math.round(savingsRate)}% savings rate this month — great work`,
       });
@@ -257,6 +302,7 @@ export function useAlerts() {
           result.push({
             id: `anomaly-${merchant}`,
             level: "warn" as const,
+            kind: "transaction",
             title: `Unusual charge: ${displayName}`,
             detail: `${formatGbp(thisMonthAmt)} this month vs avg ${formatGbp(avg)} (${Math.round((diff / avg) * 100)}% higher)`,
           });
@@ -281,6 +327,7 @@ export function useAlerts() {
           result.push({
             id: `balance-alert-${rule.accountId}`,
             level: rule.level,
+            kind: "balance",
             title: `Low balance: ${rule.accountName}`,
             detail: `${formatGbp(balance)} — below your ${formatGbp(rule.threshold)} threshold`,
           });
@@ -430,9 +477,13 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
     });
   }, []);
 
+  // Persona filter (P2·5). Drop kinds the active persona shouldn't
+  // see BEFORE the dismissed filter so a market user never dismisses
+  // a budget alert that then reappears if they switch persona.
+  const allowedKinds = useMemo(() => alertKindsForPersona(activePersonaId), [activePersonaId]);
   const visible = useMemo(
-    () => alerts.filter((a) => !dismissed.includes(a.id)),
-    [alerts, dismissed]
+    () => alerts.filter((a) => allowedKinds.has(a.kind) && !dismissed.includes(a.id)),
+    [alerts, dismissed, allowedKinds]
   );
 
   // Group by level in order: critical → warn → info → success
