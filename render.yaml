@@ -25,6 +25,12 @@ services:
         sync: false
       - key: BETTER_AUTH_SECRET
         sync: false
+      # Required. 32 bytes base64. Encrypts stored provider credentials; the
+      # server refuses to boot without it. Losing it means every user
+      # re-enters their connection credentials.
+      - key: CREDENTIAL_ENCRYPTION_KEY
+        generateValue: false
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -33,8 +39,7 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
-      - key: WISE_API_TOKEN
-        sync: false
+      # WISE_API_TOKEN is gone — H2 moved it to a per-user encrypted credential.
       - key: WISE_ENV
         sync: false
       - key: ALPACA_KEY_ID
