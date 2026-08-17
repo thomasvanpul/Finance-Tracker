@@ -6,6 +6,7 @@ import {
   useListTransactions,
   useGetTransactionSummary,
   useListSubscriptions,
+  useListUpcoming,
 } from "@workspace/api-client-react";
 import type { AppScreen } from "./MobileApp";
 import { MobileEmptyState } from "./mobile-ui";
@@ -119,6 +120,11 @@ export function MobileHome(_props: MobileHomeProps) {
   const { data: _monthSummary } = useGetTransactionSummary({ month: monthStr });
   const { data: txns = [] } = useListTransactions({ dateFrom, dateTo });
   const { data: subs = [] } = useListSubscriptions();
+  // C2-3: pull upcoming income items so COMING can show salary +
+  // any other explicit income entries alongside the recurring bills.
+  // upcomingTable already carries `type: income | expense` — no
+  // schema change needed. Filter to pending + next 30d + income.
+  const { data: upcomingItems = [] } = useListUpcoming();
 
   // ── Derived from real data ──
   const netWorth = dashboard?.netWorth ?? 0;
@@ -145,6 +151,19 @@ export function MobileHome(_props: MobileHomeProps) {
   const upcomingBills = activeSubs
     .filter((s): s is typeof s & { nextDue: string } => !!s.nextDue)
     .sort((a, b) => a.nextDue.localeCompare(b.nextDue))
+    .slice(0, 2);
+  // Upcoming income within the next 30 days. Bills come from
+  // subscriptions (recurring); income comes from upcomingTable
+  // (explicit one-off or scheduled). Two rendering rows max — enough
+  // for salary + maybe a client invoice, without turning COMING into
+  // an infinite feed.
+  const now30 = new Date();
+  const in30Str = new Date(now30.getTime() + 30 * 86400000).toISOString().slice(0, 10);
+  const todayStr = now30.toISOString().slice(0, 10);
+  const upcomingIncome = upcomingItems
+    .filter((i) => i.type === "income" && i.status === "pending")
+    .filter((i) => i.dueDate >= todayStr && i.dueDate <= in30Str)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     .slice(0, 2);
   const monthlySubTotalGbp = activeSubs.reduce((sum, s) => {
     if (s.currency !== "GBP") return sum; // no FX in this pane
@@ -453,7 +472,7 @@ export function MobileHome(_props: MobileHomeProps) {
           onLink={() => navigate("/upcoming")}
         />
         <div style={{ padding: "0 18px" }}>
-          <UpcomingList bills={upcomingBills} />
+          <UpcomingList bills={upcomingBills} incoming={upcomingIncome} />
           <a
             onClick={(e) => {
               e.preventDefault();
@@ -1011,47 +1030,88 @@ function AccountsList({ accounts }: { accounts: Acct[] }) {
 }
 
 // ── Upcoming list ────────────────────────────────────────────────────────────
+// Two row kinds share the same rendering:
+//   - BILL (from subscriptions): negative amount, red
+//   - INCOME (from upcomingTable, type=income): positive amount, green
+// Income rows render FIRST so salary etc. sit at the top of the pane
+// — the "known money in" is the item most likely to change the
+// user's plan for the month.
+interface UpcomingIncomeRow {
+  id: number;
+  description: string;
+  dueDate: string;
+  nativeAmount: number;
+  currency: string;
+}
 function UpcomingList({
   bills,
+  incoming = [],
 }: {
   bills: Array<{ id: number; name: string; amount: number; nextDue: string; currency: string }>;
+  incoming?: UpcomingIncomeRow[];
 }) {
-  if (!bills.length) {
+  if (!bills.length && !incoming.length) {
     return (
       <div style={{ padding: "12px 0", fontSize: 13, color: "var(--ft-dim)" }}>
         Nothing upcoming.
       </div>
     );
   }
+  const rows: Array<
+    | { kind: "in"; id: number; name: string; amount: number; dateStr: string; currency: string }
+    | { kind: "out"; id: number; name: string; amount: number; dateStr: string; currency: string }
+  > = [
+    ...incoming.map((i) => ({
+      kind: "in" as const,
+      id: i.id,
+      name: i.description,
+      amount: i.nativeAmount,
+      dateStr: new Date(i.dueDate + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
+      currency: i.currency,
+    })),
+    ...bills.map((b) => ({
+      kind: "out" as const,
+      id: b.id,
+      name: b.name,
+      amount: b.amount,
+      dateStr: new Date(b.nextDue + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
+      currency: b.currency,
+    })),
+  ];
   return (
     <VStack>
-      {bills.map((b, i) => {
-        const due = new Date(b.nextDue + "T12:00:00");
-        const dueStr = due.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-        return (
-          <div
-            key={b.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              minHeight: 44,
-              borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-              ...(i === bills.length - 1
-                ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
-                : {}),
-              fontSize: 14,
-            }}
+      {rows.map((r, i) => (
+        <div
+          key={`${r.kind}-${r.id}`}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            minHeight: 44,
+            borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
+            ...(i === rows.length - 1
+              ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
+              : {}),
+            fontSize: 14,
+          }}
+        >
+          <Text as="span" size={14}>
+            {r.name} · {r.dateStr}
+          </Text>
+          <Text
+            as="span"
+            mono
+            size={13}
+            color={r.kind === "in" ? "var(--ft-green)" : "var(--ft-red)"}
+            numeric
           >
-            <Text as="span" size={14}>
-              {b.name} · {dueStr}
-            </Text>
-            <Text as="span" mono size={13} color="var(--ft-red)" numeric>
-              {nfmt(-b.amount, { symbol: b.currency === "GBP" ? "£" : "" })}
-            </Text>
-          </div>
-        );
-      })}
+            {nfmt(r.kind === "in" ? r.amount : -r.amount, {
+              symbol: r.currency === "GBP" ? "£" : "",
+              sign: r.kind === "in",
+            })}
+          </Text>
+        </div>
+      ))}
     </VStack>
   );
 }
