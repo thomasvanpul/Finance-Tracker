@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { and, eq, gte, lte } from "drizzle-orm";
-import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable } from "@workspace/db";
+import { and, eq, gte, lte, inArray } from "drizzle-orm";
+import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable, nwSnapshotsTable } from "@workspace/db";
 import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, getStockPrices } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
@@ -155,9 +155,107 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const netLiquidity = totalCash - committedOut + expectedIn;
   const netWorth = totalCash + portfolioValueGbp;
 
-  // Monthly history — last 6 months
-  const monthlyHistory: { month: string; income: number; expenses: number; netSavings: number }[] = [];
-  for (const range of trailingMonthRanges(now, 6)) {
+  // Monthly history — last 12 months. Extended from 6 for C2-1 so
+  // BANDS gets a full year of composition to render. Each entry carries
+  // income/expenses/netSavings AND a composition snapshot (or null if
+  // no snapshot exists for that month — see nw_snapshots below).
+  const ranges = trailingMonthRanges(now, 12);
+
+  // Snapshots for the range window. Fetched in one query keyed by
+  // (userId, month IN (…)). The current-month row is upserted below
+  // AFTER we have the live buckets; that upsert row is included in
+  // the map because it lands before this select — actually no, we
+  // do the read first, then upsert. Simpler: read now, then for the
+  // current month, substitute live buckets in place if no snapshot
+  // yet OR update in place with live buckets so the response and the
+  // upsert always agree.
+  const rangeMonths = ranges.map((r) => r.month);
+  const snapshots = await db
+    .select()
+    .from(nwSnapshotsTable)
+    .where(and(eq(nwSnapshotsTable.userId, userId), inArray(nwSnapshotsTable.month, rangeMonths)));
+  const snapshotMap = new Map<string, typeof snapshots[number]>();
+  for (const s of snapshots) snapshotMap.set(s.month, s);
+
+  // Live composition for the current month, computed from
+  // accountBreakdown + portfolio. Mirrors computeHoldings() on the
+  // frontend (MobileHome.tsx) — kept in step because the frontend
+  // uses this same shape to render RING.
+  //
+  // Investment bucket = investment-typed accounts + total portfolio
+  // value. The other buckets sum FX-convertible accounts of matching
+  // type; unconvertible accounts fall out with no ghost bucket.
+  const liveComposition = { cash: 0, investment: 0, pension: 0, property: 0, other: 0 };
+  for (const a of accountBreakdown) {
+    if (a.gbpEquivalent == null) continue;
+    liveComposition[a.type as "cash" | "investment" | "pension" | "property" | "other"] += a.gbpEquivalent;
+  }
+  liveComposition.investment += portfolioValueGbp;
+  const round4 = (n: number) => Math.round(n * 100) / 100;
+  const liveCompositionRounded = {
+    cash: round4(liveComposition.cash),
+    investment: round4(liveComposition.investment),
+    pension: round4(liveComposition.pension),
+    property: round4(liveComposition.property),
+    other: round4(liveComposition.other),
+  };
+
+  // Current-month snapshot: upsert on (userId, month). The last write
+  // of a month wins — subsequent dashboard reads overwrite the
+  // in-progress snapshot with the newer live totals. Once the month
+  // rolls over, no further writes happen for that band (the read-only
+  // guard is the range membership check, not a fresh write path).
+  const thisMonthKey = ranges[ranges.length - 1]!.month;
+  await db
+    .insert(nwSnapshotsTable)
+    .values({
+      userId,
+      month: thisMonthKey,
+      cash: String(liveCompositionRounded.cash),
+      investment: String(liveCompositionRounded.investment),
+      pension: String(liveCompositionRounded.pension),
+      property: String(liveCompositionRounded.property),
+      other: String(liveCompositionRounded.other),
+    })
+    .onConflictDoUpdate({
+      target: [nwSnapshotsTable.userId, nwSnapshotsTable.month],
+      set: {
+        cash: String(liveCompositionRounded.cash),
+        investment: String(liveCompositionRounded.investment),
+        pension: String(liveCompositionRounded.pension),
+        property: String(liveCompositionRounded.property),
+        other: String(liveCompositionRounded.other),
+      },
+    });
+  // Make the just-upserted current-month values visible to the loop
+  // below without a second SELECT.
+  snapshotMap.set(thisMonthKey, {
+    id: -1,
+    userId,
+    month: thisMonthKey,
+    cash: String(liveCompositionRounded.cash),
+    investment: String(liveCompositionRounded.investment),
+    pension: String(liveCompositionRounded.pension),
+    property: String(liveCompositionRounded.property),
+    other: String(liveCompositionRounded.other),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  const monthlyHistory: {
+    month: string;
+    income: number;
+    expenses: number;
+    netSavings: number;
+    composition: {
+      cash: number;
+      investment: number;
+      pension: number;
+      property: number;
+      other: number;
+    } | null;
+  }[] = [];
+  for (const range of ranges) {
     const mTxs = await db.select().from(transactionsTable)
       .where(and(eq(transactionsTable.userId, userId), gte(transactionsTable.date, range.from), lte(transactionsTable.date, range.to)));
     let mInc = 0, mExp = 0;
@@ -168,7 +266,27 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       if (tx.type === "income") mInc += gbp;
       else if (tx.type === "expense") mExp += gbp;
     }
-    monthlyHistory.push({ month: range.month, income: Math.round(mInc * 100) / 100, expenses: Math.round(mExp * 100) / 100, netSavings: Math.round((mInc - mExp) * 100) / 100 });
+    const snap = snapshotMap.get(range.month);
+    // Composition: null when no snapshot exists for that month. UI
+    // renders an empty band, NOT a fabricated zero — snapshots start
+    // building the first time the dashboard route runs for a user
+    // (see the upsert above), so months before that show as null.
+    const composition = snap
+      ? {
+          cash: parseFloat(snap.cash),
+          investment: parseFloat(snap.investment),
+          pension: parseFloat(snap.pension),
+          property: parseFloat(snap.property),
+          other: parseFloat(snap.other),
+        }
+      : null;
+    monthlyHistory.push({
+      month: range.month,
+      income: Math.round(mInc * 100) / 100,
+      expenses: Math.round(mExp * 100) / 100,
+      netSavings: Math.round((mInc - mExp) * 100) / 100,
+      composition,
+    });
   }
 
   // Owing — pending debts only. FX-unavailable debts drop out of the

@@ -2155,6 +2155,26 @@ components:
                 type: number
               netSavings:
                 type: number
+              # C2-1: per-bucket asset composition snapshot for this
+              # month. Null when no snapshot exists (see nw_snapshots
+              # table — populated lazily on dashboard read for the
+              # current month; past months without a snapshot render
+              # as an empty band in the UI, never a fabricated zero).
+              composition:
+                nullable: true
+                type: object
+                required: [cash, investment, pension, property, other]
+                properties:
+                  cash:
+                    type: number
+                  investment:
+                    type: number
+                  pension:
+                    type: number
+                  property:
+                    type: number
+                  other:
+                    type: number
 
     # ── WISE ──────────────────────────────────────────────────────────────────
     WiseStatus:

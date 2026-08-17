@@ -56,7 +56,16 @@ export const GetDashboardResponse = zod.object({
   "month": zod.string(),
   "income": zod.number(),
   "expenses": zod.number(),
-  "netSavings": zod.number()
+  "netSavings": zod.number(),
+  // C2-1: per-bucket composition snapshot; null when the month has no
+  // recorded snapshot in nw_snapshots.
+  "composition": zod.object({
+    "cash": zod.number(),
+    "investment": zod.number(),
+    "pension": zod.number(),
+    "property": zod.number(),
+    "other": zod.number(),
+  }).nullable().optional()
 })).optional()
 })
 

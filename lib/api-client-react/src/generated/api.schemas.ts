@@ -966,11 +966,21 @@ export type DashboardSummaryOwing = {
   pendingCount: number;
 };
 
+export type DashboardSummaryMonthlyHistoryComposition = {
+  cash: number;
+  investment: number;
+  pension: number;
+  property: number;
+  other: number;
+};
+
 export type DashboardSummaryMonthlyHistoryItem = {
   month: string;
   income: number;
   expenses: number;
   netSavings: number;
+  /** C2-1: per-bucket composition snapshot; null when no snapshot exists for that month. */
+  composition?: DashboardSummaryMonthlyHistoryComposition | null;
 };
 
 export interface DashboardSummary {
