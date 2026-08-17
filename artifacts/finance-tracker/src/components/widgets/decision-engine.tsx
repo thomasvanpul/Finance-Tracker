@@ -12,15 +12,45 @@ import {
 } from "@workspace/api-client-react";
 import type { Account, Transaction, Investment, InvestmentSummary, Goal, Budget, Subscription, Debt } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
+import { useActivePersona } from "@/lib/persona-hook";
 import { Zap, ChevronRight } from "lucide-react";
 
 type DecisionPriority = "critical" | "high" | "medium" | "low";
+// Decision `kind` gates which persona surfaces which decisions.
+// Table lives in decisionKindsForPersona() at the bottom of the file.
+// A decision tagged with a kind no persona accepts is dead code by
+// construction.
+export type DecisionKind =
+  | "cash"          // idle cash sitting in checking
+  | "portfolio"     // not-invested / concentration / ISA
+  | "goal"          // savings goal overdue or behind
+  | "subscription"  // cancel-inactive-sub / recurring spend
+  | "budget"        // budget exceeded
+  | "debt";         // amounts owed to user
 interface MiniDecision {
   id: string;
   priority: DecisionPriority;
+  kind: DecisionKind;
   title: string;
   annualCost?: number;
   href: string;
+}
+
+// See notifications-panel.tsx for the same shape. Kept independent —
+// alerts and decisions overlap in taxonomy but a decision is
+// actionable, an alert is descriptive; a market user gets both
+// portfolio decisions AND balance alerts, not one or the other.
+import type { PersonaId } from "@/lib/persona";
+export function decisionKindsForPersona(persona: PersonaId): Set<DecisionKind> {
+  switch (persona) {
+    case "market": return new Set(["cash", "portfolio"]);
+    case "budget": return new Set(["subscription", "budget", "debt", "goal"]);
+    case "wealth": return new Set(["cash", "portfolio", "goal", "budget"]);
+    case "social": return new Set(["debt", "subscription", "budget"]);
+    case "full":
+    default:
+      return new Set(["cash", "portfolio", "goal", "subscription", "budget", "debt"]);
+  }
 }
 
 const PRIORITY_COLOR: Record<DecisionPriority, string> = {
@@ -63,10 +93,10 @@ function buildMiniDecisions(
   if (totalCashGbp > 5000 && cashRatio > 0.6) {
     const idleGbp = totalCashGbp - portfolioGbp * 0.4;
     const annualCost = Math.max(0, idleGbp) * 0.045;
-    out.push({ id: "idle-cash", priority: idleGbp > 20000 ? "critical" : idleGbp > 10000 ? "high" : "medium", title: `${formatGbp(totalCashGbp)} idle cash — ${formatGbp(annualCost)}/yr lost`, annualCost, href: "/accounts" });
+    out.push({ id: "idle-cash", priority: idleGbp > 20000 ? "critical" : idleGbp > 10000 ? "high" : "medium", kind: "cash", title: `${formatGbp(totalCashGbp)} idle cash — ${formatGbp(annualCost)}/yr lost`, annualCost, href: "/accounts" });
   }
   if (investments.length === 0 && totalCashGbp > 1000) {
-    out.push({ id: "no-investments", priority: "high", title: "Not invested yet", annualCost: totalCashGbp * 0.05, href: "/portfolio" });
+    out.push({ id: "no-investments", priority: "high", kind: "portfolio", title: "Not invested yet", annualCost: totalCashGbp * 0.05, href: "/portfolio" });
   }
   if (portfolioGbp > 500) {
     // G10: concentration checks require a live price. Silently skipping
@@ -75,7 +105,7 @@ function buildMiniDecisions(
     investments.forEach((inv) => {
       if (inv.gbpValue == null) return;
       const pct = portfolioGbp > 0 ? inv.gbpValue / portfolioGbp : 0;
-      if (pct > 0.35) out.push({ id: `conc-${inv.id}`, priority: pct > 0.6 ? "high" : "medium", title: `${inv.ticker} is ${Math.round(pct * 100)}% of portfolio`, href: "/portfolio" });
+      if (pct > 0.35) out.push({ id: `conc-${inv.id}`, priority: pct > 0.6 ? "high" : "medium", kind: "portfolio", title: `${inv.ticker} is ${Math.round(pct * 100)}% of portfolio`, href: "/portfolio" });
     });
   }
   const now = new Date();
@@ -83,20 +113,20 @@ function buildMiniDecisions(
   const isaDeadline = new Date(`${now.getMonth() < 3 || (now.getMonth() === 3 && now.getDate() <= 5) ? thisYear : thisYear + 1}-04-05`);
   const daysToISA = Math.ceil((isaDeadline.getTime() - now.getTime()) / 86_400_000);
   if (daysToISA <= 90) {
-    out.push({ id: "isa-deadline", priority: daysToISA <= 30 ? "critical" : "high", title: `ISA deadline in ${daysToISA} days`, href: "/portfolio" });
+    out.push({ id: "isa-deadline", priority: daysToISA <= 30 ? "critical" : "high", kind: "portfolio", title: `ISA deadline in ${daysToISA} days`, href: "/portfolio" });
   }
   goals.forEach((g) => {
     if (!g.deadline) return;
     const days = Math.ceil((new Date(g.deadline).getTime() - now.getTime()) / 86_400_000);
     if (days < 0 && g.current < g.target) {
-      out.push({ id: `goal-overdue-${g.id}`, priority: "high", title: `"${g.name}" goal overdue`, href: "/goals" });
+      out.push({ id: `goal-overdue-${g.id}`, priority: "high", kind: "goal", title: `"${g.name}" goal overdue`, href: "/goals" });
     } else if (days > 0 && days < 180 && g.target > 0 && g.current / g.target < 0.5) {
-      out.push({ id: `goal-behind-${g.id}`, priority: days < 60 ? "high" : "medium", title: `"${g.name}" underfunded — ${days}d left`, href: "/goals" });
+      out.push({ id: `goal-behind-${g.id}`, priority: days < 60 ? "high" : "medium", kind: "goal", title: `"${g.name}" underfunded — ${days}d left`, href: "/goals" });
     }
   });
   subscriptions.filter((s) => !s.active).forEach((s) => {
     const annual = subsAnnual(s);
-    out.push({ id: `sub-${s.id}`, priority: annual > 100 ? "high" : "medium", title: `Cancel ${s.name} — save ${formatGbp(annual)}/yr`, annualCost: annual, href: "/subscriptions" });
+    out.push({ id: `sub-${s.id}`, priority: annual > 100 ? "high" : "medium", kind: "subscription", title: `Cancel ${s.name} — save ${formatGbp(annual)}/yr`, annualCost: annual, href: "/subscriptions" });
   });
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const spendByCategory: Record<string, number> = {};
@@ -105,11 +135,11 @@ function buildMiniDecisions(
   });
   budgets.forEach((b) => {
     const over = (spendByCategory[b.category] ?? 0) - b.monthlyLimit;
-    if (over > 0) out.push({ id: `budget-${b.id}`, priority: over > b.monthlyLimit * 0.5 ? "high" : "medium", title: `${b.category} budget exceeded by ${formatGbp(over)}`, annualCost: over * 12, href: "/budget" });
+    if (over > 0) out.push({ id: `budget-${b.id}`, priority: over > b.monthlyLimit * 0.5 ? "high" : "medium", kind: "budget", title: `${b.category} budget exceeded by ${formatGbp(over)}`, annualCost: over * 12, href: "/budget" });
   });
   const debtsPending = debts.filter((d) => d.direction === "they_owe_me" && d.status === "pending");
   const totalOwed = debtsPending.reduce((s, d) => s + (d.gbpEquivalent ?? 0), 0);
-  if (totalOwed > 50) out.push({ id: "debts-owed", priority: totalOwed > 500 ? "high" : "medium", title: `${formatGbp(totalOwed)} owed to you`, href: "/owing" });
+  if (totalOwed > 50) out.push({ id: "debts-owed", priority: totalOwed > 500 ? "high" : "medium", kind: "debt", title: `${formatGbp(totalOwed)} owed to you`, href: "/owing" });
 
   return out.sort((a, b) => {
     const po = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
@@ -233,14 +263,16 @@ export function DecisionEngineWidget() {
   const { data: budgets = [] } = useListBudgets();
   const { data: subscriptions = [] } = useListSubscriptions();
   const { data: debts = [] } = useListDebts();
+  const persona = useActivePersona();
+  const allowedKinds = useMemo(() => decisionKindsForPersona(persona), [persona]);
 
   const decisions = useMemo(
     () => buildMiniDecisions(
       accounts as Account[], transactions as Transaction[], investments as Investment[],
       summary as InvestmentSummary | undefined, goals as Goal[], budgets as Budget[],
       subscriptions as Subscription[], debts as Debt[],
-    ),
-    [accounts, transactions, investments, summary, goals, budgets, subscriptions, debts],
+    ).filter((d) => allowedKinds.has(d.kind)),
+    [accounts, transactions, investments, summary, goals, budgets, subscriptions, debts, allowedKinds],
   );
 
   const top = decisions.slice(0, 6);

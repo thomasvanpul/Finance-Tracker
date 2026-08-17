@@ -2,7 +2,8 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Send, Loader2, BotMessageSquare, Sparkles, RotateCcw, TrendingDown, Target, PiggyBank, AlertTriangle, Zap, TrendingUp, BarChart2, Flame, Shield, Users } from "lucide-react";
 import { useListTransactions, useListAccounts, useGetDashboard, useListBudgets, useGetInvestmentSummary, useListGoals, useListInvestments } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
-import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
+import { PERSONAS, type PersonaId } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 import { PageHeader } from "@/components/page-header";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
@@ -405,8 +406,11 @@ export default function AiCoach() {
       .sort((a, b) => b.total - a.total);
   })();
 
-  const activePersonaIds = useMemo(() => loadPersonaIds(), []);
-  const primaryPersonaId: PersonaId = activePersonaIds[0] ?? "full";
+  // Reactive persona (P2·6). Prior code read loadPersonaIds() on
+  // mount, so a persona switch mid-session left stale prompts on
+  // screen until reload. useActivePersona re-renders on the
+  // nr-persona-update event chain (see persona-hook.ts).
+  const primaryPersonaId: PersonaId = useActivePersona();
   const primaryPersona = PERSONAS.find(p => p.id === primaryPersonaId);
   const coachSubtitle = PERSONA_SUBTITLE[primaryPersonaId];
   const suggestedPrompts = PROMPTS_BY_PERSONA[primaryPersonaId];
