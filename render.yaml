@@ -10,6 +10,11 @@ services:
     healthCheckPath: /api/accounts
     envVars:
       # Render injects PORT itself — do not set it.
+      # Pin Node explicitly. Render's default can lag behind what the code
+      # needs: the api-server uses --env-file-if-exists (Node 20+) and esbuild
+      # targets a modern runtime.
+      - key: NODE_VERSION
+        value: "22"
       - key: NODE_ENV
         value: production
       - key: LOG_LEVEL
