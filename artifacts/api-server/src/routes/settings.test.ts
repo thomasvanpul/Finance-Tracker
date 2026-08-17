@@ -128,7 +128,7 @@ describe("PUT /settings/persona", () => {
       body: JSON.stringify({ persona: "not-a-persona" }),
     });
     expect(r.status).toBe(400);
-    const body = await r.json();
+    const body = await r.json() as { error: string };
     expect(body.error).toMatch(/must be one of/);
     expect(body.error).toMatch(/market/);
     expect(body.error).toMatch(/full/);

@@ -30,6 +30,10 @@ export type StockPriceData = {
   ticker: string;
   price: number;
   currency: string;
+  // Prior session close from Yahoo (regularMarketPreviousClose). Null
+  // when Yahoo doesn't return one — treat as "day change unavailable"
+  // rather than fabricate a zero delta.
+  previousClose: number | null;
   updatedAt: string;
 };
 
@@ -336,10 +340,15 @@ export async function getStockPrices(tickers: string[]): Promise<StockPriceData[
         const quote = await yahooFinance.quote(ticker);
         const price = quote?.regularMarketPrice ?? 0;
         const currency = quote?.currency ?? "USD";
+        const previousClose =
+          typeof quote?.regularMarketPreviousClose === "number"
+            ? quote.regularMarketPreviousClose
+            : null;
         const data: StockPriceData = {
           ticker,
           price: typeof price === "number" ? price : 0,
           currency,
+          previousClose,
           updatedAt: new Date().toISOString(),
         };
         stockCache.set(ticker, { data, ts: now });

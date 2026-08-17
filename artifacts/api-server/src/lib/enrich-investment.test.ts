@@ -33,20 +33,20 @@ describe("enrichInvestment — G10 contract", () => {
   });
 
   it("does not fabricate a zero when the priceData is present but the price is NaN", () => {
-    const bad: StockPriceData = { ticker: "AAPL", price: Number.NaN, currency: "USD", updatedAt: "2026-08-15T00:00:00Z" };
+    const bad: StockPriceData = { ticker: "AAPL", price: Number.NaN, currency: "USD", previousClose: null, updatedAt: "2026-08-15T00:00:00Z" };
     const result = enrichInvestment(row, new Map([["AAPL", bad]]), fx);
     expect(result.priceAvailable).toBe(false);
     expect(result.livePrice).toBeNull();
   });
 
   it("does not fabricate a zero when the priceData is present but the price is Infinity", () => {
-    const bad: StockPriceData = { ticker: "AAPL", price: Number.POSITIVE_INFINITY, currency: "USD", updatedAt: "2026-08-15T00:00:00Z" };
+    const bad: StockPriceData = { ticker: "AAPL", price: Number.POSITIVE_INFINITY, currency: "USD", previousClose: null, updatedAt: "2026-08-15T00:00:00Z" };
     const result = enrichInvestment(row, new Map([["AAPL", bad]]), fx);
     expect(result.priceAvailable).toBe(false);
   });
 
   it("populates all price-derived fields when the price is available", () => {
-    const good: StockPriceData = { ticker: "AAPL", price: 210, currency: "USD", updatedAt: "2026-08-15T00:00:00Z" };
+    const good: StockPriceData = { ticker: "AAPL", price: 210, currency: "USD", previousClose: null, updatedAt: "2026-08-15T00:00:00Z" };
     const result = enrichInvestment(row, new Map([["AAPL", good]]), fx);
     expect(result.priceAvailable).toBe(true);
     expect(result.livePrice).toBe(210);

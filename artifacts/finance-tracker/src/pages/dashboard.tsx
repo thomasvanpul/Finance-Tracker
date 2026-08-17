@@ -2700,6 +2700,14 @@ export default function Dashboard() {
     const portfolioVal = dashData.portfolio?.totalValueGbp ?? 0;
     const portfolioPl  = dashData.portfolio?.totalPlGbp ?? 0;
     const portfolioPct = dashData.portfolio?.totalPlPercent ?? 0;
+    // Intraday delta (P1b). Nullable — the server returns null when
+    // ANY contributing position lacks previousClose or an FX leg.
+    // Do NOT coerce to 0: the market persona's headline needs to
+    // change overnight without the user doing anything, and a
+    // fabricated zero would make the KPI read "no change today" when
+    // the truth is "we don't know". G10: render "—".
+    const dayChangeGbp     = dashData.portfolio?.dayChangeGbp ?? null;
+    const dayChangePercent = dashData.portfolio?.dayChangePercent ?? null;
     const cash = dashData.totalCash ?? 0;
     const owedToMe = dashData.owing?.totalOwedToMe ?? 0;
     const iOwe = dashData.owing?.totalIOwe ?? 0;
@@ -2752,18 +2760,43 @@ export default function Dashboard() {
     const PORTFOLIO: KpiCellData = {
       label: "PORTFOLIO",
       value: portfolioVal > 0 ? formatGbp(portfolioVal) : "–",
-      // Delta here is total P&L, not 24h. The API does not yet return
-      // an intraday delta on DashboardSummary; when it does, swap.
+      // Delta is total P&L (return-since-inception). Kept as the
+      // secondary line on this cell for continuity; the intraday
+      // headline lives on PORTFOLIO_DAY (below) for the market persona.
       delta: portfolioPl !== 0
         ? `${portfolioPl >= 0 ? "+" : ""}${formatGbp(portfolioPl)}`
         : undefined,
       deltaColor: portfolioPl >= 0 ? "var(--ft-green)" : "var(--ft-red)",
       valueColor: "var(--ft-text)",
     };
+    // Total return-since-inception percent. Not the market-persona
+    // headline (see PORTFOLIO_DAY) but kept as a reference cell for
+    // wealth-persona use if it grows one.
     const PORTFOLIO_RETURN: KpiCellData = {
       label: "RETURN",
       value: portfolioVal > 0 ? `${portfolioPct >= 0 ? "+" : ""}${portfolioPct.toFixed(2)}%` : "–",
       valueColor: portfolioPct >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+    };
+    // Intraday portfolio delta — the market persona's headline.
+    // Renders "—" when the API returns null (any position missing
+    // previousClose or FX leg). Percent shown as secondary; both
+    // green/red only when the delta is present. If either is null,
+    // colour goes to dim rather than defaulting to green (no fake
+    // sign colour on an unknown value).
+    const PORTFOLIO_DAY: KpiCellData = {
+      label: "24H",
+      value: dayChangeGbp == null
+        ? "—"
+        : `${dayChangeGbp >= 0 ? "+" : ""}${formatGbp(dayChangeGbp)}`,
+      delta: dayChangePercent == null
+        ? undefined
+        : `${dayChangePercent >= 0 ? "+" : ""}${dayChangePercent.toFixed(2)}%`,
+      deltaColor: dayChangePercent == null
+        ? "var(--ft-dim)"
+        : dayChangePercent >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+      valueColor: dayChangeGbp == null
+        ? "var(--ft-dim)"
+        : dayChangeGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)",
     };
     const CASH: KpiCellData = {
       label: "CASH",
@@ -2786,15 +2819,15 @@ export default function Dashboard() {
     // preserves the pre-item-4 six-cell layout so no existing user's
     // dashboard shifts.
     //
-    // Market: PORTFOLIO + P&L are the two most important numbers.
-    // Return and Cash fill the row. The user brief asked for a "24h
-    // portfolio delta" — the current API returns total P&L, not
-    // intraday. Using total P&L until a 24h delta field exists is
-    // honest (no fabrication) and matches what the market-persona
-    // KpiBar orphan already did.
+    // Market: PORTFOLIO_DAY (intraday delta) is the hero — the whole
+    // argument for the market persona is that the screen changes
+    // overnight without the user touching anything, and a
+    // return-since-inception figure does not. When the intraday
+    // delta is unavailable it renders "—"; we do NOT fall back to
+    // total P&L (that would look like a fresh number when it isn't).
     switch (activePersonaId) {
       case "market":
-        return [PORTFOLIO, PORTFOLIO_RETURN, NET_WORTH, CASH];
+        return [PORTFOLIO_DAY, PORTFOLIO, PORTFOLIO_RETURN, CASH];
       case "budget":
         return [MONTHLY_SPEND, SAVINGS_RATE, MOM_SPEND, CASH];
       case "wealth":

@@ -36,7 +36,9 @@ export const GetDashboardResponse = zod.object({
   "portfolio": zod.object({
   "totalValueGbp": zod.number(),
   "totalPlGbp": zod.number(),
-  "totalPlPercent": zod.number()
+  "totalPlPercent": zod.number(),
+  "dayChangeGbp": zod.number().nullable(),
+  "dayChangePercent": zod.number().nullable()
 }),
   "thisMonth": zod.object({
   "income": zod.number(),

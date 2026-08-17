@@ -45,6 +45,16 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const investments = await db.select().from(investmentsTable).where(eq(investmentsTable.userId, userId));
   let portfolioValueGbp = 0;
   let portfolioCostGbp = 0;
+  // Intraday day-change (P1b). Sum of shares * (price - previousClose)
+  // converted to base, over positions that contribute to the value
+  // total. If ANY contributing position lacks previousClose or its
+  // FX leg fails, the whole delta becomes null — a half-computed
+  // delta would be a lie on the headline that decides whether the
+  // market persona has a reason to open the app tomorrow. G10:
+  // render "—" not a fabricated zero.
+  let dayChangeGbp: number | null = 0;
+  let dayChangePrevValueGbp: number | null = 0;
+  const invalidateDayChange = () => { dayChangeGbp = null; dayChangePrevValueGbp = null; };
   if (investments.length > 0) {
     const tickers = [...new Set(investments.map((i) => i.ticker))];
     const prices = await getStockPrices(tickers);
@@ -63,10 +73,40 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       if (valueGbp == null || costGbp == null) continue;
       portfolioValueGbp += valueGbp;
       portfolioCostGbp += costGbp;
+
+      // Day-change contribution for this position. If any leg is
+      // missing (no previousClose, non-finite, or FX conversion
+      // fails), invalidate the whole delta and stop accumulating.
+      if (dayChangeGbp !== null) {
+        const prev = priceData.previousClose;
+        if (prev == null || !Number.isFinite(prev)) {
+          invalidateDayChange();
+        } else {
+          const deltaNative = shares * (priceData.price - prev);
+          const prevValueNative = shares * prev;
+          const deltaGbp = await toBase(deltaNative, currency, baseCurrency);
+          const prevValueGbp = await toBase(prevValueNative, currency, baseCurrency);
+          if (deltaGbp == null || prevValueGbp == null) {
+            invalidateDayChange();
+          } else {
+            dayChangeGbp += deltaGbp;
+            (dayChangePrevValueGbp as number) += prevValueGbp;
+          }
+        }
+      }
     }
   }
   const portfolioPlGbp = portfolioValueGbp - portfolioCostGbp;
   const portfolioPlPercent = portfolioCostGbp > 0 ? (portfolioPlGbp / portfolioCostGbp) * 100 : 0;
+  // Day-change percent = deltaGbp / previousValueGbp. Null when the
+  // delta itself is null OR previousValueGbp is 0 (nothing to
+  // compare against). "0 previous" happens when the user holds only
+  // positions whose previous close was 0, which does not occur for
+  // real equities but is guarded for defensiveness.
+  const dayChangePercent: number | null =
+    dayChangeGbp == null || dayChangePrevValueGbp == null || dayChangePrevValueGbp === 0
+      ? null
+      : (dayChangeGbp / dayChangePrevValueGbp) * 100;
 
   // This month's transactions. Transactions whose FX leg is unavailable
   // are dropped from the month totals — a fabricated conversion would
@@ -155,6 +195,8 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         totalValueGbp: Math.round(portfolioValueGbp * 100) / 100,
         totalPlGbp: Math.round(portfolioPlGbp * 100) / 100,
         totalPlPercent: Math.round(portfolioPlPercent * 100) / 100,
+        dayChangeGbp: dayChangeGbp == null ? null : Math.round(dayChangeGbp * 100) / 100,
+        dayChangePercent: dayChangePercent == null ? null : Math.round(dayChangePercent * 100) / 100,
       },
       thisMonth: {
         income: Math.round(monthIncome * 100) / 100,

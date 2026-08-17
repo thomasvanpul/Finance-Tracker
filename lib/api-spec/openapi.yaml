@@ -2099,7 +2099,7 @@ components:
                 enum: [cash, investment, pension, property, other]
         portfolio:
           type: object
-          required: [totalValueGbp, totalPlGbp, totalPlPercent]
+          required: [totalValueGbp, totalPlGbp, totalPlPercent, dayChangeGbp, dayChangePercent]
           properties:
             totalValueGbp:
               type: number
@@ -2107,6 +2107,16 @@ components:
               type: number
             totalPlPercent:
               type: number
+            # Intraday delta = sum over positions of shares * (price - previousClose),
+            # converted to base. NULL when ANY contributing position lacks previousClose
+            # or its FX leg — a half-computed delta is a lie on the headline that
+            # decides whether the market persona has a reason to open the app tomorrow.
+            dayChangeGbp:
+              type: ["number", "null"]
+            # Percent = dayChangeGbp / sum(previousValueGbp). Null when the delta
+            # itself is null or previousValue sums to 0.
+            dayChangePercent:
+              type: ["number", "null"]
         thisMonth:
           type: object
           required: [income, expenses, netSavings, savingsRate]

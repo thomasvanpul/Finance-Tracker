@@ -10,4 +10,8 @@ export type DashboardSummaryPortfolio = {
   totalValueGbp: number;
   totalPlGbp: number;
   totalPlPercent: number;
+  /** @nullable */
+  dayChangeGbp: number | null;
+  /** @nullable */
+  dayChangePercent: number | null;
 };
