@@ -9,6 +9,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { applyAutoCategory } from "@/lib/auto-cat";
+import { useLocation } from "wouter";
+import { useActivePersona } from "@/lib/persona-hook";
 
 interface Props {
   open: boolean;
@@ -647,8 +649,22 @@ export function QuickAddTransaction({ open, onClose }: Props) {
 
 export function useQuickAdd(): { open: boolean; openQuickAdd: () => void; close: () => void } {
   const [open, setOpen] = useState(false);
+  const persona = useActivePersona();
+  const [, navigate] = useLocation();
 
-  const openQuickAdd = useCallback(() => setOpen(true), []);
+  // Persona-driven quick-add (P2·8). For the market persona, "add"
+  // means "add a holding", not "add a transaction". A market user
+  // types tickers into /investments; they do not log day-to-day
+  // spending. Navigating to /investments and letting that page show
+  // its own add flow is the honest default. Every other persona
+  // opens the transaction modal as before.
+  const openQuickAdd = useCallback(() => {
+    if (persona === "market") {
+      navigate("/investments?add=1");
+      return;
+    }
+    setOpen(true);
+  }, [persona, navigate]);
   const close = useCallback(() => setOpen(false), []);
 
   useEffect(() => {
@@ -663,12 +679,12 @@ export function useQuickAdd(): { open: boolean; openQuickAdd: () => void; close:
         return;
       }
       if (e.key === "n" || e.key === "N") {
-        setOpen(true);
+        openQuickAdd();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [openQuickAdd]);
 
   return { open, openQuickAdd, close };
 }

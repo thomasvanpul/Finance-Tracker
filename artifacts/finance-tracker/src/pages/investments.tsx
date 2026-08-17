@@ -1517,6 +1517,20 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
   useEffect(() => { writeClassMap(classMap); }, [classMap]);
 
+  // Open the Add-Position dialog automatically when the URL carries
+  // ?add=1. Used by the market-persona quick-add path (P2·8): pressing
+  // N or the FAB for a market user navigates to /investments?add=1
+  // instead of opening the transaction modal. Runs once on mount.
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("add") === "1") {
+        setForm(makeEmptyInvForm());
+        setAddOpen(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const hasInvestments = (investments?.length ?? 0) > 0;
   const { data: spyHistory } = useGetMarketHistory(
     { ticker: "SPY", period: "1y" },
