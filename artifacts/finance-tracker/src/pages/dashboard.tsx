@@ -2684,6 +2684,12 @@ export default function Dashboard() {
     const expenses = dashData.thisMonth?.expenses ?? 0;
     const savingsRate = dashData.thisMonth?.savingsRate ?? 0;
     const netSavings = dashData.thisMonth?.netSavings ?? 0;
+    const portfolioVal = dashData.portfolio?.totalValueGbp ?? 0;
+    const portfolioPl  = dashData.portfolio?.totalPlGbp ?? 0;
+    const portfolioPct = dashData.portfolio?.totalPlPercent ?? 0;
+    const cash = dashData.totalCash ?? 0;
+    const owedToMe = dashData.owing?.totalOwedToMe ?? 0;
+    const iOwe = dashData.owing?.totalIOwe ?? 0;
 
     // MoM delta: compare current month expenses to previous. Skip
     // unconvertible rows from the prev-month sum; if enough rows drop
@@ -2693,52 +2699,100 @@ export default function Dashboard() {
     const momSign = momDelta >= 0 ? "+" : "";
     const momColor = momDelta > 5 ? "var(--ft-red)" : momDelta < -5 ? "var(--ft-green)" : "var(--ft-amber)";
 
-    return [
-      {
-        label: "NET WORTH",
-        value: formatGbp(netWorth),
-        delta: netWorth > 0 ? undefined : "–",
-        valueColor: "var(--ft-blue)",
-      },
-      {
-        label: "MONTHLY INCOME",
-        value: income > 0 ? formatGbp(income) : "–",
-        valueColor: income > 0 ? "var(--ft-green)" : "var(--ft-dim)",
-      },
-      {
-        label: "MONTHLY SPEND",
-        value: expenses > 0 ? formatGbp(expenses) : "–",
-        valueColor: expenses > 0 ? "var(--ft-red)" : "var(--ft-dim)",
-      },
-      {
-        label: "SAVINGS RATE",
-        value: income > 0 ? `${Math.round(savingsRate)}%` : "–",
-        delta: netSavings !== 0 ? `${netSavings >= 0 ? "+" : ""}${formatGbp(netSavings)}` : undefined,
-        deltaColor: netSavings > 0 ? "var(--ft-green)" : "var(--ft-red)",
-        valueColor: savingsRate >= 20
-          ? "var(--ft-green)"
-          : savingsRate >= 10
-          ? "var(--ft-amber)"
-          : savingsRate > 0
-          ? "var(--ft-red)"
-          : "var(--ft-dim)",
-      },
-      {
-        label: "MoM SPEND",
-        value: prevExpenses > 0 ? `${momSign}${momDelta.toFixed(1)}%` : "–",
-        valueColor: prevExpenses > 0 ? momColor : "var(--ft-dim)",
-      },
-      {
-        label: "PORTFOLIO",
-        value: (dashData.portfolio?.totalValueGbp ?? 0) > 0 ? formatGbp(dashData.portfolio.totalValueGbp) : "–",
-        delta: (dashData.portfolio?.totalPlGbp ?? 0) !== 0
-          ? `${dashData.portfolio.totalPlGbp >= 0 ? "+" : ""}${formatGbp(dashData.portfolio.totalPlGbp)}`
-          : undefined,
-        deltaColor: (dashData.portfolio?.totalPlGbp ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-        valueColor: "var(--ft-text)",
-      },
-    ];
-  }, [dashData, prevMonthTxs]);
+    // Individual cells. Keeping each as a const so the persona table
+    // below reads like a table, not a tangle of inline object literals.
+
+    const NET_WORTH: KpiCellData = {
+      label: "NET WORTH",
+      value: formatGbp(netWorth),
+      delta: netWorth > 0 ? undefined : "–",
+      valueColor: "var(--ft-blue)",
+    };
+    const MONTHLY_INCOME: KpiCellData = {
+      label: "MONTHLY INCOME",
+      value: income > 0 ? formatGbp(income) : "–",
+      valueColor: income > 0 ? "var(--ft-green)" : "var(--ft-dim)",
+    };
+    const MONTHLY_SPEND: KpiCellData = {
+      label: "MONTHLY SPEND",
+      value: expenses > 0 ? formatGbp(expenses) : "–",
+      valueColor: expenses > 0 ? "var(--ft-red)" : "var(--ft-dim)",
+    };
+    const SAVINGS_RATE: KpiCellData = {
+      label: "SAVINGS RATE",
+      value: income > 0 ? `${Math.round(savingsRate)}%` : "–",
+      delta: netSavings !== 0 ? `${netSavings >= 0 ? "+" : ""}${formatGbp(netSavings)}` : undefined,
+      deltaColor: netSavings > 0 ? "var(--ft-green)" : "var(--ft-red)",
+      valueColor: savingsRate >= 20
+        ? "var(--ft-green)"
+        : savingsRate >= 10
+        ? "var(--ft-amber)"
+        : savingsRate > 0
+        ? "var(--ft-red)"
+        : "var(--ft-dim)",
+    };
+    const MOM_SPEND: KpiCellData = {
+      label: "MoM SPEND",
+      value: prevExpenses > 0 ? `${momSign}${momDelta.toFixed(1)}%` : "–",
+      valueColor: prevExpenses > 0 ? momColor : "var(--ft-dim)",
+    };
+    const PORTFOLIO: KpiCellData = {
+      label: "PORTFOLIO",
+      value: portfolioVal > 0 ? formatGbp(portfolioVal) : "–",
+      // Delta here is total P&L, not 24h. The API does not yet return
+      // an intraday delta on DashboardSummary; when it does, swap.
+      delta: portfolioPl !== 0
+        ? `${portfolioPl >= 0 ? "+" : ""}${formatGbp(portfolioPl)}`
+        : undefined,
+      deltaColor: portfolioPl >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+      valueColor: "var(--ft-text)",
+    };
+    const PORTFOLIO_RETURN: KpiCellData = {
+      label: "RETURN",
+      value: portfolioVal > 0 ? `${portfolioPct >= 0 ? "+" : ""}${portfolioPct.toFixed(2)}%` : "–",
+      valueColor: portfolioPct >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+    };
+    const CASH: KpiCellData = {
+      label: "CASH",
+      value: cash !== 0 ? formatGbp(cash) : "–",
+      valueColor: cash > 0 ? "var(--ft-text)" : "var(--ft-dim)",
+    };
+    const OWED_TO_ME: KpiCellData = {
+      label: "OWED TO ME",
+      value: owedToMe > 0 ? formatGbp(owedToMe) : "–",
+      valueColor: owedToMe > 0 ? "var(--ft-green)" : "var(--ft-dim)",
+    };
+    const I_OWE: KpiCellData = {
+      label: "I OWE",
+      value: iOwe > 0 ? formatGbp(iOwe) : "–",
+      valueColor: iOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)",
+    };
+
+    // Persona-driven KPI selection. Each entry names the cells that
+    // appear on the KPI bar for that persona, left to right. "full"
+    // preserves the pre-item-4 six-cell layout so no existing user's
+    // dashboard shifts.
+    //
+    // Market: PORTFOLIO + P&L are the two most important numbers.
+    // Return and Cash fill the row. The user brief asked for a "24h
+    // portfolio delta" — the current API returns total P&L, not
+    // intraday. Using total P&L until a 24h delta field exists is
+    // honest (no fabrication) and matches what the market-persona
+    // KpiBar orphan already did.
+    switch (activePersonaId) {
+      case "market":
+        return [PORTFOLIO, PORTFOLIO_RETURN, NET_WORTH, CASH];
+      case "budget":
+        return [MONTHLY_SPEND, SAVINGS_RATE, MOM_SPEND, CASH];
+      case "wealth":
+        return [NET_WORTH, SAVINGS_RATE, PORTFOLIO, CASH];
+      case "social":
+        return [NET_WORTH, OWED_TO_ME, I_OWE, CASH];
+      case "full":
+      default:
+        return [NET_WORTH, MONTHLY_INCOME, MONTHLY_SPEND, SAVINGS_RATE, MOM_SPEND, PORTFOLIO];
+    }
+  }, [dashData, prevMonthTxs, activePersonaId]);
 
   // ── AI Insights props ────────────────────────────────────────────────────────
   const aiInsightsProps = useMemo((): AiInsightsPanelProps => {

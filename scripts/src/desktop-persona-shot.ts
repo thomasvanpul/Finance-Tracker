@@ -78,9 +78,11 @@ async function shot(persona: string, theme: string, path: string, emptyDash: boo
 
 for (const persona of ['market', 'budget'] as const) {
   for (const theme of ['void', 'arctic'] as const) {
-    // Dashboard with empty accounts
+    // Dashboard with empty accounts — shows persona-branched empty state.
     await shot(persona, theme, '/', true);
-    // Settings connections
+    // Dashboard with populated data — shows persona-branched KPI bar.
+    await shot(persona, theme, '/?populated=1', false);
+    // Settings connections.
     await shot(persona, theme, '/settings?panel=connections', false);
   }
 }
