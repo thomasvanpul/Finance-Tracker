@@ -2338,19 +2338,19 @@ export default function Transactions() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
             <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>In</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiIncome > 0 ? "var(--ft-green)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiIncome > 0 ? "var(--ft-green)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap" as const }}>
                 {formatGbp(kpiIncome)}
               </div>
             </div>
             <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>Out</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap" as const }}>
                 {formatGbp(kpiExpenses)}
               </div>
             </div>
             <div style={{ padding: "10px 10px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>Net</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap" as const }}>
                 {kpiNet >= 0 ? "+" : "−"}{formatGbp(Math.abs(kpiNet))}
               </div>
             </div>
