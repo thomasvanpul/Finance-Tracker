@@ -120,27 +120,21 @@ and the DELETE reveal button + swipe transform are gated on `isMobile`
 route change required; `/transactions` reaches phone users through the
 desktop page's mobile branches.
 
-### D2 · Remaining mobile screens in the new design — IN PROGRESS
-Approved-language ports: home (already done), plus **MobileAccounts
-(`6d86166`)** and **MobileNetWorth (`00afb0c`)** in this pass. Both
-carry the home vocabulary — 09:41 top bar, mono-uppercase label + 34px
-premium figure, block field with area-encodes-value + constant-depth
-decoration, per-currency or per-type sections with native-first /
-converted-second number treatment.
-Extracted `nfmt` + `CURRENCY_SYMBOLS` to `mobile-format.ts` so the three
-screens share the exact number rule.
-- **Remaining (11 screens):** Upcoming next (linked from home), then the
-  rest in whatever order.
-- **Read:** `docs/MOBILE-CONCEPT.md` before continuing.
-- **Note:** stopping at 2 confirms the pattern before the remaining
-  eleven. Design phase ran to 22 rounds by inventing questions
-  implementation could answer.
+### D2 · Remaining mobile screens in the new design — DONE (12 ports + normalise + fixes)
+All 12 numbered mobile ports landed:
+`ca7bee9` (UpcomingFull) · `9535f09` (Budget) · `b509cbe` (Subscriptions) ·
+`5bfd41c` (Owing) · `04bc379` (Goals) · `bb9a649` (Investments) ·
+`7437453` (Reports) · `ebc0893` (Analytics) · `6ed7c76` (More) ·
+`2bc7f7b` (Settings) · `5fea894` (Personalize) plus the earlier
+UpcomingFull follow-ups. Three primitives-normalise passes brought
+Home / Accounts / NetWorth onto HStack/VStack/Text/MonoLabel
+(`4fdb6f4`, `007255a`, `132e061`). `nfmt` + `CURRENCY_SYMBOLS` live
+shared in `mobile-format.ts`.
 
-### D3 · Dead config cleanup — TODO
-`useMobileConfig().midTabs` and `.quickActions` have no consumers after the nav
-unification. `MobileWidgetManager` and `useWidgetVisibility` are orphaned — every
-widget they gated was mock-driven and has been deleted.
-- **Decide:** delete, or keep for the onboarding customisation in F1.
+### D3 · Dead config cleanup — DONE (`be54cb7`)
+`useMobileConfig().midTabs` / `.quickActions`, `MobileWidgetManager`,
+and `useWidgetVisibility` all deleted; every consumer was another
+dead file in the same cluster.
 
 ---
 
@@ -260,46 +254,48 @@ type modules is a follow-up.
 See `docs/TARGET-PRODUCT.md`. Design and rationale are settled; these are build
 tasks. None are blocked on design.
 
-### F1 · Onboarding questionnaire → persona — TODO
-A short questionnaire infers persona, panes, view rendering, density and theme.
-`lib/persona.ts` has five personas; today they choose widgets, and they should
-choose the whole register — `market` is the dense terminal, `budget` is plain
-English with larger type and obvious entry points.
+### F1 · Onboarding questionnaire → persona — DONE
+Server-side persistence in `66f72e9` (F1a: `app_settings.persona`
+column + `/settings/persona` route + tests). Three-question
+inferring questionnaire in `9bbe0c2` (F1b: `inferPersona`
+table + skip=full + `persona-sync` server hydration). Persona-
+gated providers and empty state in `2952676` (F1c). Persona
+consequences shipped across items 1-10:
+- Item 1 (`51fb1de`)  desktop empty state + provider filter
+- Item 2 (`209cc8f`)  sidebar/consumers reactive
+- Item 3 (`b643385`)  default landing page reactive
+- Item 4 (`a382290`)  KPI bar contents by persona
+- Item 5 (`bb7aa0d`)  notification alerts filtered
+- Item 6 (`dc9ef02`)  decision-engine + AI coach
+- Item 7 (`a4b146f`)  command palette scope
+- Item 8 (`da26e7c`)  quick-add defaults
+- Item 9 (`d409192`)  MobileHome hero for market
+- Item 10 (`092496f`) mobile bottom-nav labels
 
-### F2 · Open banking — TODO · research done, see `docs/OPEN-BANKING.md`
-**GoCardless Bank Account Data is closed to new signups** — the earlier
-recommendation is void. Provider decision is now Enable Banking, whose
-Restricted Production gives real production data on accounts you link yourself,
-self-serve and free, with no company or contract required. That is exactly this
-project's situation: one user, his own accounts.
+Items 11-14 are pending (sync-now button, onboarding follow-up
+destination, widget catalogue, import CSV presets). Item 15
+(strings layer) is a proposal, deliberately not built — 30
+persona-varied strings today against a 300-string break-even.
 
-Sequence: sandbox first, then Restricted Production with the real Wise and
-Revolut accounts, then public signup only when there is a reason to pay for KYB
-and wait 4-12 weeks for certification. Malaysia is out of scope for any
-provider; Maybank stays manual.
+### F2 · Open banking — PARKED (see H4)
+Superseded by the H series: connection model + Wise/Alpaca/Kraken
+adapters. H4 (Enable Banking) is code-complete and parked because
+Restricted Production only covers accounts the developer personally
+links; see `docs/OPEN-BANKING.md` and `docs/H4-ENABLE-BANKING.md`.
 
-### F2-old · Superseded note
-Data must arrive by itself; manual CSV import is the reason a non-technical user
-would never complete onboarding. UK providers: TrueLayer, Plaid, GoCardless.
-The AIS agent route is roughly 4–6 weeks against about a year for direct
-registration. Payment initiation is achievable as an unregulated caller through
-TrueLayer — see the regulatory section of `docs/TARGET-PRODUCT.md`.
-Malaysia has no open banking regime, so Maybank and MYR stay read-only.
+### F3 · Market, FX and news — PARTIAL (`57091ab`)
+Mobile home MarketPane ships live prices for tickers the user
+already holds and FX pairs for held foreign currencies. News feed
+is not built.
 
-### F3 · Market, FX and news — TODO
-Alpaca is already wired. These are the only elements on the home screen that
-differ tomorrow morning, and therefore the only ones that reward reopening.
-
-### F4 · Social split and owing — TODO
-Currently a ledger. Make it social: request, settle, add a shared expense. This
-is the only mechanism in the product that produces genuine return frequency,
-because another person's action puts something on the user's screen without the
-user doing anything.
+### F4 · Social split and owing — PARTIAL
+Request + reject endpoints exist (`artifacts/api-server/src/routes/debts.ts`
+POST / reject). Settle-via-provider integration doesn't exist yet;
+shared-expense creation is the CSV+manual flow, not first-class.
 
 ### F5 · Progression — TODO
-XP, theme unlocks and avatar skins exist in `lib/learn-xp.ts` and
-`lib/bot-skins.ts` and are decoration. Never reward spending; track maintenance
-and position only.
+`lib/learn-xp.ts` and `lib/bot-skins.ts` still decoration; no
+event stream wires user actions to XP.
 
 ### F6 · Avatars as 3D models — PARKED
 Redesign in Claude Design, swappable. Files: `lib/bot-skins.ts`,
@@ -333,14 +329,23 @@ renderer for a decorative avatar is real battery and bundle cost.
   Same commit dropped the dep from `artifacts/mockup-sandbox/package.json`.
   Backlog was stale.
 - **G6 · `sslmode=require` no longer verifies certificates** in newer pg
-  clients. Revisit the connection config.
+  clients. Revisit the connection config. Status 2026-08-17:
+  `lib/db/.env` still uses `sslmode=require&channel_binding=require`;
+  no change committed. Move to `verify-full` explicitly (or
+  document why `require` is acceptable for the dev branch).
 - **G7 · Neon cold-start on CI.** A cold Neon compute takes ~110s to wake on
   the first query. `drizzle-kit push` / `pull` / `migrate` all spin on
   "Pulling schema from database…" during that time. Any CI job that shells
   into the dev branch (migration checks, spec generation, integration tests)
   needs a per-step timeout above two minutes, or a warm-up ping to
   `SELECT 1` before the real command, or it will fail spuriously.
-- **G8 · Refactor PERSONA_COLORS into an Accent-keyed map — TODO.**
+- **G8 · Refactor PERSONA_COLORS into an Accent-keyed map — DONE (`e214506`).**
+  `PERSONA_ACCENT` (persona → accent slug) and `ACCENTS` (closed
+  enum) landed; `PERSONA_COLORS` derives from both so persona
+  colour and accent token can no longer drift. Below is the
+  original proposal, kept for context.
+
+  ~~Original TODO description:~~
   Follow-up to the AccentPanel decision (declined; 6 sites is not a
   pattern). 19 flex containers in `pages/` set `borderLeft: \`3px solid
   ${color}\`` where `color` is a persona-derived value from
@@ -382,7 +387,12 @@ renderer for a decorative avatar is real battery and bundle cost.
   label, centred vs. left, "No X yet" vs. "— NO X —" case, with/without
   CTA button).
 
-  **Above the 10-site threshold.** Proposal follows.
+  **Above the 10-site threshold.** Proposal follows. Status
+  2026-08-17: proposal only — the primitive has NOT been built
+  and no migrations landed. Whoever picks up G9 next should
+  implement the prop set below, migrate the existing two
+  `<EmptyState>` callers first, then work through the 11 inline
+  sites listed.
 
   **G9-P · `<DesktopEmptyState>` proposal.**
   The existing `EmptyState` covers three of the four properties we need
@@ -427,29 +437,13 @@ renderer for a decorative avatar is real battery and bundle cost.
   in a second pass; the 800-line file cap keeps each migration commit
   reviewable.
 
-  **E4 · MarketsTab extraction — 2026-08-16 entanglement report.**
-  The type + helper lift landed (`pages/investments/types.ts`, commit
-  9ca8b1a). Extracting `MarketsTab` itself is a real refactor, not a
-  pure move, because the component sits on top of five sibling pieces
-  in the same file that any extraction has to bring along:
-
-  1. `MOCK_QUOTES` (module-level constant used in the qMap fallback).
-     **Blocks the move on its own** — this violates CLAUDE.md's "never
-     show a number the API did not supply" rule and cannot be moved
-     verbatim into a shared module; it needs to be *deleted* first,
-     which is a behaviour change and belongs in a separate task.
-  2. `OVERVIEW_TICKERS` — module-level ticker list.
-  3. `TICK_PERIODS_SET` — SSE tick-period whitelist.
-  4. `useTickerStream(ticker, period)` — 40-line SSE hook.
-  5. `WatchlistsPanel` — a ~150-line component with its own state.
-  6. `computeStockRating(quote, detail)` — 100-line rating heuristic.
-
-  Item (1) alone forces a scope decision the user has to make: either
-  MarketsTab keeps a mock fallback (contra CLAUDE.md) or the mock has
-  to be removed with an empty-state redesign for the "quotes unavailable"
-  case. That is not a refactor unit of work. STOPPED, per the "if
-  cannot be done without behaviour change, stop" rule. Extraction re-
-  opens after `MOCK_QUOTES` is dealt with.
+  **E4 · MarketsTab extraction — DONE (`a88f5d0`).** The
+  MOCK_QUOTES blocker was resolved (the constant no longer exists;
+  only a stale comment reference remains in
+  `chart-analysis-modal.tsx:239`). `pages/investments/markets-tab.tsx`
+  now holds the MarketsTab component with its five sibling pieces.
+  `investments.tsx` is 2,753 lines (was 5,092 at the start of E4);
+  `markets-tab.tsx` is 2,047 lines.
 
 ---
 
@@ -468,6 +462,12 @@ was already a stated rule; these predate it.
 Sources: the currency-to-emoji map duplicated in
 `components/widgets/net-worth.tsx:36` and `accounts-summary.tsx:7`, and the
 market-hours city list in `components/layout.tsx:223-233`.
+
+Reconciliation note (2026-08-17): the earlier CLAUDE.md commit
+`04db331` documented the no-emoji rule but did not remove the flag
+maps. The three call sites still ship codepoints — see grep above.
+Part 1 of this run addresses it with a shared inline-SVG set + a
+source-level lock.
 
 - **Do:** one shared icon set as inline SVG, sized to the type ladder and
   monochrome-or-restrained enough to survive all 11 themes including `arctic`.
@@ -492,17 +492,23 @@ will never have one acquisition method. The architecture should stop pretending
 otherwise: one connection model, several adapters, each user connecting whatever
 their institution supports.
 
-### H1 · Connection model + encrypted credential storage — TODO
-Per-user connections with credentials encrypted at rest. This is the first time
-the app stores other people's bank credentials; treat it accordingly.
+### H1 · Connection model + encrypted credential storage — DONE (`d4515e8`)
+`connections` table with AES-256-GCM credential blob. Adapter
+interface (`validateCredential` / `listAccounts` /
+`fetchTransactionsSince`). `POST/DELETE /connections` + credential-
+never-leaves-the-server test (`routes/connections.test.ts` asserts
+on serialised body). Migration `0002_faulty_hobgoblin`.
 
-### H2 · Wise adapter, per-user — TODO · Blocked by H1
-Move `WISE_API_TOKEN` from the environment to a user-supplied credential.
+### H2 · Wise adapter, per-user — DONE (`901b6d2`)
+Moved Wise behind the adapter registry; env fallback dropped. UI
+in `settings-connections.tsx` (desktop) and `MobileSettings.tsx`
+(mobile) landed with items 1 + 1c.
 
-### H3 · Further token adapters — TODO · Blocked by H2
-Revolut Business, IBKR, Alpaca, Coinbase, Kraken all issue user-generated
-read-only keys. The user authorises directly with their provider, so no
-regulatory burden falls on this app — and it works for strangers today.
+### H3 · Further token adapters — DONE (`7a87fbd`)
+Alpaca + Kraken adapters land with `provider-agnostic` account
+identity (migration `0003_bent_richard_fisk`). Revolut skipped
+(no personal API), IBKR skipped (gateway model), Coinbase
+deferred (ES256 JWT signing worth its own commit).
 
 ### H4 · Open banking as one adapter — PARKED (decided 16 Aug 2026)
 Code-complete and unit-tested against a stub; see `docs/H4-ENABLE-BANKING.md`.
