@@ -27,6 +27,7 @@ import { NotificationsPanel, useAlerts, loadDismissed } from "@/components/notif
 import { loadSidebarConfig, saveSidebarConfig } from "@/lib/sidebar-config";
 import type { SidebarConfig, SidebarItemConfig } from "@/lib/sidebar-config";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 import { haptic } from "@/lib/haptics";
 import { useKeyboard } from "@/hooks/use-keyboard";
 import { usePageSwipe } from "@/hooks/use-page-swipe";
@@ -1185,14 +1186,17 @@ export function Layout({ children }: LayoutProps) {
     window.addEventListener("nr-sidebar-config-update", handler);
     return () => window.removeEventListener("nr-sidebar-config-update", handler);
   }, []);
-  const [activePersonas, setActivePersonas] = useState(() =>
-    PERSONAS.filter(p => loadPersonaIds().includes(p.id))
+  // Re-render on nr-persona-update as well as nr-sidebar-config-update
+  // so a persona flip (from server hydration or another tab) rebuilds
+  // the badges immediately. Prior code only listened for
+  // nr-sidebar-config-update, which fires from the SAME applyPersonas
+  // call — but not when persona changes via a non-applyPersonas path.
+  const activePersonaId = useActivePersona();
+  const activePersonas = useMemo(
+    () => PERSONAS.filter((p) => loadPersonaIds().includes(p.id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activePersonaId],
   );
-  useEffect(() => {
-    const handler = () => setActivePersonas(PERSONAS.filter(p => loadPersonaIds().includes(p.id)));
-    window.addEventListener("nr-sidebar-config-update", handler);
-    return () => window.removeEventListener("nr-sidebar-config-update", handler);
-  }, []);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     try {
       const s = localStorage.getItem("ft-sidebar-width");

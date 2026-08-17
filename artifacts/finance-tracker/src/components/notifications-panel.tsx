@@ -9,7 +9,8 @@ import {
   useListAccounts,
 } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
-import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_FOCUS } from "@/lib/persona";
+import { PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_FOCUS } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 
 const BALANCE_ALERTS_KEY = "ft-balance-alerts";
 
@@ -358,10 +359,11 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
   const alerts = useAlerts();
   const { data: accounts } = useListAccounts();
 
-  const primaryPersona = useMemo(() => {
-    const ids = loadPersonaIds();
-    return ids.length > 0 ? PERSONAS.find((p) => p.id === ids[0]) ?? null : null;
-  }, []);
+  const activePersonaId = useActivePersona();
+  const primaryPersona = useMemo(
+    () => PERSONAS.find((p) => p.id === activePersonaId) ?? null,
+    [activePersonaId],
+  );
 
   // Balance alerts config state
   const [balanceRules, setBalanceRules] = useState<BalanceAlertRule[]>(() =>

@@ -49,6 +49,7 @@ import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard 
 import { Link } from "wouter";
 import { formatGbp, formatNative } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 import { useLocation } from "wouter";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
 import { Zap, RefreshCw } from "lucide-react";
@@ -2487,7 +2488,11 @@ export default function Dashboard() {
       localStorage.getItem("nr-onboarding-complete") === "1" ||
       localStorage.getItem("ft-onboarding-dismissed") === "1"
   );
-  const [personaVersion, setPersonaVersion] = useState(0);
+  // Bump-on-persona-change: useActivePersona re-renders this
+  // component whenever the persona flips (see persona-hook.ts). The
+  // downstream useMemo below reads loadPersonaIds() and needs a fresh
+  // eval, so we key it off this value.
+  const activePersonaId = useActivePersona();
   const [isCustomizing, setIsCustomizing] = useState(
     () => localStorage.getItem(CUSTOMIZE_MODE_KEY) === "1"
   );
@@ -2499,19 +2504,13 @@ export default function Dashboard() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  useEffect(() => {
-    const handler = () => setPersonaVersion(v => v + 1);
-    window.addEventListener("nr-sidebar-config-update", handler);
-    return () => window.removeEventListener("nr-sidebar-config-update", handler);
-  }, []);
-
   const dashboardLabel = useMemo(() => {
     const ids = loadPersonaIds();
     if (ids.length === 0) return "PORTFOLIO OVERVIEW";
     if (ids.length > 1) return ids.map(id => PERSONAS.find(p => p.id === id)?.code ?? id).join("+");
     return PERSONA_DASHBOARD_LABEL[ids[0]] ?? "PORTFOLIO OVERVIEW";
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personaVersion]);
+  }, [activePersonaId]);
 
   // Show the wizard whenever the user hasn't completed/dismissed it, regardless of account count.
   // This ensures returning users who reset onboarding also see it.

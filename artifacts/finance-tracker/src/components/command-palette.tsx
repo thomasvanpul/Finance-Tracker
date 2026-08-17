@@ -4,6 +4,7 @@ import { usePrivacy } from "@/contexts/privacy-context";
 import { useListTransactions, useListAccounts } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { applyPersonas, loadPersonaIds, PERSONAS, PERSONA_GLYPHS, type PersonaId } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -186,7 +187,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
   const { data: allAccounts } = useListAccounts({});
   const { data: allTxs } = useListTransactions();
 
-  const activePersonaId = useMemo(() => loadPersonaIds()[0], []);
+  const activePersonaId = useActivePersona();
   const commands = buildCommands(navigate, onClose, onNewTransaction, togglePrivacy, activePersonaId, onToggleAlerts, onToggleSidebar);
 
   const navTo = (path: string) => () => { navigate(path); onClose(); };

@@ -3,6 +3,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { getAiStyle, setAiStylePref, type AiStyle } from "@/components/ai-agent";
 import { loadCatRules, saveCatRules, type CatRule } from "@/lib/auto-cat";
 import { PERSONAS, loadPersonaIds, applyPersonas, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_INSIGHT_PREVIEWS, PERSONA_BG, type PersonaId } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 import { loadSidebarConfig, saveSidebarConfig } from "@/lib/sidebar-config";
 import {
   useGetSettingsCurrency,
@@ -2416,10 +2417,10 @@ export default function Settings() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   // Persona-filtered NAV. Market persona hides bank-only surfaces
-  // (see MARKET_HIDDEN_NAV). Reads localStorage synchronously; the
-  // parent useEffect above bumps personaVersion when persona changes
-  // via the nr-persona-update event so this re-derives.
-  const persona = (loadPersonaIds()[0] as "market" | "budget" | "wealth" | "social" | "full") ?? "full";
+  // (see MARKET_HIDDEN_NAV). useActivePersona re-renders on any
+  // persona change (server hydration, cross-tab, future settings row)
+  // so the nav rebuilds without a page reload.
+  const persona = useActivePersona();
   const navGroups = filterNavGroupsForPersona(NAV_GROUPS, persona);
   const allNavItems = navGroups.flatMap(g => g.items);
   const activeLabel = allNavItems.find(i => i.id === activePanel)?.label ?? "Settings";

@@ -2,7 +2,8 @@ import { useGetDashboard } from "@workspace/api-client-react";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { PrivNum } from "@/contexts/privacy-context";
 import { useCountUp } from "@/hooks/use-count-up";
-import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
+import { PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 import { useMemo } from "react";
 import { Link } from "wouter";
 
@@ -25,11 +26,11 @@ interface KpiItem {
 export function KpiBar() {
   const { data } = useGetDashboard();
 
-  const { personaId, persona } = useMemo(() => {
-    const ids = loadPersonaIds();
-    const id = ids[0] ?? "full";
-    return { personaId: id, persona: PERSONAS.find(p => p.id === id) ?? null };
-  }, []);
+  const personaId = useActivePersona();
+  const persona = useMemo(
+    () => PERSONAS.find((p) => p.id === personaId) ?? null,
+    [personaId],
+  );
 
   if (!data) return null;
 

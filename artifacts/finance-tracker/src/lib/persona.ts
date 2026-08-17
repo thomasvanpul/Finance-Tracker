@@ -248,6 +248,11 @@ export const PERSONA_INSIGHT_PREVIEWS: Record<PersonaId, { page: string; msg: st
 export const LS_PERSONA_KEY = "ft-persona";
 export const LS_ONBOARDING_KEY = "ft-onboarding-complete";
 
+// Event fired whenever the active persona changes. Consumers that
+// render persona-derived UI (KPI content, nav, empty state, default
+// landing) listen for this via useActivePersona() (see persona-hook.ts).
+export const PERSONA_UPDATE_EVENT = "nr-persona-update";
+
 export function loadPersonaIds(): PersonaId[] {
   try {
     const raw = localStorage.getItem(LS_PERSONA_KEY);
@@ -314,7 +319,11 @@ export function applyPersonas(ids: PersonaId[]): void {
     spans: widgetSpans,
   }));
 
-  // Notify listeners to re-read configs without a page reload
+  // Notify listeners to re-read configs without a page reload.
+  // `nr-persona-update` fires alongside the more specific events so
+  // components that derive UI from the persona itself (not just from
+  // sidebar or widget configs) have one signal to listen for.
   window.dispatchEvent(new Event("nr-sidebar-config-update"));
   window.dispatchEvent(new Event("ft-widgets-update"));
+  window.dispatchEvent(new Event(PERSONA_UPDATE_EVENT));
 }

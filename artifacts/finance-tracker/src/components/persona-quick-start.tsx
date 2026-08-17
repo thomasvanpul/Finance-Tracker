@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
+import { PERSONAS, type PersonaId } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const qsDismissedKey = (id: string) => `ft-qs-dismissed-${id}`;
@@ -39,8 +40,7 @@ export const PERSONA_QS_STEPS: Record<PersonaId, QsStep[]> = {
 export function PersonaQuickStart() {
   const [, navigate] = useLocation();
   const isMobile = useIsMobile();
-  const ids = loadPersonaIds();
-  const primaryId = ids[0] as PersonaId | undefined;
+  const primaryId = useActivePersona();
   const persona = PERSONAS.find(p => p.id === primaryId);
   const steps = (primaryId && PERSONA_QS_STEPS[primaryId]) ? PERSONA_QS_STEPS[primaryId] : PERSONA_QS_STEPS.full;
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { loadPersonaIds, PERSONAS, PERSONA_GLYPHS, PERSONA_COLORS } from "@/lib/persona";
+import { PERSONAS, PERSONA_GLYPHS, PERSONA_COLORS } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 
 interface ShortcutSection {
   label: string;
@@ -60,10 +61,10 @@ interface Props {
 }
 
 export function KeyboardShortcuts({ open, onClose }: Props) {
-  const activePersonaIds = useMemo(() => loadPersonaIds(), [open]);
+  const activePersonaId = useActivePersona();
   const primaryPersona = useMemo(
-    () => PERSONAS.find((p) => p.id === activePersonaIds[0]) ?? null,
-    [activePersonaIds]
+    () => PERSONAS.find((p) => p.id === activePersonaId) ?? null,
+    [activePersonaId, open]
   );
 
   const personaSection = useMemo((): ShortcutSection => {
@@ -80,10 +81,11 @@ export function KeyboardShortcuts({ open, onClose }: Props) {
     }
     const color = PERSONA_COLORS[primaryPersona.id];
     const glyph = PERSONA_GLYPHS[primaryPersona.id];
-    const secondary = activePersonaIds
-      .slice(1)
-      .map((id) => PERSONAS.find((p) => p.id === id)?.code ?? id)
-      .join(" + ");
+    // useActivePersona returns a single id; the panel treats
+    // additional personas as decorative, so "secondary" is empty in
+    // the reactive world. Kept as a hook of the row so a future
+    // multi-persona layer can restore it.
+    const secondary = "";
     return {
       label: "TERMINAL PROFILE",
       accent: color,
@@ -94,7 +96,7 @@ export function KeyboardShortcuts({ open, onClose }: Props) {
         ["— —", primaryPersona.tagline],
       ],
     };
-  }, [primaryPersona, activePersonaIds]);
+  }, [primaryPersona, activePersonaId]);
 
   useEffect(() => {
     if (!open) return;
