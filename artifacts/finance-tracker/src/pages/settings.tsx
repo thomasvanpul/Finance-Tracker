@@ -2222,7 +2222,7 @@ function CategoriesPanel() {
               <input
                 value={emojiInput}
                 onChange={e => setEmojiInput(e.target.value)}
-                placeholder="🎯"
+                placeholder="e.g. X"
                 style={{ fontFamily: "var(--font-mono)", fontSize: 18, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "6px 10px", width: "100%", outline: "none", boxSizing: "border-box" }}
               />
             </div>

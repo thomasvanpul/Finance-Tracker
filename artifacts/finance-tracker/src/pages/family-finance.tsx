@@ -1032,7 +1032,9 @@ function GoalRow({
               </FtSelect>
             </FieldRow>
             <FieldRow label="Emoji">
-              <FtInput value={goalForm.emoji} onChange={(e) => setGoalForm({ ...goalForm, emoji: e.target.value })} placeholder="🏠" style={{ width: 60 }} />
+              {/* Placeholder emoji removed — CLAUDE.md forbids shipping
+                  emoji even as ghost text. Field accepts any user character. */}
+              <FtInput value={goalForm.emoji} onChange={(e) => setGoalForm({ ...goalForm, emoji: e.target.value })} placeholder="e.g. H" style={{ width: 60 }} />
             </FieldRow>
           </div>
           <HStack gap={8}>
@@ -1362,7 +1364,9 @@ export default function FamilyFinance() {
     currentAmount: 0,
     deadline: "",
     assignedTo: "shared",
-    emoji: "🏠",
+    // Default glyph blank per no-emoji lock. The categories field
+    // remains user-editable via the settings panel.
+    emoji: "",
   };
   const [goalForm, setGoalForm] = useState(emptyGoalForm);
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
@@ -2120,7 +2124,7 @@ export default function FamilyFinance() {
                 <FtInput
                   value={goalForm.emoji}
                   onChange={(e) => setGoalForm({ ...goalForm, emoji: e.target.value })}
-                  placeholder="🏠"
+                  placeholder="e.g. H"
                   style={{ width: 60 }}
                 />
               </FieldRow>

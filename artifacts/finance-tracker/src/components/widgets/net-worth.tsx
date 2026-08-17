@@ -3,6 +3,7 @@ import { useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp, formatPercent } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import { useCountUp } from "@/hooks/use-count-up";
+import { CurrencyMark } from "@/components/currency-mark";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const HISTORY_KEY = "ft-nw-history";
@@ -32,11 +33,6 @@ function buildCurrencyGroups(
     .sort((a, b) => b.gbpTotal - a.gbpTotal);
 }
 
-const CURRENCY_FLAGS: Record<string, string> = {
-  GBP: "🇬🇧", USD: "🇺🇸", EUR: "🇪🇺", MYR: "🇲🇾", SGD: "🇸🇬",
-  AUD: "🇦🇺", CAD: "🇨🇦", JPY: "🇯🇵", HKD: "🇭🇰", CHF: "🇨🇭",
-  NZD: "🇳🇿", SEK: "🇸🇪", NOK: "🇳🇴", DKK: "🇩🇰", CNY: "🇨🇳",
-};
 
 function formatNative(amount: number, currency: string): string {
   const symbols: Record<string, string> = { GBP: "£", USD: "$", EUR: "€", MYR: "RM ", SGD: "S$", AUD: "A$", CAD: "C$", JPY: "¥", HKD: "HK$", CHF: "CHF " };
@@ -84,9 +80,8 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
-              <span style={{ fontSize: 10 }}>{CURRENCY_FLAGS[g.currency] ?? "🌐"}</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-muted)" }}>
-                {g.currency}
+              <span style={{ color: "var(--ft-muted)" }}>
+                <CurrencyMark code={g.currency} size={10} />
               </span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 2 }}>
                 {g.share.toFixed(0)}%

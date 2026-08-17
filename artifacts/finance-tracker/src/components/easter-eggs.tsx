@@ -177,16 +177,27 @@ function OceanFishSwimOverlay({ onDone }: { onDone: () => void }) {
     <div
       style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none", overflow: "hidden" }}
     >
+      {/* SVG puffer replaces the emoji per the no-emoji lock.
+          Kept the same 40px footprint and animation for the easter
+          egg's timing. Fills currentColor so it takes the theme. */}
       <div
         style={{
           position: "absolute",
           top: "50%",
-          fontSize: 40,
           animation: "ft-fish-swim 3s linear forwards",
           userSelect: "none",
+          color: "var(--ft-amber)",
         }}
+        aria-hidden
       >
-        🐡
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <ellipse cx="20" cy="20" rx="12" ry="10" fill="currentColor" opacity="0.9" />
+          <circle cx="24" cy="18" r="1.5" fill="var(--ft-base)" />
+          <path d="M8 20 L2 14 L2 26 Z" fill="currentColor" opacity="0.7" />
+          {[3, 8, 13, 18, 23].map((x) => (
+            <circle key={x} cx={12 + x} cy={14 + (x % 5)} r={0.9} fill="var(--ft-base)" opacity="0.7" />
+          ))}
+        </svg>
       </div>
       <style>{`
         @keyframes ft-fish-swim {

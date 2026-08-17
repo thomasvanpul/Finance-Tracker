@@ -2,11 +2,7 @@ import { useState } from "react";
 import { useGetDashboard } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
-
-const CURRENCY_FLAGS: Record<string, string> = {
-  GBP: "🇬🇧", USD: "🇺🇸", EUR: "🇪🇺", MYR: "🇲🇾", SGD: "🇸🇬",
-  AUD: "🇦🇺", CAD: "🇨🇦", JPY: "🇯🇵", HKD: "🇭🇰", CHF: "🇨🇭",
-};
+import { CurrencyMark } from "@/components/currency-mark";
 
 type SortKey = "name" | "balance" | "gbp";
 
@@ -74,11 +70,8 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
         </div>
       </td>
       <td style={{ padding: "7px 10px" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.04em" }}>
-          {CURRENCY_FLAGS[acct.currency] ?? ""}
-        </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 3 }}>
-          {acct.currency}
+        <span style={{ color: "var(--ft-dim)" }}>
+          <CurrencyMark code={acct.currency} size={10} />
         </span>
       </td>
       <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>

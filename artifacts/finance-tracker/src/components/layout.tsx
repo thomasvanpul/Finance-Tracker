@@ -4,6 +4,7 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import { useAppResume } from "@/hooks/use-app-resume";
 import { MobileFab } from "@/components/mobile-fab";
+import { CountryMark, COUNTRY_FOR_CITY } from "@/components/currency-mark";
 import { createPortal } from "react-dom";
 import { useFintrackTheme } from "@/contexts/theme-context";
 import { authClient } from "@/lib/auth-client";
@@ -213,7 +214,10 @@ const HREF_SECTION_MAP: Record<string, string> = {
 
 interface WorldCity {
   label: string;
-  flag: string;
+  // ISO 3166-1 alpha-2 country code. Was an emoji flag; migrated
+  // to a themeable inline-SVG mark (see components/currency-mark.tsx).
+  // Legacy `flag` entries in localStorage are migrated on read.
+  country: string;
   tz: string;
   exchange: string;
   marketOpen: string;   // "HH:MM" local time (24h)
@@ -221,34 +225,34 @@ interface WorldCity {
 }
 
 const DEFAULT_WORLD_CITIES: WorldCity[] = [
-  { label: "London",    flag: "🇬🇧", tz: "Europe/London",      exchange: "LSE",     marketOpen: "08:00", marketClose: "16:30" },
-  { label: "New York",  flag: "🇺🇸", tz: "America/New_York",   exchange: "NYSE",    marketOpen: "09:30", marketClose: "16:00" },
-  { label: "Tokyo",     flag: "🇯🇵", tz: "Asia/Tokyo",          exchange: "TSE",     marketOpen: "09:00", marketClose: "15:30" },
-  { label: "Hong Kong", flag: "🇨🇳", tz: "Asia/Hong_Kong",      exchange: "HKEX",   marketOpen: "09:30", marketClose: "16:00" },
-  { label: "Sydney",    flag: "🇦🇺", tz: "Australia/Sydney",    exchange: "ASX",     marketOpen: "10:00", marketClose: "16:00" },
-  { label: "Frankfurt", flag: "🇩🇪", tz: "Europe/Berlin",       exchange: "XETRA",  marketOpen: "09:00", marketClose: "17:30" },
+  { label: "London",    country: "GB", tz: "Europe/London",      exchange: "LSE",   marketOpen: "08:00", marketClose: "16:30" },
+  { label: "New York",  country: "US", tz: "America/New_York",   exchange: "NYSE",  marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Tokyo",     country: "JP", tz: "Asia/Tokyo",         exchange: "TSE",   marketOpen: "09:00", marketClose: "15:30" },
+  { label: "Hong Kong", country: "HK", tz: "Asia/Hong_Kong",     exchange: "HKEX",  marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Sydney",    country: "AU", tz: "Australia/Sydney",   exchange: "ASX",   marketOpen: "10:00", marketClose: "16:00" },
+  { label: "Frankfurt", country: "DE", tz: "Europe/Berlin",      exchange: "XETRA", marketOpen: "09:00", marketClose: "17:30" },
 ];
 
 // Curated timezone presets for the "Add city" dropdown
 const TZ_PRESETS: WorldCity[] = [
-  { label: "London",       flag: "🇬🇧", tz: "Europe/London",        exchange: "LSE",      marketOpen: "08:00", marketClose: "16:30" },
-  { label: "New York",     flag: "🇺🇸", tz: "America/New_York",     exchange: "NYSE",     marketOpen: "09:30", marketClose: "16:00" },
-  { label: "Chicago",      flag: "🇺🇸", tz: "America/Chicago",      exchange: "CME",      marketOpen: "08:30", marketClose: "15:15" },
-  { label: "Los Angeles",  flag: "🇺🇸", tz: "America/Los_Angeles",  exchange: "—",        marketOpen: "09:30", marketClose: "16:00" },
-  { label: "Toronto",      flag: "🇨🇦", tz: "America/Toronto",      exchange: "TSX",      marketOpen: "09:30", marketClose: "16:00" },
-  { label: "São Paulo",    flag: "🇧🇷", tz: "America/Sao_Paulo",    exchange: "B3",       marketOpen: "10:00", marketClose: "17:55" },
-  { label: "Frankfurt",    flag: "🇩🇪", tz: "Europe/Berlin",         exchange: "XETRA",   marketOpen: "09:00", marketClose: "17:30" },
-  { label: "Paris",        flag: "🇫🇷", tz: "Europe/Paris",          exchange: "Euronext", marketOpen: "09:00", marketClose: "17:30" },
-  { label: "Amsterdam",    flag: "🇳🇱", tz: "Europe/Amsterdam",      exchange: "Euronext", marketOpen: "09:00", marketClose: "17:30" },
-  { label: "Zurich",       flag: "🇨🇭", tz: "Europe/Zurich",         exchange: "SIX",      marketOpen: "09:00", marketClose: "17:30" },
-  { label: "Dubai",        flag: "🇦🇪", tz: "Asia/Dubai",            exchange: "DFM",      marketOpen: "10:00", marketClose: "14:00" },
-  { label: "Mumbai",       flag: "🇮🇳", tz: "Asia/Kolkata",          exchange: "NSE",      marketOpen: "09:15", marketClose: "15:30" },
-  { label: "Singapore",    flag: "🇸🇬", tz: "Asia/Singapore",        exchange: "SGX",      marketOpen: "09:00", marketClose: "17:00" },
-  { label: "Hong Kong",    flag: "🇨🇳", tz: "Asia/Hong_Kong",        exchange: "HKEX",     marketOpen: "09:30", marketClose: "16:00" },
-  { label: "Shanghai",     flag: "🇨🇳", tz: "Asia/Shanghai",         exchange: "SSE",      marketOpen: "09:30", marketClose: "15:00" },
-  { label: "Tokyo",        flag: "🇯🇵", tz: "Asia/Tokyo",            exchange: "TSE",      marketOpen: "09:00", marketClose: "15:30" },
-  { label: "Seoul",        flag: "🇰🇷", tz: "Asia/Seoul",            exchange: "KRX",      marketOpen: "09:00", marketClose: "15:30" },
-  { label: "Sydney",       flag: "🇦🇺", tz: "Australia/Sydney",      exchange: "ASX",      marketOpen: "10:00", marketClose: "16:00" },
+  { label: "London",       country: "GB", tz: "Europe/London",       exchange: "LSE",      marketOpen: "08:00", marketClose: "16:30" },
+  { label: "New York",     country: "US", tz: "America/New_York",    exchange: "NYSE",     marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Chicago",      country: "US", tz: "America/Chicago",     exchange: "CME",      marketOpen: "08:30", marketClose: "15:15" },
+  { label: "Los Angeles",  country: "US", tz: "America/Los_Angeles", exchange: "—",        marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Toronto",      country: "CA", tz: "America/Toronto",     exchange: "TSX",      marketOpen: "09:30", marketClose: "16:00" },
+  { label: "São Paulo",    country: "BR", tz: "America/Sao_Paulo",   exchange: "B3",       marketOpen: "10:00", marketClose: "17:55" },
+  { label: "Frankfurt",    country: "DE", tz: "Europe/Berlin",       exchange: "XETRA",    marketOpen: "09:00", marketClose: "17:30" },
+  { label: "Paris",        country: "FR", tz: "Europe/Paris",        exchange: "Euronext", marketOpen: "09:00", marketClose: "17:30" },
+  { label: "Amsterdam",    country: "NL", tz: "Europe/Amsterdam",    exchange: "Euronext", marketOpen: "09:00", marketClose: "17:30" },
+  { label: "Zurich",       country: "CH", tz: "Europe/Zurich",       exchange: "SIX",      marketOpen: "09:00", marketClose: "17:30" },
+  { label: "Dubai",        country: "AE", tz: "Asia/Dubai",          exchange: "DFM",      marketOpen: "10:00", marketClose: "14:00" },
+  { label: "Mumbai",       country: "IN", tz: "Asia/Kolkata",        exchange: "NSE",      marketOpen: "09:15", marketClose: "15:30" },
+  { label: "Singapore",    country: "SG", tz: "Asia/Singapore",      exchange: "SGX",      marketOpen: "09:00", marketClose: "17:00" },
+  { label: "Hong Kong",    country: "HK", tz: "Asia/Hong_Kong",      exchange: "HKEX",     marketOpen: "09:30", marketClose: "16:00" },
+  { label: "Shanghai",     country: "CN", tz: "Asia/Shanghai",       exchange: "SSE",      marketOpen: "09:30", marketClose: "15:00" },
+  { label: "Tokyo",        country: "JP", tz: "Asia/Tokyo",          exchange: "TSE",      marketOpen: "09:00", marketClose: "15:30" },
+  { label: "Seoul",        country: "KR", tz: "Asia/Seoul",          exchange: "KRX",      marketOpen: "09:00", marketClose: "15:30" },
+  { label: "Sydney",       country: "AU", tz: "Australia/Sydney",    exchange: "ASX",      marketOpen: "10:00", marketClose: "16:00" },
 ];
 
 const LS_WORLD_CLOCK_KEY = "ft-world-clock-cities";
@@ -256,7 +260,19 @@ const LS_WORLD_CLOCK_KEY = "ft-world-clock-cities";
 function readWorldCities(): WorldCity[] {
   try {
     const r = localStorage.getItem(LS_WORLD_CLOCK_KEY);
-    return r ? JSON.parse(r) : DEFAULT_WORLD_CITIES;
+    if (!r) return DEFAULT_WORLD_CITIES;
+    const raw = JSON.parse(r) as Array<Partial<WorldCity> & { flag?: string }>;
+    // Migrate legacy entries: `flag` (emoji) → `country` (ISO code)
+    // via COUNTRY_FOR_CITY. Anything unrecognised falls back to a
+    // two-letter guess from the label, defaulting to "??".
+    return raw.map((c) => ({
+      label: c.label ?? "",
+      country: c.country ?? COUNTRY_FOR_CITY[c.label ?? ""] ?? "??",
+      tz: c.tz ?? "UTC",
+      exchange: c.exchange ?? "—",
+      marketOpen: c.marketOpen ?? "09:00",
+      marketClose: c.marketClose ?? "17:00",
+    }));
   } catch { return DEFAULT_WORLD_CITIES; }
 }
 
@@ -372,7 +388,9 @@ function ClockDisplay({ clock }: { clock: string; }) {
                 {editing && (
                   <button onClick={() => removeCity(city.tz)} title="Remove" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-red)", fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0 }}>✕</button>
                 )}
-                <span style={{ fontSize: 13, flexShrink: 0 }}>{city.flag}</span>
+                <span style={{ color: "var(--ft-dim)", flexShrink: 0 }}>
+                  <CountryMark code={city.country} size={11} />
+                </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-text)" }}>{city.label}</div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>{city.exchange}</div>
@@ -396,7 +414,10 @@ function ClockDisplay({ clock }: { clock: string; }) {
                 style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "4px 6px", outline: "none", minWidth: 120 }}
               >
                 {TZ_PRESETS.filter((p) => !cities.find((c) => c.tz === p.tz)).map((p) => (
-                  <option key={p.tz} value={p.tz}>{p.flag} {p.label}</option>
+                  // Native <option> cannot carry SVG; strip the mark
+                  // and prefix the country code textually so the
+                  // dropdown still identifies the city without emoji.
+                  <option key={p.tz} value={p.tz}>{p.country}  {p.label}</option>
                 ))}
               </select>
               <button onClick={addCity} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "4px 10px", cursor: "pointer", fontWeight: 700 }}>+ ADD</button>

@@ -43,21 +43,12 @@ const DEFAULT_COLORS: Record<string, string> = {
   transfer: "#94a3b8",
 };
 
-const DEFAULT_EMOJIS: Record<string, string> = {
-  food: "🍔",
-  groceries: "🛒",
-  dining: "🍽️",
-  transport: "🚗",
-  shopping: "🛍️",
-  entertainment: "🎬",
-  health: "💊",
-  utilities: "⚡",
-  travel: "✈️",
-  income: "💰",
-  salary: "💰",
-  transfer: "↔️",
-  other: "📦",
-};
+// DEFAULT_EMOJIS map removed per the no-emoji lock. Users can still
+// set a single character as a category glyph via the categories
+// settings panel (that field is user content, not a shipped default).
+// A future icon set can replace this with themeable SVG per category,
+// same shape as components/currency-mark.tsx.
+const DEFAULT_EMOJIS: Record<string, string> = {};
 
 export function CategoryProvider({ children }: { children: ReactNode }) {
   const [meta, setMeta] = useState<Record<string, CategoryMeta>>(() => load());
@@ -80,8 +71,11 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getEmoji = useCallback((category: string): string => {
+    // User-set glyph OR empty. No fallback emoji — CLAUDE.md
+    // forbids shipping emoji as decoration; if the user sets one
+    // themselves via the categories panel, we surface it.
     const key = category.toLowerCase();
-    return meta[key]?.emoji ?? DEFAULT_EMOJIS[key] ?? "📂";
+    return meta[key]?.emoji ?? DEFAULT_EMOJIS[key] ?? "";
   }, [meta]);
 
   const getColor = useCallback((category: string): string => {
