@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
-import { getFxRates, getStockPrices, getStockQuotes, getStockHistory, getStockDetail, getOptionsChain, getStockNews } from "../lib/market";
+import { and, eq } from "drizzle-orm";
+import { db, investmentsTable, accountsTable } from "@workspace/db";
+import { getFxRates, getStockPrices, getStockQuotes, getStockHistory, getStockDetail, getOptionsChain, getStockNews, getFilteredNewsForUser } from "../lib/market";
 import {
   GetFxRatesResponse,
   GetMarketPricesQueryParams,
@@ -67,6 +69,34 @@ router.get("/market/news", async (req, res): Promise<void> => {
   if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
   const data = await getStockNews(ticker);
   res.json(data);
+});
+
+// F3 · aggregated news across the current user's holdings. Ticker
+// news is pulled per-ticker (inherent anchor); currency news is
+// deferred until a generic-feed source is wired. If the user
+// holds neither, returns [] — the pane must not render.
+router.get("/market/news/for-user", async (req, res): Promise<void> => {
+  const userId = (req as unknown as { userId: string }).userId;
+  const investments = await db
+    .select({ ticker: investmentsTable.ticker })
+    .from(investmentsTable)
+    .where(eq(investmentsTable.userId, userId));
+  const accounts = await db
+    .select({ currency: accountsTable.currency })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId));
+
+  const tickers = [...new Set(investments.map((i) => i.ticker.toUpperCase()))];
+  const currencies = [...new Set(accounts.map((a) => a.currency.toUpperCase()))];
+  const items = await getFilteredNewsForUser({ tickers, currencies });
+  res.json({
+    tickers,
+    currencies,
+    items,
+  });
+  // Silence unused: the `and` import is reserved for a future
+  // filter (date range) that would pair with an eq predicate.
+  void and;
 });
 
 export default router;

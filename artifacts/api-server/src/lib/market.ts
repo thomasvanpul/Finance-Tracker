@@ -527,6 +527,115 @@ export interface NewsItem {
   publishedAt: string;
 }
 
+// F3 · a news item scoped to something the user actually holds.
+// `connectedTo` names the anchor so the UI can render the required
+// connection line ("Ringgit slips as Malaysia holds rate" next to
+// "your RM 4,120 in Maybank"). If the item cannot be tied to a
+// holding or currency, it does not appear in the response.
+export interface FilteredNewsItem extends NewsItem {
+  connectedTo: {
+    kind: "ticker" | "currency";
+    // For tickers: the ticker symbol. For currencies: the ISO code.
+    value: string;
+    // Human label the UI can render alongside the anchor amount.
+    // For tickers: the ticker itself. For currencies: the code.
+    label: string;
+  };
+}
+
+// Deterministic keywords per currency for the generic-feed filter.
+// Kept short and specific enough that a "yen" or "dollar" mention
+// counts, but a passing "pounds of ..." or "buck" doesn't. The
+// three-letter ISO code always counts as a hit.
+const CURRENCY_KEYWORDS: Record<string, string[]> = {
+  GBP: ["gbp", "sterling", "pound sterling", "british pound"],
+  USD: ["usd", "us dollar", "u.s. dollar", "dollar"],
+  EUR: ["eur", "euro", "eurozone"],
+  MYR: ["myr", "ringgit", "malaysian ringgit"],
+  SGD: ["sgd", "singapore dollar"],
+  CNY: ["cny", "yuan", "renminbi"],
+  JPY: ["jpy", "yen"],
+  AUD: ["aud", "australian dollar", "aussie dollar"],
+  CAD: ["cad", "canadian dollar"],
+  HKD: ["hkd", "hong kong dollar"],
+  THB: ["thb", "thai baht", "baht"],
+  INR: ["inr", "rupee", "indian rupee"],
+};
+
+// Filter a set of raw news items against a user's holdings. Every
+// surviving item carries a `connectedTo` marker. Items that match
+// multiple anchors are attributed to the FIRST match in
+// (tickers, currencies) order — good enough for the "why is this
+// on my screen" caption, and cheap to compute.
+export function filterNewsForUser(
+  items: NewsItem[],
+  holdings: { tickers: string[]; currencies: string[] },
+): FilteredNewsItem[] {
+  const tickers = holdings.tickers.map((t) => t.toUpperCase());
+  const currencies = holdings.currencies.map((c) => c.toUpperCase());
+  const out: FilteredNewsItem[] = [];
+  for (const item of items) {
+    const t = item.title.toUpperCase();
+    // Ticker match first — a bare ticker in a title is a stronger
+    // signal than a currency keyword, and the F3 UX prefers a
+    // ticker-scoped caption over a currency-scoped one when both
+    // could apply.
+    const tickerHit = tickers.find((ticker) => t.includes(ticker));
+    if (tickerHit) {
+      out.push({ ...item, connectedTo: { kind: "ticker", value: tickerHit, label: tickerHit } });
+      continue;
+    }
+    let matched = false;
+    for (const code of currencies) {
+      const keywords = CURRENCY_KEYWORDS[code];
+      if (!keywords) continue;
+      const lower = item.title.toLowerCase();
+      if (keywords.some((kw) => lower.includes(kw))) {
+        out.push({ ...item, connectedTo: { kind: "currency", value: code, label: code } });
+        matched = true;
+        break;
+      }
+    }
+    if (matched) continue;
+    // No anchor → drop. The whole point of F3.
+  }
+  return out;
+}
+
+// Aggregate news for a user across ticker + currency holdings. Ticker
+// news is fetched per-ticker (so it's inherently anchor-scoped —
+// survival is 100% by request construction). Currency news requires
+// a generic feed + keyword filter; that path is off by default
+// because no generic-feed source is wired today. When it lands, this
+// function will fetch it and pass through filterNewsForUser().
+export async function getFilteredNewsForUser(
+  holdings: { tickers: string[]; currencies: string[] },
+  limit: number = 12,
+): Promise<FilteredNewsItem[]> {
+  if (holdings.tickers.length === 0 && holdings.currencies.length === 0) {
+    return [];
+  }
+  const out: FilteredNewsItem[] = [];
+  // Per-ticker fetch — each result is inherently connected to that
+  // ticker, so we tag directly rather than run the keyword matcher.
+  for (const ticker of holdings.tickers) {
+    const upper = ticker.toUpperCase();
+    try {
+      const items = await getStockNews(upper);
+      for (const item of items) {
+        out.push({ ...item, connectedTo: { kind: "ticker", value: upper, label: upper } });
+        if (out.length >= limit) return out;
+      }
+    } catch (err) {
+      logger.warn({ err, ticker: upper }, "per-ticker news fetch failed");
+    }
+  }
+  // Currency-side news: no generic feed source in play today.
+  // Documented as unavailable; when a generic-feed source is wired,
+  // call filterNewsForUser(feedItems, holdings) here.
+  return out;
+}
+
 const newsCache = new Map<string, { data: NewsItem[]; ts: number }>();
 const NEWS_TTL_MS = 10 * 60 * 1000;
 

@@ -13,6 +13,7 @@ import { MobileEmptyState } from "./mobile-ui";
 import { BlockField } from "@/components/primitives/block-field";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { MarketPane } from "./MarketPane";
+import { NewsPane } from "./NewsPane";
 import { loadPersonaIds, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 
@@ -482,6 +483,11 @@ export function MobileHome(_props: MobileHomeProps) {
             without the user doing anything. Scoped to holdings + implied
             FX pairs; renders nothing when the user has neither. */}
         <MarketPane onOpenInvestments={() => navigate("/investments")} />
+
+        {/* F3 · news pane. All-or-nothing: header + list render
+            together only when NewsPane has anchor-tied items to
+            show. See components/mobile/NewsPane.tsx. */}
+        <NewsPane onOpenInvestments={() => navigate("/investments")} />
 
         {/* Coming section */}
         <SectionHeader
