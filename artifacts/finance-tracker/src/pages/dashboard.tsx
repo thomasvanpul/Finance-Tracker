@@ -1764,9 +1764,22 @@ function DashboardKpiBar({
   dashboardLabel: string;
   isMobile: boolean;
 }) {
-  const netWorthCell = cells.find(c => c.label === "NET WORTH");
-  const savingsCell  = cells.find(c => c.label === "SAVINGS RATE");
-  const spendCell    = cells.find(c => c.label === "MONTHLY SPEND");
+  // Narrow-viewport layout picks by POSITION, not label. Each persona's
+  // kpiCells array puts the primary figure at index 0 and two
+  // secondary figures at [1] and [2]; the mobile hero renders those
+  // three cells in that order. Prior code looked up cells by name
+  // (NET WORTH / SAVINGS RATE / MONTHLY SPEND) which meant market and
+  // social personas rendered an empty hero — those tuples do not
+  // contain those labels. Position-based makes every persona render
+  // whatever it declared its primary + secondary to be.
+  //
+  // Also drops the overflow:hidden + text-overflow:ellipsis on the
+  // hero .pnum. That combination clips financial figures, which
+  // CLAUDE.md and MOBILE-CONCEPT.md forbid: "A financial figure is
+  // shown in full or not at all." A too-long hero should shrink via
+  // clamp() or push the container width, not silently lose digits.
+  const heroCell = cells[0];
+  const secondary = cells.slice(1, 3);
 
   if (isMobile) {
     return (
@@ -1815,46 +1828,46 @@ function DashboardKpiBar({
             {isCustomizing ? "EXIT" : "CUSTOMIZE"}
           </button>
         </div>
-        {/* Row 2: big net worth + secondary metrics */}
+        {/* Row 2: hero + secondary stats */}
         <HStack align="stretch">
-          {/* Net worth — hero */}
+          {/* Hero — cells[0] */}
           <div style={{ flex: 1, padding: "12px 14px", borderRight: "1px solid var(--ft-border)", minHeight: 72, minWidth: 0 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
-              NET WORTH
+              {heroCell?.label ?? "—"}
             </div>
             <div className="pnum" style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 34,
+              fontSize: "clamp(24px, 8vw, 34px)",
               fontWeight: 700,
               letterSpacing: "-0.03em",
-              color: netWorthCell?.valueColor ?? "var(--ft-blue)",
+              color: heroCell?.valueColor ?? "var(--ft-blue)",
               lineHeight: 1,
               fontVariantNumeric: "tabular-nums",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}>
-              {netWorthCell?.value ?? "—"}
+              {heroCell?.value ?? "—"}
             </div>
           </div>
-          {/* Secondary stats column */}
+          {/* Secondary stats — cells[1..2] */}
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", padding: "10px 12px 10px 14px", gap: 6, minHeight: 72, maxWidth: "48%", overflow: "hidden" }}>
-            {savingsCell && (
-              <VStack gap={2} minWidth0>
-                <MonoLabel as="span" size={7} letterSpacing="0.12em">SAVED</MonoLabel>
-                <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: savingsCell.valueColor ?? "var(--ft-green)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {savingsCell.value}
+            {secondary.map((c) => (
+              <VStack key={c.label} gap={2} minWidth0>
+                <MonoLabel as="span" size={7} letterSpacing="0.12em">{c.label}</MonoLabel>
+                <span
+                  className="pnum"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: c.valueColor ?? "var(--ft-text)",
+                    fontVariantNumeric: "tabular-nums",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {c.value}
                 </span>
               </VStack>
-            )}
-            {spendCell && (
-              <VStack gap={2} minWidth0>
-                <MonoLabel as="span" size={7} letterSpacing="0.12em">SPEND</MonoLabel>
-                <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: spendCell.valueColor ?? "var(--ft-red)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {spendCell.value}
-                </span>
-              </VStack>
-            )}
+            ))}
           </div>
         </HStack>
       </div>
