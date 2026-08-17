@@ -2,7 +2,8 @@ import { useState, useRef, useMemo } from "react";
 import { useListAccounts, useCreateTransaction, useListTransactions } from "@workspace/api-client-react";
 import { formatGbp } from "@/lib/utils";
 import { applyAutoCategory } from "@/lib/auto-cat";
-import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
+import { loadPersonaIds, PERSONA_COLORS, type PersonaId } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 import { PageHeader } from "@/components/page-header";
 import {
   FileInput,
@@ -50,23 +51,44 @@ type AmountFormat = "signed" | "separate";
 
 // ─── Bank/broker format presets ───────────────────────────────────────────────
 
+// A CSV preset is a bank or broker/exchange export shape. The `kind`
+// drives item 14's persona-varied ordering — market and wealth users
+// have brokers sort to the top; budget and social have banks first.
+// The list stays intact for every persona (a market user with a
+// second bank account can still find Monzo), only the order changes.
+type PresetKind = "bank" | "broker";
+
 interface FormatPreset {
   label: string;
+  kind: PresetKind;
   amountFormat: AmountFormat;
   colHints: { date: string[]; description: string[]; amount: string[]; credit: string[]; debit: string[] };
 }
 
 const FORMAT_PRESETS: FormatPreset[] = [
-  { label: "Monzo",     amountFormat: "signed",   colHints: { date: ["date"], description: ["name","description","memo"], amount: ["amount"], credit: [], debit: [] } },
-  { label: "Revolut",   amountFormat: "signed",   colHints: { date: ["date completed","date"], description: ["description"], amount: ["amount"], credit: [], debit: [] } },
-  { label: "Starling",  amountFormat: "signed",   colHints: { date: ["date"], description: ["counter party","reference","description"], amount: ["amount (gbp)","amount"], credit: [], debit: [] } },
-  { label: "Barclays",  amountFormat: "signed",   colHints: { date: ["date"], description: ["memo","description"], amount: ["amount"], credit: [], debit: [] } },
-  { label: "HSBC",      amountFormat: "separate", colHints: { date: ["date"], description: ["description","details"], amount: [], credit: ["credit","in"], debit: ["debit","out"] } },
-  { label: "NatWest",   amountFormat: "separate", colHints: { date: ["date"], description: ["description","reference"], amount: [], credit: ["credit"], debit: ["debit"] } },
-  { label: "Schwab",    amountFormat: "signed",   colHints: { date: ["date"], description: ["description","action"], amount: ["amount"], credit: [], debit: [] } },
-  { label: "Robinhood", amountFormat: "signed",   colHints: { date: ["activity date","process date"], description: ["description","instrument"], amount: ["amount"], credit: [], debit: [] } },
-  { label: "IBKR",      amountFormat: "signed",   colHints: { date: ["date/time","date"], description: ["description","symbol"], amount: ["amount","proceeds"], credit: [], debit: [] } },
+  { label: "Monzo",     kind: "bank",   amountFormat: "signed",   colHints: { date: ["date"], description: ["name","description","memo"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "Revolut",   kind: "bank",   amountFormat: "signed",   colHints: { date: ["date completed","date"], description: ["description"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "Starling",  kind: "bank",   amountFormat: "signed",   colHints: { date: ["date"], description: ["counter party","reference","description"], amount: ["amount (gbp)","amount"], credit: [], debit: [] } },
+  { label: "Barclays",  kind: "bank",   amountFormat: "signed",   colHints: { date: ["date"], description: ["memo","description"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "HSBC",      kind: "bank",   amountFormat: "separate", colHints: { date: ["date"], description: ["description","details"], amount: [], credit: ["credit","in"], debit: ["debit","out"] } },
+  { label: "NatWest",   kind: "bank",   amountFormat: "separate", colHints: { date: ["date"], description: ["description","reference"], amount: [], credit: ["credit"], debit: ["debit"] } },
+  { label: "Schwab",    kind: "broker", amountFormat: "signed",   colHints: { date: ["date"], description: ["description","action"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "Robinhood", kind: "broker", amountFormat: "signed",   colHints: { date: ["activity date","process date"], description: ["description","instrument"], amount: ["amount"], credit: [], debit: [] } },
+  { label: "IBKR",      kind: "broker", amountFormat: "signed",   colHints: { date: ["date/time","date"], description: ["description","symbol"], amount: ["amount","proceeds"], credit: [], debit: [] } },
 ];
+
+// Item 14: which preset kind a persona sees at the top of the list.
+// Market and wealth: brokers first (their imports are usually
+// trades/positions exports). Budget and social: banks first (their
+// imports are usually statement CSVs). Full: banks first — matches
+// the registry's declared order and the historical UI.
+function presetsForPersona(persona: PersonaId): FormatPreset[] {
+  const priority: PresetKind =
+    persona === "market" || persona === "wealth" ? "broker" : "bank";
+  const first = FORMAT_PRESETS.filter((p) => p.kind === priority);
+  const rest  = FORMAT_PRESETS.filter((p) => p.kind !== priority);
+  return [...first, ...rest];
+}
 
 function applyPreset(preset: FormatPreset, headers: string[]): { colMap: Partial<ColumnMap>; amountFormat: AmountFormat } {
   const lc = headers.map((h) => h.toLowerCase().trim());
@@ -794,6 +816,7 @@ function Step2({
   onProceed,
   onBack,
   onApplyPreset,
+  personaId,
 }: {
   headers: string[];
   previewRows: string[][];
@@ -804,6 +827,7 @@ function Step2({
   onProceed: () => void;
   onBack: () => void;
   onApplyPreset: (preset: FormatPreset) => void;
+  personaId: PersonaId;
 }) {
   const ColSelect = ({ field, label }: { field: keyof ColumnMap; label: string }) => (
     <VStack gap={4} grow minWidth={140}>
@@ -855,11 +879,11 @@ function Step2({
         </div>
       </div>
 
-      {/* Quick Format Presets */}
+      {/* Quick Format Presets — order varies by persona (item 14) */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ ...labelStyle, marginBottom: 8 }}>Quick presets — auto-fill for known banks</div>
+        <div style={{ ...labelStyle, marginBottom: 8 }}>Quick presets — auto-fill for known banks and brokers</div>
         <HStack gap={5} wrap>
-          {FORMAT_PRESETS.map((p) => (
+          {presetsForPersona(personaId).map((p) => (
             <PresetButton key={p.label} preset={p} onApply={onApplyPreset} />
           ))}
         </HStack>
@@ -1393,6 +1417,7 @@ function ImportRow({
 // ─── main page ────────────────────────────────────────────────────────────────
 
 export default function ImportPage() {
+  const personaId = useActivePersona();
   const [step, setStep] = useState<ImportStep>(1);
   const [csvText, setCsvText] = useState("");
   const [showExample, setShowExample] = useState(false);
@@ -1742,6 +1767,7 @@ export default function ImportPage() {
             setColMap((m) => ({ ...m, ...newMap }));
             setAmountFormat(newFmt);
           }}
+          personaId={personaId}
         />
       )}
 
