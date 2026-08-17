@@ -1874,15 +1874,13 @@ function DashboardKpiBar({
     );
   }
 
-  // Map label to accent color for borderTop per cell
-  const KPI_ACCENT: Record<string, string> = {
-    "NET WORTH":      "var(--ft-blue)",
-    "MONTHLY INCOME": "var(--ft-green)",
-    "MONTHLY SPEND":  "var(--ft-red)",
-    "SAVINGS RATE":   "var(--ft-cyan)",
-    "MoM SPEND":      "var(--ft-amber)",
-    "PORTFOLIO":      "var(--ft-accent)",
-  };
+  // Rainbow-coloured accent stripes deleted per docs/MOBILE-CONCEPT.md
+  // § Desktop port: "Colour was not encoding rank. Deleted in the
+  // pilot; do not reintroduce. Colour on desktop is semantic
+  // (--ft-green for positive P&L, --ft-red for negative) or absent."
+  // The value tint (cell.valueColor) already carries the semantic
+  // colour; the border stripe was pure decoration. Structural hairline
+  // stays as --ft-border across every cell.
 
   return (
     <div style={{
@@ -1947,9 +1945,11 @@ function DashboardKpiBar({
             justifyContent: "center",
             padding: "var(--ft-metric-py) 14px",
             background: "var(--ft-surface)",
-            borderTop: `2px solid ${KPI_ACCENT[cell.label] ?? cell.valueColor ?? "var(--ft-accent)"}`,
             flexShrink: 0,
-            minWidth: 90,
+            minWidth: 100, // widened from 90 so a 6-digit figure at 18px
+                           // does not need to shrink; column widths on
+                           // aligned tables (MOBILE-CONCEPT § Ports with
+                           // scaling) get minmax not fixed sub-readable min
             minHeight: 52,
           }}
         >
@@ -1967,16 +1967,18 @@ function DashboardKpiBar({
           }}>
             {cell.label}
           </span>
+          {/* No overflow:hidden + text-overflow:ellipsis on the .pnum
+              value or delta. "A financial figure is shown in full or
+              not at all" (CLAUDE.md). Font-size clamp allows the value
+              to shrink instead of clip; nowrap keeps it single-line. */}
           <span className="pnum" style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 18,
+            fontSize: "clamp(13px, 1.4vw, 18px)",
             fontWeight: 700,
             letterSpacing: "-0.01em",
             color: cell.valueColor ?? "var(--ft-text)",
             lineHeight: 1,
             fontVariantNumeric: "tabular-nums",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}>
             {cell.value}
@@ -1989,8 +1991,6 @@ function DashboardKpiBar({
               color: cell.deltaColor ?? "var(--ft-dim)",
               marginTop: 2,
               fontVariantNumeric: "tabular-nums",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}>
               {cell.delta}
