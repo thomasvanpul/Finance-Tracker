@@ -248,6 +248,62 @@ export const PERSONA_INSIGHT_PREVIEWS: Record<PersonaId, { page: string; msg: st
 export const LS_PERSONA_KEY = "ft-persona";
 export const LS_ONBOARDING_KEY = "ft-onboarding-complete";
 
+// The "sync now" verb on a connection row. Depends on which providers
+// the persona is allowed to add (see providersForPersona in
+// pages/settings-connections.tsx) — market/wealth users only ever have
+// broker/exchange connections here, so "REFRESH PRICES" is what a sync
+// actually does for them. Budget and social users only see bank
+// connections, so "REFRESH TRANSACTIONS" is honest. Wealth and full
+// can hold both, so the neutral "SYNC NOW" stays. State-driven labels
+// (SYNCING… · RETRY · RECONNECT) are not persona-varied — those describe
+// what the button does right now, not what the user came for.
+//
+// Table shape kept in one place so the rule set is visible at once and
+// the two call sites (desktop settings-connections + mobile Settings)
+// stay in sync.
+export function syncCta(persona: PersonaId): string {
+  switch (persona) {
+    case "market":
+      return "REFRESH PRICES";
+    case "budget":
+    case "social":
+      return "REFRESH TRANSACTIONS";
+    case "wealth":
+    case "full":
+    default:
+      return "SYNC NOW";
+  }
+}
+
+// Where the user lands the first time they finish onboarding. For most
+// personas this is a "connect first" step — the persona's real landing
+// page (Portfolio, Dashboard, Net Worth, Split) is empty until data
+// arrives, so dropping the user there before they've added a connection
+// or an account shows them the empty state instead of the app. Full
+// persona explicitly chose "show everything" so we honour that and land
+// them on the dashboard directly.
+//
+// Read once by DefaultPageRedirector in App.tsx, then cleared — so the
+// second time the user opens the app they land on the persona's real
+// default page (from PERSONAS[].defaultPage).
+export function personaOnboardingFollowUp(persona: PersonaId): string {
+  switch (persona) {
+    case "market":
+      return "/settings"; // add Alpaca/Kraken keys
+    case "budget":
+      return "/accounts"; // add first bank account or Wise
+    case "wealth":
+      return "/accounts"; // needs both bank + broker to compute net worth
+    case "social":
+      return "/split"; // social's default page — no external data required
+    case "full":
+    default:
+      return "/"; // full explicitly chose to see the whole app
+  }
+}
+
+export const LS_ONBOARDING_FOLLOWUP_KEY = "nr-onboarding-followup";
+
 // Event fired whenever the active persona changes. Consumers that
 // render persona-derived UI (KPI content, nav, empty state, default
 // landing) listen for this via useActivePersona() (see persona-hook.ts).

@@ -14,7 +14,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ExternalLink } from "lucide-react";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { useToast } from "@/hooks/use-toast";
-import { loadPersonaIds, type PersonaId as MobilePersonaId } from "@/lib/persona";
+import { loadPersonaIds, syncCta, type PersonaId as MobilePersonaId } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 
 // Mobile settings — configuration, not a financial instrument.
 //
@@ -318,6 +319,15 @@ function ChipButton({ active, onClick, children }: { active: boolean; onClick: (
 // credential is ever rendered. Add form is inline (no modal) to fit the
 // mobile scroll flow.
 
+// Mobile chip labels are sentence-case ("Sync now", "Reconnect") while
+// the persona syncCta helper returns desktop-style uppercase
+// ("SYNC NOW"). Downcase everything after the first letter to match
+// mobile convention without duplicating the persona table.
+function sentenceCase(s: string): string {
+  if (s.length === 0) return s;
+  return s.charAt(0) + s.slice(1).toLowerCase();
+}
+
 interface MobileCredentialField { key: string; label: string; hint: string; }
 type MobileProviderKind = "bank" | "broker" | "exchange";
 interface MobileProviderMeta {
@@ -450,6 +460,7 @@ function MobileConnectionRow({ connection }: { connection: Connection }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
+  const personaId = useActivePersona();
   const syncMutation = useSyncConnection();
   const deleteMutation = useDeleteConnection();
 
@@ -538,7 +549,7 @@ function MobileConnectionRow({ connection }: { connection: Connection }) {
               ? "Reconnect"
               : connection.lastError
                 ? "Retry"
-                : "Sync now"}
+                : sentenceCase(syncCta(personaId))}
         </MobileChip>
         {confirmDelete ? (
           <>

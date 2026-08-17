@@ -27,7 +27,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { HStack, Text, VStack } from "@/components/primitives";
 import { PANEL_STYLE, HEADER_STYLE, ROW, RowLabel, ActionBtn } from "./settings-atoms";
-import { loadPersonaIds, type PersonaId } from "@/lib/persona";
+import { loadPersonaIds, syncCta, type PersonaId } from "@/lib/persona";
+import { useActivePersona } from "@/lib/persona-hook";
 
 // Providers the user can add through this UI. Multi-field providers
 // list every field they need; the form joins the values as JSON and
@@ -161,6 +162,7 @@ function ConnectionRow({ connection }: { connection: Connection }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
+  const personaId = useActivePersona();
 
   const syncMutation = useSyncConnection();
   const deleteMutation = useDeleteConnection();
@@ -256,7 +258,7 @@ function ConnectionRow({ connection }: { connection: Connection }) {
           />
         ) : (
           <ActionBtn
-            label={syncBusy ? "SYNCING…" : connection.lastError ? "RETRY" : "SYNC NOW"}
+            label={syncBusy ? "SYNCING…" : connection.lastError ? "RETRY" : syncCta(personaId)}
             variant="accent"
             onClick={handleSync}
             disabled={syncBusy}
