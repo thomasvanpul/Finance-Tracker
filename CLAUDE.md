@@ -97,6 +97,18 @@ figure came from. Value is encoded by length or area — depth is decoration and
 never data. Eleven themes including a light one (`arctic`), so all colour comes
 from `--ft-*` tokens and hierarchy comes from structure and scale, never hue.
 
+## A hazard that has already bitten
+
+`artifacts/finance-tracker/` used to contain its own `.git` — a dead Replit-era
+repo with no remote. Any git command run from that directory silently targeted
+it instead of the monorepo, and a `git reset --hard HEAD~1` there wiped 250+
+working-tree files that existed only on disk. Removed 16 Aug 2026 and archived
+to `~/Desktop/nested-git-archive-finance-tracker.tar.gz`.
+
+If a git command produces a surprising result, run `git rev-parse
+--show-toplevel` first and confirm which repo you are in. There is also a
+worktree under `.claude/worktrees/` with its own `.git`, which is legitimate.
+
 ## How to work
 
 These are corrections for mistakes that have actually happened here.
