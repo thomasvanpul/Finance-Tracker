@@ -78,7 +78,36 @@ function DefaultPageRedirector() {
     // page with no mobile shell on cold open.
     const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
     if (isMobile && !MOBILE_ROUTES.has(page)) return;
+    // Remember the current default so an in-session persona flip
+    // (below) can tell "user is on their old default" from "user
+    // navigated somewhere on purpose".
+    sessionStorage.setItem("ft-active-default-page", page);
     navigate(page);
+  }, [navigate]);
+
+  // React to persona changes mid-session. If the user is on the
+  // BASE URL or on the previous default page, navigate them to the
+  // new default. If they're anywhere else (mid-flow), leave them
+  // alone — a persona flip should not yank someone out of what
+  // they were doing.
+  useEffect(() => {
+    const handler = () => {
+      const newDefault = localStorage.getItem("nr-default-page");
+      if (!newDefault) return;
+      const base = import.meta.env.BASE_URL.replace(/\/$/, "") || "/";
+      const here = window.location.pathname;
+      const oldDefault = sessionStorage.getItem("ft-active-default-page");
+      const onRoot = here === base;
+      const onOldDefault = oldDefault != null && here === oldDefault;
+      if (!onRoot && !onOldDefault) return;
+      if (here === newDefault) return; // already there
+      const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+      if (isMobile && !MOBILE_ROUTES.has(newDefault)) return;
+      sessionStorage.setItem("ft-active-default-page", newDefault);
+      navigate(newDefault);
+    };
+    window.addEventListener("nr-persona-update", handler);
+    return () => window.removeEventListener("nr-persona-update", handler);
   }, [navigate]);
   return null;
 }
