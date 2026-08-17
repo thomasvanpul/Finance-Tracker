@@ -3,12 +3,14 @@ import { wiseAdapter } from "./wise";
 import { alpacaAdapter } from "./alpaca";
 import { krakenAdapter } from "./kraken";
 import { enableBankingAdapter } from "./enable-banking";
+import { fileAdapter } from "./file";
 
 export * from "./types";
 export { wiseAdapter } from "./wise";
 export { alpacaAdapter } from "./alpaca";
 export { krakenAdapter } from "./kraken";
 export { enableBankingAdapter } from "./enable-banking";
+export { fileAdapter } from "./file";
 
 // Registry keyed by provider slug. Additions land here and nowhere else so
 // the route layer can look up an adapter without knowing which providers
@@ -18,6 +20,7 @@ const REGISTRY: Record<string, ProviderAdapter> = {
   [alpacaAdapter.provider]: alpacaAdapter,
   [krakenAdapter.provider]: krakenAdapter,
   [enableBankingAdapter.provider]: enableBankingAdapter,
+  [fileAdapter.provider]: fileAdapter,
 };
 
 export function getAdapter(provider: string): ProviderAdapter | null {

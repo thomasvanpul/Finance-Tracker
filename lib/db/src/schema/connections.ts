@@ -35,6 +35,16 @@ export const connectionsTable = pgTable(
     lastError: text("last_error"),
     // Encrypted at rest. base64 of iv||ciphertext||authTag.
     credentialCiphertext: text("credential_ciphertext").notNull(),
+    // H5: file adapter carries metadata about the import source
+    // instead of a live credential. `institution` names the source
+    // (e.g. "monzo", "hsbc", "maybank"), `format` names the file
+    // format (e.g. "csv", "ofx"). Both null for pull-adapters (Wise,
+    // Alpaca, Kraken) where the credential is the source of identity.
+    // A file connection still uses credentialCiphertext to satisfy
+    // the not-null constraint — it stores the encrypted institution
+    // slug so no plaintext identifier hits disk.
+    institution: text("institution"),
+    format: text("format"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()

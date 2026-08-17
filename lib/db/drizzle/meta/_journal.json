@@ -50,6 +50,13 @@
       "when": 1786978020073,
       "tag": "0006_romantic_landau",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786979266906,
+      "tag": "0007_lush_giant_man",
+      "breakpoints": true
     }
   ]
 }
