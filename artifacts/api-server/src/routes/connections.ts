@@ -14,7 +14,7 @@ import { getAdapter, AdapterError } from "../adapters";
 import { parseFileCredential } from "../adapters/file";
 import { logger } from "../lib/logger";
 import { runConnectionSync } from "../lib/connection-sync";
-import { computeExternalId } from "../lib/file-dedup";
+import { computeExternalId, assignOrdinals } from "../lib/file-dedup";
 
 const router: IRouter = Router();
 
@@ -193,22 +193,28 @@ router.post("/connections/:id/sync", async (req, res): Promise<void> => {
 // the source format.
 //
 // Dedup contract:
-//   1. externalId = computeExternalId({userId, accountId, date,
-//      description, nativeAmount}) — the deterministic sha256
-//      truncated to 32 base64url chars.
-//   2. Insert with ON CONFLICT (userId, accountId, externalId) DO
+//   1. Assign a 1-based ordinal to every incoming row within its
+//      group of otherwise-identical rows (same date, normalised
+//      description, signed amount). Unrelated rows never share a
+//      group, so their ordinals never shift each other.
+//   2. externalId = computeExternalId({userId, accountId, date,
+//      description, nativeAmount, ordinal}) — deterministic
+//      sha256 truncated to 32 base64url chars.
+//   3. Insert with ON CONFLICT (userId, accountId, externalId) DO
 //      NOTHING — the unique index on transactions handles the
 //      collision.
-//   3. Response reports attempted / inserted / duplicates so the
+//   4. Response reports attempted / inserted / duplicates so the
 //      user knows exactly how many new rows landed.
-//   4. Update connections.lastSyncedAt and clear lastError on
+//   5. Update connections.lastSyncedAt and clear lastError on
 //      success; on any exception, set lastError and status=error.
 //
-// The dedup rule collapses two truly-identical purchases on the
-// same day (rare but real: two coffees at the same shop for the
-// same amount) into one row. This is the accepted trade-off; the
-// alternative (ordinal-based hash) breaks re-import whenever a
-// reissued statement adds a same-day row and shifts ordinals.
+// Two identical purchases on the same day are preserved as TWO
+// rows (ordinal 1 and 2), which is what a spending tracker must
+// do. See lib/file-dedup.ts for the four reissue cases the group-
+// scoped ordinal handles correctly, and the one asymmetry that
+// remains (reissue that REMOVES a row leaves the original on disk
+// as stale — accepted because the file layer cannot distinguish
+// "removed from history" from "smaller date window this time").
 router.post("/connections/:id/import", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
   const id = parseInt(String(req.params.id), 10);
@@ -252,33 +258,57 @@ router.post("/connections/:id/import", async (req, res): Promise<void> => {
     return;
   }
 
+  // Filter malformed rows and normalise the sign up front — the
+  // ordinal assignment needs the signed amount, and the hash needs
+  // to see the same amount the DB row will carry.
+  const validRows: Array<IncomingRow & { signedAmount: number }> = [];
+  for (const row of rowsIn) {
+    if (
+      typeof row?.date !== "string" ||
+      typeof row?.description !== "string" ||
+      typeof row?.nativeAmount !== "number" ||
+      typeof row?.currency !== "string" ||
+      (row.type !== "income" && row.type !== "expense") ||
+      typeof row?.category !== "string"
+    ) {
+      // Skip malformed rows silently — the row-level validator in
+      // the frontend should have caught them. A malformed row that
+      // made it past that is not a reason to abort the whole import.
+      continue;
+    }
+    validRows.push({
+      ...row,
+      // Sign matches how nativeAmount would be reasoned about at
+      // dedup time — negative for expenses. Some parsers deliver
+      // positive amounts with a separate type; normalise here.
+      signedAmount: row.type === "expense" ? -Math.abs(row.nativeAmount) : Math.abs(row.nativeAmount),
+    });
+  }
+
+  // Assign 1-based ordinals within groups of otherwise-identical
+  // rows. Two £5 Starbucks on the same day get ordinals 1 and 2 →
+  // two distinct externalIds → both persist as separate rows.
+  const rowsWithOrdinals = assignOrdinals(
+    validRows.map((r) => ({
+      date: r.date,
+      description: r.description,
+      nativeAmount: r.signedAmount,
+    })),
+  );
+
   let inserted = 0;
   let duplicates = 0;
   try {
-    for (const row of rowsIn) {
-      if (
-        typeof row?.date !== "string" ||
-        typeof row?.description !== "string" ||
-        typeof row?.nativeAmount !== "number" ||
-        typeof row?.currency !== "string" ||
-        (row.type !== "income" && row.type !== "expense") ||
-        typeof row?.category !== "string"
-      ) {
-        // Skip malformed rows silently — the row-level validator
-        // in the frontend should have caught them. A malformed row
-        // that made it past that is not a reason to abort the
-        // whole import.
-        continue;
-      }
+    for (let i = 0; i < validRows.length; i++) {
+      const row = validRows[i]!;
+      const ord = rowsWithOrdinals[i]!.ordinal;
       const externalId = computeExternalId({
         userId,
         accountId,
         date: row.date,
         description: row.description,
-        // Sign matches how nativeAmount is stored — negative for
-        // expenses on income/expense flip. Some parsers deliver
-        // positive amounts with a separate type; normalise here.
-        nativeAmount: row.type === "expense" ? -Math.abs(row.nativeAmount) : Math.abs(row.nativeAmount),
+        nativeAmount: row.signedAmount,
+        ordinal: ord,
       });
 
       const result = await db
