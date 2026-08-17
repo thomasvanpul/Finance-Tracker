@@ -957,7 +957,13 @@ function Step2({
                     style={{ background: i % 2 === 1 ? "var(--ft-base)" : "transparent" }}
                   >
                     {row.map((cell, j) => (
-                      <td key={j} style={{ ...td, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>
+                      // Truncation removed: cells here render raw CSV
+                      // values including amount columns, and clipping
+                      // an amount to ellipsis is the exact failure the
+                      // no-truncation invariant forbids. The parent div
+                      // already carries overflowX:auto so long cells
+                      // scroll horizontally instead of being cropped.
+                      <td key={j} style={{ ...td, whiteSpace: "nowrap" }}>
                         {cell}
                       </td>
                     ))}
@@ -1084,19 +1090,24 @@ function Step3({
         </div>
       </div>
 
-      {/* KPI strip (border-as-gap) */}
+      {/* KPI strip (border-as-gap). Desktop port: per-cell borderTop
+          accent stripes deleted (constitution's "rainbow ratings"
+          pattern — colour wasn't encoding rank on Total/Selected).
+          Colour on the value remains only where SEMANTIC: green for
+          income, red for expenses. Total and Selected use text colour
+          — a count is not positive or negative. */}
       <div style={{ display: "grid", gap: 1, background: "var(--ft-border)", marginBottom: 14 }} className="ft-four-col">
         {[
-          { label: "Total Rows", value: String(rows.length), color: "var(--ft-muted)" },
-          { label: "Selected", value: String(selectedCount), color: "var(--ft-accent)" },
+          { label: "Total Rows", value: String(rows.length), color: "var(--ft-text)" },
+          { label: "Selected", value: String(selectedCount), color: "var(--ft-text)" },
           { label: "Income", value: String(incomeCount), color: "var(--ft-green)" },
           { label: "Expenses", value: String(expenseCount), color: "var(--ft-red)" },
         ].map(k => (
-          <div key={k.label} style={{ background: "var(--ft-surface)", borderTop: `2px solid ${k.color}`, padding: "7px 12px" }}>
+          <div key={k.label} style={{ background: "var(--ft-surface)", padding: "7px 12px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 3 }}>
               {k.label}
             </div>
-            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: k.color, lineHeight: 1 }}>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: k.color, lineHeight: 1, whiteSpace: "nowrap" }}>
               {k.value}
             </div>
           </div>
