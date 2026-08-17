@@ -428,12 +428,19 @@ function KpiCell({
   value,
   sub,
   color,
-  accentColor,
+  accentColor: _accentColor,
 }: {
   label: string;
   value: string;
   sub?: string;
   color?: string;
+  // Deprecated in the desktop-port pass: the per-cell coloured
+  // borderTop stripe was the "rainbow ratings" pattern the port
+  // rule kills. Kept on the prop shape so the 5 caller sites
+  // don't need editing in this commit; the value ignores it.
+  // Colour on the value itself (`color` prop) remains and IS
+  // semantic (green for positive, red for negative, amber for
+  // caution) — that stays.
   accentColor?: string;
 }) {
   return (
@@ -443,7 +450,6 @@ function KpiCell({
         minWidth: 0,
         padding: "10px 14px",
         background: "var(--ft-surface)",
-        borderTop: `2px solid ${accentColor ?? "var(--ft-border2)"}`,
       }}
     >
       <div
@@ -463,11 +469,15 @@ function KpiCell({
         className="pnum"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 18,
+          // Primary tier per the port rule — clamp so a KPI in a
+          // 240px cell on a 1440px page reads at desktop scale,
+          // not phone scale. Mobile min matches the original 18px.
+          fontSize: "clamp(15px, 1.6vw, 20px)",
           fontWeight: 700,
           color: color ?? "var(--ft-text)",
           fontVariantNumeric: "tabular-nums",
           lineHeight: 1.1,
+          whiteSpace: "nowrap",
         }}
       >
         {value}
@@ -1541,7 +1551,9 @@ export default function FamilyFinance() {
               flex: 1,
               padding: "10px 14px",
               background: "var(--ft-surface)",
-              borderTop: "2px solid var(--ft-blue)",
+              // Desktop port: dropped `borderTop: 2px solid --ft-blue`
+              // (rainbow accent — Household size is neither positive
+              // nor negative).
               ...(isMobile ? { gridColumn: "span 2" } : {}),
             }}
           >
@@ -1562,10 +1574,11 @@ export default function FamilyFinance() {
               className="pnum"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 18,
+                fontSize: "clamp(15px, 1.6vw, 20px)",
                 fontWeight: 700,
                 color: "var(--ft-text)",
                 lineHeight: 1.1,
+                whiteSpace: "nowrap",
                 fontVariantNumeric: "tabular-nums",
               }}
             >
