@@ -11,29 +11,13 @@ import {
 import { formatGbp } from "@/lib/utils";
 import { PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_FOCUS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
+import { useListSharedExpenses, type SharedExpense } from "@/lib/shared-expenses-hook";
+import { authClient } from "@/lib/auth-client";
 
-// Persona → allowed AlertKind. Read like a table. If a kind is
-// missing for a persona it's dropped from the notifications panel.
-//
-//   market  → balance + transaction + market. No budget nag, no bill,
-//             no goal — market users are here for holdings.
-//   budget  → the day-to-day: budget, transaction, bill, balance.
-//             No market alerts.
-//   wealth  → big-picture: goal, balance, market. Drop budget/transaction
-//             — a wealth user does not want a "coffee anomaly" ping.
-//   social  → debt + bill + balance. Splits need to settle from a bank.
-//   full    → every kind.
-export function alertKindsForPersona(persona: PersonaId): Set<AlertKind> {
-  switch (persona) {
-    case "market": return new Set(["balance", "transaction", "market"]);
-    case "budget": return new Set(["budget", "transaction", "bill", "balance"]);
-    case "wealth": return new Set(["goal", "balance", "market"]);
-    case "social": return new Set(["debt", "bill", "balance"]);
-    case "full":
-    default:
-      return new Set(["budget", "transaction", "bill", "debt", "goal", "balance", "market"]);
-  }
-}
+// alertKindsForPersona lives in lib/notification-kinds.ts so tests
+// can lock the table without loading this whole panel's import graph.
+import { alertKindsForPersona } from "@/lib/notification-kinds";
+export { alertKindsForPersona };
 
 const BALANCE_ALERTS_KEY = "ft-balance-alerts";
 
@@ -59,19 +43,11 @@ export function saveBalanceAlertRules(rules: BalanceAlertRule[]): void {
   } catch {}
 }
 
-// Alert `kind` gates which persona sees which alerts. Table lives in
-// alertKindsForPersona() at the bottom of this file. Adding a new
-// kind: add it here, tag emitters below, add it to the persona
-// table. If tagged with a kind that no persona accepts, the alert is
-// dead code by construction.
-export type AlertKind =
-  | "budget"       // budget-exceeded / budget-approaching
-  | "transaction"  // large-tx, anomaly detection
-  | "bill"         // upcoming payment due
-  | "debt"         // IOU overdue
-  | "goal"         // savings goal achieved / savings-rate praise
-  | "balance"      // low account balance
-  | "market";      // portfolio-side (none today; reserved)
+// AlertKind moved to lib/notification-kinds.ts alongside the
+// persona filter. Re-exported here for backward compatibility with
+// existing callers.
+export type { AlertKind } from "@/lib/notification-kinds";
+import type { AlertKind } from "@/lib/notification-kinds";
 
 export interface Alert {
   id: string;
@@ -147,6 +123,17 @@ export function useAlerts() {
   const { data: goals = [] } = useListGoals();
   const { data: budgets = [] } = useListBudgets();
   const { data: accounts } = useListAccounts();
+  // F4: shared expenses. Emitter below turns each "signal" from the
+  // shared-expenses feed into an Alert. The whole point of F4 is
+  // that another person's action can put something on this screen —
+  // this is where that lands. Active persona is used only for
+  // filtering downstream via alertKindsForPersona; the emitter
+  // itself is persona-agnostic. Session drives payer-vs-participant
+  // role: expense.userId is the payer; the current user is either
+  // that person or an entry in expense.participants[].linkedUserId.
+  const { data: sharedExpenses = [] } = useListSharedExpenses();
+  const { data: session } = authClient.useSession();
+  const currentUserId = session?.user?.id ?? null;
 
   const alerts = useMemo<Alert[]>(() => {
     const result: Alert[] = [];
@@ -311,6 +298,73 @@ export function useAlerts() {
       }
     }
 
+    // F4: shared-expense alerts. Two roles, three signals.
+    //
+    // As PAYER:
+    //   - participant has requested settlement → prompt to ack or
+    //     dispute. This is the "someone paid you back, confirm it"
+    //     nudge that keeps the ledger honest.
+    //
+    // As PARTICIPANT (I owe on someone else's bill):
+    //   - my share is still outstanding → prompt to settle
+    //     (informational; a nag is possible later with a threshold).
+    //   - my request was DISPUTED → I need to talk to the payer.
+    //     Elevated to warn.
+    //
+    // Deliberately NOT emitted:
+    //   - "expense created" toast when I'm added — the whole
+    //     purpose of the notifications panel is to summarise state
+    //     that needs an action; a plain new-line without a request
+    //     just crowds the panel. When the expense is old enough or
+    //     large enough to matter (thresholds TBD) that changes.
+    if (currentUserId && sharedExpenses.length > 0) {
+      for (const expense of sharedExpenses as SharedExpense[]) {
+        const isPayer = expense.userId === currentUserId;
+        if (isPayer) {
+          // Payer-side: participants who requested settlement need
+          // an ack or dispute from me. Collapse into one alert per
+          // expense so the panel doesn't explode on a bill with 8
+          // people who all paid at once.
+          const requested = expense.participants.filter((p) => p.status === "requested");
+          if (requested.length > 0) {
+            const totalRequested = requested.reduce((s, p) => s + p.shareAmount, 0);
+            result.push({
+              id: `shared-expense-ack-${expense.id}`,
+              level: "info",
+              kind: "shared-expense",
+              title: `Confirm ${requested.length} payment${requested.length > 1 ? "s" : ""} on ${expense.description}`,
+              detail: `${expense.currency} ${totalRequested.toFixed(2)} claimed as paid — acknowledge or dispute`,
+            });
+          }
+        } else {
+          // Participant-side: find my row on this expense. There
+          // may be several rows with my linkedUserId across
+          // expenses; on THIS expense there is at most one linked
+          // to me (schema doesn't prevent duplicates but the create
+          // flow doesn't produce them either).
+          const mine = expense.participants.find((p) => p.linkedUserId === currentUserId);
+          if (!mine) continue;
+          if (mine.status === "outstanding") {
+            result.push({
+              id: `shared-expense-owe-${expense.id}`,
+              level: "info",
+              kind: "shared-expense",
+              title: `You owe on ${expense.description}`,
+              detail: `${expense.currency} ${mine.shareAmount.toFixed(2)} — split by ${expense.splitRule}`,
+            });
+          } else if (mine.status === "disputed") {
+            result.push({
+              id: `shared-expense-disputed-${expense.id}`,
+              level: "warn",
+              kind: "shared-expense",
+              title: `Payment disputed on ${expense.description}`,
+              detail: `${expense.currency} ${mine.shareAmount.toFixed(2)} — the payer rejected your last request`,
+            });
+          }
+        }
+      }
+    }
+
     // Account balance alerts
     const balanceRules = loadBalanceAlertRules();
     if (balanceRules.length > 0 && accounts) {
@@ -336,7 +390,7 @@ export function useAlerts() {
     }
 
     return result;
-  }, [dashboard, monthTxs, recentTxs, allTxs, upcoming, debts, goals, budgets, alertRules, accounts]);
+  }, [dashboard, monthTxs, recentTxs, allTxs, upcoming, debts, goals, budgets, alertRules, accounts, sharedExpenses, currentUserId]);
 
   return alerts;
 }
@@ -486,15 +540,29 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
     [alerts, dismissed, allowedKinds]
   );
 
-  // Group by level in order: critical → warn → info → success
+  // Group by level in order: critical → warn → info → success.
+  // For the SOCIAL persona, shared-expense alerts float to the top
+  // WITHIN each level bucket — this is the persona whose whole point
+  // is the other-people dimension, so the "another person acted on
+  // your screen" signal shouldn't queue behind a bill reminder.
+  // Other personas keep insertion order within each level.
   const grouped = useMemo(() => {
+    const isSocial = activePersonaId === "social";
+    const priorityKind: AlertKind | null = isSocial ? "shared-expense" : null;
     const groups: Partial<Record<Alert["level"], Alert[]>> = {};
     for (const level of LEVEL_ORDER) {
       const items = visible.filter((a) => a.level === level);
-      if (items.length > 0) groups[level] = items;
+      if (items.length === 0) continue;
+      if (priorityKind) {
+        const first = items.filter((a) => a.kind === priorityKind);
+        const rest = items.filter((a) => a.kind !== priorityKind);
+        groups[level] = [...first, ...rest];
+      } else {
+        groups[level] = items;
+      }
     }
     return groups;
-  }, [visible]);
+  }, [visible, activePersonaId]);
 
   return (
     <>

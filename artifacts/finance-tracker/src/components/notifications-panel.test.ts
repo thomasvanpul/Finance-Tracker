@@ -2,7 +2,10 @@
 // providersForPersona/inferPersona so adding a persona has one visible
 // place to extend.
 import { describe, it, expect } from "vitest";
-import { alertKindsForPersona } from "./notifications-panel";
+// Imported from lib/notification-kinds directly so this test doesn't
+// have to load notifications-panel.tsx (whose transitive imports
+// touch window at module init).
+import { alertKindsForPersona } from "@/lib/notification-kinds";
 
 describe("alertKindsForPersona", () => {
   it("market sees balance/transaction/market; NOT budget/bill/goal/debt", () => {
@@ -34,19 +37,29 @@ describe("alertKindsForPersona", () => {
     expect(k.has("transaction")).toBe(false);
   });
 
-  it("social sees debt/bill/balance; NOT market/budget/goal", () => {
+  it("social sees debt/bill/balance/shared-expense; NOT market/budget/goal", () => {
     const k = alertKindsForPersona("social");
     expect(k.has("debt")).toBe(true);
     expect(k.has("bill")).toBe(true);
     expect(k.has("balance")).toBe(true);
+    expect(k.has("shared-expense")).toBe(true);
     expect(k.has("market")).toBe(false);
     expect(k.has("budget")).toBe(false);
     expect(k.has("goal")).toBe(false);
   });
 
+  it("budget sees shared-expense (a split is a spending event)", () => {
+    expect(alertKindsForPersona("budget").has("shared-expense")).toBe(true);
+  });
+
+  it("market and wealth DO NOT see shared-expense", () => {
+    expect(alertKindsForPersona("market").has("shared-expense")).toBe(false);
+    expect(alertKindsForPersona("wealth").has("shared-expense")).toBe(false);
+  });
+
   it("full sees every kind", () => {
     const k = alertKindsForPersona("full");
-    for (const kind of ["budget", "transaction", "bill", "debt", "goal", "balance", "market"]) {
+    for (const kind of ["budget", "transaction", "bill", "debt", "goal", "balance", "market", "shared-expense"]) {
       expect(k.has(kind as never)).toBe(true);
     }
   });
