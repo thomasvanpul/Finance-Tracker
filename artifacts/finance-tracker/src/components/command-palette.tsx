@@ -175,6 +175,23 @@ const SECTION_LABELS: Record<CommandSection, string> = {
 
 const SECTION_ORDER: CommandSection[] = ["navigation", "actions", "persona", "accounts", "transactions"];
 
+// Persona bias for section order (P2·7). Live search results
+// (accounts, transactions) float to the top for whichever the
+// persona cares about first.
+//   market  → accounts (portfolio positions live here) come first.
+//   budget  → transactions come first — the main entity a budget
+//             user searches for.
+//   others  → the default order (navigation-first).
+// If a persona ever wants a ticker-specific section, add it to
+// CommandSection and re-order here.
+function sectionOrderForPersona(persona: PersonaId): CommandSection[] {
+  switch (persona) {
+    case "market": return ["accounts", "navigation", "transactions", "actions", "persona"];
+    case "budget": return ["transactions", "accounts", "navigation", "actions", "persona"];
+    default:       return SECTION_ORDER;
+  }
+}
+
 export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts, onToggleSidebar }: CommandPaletteProps) {
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
@@ -224,7 +241,8 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
         cmd.title.toLowerCase().includes(query.toLowerCase())
       );
 
-  const grouped = SECTION_ORDER.reduce<Record<CommandSection, Command[]>>(
+  const sectionOrder = sectionOrderForPersona(activePersonaId);
+  const grouped = sectionOrder.reduce<Record<CommandSection, Command[]>>(
     (acc, section) => {
       if (section === "accounts" || section === "transactions") {
         acc[section] = liveCommands.filter((cmd) => cmd.section === section);
@@ -236,7 +254,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
     { navigation: [], actions: [], persona: [], accounts: [], transactions: [] } as Record<CommandSection, Command[]>
   );
 
-  const flatFiltered = SECTION_ORDER.flatMap((s) => grouped[s]);
+  const flatFiltered = sectionOrder.flatMap((s) => grouped[s]);
 
   useEffect(() => {
     if (open) {
@@ -383,7 +401,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
               NO RESULTS
             </div>
           ) : (
-            SECTION_ORDER.map((section) => {
+            sectionOrder.map((section) => {
               const sectionItems = grouped[section];
               if (sectionItems.length === 0) return null;
 
