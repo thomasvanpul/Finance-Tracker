@@ -19,6 +19,7 @@ import digestRouter from "./digest";
 import receiptRouter from "./receipt";
 import connectionsRouter from "./connections";
 import enableBankingRouter from "./enable-banking";
+import sharedExpensesRouter from "./shared-expenses";
 
 const router: IRouter = Router();
 
@@ -38,6 +39,7 @@ router.use(connectionsRouter);
 router.use(enableBankingRouter);
 router.use(importRouter);
 router.use(debtsRouter);
+router.use(sharedExpensesRouter);
 router.use(settingsRouter);
 router.use(aiRouter);
 router.use("/api/digest", digestRouter);
