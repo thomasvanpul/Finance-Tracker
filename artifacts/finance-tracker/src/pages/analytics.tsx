@@ -243,7 +243,7 @@ function CategoryRow({ row: r, catMax, totalSpend, onCategoryClick, rowIndex: ri
       onTouchEnd={() => setHov(false)}
       onTouchCancel={() => setHov(false)}
     >
-      <td style={{ ...td, fontWeight: 600, maxWidth: isMobile ? 110 : undefined, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <td style={{ ...td, fontWeight: 600, maxWidth: isMobile ? 110 : undefined, whiteSpace: "nowrap" }}>
         <span style={{ color: "var(--ft-accent)", marginRight: 5, fontSize: 9 }}>→</span>
         {r.cat}
       </td>
@@ -415,7 +415,7 @@ function IncomeSourceRow({ cat, total, grandTotal, colorIndex, isLast }: IncomeS
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
-      <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+      <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", whiteSpace: "nowrap" as const }}>
         <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: color, marginRight: 6, flexShrink: 0 }} />
         {cat}
       </div>
@@ -456,7 +456,7 @@ function AnnotationRow({ annotation: a, index: ai, onDelete }: AnnotationRowProp
     >
       <div style={{ width: 3, height: 16, background: "var(--ft-amber)", flexShrink: 0, opacity: 0.85 }} />
       <span style={{ ...mono, fontSize: 10, color: "var(--ft-amber)", flexShrink: 0, minWidth: 52 }}>{a.month}</span>
-      <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.label}</span>
+      <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)", flex: 1, whiteSpace: "nowrap" }}>{a.label}</span>
       <button
         onClick={() => onDelete(a.id)}
         style={{ background: "none", border: "1px solid transparent", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1, padding: "2px 5px", flexShrink: 0 }}
@@ -1413,7 +1413,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
               </div>
               {tooltip.day.txs.slice(0, 5).map(t => (
                 <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
-                  <span style={{ color: "var(--ft-muted)", fontSize: 9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
+                  <span style={{ color: "var(--ft-muted)", fontSize: 9, whiteSpace: "nowrap", maxWidth: 130 }}>
                     {t.description || t.category || "—"}
                   </span>
                   <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, fontSize: 9, flexShrink: 0 }}>{formatGbp(t.gbpValue)}</span>
@@ -2545,7 +2545,7 @@ function SpendingAnomalies({ expenses, isDemo }: { expenses: Tx[]; isDemo: boole
             const barW = Math.min(100, (r.sigma / 8) * 100);
             return (
               <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
-                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.description}</td>
+                <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, maxWidth: 200, whiteSpace: "nowrap" }}>{r.description}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", color: "var(--ft-dim)" }}>{r.category}</td>
                 <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: "var(--ft-red)" }}>{formatGbp(r.amount)}</td>
                 <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.catAvg > 0 ? formatGbp(r.catAvg) : "—"}</td>
@@ -2862,7 +2862,7 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
         ].map((cell, i) => (
           <div key={cell.label} style={{ padding: isMobile ? "10px 10px" : "12px 14px", borderRight: i < 2 ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ ...ftLabel, marginBottom: 4 }}>{cell.label}</div>
-            <div className="pnum" style={{ ...mono, fontSize: isMobile ? 14 : 17, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+            <div className="pnum" style={{ ...mono, fontSize: isMobile ? 14 : 17, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, whiteSpace: "nowrap" as const }}>
               {formatGbp(cell.value)}
             </div>
             {cell.delta != null && (
@@ -2996,7 +2996,7 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
               return (
                 <tr key={sub.desc} style={{ background: baseBg }}>
                   <td style={{ ...td, color: "var(--ft-dim)", fontSize: 9 }}>{i + 1}</td>
-                  <td style={{ ...td, maxWidth: isMobile ? 130 : 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.desc}</td>
+                  <td style={{ ...td, maxWidth: isMobile ? 130 : 220, whiteSpace: "nowrap" }}>{sub.desc}</td>
                   {!isMobile && <td style={{ ...td, textAlign: "right", color: "var(--ft-dim)" }}>{sub.lastDate}</td>}
                   {!isMobile && <td style={{ ...td, textAlign: "right", color: "var(--ft-muted)" }}>{sub.count}×</td>}
                   <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-red)", fontWeight: 600 }}>{formatGbp(sub.monthlyEst)}</td>

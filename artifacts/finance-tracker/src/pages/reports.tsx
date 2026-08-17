@@ -851,7 +851,7 @@ function BiggestTxRow({ tx, rowIdx }: BiggestTxRowProps) {
       <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
         {formatDate(tx.date)}
       </div>
-      <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
         {tx.description}
       </div>
       <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
@@ -905,7 +905,7 @@ function KpiTileCell({ tile, isLoading }: KpiTileProps) {
         <div style={{ height: 24, width: 80, background: "var(--ft-raised)", borderRadius: 2 }} />
       ) : (
         <>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: tile.color, fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: tile.color, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", minWidth: 0 }}>
             {tile.value}
           </div>
           {tile.delta !== null && (
@@ -1162,7 +1162,7 @@ export default function Reports() {
             REPORTS
           </span>
           {!isMobile && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", whiteSpace: "nowrap", minWidth: 0 }}>
               income · expenses · trends
             </span>
           )}

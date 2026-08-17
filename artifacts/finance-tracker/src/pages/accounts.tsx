@@ -946,7 +946,7 @@ function RecentTxRow({ tx }: RecentTxRowProps) {
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ fontSize: 10, color: "var(--ft-text)", whiteSpace: "nowrap" }}>
           {tx.description}
         </div>
         <Text as="div" size={9} color="var(--ft-dim)">
@@ -995,7 +995,7 @@ function MonthSpendingRow({ category, total, maxSpend }: MonthSpendingRowProps) 
       onMouseLeave={() => setHov(false)}
     >
       <HStack justify="between" marginBottom={2}>
-        <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{category}</span>
+        <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{category}</span>
         <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", flexShrink: 0, whiteSpace: "nowrap", marginLeft: 4 }}>{formatGbp(total)}</span>
       </HStack>
       <div style={{ height: 3, background: "var(--ft-raised)", borderRadius: 1 }}>
@@ -1081,7 +1081,7 @@ function AccountAllocationRow({ name, pct, colorIndex }: AccountAllocationRowPro
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ width: 6, height: 6, borderRadius: 1, background: color, flexShrink: 0 }} />
-      <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>
+      <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", maxWidth: 120 }}>
         {name}
       </span>
       <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", marginLeft: "auto" }}>
@@ -1282,7 +1282,7 @@ function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false
       >
         {value}
       </div>
-      <div style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>
+      <div style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{sub}</div>
     </div>
   );
 }
@@ -1417,7 +1417,7 @@ function AccountTableRow({
         >
           {isMobile ? (
             <div style={{ minWidth: 0 }}>
-              <div style={{ color: "var(--ft-text)", fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div style={{ color: "var(--ft-text)", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
                 {account.name}
               </div>
               <HStack gap={5} align="center" marginTop={3}>
@@ -1431,7 +1431,7 @@ function AccountTableRow({
           ) : (
             <div className="flex items-center gap-2" style={{ minWidth: 0 }}>
               <Landmark className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--ft-dim)" }} />
-              <span style={{ color: "var(--ft-text)", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+              <span style={{ color: "var(--ft-text)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", minWidth: 0 }}>
                 {account.name}
               </span>
               {account.isWiseLinked && (
@@ -1491,7 +1491,7 @@ function AccountTableRow({
             figure in the account's own currency. */}
         <div
           className="pnum"
-          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.gbpEquivalent == null ? "var(--ft-dim)" : account.gbpEquivalent < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", ...privacyStyle }}
+          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.gbpEquivalent == null ? "var(--ft-dim)" : account.gbpEquivalent < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", ...privacyStyle }}
         >
           {account.gbpEquivalent == null ? "—" : formatGbp(account.gbpEquivalent)}
         </div>
@@ -2305,7 +2305,7 @@ export default function Accounts() {
               />
               <KpiCell
                 label="Most Active"
-                value={<span style={{ fontSize: 13, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", minWidth: 0 }}>{mostRecentAccount ? mostRecentAccount.account.name.split(" ").slice(0, 2).join(" ") : "—"}</span>}
+                value={<span style={{ fontSize: 13, color: "var(--ft-text)", whiteSpace: "nowrap", display: "block", minWidth: 0 }}>{mostRecentAccount ? mostRecentAccount.account.name.split(" ").slice(0, 2).join(" ") : "—"}</span>}
                 sub={mostRecentAccount ? `last txn ${mostRecentAccount.lastTxDate}` : "no transactions"}
                 accent="var(--ft-blue)"
                 icon={<Landmark className="w-3.5 h-3.5" />}
@@ -2907,7 +2907,7 @@ export default function Accounts() {
       {fxRates && (
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
           <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(34,211,238,0.05)", borderColor: "rgba(34,211,238,0.18)", borderLeft: "3px solid var(--ft-cyan)", color: "var(--ft-cyan)", overflow: "hidden" }}>
-            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>▼ FX RATES — Live · GBP Base</span>
+            <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap" }}>▼ FX RATES — Live · GBP Base</span>
             <span style={{ marginLeft: 8, flexShrink: 0, fontSize: 9, fontWeight: 400, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
               {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
             </span>
@@ -3099,7 +3099,7 @@ function CurrencyConverter({ fxRates, baseCurrency }: { fxRates: Record<string, 
           style={{ ...ccyInputStyle, borderColor: toValid ? "var(--ft-border2)" : "var(--ft-red)" }}
         />
         <Text as="span" size={18} weight={300} color="var(--ft-dim)">=</Text>
-        <span style={{ fontSize: 18, fontFamily: "var(--font-mono)", fontWeight: 700, color: result !== null ? "var(--ft-green)" : "var(--ft-dim)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 18, fontFamily: "var(--font-mono)", fontWeight: 700, color: result !== null ? "var(--ft-green)" : "var(--ft-dim)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
           {result !== null
             ? result.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 4 })
             : "—"}

@@ -115,10 +115,10 @@ export function CashFlowSankeyWidget() {
               { label: savings >= 0 ? "Saved" : "Deficit", value: Math.abs(savings), color: savings >= 0 ? "var(--ft-accent)" : "var(--ft-red)" },
             ].map((item) => (
               <div key={item.label} style={{ padding: "8px 12px", background: "var(--ft-surface)", borderTop: `2px solid ${item.color}`, overflow: "hidden", minWidth: 0 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
                   {item.label}
                 </div>
-                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: item.color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: item.color, whiteSpace: "nowrap" }}>
                   {formatGbp(item.value)}
                 </div>
                 {totalIncome > 0 && item.label !== "Income" && (

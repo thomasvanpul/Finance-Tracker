@@ -15,7 +15,7 @@ import type { WidgetId } from "@/contexts/widgets-context";
 // ── Shared style constants ────────────────────────────────────────────────────
 
 const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
-const CLIP: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 };
+const CLIP: React.CSSProperties = { whiteSpace: "nowrap", minWidth: 0 };
 const LABEL: React.CSSProperties = { ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.13em", textTransform: "uppercase" as const };
 
 // ── Tile heights ──────────────────────────────────────────────────────────────
@@ -327,7 +327,7 @@ function CashFlowCol({ label, value, color, borderRight }: CashFlowColProps) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
-      <div style={{ ...MONO, fontSize: 9, color, letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" as const, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</div>
+      <div style={{ ...MONO, fontSize: 9, color, letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" as const, whiteSpace: "nowrap" }}>{label}</div>
       <div className="pnum" style={{ ...MONO, ...CLIP, fontSize: 16, fontWeight: 700, color, lineHeight: 1, letterSpacing: "-0.02em" }}>{value}</div>
     </div>
   );
@@ -371,7 +371,7 @@ export function CompactNetWorth() {
         </div>
         {/* Big number */}
         <div style={{ padding: "14px 14px 12px" }}>
-          <div className="pnum" style={{ ...MONO, fontSize: 34, fontWeight: 700, color: nwColor, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div className="pnum" style={{ ...MONO, fontSize: 34, fontWeight: 700, color: nwColor, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8, whiteSpace: "nowrap" }}>
             {formatGbp(nw)}
           </div>
           {/* MTD delta pill */}
@@ -392,7 +392,7 @@ export function CompactNetWorth() {
               ].map((stat, i) => (
                 <div key={stat.label} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid var(--ft-border)" : "none", padding: "0 4px" }}>
                   <div style={{ ...MONO, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", marginBottom: 3, textTransform: "uppercase" as const }}>{stat.label}</div>
-                  <div className="pnum" style={{ ...MONO, fontSize: 14, fontWeight: 700, color: stat.color, letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{stat.value}</div>
+                  <div className="pnum" style={{ ...MONO, fontSize: 14, fontWeight: 700, color: stat.color, letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>{stat.value}</div>
                 </div>
               ))}
             </div>

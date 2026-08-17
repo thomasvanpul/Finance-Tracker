@@ -385,8 +385,6 @@ function HeroResult({ label, value, color, sub, note, isMobile }: {
         color,
         lineHeight: 1,
         letterSpacing: "-0.03em",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
         whiteSpace: "nowrap",
         minWidth: 0,
         marginBottom: sub ? 8 : 0,
@@ -568,7 +566,7 @@ function FireVariantCard({ v, effPortfolio }: FireVariantCardProps) {
           </span>
         )}
       </HStack>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: reached ? v.color : "var(--ft-text)", lineHeight: 1, marginBottom: 4, letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: reached ? v.color : "var(--ft-text)", lineHeight: 1, marginBottom: 4, letterSpacing: "-0.02em", whiteSpace: "nowrap", minWidth: 0 }}>
         {formatGbp(v.number)}
       </div>
       <div style={{ height: 2, background: "var(--ft-border)", overflow: "hidden", marginBottom: 6 }}>

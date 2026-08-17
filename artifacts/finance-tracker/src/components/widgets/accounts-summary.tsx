@@ -119,10 +119,10 @@ function OwingCell({ label, value, raw, color, isLast }: OwingCellProps) {
         minWidth: 0,
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
         {label}
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: raw === 0 ? "var(--ft-dim)" : color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: raw === 0 ? "var(--ft-dim)" : color, whiteSpace: "nowrap" }}>
         {raw === 0 ? "—" : value}
       </div>
     </div>

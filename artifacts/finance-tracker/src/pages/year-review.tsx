@@ -156,7 +156,7 @@ function KpiStrip({ income, expenses, txCount, year, prevIncome, prevExpenses }:
           }}
         >
           <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 }}>{tile.label}</div>
-          <div className="pnum" style={{ ...mono, fontSize: 20, fontWeight: 700, color: tile.color, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tile.value}</div>
+          <div className="pnum" style={{ ...mono, fontSize: 20, fontWeight: 700, color: tile.color, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{tile.value}</div>
           {tile.sub && (
             <div style={{ ...mono, fontSize: 9, color: tile.subColor, marginTop: 3 }}>{tile.sub}</div>
           )}
@@ -365,7 +365,7 @@ function MilestoneCard({ item, i, total }: { item: { icon: string; label: string
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: item.color, marginBottom: 3, fontVariantNumeric: "tabular-nums" }}>
         {item.value}
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" as const }}>
         {item.sub}
       </div>
     </div>
@@ -508,7 +508,7 @@ function CategoryRow({ row, rank }: CategoryRowProps) {
       }}
     >
       <div style={{ ...mono, fontSize: 9, color: "var(--ft-border2)", width: 14, textAlign: "right", flexShrink: 0 }}>{rank + 1}</div>
-      <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", width: 130, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0 }}>
+      <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", width: 130, whiteSpace: "nowrap", flexShrink: 0 }}>
         {row.cat}
       </div>
       <div style={{ flex: 1, height: 12, background: "var(--ft-raised)", position: "relative", flexShrink: 1, border: "1px solid var(--ft-border)" }}>

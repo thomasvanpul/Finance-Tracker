@@ -344,7 +344,7 @@ const TH: React.CSSProperties = {
 function SectionHeader({ label, color = "var(--ft-blue)" }: { label: string; color?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)", borderLeft: `3px solid ${color}` }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color, whiteSpace: "nowrap" as const }}>
         {label}
       </span>
     </div>
@@ -355,7 +355,7 @@ function MetricTile({ label, value, color, sub }: { label: string; value: string
   return (
     <div style={{ padding: "10px 14px", background: "var(--ft-surface)", minWidth: 0 }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 5 }}>{label}</div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{value}</div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" as const }}>{value}</div>
       {sub && <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{sub}</div>}
     </div>
   );
@@ -484,8 +484,8 @@ function DisposalRow({ d, sym: disposalSym, deleteConfirmId, onDelete, holdingLa
   const hl = holdingLabel(d);
   return (
     <TaxHoverRow style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--ft-border)", height: 36 }}>
-      <div style={{ flex: 1, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, fontFamily: "var(--font-mono)" }}>{d.assetName}</div>
-      <div style={{ width: 80, minWidth: 80, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-cyan)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.ticker ?? "—"}</div>
+      <div style={{ flex: 1, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, color: "var(--ft-text)", whiteSpace: "nowrap", minWidth: 0, fontFamily: "var(--font-mono)" }}>{d.assetName}</div>
+      <div style={{ width: 80, minWidth: 80, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-cyan)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{d.ticker ?? "—"}</div>
       <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{d.acquiredDate}</div>
       <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{d.disposedDate}</div>
       <div style={{ width: 70, minWidth: 70, padding: "6px 8px", borderRight: "1px solid var(--ft-border)", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, color: hl.color, textAlign: "center" }}>{hl.text}</div>

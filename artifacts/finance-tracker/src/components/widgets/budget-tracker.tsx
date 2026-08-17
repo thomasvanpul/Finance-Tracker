@@ -225,8 +225,6 @@ function BudgetCard({
             fontSize: 11,
             fontWeight: 700,
             color: over ? "var(--ft-red)" : "var(--ft-text)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
             whiteSpace: "nowrap",
             flex: 1,
             minWidth: 0,
@@ -493,8 +491,6 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                     fontSize: 13,
                     fontWeight: 700,
                     color: totalOver ? "var(--ft-red)" : "var(--ft-text)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                   }}
                 >

@@ -413,7 +413,7 @@ function MilestoneRow({ m, isHit, currentNW }: { m: { value: number; date: strin
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: isHit ? "var(--ft-text)" : "var(--ft-muted)", minWidth: 80, flexShrink: 0, whiteSpace: "nowrap" }}>
         {formatGbp(m.value)}
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, whiteSpace: "nowrap", minWidth: 0 }}>
         {isHit ? `Reached ${shortDate(m.date)}` : "Not yet reached"}
       </div>
       {isHit && (
@@ -459,7 +459,7 @@ function SnapshotRow({ e, prev, onDelete, deleteConfirmDate }: {
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: deltaPct === null ? "var(--ft-dim)" : deltaPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 8px" }}>
         {deltaPct === null ? "—" : `${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%`}
       </td>
-      <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "7px 8px", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.note ?? ""}</td>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "7px 8px", maxWidth: 160, whiteSpace: "nowrap" }}>{e.note ?? ""}</td>
       <td style={{ padding: "7px 8px" }}>
         <button
           onClick={() => onDelete(e.date)}
@@ -883,7 +883,7 @@ export default function NetWorthHistory() {
           {/* Current Net Worth — hero number */}
           <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Net Worth</div>
-            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1, whiteSpace: "nowrap" }}>
               {formatGbp(currentNW)}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
@@ -943,7 +943,7 @@ export default function NetWorthHistory() {
           ].map((cell, i) => (
             <div key={cell.label} style={{ padding: "12px 16px", background: "var(--ft-surface)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{cell.label}</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: i === 2 ? 18 : 14, fontWeight: 700, color: cell.color, lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cell.value}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: i === 2 ? 18 : 14, fontWeight: 700, color: cell.color, lineHeight: 1, whiteSpace: "nowrap" }}>{cell.value}</div>
             </div>
           ))}
         </div>
@@ -1488,7 +1488,7 @@ export default function NetWorthHistory() {
             {milestones.map((m, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, borderLeft: `3px solid ${m.color ?? "var(--ft-accent)"}`, paddingLeft: 10, padding: "6px 0 6px 10px", borderBottom: "1px solid var(--ft-border)" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", minWidth: 60, flexShrink: 0, whiteSpace: "nowrap" }}>{shortDate(m.date)}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{m.label}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, whiteSpace: "nowrap", minWidth: 0 }}>{m.label}</div>
                 <button
                   onClick={() => {
                     const updated = milestones.filter((_, j) => j !== i);
@@ -1572,7 +1572,7 @@ export default function NetWorthHistory() {
                         </span>
                       )}
                       {e.note && (
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap", maxWidth: 140 }}>
                           {e.note}
                         </span>
                       )}

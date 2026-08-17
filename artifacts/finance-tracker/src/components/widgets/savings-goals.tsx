@@ -329,14 +329,12 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
               fontSize: 13,
               fontWeight: 700,
               color: done ? "var(--ft-green)" : color,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
           >
             {formatGbp(current)}
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>
             of <span className="pnum">{formatGbp(target)}</span>
           </div>
         </div>

@@ -53,7 +53,7 @@ function TodayTxRow({ description, category, gbpValue }: TodayTxRowProps) {
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ minWidth: 0, flex: 1, marginRight: 8 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", display: "block" }}>
           {description || category || "Expense"}
         </span>
         {category && description && (
@@ -152,12 +152,12 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
 
       {/* Big hero number */}
       {todayTotal === 0 ? (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-green)", marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-green)", marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
           £0.00
           <span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)", marginLeft: 8 }}>clear day</span>
         </div>
       ) : (
-        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: totalColor, marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: totalColor, marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
           {formatGbp(todayTotal)}
         </div>
       )}
@@ -205,12 +205,12 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
 
           <div style={{ display: "flex", gap: 14, minWidth: 0 }}>
             <div style={{ minWidth: 0, overflow: "hidden" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>MTD SPEND</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{formatGbp(thisMonthExpenses)}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>MTD SPEND</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", whiteSpace: "nowrap" }}>{formatGbp(thisMonthExpenses)}</div>
             </div>
             <div style={{ minWidth: 0, overflow: "hidden" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>PROJECTED</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: projectedMonthEnd > runRate * 1.1 ? "var(--ft-red)" : "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{formatGbp(projectedMonthEnd)}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>PROJECTED</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: projectedMonthEnd > runRate * 1.1 ? "var(--ft-red)" : "var(--ft-muted)", whiteSpace: "nowrap" }}>{formatGbp(projectedMonthEnd)}</div>
             </div>
           </div>
         </>

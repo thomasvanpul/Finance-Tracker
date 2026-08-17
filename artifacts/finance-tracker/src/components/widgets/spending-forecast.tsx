@@ -240,8 +240,6 @@ function CategoryForecastRowCompact({ row, timeElapsed }: CategoryForecastRowCom
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             color: "var(--ft-text)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
             whiteSpace: "nowrap",
             flex: 1,
             minWidth: 0,
@@ -451,8 +449,6 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                 letterSpacing: "-0.03em",
                 lineHeight: 1,
                 marginBottom: 10,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
               }}
             >

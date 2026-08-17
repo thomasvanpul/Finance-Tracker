@@ -137,7 +137,7 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) 
         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-text)", marginBottom: 2, lineHeight: 1.3 }}>
           {alert.title}
         </div>
-        <div className="pnum" style={{ fontSize: 9, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
+        <div className="pnum" style={{ fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
           {alert.detail}
         </div>
       </div>
