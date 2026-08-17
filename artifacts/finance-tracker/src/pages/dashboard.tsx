@@ -48,7 +48,8 @@ import { OnboardingWizard } from "@/components/onboarding-wizard";
 import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { formatGbp, formatNative } from "@/lib/utils";
-import { loadPersonaIds, PERSONAS } from "@/lib/persona";
+import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
+import { useLocation } from "wouter";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
 import { Zap, RefreshCw } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, memo } from "react";
@@ -1680,6 +1681,75 @@ interface KpiCellData {
   valueColor?: string;
 }
 
+// Persona-aware empty state for the desktop Dashboard. Same rules as
+// MobileHome: a market-persona user is asked to add a holding, never
+// to connect a bank. Every other persona lands on the connections
+// panel. Rendered above the widget grid rather than replacing it, so
+// a user with a legitimate zero-account state can still explore the
+// widgets in-place.
+function DashboardEmptyState() {
+  const [, navigate] = useLocation();
+  const persona: PersonaId = (loadPersonaIds()[0] as PersonaId) ?? "full";
+  const isMarket = persona === "market";
+  const title = isMarket ? "Add your first holding." : "No accounts yet.";
+  const description = isMarket
+    ? "Type a ticker and Numeris tracks it from the market. No bank connection needed — enter a few tickers once and the dashboard fills in whenever prices move."
+    : "Connect a bank account or add one by hand. Once one is connected the dashboard fills in on its own.";
+  const ctaLabel = isMarket ? "Add a holding →" : "Connect an account →";
+  const ctaHref = isMarket ? "/investments" : "/settings?panel=connections";
+  const label = isMarket ? "NO HOLDINGS" : "NO ACCOUNTS";
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        padding: "18px 20px",
+        background: "var(--ft-surface)",
+        border: "1px solid var(--ft-border)",
+        marginBottom: 8,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          letterSpacing: "0.18em",
+          color: "var(--ft-accent)",
+          fontWeight: 700,
+        }}
+      >
+        {label}
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.01em" }}>
+        {title}
+      </div>
+      <div style={{ fontSize: 13, color: "var(--ft-dim)", maxWidth: 640, lineHeight: 1.5 }}>
+        {description}
+      </div>
+      <div>
+        <button
+          type="button"
+          onClick={() => navigate(ctaHref)}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--ft-accent)",
+            background: "transparent",
+            border: "1px solid var(--ft-accent)",
+            padding: "8px 18px",
+            cursor: "pointer",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+          }}
+        >
+          {ctaLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function DashboardKpiBar({
   cells,
   onCustomize,
@@ -2712,6 +2782,14 @@ export default function Dashboard() {
           setOnboardingDismissed(true);
         }}
       />
+
+      {/* Persona-aware empty state — desktop counterpart to
+          MobileHome's "NO HOLDINGS / NO ACCOUNTS" card. Renders when
+          the account breakdown comes back empty; widgets below still
+          render (zeros) so a user in this state can still explore. */}
+      {dashData && (dashData.accountBreakdown?.length ?? 0) === 0 && (
+        <DashboardEmptyState />
+      )}
 
       {/* ── Bloomberg KPI Bar ── */}
       <DashboardKpiBar

@@ -128,6 +128,22 @@ const ALL_NAV_ITEMS_FOR_SETTINGS = [
   { href: "/learn",         label: "Learn",        section: "TOOLS" },
 ];
 
+// Nav items a market persona should not see (bank-only surfaces).
+// Extend this set if a future integration is bank-only. Everything
+// else is visible to every persona; the Connections panel itself
+// filters providers by persona via providersForPersona().
+const MARKET_HIDDEN_NAV: readonly NavItem[] = ["wise"] as const;
+
+function filterNavGroupsForPersona(
+  groups: { label: string; items: { id: NavItem; label: string }[] }[],
+  persona: "market" | "budget" | "wealth" | "social" | "full",
+): { label: string; items: { id: NavItem; label: string }[] }[] {
+  if (persona !== "market") return groups;
+  return groups
+    .map((g) => ({ ...g, items: g.items.filter((i) => !MARKET_HIDDEN_NAV.includes(i.id)) }))
+    .filter((g) => g.items.length > 0);
+}
+
 const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] = [
   {
     label: "Personalise",
@@ -2399,9 +2415,15 @@ export default function Settings() {
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  const allNavItems = NAV_GROUPS.flatMap(g => g.items);
+  // Persona-filtered NAV. Market persona hides bank-only surfaces
+  // (see MARKET_HIDDEN_NAV). Reads localStorage synchronously; the
+  // parent useEffect above bumps personaVersion when persona changes
+  // via the nr-persona-update event so this re-derives.
+  const persona = (loadPersonaIds()[0] as "market" | "budget" | "wealth" | "social" | "full") ?? "full";
+  const navGroups = filterNavGroupsForPersona(NAV_GROUPS, persona);
+  const allNavItems = navGroups.flatMap(g => g.items);
   const activeLabel = allNavItems.find(i => i.id === activePanel)?.label ?? "Settings";
-  const activeGroup = NAV_GROUPS.find(g => g.items.some(i => i.id === activePanel)) ?? NAV_GROUPS[0];
+  const activeGroup = navGroups.find(g => g.items.some(i => i.id === activePanel)) ?? navGroups[0];
 
   return (
     <div className="ft-settings-layout" style={{ display: "flex", height: isMobile ? "auto" : "calc(100vh - 48px)", overflow: isMobile ? "visible" : "hidden" }}>
@@ -2417,7 +2439,7 @@ export default function Settings() {
           </div>
           {/* Group tabs */}
           <div style={{ display: "flex", overflowX: "auto", scrollbarWidth: "none", padding: "8px 14px 0", gap: 0, borderBottom: "1px solid var(--ft-border)" }}>
-            {NAV_GROUPS.map(group => {
+            {navGroups.map(group => {
               const isGActive = group.label === activeGroup.label;
               return (
                 <button
@@ -2473,7 +2495,7 @@ export default function Settings() {
           <div style={{ padding: "12px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
             <Text as="span" color="var(--ft-accent)">·</Text> System Config
           </div>
-          {NAV_GROUPS.map(group => (
+          {navGroups.map(group => (
             <div key={group.label}>
               <div style={{ padding: "10px 14px 3px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 700 }}>
                 {group.label}
