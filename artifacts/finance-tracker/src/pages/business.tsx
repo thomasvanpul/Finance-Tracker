@@ -241,13 +241,19 @@ function KpiCell({
   value,
   sub,
   valueColor,
-  accentColor,
+  accentColor: _accentColor,
   trend,
 }: {
   label: string;
   value: string;
   sub?: string;
   valueColor?: string;
+  // Deprecated in the desktop-port pass: the per-cell coloured
+  // borderTop stripe was the constitution's "rainbow ratings"
+  // pattern. Kept on the prop shape so caller sites (10+ across
+  // this file) don't need editing this commit; the value ignores
+  // it. Colour on the value itself (`valueColor`) remains and IS
+  // semantic (green/red for +/-). That stays.
   accentColor?: string;
   trend?: "up" | "down" | "neutral";
 }) {
@@ -261,7 +267,6 @@ function KpiCell({
         display: "flex",
         flexDirection: "column",
         gap: 2,
-        borderTop: `2px solid ${accentColor ?? "var(--ft-border2)"}`,
       }}
     >
       <div
@@ -282,11 +287,16 @@ function KpiCell({
           className="pnum"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 20,
+            // Primary tier per the port rule — clamp so a 20px
+            // figure in a cramped multi-cell strip reads at the
+            // right scale across 390px and 1440px. Mobile min
+            // matches the original 20px reasonably.
+            fontSize: "clamp(16px, 1.7vw, 22px)",
             fontWeight: 700,
             color: valueColor ?? "var(--ft-text)",
             fontVariantNumeric: "tabular-nums",
             lineHeight: 1.1,
+            whiteSpace: "nowrap",
           }}
         >
           {value}
