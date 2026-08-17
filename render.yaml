@@ -5,16 +5,17 @@ services:
     plan: free
     region: frankfurt
     rootDir: .
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @workspace/api-server run build
-    startCommand: pnpm --filter @workspace/api-server run start
+    # Do NOT use `corepack enable` — it symlinks into /usr/bin, which is
+    # read-only on Render (EROFS: unlink '/usr/bin/pnpm'). npx fetches the
+    # version pinned in package.json#packageManager into a local cache
+    # instead, which needs no write access outside the workspace.
+    buildCommand: npx --yes pnpm@11.12.0 install --frozen-lockfile && npx --yes pnpm@11.12.0 --filter @workspace/api-server run build
+    startCommand: npx --yes pnpm@11.12.0 --filter @workspace/api-server run start
     healthCheckPath: /api/accounts
     envVars:
       # Render injects PORT itself — do not set it.
-      # Pin Node explicitly. Render's default can lag behind what the code
-      # needs: the api-server uses --env-file-if-exists (Node 20+) and esbuild
-      # targets a modern runtime.
-      - key: NODE_VERSION
-        value: "22"
+      # Render's default was Node 24.14.1, which is fine. Pinning is only
+      # needed if that regresses below 20 (--env-file-if-exists).
       - key: NODE_ENV
         value: production
       - key: LOG_LEVEL
