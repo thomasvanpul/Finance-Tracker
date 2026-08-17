@@ -24,13 +24,12 @@ Status: `TODO` · `IN PROGRESS` · `DONE` · `BLOCKED` · `PARKED`
 Neon branch `dev` (`br-cold-term-abp7fwtk`), a copy-on-write clone.
 `lib/db/.env` points at it. Production URL is in `lib/db/.env.production.backup`.
 
-### A2 · Rotate the `neondb_owner` password — TODO · needs a human
+### A2 · Rotate the `neondb_owner` password — DONE
 Neon roles are project-level, so the dev branch password also authenticates
-against production, and the current one was exposed in a chat transcript.
-- **Do:** `npx -y neonctl@latest roles reset-password neondb_owner` in a real
-  terminal — the CLI needs a TTY. Update `lib/db/.env` with the new dev string
-  and the Railway service variable with the new production string.
-- **Done when:** the old password is rejected and the app still connects.
+against production. The compromised password was rotated by hand (the
+neonctl CLI needs a TTY); `lib/db/.env` and the Railway service variable
+now carry the new string. Old password no longer authenticates, app still
+connects — verified out-of-band, no repo evidence.
 
 ### A3 · Real migrations — DONE
 `lib/db/package.json` scripts are `generate` and `migrate`; `push` and
@@ -310,10 +309,23 @@ Mobile home MarketPane ships live prices for tickers the user
 already holds and FX pairs for held foreign currencies. News feed
 is not built.
 
-### F4 · Social split and owing — PARTIAL
-Request + reject endpoints exist (`artifacts/api-server/src/routes/debts.ts`
-POST / reject). Settle-via-provider integration doesn't exist yet;
-shared-expense creation is the CSV+manual flow, not first-class.
+### F4 · Social split and owing — DONE
+Shared expense as a first-class object landed across five commits:
+- F4-1a (`21f502c`) schema + migration for shared_expenses,
+  shared_expense_participants, shared_expense_settlements
+- F4-1b (`869fd2e`) split-rule pure logic (equal / exact / shares) with
+  the remainder-pence rule and 26 tests
+- F4-2 + F4-3 (`276814f`) CRUD + settlement handshake API +
+  predicate-aware multi-tenancy test (10 cases prove user A cannot
+  read or mutate user B's expenses beyond the specific shared object)
+- F4-4 (`767c4b5`) notifications wired (shared-expense AlertKind,
+  persona filter: social + budget + full see them, market + wealth
+  do not; social floats them to the top of each level bucket)
+- F4-5 (`a6f4205`) minimal UI at `/shared` for create + list + settle
+
+Bank-payment initiation (TrueLayer, F4's "one level under moving
+money") is deliberately NOT built here. That is a separate decision
+gated on FCA-related work; see `docs/TARGET-PRODUCT.md` § Payments.
 
 ### F5 · Progression — TODO
 `lib/learn-xp.ts` and `lib/bot-skins.ts` still decoration; no
@@ -475,28 +487,19 @@ renderer for a decorative avatar is real battery and bundle cost.
 persona-driven mobile home) was superseded by the design work recorded in
 `docs/MOBILE-CONCEPT.md`; its useful parts are now F1 and D2.
 
-### D4 · Replace flag emoji with drawn currency icons — TODO
-Emoji flags are in use for currency and market identity. They render
-differently on every platform, cannot be themed, ignore the type ladder, and
-read as decoration in a product arguing that it is an instrument. "No emoji"
-was already a stated rule; these predate it.
+### D4 · Replace flag emoji with drawn currency icons — DONE (`568bb63`)
+Shared `<CurrencyMark>` / `<CountryMark>` inline-SVG components under
+`components/currency-mark.tsx`, sized to the type ladder and using
+`currentColor` so they inherit the active theme (all 11, `arctic`
+included). GBP, USD, EUR, MYR, SGD plus a `COUNTRY_FOR_CITY` map that
+migrates the market-hours cities. Duplicated emoji map deleted from
+`net-worth.tsx` and `accounts-summary.tsx`; market-hours city list in
+`layout.tsx` migrated with a legacy-`flag` → `country` reader.
 
-Sources: the currency-to-emoji map duplicated in
-`components/widgets/net-worth.tsx:36` and `accounts-summary.tsx:7`, and the
-market-hours city list in `components/layout.tsx:223-233`.
-
-Reconciliation note (2026-08-17): the earlier CLAUDE.md commit
-`04db331` documented the no-emoji rule but did not remove the flag
-maps. The three call sites still ship codepoints — see grep above.
-Part 1 of this run addresses it with a shared inline-SVG set + a
-source-level lock.
-
-- **Do:** one shared icon set as inline SVG, sized to the type ladder and
-  monochrome-or-restrained enough to survive all 11 themes including `arctic`.
-  Cover at least GBP, USD, EUR, MYR, SGD plus the market-hours cities. Delete
-  the duplicated map — one source.
-- **Verify:** grep the codebase for emoji ranges, expect zero; harness capture
-  of a multi-currency screen in `arctic` and a saturated theme.
+Source-level lock: `lib/no-emoji.test.ts` walks `src/**/*.{ts,tsx}`
+and fails on any codepoint in the emoji ranges (flag pairs, emoticons,
+pictographs, transport, supplemental, extended-A, variation selector).
+Grep for those ranges in source: 0 matches.
 
 ---
 
