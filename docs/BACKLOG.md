@@ -271,11 +271,33 @@ consequences shipped across items 1-10:
 - Item 8 (`da26e7c`)  quick-add defaults
 - Item 9 (`d409192`)  MobileHome hero for market
 - Item 10 (`092496f`) mobile bottom-nav labels
+- Item 11 (`5192550`) sync-now button label by persona
+- Item 12 (`59db4f0`) onboarding follow-up destination
+- Item 13 (`ccdbe0f`) widget catalogue sort + tag by persona
+- Item 14 (`e91cdfd`) CSV preset order by persona
 
-Items 11-14 are pending (sync-now button, onboarding follow-up
-destination, widget catalogue, import CSV presets). Item 15
-(strings layer) is a proposal, deliberately not built — 30
-persona-varied strings today against a 300-string break-even.
+Item 15 (strings layer) is a proposal, still not built. Recounted
+after items 11-14 shipped: **100 persona-varied user-visible strings**
+against a 300-string break-even. Distribution:
+
+- `lib/persona.ts` — 75 strings
+  - `PERSONAS[]` (label + tagline + description + 4 highlights, × 5): 35
+  - `PERSONA_INSIGHT_PREVIEWS` (3 previews × page+msg, × 5): 30
+  - `PERSONA_FOCUS`: 5
+  - `syncCta()` (item 11): 5 return paths
+- `components/kpi-bar.tsx` — 20 (4 labels × 5 personas)
+- `components/mobile/MobileNav.tsx` — 4 (slot-2 tab labels)
+- `pages/settings-atoms.tsx` — 1 (item 13 "For your persona" tag)
+
+Not counted: persona filter tables that return `Set<Kind>` (decision
+kinds, alert kinds, command-palette section IDs). Those are routing
+identifiers, not strings the user reads.
+
+Break-even is 200 strings away. To triple the count and get near it
+we'd need to touch every persona-conditional feature with new copy
+— roughly every mobile screen's empty state, every export preset,
+every AI coach prompt template. That work isn't on the roadmap.
+Verdict unchanged: don't build the strings layer.
 
 ### F2 · Open banking — PARKED (see H4)
 Superseded by the H series: connection model + Wise/Alpaca/Kraken
