@@ -82,9 +82,22 @@ autoInstallPeers: false
 
 onlyBuiltDependencies:
   - '@swc/core'
-  - esbuild
   - msw
   - unrs-resolver
+
+# esbuild's postinstall (install.js) only fetches or validates its native
+# binary. We do not need it: the platform packages are ordinary optional
+# dependencies, and the `overrides` below strip every platform EXCEPT the ones
+# we build on (darwin-* locally, @esbuild/linux-x64 in CI), so the correct
+# binary is already installed by resolution alone.
+#
+# pnpm 11 treats any ignored build script as a hard error, so this has to be
+# declared rather than left implicit — Render failed with
+# ERR_PNPM_IGNORED_BUILDS on a clean Linux install. Declaring it here is the
+# honest position: we know the script is skipped and why. minimumReleaseAge and
+# the lockfile supply-chain verification are untouched.
+ignoredBuiltDependencies:
+  - esbuild
 
 overrides:
   # replit uses linux-x64 only, we can exclude all other platforms
