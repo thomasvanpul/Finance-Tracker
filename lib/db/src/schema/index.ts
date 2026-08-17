@@ -4,6 +4,7 @@ export * from "./transactions";
 export * from "./upcoming";
 export * from "./investments";
 export * from "./debts";
+export * from "./shared-expenses";
 export * from "./app-settings";
 export * from "./budgets";
 export * from "./goals";
