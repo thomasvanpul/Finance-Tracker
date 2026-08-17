@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Plus } from "lucide-react";
 import { QuickAddTransaction } from "@/components/quick-add-transaction";
+import { useActivePersona } from "@/lib/persona-hook";
+import type { PersonaId } from "@/lib/persona";
 
 // ── Unified mobile footer ────────────────────────────────────────────────────
 // Single component used on every mobile screen. Five slots:
-//   HOME · MONTH · (+) · MOVE · FIND
+//   HOME · (slot 2) · (+) · (slot 4) · (slot 5)
 // The centre + is the primary add action. It opens QuickAddTransaction and
 // sits raised above the nav bar so it reads as part of the navigation, not a
 // floating sticker.
@@ -13,22 +15,46 @@ import { QuickAddTransaction } from "@/components/quick-add-transaction";
 // Active state is derived from the current URL. Screens the footer does not
 // name (e.g. /budget, /portfolio, /reports) leave no tab active — the user is
 // somewhere the footer does not map to, and honesty beats false highlighting.
+//
+// Persona parameterisation (P2·10): ONE component, five slot definitions per
+// persona. Slots 1 and 5 stay constant across personas (HOME + FIND) — those
+// are the anchors. Slots 2 and 4 vary by persona. This preserves muscle memory
+// on cross-persona flips.
 
-export type MobileTab = "home" | "month" | "move" | "find";
+type GlyphKind = "filled" | "outline" | "bars" | "ring";
 
-const ROUTE: Record<MobileTab, string> = {
-  home:  "/",
-  month: "/upcoming",
-  move:  "/accounts",
-  find:  "/more",
-};
+interface FooterTabDef {
+  key: string;
+  label: string;
+  route: string;
+  glyph: GlyphKind;
+  // Matcher used to decide whether the tab is active from wouter's
+  // current location. Route equality first; a matcher lets a "detail"
+  // route light the parent tab if we ever want that.
+  matches: (location: string) => boolean;
+}
 
-function activeFromLocation(location: string): MobileTab | null {
-  if (location === "/" || location === "") return "home";
-  if (location === "/upcoming") return "month";
-  if (location === "/accounts") return "move";
-  if (location === "/more") return "find";
-  return null;
+const TAB_HOME: FooterTabDef  = { key: "home",   label: "HOME",   route: "/",         glyph: "filled",  matches: (l) => l === "/" || l === "" };
+const TAB_MONTH: FooterTabDef = { key: "month",  label: "MONTH",  route: "/upcoming", glyph: "outline", matches: (l) => l === "/upcoming" };
+const TAB_MOVE: FooterTabDef  = { key: "move",   label: "MOVE",   route: "/accounts", glyph: "bars",    matches: (l) => l === "/accounts" };
+const TAB_FIND: FooterTabDef  = { key: "find",   label: "FIND",   route: "/more",     glyph: "ring",    matches: (l) => l === "/more" };
+// Market / wealth / social replacements for slot 2 (MONTH). All keep
+// MOVE + FIND at slots 4/5. Routes here are already in MOBILE_ROUTES.
+const TAB_PORTFOLIO: FooterTabDef = { key: "portfolio", label: "PORTFOLIO", route: "/investments", glyph: "outline", matches: (l) => l === "/investments" };
+const TAB_GOALS: FooterTabDef     = { key: "goals",     label: "GOALS",     route: "/goals",       glyph: "outline", matches: (l) => l === "/goals" };
+const TAB_OWING: FooterTabDef     = { key: "owing",     label: "OWING",     route: "/owing",       glyph: "outline", matches: (l) => l === "/owing" };
+
+// Slot 2 varies by persona; slot 4 stays MOVE across the board (every
+// persona needs one-tap to their accounts). Slot 5 stays FIND. If a
+// future persona also wants to swap MOVE, add a fourth-slot lookup
+// here — same shape.
+export function tabSetForPersona(persona: PersonaId): FooterTabDef[] {
+  const slot2 =
+    persona === "market" ? TAB_PORTFOLIO :
+    persona === "wealth" ? TAB_GOALS :
+    persona === "social" ? TAB_OWING :
+    TAB_MONTH;
+  return [TAB_HOME, slot2, TAB_MOVE, TAB_FIND];
 }
 
 // Glyph vocab: filled square = HOME, outlined square = MONTH,
@@ -92,6 +118,15 @@ function GlyphRing({ active }: { active: boolean }) {
   );
 }
 
+function renderGlyph(kind: GlyphKind, active: boolean) {
+  switch (kind) {
+    case "filled":  return <GlyphFilled active={active} />;
+    case "outline": return <GlyphOutline active={active} />;
+    case "bars":    return <GlyphBars active={active} />;
+    case "ring":    return <GlyphRing active={active} />;
+  }
+}
+
 function FooterTab({
   label,
   active,
@@ -127,7 +162,8 @@ function FooterTab({
 export function MobileNav() {
   const [location, navigate] = useLocation();
   const [addOpen, setAddOpen] = useState(false);
-  const active = activeFromLocation(location);
+  const persona = useActivePersona();
+  const tabs = tabSetForPersona(persona);
 
   return (
     <>
@@ -157,12 +193,32 @@ export function MobileNav() {
             letterSpacing: "0.08em",
           }}
         >
-          <FooterTab label="HOME"  active={active === "home"}  onClick={() => navigate(ROUTE.home)}  glyph={<GlyphFilled active={active === "home"} />} />
-          <FooterTab label="MONTH" active={active === "month"} onClick={() => navigate(ROUTE.month)} glyph={<GlyphOutline active={active === "month"} />} />
+          <FooterTab
+            label={tabs[0]!.label}
+            active={tabs[0]!.matches(location)}
+            onClick={() => navigate(tabs[0]!.route)}
+            glyph={renderGlyph(tabs[0]!.glyph, tabs[0]!.matches(location))}
+          />
+          <FooterTab
+            label={tabs[1]!.label}
+            active={tabs[1]!.matches(location)}
+            onClick={() => navigate(tabs[1]!.route)}
+            glyph={renderGlyph(tabs[1]!.glyph, tabs[1]!.matches(location))}
+          />
           {/* Centre slot is deliberately empty — the raised + sits above it */}
           <div />
-          <FooterTab label="MOVE"  active={active === "move"}  onClick={() => navigate(ROUTE.move)}  glyph={<GlyphBars active={active === "move"} />} />
-          <FooterTab label="FIND"  active={active === "find"}  onClick={() => navigate(ROUTE.find)}  glyph={<GlyphRing active={active === "find"} />} />
+          <FooterTab
+            label={tabs[2]!.label}
+            active={tabs[2]!.matches(location)}
+            onClick={() => navigate(tabs[2]!.route)}
+            glyph={renderGlyph(tabs[2]!.glyph, tabs[2]!.matches(location))}
+          />
+          <FooterTab
+            label={tabs[3]!.label}
+            active={tabs[3]!.matches(location)}
+            onClick={() => navigate(tabs[3]!.route)}
+            glyph={renderGlyph(tabs[3]!.glyph, tabs[3]!.matches(location))}
+          />
 
           {/* Raised centre add button */}
           <div
