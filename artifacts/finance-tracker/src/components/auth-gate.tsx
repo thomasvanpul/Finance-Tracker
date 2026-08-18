@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
 import { LogoMark } from "@/components/logo";
-
-const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_OAUTH);
+import { useAuthProviders } from "@/lib/auth-providers";
 
 type Mode = "signin" | "signup" | "forgot" | "reset";
 
@@ -154,6 +153,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  // Server tells us which provider buttons may render. No build-
+  // time env flag decides — that was the wasted-hour bug.
+  const { providers } = useAuthProviders();
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
@@ -496,7 +498,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   <button type="submit" disabled={submitting || !email || !password} style={btnStyle(submitting || !email || !password)}>
                     {submitting ? "Signing in…" : "Sign in"}
                   </button>
-                  {GOOGLE_ENABLED && (
+                  {providers.includes("google") && (
                     <button type="button" onClick={handleGoogle} disabled={googleLoading} style={{ ...btnSecondaryStyle, opacity: googleLoading ? 0.6 : 1, cursor: googleLoading ? "default" : "pointer" }}>
                       {googleLoading ? "Redirecting…" : "Continue with Google"}
                     </button>
@@ -545,7 +547,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   <button type="submit" disabled={submitting || !name || !email || password.length < 8} style={btnStyle(submitting || !name || !email || password.length < 8)}>
                     {submitting ? "Creating account…" : "Create account"}
                   </button>
-                  {GOOGLE_ENABLED && (
+                  {providers.includes("google") && (
                     <button type="button" onClick={handleGoogle} disabled={googleLoading} style={{ ...btnSecondaryStyle, opacity: googleLoading ? 0.6 : 1, cursor: googleLoading ? "default" : "pointer" }}>
                       {googleLoading ? "Redirecting…" : "Continue with Google"}
                     </button>

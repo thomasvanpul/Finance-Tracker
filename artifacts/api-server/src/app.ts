@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
 import router from "./routes";
 import healthRouter from "./routes/health";
+import authProvidersRouter from "./routes/auth-providers";
 import { logger } from "./lib/logger";
 import { auth } from "./lib/better-auth";
 
@@ -121,6 +122,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use("/api", healthRouter);
+// PUBLIC: auth-providers is the single source of truth for which
+// login buttons the UI is allowed to render. Mounted BEFORE
+// requireAuth because the page consuming it is the sign-in page
+// itself. See routes/auth-providers.ts.
+app.use("/api", authProvidersRouter);
 
 // Middleware that reads the Better Auth session and puts userId on the request.
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
