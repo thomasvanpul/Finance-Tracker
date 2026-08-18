@@ -59,7 +59,18 @@ router.get("/auth-providers", (_req, res) => {
   const passwordResetEnabled =
     typeof process.env.RESEND_API_KEY === "string" &&
     process.env.RESEND_API_KEY.trim().length > 0;
-  res.json({ providers, passwordResetEnabled });
+  // The base better-auth actually resolved, so a redirect_uri
+    // mismatch is diagnosable without shell access to the host.
+    // Not a secret — it appears in every OAuth URL we generate.
+    const callbackBase =
+      process.env.API_BASE_URL ??
+      process.env.RENDER_EXTERNAL_URL ??
+      (process.env.RAILWAY_PUBLIC_DOMAIN
+        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+        : "http://localhost:3000");
+
+    res.json({
+      callbackBase, providers, passwordResetEnabled });
 });
 
 export default router;
