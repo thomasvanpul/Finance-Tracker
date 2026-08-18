@@ -18,6 +18,22 @@ pnpm --filter @workspace/finance-tracker test            # vitest
 export PORT=5173 BASE_PATH=/ && git push origin main
 ```
 
+## Restarting the local servers
+
+Kill and restart the local api-server (:3001) and Vite (:4321) yourself
+whenever you need to — `pnpm dev` builds then runs `dist/index.mjs` with no
+watcher, so a server change is NOT live until the process is restarted. Both are
+dev processes pointing at the Neon dev branch; nothing depends on their uptime.
+Waiting for a human to restart them has stalled two sessions.
+
+```bash
+pkill -f "dist/index.mjs"; cd artifacts/api-server && pnpm dev
+pkill -f vite; cd artifacts/finance-tracker && PORT=4321 BASE_PATH=/ pnpm dev
+```
+
+Also kill any Playwright browsers you spawn — one session left 129 Chromium
+processes running.
+
 ## Where things are
 
 | Path | What |
