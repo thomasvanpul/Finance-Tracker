@@ -1562,9 +1562,9 @@ function WiseIntegrationPanel() {
             ) : !isConfigured ? (
               <span style={{
                 fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em",
-                fontWeight: 700, color: "#F59E0B",
-                border: "1px solid #F59E0B44", padding: "2px 8px",
-                background: "#F59E0B11",
+                fontWeight: 700, color: "var(--ft-amber)",
+                border: "1px solid var(--ft-amber)44", padding: "2px 8px",
+                background: "var(--ft-amber)11",
               }}>
                 NOT CONFIGURED
               </span>

@@ -393,7 +393,10 @@ input[type="checkbox"]:checked {
   --ft-muted:   #4A5A74;
   --ft-dim:     #637088;
   --ft-accent:  #0052CC;
-  --ft-amber:   #FF6600;
+  /* #FF6600 measured ~2.94:1 on white — failed WCAG for body text.
+     #B45309 (Tailwind amber-700) measures ~4.95:1 and reads as amber
+     rather than brown. Applies to every arctic amber consumer. */
+  --ft-amber:   #B45309;
   --ft-green:   #006644;
   --ft-red:     #CC0000;
   --ft-blue:    #0065FF;
