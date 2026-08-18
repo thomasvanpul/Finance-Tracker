@@ -1,8 +1,11 @@
 import { createAuthClient } from "better-auth/react";
 import { twoFactorClient } from "better-auth/client/plugins";
 
-// In dev, route through the Vite proxy (/api → Railway) so cookies land on localhost correctly.
-// In production, go directly to the Railway URL.
+// Always same-origin. In dev the Vite proxy forwards /api to the local API; in
+// production Vercel rewrites /api/* to the Render service (see vercel.json).
+// This is not a convenience — a cross-domain API sets a third-party cookie,
+// which Safari blocks outright, so sign-in succeeds and the session is
+// discarded. Leave VITE_API_URL unset in production.
 const authBase = import.meta.env.DEV
   ? `${window.location.origin}/api/auth`
   : import.meta.env.VITE_API_URL

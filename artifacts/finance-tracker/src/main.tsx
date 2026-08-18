@@ -23,8 +23,10 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
   }
 }
 
-// In production, point directly at Railway. In dev, leave base URL empty so
-// requests go through the Vite proxy (/api → Railway) which handles cookies correctly.
+// Leave the base URL empty in both dev and production so every request is
+// same-origin: the Vite proxy handles it locally, Vercel's /api/* rewrite
+// handles it in production. A cross-domain base makes the session cookie
+// third-party and Safari drops it. VITE_API_URL is an escape hatch only.
 if (!import.meta.env.DEV && import.meta.env.VITE_API_URL) {
   setBaseUrl(import.meta.env.VITE_API_URL as string);
 }
