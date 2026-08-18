@@ -1,161 +1,179 @@
-import { useState, useEffect } from "react";
+// Auth gate — rebuilt to the same design language as the rest
+// of the app.
+//
+// What went away:
+//   - The 1,048-row spreadsheet gutter. It was ~1,000 DOM nodes
+//     on the first screen every user loads on the free tier, for
+//     an easter egg almost nobody reached.
+//   - The row-1000 easter egg (LOCKED_CELL / "tf u doing here").
+//     If an egg wants to exist, it doesn't belong on the entry
+//     point.
+//   - The spreadsheet metaphor entirely: cell reference "A1",
+//     "=NUMERIS.SIGN_IN()", the formula bar, "LOCKED_CELL". That
+//     metaphor was abandoned in the design work because it
+//     doesn't survive a phone. The auth page just never caught up.
+//
+// What stayed:
+//   - The `fx` provenance mark is NOT here — it earns its place
+//     next to a computed figure (see MobileHome), and there are
+//     no figures on this page. Kept out of the entry-point
+//     signature deliberately.
+//   - Type ladder, hairline structure, primitives — inherited
+//     from HStack/VStack/Text/PanelBox as elsewhere.
+//
+// Provider buttons render iff the server reports the provider
+// as configured via GET /api/auth-providers (useAuthProviders).
+// No build-time env flag decides. Test-locked in
+// auth-providers.test.ts.
+
+import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { LogoMark } from "@/components/logo";
-import { useAuthProviders } from "@/lib/auth-providers";
+import { useAuthProviders, type ProviderId } from "@/lib/auth-providers";
+import {
+  classifyAuthError,
+  makeAuthError,
+  looksLikeColdStart,
+  type AuthError,
+} from "@/lib/auth-errors";
+import { HStack, VStack, Text, PanelBox } from "@/components/primitives";
 
-type Mode = "signin" | "signup" | "forgot" | "reset";
+type Mode = "signin" | "signup" | "forgot" | "reset" | "twofa";
 
-function TopBar({ locked }: { locked: boolean }) {
+// One-sentence pitch shown on every mode. Written so a stranger
+// arriving here knows what Numeris is before they type anything.
+const PITCH = "A personal finance OS — your accounts, portfolios, budgets, and shared bills across currencies, in one screen.";
+
+// Human labels for each provider. Icons are inline SVG (no emoji
+// per the no-emoji lock). Each SVG is drawn to render legibly
+// against both dark and light themes via currentColor.
+const PROVIDER_LABEL: Record<ProviderId, string> = {
+  google: "Continue with Google",
+  apple:  "Continue with Apple",
+  github: "Continue with GitHub",
+};
+
+function ProviderIcon({ id }: { id: ProviderId }) {
+  if (id === "google") {
+    return (
+      <svg width={14} height={14} viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#4285F4" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.7 30.4.5 24 .5 14.9.5 7.1 5.7 3.4 13.3l7.9 6.1C13.2 13.7 18.2 9.5 24 9.5z"/>
+        <path fill="#34A853" d="M46.5 24.5c0-1.5-.1-3-.4-4.5H24v9h12.7c-.6 3.1-2.3 5.7-4.9 7.4l7.6 5.9c4.4-4.1 7.1-10.1 7.1-17.8z"/>
+        <path fill="#FBBC05" d="M11.3 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.1C1.9 16.3.5 20 .5 24s1.4 7.7 3.4 10.7l7.4-6.1z"/>
+        <path fill="#EA4335" d="M24 47.5c6.4 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.8 2.3-8.3 2.3-5.8 0-10.8-4.2-12.6-9.9l-7.9 6.1C7.1 42.3 14.9 47.5 24 47.5z"/>
+      </svg>
+    );
+  }
+  if (id === "apple") {
+    return (
+      <svg width={14} height={14} viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+        <path d="M17.05 12.65c-.03-2.75 2.24-4.07 2.34-4.13-1.28-1.87-3.27-2.13-3.97-2.16-1.69-.17-3.29 1-4.14 1-.87 0-2.18-.98-3.58-.95-1.84.03-3.54 1.07-4.49 2.72-1.91 3.32-.49 8.22 1.37 10.9.91 1.32 1.99 2.8 3.4 2.75 1.37-.06 1.89-.88 3.55-.88s2.12.88 3.57.85c1.48-.03 2.41-1.34 3.31-2.66 1.04-1.52 1.47-3 1.49-3.08-.03-.01-2.85-1.09-2.88-4.32zM14.31 4.66c.75-.91 1.26-2.18 1.12-3.44-1.08.04-2.39.72-3.17 1.63-.7.8-1.31 2.08-1.15 3.32 1.21.09 2.44-.61 3.2-1.51z"/>
+      </svg>
+    );
+  }
+  // github
   return (
-    <div
-      className="flex-shrink-0 flex items-center"
-      style={{ background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-raised)", height: 44 }}
-    >
-      <div
-        className="flex items-center gap-2 px-4"
-        style={{ borderRight: "1px solid var(--ft-raised)", height: 44 }}
-      >
-        <LogoMark />
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.12em", lineHeight: 1 }}>NUMERIS</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.15em", lineHeight: 1 }}>PERSONAL OS</span>
-        </div>
-      </div>
-      <div className="flex-1" />
-      {locked && (
-        <div className="flex items-center gap-3 px-4 text-xs" style={{ color: "var(--ft-dim)" }}>
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--ft-red)" }} />
-            <span style={{ color: "var(--ft-red)" }}>Locked</span>
-          </span>
-        </div>
-      )}
-    </div>
+    <svg width={14} height={14} viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.4-1.7-1.4-1.7-1.1-.8.1-.8.1-.8 1.2.1 1.9 1.3 1.9 1.3 1.1 1.9 2.9 1.4 3.6 1 .1-.8.4-1.4.8-1.7-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.3-3.2-.1-.4-.6-1.6.1-3.3 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.2 2.9.1 3.3.8.8 1.3 1.9 1.3 3.2 0 4.7-2.9 5.7-5.5 6 .4.4.8 1.1.8 2.3v3.4c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/>
+    </svg>
   );
 }
 
-function FormulaBar({ label }: { label: string }) {
+// Icon-only visual for the top of the card. Uses the same
+// hairline-outline shape the logo carries in MobileHome — the
+// glyph is a filled diamond notched out, drawn inline in SVG so
+// it inherits the active theme accent.
+function BrandMark({ size = 22 }: { size?: number }) {
   return (
-    <div
-      className="flex-shrink-0 flex items-center gap-2 px-3"
-      style={{ background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-raised)", height: 28 }}
-    >
-      <span
-        className="text-xs font-mono px-2 py-0.5 border"
-        style={{ color: "var(--ft-blue)", borderColor: "var(--ft-border2)", background: "var(--ft-base)", minWidth: 48, textAlign: "center" }}
-      >
-        AUTH
-      </span>
-      <span className="text-xs" style={{ color: "var(--ft-dim)" }}>fx</span>
-      <span className="text-xs font-mono flex-1 truncate" style={{ color: "var(--ft-dim)" }}>
-        {label}
-      </span>
-    </div>
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M6 6 L26 6 L26 26 L6 26 Z" fill="none" stroke="var(--ft-accent)" strokeWidth="2" />
+      <path d="M11 10 L11 22 L14 22 L14 15 L21 22 L21 10 L18 10 L18 17 L11 10 Z" fill="var(--ft-accent)" />
+    </svg>
   );
 }
 
-function RowGutter() {
-  const ROWS = 1048;
-  const EGG_ZONE_START = 997;
-  return (
-    <div
-      className="hidden sm:flex flex-shrink-0 flex-col select-none"
-      style={{ background: "var(--ft-base)", borderRight: "1px solid var(--ft-raised)", width: 44 }}
-    >
-      {Array.from({ length: ROWS }, (_, i) => {
-        const rowNum = i + 1;
-        const isEgg = rowNum >= EGG_ZONE_START;
-        return (
-          <div
-            key={i}
-            className="flex items-center justify-center"
-            style={{
-              height: 24,
-              fontSize: 10,
-              fontFamily: "var(--font-mono)",
-              color: isEgg ? "var(--ft-accent)" : "var(--ft-dim)",
-              borderBottom: "1px solid rgba(33,38,45,0.5)",
-              flexShrink: 0,
-              fontWeight: isEgg ? 600 : undefined,
-            }}
-          >
-            {rowNum}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-const inputStyle: React.CSSProperties = {
+// ── Shared styles (kept tiny and centralised — three fields, one
+//    button — instead of the 49 inline objects the previous file
+//    carried). Buttons and inputs get one style each, and the
+//    small variants layer via inline overrides.
+const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
   boxSizing: "border-box",
   background: "var(--ft-base)",
   border: "1px solid var(--ft-border2)",
-  borderRadius: 2,
   color: "var(--ft-text)",
+  fontFamily: "var(--font-mono)",
   fontSize: 13,
-  fontFamily: "monospace",
-  padding: "8px 10px",
-  marginBottom: 10,
+  padding: "10px 12px",
+  outline: "none",
+  minHeight: 44, // 44pt touch target on mobile
 };
-
-const btnStyle = (disabled: boolean): React.CSSProperties => ({
+const PRIMARY_BTN: React.CSSProperties = {
   width: "100%",
-  background: "var(--ft-blue)",
+  background: "var(--ft-accent)",
   color: "var(--ft-base)",
   border: "none",
-  borderRadius: 2,
-  fontSize: 13,
-  fontWeight: 600,
-  padding: "8px 0",
-  cursor: disabled ? "default" : "pointer",
-  opacity: disabled ? 0.6 : 1,
-  marginBottom: 8,
-});
-
-const btnSecondaryStyle: React.CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  padding: "12px 16px",
+  cursor: "pointer",
+  minHeight: 44,
+};
+const SECONDARY_BTN: React.CSSProperties = {
   width: "100%",
-  background: "var(--ft-raised)",
+  background: "transparent",
   color: "var(--ft-text)",
   border: "1px solid var(--ft-border2)",
-  borderRadius: 2,
-  fontSize: 13,
-  fontWeight: 500,
-  padding: "8px 0",
+  fontFamily: "var(--font-mono)",
+  fontSize: 12,
+  padding: "10px 14px",
   cursor: "pointer",
-  marginBottom: 8,
+  minHeight: 44,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
 };
-
-const linkBtnStyle: React.CSSProperties = {
-  color: "var(--ft-blue)",
+const LINK_BTN: React.CSSProperties = {
   background: "none",
   border: "none",
+  color: "var(--ft-accent)",
+  fontFamily: "var(--font-mono)",
+  fontSize: 11,
   cursor: "pointer",
-  fontSize: 12,
+  padding: 0,
+  textDecoration: "underline",
+  textUnderlineOffset: 2,
 };
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
+  const { providers, passwordResetEnabled, loading: providersLoading } = useAuthProviders();
+
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [resetToken, setResetToken] = useState<string | null>(null);
-  const [needsCode, setNeedsCode] = useState(false);
   const [totpCode, setTotpCode] = useState("");
-  const urlError = new URLSearchParams(window.location.search).get("error");
-  const [error, setError] = useState<string | null>(
-    urlError === "account_not_linked" ? "Google account not linked. Try signing in with email/password first, then link Google from settings." : urlError
-  );
+  const [resetToken, setResetToken] = useState<string | null>(null);
+  const [error, setError] = useState<AuthError | null>(() => {
+    // ?error=xxx from an OAuth redirect
+    const url = new URLSearchParams(window.location.search).get("error");
+    if (url === "account_not_linked") {
+      return {
+        kind: "provider_unavailable",
+        message: "That social account isn't linked. Sign in with email/password first, then link it from Settings.",
+      };
+    }
+    return null;
+  });
   const [submitting, setSubmitting] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [forgotSent, setForgotSent] = useState(false);
-  // Server tells us which provider buttons may render. No build-
-  // time env flag decides — that was the wasted-hour bug.
-  const { providers } = useAuthProviders();
+  const [socialLoading, setSocialLoading] = useState<ProviderId | null>(null);
+  const [forgotSent, setForgotSent] = useState<{ email: string } | null>(null);
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
@@ -168,469 +186,446 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (isPending) {
     return <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
   }
-
   if (session) {
     return <>{children}</>;
   }
+
+  const catch401 = async (fn: () => Promise<unknown>): Promise<void> => {
+    try {
+      await fn();
+    } catch (err) {
+      // Network / cold-start disambiguation
+      const initial = classifyAuthError(err);
+      if (initial.kind === "network") {
+        const cold = await looksLikeColdStart();
+        setError(cold ? makeAuthError("server_waking") : initial);
+      } else {
+        setError(initial);
+      }
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    try {
+    await catch401(async () => {
       const res = await authClient.signIn.email({ email, password });
       if (res?.error) {
-        type ErrShape = { message?: string; statusText?: string; error?: { message?: string } };
-        const e = res.error as ErrShape;
-        const msg = e?.message ?? e?.error?.message ?? e?.statusText ?? "Incorrect email or password";
-        if (msg.toLowerCase().includes("two") || msg.toLowerCase().includes("2fa") || msg.toLowerCase().includes("factor")) {
-          setNeedsCode(true);
+        const classified = classifyAuthError(res.error);
+        if (classified.kind === "two_factor_wrong") {
+          setMode("twofa");
         } else {
-          setError(msg || "Incorrect email or password");
+          setError(classified);
         }
       }
-    } catch {
-      setError("Could not reach the server");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleTotpVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-    try {
-      const res = await (authClient as { twoFactor?: { verifyTotp?: (opts: { code: string }) => Promise<{ error?: unknown }> } }).twoFactor?.verifyTotp?.({ code: totpCode });
-      if (res?.error) {
-        setError((res.error as { message?: string })?.message ?? "Incorrect code");
-      }
-    } catch {
-      setError("Could not reach the server");
-    } finally {
-      setSubmitting(false);
-    }
+      // Successful sign-in: better-auth's useSession refreshes on
+      // its own; if there is a session on next render we unmount
+      // and reveal the app.
+    });
+    setSubmitting(false);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    try {
+    await catch401(async () => {
       const res = await authClient.signUp.email({ email, password, name });
       if (res?.error) {
-        setError((res.error as { message?: string })?.message ?? "Sign up failed");
+        setError(classifyAuthError(res.error));
+      } else {
+        // Fresh sign-up: land on the onboarding questionnaire
+        // rather than a bare dashboard. The onboarding component
+        // (see components/onboarding.tsx) reads the persona
+        // localStorage key and renders when it's absent; a
+        // fresh signup has no key, so simply revealing the app
+        // shell brings the OnboardingGate up automatically.
+        // Nothing more to do here — the session flip on the
+        // next useSession refresh reveals children.
       }
-    } catch {
-      setError("Could not reach the server");
-    } finally {
-      setSubmitting(false);
-    }
+    });
+    setSubmitting(false);
   };
 
-  const handleGoogle = async () => {
-    setGoogleLoading(true);
-    try {
-      await authClient.signIn.social({
-        provider: "google",
-        callbackURL: window.location.origin,
-        errorCallbackURL: window.location.origin,
-      });
-    } catch (err) {
-      console.error("Google sign-in failed:", err);
-      setError("Google sign-in is unavailable in this environment.");
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
+  const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    try {
+    await catch401(async () => {
       const resetOrigin = import.meta.env.VITE_RESET_ORIGIN || window.location.origin;
-      const res = await authClient.requestPasswordReset({
-        email,
-        redirectTo: resetOrigin,
-      });
+      const res = await authClient.requestPasswordReset({ email, redirectTo: resetOrigin });
       if (res?.error) {
-        setError((res.error as { message?: string })?.message ?? "Something went wrong");
+        setError(classifyAuthError(res.error));
       } else {
-        setForgotSent(true);
+        // Only claim "sent" after the API returned success.
+        // The server throws when RESEND_API_KEY is missing, which
+        // routes here as `reset_transport_off` — the UI shows the
+        // real message rather than "check your inbox".
+        setForgotSent({ email });
       }
-    } catch {
-      setError("Could not reach the server");
-    } finally {
-      setSubmitting(false);
-    }
+    });
+    setSubmitting(false);
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
+      setError({ kind: "wrong_credentials", message: "Passwords do not match." });
       return;
     }
     if (!resetToken) {
-      setError("Missing reset token");
+      setError(makeAuthError("reset_token_invalid"));
       return;
     }
     setSubmitting(true);
     setError(null);
-    try {
-      const res = await authClient.resetPassword({
-        newPassword,
-        token: resetToken,
-      });
+    await catch401(async () => {
+      const res = await authClient.resetPassword({ newPassword, token: resetToken });
       if (res?.error) {
-        setError((res.error as { message?: string })?.message ?? "Reset failed");
+        setError(classifyAuthError(res.error));
       } else {
+        setResetToken(null);
         setNewPassword("");
         setConfirmPassword("");
-        setResetToken(null);
         setMode("signin");
-        // Clear the token from the URL without a full reload
         const url = new URL(window.location.href);
         url.searchParams.delete("token");
         url.searchParams.delete("reset");
         window.history.replaceState({}, "", url.toString());
       }
-    } catch {
-      setError("Could not reach the server");
+    });
+    setSubmitting(false);
+  };
+
+  const handleTotp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    await catch401(async () => {
+      const tf = (authClient as unknown as {
+        twoFactor?: { verifyTotp?: (opts: { code: string }) => Promise<{ error?: unknown }> };
+      }).twoFactor;
+      const res = await tf?.verifyTotp?.({ code: totpCode });
+      if (res?.error) setError(classifyAuthError(res.error));
+    });
+    setSubmitting(false);
+  };
+
+  const handleSocial = async (provider: ProviderId) => {
+    setError(null);
+    setSocialLoading(provider);
+    try {
+      await authClient.signIn.social({
+        provider,
+        callbackURL: window.location.origin,
+        errorCallbackURL: window.location.origin,
+      });
+    } catch (err) {
+      setError(classifyAuthError(err));
     } finally {
-      setSubmitting(false);
+      setSocialLoading(null);
     }
   };
 
-  const goToSignIn = () => {
-    setMode("signin");
+  const applyAction = (action: NonNullable<AuthError["action"]>) => {
     setError(null);
-    setForgotSent(false);
+    if (action.intent === "signup") setMode("signup");
+    else if (action.intent === "signin") setMode("signin");
+    else if (action.intent === "forgot") setMode("forgot");
+    else if (action.intent === "retry") {
+      // Retry: clear the error; the user re-clicks Submit. We
+      // don't auto-resubmit because a retry loop against a
+      // still-cold server would spam Render's rate limiter.
+    }
   };
 
-  const isSignIn = mode === "signin";
+  // ── Sub-renders ──────────────────────────────────────────
+  const renderHeader = (heading: string, sub?: string) => (
+    <VStack gap={6} padding="0 0 16px">
+      <HStack gap={10} align="center">
+        <BrandMark />
+        <Text as="span" mono weight={700} letterSpacing="0.16em" color="var(--ft-text)" size={13}>
+          NUMERIS
+        </Text>
+      </HStack>
+      <Text as="h1" weight={700} color="var(--ft-text)" size={18} lineHeight={1.25} mt={4}>
+        {heading}
+      </Text>
+      {sub && (
+        <Text as="p" color="var(--ft-muted)" size={12} lineHeight={1.55} mt={2}>
+          {sub}
+        </Text>
+      )}
+    </VStack>
+  );
 
-  const formulaLabel = needsCode
-    ? "=NUMERIS.VERIFY_2FA()"
-    : mode === "forgot"
-    ? "=NUMERIS.FORGOT_PASSWORD()"
-    : mode === "reset"
-    ? "=NUMERIS.RESET_PASSWORD()"
-    : isSignIn
-    ? "=NUMERIS.SIGN_IN()"
-    : "=NUMERIS.SIGN_UP()";
+  const renderError = () => {
+    if (!error) return null;
+    return (
+      <div
+        role="alert"
+        style={{
+          background: "color-mix(in srgb, var(--ft-red) 8%, transparent)",
+          border: "1px solid color-mix(in srgb, var(--ft-red) 40%, transparent)",
+          padding: "10px 12px",
+          marginBottom: 12,
+        }}
+      >
+        <Text as="div" color="var(--ft-red)" mono size={11} lineHeight={1.45}>
+          {error.message}
+        </Text>
+        {error.action && (
+          <button
+            type="button"
+            onClick={() => applyAction(error.action!)}
+            style={{ ...LINK_BTN, color: "var(--ft-red)", marginTop: 6 }}
+          >
+            {error.action.label}
+          </button>
+        )}
+      </div>
+    );
+  };
 
-  const headerLabel = needsCode
-    ? "Two-factor authentication"
-    : mode === "forgot"
-    ? "Reset your password"
-    : mode === "reset"
-    ? "Set a new password"
-    : isSignIn
-    ? "Sign in to Numeris"
-    : "Create your account";
+  const renderProviders = () => {
+    if (providersLoading) return null;
+    if (providers.length === 0) return null;
+    return (
+      <VStack gap={8} padding="12px 0 0">
+        <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 12 }}>
+          <Text as="div" mono upper letterSpacing="0.08em" color="var(--ft-dim)" size={9} mb={8} align="center">
+            OR
+          </Text>
+          <VStack gap={8}>
+            {providers.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => handleSocial(p)}
+                disabled={socialLoading != null}
+                style={{
+                  ...SECONDARY_BTN,
+                  opacity: socialLoading != null && socialLoading !== p ? 0.5 : 1,
+                }}
+              >
+                <ProviderIcon id={p} />
+                <span>{socialLoading === p ? "Redirecting…" : PROVIDER_LABEL[p]}</span>
+              </button>
+            ))}
+          </VStack>
+        </div>
+      </VStack>
+    );
+  };
+
+  // ── Body per mode ────────────────────────────────────────
+  const body = (() => {
+    if (mode === "twofa") {
+      return (
+        <>
+          {renderHeader("Two-factor code", "Enter the 6-digit code from your authenticator.")}
+          {renderError()}
+          <form onSubmit={handleTotp}>
+            <VStack gap={10}>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                maxLength={6}
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value)}
+                placeholder="000000"
+                style={INPUT_STYLE}
+              />
+              <button type="submit" disabled={submitting || totpCode.length < 6} style={{ ...PRIMARY_BTN, opacity: submitting || totpCode.length < 6 ? 0.5 : 1 }}>
+                {submitting ? "Verifying…" : "Verify"}
+              </button>
+              <HStack justify="center" padding="6px 0 0">
+                <button type="button" onClick={() => { setMode("signin"); setError(null); setTotpCode(""); }} style={LINK_BTN}>
+                  ← Back to sign in
+                </button>
+              </HStack>
+            </VStack>
+          </form>
+        </>
+      );
+    }
+    if (mode === "reset") {
+      return (
+        <>
+          {renderHeader("Set a new password", "Choose a password of at least 8 characters.")}
+          {renderError()}
+          <form onSubmit={handleReset}>
+            <VStack gap={10}>
+              <input type="password" autoFocus value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password" style={INPUT_STYLE} />
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" style={INPUT_STYLE} />
+              <button
+                type="submit"
+                disabled={submitting || newPassword.length < 8 || confirmPassword.length < 8}
+                style={{ ...PRIMARY_BTN, opacity: submitting || newPassword.length < 8 ? 0.5 : 1 }}
+              >
+                {submitting ? "Updating…" : "Update password"}
+              </button>
+              <HStack justify="center" padding="6px 0 0">
+                <button type="button" onClick={() => { setMode("signin"); setError(null); }} style={LINK_BTN}>
+                  ← Back to sign in
+                </button>
+              </HStack>
+            </VStack>
+          </form>
+        </>
+      );
+    }
+    if (mode === "forgot") {
+      if (forgotSent) {
+        return (
+          <>
+            {renderHeader("Check your inbox", `If ${forgotSent.email} is registered, a reset link is on its way. Links expire in 1 hour.`)}
+            <HStack justify="center" padding="8px 0 0">
+              <button type="button" onClick={() => { setMode("signin"); setError(null); setForgotSent(null); }} style={LINK_BTN}>
+                ← Back to sign in
+              </button>
+            </HStack>
+          </>
+        );
+      }
+      return (
+        <>
+          {renderHeader("Reset your password", passwordResetEnabled
+            ? "We'll email you a link to set a new password."
+            : "Password reset isn't configured on this server."
+          )}
+          {renderError()}
+          <form onSubmit={handleForgot}>
+            <VStack gap={10}>
+              <input
+                type="email"
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                style={INPUT_STYLE}
+                disabled={!passwordResetEnabled}
+              />
+              <button
+                type="submit"
+                disabled={submitting || !email || !passwordResetEnabled}
+                style={{ ...PRIMARY_BTN, opacity: submitting || !email || !passwordResetEnabled ? 0.5 : 1 }}
+              >
+                {submitting ? "Sending…" : passwordResetEnabled ? "Send reset link" : "Reset unavailable"}
+              </button>
+              <HStack justify="center" padding="6px 0 0">
+                <button type="button" onClick={() => { setMode("signin"); setError(null); }} style={LINK_BTN}>
+                  ← Back to sign in
+                </button>
+              </HStack>
+            </VStack>
+          </form>
+        </>
+      );
+    }
+
+    // signin / signup
+    const isSignIn = mode === "signin";
+    return (
+      <>
+        {renderHeader(
+          isSignIn ? "Sign in" : "Create your account",
+          PITCH,
+        )}
+        {renderError()}
+        <form onSubmit={isSignIn ? handleSignIn : handleSignUp}>
+          <VStack gap={10}>
+            {!isSignIn && (
+              <input
+                type="text"
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Name"
+                style={INPUT_STYLE}
+              />
+            )}
+            <input
+              type="email"
+              autoFocus={isSignIn}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              style={INPUT_STYLE}
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={isSignIn ? "Password" : "Password (min 8 characters)"}
+              style={INPUT_STYLE}
+            />
+            {isSignIn && passwordResetEnabled && (
+              <HStack justify="end">
+                <button type="button" onClick={() => { setMode("forgot"); setError(null); }} style={LINK_BTN}>
+                  Forgot password?
+                </button>
+              </HStack>
+            )}
+            <button
+              type="submit"
+              disabled={
+                submitting ||
+                !email ||
+                (!isSignIn && !name) ||
+                (!isSignIn && password.length < 8) ||
+                (isSignIn && !password)
+              }
+              style={{
+                ...PRIMARY_BTN,
+                opacity:
+                  submitting || !email || (isSignIn ? !password : !name || password.length < 8) ? 0.5 : 1,
+              }}
+            >
+              {submitting
+                ? isSignIn ? "Signing in…" : "Creating account…"
+                : isSignIn ? "Sign in" : "Create account"}
+            </button>
+          </VStack>
+        </form>
+
+        {renderProviders()}
+
+        <HStack justify="center" padding="16px 0 0">
+          <Text as="span" color="var(--ft-dim)" size={11}>
+            {isSignIn ? "No account? " : "Have an account? "}
+            <button
+              type="button"
+              onClick={() => { setMode(isSignIn ? "signup" : "signin"); setError(null); }}
+              style={LINK_BTN}
+            >
+              {isSignIn ? "Sign up" : "Sign in"}
+            </button>
+          </Text>
+        </HStack>
+      </>
+    );
+  })();
 
   return (
     <div
-      className="flex flex-col h-[100dvh] overflow-hidden"
-      style={{ background: "var(--ft-base)", color: "var(--ft-text)" }}
+      style={{
+        minHeight: "100dvh",
+        background: "var(--ft-base)",
+        color: "var(--ft-text)",
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "center",
+        padding: "48px 20px 40px",
+        boxSizing: "border-box",
+      }}
     >
-      <TopBar locked />
-      <FormulaBar label={formulaLabel} />
-
-      <div className="flex flex-1 overflow-y-auto ft-no-scrollbar" style={{ scrollbarWidth: "none" }}>
-        <RowGutter />
-
-        <div style={{ flex: 1, position: "relative", minHeight: 1048 * 24 }}>
-          <div style={{ display: "flex", justifyContent: "center", paddingTop: "calc(50dvh - 200px)" }}>
-          <div
-            style={{
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border2)",
-              borderRadius: 2,
-              width: 320,
-            }}
-          >
-            <div
-              className="flex items-center gap-1.5 px-3"
-              style={{ height: 26, borderBottom: "1px solid var(--ft-raised)", background: "var(--ft-base)" }}
-            >
-              <span className="text-xs font-mono" style={{ color: "var(--ft-blue)" }}>A1</span>
-              <span className="text-xs" style={{ color: "var(--ft-dim)" }}>·</span>
-              <span className="text-xs" style={{ color: "var(--ft-dim)" }}>
-                {headerLabel}
-              </span>
-            </div>
-
-            <div className="p-4">
-              {needsCode ? (
-                <form onSubmit={handleTotpVerify}>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoFocus
-                    maxLength={6}
-                    value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value)}
-                    placeholder="6-digit code"
-                    style={inputStyle}
-                  />
-                  {error && (
-                    <p className="font-mono" style={{ color: "var(--ft-red)", fontSize: 12, marginBottom: 10 }}>
-                      ! {error}
-                    </p>
-                  )}
-                  <button type="submit" disabled={submitting || totpCode.length < 6} style={btnStyle(submitting || totpCode.length < 6)}>
-                    {submitting ? "Verifying…" : "Verify"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setNeedsCode(false); setTotpCode(""); setError(null); }}
-                    style={btnSecondaryStyle}
-                  >
-                    Back
-                  </button>
-                </form>
-              ) : mode === "forgot" ? (
-                forgotSent ? (
-                  <div>
-                    <p className="font-mono text-xs" style={{ color: "var(--ft-text)", marginBottom: 16, lineHeight: 1.6 }}>
-                      If that email is registered, a reset link has been sent.
-                    </p>
-                    <p className="text-center text-xs" style={{ color: "var(--ft-dim)", marginTop: 4 }}>
-                      <button type="button" onClick={goToSignIn} style={linkBtnStyle}>
-                        ← Back to sign in
-                      </button>
-                    </p>
-                  </div>
-                ) : (
-                  <form onSubmit={handleForgotPassword}>
-                    <input
-                      type="email"
-                      autoFocus
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email"
-                      style={inputStyle}
-                    />
-                    {error && (
-                      <p className="font-mono" style={{ color: "var(--ft-red)", fontSize: 12, marginBottom: 10 }}>
-                        ! {error}
-                      </p>
-                    )}
-                    <button type="submit" disabled={submitting || !email} style={btnStyle(submitting || !email)}>
-                      {submitting ? "Sending…" : "Send reset link"}
-                    </button>
-                    <p className="text-center text-xs" style={{ color: "var(--ft-dim)", marginTop: 4 }}>
-                      <button type="button" onClick={goToSignIn} style={linkBtnStyle}>
-                        ← Back to sign in
-                      </button>
-                    </p>
-                  </form>
-                )
-              ) : mode === "reset" ? (
-                <form onSubmit={handleResetPassword}>
-                  <input
-                    type="password"
-                    autoFocus
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="New password (min 8 chars)"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
-                    style={inputStyle}
-                  />
-                  {error && (
-                    <p className="font-mono" style={{ color: "var(--ft-red)", fontSize: 12, marginBottom: 10 }}>
-                      ! {error}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={submitting || newPassword.length < 8 || confirmPassword.length < 8}
-                    style={btnStyle(submitting || newPassword.length < 8 || confirmPassword.length < 8)}
-                  >
-                    {submitting ? "Updating…" : "Update password"}
-                  </button>
-                  <p className="text-center text-xs" style={{ color: "var(--ft-dim)", marginTop: 4 }}>
-                    <button type="button" onClick={goToSignIn} style={linkBtnStyle}>
-                      ← Back to sign in
-                    </button>
-                  </p>
-                </form>
-              ) : isSignIn ? (
-                <form onSubmit={handleSignIn}>
-                  <input
-                    type="email"
-                    autoFocus
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    style={inputStyle}
-                  />
-                  <p className="text-xs" style={{ color: "var(--ft-dim)", marginBottom: 10, marginTop: -4 }}>
-                    <button
-                      type="button"
-                      onClick={() => { setMode("forgot"); setError(null); }}
-                      style={linkBtnStyle}
-                    >
-                      Forgot password?
-                    </button>
-                  </p>
-                  {error && (
-                    <p className="font-mono" style={{ color: "var(--ft-red)", fontSize: 12, marginBottom: 10 }}>
-                      ! {error}
-                    </p>
-                  )}
-                  <button type="submit" disabled={submitting || !email || !password} style={btnStyle(submitting || !email || !password)}>
-                    {submitting ? "Signing in…" : "Sign in"}
-                  </button>
-                  {providers.includes("google") && (
-                    <button type="button" onClick={handleGoogle} disabled={googleLoading} style={{ ...btnSecondaryStyle, opacity: googleLoading ? 0.6 : 1, cursor: googleLoading ? "default" : "pointer" }}>
-                      {googleLoading ? "Redirecting…" : "Continue with Google"}
-                    </button>
-                  )}
-                  <p className="text-center text-xs" style={{ color: "var(--ft-dim)", marginTop: 4 }}>
-                    No account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => { setMode("signup"); setError(null); }}
-                      style={linkBtnStyle}
-                    >
-                      Sign up
-                    </button>
-                  </p>
-
-                </form>
-              ) : (
-                <form onSubmit={handleSignUp}>
-                  <input
-                    type="text"
-                    autoFocus
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Name"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password (min 8 chars)"
-                    style={inputStyle}
-                  />
-                  {error && (
-                    <p className="font-mono" style={{ color: "var(--ft-red)", fontSize: 12, marginBottom: 10 }}>
-                      ! {error}
-                    </p>
-                  )}
-                  <button type="submit" disabled={submitting || !name || !email || password.length < 8} style={btnStyle(submitting || !name || !email || password.length < 8)}>
-                    {submitting ? "Creating account…" : "Create account"}
-                  </button>
-                  {providers.includes("google") && (
-                    <button type="button" onClick={handleGoogle} disabled={googleLoading} style={{ ...btnSecondaryStyle, opacity: googleLoading ? 0.6 : 1, cursor: googleLoading ? "default" : "pointer" }}>
-                      {googleLoading ? "Redirecting…" : "Continue with Google"}
-                    </button>
-                  )}
-                  <p className="text-center text-xs" style={{ color: "var(--ft-dim)", marginTop: 4 }}>
-                    Have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => { setMode("signin"); setError(null); }}
-                      style={linkBtnStyle}
-                    >
-                      Sign in
-                    </button>
-                  </p>
-                </form>
-              )}
-            </div>
-          </div>
-          </div>
-
-          <div
-            style={{
-              position: "absolute",
-              top: 999 * 24,
-              left: 0,
-              right: 0,
-              padding: "0 20px 0 20px",
-              fontFamily: "var(--font-mono)",
-            }}
-          >
-            <div
-              style={{
-                background: "var(--ft-surface)",
-                border: "1px solid var(--ft-accent)",
-                borderRadius: 2,
-                padding: "12px 16px",
-                maxWidth: 460,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span
-                  style={{
-                    fontSize: 10,
-                    color: "var(--ft-accent)",
-                    background: "var(--ft-raised)",
-                    padding: "1px 6px",
-                    borderRadius: 2,
-                    letterSpacing: "0.1em",
-                  }}
-                >
-                  A1000
-                </span>
-                <span style={{ fontSize: 10, color: "var(--ft-dim)" }}>·</span>
-                <span style={{ fontSize: 10, color: "var(--ft-dim)" }}>
-                  =NUMERIS.LOCKED_CELL("SECRET_A1000")
-                </span>
-              </div>
-              <p style={{ fontSize: 15, fontWeight: 700, color: "var(--ft-text)", marginBottom: 4 }}>
-                tf u doing here
-              </p>
-              <p style={{ fontSize: 12, color: "var(--ft-muted)", marginBottom: 10 }}>
-                you scrolled through 1,000 rows of a login screen for this?
-              </p>
-              <div style={{ fontSize: 11, color: "var(--ft-green)", marginBottom: 2 }}>
-                ✓ respect achieved
-              </div>
-              <div style={{ fontSize: 11, color: "var(--ft-amber)", marginBottom: 10 }}>
-                ! no loot here though
-              </div>
-              <div
-                style={{
-                  paddingTop: 8,
-                  borderTop: "1px solid var(--ft-border2)",
-                  fontSize: 10,
-                  color: "var(--ft-dim)",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                #REF! · SHEET1!A1000:B1001 · NUMERIS_EGG_V1
-              </div>
-            </div>
-          </div>
-        </div>
+      <div style={{ width: "100%", maxWidth: 380 }}>
+        <PanelBox padding={20}>
+          {body}
+        </PanelBox>
       </div>
     </div>
   );

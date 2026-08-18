@@ -56,8 +56,9 @@ async function shoot(theme: Theme, viewport: Viewport, shot: Shot): Promise<void
   const page = await context.newPage();
 
   // Preload the theme choice into localStorage before the app boots.
+  // Theme context reads "ft-theme" (see contexts/theme-context.tsx).
   await page.addInitScript((t) => {
-    localStorage.setItem("nr-theme", t);
+    localStorage.setItem("ft-theme", t);
   }, theme);
 
   await page.goto(`${BASE}${shot.path}`, { waitUntil: "domcontentloaded" });
