@@ -63,6 +63,7 @@ import type {
   StockPrice,
   StockQuote,
   Subscription,
+  ThemeSettings,
   Transaction,
   TransactionInput,
   TransactionSummary,
@@ -4453,6 +4454,154 @@ export const useUpdateSettingsPersona = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateSettingsPersonaMutationOptions(options));
+    }
+
+export const getGetSettingsThemeUrl = () => {
+
+
+
+
+  return `/api/settings/theme`
+}
+
+/**
+ * @summary Get the current user's theme
+ */
+export const getSettingsTheme = async ( options?: RequestInit): Promise<ThemeSettings> => {
+
+  return customFetch<ThemeSettings>(getGetSettingsThemeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSettingsThemeQueryKey = () => {
+    return [
+    `/api/settings/theme`
+    ] as const;
+    }
+
+
+export const getGetSettingsThemeQueryOptions = <TData = Awaited<ReturnType<typeof getSettingsTheme>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsTheme>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSettingsThemeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSettingsTheme>>> = ({ signal }) => getSettingsTheme({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSettingsTheme>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSettingsThemeQueryResult = NonNullable<Awaited<ReturnType<typeof getSettingsTheme>>>
+export type GetSettingsThemeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current user's theme
+ */
+
+export function useGetSettingsTheme<TData = Awaited<ReturnType<typeof getSettingsTheme>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsTheme>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSettingsThemeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateSettingsThemeUrl = () => {
+
+
+
+
+  return `/api/settings/theme`
+}
+
+/**
+ * @summary Set the current user's theme
+ */
+export const updateSettingsTheme = async (themeSettings: ThemeSettings, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUpdateSettingsThemeUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      themeSettings,)
+  }
+);}
+
+
+
+
+export const getUpdateSettingsThemeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsTheme>>, TError,{data: BodyType<ThemeSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSettingsTheme>>, TError,{data: BodyType<ThemeSettings>}, TContext> => {
+
+const mutationKey = ['updateSettingsTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSettingsTheme>>, {data: BodyType<ThemeSettings>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateSettingsTheme(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSettingsThemeMutationResult = NonNullable<Awaited<ReturnType<typeof updateSettingsTheme>>>
+    export type UpdateSettingsThemeMutationBody = BodyType<ThemeSettings>
+    export type UpdateSettingsThemeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set the current user's theme
+ */
+export const useUpdateSettingsTheme = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsTheme>>, TError,{data: BodyType<ThemeSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSettingsTheme>>,
+        TError,
+        {data: BodyType<ThemeSettings>},
+        TContext
+      > => {
+      return useMutation(getUpdateSettingsThemeMutationOptions(options));
     }
 
 export const getChangePasswordUrl = () => {

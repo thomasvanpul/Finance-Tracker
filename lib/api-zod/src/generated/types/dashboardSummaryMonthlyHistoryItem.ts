@@ -5,10 +5,12 @@
  * Personal Finance Tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { DashboardSummaryMonthlyHistoryItemComposition } from './dashboardSummaryMonthlyHistoryItemComposition';
 
 export type DashboardSummaryMonthlyHistoryItem = {
   month: string;
   income: number;
   expenses: number;
   netSavings: number;
+  composition?: DashboardSummaryMonthlyHistoryItemComposition;
 };

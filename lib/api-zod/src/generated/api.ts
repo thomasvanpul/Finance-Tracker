@@ -51,27 +51,24 @@ export const GetDashboardResponse = zod.object({
   "totalIOwe": zod.number(),
   "netGbp": zod.number(),
   "pendingCount": zod.number(),
-  // C2-4: top pending counterparties for the mobile home strip.
   "topPending": zod.array(zod.object({
-    "name": zod.string(),
-    "amountGbp": zod.number(),
-    "direction": zod.enum(["they_owe_me", "i_owe_them"]),
-  })).optional()
+  "name": zod.string(),
+  "amountGbp": zod.number(),
+  "direction": zod.enum(['they_owe_me', 'i_owe_them'])
+})).optional()
 }),
   "monthlyHistory": zod.array(zod.object({
   "month": zod.string(),
   "income": zod.number(),
   "expenses": zod.number(),
   "netSavings": zod.number(),
-  // C2-1: per-bucket composition snapshot; null when the month has no
-  // recorded snapshot in nw_snapshots.
   "composition": zod.object({
-    "cash": zod.number(),
-    "investment": zod.number(),
-    "pension": zod.number(),
-    "property": zod.number(),
-    "other": zod.number(),
-  }).nullable().optional()
+  "cash": zod.number(),
+  "investment": zod.number(),
+  "pension": zod.number(),
+  "property": zod.number(),
+  "other": zod.number()
+}).nullish()
 })).optional()
 })
 
@@ -1055,6 +1052,22 @@ export const GetSettingsPersonaResponse = zod.object({
  */
 export const UpdateSettingsPersonaBody = zod.object({
   "persona": zod.enum(['market', 'budget', 'wealth', 'social', 'full']).describe('Which product face the user sees. See lib\/persona.ts on the\nfrontend for what each id enables\/disables.\n')
+})
+
+
+/**
+ * @summary Get the current user's theme
+ */
+export const GetSettingsThemeResponse = zod.object({
+  "theme": zod.enum(['void', 'phosphor', 'arctic', 'amber', 'midnight', 'matrix', 'synthwave', 'deep-space', 'mario', 'gilded', 'bloodline']).describe('The user\'s chosen colour theme. Server owns this so it\nfollows the user across devices and never leaks to a\ndifferent user on the same browser. See\ncontexts\/theme-context.tsx for colour semantics.\n')
+})
+
+
+/**
+ * @summary Set the current user's theme
+ */
+export const UpdateSettingsThemeBody = zod.object({
+  "theme": zod.enum(['void', 'phosphor', 'arctic', 'amber', 'midnight', 'matrix', 'synthwave', 'deep-space', 'mario', 'gilded', 'bloodline']).describe('The user\'s chosen colour theme. Server owns this so it\nfollows the user across devices and never leaks to a\ndifferent user on the same browser. See\ncontexts\/theme-context.tsx for colour semantics.\n')
 })
 
 

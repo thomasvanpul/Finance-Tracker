@@ -1112,6 +1112,32 @@ paths:
         "200":
           description: Updated
 
+  /settings/theme:
+    get:
+      operationId: getSettingsTheme
+      tags: [settings]
+      summary: Get the current user's theme
+      responses:
+        "200":
+          description: Theme
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThemeSettings"
+    put:
+      operationId: updateSettingsTheme
+      tags: [settings]
+      summary: Set the current user's theme
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ThemeSettings"
+      responses:
+        "200":
+          description: Updated
+
   # ── SETTINGS (password + 2FA) ───────────────────────────────────────────────
   /settings/password:
     post:
@@ -2057,6 +2083,19 @@ components:
           description: |
             Which product face the user sees. See lib/persona.ts on the
             frontend for what each id enables/disables.
+
+    ThemeSettings:
+      type: object
+      required: [theme]
+      properties:
+        theme:
+          type: string
+          enum: [void, phosphor, arctic, amber, midnight, matrix, synthwave, deep-space, mario, gilded, bloodline]
+          description: |
+            The user's chosen colour theme. Server owns this so it
+            follows the user across devices and never leaks to a
+            different user on the same browser. See
+            contexts/theme-context.tsx for colour semantics.
 
     # ── DASHBOARD ─────────────────────────────────────────────────────────────
     DashboardSummary:

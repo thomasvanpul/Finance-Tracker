@@ -5,10 +5,12 @@
  * Personal Finance Tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { DashboardSummaryOwingTopPendingItem } from './dashboardSummaryOwingTopPendingItem';
 
 export type DashboardSummaryOwing = {
   totalOwedToMe: number;
   totalIOwe: number;
   netGbp: number;
   pendingCount: number;
+  topPending?: DashboardSummaryOwingTopPendingItem[];
 };

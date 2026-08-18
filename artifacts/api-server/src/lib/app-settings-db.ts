@@ -42,3 +42,27 @@ export async function setPersona(userId: string, persona: PersonaId): Promise<vo
     .set({ persona })
     .where(eq(appSettingsTable.userId, userId));
 }
+
+// Theme. Same shape as persona: server validates against the id list;
+// frontend (contexts/theme-context.tsx) owns colour semantics. Keep
+// this list in sync with the FintrackTheme union — the client route
+// gets called before the client applies, so an unknown id here is a
+// hard 400 rather than a silent write.
+export const VALID_THEMES = [
+  "void", "phosphor", "arctic", "amber", "midnight", "matrix",
+  "synthwave", "deep-space", "mario", "gilded", "bloodline",
+] as const;
+export type ThemeId = (typeof VALID_THEMES)[number];
+
+export async function getTheme(userId: string): Promise<ThemeId> {
+  const row = await ensureSettings(userId);
+  return (row.theme as ThemeId) ?? "void";
+}
+
+export async function setTheme(userId: string, theme: ThemeId): Promise<void> {
+  await ensureSettings(userId);
+  await db
+    .update(appSettingsTable)
+    .set({ theme })
+    .where(eq(appSettingsTable.userId, userId));
+}

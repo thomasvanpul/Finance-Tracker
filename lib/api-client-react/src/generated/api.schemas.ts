@@ -921,6 +921,39 @@ export interface PersonaSettings {
   persona: PersonaSettingsPersona;
 }
 
+/**
+ * The user's chosen colour theme. Server owns this so it
+follows the user across devices and never leaks to a
+different user on the same browser. See
+contexts/theme-context.tsx for colour semantics.
+
+ */
+export type ThemeSettingsTheme = typeof ThemeSettingsTheme[keyof typeof ThemeSettingsTheme];
+
+
+export const ThemeSettingsTheme = {
+  void: 'void',
+  phosphor: 'phosphor',
+  arctic: 'arctic',
+  amber: 'amber',
+  midnight: 'midnight',
+  matrix: 'matrix',
+  synthwave: 'synthwave',
+  'deep-space': 'deep-space',
+  mario: 'mario',
+  gilded: 'gilded',
+  bloodline: 'bloodline',
+} as const;
+
+export interface ThemeSettings {
+  /** The user's chosen colour theme. Server owns this so it
+  follows the user across devices and never leaks to a
+  different user on the same browser. See
+  contexts/theme-context.tsx for colour semantics.
+   */
+  theme: ThemeSettingsTheme;
+}
+
 export type DashboardSummaryAccountBreakdownItemType = typeof DashboardSummaryAccountBreakdownItemType[keyof typeof DashboardSummaryAccountBreakdownItemType];
 
 
@@ -959,10 +992,18 @@ export type DashboardSummaryThisMonth = {
   savingsRate: number;
 };
 
+export type DashboardSummaryOwingTopPendingItemDirection = typeof DashboardSummaryOwingTopPendingItemDirection[keyof typeof DashboardSummaryOwingTopPendingItemDirection];
+
+
+export const DashboardSummaryOwingTopPendingItemDirection = {
+  they_owe_me: 'they_owe_me',
+  i_owe_them: 'i_owe_them',
+} as const;
+
 export type DashboardSummaryOwingTopPendingItem = {
   name: string;
   amountGbp: number;
-  direction: "they_owe_me" | "i_owe_them";
+  direction: DashboardSummaryOwingTopPendingItemDirection;
 };
 
 export type DashboardSummaryOwing = {
@@ -970,25 +1011,23 @@ export type DashboardSummaryOwing = {
   totalIOwe: number;
   netGbp: number;
   pendingCount: number;
-  /** C2-4: top pending counterparties for the mobile home strip. */
   topPending?: DashboardSummaryOwingTopPendingItem[];
 };
 
-export type DashboardSummaryMonthlyHistoryComposition = {
+export type DashboardSummaryMonthlyHistoryItemComposition = {
   cash: number;
   investment: number;
   pension: number;
   property: number;
   other: number;
-};
+} | null;
 
 export type DashboardSummaryMonthlyHistoryItem = {
   month: string;
   income: number;
   expenses: number;
   netSavings: number;
-  /** C2-1: per-bucket composition snapshot; null when no snapshot exists for that month. */
-  composition?: DashboardSummaryMonthlyHistoryComposition | null;
+  composition?: DashboardSummaryMonthlyHistoryItemComposition;
 };
 
 export interface DashboardSummary {

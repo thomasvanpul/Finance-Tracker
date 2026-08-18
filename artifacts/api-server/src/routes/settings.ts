@@ -6,6 +6,10 @@ import {
   setPersona,
   VALID_PERSONAS,
   type PersonaId,
+  getTheme,
+  setTheme,
+  VALID_THEMES,
+  type ThemeId,
 } from "../lib/app-settings-db";
 
 const SUPPORTED_CURRENCIES = ["GBP", "USD", "EUR", "MYR", "CNY", "JPY", "AUD", "CAD", "SGD", "HKD", "THB", "INR"] as const;
@@ -43,6 +47,23 @@ router.put("/settings/persona", async (req, res): Promise<void> => {
     return;
   }
   await setPersona(userId, persona as PersonaId);
+  res.sendStatus(200);
+});
+
+router.get("/settings/theme", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const theme = await getTheme(userId);
+  res.json({ theme });
+});
+
+router.put("/settings/theme", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const { theme } = req.body as { theme?: string };
+  if (!theme || !(VALID_THEMES as readonly string[]).includes(theme)) {
+    res.status(400).json({ error: `theme must be one of: ${VALID_THEMES.join(", ")}` });
+    return;
+  }
+  await setTheme(userId, theme as ThemeId);
   res.sendStatus(200);
 });
 

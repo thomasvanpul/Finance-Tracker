@@ -4,4 +4,6 @@
 // they aren't needed here anyway: TS types for API payloads are consumed
 // from @workspace/api-client-react. If a caller of this package needs a
 // type, they can derive it inline with `z.infer<typeof GetDashboardResponse>`.
+// Do NOT re-add `export * from './generated/types'` — orval keeps
+// suggesting it and it breaks the build.
 export * from "./generated/api";

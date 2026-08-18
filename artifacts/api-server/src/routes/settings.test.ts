@@ -1,14 +1,15 @@
-// Contract tests for the persona endpoints. In-memory DB stub +
-// live express instance on a random port, same pattern as
+// Contract tests for the persona + theme endpoints. In-memory DB stub
+// + live express instance on a random port, same pattern as
 // connections.test.ts. Focus: validation rejects bad ids, valid ids
-// round-trip through GET/PUT, missing row defaults to "full".
+// round-trip through GET/PUT, missing row defaults to the schema
+// default ("full" for persona, "void" for theme).
 
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from "vitest";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
-// In-memory persona store keyed by userId.
-const store = new Map<string, { persona: string; baseCurrency: string }>();
+// In-memory settings store keyed by userId.
+const store = new Map<string, { persona: string; baseCurrency: string; theme: string }>();
 
 function reset(): void { store.clear(); }
 
@@ -42,7 +43,7 @@ vi.mock("@workspace/db", () => {
       returning() {
         if (kind === "insert" && payload?.userId) {
           if (!store.has(payload.userId)) {
-            store.set(payload.userId, { persona: "full", baseCurrency: "GBP", ...payload });
+            store.set(payload.userId, { persona: "full", baseCurrency: "GBP", theme: "void", ...payload });
           }
           const row = store.get(payload.userId)!;
           return Promise.resolve([{ userId: payload.userId, ...row }]);
@@ -136,6 +137,61 @@ describe("PUT /settings/persona", () => {
 
   it("rejects a missing persona field", async () => {
     const r = await fetch(`${baseUrl}/settings/persona`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    expect(r.status).toBe(400);
+  });
+});
+
+describe("GET /settings/theme", () => {
+  it("returns void by default when no row exists", async () => {
+    const r = await fetch(`${baseUrl}/settings/theme`);
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ theme: "void" });
+  });
+
+  it("returns the stored theme after a PUT", async () => {
+    const put = await fetch(`${baseUrl}/settings/theme`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: "arctic" }),
+    });
+    expect(put.status).toBe(200);
+    const get = await fetch(`${baseUrl}/settings/theme`);
+    expect(await get.json()).toEqual({ theme: "arctic" });
+  });
+});
+
+describe("PUT /settings/theme", () => {
+  it.each([
+    "void", "phosphor", "arctic", "amber", "midnight", "matrix",
+    "synthwave", "deep-space", "mario", "gilded", "bloodline",
+  ])("accepts %s", async (t) => {
+    const r = await fetch(`${baseUrl}/settings/theme`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: t }),
+    });
+    expect(r.status).toBe(200);
+  });
+
+  it("rejects an unknown theme with 400 listing valid ids", async () => {
+    const r = await fetch(`${baseUrl}/settings/theme`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: "not-a-theme" }),
+    });
+    expect(r.status).toBe(400);
+    const body = await r.json() as { error: string };
+    expect(body.error).toMatch(/must be one of/);
+    expect(body.error).toMatch(/void/);
+    expect(body.error).toMatch(/arctic/);
+  });
+
+  it("rejects a missing theme field", async () => {
+    const r = await fetch(`${baseUrl}/settings/theme`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
