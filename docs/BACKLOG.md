@@ -62,7 +62,27 @@ an app intended for public signup.
   rotation and has been corrected. That is why the first attempt reported an
   auth failure rather than a result.
 
-### B1 · Rehost the API server — TODO · needs a human for signup
+### B1 · Rehost the API server — DONE (18 Aug 2026)
+Live at `https://numeris-api.onrender.com`, Render free tier, Frankfurt.
+Verified externally: `/api/healthz` 200, `/api/accounts` 401 with
+`ratelimit-limit: 300`.
+
+Four failures on the way, worth recording so they are not rediscovered:
+1. `corepack enable` cannot write to `/usr/bin` on Render (EROFS). Use
+   `npx --yes pnpm@<version>` instead.
+2. `ERR_PNPM_IGNORED_BUILDS` on esbuild. **pnpm 11 removed
+   `onlyBuiltDependencies` and `ignoredBuiltDependencies` and replaced both with
+   `allowBuilds`**, a dictionary. The old keys are silently ignored and
+   `strictDepBuilds` now defaults true. Invisible on macOS because esbuild's
+   postinstall only triggers on Linux.
+3. `package.json#pnpm` is no longer read by pnpm at all.
+4. The health check pointed at `/api/accounts`, which sits behind `requireAuth`
+   and returns 401 — Render read that as unhealthy and timed out while the
+   server was up and answering. `/api/healthz` already existed, mounted before
+   `requireAuth`.
+
+Free tier caveats: spins down after ~15 min idle (measured 62s cold start), and
+bandwidth is billable above 5 GB/month at $0.15/GB even on free.
 Railway runs `artifacts/api-server` only. The database is Neon and is
 unaffected. The API has `ws` for the Alpaca stream, so it needs a long-lived
 process — serverless platforms cannot hold the socket open.
