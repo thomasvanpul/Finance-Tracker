@@ -1,4 +1,5 @@
 diagram: flow
+weight: 20
 stages:
   - [BANK, "Plaid link"]
   - [INGEST, "Node service"]
