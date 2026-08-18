@@ -953,9 +953,9 @@ export function MarketsTab() {
               {chartData.length > 0 && (
                 <div style={{ display: "flex", gap: 2, marginLeft: 4 }}>
                   {[
-                    { key: "sma20",  label: "SMA20",  color: "#60a5fa", on: showSMA20,  set: setShowSMA20  },
-                    { key: "sma50",  label: "SMA50",  color: "#f59e0b", on: showSMA50,  set: setShowSMA50  },
-                    { key: "sma200", label: "SMA200", color: "#a78bfa", on: showSMA200, set: setShowSMA200 },
+                    { key: "sma20",  label: "SMA20",  color: "var(--ft-id-1)", on: showSMA20,  set: setShowSMA20  },
+                    { key: "sma50",  label: "SMA50",  color: "var(--ft-id-3)", on: showSMA50,  set: setShowSMA50  },
+                    { key: "sma200", label: "SMA200", color: "var(--ft-id-6)", on: showSMA200, set: setShowSMA200 },
                     { key: "vol",    label: "VOL",    color: "var(--ft-dim)", on: showVolume,  set: setShowVolume  },
                   ].map(({ key, label, color, on, set }) => (
                     <button key={key} onClick={() => set(!on)} style={{

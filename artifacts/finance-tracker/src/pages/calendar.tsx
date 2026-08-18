@@ -80,7 +80,7 @@ const PREDEFINED_FEEDS: PredefinedFeed[] = [
   {
     id: "uk-holidays",
     name: "UK Bank Holidays",
-    color: "#4ADE80",
+    color: "var(--ft-id-2)",
     category: "Holidays",
     events: [
       { date: "2025-01-01", title: "New Year's Day" },
@@ -104,7 +104,7 @@ const PREDEFINED_FEEDS: PredefinedFeed[] = [
   {
     id: "us-holidays",
     name: "US Federal Holidays",
-    color: "#60A5FA",
+    color: "var(--ft-id-1)",
     category: "Holidays",
     events: [
       { date: "2025-01-01", title: "New Year's Day" },
@@ -129,7 +129,7 @@ const PREDEFINED_FEEDS: PredefinedFeed[] = [
   {
     id: "boe-mpc",
     name: "BoE MPC Meetings",
-    color: "#F0883E",
+    color: "var(--ft-id-9)",
     category: "Economics",
     events: [
       { date: "2025-02-06", title: "BoE MPC Decision" },
@@ -153,7 +153,7 @@ const PREDEFINED_FEEDS: PredefinedFeed[] = [
   {
     id: "fomc",
     name: "US FOMC Meetings",
-    color: "#4D9FFF",
+    color: "var(--ft-id-10)",
     category: "Economics",
     events: [
       { date: "2025-01-29", title: "FOMC Rate Decision" },
@@ -177,7 +177,7 @@ const PREDEFINED_FEEDS: PredefinedFeed[] = [
   {
     id: "uk-cpi",
     name: "UK CPI Releases",
-    color: "#22D3EE",
+    color: "var(--ft-id-4)",
     category: "Economics",
     events: [
       { date: "2025-01-15", title: "UK CPI Release" },
@@ -209,7 +209,7 @@ const PREDEFINED_FEEDS: PredefinedFeed[] = [
   {
     id: "us-cpi",
     name: "US CPI Releases",
-    color: "#79C0FF",
+    color: "var(--ft-id-12)",
     category: "Economics",
     events: [
       { date: "2025-01-15", title: "US CPI Release" },
@@ -241,7 +241,7 @@ const PREDEFINED_FEEDS: PredefinedFeed[] = [
   {
     id: "us-nfp",
     name: "US Jobs Report (NFP)",
-    color: "#56D364",
+    color: "var(--ft-id-11)",
     category: "Economics",
     events: [
       { date: "2025-01-10", title: "US Non-Farm Payrolls" },
@@ -273,7 +273,7 @@ const PREDEFINED_FEEDS: PredefinedFeed[] = [
   {
     id: "us-gdp",
     name: "US GDP Releases",
-    color: "#3FB950",
+    color: "var(--ft-id-8)",
     category: "Economics",
     events: [
       { date: "2025-01-30", title: "US GDP Q4 2024 (Advance)" },
@@ -305,7 +305,7 @@ const PREDEFINED_FEEDS: PredefinedFeed[] = [
   {
     id: "earnings-mega-cap",
     name: "Mega-Cap Earnings",
-    color: "#D2A8FF",
+    color: "var(--ft-id-6)",
     category: "Earnings",
     events: [
       // Q4 2024 (reported Jan-Feb 2025)
@@ -483,7 +483,16 @@ function useNotifPermission() {
   return { permission, request };
 }
 
-const EVENT_COLORS = ["#F4A21E", "#4ADE80", "#60A5FA", "#F87171", "#22D3EE", "#D2A8FF", "#FF7B72", "#E3B341"];
+const EVENT_COLORS = [
+  "var(--ft-id-3)",
+  "var(--ft-id-2)",
+  "var(--ft-id-1)",
+  "var(--ft-id-5)",
+  "var(--ft-id-4)",
+  "var(--ft-id-6)",
+  "var(--ft-id-9)",
+  "var(--ft-id-7)",
+];
 
 // ─── WeekStripDayCell sub-component ──────────────────────────────────────────
 
@@ -882,10 +891,11 @@ function WeekDayCell({ date, dayData, feedEvs, custEvs, onAddEvent }: WeekDayCel
     <div style={{ borderRight: "1px solid var(--ft-border)", padding: "6px 5px", minHeight: 120, display: "flex", flexDirection: "column", gap: 3 }}>
       {feedEvs.slice(0, 3).map((ev, i) => {
         const feed = PREDEFINED_FEEDS.find(f => f.id === ev.feedId);
-        return <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `${feed?.color ?? "var(--ft-border)"}22`, color: feed?.color ?? "var(--ft-dim)", borderLeft: `2px solid ${feed?.color ?? "var(--ft-border)"}`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>;
+        const c = feed?.color ?? "var(--ft-border)";
+        return <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${c} 13%, transparent)`, color: feed?.color ?? "var(--ft-dim)", borderLeft: `2px solid ${c}`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>;
       })}
       {custEvs.slice(0, 3).map((ev, i) => (
-        <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `${ev.color}22`, color: ev.color, borderLeft: `2px solid ${ev.color}`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
+        <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${ev.color} 13%, transparent)`, color: ev.color, borderLeft: `2px solid ${ev.color}`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
       ))}
       {income > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>+{formatGbp(income)}</div>}
       {expenses > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>-{formatGbp(expenses)}</div>}

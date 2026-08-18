@@ -364,6 +364,26 @@ input[type="checkbox"]:checked {
   --ft-red:     #FF4757;
   --ft-blue:    #4A9EFF;
   --ft-cyan:    #00D4FF;
+  /* Identity ramp: 12 slots kept mutually distinguishable per theme.
+     Consumers (split members 1..8, calendar feeds 1..12, SMA lines
+     as a subset) route through --ft-id-N so a given identity stays
+     visible on any background. Dark themes inherit the bright values
+     below; arctic (and any future light theme) overrides each slot
+     with a contrast-safe cousin. 12 slots because calendar has 9
+     feeds — 8 would collide two feeds onto the same colour, which
+     defeats the identity contract on that page. */
+  --ft-id-1:    #60A5FA;
+  --ft-id-2:    #4ADE80;
+  --ft-id-3:    #F4A21E;
+  --ft-id-4:    #22D3EE;
+  --ft-id-5:    #F87171;
+  --ft-id-6:    #A78BFA;
+  --ft-id-7:    #FBBF24;
+  --ft-id-8:    #34D399;
+  --ft-id-9:    #F0883E;
+  --ft-id-10:   #4D9FFF;
+  --ft-id-11:   #56D364;
+  --ft-id-12:   #79C0FF;
 }
 
 [data-theme="phosphor"] {
@@ -401,6 +421,23 @@ input[type="checkbox"]:checked {
   --ft-red:     #CC0000;
   --ft-blue:    #0065FF;
   --ft-cyan:    #0052CC;
+  /* Identity ramp darkened for light-surface contrast. Each slot
+     clears WCAG AA for normal text on #FFFFFF and stays visually
+     distinct from every other slot. A member is 'the blue one' on
+     dark themes and a deeper blue on arctic — same slot, shifted
+     hue. Cross-theme visual continuity is not preserved by design. */
+  --ft-id-1:    #1E5FBF;
+  --ft-id-2:    #157A3F;
+  --ft-id-3:    #A05500;
+  --ft-id-4:    #0E7490;
+  --ft-id-5:    #B91C1C;
+  --ft-id-6:    #6D28D9;
+  --ft-id-7:    #A16207;
+  --ft-id-8:    #0F766E;
+  --ft-id-9:    #B45309;
+  --ft-id-10:   #1D4ED8;
+  --ft-id-11:   #047857;
+  --ft-id-12:   #075985;
 }
 
 [data-theme="amber"] {

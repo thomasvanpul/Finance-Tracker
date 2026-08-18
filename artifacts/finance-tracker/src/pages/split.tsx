@@ -128,19 +128,13 @@ function formatDateShort(dateStr: string): string {
 
 // ─── Colour helpers ───────────────────────────────────────────────────────────
 
-const MEMBER_COLORS = [
-  { bg: "rgba(96,165,250,0.15)", color: "#60A5FA" },
-  { bg: "rgba(74,222,128,0.15)", color: "#4ADE80" },
-  { bg: "rgba(244,162,30,0.15)", color: "#F4A21E" },
-  { bg: "rgba(34,211,238,0.15)", color: "#22D3EE" },
-  { bg: "rgba(248,113,113,0.15)", color: "#F87171" },
-  { bg: "rgba(167,139,250,0.15)", color: "#A78BFA" },
-  { bg: "rgba(251,191,36,0.15)", color: "#FBBF24" },
-  { bg: "rgba(52,211,153,0.15)", color: "#34D399" },
-];
-
+// Members route through the theme-defined identity ramp so a member's
+// colour adapts per theme while staying distinct from the other seven.
+// See :root / [data-theme="arctic"] --ft-id-1..8 in index.css.
 function memberColor(index: number): { bg: string; color: string } {
-  return MEMBER_COLORS[index % MEMBER_COLORS.length];
+  const slot = (index % 8) + 1;
+  const color = `var(--ft-id-${slot})`;
+  return { color, bg: `color-mix(in srgb, ${color} 15%, transparent)` };
 }
 
 function memberIndex(members: string[], name: string): number {
