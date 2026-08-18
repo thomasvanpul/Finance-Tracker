@@ -1,0 +1,8 @@
+diagram: flow
+stages:
+  - [BANK, "Plaid link"]
+  - [INGEST, "Node service"]
+  - [POSTGRES, "normalised ledger"]
+  - [API, "typed endpoints"]
+  - [UI, "React, daily use"]
+side_input: [MARKET DATA, "Yahoo Finance"]
