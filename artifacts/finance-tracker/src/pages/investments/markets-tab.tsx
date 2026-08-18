@@ -916,8 +916,8 @@ export function MarketsTab() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
                 Price Chart
                 {isLive && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)", color: "#ef4444", fontSize: 9, padding: "1px 5px", letterSpacing: "0.1em" }}>
-                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#ef4444", animation: "pulse 1s infinite" }} />
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "color-mix(in srgb, var(--ft-red) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-red) 35%, transparent)", color: "var(--ft-red)", fontSize: 9, padding: "1px 5px", letterSpacing: "0.1em" }}>
+                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--ft-red)", animation: "pulse 1s infinite" }} />
                     LIVE
                   </span>
                 )}

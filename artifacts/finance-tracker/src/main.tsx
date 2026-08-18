@@ -11,7 +11,7 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
     if (this.state.error) {
       return (
         <div style={{ background: "var(--ft-base)", color: "var(--ft-red)", padding: 32, fontFamily: "monospace", minHeight: "100vh" }}>
-          <div style={{ marginBottom: 8, color: "#F4A21E", fontSize: 14 }}>! RENDER ERROR</div>
+          <div style={{ marginBottom: 8, color: "var(--ft-amber)", fontSize: 14 }}>! RENDER ERROR</div>
           <pre style={{ fontSize: 12, whiteSpace: "pre-wrap" }}>{String(this.state.error)}</pre>
           <pre style={{ fontSize: 10, color: "var(--ft-dim)", marginTop: 8, whiteSpace: "pre-wrap" }}>
             {(this.state.error as Error).stack}

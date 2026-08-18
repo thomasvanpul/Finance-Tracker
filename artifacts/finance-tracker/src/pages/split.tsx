@@ -370,7 +370,7 @@ function ReceiptAnalysisPanel({
           padding: "5px 12px", fontFamily: "var(--font-mono)", fontSize: 10,
           letterSpacing: "0.06em", textTransform: "uppercase",
           background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.3)",
-          color: "#A78BFA", cursor: "pointer", borderRadius: 2,
+          color: "var(--ft-id-6)", cursor: "pointer", borderRadius: 2,
         }}
       >
         ✦ Scan Receipt with AI
@@ -403,7 +403,7 @@ function ReceiptAnalysisPanel({
 
   return (
     <div style={{ background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 2, padding: "10px 12px" }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#A78BFA", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-id-6)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
         ✦ Receipt Analysis
       </div>
 
@@ -453,7 +453,7 @@ function ReceiptAnalysisPanel({
           }}>
             <HStack align="center" justify="between" marginBottom={4}>
               <div>
-                <Text as="span" mono size={10} weight={700} color={appliedIdx === i ? "#A78BFA" : "var(--ft-text)"}>
+                <Text as="span" mono size={10} weight={700} color={appliedIdx === i ? "var(--ft-id-6)" : "var(--ft-text)"}>
                   {sug.label}
                 </Text>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginLeft: 6 }}>
@@ -466,7 +466,7 @@ function ReceiptAnalysisPanel({
                   fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.05em",
                   padding: "2px 9px", background: appliedIdx === i ? "rgba(167,139,250,0.2)" : "var(--ft-raised)",
                   border: `1px solid ${appliedIdx === i ? "rgba(167,139,250,0.4)" : "var(--ft-border2)"}`,
-                  color: appliedIdx === i ? "#A78BFA" : "var(--ft-muted)", cursor: "pointer", borderRadius: 2,
+                  color: appliedIdx === i ? "var(--ft-id-6)" : "var(--ft-muted)", cursor: "pointer", borderRadius: 2,
                 }}
               >
                 {appliedIdx === i ? "✓ Applied" : "Apply"}
@@ -532,7 +532,7 @@ function ReceiptViewerModal({
             style={{
               background: "var(--ft-surface)",
               border: "1px solid var(--ft-border)",
-              borderTop: "2px solid #A78BFA",
+              borderTop: "2px solid var(--ft-id-6)",
               padding: "12px 14px",
               minWidth: 220,
               maxWidth: 300,
@@ -541,7 +541,7 @@ function ReceiptViewerModal({
               flexShrink: 0,
             }}
           >
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#A78BFA", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-id-6)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
               ✦ Receipt Items
             </div>
 

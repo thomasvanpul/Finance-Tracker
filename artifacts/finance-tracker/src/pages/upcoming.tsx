@@ -859,7 +859,7 @@ export default function Upcoming() {
                   </span>
                 </HStack>
                 {!markPaidItem.accountId && (
-                  <div style={{ marginTop: 8, fontSize: 10, color: "#E3B341", fontFamily: "var(--font-mono)" }}>
+                  <div style={{ marginTop: 8, fontSize: 10, color: "var(--ft-amber)", fontFamily: "var(--font-mono)" }}>
                     No account linked — transaction will not be recorded
                   </div>
                 )}

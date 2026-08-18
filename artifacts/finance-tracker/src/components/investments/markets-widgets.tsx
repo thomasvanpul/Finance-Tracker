@@ -23,7 +23,7 @@ export function CandlestickLayer(props: Record<string, unknown>) {
         const high = d.high ?? Math.max(open, close);
         const low = d.low ?? Math.min(open, close);
         const isUp = close >= open;
-        const color = isUp ? "#3fb950" : "#f85149";
+        const color = isUp ? "var(--ft-green)" : "var(--ft-red)";
         const yHigh = yScale(high);
         const yLow = yScale(low);
         const yOpen = yScale(open);
@@ -54,11 +54,11 @@ export function OHLCTooltip({ active, payload, label }: { active?: boolean; payl
       {d.open != null && (
         <>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Open</span><span style={{ color: "var(--ft-text)", flexShrink: 0, whiteSpace: "nowrap" }}>${d.open.toFixed(2)}</span></div>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>High</span><span style={{ color: "#3fb950", flexShrink: 0, whiteSpace: "nowrap" }}>${(d.high ?? d.close ?? 0).toFixed(2)}</span></div>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Low</span><span style={{ color: "#f85149", flexShrink: 0, whiteSpace: "nowrap" }}>${(d.low ?? d.close ?? 0).toFixed(2)}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>High</span><span style={{ color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>${(d.high ?? d.close ?? 0).toFixed(2)}</span></div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Low</span><span style={{ color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>${(d.low ?? d.close ?? 0).toFixed(2)}</span></div>
         </>
       )}
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Close</span><span style={{ color: isUp ? "#3fb950" : "#f85149", fontWeight: 700, flexShrink: 0, whiteSpace: "nowrap" }}>${(d.close ?? 0).toFixed(2)}</span></div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--ft-dim)", flex: 1, minWidth: 0 }}>Close</span><span style={{ color: isUp ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, flexShrink: 0, whiteSpace: "nowrap" }}>${(d.close ?? 0).toFixed(2)}</span></div>
       {d.volume != null && (
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, color: "var(--ft-dim)", fontSize: 9, marginTop: 3, borderTop: "1px solid var(--ft-border)", paddingTop: 3 }}>
           <span style={{ flex: 1, minWidth: 0 }}>Volume</span>
