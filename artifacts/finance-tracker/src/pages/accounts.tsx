@@ -18,6 +18,7 @@ import {
   useGetTransactionSummary,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { AXIS_TICK } from "@/lib/chart-tokens";
 import { MonoTooltip, type TooltipEntry } from "@/components/mono-tooltip";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { usePrivacy } from "@/contexts/privacy-context";
@@ -2942,8 +2943,8 @@ export default function Accounts() {
             <div style={{ padding: "12px 0 0" }}>
               <ResponsiveContainer width="100%" height={140}>
                 <ComposedChart data={monthlyFlow} margin={{ top: 4, right: 16, left: 0, bottom: 0 }} barGap={4}>
-                  <XAxis dataKey="month" tick={{ fill: "#6b7280", fontSize: 10, fontFamily: "var(--font-mono)" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#6b7280", fontSize: 9, className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `£${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toFixed(0)}`} width={44} />
+                  <XAxis dataKey="month" tick={{ ...AXIS_TICK, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ ...AXIS_TICK, fontSize: 9, className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `£${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v.toFixed(0)}`} width={44} />
                   <Tooltip
                     content={(p) => (
                       <MonoTooltip

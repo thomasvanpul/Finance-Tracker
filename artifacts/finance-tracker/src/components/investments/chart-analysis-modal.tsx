@@ -6,6 +6,7 @@ import {
   Tooltip, ResponsiveContainer, ReferenceLine, Cell,
 } from "recharts";
 import type { StockHistoryPoint } from "@workspace/api-client-react";
+import { AXIS_TICK } from "@/lib/chart-tokens";
 
 const PERIODS = ["1d", "3d", "5d", "1w", "1m", "3m", "6m", "1y", "2y", "5y"];
 const INTRADAY_MODAL_SET = new Set(["1d", "3d", "5d"]);
@@ -356,8 +357,8 @@ export function ChartAnalysisModal({
                       )}
                     </defs>
                     <CartesianGrid strokeDasharray="2 6" stroke="#21262d" vertical={false} />
-                    <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
-                    <YAxis domain={["auto", "auto"]} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v.toFixed(0)}`} width={56} orientation="right" />
+                    <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ ...AXIS_TICK, fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
+                    <YAxis domain={["auto", "auto"]} tick={{ ...AXIS_TICK, fontSize: 8 }} axisLine={false} tickLine={false} tickFormatter={v => `$${v.toFixed(0)}`} width={56} orientation="right" />
                     <Tooltip content={<PriceTooltip showSMA20={showSMA20} showSMA50={showSMA50} showBB={showBB} period={period} />} />
                     {/* Hidden lines to get OHLCV into tooltip */}
                     <Line dataKey="open" stroke="transparent" dot={false} legendType="none" />
@@ -384,8 +385,8 @@ export function ChartAnalysisModal({
                   <div style={{ flex: 1, minHeight: 0 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={enriched} margin={{ top: 2, right: 12, left: 0, bottom: 0 }}>
-                      <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
-                      <YAxis tick={{ fill: "#7d8590", fontSize: 7 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1e6 ? `${(v / 1e6).toFixed(0)}M` : `${v}`} width={40} orientation="right" />
+                      <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ ...AXIS_TICK, fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
+                      <YAxis tick={{ ...AXIS_TICK, fontSize: 7 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1e6 ? `${(v / 1e6).toFixed(0)}M` : `${v}`} width={40} orientation="right" />
                       <Tooltip contentStyle={{ background: "#0d1117", border: "1px solid #30363d", fontSize: 9, fontFamily: "var(--font-mono)" }} formatter={(v: number) => [`${(v / 1e6).toFixed(2)}M`, "Vol"]} labelStyle={{ color: "#7d8590", fontSize: 8 }} />
                       <Bar dataKey="volume" maxBarSize={8}>
                         {enriched.map((d, i) => (
@@ -406,8 +407,8 @@ export function ChartAnalysisModal({
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={enriched} margin={{ top: 2, right: 12, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="2 6" stroke="#21262d" vertical={false} />
-                      <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
-                      <YAxis domain={[0, 100]} ticks={[30, 50, 70]} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} width={30} orientation="right" />
+                      <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ ...AXIS_TICK, fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
+                      <YAxis domain={[0, 100]} ticks={[30, 50, 70]} tick={{ ...AXIS_TICK, fontSize: 8 }} axisLine={false} tickLine={false} width={30} orientation="right" />
                       <Tooltip contentStyle={{ background: "#0d1117", border: "1px solid #30363d", fontSize: 9, fontFamily: "var(--font-mono)" }} formatter={(v: number) => [v?.toFixed(1), "RSI"]} labelStyle={{ color: "#7d8590", fontSize: 8 }} />
                       <ReferenceLine y={70} stroke="#f85149" strokeDasharray="3 3" strokeWidth={0.8} />
                       <ReferenceLine y={50} stroke="#30363d" strokeDasharray="2 4" strokeWidth={0.8} />
@@ -427,8 +428,8 @@ export function ChartAnalysisModal({
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={enriched} margin={{ top: 2, right: 12, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="2 6" stroke="#21262d" vertical={false} />
-                      <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
-                      <YAxis tick={{ fill: "#7d8590", fontSize: 8 }} axisLine={false} tickLine={false} tickFormatter={v => v.toFixed(1)} width={36} orientation="right" />
+                      <XAxis dataKey="date" tickFormatter={xTickFormatter} tick={{ ...AXIS_TICK, fontSize: 8 }} axisLine={false} tickLine={false} interval={typeof tickCount === "number" ? tickCount : tickCount} />
+                      <YAxis tick={{ ...AXIS_TICK, fontSize: 8 }} axisLine={false} tickLine={false} tickFormatter={v => v.toFixed(1)} width={36} orientation="right" />
                       <Tooltip contentStyle={{ background: "#0d1117", border: "1px solid #30363d", fontSize: 9, fontFamily: "var(--font-mono)" }} formatter={(v: number, name: string) => [v?.toFixed(3), name === "macd" ? "MACD" : name === "signal" ? "Signal" : "Hist"]} labelStyle={{ color: "#7d8590", fontSize: 8 }} />
                       <ReferenceLine y={0} stroke="#30363d" strokeWidth={0.8} />
                       <Bar dataKey="hist" maxBarSize={6}>

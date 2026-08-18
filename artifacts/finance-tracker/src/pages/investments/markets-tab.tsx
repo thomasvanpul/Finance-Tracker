@@ -42,6 +42,7 @@ import {
 } from "@/components/investments/markets-widgets";
 import type { AlertMetric, NewsItem, PriceAlert, QuoteData, Watchlist } from "./types";
 import { readAlerts, writeAlerts, readWatchlists, writeWatchlists } from "./types";
+import { AXIS_TICK, AXIS_LINE } from "@/lib/chart-tokens";
 
 // Colour + label for a change-percent value. Returns "—" and a neutral
 // colour when the API didn't supply the value — never a fabricated zero
@@ -1085,9 +1086,9 @@ export function MarketsTab() {
                         }
                         return picks;
                       })()}
-                      tick={{ fill: "#6b7280", fontSize: 10, fontFamily: "var(--font-mono)" }}
-                      axisLine={{ stroke: "#374151", strokeWidth: 1 }}
-                      tickLine={{ stroke: "#374151", strokeWidth: 1 }}
+                      tick={{ ...AXIS_TICK, fontSize: 10 }}
+                      axisLine={AXIS_LINE}
+                      tickLine={AXIS_LINE}
                       height={26}
                     />
                     <YAxis domain={["auto", "auto"]} tick={{ fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`} width={56} />

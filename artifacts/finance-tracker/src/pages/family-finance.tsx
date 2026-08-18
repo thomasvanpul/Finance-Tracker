@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { formatGbp } from "@/lib/utils";
+import { AXIS_TICK } from "@/lib/chart-tokens";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   useGetDashboard,
@@ -1833,7 +1834,7 @@ export default function FamilyFinance() {
                 >
                   <XAxis
                     type="number"
-                    tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "#6C7A96" }}
+                    tick={{ ...AXIS_TICK, fontSize: 9 }}
                     tickFormatter={(v) => formatGbp(v)}
                     axisLine={false}
                     tickLine={false}
@@ -1842,7 +1843,7 @@ export default function FamilyFinance() {
                     type="category"
                     dataKey="name"
                     width={60}
-                    tick={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "#CDD6F4" }}
+                    tick={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "var(--ft-text)" }}
                     axisLine={false}
                     tickLine={false}
                   />
