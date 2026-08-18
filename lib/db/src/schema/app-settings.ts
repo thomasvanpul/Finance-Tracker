@@ -9,10 +9,16 @@ import { userTable } from "./auth";
 // existing users effectively had before persistence, and what anyone
 // who skips onboarding gets. See lib/persona.ts on the frontend for
 // the runtime meaning of each id.
+//
+// theme: text column, same reasoning — not enumerated so a new theme
+// is a one-deploy change. Runtime values are the FintrackTheme union
+// in contexts/theme-context.tsx. Default = 'void' — the signed-out
+// first-impression default; a signed-in user's stored value overrides.
 export const appSettingsTable = pgTable("app_settings", {
   userId: text("user_id").primaryKey().references(() => userTable.id, { onDelete: "cascade" }),
   baseCurrency: text("base_currency").notNull().default("GBP"),
   persona: text("persona").notNull().default("full"),
+  theme: text("theme").notNull().default("void"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 

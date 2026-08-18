@@ -1,0 +1,1 @@
+ALTER TABLE "app_settings" ADD COLUMN "theme" text DEFAULT 'void' NOT NULL;

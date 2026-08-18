@@ -57,6 +57,13 @@
       "when": 1786979266906,
       "tag": "0007_lush_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787043953699,
+      "tag": "0008_useful_bedlam",
+      "breakpoints": true
     }
   ]
 }
