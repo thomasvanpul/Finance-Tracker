@@ -162,31 +162,39 @@ function PriceTooltip({ active, payload, label, showSMA20, showSMA50, showBB, pe
   payload.forEach(p => { if (p.value != null) map[p.dataKey] = p.value; });
   const displayLabel = label ? fmtTooltipLabel(label, period) : "";
   return (
-    <div style={{ background: "#0d1117", border: "1px solid #30363d", padding: "8px 10px", fontFamily: "var(--font-mono)", fontSize: 10, minWidth: 160, boxShadow: "0 4px 16px rgba(0,0,0,0.6)" }}>
-      <div style={{ color: "#7d8590", marginBottom: 6, fontSize: 9 }}>{displayLabel}</div>
-      {map.open != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "#e6edf3" }}>
-        <span style={{ color: "#7d8590" }}>O</span><span>{map.open?.toFixed(2)}</span>
+    // Arctic audit unit 1: every colour on this tooltip was a
+    // hardcoded GitHub-dark hex. On arctic that rendered as a
+    // black box floating on a white page. All colours now route
+    // through --ft-* tokens so the tooltip adapts to whichever
+    // theme is active. Series semantics preserved: H green,
+    // L red, C blue accent, SMA20 green, SMA50 amber, BB cyan.
+    // The rgba scrim on the boxShadow stays — a soft dark drop
+    // shadow reads correctly under either theme's surface.
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: "8px 10px", fontFamily: "var(--font-mono)", fontSize: 10, minWidth: 160, boxShadow: "0 4px 16px rgba(0,0,0,0.35)" }}>
+      <div style={{ color: "var(--ft-dim)", marginBottom: 6, fontSize: 9 }}>{displayLabel}</div>
+      {map.open != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "var(--ft-text)" }}>
+        <span style={{ color: "var(--ft-dim)" }}>O</span><span>{map.open?.toFixed(2)}</span>
       </div>}
-      {map.high != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "#3fb950" }}>
-        <span style={{ color: "#7d8590" }}>H</span><span>{map.high?.toFixed(2)}</span>
+      {map.high != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "var(--ft-green)" }}>
+        <span style={{ color: "var(--ft-dim)" }}>H</span><span>{map.high?.toFixed(2)}</span>
       </div>}
-      {map.low != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "#f85149" }}>
-        <span style={{ color: "#7d8590" }}>L</span><span>{map.low?.toFixed(2)}</span>
+      {map.low != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "var(--ft-red)" }}>
+        <span style={{ color: "var(--ft-dim)" }}>L</span><span>{map.low?.toFixed(2)}</span>
       </div>}
-      {map.close != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "#58a6ff", fontWeight: 700 }}>
-        <span style={{ color: "#7d8590" }}>C</span><span>{map.close?.toFixed(2)}</span>
+      {map.close != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "var(--ft-blue)", fontWeight: 700 }}>
+        <span style={{ color: "var(--ft-dim)" }}>C</span><span>{map.close?.toFixed(2)}</span>
       </div>}
-      {showSMA20 && map.sma20 != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "#3fb950", marginTop: 4, fontSize: 9 }}>
-        <span style={{ color: "#7d8590" }}>SMA20</span><span>{map.sma20?.toFixed(2)}</span>
+      {showSMA20 && map.sma20 != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "var(--ft-green)", marginTop: 4, fontSize: 9 }}>
+        <span style={{ color: "var(--ft-dim)" }}>SMA20</span><span>{map.sma20?.toFixed(2)}</span>
       </div>}
-      {showSMA50 && map.sma50 != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "#e3b341", fontSize: 9 }}>
-        <span style={{ color: "#7d8590" }}>SMA50</span><span>{map.sma50?.toFixed(2)}</span>
+      {showSMA50 && map.sma50 != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "var(--ft-amber)", fontSize: 9 }}>
+        <span style={{ color: "var(--ft-dim)" }}>SMA50</span><span>{map.sma50?.toFixed(2)}</span>
       </div>}
-      {showBB && map.bbUpper != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "#22d3ee", fontSize: 9 }}>
-        <span style={{ color: "#7d8590" }}>BB↑</span><span>{map.bbUpper?.toFixed(2)}</span>
+      {showBB && map.bbUpper != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "var(--ft-cyan)", fontSize: 9 }}>
+        <span style={{ color: "var(--ft-dim)" }}>BB↑</span><span>{map.bbUpper?.toFixed(2)}</span>
       </div>}
-      {showBB && map.bbLower != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "#22d3ee", fontSize: 9 }}>
-        <span style={{ color: "#7d8590" }}>BB↓</span><span>{map.bbLower?.toFixed(2)}</span>
+      {showBB && map.bbLower != null && <div style={{ display: "flex", justifyContent: "space-between", gap: 16, color: "var(--ft-cyan)", fontSize: 9 }}>
+        <span style={{ color: "var(--ft-dim)" }}>BB↓</span><span>{map.bbLower?.toFixed(2)}</span>
       </div>}
     </div>
   );
