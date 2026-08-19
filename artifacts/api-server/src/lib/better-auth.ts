@@ -143,10 +143,23 @@ export const auth = betterAuth({
     },
   },
   advanced: {
-    // Frontend (Vercel) and backend (Railway) are on different domains,
-    // so cookies must be SameSite=None to survive the Google OAuth redirect.
+    // SameSite=Lax, NOT None. This was "none" when the frontend was on Vercel
+    // and the API on Railway — different registrable domains, so cookies had to
+    // be cross-site to survive the OAuth redirect. That is no longer true:
+    // Vercel rewrites /api/* to the API, so every request is same-origin.
+    //
+    // Keeping "none" was actively harmful. Cross-site cookies are exempt from
+    // the normal clean-up a Lax cookie gets, so every abandoned OAuth attempt
+    // left its state cookie behind. They accumulated until the Cookie header
+    // exceeded the proxy limit and every /api/* call returned 494 (Request
+    // Header Or Cookie Too Large) — the sign-in page lost its provider buttons
+    // because it could no longer reach its own API.
+    //
+    // Lax is also the correct setting on merit: it still survives a top-level
+    // GET redirect back from Google or GitHub, which is the only cross-site
+    // navigation in the flow.
     defaultCookieAttributes: {
-      sameSite: "none",
+      sameSite: "lax",
       secure: true,
     },
   },
