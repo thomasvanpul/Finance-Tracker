@@ -40,7 +40,14 @@ afterEach(() => {
 
 // Fake req/res just enough to exercise the express handler
 // without booting the whole app.
-async function call(): Promise<{ providers: string[]; passwordResetEnabled: boolean }> {
+interface ProvidersResponse {
+  providers: string[];
+  passwordResetEnabled: boolean;
+  passkeyEnabled: boolean;
+  callbackBase: string;
+}
+
+async function call(): Promise<ProvidersResponse> {
   return new Promise((resolve, reject) => {
     // The router has exactly one GET handler on /auth-providers.
     // Pull it out of the stack rather than boot a real server.
@@ -49,7 +56,7 @@ async function call(): Promise<{ providers: string[]; passwordResetEnabled: bool
     if (!layer) return reject(new Error("route not found"));
     const handler = layer.route.stack[0].handle as (req: unknown, res: unknown) => void;
     handler({} as unknown, {
-      json: (body: { providers: string[]; passwordResetEnabled: boolean }) => resolve(body),
+      json: (body: ProvidersResponse) => resolve(body),
     } as unknown);
   });
 }
@@ -100,6 +107,21 @@ describe("/api/auth-providers — configuration reporting", () => {
     process.env.RESEND_API_KEY = "re_test";
     const body = await call();
     expect(body.passwordResetEnabled).toBe(true);
+  });
+
+  it("passkeyEnabled is always true — WebAuthn has no server credentials to gate on", async () => {
+    const body = await call();
+    expect(body.passkeyEnabled).toBe(true);
+    // Even with every social provider unset — passkey is independent.
+    delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_SECRET;
+    delete process.env.APPLE_CLIENT_ID;
+    delete process.env.APPLE_CLIENT_SECRET;
+    delete process.env.GITHUB_CLIENT_ID;
+    delete process.env.GITHUB_CLIENT_SECRET;
+    delete process.env.RESEND_API_KEY;
+    const body2 = await call();
+    expect(body2.passkeyEnabled).toBe(true);
   });
 });
 
