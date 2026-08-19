@@ -127,9 +127,17 @@ const apiLimiter = rateLimit({
 // Strict limiter ONLY on credential-accepting paths. Everything else in the
 // auth namespace (get-session, callbacks, the OAuth round trip) uses the
 // general apiLimiter, which is generous enough for normal page loads.
+//
+// isCredentialPath is exported so the property test in
+// app.rate-limit.test.ts can assert the predicate directly. The bug
+// this locks against — strict limiter accidentally covering
+// get-session — was invisible from the config object alone.
 const CREDENTIAL_PATHS = /^\/api\/auth\/(sign-in|sign-up|forget-password|reset-password|change-password)/;
+export function isCredentialPath(path: string): boolean {
+  return CREDENTIAL_PATHS.test(path);
+}
 app.all("/api/auth/{*path}", (req, res, next) => {
-  if (CREDENTIAL_PATHS.test(req.path)) return authLimiter(req, res, next);
+  if (isCredentialPath(req.path)) return authLimiter(req, res, next);
   return next();
 }, toNodeHandler(auth));
 
