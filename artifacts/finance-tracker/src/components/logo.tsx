@@ -4,11 +4,11 @@ import { useState } from "react";
 const DIAG_LEN = 24.2;
 const VERT_LEN = 18.5;
 
-export function LogoMark({ hovered = false }: { hovered?: boolean }) {
+export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; size?: number }) {
   return (
     <svg
-      width="28"
-      height="28"
+      width={size}
+      height={size}
       viewBox="0 0 28 28"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -193,16 +193,23 @@ export function LogoMark({ hovered = false }: { hovered?: boolean }) {
 
 const LETTERS = "NUMERIS".split("");
 
-export function Logo() {
+// size prop scales the whole lockup — mark + wordmark + tagline —
+// so the auth-screen hero can lead with the mark without a wrapper
+// transform. Existing sidebar/header callers pass no prop and get
+// the same 28/13/8 sizing they always had.
+export function Logo({ size = 28 }: { size?: number }) {
   const [hovered, setHovered] = useState(false);
+  const wordSize = Math.round(size * 0.465);   // 28 → 13
+  const tagSize  = Math.round(size * 0.286);   // 28 → 8
+  const gap      = Math.round(size * 0.286);   // 28 → 8
 
   return (
     <div
-      style={{ display: "flex", alignItems: "center", gap: 8, cursor: "default", userSelect: "none" }}
+      style={{ display: "flex", alignItems: "center", gap, cursor: "default", userSelect: "none" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <LogoMark hovered={hovered} />
+      <LogoMark hovered={hovered} size={size} />
       <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
         <span style={{ display: "flex", letterSpacing: "0.12em" }}>
           {LETTERS.map((ch, i) => (
@@ -210,7 +217,7 @@ export function Logo() {
               key={i}
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 13,
+                fontSize: wordSize,
                 fontWeight: 700,
                 lineHeight: 1,
                 color: hovered ? "var(--ft-accent)" : "var(--ft-text)",
@@ -224,7 +231,7 @@ export function Logo() {
         </span>
         <span style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 8,
+          fontSize: tagSize,
           letterSpacing: "0.18em",
           lineHeight: 1,
           color: hovered ? "var(--ft-accent)" : "var(--ft-dim)",

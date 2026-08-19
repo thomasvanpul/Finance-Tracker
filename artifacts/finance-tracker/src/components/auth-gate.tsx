@@ -92,8 +92,13 @@ function ProviderIcon({ id }: { id: ProviderId }) {
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
   boxSizing: "border-box",
+  // Inputs recede when empty: --ft-base blends into the card's own
+  // surrounding surface (both are dark on dark themes), and the
+  // border sits at the lighter --ft-border rather than --ft-border2.
+  // Focus + fill still carry the action; the empty form doesn't
+  // shout back at the user before they've done anything.
   background: "var(--ft-base)",
-  border: "1px solid var(--ft-border2)",
+  border: "1px solid var(--ft-border)",
   color: "var(--ft-text)",
   fontFamily: "var(--font-mono)",
   fontSize: 13,
@@ -101,11 +106,17 @@ const INPUT_STYLE: React.CSSProperties = {
   outline: "none",
   minHeight: 44, // 44pt touch target on mobile
 };
+// Primary action reads as primary via the accent border + accent
+// text + full-width footprint — not via a solid olive block. The
+// old solid-fill made the button the heaviest element on the card,
+// so the eye landed on it before the mark or the heading (audit
+// finding). Outline treatment holds affordance without weight;
+// hover fills to communicate the action.
 const PRIMARY_BTN: React.CSSProperties = {
   width: "100%",
-  background: "var(--ft-accent)",
-  color: "var(--ft-base)",
-  border: "none",
+  background: "transparent",
+  color: "var(--ft-accent)",
+  border: "1.5px solid var(--ft-accent)",
   fontFamily: "var(--font-mono)",
   fontSize: 12,
   fontWeight: 700,
@@ -114,6 +125,7 @@ const PRIMARY_BTN: React.CSSProperties = {
   padding: "12px 16px",
   cursor: "pointer",
   minHeight: 44,
+  transition: "background 0.14s ease, color 0.14s ease",
 };
 const SECONDARY_BTN: React.CSSProperties = {
   width: "100%",
@@ -335,10 +347,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   };
 
   // ── Sub-renders ──────────────────────────────────────────
+  // Weight ladder, top to bottom:
+  //   Logo (mark + wordmark) — hero size 44, leads the eye
+  //   heading — 20px, semantic h1, tells you what you're doing
+  //   sub description — 12px muted, context
+  //   form — quiet inputs, hairline borders
+  //   primary action — outline accent, clear affordance without a
+  //     solid olive block dominating the card
   const renderHeader = (heading: string, sub?: string) => (
-    <VStack gap={6} padding="0 0 16px">
-      <Logo />
-      <Text as="h1" weight={700} color="var(--ft-text)" size={18} lineHeight={1.25} mt={4}>
+    <VStack gap={8} padding="0 0 20px">
+      <Logo size={44} />
+      <Text as="h1" weight={700} color="var(--ft-text)" size={20} lineHeight={1.25} mt={12}>
         {heading}
       </Text>
       {sub && (
@@ -427,7 +446,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 placeholder="000000"
                 style={INPUT_STYLE}
               />
-              <button type="submit" disabled={submitting || totpCode.length < 6} style={{ ...PRIMARY_BTN, opacity: submitting || totpCode.length < 6 ? 0.5 : 1 }}>
+              <button type="submit" className="ft-auth-primary" disabled={submitting || totpCode.length < 6} style={{ ...PRIMARY_BTN, opacity: submitting || totpCode.length < 6 ? 0.5 : 1 }}>
                 {submitting ? "Verifying…" : "Verify"}
               </button>
               <HStack justify="center" padding="6px 0 0">
@@ -451,6 +470,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" style={INPUT_STYLE} />
               <button
                 type="submit"
+                className="ft-auth-primary"
                 disabled={submitting || newPassword.length < 8 || confirmPassword.length < 8}
                 style={{ ...PRIMARY_BTN, opacity: submitting || newPassword.length < 8 ? 0.5 : 1 }}
               >
@@ -499,6 +519,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               />
               <button
                 type="submit"
+                className="ft-auth-primary"
                 disabled={submitting || !email || !passwordResetEnabled}
                 style={{ ...PRIMARY_BTN, opacity: submitting || !email || !passwordResetEnabled ? 0.5 : 1 }}
               >
@@ -560,6 +581,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             )}
             <button
               type="submit"
+              className="ft-auth-primary"
               disabled={
                 submitting ||
                 !email ||

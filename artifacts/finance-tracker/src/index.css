@@ -693,6 +693,19 @@ input[type="checkbox"]:checked {
 
 /* rose and ocean themes removed — not a financial terminal aesthetic */
 
+/* Outline primary button for the auth card. Hover fills to the
+   accent so tactile feedback survives the outline treatment;
+   without a hover state, an outline primary can feel dead. Disabled
+   state is handled inline via opacity so we don't need :disabled
+   selectors here. See components/auth-gate.tsx PRIMARY_BTN. */
+.ft-auth-primary:not(:disabled):hover {
+  background: var(--ft-accent);
+  color: var(--ft-base);
+}
+.ft-auth-primary:not(:disabled):active {
+  background: color-mix(in srgb, var(--ft-accent) 88%, black);
+}
+
 /* ── Terminal layout primitives ── */
 .ft-panel {
   background: var(--ft-surface);
