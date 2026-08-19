@@ -36,6 +36,7 @@ import {
   type AuthError,
 } from "@/lib/auth-errors";
 import { HStack, VStack, Text, PanelBox } from "@/components/primitives";
+import { Logo } from "@/components/logo";
 
 type Mode = "signin" | "signup" | "forgot" | "reset" | "twofa";
 
@@ -78,18 +79,11 @@ function ProviderIcon({ id }: { id: ProviderId }) {
   );
 }
 
-// Icon-only visual for the top of the card. Uses the same
-// hairline-outline shape the logo carries in MobileHome — the
-// glyph is a filled diamond notched out, drawn inline in SVG so
-// it inherits the active theme accent.
-function BrandMark({ size = 22 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M6 6 L26 6 L26 26 L6 26 Z" fill="none" stroke="var(--ft-accent)" strokeWidth="2" />
-      <path d="M11 10 L11 22 L14 22 L14 15 L21 22 L21 10 L18 10 L18 17 L11 10 Z" fill="var(--ft-accent)" />
-    </svg>
-  );
-}
+// BrandMark used to live here as a bespoke boxed-N placeholder. The
+// real Numeris mark is <LogoMark>/<Logo> in components/logo.tsx —
+// the animated peak-and-diagonal glyph the sidebar and mobile
+// header already use. Auth-gate now composes <Logo> like every
+// other brand chrome site should.
 
 // ── Shared styles (kept tiny and centralised — three fields, one
 //    button — instead of the 49 inline objects the previous file
@@ -343,12 +337,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   // ── Sub-renders ──────────────────────────────────────────
   const renderHeader = (heading: string, sub?: string) => (
     <VStack gap={6} padding="0 0 16px">
-      <HStack gap={10} align="center">
-        <BrandMark />
-        <Text as="span" mono weight={700} letterSpacing="0.16em" color="var(--ft-text)" size={13}>
-          NUMERIS
-        </Text>
-      </HStack>
+      <Logo />
       <Text as="h1" weight={700} color="var(--ft-text)" size={18} lineHeight={1.25} mt={4}>
         {heading}
       </Text>
