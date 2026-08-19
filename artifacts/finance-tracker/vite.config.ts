@@ -26,6 +26,12 @@ return {
       registerType: "autoUpdate",
       devOptions: { enabled: false },
       workbox: {
+        // Without this the service worker's navigation fallback serves
+        // index.html for ANY navigation — including /api/auth/callback/google.
+        // Google's OAuth redirect was being swallowed by the PWA and booting
+        // the React app instead, which looked exactly like the page reloading.
+        // curl worked because curl has no service worker.
+        navigateFallbackDenylist: [/^\/api\//],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
