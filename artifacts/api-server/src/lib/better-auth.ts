@@ -157,12 +157,23 @@ export const auth = betterAuth({
   account: {
     accountLinking: {
       enabled: true,
-      // Apple and GitHub both return verified emails via OAuth
-      // (Apple via ID token, GitHub via the user email API), so
-      // they're safe to trust for auto-linking to an existing
-      // email/password account. Kept here alongside google so
-      // adding a fourth provider is a one-line list append.
-      trustedProviders: ["google", "apple", "github"],
+      // Google and Apple only surface verified addresses in their
+      // OAuth flows — Google via id_token.email_verified, Apple via
+      // the Apple-signed ID token. Trusting them for auto-linking is
+      // sound; the OAuth provider's own verification is what backs
+      // the "this email belongs to this account" claim.
+      //
+      // GitHub is DELIBERATELY NOT in this list. See the test in
+      // lib/better-auth.test.ts for the full reasoning. Short version:
+      // auto-linking GitHub to an existing user by email means anyone
+      // controlling a GitHub account with the user's email address
+      // gets straight into their financial data — account takeover
+      // mediated by a third party's email policy. Blast radius here
+      // is bank balances, not a forum profile. GitHub still works —
+      // it falls through to the standard emailVerified gate, and
+      // users who want it link it deliberately from the Sign-in
+      // Methods panel in Settings.
+      trustedProviders: ["google", "apple"],
       requireLocalEmailVerified: false,
     },
   },
