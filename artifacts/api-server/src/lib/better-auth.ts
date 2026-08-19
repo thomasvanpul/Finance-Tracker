@@ -19,7 +19,17 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
-    cookieCache: { enabled: true, maxAge: 60 * 5 },
+    // Disabled deliberately. cookieCache serialises the whole session AND user
+    // object into a session_data cookie to save a DB read — already 987 bytes
+    // on a nearly-empty account, and it grows with the user record. Combined
+    // with stale OAuth state cookies that pushed the request header past the
+    // edge proxy limit, every page started returning 494
+    // REQUEST_HEADER_TOO_LARGE once signed in.
+    //
+    // The DB read it avoids is a single indexed lookup against Neon. That is
+    // not worth putting user data in a cookie on every request, where it also
+    // has to be re-sent to the server on every asset fetch.
+    cookieCache: { enabled: false },
   },
   database: drizzleAdapter(db, {
     provider: "pg",
