@@ -1,5 +1,6 @@
 import { createAuthClient } from "better-auth/react";
 import { twoFactorClient } from "better-auth/client/plugins";
+import { passkeyClient } from "@better-auth/passkey/client";
 
 // Always same-origin. In dev the Vite proxy forwards /api to the local API; in
 // production Vercel rewrites /api/* to the Render service (see vercel.json).
@@ -14,7 +15,7 @@ const authBase = import.meta.env.DEV
 
 export const authClient = createAuthClient({
   baseURL: authBase,
-  plugins: [twoFactorClient()],
+  plugins: [twoFactorClient(), passkeyClient()],
 });
 
 export type Session = typeof authClient.$Infer.Session;

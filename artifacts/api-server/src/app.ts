@@ -18,7 +18,12 @@ const IS_DEV = process.env.NODE_ENV === "development";
 
 const app: Express = express();
 
-app.set("trust proxy", 1);
+// Two proxies sit in front of this app: Vercel rewrites /api/* to Render, and
+// Render has its own edge. "1" only unwinds one hop, so req.ip resolved to
+// Render's address, not the client's — better-auth logged "Rate limiting could
+// not determine a client IP and is falling back to a single shared per-path
+// bucket", meaning EVERY user in the world shared one bucket of 20.
+app.set("trust proxy", 2);
 
 // Security headers — must come before routes
 app.use(
@@ -84,6 +89,10 @@ app.use((err: Error, _req: Request, res: Response, next: NextFunction): void => 
 // ── Rate limiters ────────────────────────────────────────────────────────────
 
 // Strict limiter for auth endpoints — prevent brute force and reset-email spam
+// Brute-force protection belongs on the endpoints that accept credentials, not
+// on the whole auth namespace. This limiter was applied to all /api/auth/*,
+// including get-session, which the app polls on every page load — so ordinary
+// use exhausted it and the sign-in page lost its provider buttons.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20,
@@ -115,7 +124,14 @@ const apiLimiter = rateLimit({
 
 // Better Auth handles its own body parsing for /api/auth/* routes,
 // so its handler must come BEFORE express.json().
-app.all("/api/auth/{*path}", authLimiter, toNodeHandler(auth));
+// Strict limiter ONLY on credential-accepting paths. Everything else in the
+// auth namespace (get-session, callbacks, the OAuth round trip) uses the
+// general apiLimiter, which is generous enough for normal page loads.
+const CREDENTIAL_PATHS = /^\/api\/auth\/(sign-in|sign-up|forget-password|reset-password|change-password)/;
+app.all("/api/auth/{*path}", (req, res, next) => {
+  if (CREDENTIAL_PATHS.test(req.path)) return authLimiter(req, res, next);
+  return next();
+}, toNodeHandler(auth));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

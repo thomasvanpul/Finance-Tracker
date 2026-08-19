@@ -19,6 +19,10 @@ export interface AuthProvidersState {
   loading: boolean;
   providers: ProviderId[];
   passwordResetEnabled: boolean;
+  // Server-side gate for passkeys. The browser-side gate is a
+  // separate feature-detect against window.PublicKeyCredential —
+  // callers must check BOTH before rendering the passkey button.
+  passkeyEnabled: boolean;
   // Non-null when the fetch itself failed (network, 5xx). Callers
   // must treat "we don't know what's configured" as "render
   // nothing" — never as "render everything hopefully".
@@ -29,12 +33,14 @@ const INITIAL: AuthProvidersState = {
   loading: true,
   providers: [],
   passwordResetEnabled: false,
+  passkeyEnabled: false,
   error: null,
 };
 
 interface Response {
   providers: ProviderId[];
   passwordResetEnabled: boolean;
+  passkeyEnabled?: boolean;
 }
 
 // The endpoint lives at /api on the same origin (dev proxy points
@@ -60,6 +66,7 @@ export function useAuthProviders(): AuthProvidersState {
               loading: false,
               providers: [],
               passwordResetEnabled: false,
+              passkeyEnabled: false,
               error: `providers endpoint returned ${res.status}`,
             });
           }
@@ -71,6 +78,11 @@ export function useAuthProviders(): AuthProvidersState {
             loading: false,
             providers: Array.isArray(body.providers) ? body.providers : [],
             passwordResetEnabled: !!body.passwordResetEnabled,
+            // Default false when the field is absent — an older
+            // server bundle that pre-dates the passkey rollout
+            // is authoritatively "no passkey support" from the
+            // client's view.
+            passkeyEnabled: !!body.passkeyEnabled,
             error: null,
           });
         }
@@ -80,6 +92,7 @@ export function useAuthProviders(): AuthProvidersState {
             loading: false,
             providers: [],
             passwordResetEnabled: false,
+            passkeyEnabled: false,
             error: err instanceof Error ? err.message : String(err),
           });
         }

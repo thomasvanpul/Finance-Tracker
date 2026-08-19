@@ -59,6 +59,14 @@ router.get("/auth-providers", (_req, res) => {
   const passwordResetEnabled =
     typeof process.env.RESEND_API_KEY === "string" &&
     process.env.RESEND_API_KEY.trim().length > 0;
+  // Passkeys have no server-side credential requirement — WebAuthn
+  // is a browser + platform authenticator affair, and the plugin
+  // always ships once wired in better-auth.ts. The value is always
+  // true; the client is still responsible for feature-detecting
+  // window.PublicKeyCredential before rendering the sign-in button.
+  // Same "never render a control that cannot work" rule as social
+  // providers, split across the two gates the fact actually has.
+  const passkeyEnabled = true;
   // The base better-auth actually resolved, so a redirect_uri
     // mismatch is diagnosable without shell access to the host.
     // Not a secret — it appears in every OAuth URL we generate.
@@ -70,7 +78,7 @@ router.get("/auth-providers", (_req, res) => {
         : "http://localhost:3000");
 
     res.json({
-      callbackBase, providers, passwordResetEnabled });
+      callbackBase, providers, passwordResetEnabled, passkeyEnabled });
 });
 
 export default router;
