@@ -369,6 +369,26 @@ next port doesn't rediscover the same friction.
   the pilot; do not reintroduce. Colour on desktop is semantic
   (`--ft-green` for positive P&L, `--ft-red` for negative) or absent.
 
+### No max-width cap on desktop content (20 Aug 2026)
+
+Considered during the responsiveness pass — cap `.ft-main-inner` at
+`max-width: 1400px` centred, so a 1920 monitor gets ~150px of gutter
+on each side and the composition reads more intentional. Rejected.
+
+The design identity is a financial terminal. Density and
+rows-in-view are the point. Someone running a wide window chose that
+window to see more Recent Transactions, more Accounts rows, wider
+Analytics tables — every extra pixel of content area translates into
+one more visible row. Capping is a taste move that trades a
+functional gain (more numbers on screen) for an aesthetic gain
+(tighter composition). On a tool people open to check numbers,
+function wins. No trading terminal caps its width.
+
+Not re-litigable. If the argument comes up again the answer is the
+same: content extends to the full sidebar-adjusted width at every
+viewport, and the container-query fabric (see index.css
+`.ft-main-inner`) already handles the sub-1000-content case.
+
 ### Test-lock on the invariants
 
 The three shared constraints — no truncation on financial figures, no
