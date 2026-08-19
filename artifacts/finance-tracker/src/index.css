@@ -837,6 +837,51 @@ input[type="checkbox"]:checked {
   gap: 8px;
 }
 
+/* ── Container-query fabric ────────────────────────────────────────────────
+   ft-main-inner (in components/layout.tsx) is the wrapper around every
+   page's content. Turning it into a query container lets responsive
+   grid utilities inside pages measure the ACTUAL content area — which
+   is viewport width MINUS the sidebar's current width, not the
+   viewport itself. This is the case viewport media queries genuinely
+   cannot express: same viewport, different content width when the
+   sidebar is collapsed or resized.
+   Container-name is scoped so future ancestors setting container-type
+   for their own reasons don't accidentally match these rules. */
+.ft-main-inner {
+  container-type: inline-size;
+  container-name: main-content;
+}
+
+/* Thresholds picked around the content widths a typical viewport +
+   sidebar produce:
+     820  viewport - 212 sidebar = 608 content  → tightest desktop
+    1024                          = 812 content  → cramped
+    1280                          = 1068 content → comfortable
+    1920                          = 1708 content → generous
+   ~900 and ~700 are the two useful breakpoints between them: 900
+   drops the widest grids by one column while everything still fits,
+   700 collapses the two-panel rows to stacked. Using !important so
+   these override inline gridTemplateColumns declarations on the
+   same elements — many pages set the base grid inline for
+   consistency with older mobile-media rules. */
+@container main-content (max-width: 900px) {
+  .ft-five-col           { grid-template-columns: repeat(3, 1fr) !important; }
+  .ft-four-col           { grid-template-columns: repeat(3, 1fr) !important; }
+  .ft-three-col          { grid-template-columns: repeat(2, 1fr) !important; }
+  .ft-dashboard-insights { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@container main-content (max-width: 700px) {
+  .ft-five-col           { grid-template-columns: repeat(2, 1fr) !important; }
+  .ft-four-col           { grid-template-columns: repeat(2, 1fr) !important; }
+  .ft-three-col          { grid-template-columns: 1fr !important; }
+  .ft-two-col            { grid-template-columns: 1fr !important; }
+  .ft-two-col-auto       { grid-template-columns: 1fr !important; }
+  .ft-dashboard-insights { grid-template-columns: 1fr !important; }
+  .ft-dashboard-two-col  { flex-direction: column !important; }
+  .ft-chart-sidebar      { grid-template-columns: 1fr !important; }
+  .ft-wardrobe-layout    { grid-template-columns: 1fr !important; }
+}
+
 /* ── Mobile bottom navigation ── */
 .ft-mobile-nav {
   display: none;

@@ -391,8 +391,10 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const compactContent = d && (
     <>
-      {/* KPI strip — border-as-gap pattern */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+      {/* KPI strip — border-as-gap pattern. ft-four-col opts into the
+          main-content container query: 4-col at wide, 3-col ≤900
+          container width, 2-col ≤700. */}
+      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--ft-border)" }}>
         {kpis.map((k, i) => (
           <KpiCell
             key={k.label}
@@ -408,7 +410,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
       </div>
 
       {/* Month stats strip */}
-      <div style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+      <div className="ft-three-col" style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
         {monthStats.map((item, i) => (
           <MonthStatCell
             key={item.label}
@@ -421,7 +423,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
       </div>
 
       {/* Breakdown strip */}
-      <div style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+      <div className="ft-three-col" style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
         {breakdownItems.map((item, i) => (
           <BreakdownCell
             key={item.label}

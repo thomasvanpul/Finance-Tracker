@@ -102,7 +102,7 @@ export function PersonaQuickStart() {
         </button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", borderBottom: "1px solid rgba(244,162,30,0.1)" }}>
+      <div className={isMobile ? undefined : "ft-three-col"} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", borderBottom: "1px solid rgba(244,162,30,0.1)" }}>
         {steps.map((step, i) => {
           const isDone = done.has(step.id);
           return isMobile ? (
