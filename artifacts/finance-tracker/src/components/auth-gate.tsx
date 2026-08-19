@@ -79,6 +79,22 @@ function ProviderIcon({ id }: { id: ProviderId }) {
   );
 }
 
+// Fingerprint-style glyph for the "Sign in with passkey" button.
+// currentColor so it inherits from --ft-text via the button style;
+// same stroke weight as the provider icons above so the OR-block
+// keeps a single visual rhythm.
+function PasskeyIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6.5 4.5A8 8 0 0 1 20 11.5v3" />
+      <path d="M4 8.5A8 8 0 0 0 3.5 12v2.5" />
+      <path d="M8 8.5a4 4 0 0 1 8 0v6" />
+      <path d="M12 8.5v6.5c0 2 .6 3 1.5 4" />
+      <path d="M6.5 14.5v.5c0 2 1 3.5 2 4.5" />
+    </svg>
+  );
+}
+
 // BrandMark used to live here as a bespoke boxed-N placeholder. The
 // real Numeris mark is <LogoMark>/<Logo> in components/logo.tsx —
 // the animated peak-and-diagonal glyph the sidebar and mobile
@@ -154,9 +170,29 @@ const LINK_BTN: React.CSSProperties = {
   textUnderlineOffset: 2,
 };
 
+// Double-gate for the passkey button: the server must have the plugin
+// wired (passkeyEnabled from /auth-providers) AND the browser must
+// implement WebAuthn (window.PublicKeyCredential). Either half missing
+// means the control cannot work and we do not render it. Feature-
+// detected on mount, refreshed if the window regains focus after the
+// user enables the feature in browser settings.
+function useBrowserWebAuthnSupport(): boolean {
+  const [supported, setSupported] = useState<boolean>(
+    () => typeof window !== "undefined" && "PublicKeyCredential" in window,
+  );
+  useEffect(() => {
+    const check = () => setSupported(typeof window !== "undefined" && "PublicKeyCredential" in window);
+    window.addEventListener("focus", check);
+    return () => window.removeEventListener("focus", check);
+  }, []);
+  return supported;
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
-  const { providers, passwordResetEnabled, loading: providersLoading } = useAuthProviders();
+  const { providers, passwordResetEnabled, passkeyEnabled, loading: providersLoading } = useAuthProviders();
+  const browserSupportsWebAuthn = useBrowserWebAuthnSupport();
+  const passkeyAvailable = passkeyEnabled && browserSupportsWebAuthn;
 
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
@@ -179,6 +215,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<ProviderId | null>(null);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [forgotSent, setForgotSent] = useState<{ email: string } | null>(null);
 
   useEffect(() => {
@@ -334,6 +371,25 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handlePasskeySignIn = async () => {
+    setError(null);
+    setPasskeyLoading(true);
+    try {
+      // signIn.passkey() from the passkeyClient plugin prompts the
+      // browser's native passkey UI. If the user cancels or no
+      // matching credential exists on this device, the SDK returns
+      // { error }. Only success unmounts the auth gate.
+      const res = await (authClient as unknown as {
+        signIn: { passkey: () => Promise<{ error?: unknown } | undefined> };
+      }).signIn.passkey();
+      if (res?.error) setError(classifyAuthError(res.error));
+    } catch (err) {
+      setError(classifyAuthError(err));
+    } finally {
+      setPasskeyLoading(false);
+    }
+  };
+
   const applyAction = (action: NonNullable<AuthError["action"]>) => {
     setError(null);
     if (action.intent === "signup") setMode("signup");
@@ -396,9 +452,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const renderProviders = () => {
+  // Alternate sign-in surface. Renders when EITHER passkey is
+  // available on this browser+server OR at least one social provider
+  // is configured. The passkey button leads (fastest, no external
+  // redirect) when present, then the "OR" divider, then providers.
+  const renderAlternates = () => {
     if (providersLoading) return null;
-    if (providers.length === 0) return null;
+    const hasProviders = providers.length > 0;
+    if (!passkeyAvailable && !hasProviders) return null;
     return (
       <VStack gap={8} padding="12px 0 0">
         <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 12 }}>
@@ -406,12 +467,26 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             OR
           </Text>
           <VStack gap={8}>
+            {passkeyAvailable && (
+              <button
+                type="button"
+                onClick={handlePasskeySignIn}
+                disabled={passkeyLoading || socialLoading != null}
+                style={{
+                  ...SECONDARY_BTN,
+                  opacity: passkeyLoading ? 0.6 : 1,
+                }}
+              >
+                <PasskeyIcon />
+                <span>{passkeyLoading ? "Waiting for authenticator…" : "Sign in with passkey"}</span>
+              </button>
+            )}
             {providers.map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => handleSocial(p)}
-                disabled={socialLoading != null}
+                disabled={socialLoading != null || passkeyLoading}
                 style={{
                   ...SECONDARY_BTN,
                   opacity: socialLoading != null && socialLoading !== p ? 0.5 : 1,
@@ -602,7 +677,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           </VStack>
         </form>
 
-        {renderProviders()}
+        {renderAlternates()}
 
         <HStack justify="center" padding="16px 0 0">
           <Text as="span" color="var(--ft-dim)" size={11}>
