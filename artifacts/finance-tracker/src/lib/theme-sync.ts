@@ -25,8 +25,9 @@ export const DEFAULT_THEME: FintrackTheme = "void";
 export const THEME_CACHE_KEY = "ft-theme";
 
 const VALID: readonly FintrackTheme[] = [
-  "void", "phosphor", "arctic", "amber", "midnight", "matrix",
-  "synthwave", "deep-space", "mario", "gilded", "bloodline",
+  "void", "phosphor", "arctic", "parchment", "slate", "linen",
+  "amber", "midnight", "matrix", "synthwave", "deep-space",
+  "mario", "gilded", "bloodline",
 ];
 
 export function isValidTheme(x: unknown): x is FintrackTheme {

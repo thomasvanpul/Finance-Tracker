@@ -1059,7 +1059,7 @@ export const UpdateSettingsPersonaBody = zod.object({
  * @summary Get the current user's theme
  */
 export const GetSettingsThemeResponse = zod.object({
-  "theme": zod.enum(['void', 'phosphor', 'arctic', 'amber', 'midnight', 'matrix', 'synthwave', 'deep-space', 'mario', 'gilded', 'bloodline']).describe('The user\'s chosen colour theme. Server owns this so it\nfollows the user across devices and never leaks to a\ndifferent user on the same browser. See\ncontexts\/theme-context.tsx for colour semantics.\n')
+  "theme": zod.enum(['void', 'phosphor', 'arctic', 'parchment', 'slate', 'linen', 'amber', 'midnight', 'matrix', 'synthwave', 'deep-space', 'mario', 'gilded', 'bloodline']).describe('The user\'s chosen colour theme. Server owns this so it\nfollows the user across devices and never leaks to a\ndifferent user on the same browser. See\ncontexts\/theme-context.tsx for colour semantics.\n')
 })
 
 
@@ -1067,7 +1067,7 @@ export const GetSettingsThemeResponse = zod.object({
  * @summary Set the current user's theme
  */
 export const UpdateSettingsThemeBody = zod.object({
-  "theme": zod.enum(['void', 'phosphor', 'arctic', 'amber', 'midnight', 'matrix', 'synthwave', 'deep-space', 'mario', 'gilded', 'bloodline']).describe('The user\'s chosen colour theme. Server owns this so it\nfollows the user across devices and never leaks to a\ndifferent user on the same browser. See\ncontexts\/theme-context.tsx for colour semantics.\n')
+  "theme": zod.enum(['void', 'phosphor', 'arctic', 'parchment', 'slate', 'linen', 'amber', 'midnight', 'matrix', 'synthwave', 'deep-space', 'mario', 'gilded', 'bloodline']).describe('The user\'s chosen colour theme. Server owns this so it\nfollows the user across devices and never leaks to a\ndifferent user on the same browser. See\ncontexts\/theme-context.tsx for colour semantics.\n')
 })
 
 

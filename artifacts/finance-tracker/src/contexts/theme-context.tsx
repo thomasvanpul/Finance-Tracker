@@ -9,12 +9,15 @@ import {
   fetchThemeFromServer,
 } from "@/lib/theme-sync";
 
-export type FintrackTheme = "void" | "phosphor" | "arctic" | "amber" | "midnight" | "matrix" | "synthwave" | "deep-space" | "mario" | "gilded" | "bloodline";
+export type FintrackTheme = "void" | "phosphor" | "arctic" | "parchment" | "slate" | "linen" | "amber" | "midnight" | "matrix" | "synthwave" | "deep-space" | "mario" | "gilded" | "bloodline";
 
 const THEMES: { id: FintrackTheme; label: string; accent: string; base: string; text: string }[] = [
   { id: "void",       label: "Void",       accent: "#F4A21E", base: "#08090B", text: "#CDD6F4" },
   { id: "phosphor",   label: "Phosphor",   accent: "#7FFF00", base: "#020802", text: "#39FF14" },
   { id: "arctic",     label: "Arctic",     accent: "#0052CC", base: "#F0F4F8", text: "#1A2333" },
+  { id: "parchment",  label: "Parchment",  accent: "#7A1F30", base: "#F5EBD8", text: "#241A0C" },
+  { id: "slate",      label: "Slate",      accent: "#0E5766", base: "#DFE6EE", text: "#141A22" },
+  { id: "linen",      label: "Linen",      accent: "#5A4610", base: "#EEE7D6", text: "#241D0F" },
   { id: "amber",      label: "Amber",      accent: "#FFD700", base: "#0A0600", text: "#FFB000" },
   { id: "midnight",   label: "Midnight",   accent: "#4D9FFF", base: "#010817", text: "#E8F0FF" },
   { id: "matrix",     label: "Matrix",     accent: "#00FF41", base: "#000300", text: "#00CC33" },

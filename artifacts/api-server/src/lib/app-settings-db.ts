@@ -49,8 +49,9 @@ export async function setPersona(userId: string, persona: PersonaId): Promise<vo
 // gets called before the client applies, so an unknown id here is a
 // hard 400 rather than a silent write.
 export const VALID_THEMES = [
-  "void", "phosphor", "arctic", "amber", "midnight", "matrix",
-  "synthwave", "deep-space", "mario", "gilded", "bloodline",
+  "void", "phosphor", "arctic", "parchment", "slate", "linen",
+  "amber", "midnight", "matrix", "synthwave", "deep-space",
+  "mario", "gilded", "bloodline",
 ] as const;
 export type ThemeId = (typeof VALID_THEMES)[number];
 

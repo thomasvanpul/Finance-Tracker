@@ -2090,7 +2090,7 @@ components:
       properties:
         theme:
           type: string
-          enum: [void, phosphor, arctic, amber, midnight, matrix, synthwave, deep-space, mario, gilded, bloodline]
+          enum: [void, phosphor, arctic, parchment, slate, linen, amber, midnight, matrix, synthwave, deep-space, mario, gilded, bloodline]
           description: |
             The user's chosen colour theme. Server owns this so it
             follows the user across devices and never leaks to a

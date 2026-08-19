@@ -31,8 +31,9 @@ const VIEWPORTS: Record<Viewport, { width: number; height: number }> = {
 };
 
 const VALID_THEMES = new Set([
-  "void", "phosphor", "arctic", "amber", "midnight", "matrix",
-  "synthwave", "deep-space", "mario", "gilded", "bloodline",
+  "void", "phosphor", "arctic", "parchment", "slate", "linen",
+  "amber", "midnight", "matrix", "synthwave", "deep-space",
+  "mario", "gilded", "bloodline",
 ]);
 
 // ── CLI ──────────────────────────────────────────────────────────────────────

@@ -166,8 +166,9 @@ describe("GET /settings/theme", () => {
 
 describe("PUT /settings/theme", () => {
   it.each([
-    "void", "phosphor", "arctic", "amber", "midnight", "matrix",
-    "synthwave", "deep-space", "mario", "gilded", "bloodline",
+    "void", "phosphor", "arctic", "parchment", "slate", "linen",
+    "amber", "midnight", "matrix", "synthwave", "deep-space",
+    "mario", "gilded", "bloodline",
   ])("accepts %s", async (t) => {
     const r = await fetch(`${baseUrl}/settings/theme`, {
       method: "PUT",

@@ -403,12 +403,27 @@ input[type="checkbox"]:checked {
   --ft-cyan:    #AAFFAA;
 }
 
+/* ── Light themes ────────────────────────────────────────────────────────────
+   Every light theme defines the FULL --ft-* token set INCLUDING the
+   --ft-id-1..12 identity ramp. Without an override those tokens fall
+   through to :root and inherit the dark-tuned bright values that
+   would fail contrast on a light surface. See scripts/src/theme-
+   contrast.ts for the WCAG proof — every text/status/identity value
+   below is ≥ 4.5:1 on its own surface, every border ≥ 3:1 on both
+   surface and base. Iterate that script if you change any token here.
+   The four light themes are personality-distinct, not tints of
+   arctic: cool-white-office (arctic), warm-newspaper (parchment),
+   cool-analyst-grey (slate), warm-ledger (linen). */
+
 [data-theme="arctic"] {
   --ft-base:    #F0F4F8;
   --ft-surface: #FFFFFF;
   --ft-raised:  #E8EDF5;
-  --ft-border:  #C9D4E0;
-  --ft-border2: #B0BDD0;
+  /* border used to be #C9D4E0 / #B0BDD0 — 1.5:1 and 1.9:1 on white,
+     both under WCAG 1.4.11's 3:1 for UI components. Darkened so a
+     panel divider is genuinely visible without leaning on shadows. */
+  --ft-border:  #7E8CA0;
+  --ft-border2: #6A788A;
   --ft-text:    #1A2333;
   --ft-muted:   #4A5A74;
   --ft-dim:     #637088;
@@ -438,6 +453,106 @@ input[type="checkbox"]:checked {
   --ft-id-10:   #1D4ED8;
   --ft-id-11:   #047857;
   --ft-id-12:   #075985;
+}
+
+/* Parchment — warm salmon-cream paper, deep ink, burgundy accent.
+   The financial-print reader theme: FT-pink paper, ink-brown text,
+   newsprint-red accent. Personality: "gains and losses set in
+   broadsheet". */
+[data-theme="parchment"] {
+  --ft-base:    #F5EBD8;
+  --ft-surface: #FFF8EC;
+  --ft-raised:  #EDE0C4;
+  --ft-border:  #9C8248;
+  --ft-border2: #7A6535;
+  --ft-text:    #241A0C;
+  --ft-muted:   #4B3818;
+  --ft-dim:     #6E5528;
+  --ft-accent:  #7A1F30;
+  --ft-amber:   #94430A;
+  --ft-green:   #155C34;
+  --ft-red:     #A82020;
+  --ft-blue:    #173C6E;
+  --ft-cyan:    #1E5266;
+  --ft-id-1:    #173C6E;
+  --ft-id-2:    #155C34;
+  --ft-id-3:    #94430A;
+  --ft-id-4:    #1E5266;
+  --ft-id-5:    #A82020;
+  --ft-id-6:    #5A1C7A;
+  --ft-id-7:    #7A4F0C;
+  --ft-id-8:    #106252;
+  --ft-id-9:    #994A0F;
+  --ft-id-10:   #1B428F;
+  --ft-id-11:   #155432;
+  --ft-id-12:   #124860;
+}
+
+/* Slate — cool granite-grey paper, near-black text, deep teal accent.
+   The analyst-desk theme: sits between arctic's crisp saas white and
+   an industrial instrument. Cooler and heavier than arctic, but not
+   the same aesthetic — teal accent instead of blue, grey paper
+   instead of white. */
+[data-theme="slate"] {
+  --ft-base:    #DFE6EE;
+  --ft-surface: #F0F4F8;
+  --ft-raised:  #D3DCE6;
+  --ft-border:  #748596;
+  --ft-border2: #5F6C7E;
+  --ft-text:    #141A22;
+  --ft-muted:   #3E4A58;
+  --ft-dim:     #5A6572;
+  --ft-accent:  #0E5766;
+  --ft-amber:   #8F4A00;
+  --ft-green:   #155C34;
+  --ft-red:     #932530;
+  --ft-blue:    #164478;
+  --ft-cyan:    #0E5766;
+  --ft-id-1:    #164478;
+  --ft-id-2:    #155C34;
+  --ft-id-3:    #8F4A00;
+  --ft-id-4:    #0E5766;
+  --ft-id-5:    #932530;
+  --ft-id-6:    #4E207F;
+  --ft-id-7:    #7A5310;
+  --ft-id-8:    #0F5B4C;
+  --ft-id-9:    #994A0F;
+  --ft-id-10:   #1A4292;
+  --ft-id-11:   #0D5533;
+  --ft-id-12:   #104A68;
+}
+
+/* Linen — warm off-white paper, olive-gold accent. The ledger /
+   private-wealth theme: warmer than arctic, less pink than
+   parchment. Olive-gold accent nods to accountancy ledger ink;
+   lower-chroma reds and greens keep the palette book-quiet. */
+[data-theme="linen"] {
+  --ft-base:    #EEE7D6;
+  --ft-surface: #F8F2E3;
+  --ft-raised:  #E4DBC4;
+  --ft-border:  #8F7E4D;
+  --ft-border2: #6E6035;
+  --ft-text:    #241D0F;
+  --ft-muted:   #4A3E1E;
+  --ft-dim:     #6A5A32;
+  --ft-accent:  #5A4610;
+  --ft-amber:   #8A3F0A;
+  --ft-green:   #33500F;
+  --ft-red:     #8F1F1F;
+  --ft-blue:    #173E68;
+  --ft-cyan:    #1E4E56;
+  --ft-id-1:    #173E68;
+  --ft-id-2:    #33500F;
+  --ft-id-3:    #8A3F0A;
+  --ft-id-4:    #124E58;
+  --ft-id-5:    #8F1F1F;
+  --ft-id-6:    #4A1B6E;
+  --ft-id-7:    #77530C;
+  --ft-id-8:    #105E42;
+  --ft-id-9:    #8F4008;
+  --ft-id-10:   #183C88;
+  --ft-id-11:   #13502F;
+  --ft-id-12:   #104060;
 }
 
 [data-theme="amber"] {
