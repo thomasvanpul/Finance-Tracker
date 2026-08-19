@@ -17,6 +17,7 @@ import { formatGbp } from "@/lib/utils";
 import { getLevel, getLearnXP } from "@/lib/learn-xp";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { SignInMethodsPanel } from "@/components/sign-in-methods-panel";
 
 const PANEL: React.CSSProperties = {
   background: "var(--ft-surface)",
@@ -801,10 +802,11 @@ export default function Profile() {
     { label: "Settings Keys", value: String(ftKeyCount) },
   ];
 
-  const authProviders = [
-    { id: "email", label: "Email / Password", active: true },
-    { id: "google", label: "Google OAuth", active: false },
-  ];
+  // authProviders was a hardcoded placeholder — a display of two
+  // fake rows that lied about what was actually linked. Replaced by
+  // <SignInMethodsPanel>, which fetches authClient.listAccounts()
+  // and passkey list at runtime and lets the user actually add or
+  // remove methods (with the lockout guard).
 
   const exportCells = [
     { label: "Transactions", value: String(txCount) },
@@ -1389,23 +1391,7 @@ export default function Profile() {
     );
   })();
 
-  const authPanel = (
-    <div style={PANEL}>
-      <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-green)", paddingLeft: 10 }}>
-        <Shield size={10} style={{ color: "var(--ft-green)" }} />
-        <span>Auth Providers</span>
-      </div>
-      <div style={{ background: "var(--ft-surface)" }}>
-        {authProviders.map((provider, i) => (
-          <AuthProviderRow
-            key={provider.id}
-            provider={provider}
-            isLast={i === authProviders.length - 1}
-          />
-        ))}
-      </div>
-    </div>
-  );
+  const authPanel = <SignInMethodsPanel panelStyle={PANEL} headerStyle={HEADER} />;
 
   const dangerPanel = (
     <div style={{ ...PANEL, border: "1px solid color-mix(in srgb, var(--ft-red) 40%, var(--ft-border))" }}>
