@@ -149,7 +149,7 @@ function SavingsRateKpi() {
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${barColor}`, minHeight: 160, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
       {/* Header */}
       <HStack align="baseline" justify="between" minWidth0>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>SAVINGS RATE</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>SAVINGS RATE</span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{target}% TARGET</span>
       </HStack>
 
@@ -234,7 +234,7 @@ function EmergencyFundWidget() {
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${valueColor}`, minHeight: 180, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
       {/* Header */}
       <HStack align="baseline" justify="between" minWidth0>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>EMERGENCY FUND</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>EMERGENCY FUND</span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{TARGET_MONTHS}MO TARGET</span>
       </HStack>
 
@@ -493,12 +493,12 @@ function CashFlowPreviewPanel() {
 
       <HStack gap={16} minWidth0>
         <HStack gap={6} align="center" minWidth0>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Inflows</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>Inflows</span>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>+{formatGbp(inflows)}</span>
         </HStack>
         <div style={{ width: 1, background: "var(--ft-border2)", flexShrink: 0 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>Outflows</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>Outflows</span>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>-{formatGbp(outflows)}</span>
         </div>
       </HStack>
@@ -1953,6 +1953,15 @@ function DashboardKpiBar({
             minHeight: 52,
           }}
         >
+          {/* Label wraps rather than clips. The audit's pnum rule
+              ("show in full or not at all") is enforced on figures via
+              lib/pnum-invariant.test.ts; the same principle applies to
+              labels — a user reading 'MONTHLY SP…' cannot tell which
+              metric they're seeing. At the 100px cell minWidth,
+              'SAVINGS RATE' at 9px mono needs ~96px inside 72px of
+              usable space after padding, so it clips on one line.
+              Allowing wrap costs ~11px of cell height on that row
+              (minHeight:52 absorbs it) and preserves the full name. */}
           <span style={{
             fontFamily: "var(--font-mono)",
             fontSize: 9,
@@ -1961,9 +1970,7 @@ function DashboardKpiBar({
             textTransform: "uppercase",
             color: "var(--ft-dim)",
             marginBottom: 2,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            lineHeight: 1.2,
           }}>
             {cell.label}
           </span>
