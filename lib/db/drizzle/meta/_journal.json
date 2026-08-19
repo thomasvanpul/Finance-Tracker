@@ -64,6 +64,20 @@
       "when": 1787043953699,
       "tag": "0008_useful_bedlam",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787158302888,
+      "tag": "0009_certain_sinister_six",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787158329186,
+      "tag": "0010_smart_nighthawk",
+      "breakpoints": true
     }
   ]
 }

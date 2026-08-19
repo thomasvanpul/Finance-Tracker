@@ -47,16 +47,24 @@ export const verificationTable = pgTable("verification", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+// Passkey rows are managed by @better-auth/passkey (v1.6.x). Column
+// set matches that plugin's expected schema: publicKey / credentialID
+// / counter / deviceType / backedUp are required, aaguid identifies
+// the authenticator model, transports lists supported WebAuthn
+// transports (usb, ble, nfc, internal, hybrid). The plugin does NOT
+// use a webauthnUserID column — the previous schema shipped one
+// under a mistaken understanding of the plugin API.
 export const passkeyTable = pgTable("passkey", {
   id: text("id").primaryKey(),
   name: text("name"),
   publicKey: text("public_key").notNull(),
   userId: text("user_id").notNull().references(() => userTable.id, { onDelete: "cascade" }),
-  webauthnUserID: text("webauthn_user_id").notNull(),
+  credentialID: text("credential_id").notNull(),
   counter: integer("counter").notNull(),
   deviceType: text("device_type").notNull(),
   backedUp: boolean("backed_up").notNull(),
   transports: text("transports"),
+  aaguid: text("aaguid"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

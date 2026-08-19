@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { twoFactor } from "better-auth/plugins";
-import { db, userTable, sessionTable, accountTable, verificationTable, twoFactorTable } from "@workspace/db";
+import { passkey } from "@better-auth/passkey";
+import { db, userTable, sessionTable, accountTable, verificationTable, twoFactorTable, passkeyTable } from "@workspace/db";
 import { logger } from "./logger";
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -28,6 +29,7 @@ export const auth = betterAuth({
       account: accountTable,
       verification: verificationTable,
       twoFactor: twoFactorTable,
+      passkey: passkeyTable,
     },
   }),
   baseURL: process.env.API_BASE_URL
@@ -129,6 +131,18 @@ export const auth = betterAuth({
   },
   plugins: [
     twoFactor({ issuer: "Fintrack" }),
+    // Passkey plugin — WebAuthn platform-authenticator sign-in.
+    // rpName is the human-readable relying-party label the browser
+    // shows in the passkey UI ("Sign in to Numeris"). rpID must be
+    // the effective apex or subdomain the site runs at; on
+    // localhost dev, better-auth infers it from the request Origin
+    // so no override is needed here. origin is the fully-qualified
+    // URL(s) allowed to complete WebAuthn — production frontend
+    // plus the dev localhost origins already covered above.
+    passkey({
+      rpName: "Numeris",
+      origin: allowedOrigins.length ? allowedOrigins[0] : "http://localhost:4321",
+    }),
   ],
   account: {
     accountLinking: {

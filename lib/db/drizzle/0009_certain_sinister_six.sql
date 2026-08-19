@@ -1,0 +1,1 @@
+ALTER TABLE "passkey" DROP COLUMN "webauthn_user_id";
