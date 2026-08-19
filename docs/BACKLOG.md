@@ -605,3 +605,44 @@ import. Four reissue cases tested including row-removal, which leaves one stale
 row rather than duplicating or dropping history.
 Already handles Revolut, Monzo and Maybank. The only path that will ever work
 for Malaysia, so it is permanent, not a stopgap.
+
+---
+
+## I. Legal, privacy and governance — prerequisites for public signup
+
+Unwritten as of 20 Aug 2026. These are not optional extras: the app stores
+other people's bank balances, salaries, debts and counterparties.
+
+### I1 · No admin role that can read user financial data — DECIDED
+An admin who can browse any user's finances is a privacy problem, not a feature.
+Access is defensible only if it is necessary, minimal, logged and disclosed, and
+"I want to look around" is none of those.
+
+What is defensible instead:
+- **Aggregate metrics** with no personal data — user count, connection count,
+  error rates, sync failures. This covers almost all real need.
+- **Support actions that do not read data** — reset a password, delete an
+  account, revoke a connection.
+- **Impersonation only with explicit user consent and an audit trail**, if ever.
+
+Nothing in the app is gated by role today: every persona sees every widget, XP
+unlocks only cosmetics, and the F5 refusals forbid gating features or data. So
+an admin role would unlock nothing that is currently locked.
+
+### I2 · Privacy policy and terms — TODO, blocks public signup
+Needs: what is collected, lawful basis under UK GDPR, retention period, who it
+is shared with (Neon, Render, Vercel, Yahoo, Alpaca, and any open-banking
+provider), and the subject access and deletion routes.
+
+### I3 · Account deletion that actually deletes — TODO
+Every table cascades from `user.id`, so the mechanism exists. Needs a
+user-facing route, a confirmation, and a stated retention window.
+
+### I4 · Breach process — TODO
+UK GDPR requires notifying the ICO within 72 hours of becoming aware of a
+qualifying breach. Write down who does what before it is needed.
+
+### I5 · Data minimisation review — TODO
+Currently stored: balances, transactions with merchant strings, debts naming
+counterparties, and encrypted provider credentials. Review whether each is
+needed, and how long it is kept.
