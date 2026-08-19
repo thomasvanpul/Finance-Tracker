@@ -78,18 +78,26 @@ const CATEGORIES = [
   "Transfer","Savings","Tax","Other",
 ];
 
-const SWATCH_DATA: { id: FintrackTheme; label: string; tagline: string; base: string; surface: string; accent: string; text: string; muted: string }[] = [
-  { id: "void",       label: "Void",       tagline: "Terminal amber on void",       base: "#08090B", surface: "#0F1117", accent: "#F4A21E", text: "#CDD6F4", muted: "#6C7A96" },
-  { id: "phosphor",   label: "Phosphor",   tagline: "CRT phosphor green",           base: "#020802", surface: "#050F05", accent: "#7FFF00", text: "#39FF14", muted: "#1E8C0A" },
-  { id: "arctic",     label: "Arctic",     tagline: "Corporate daylight",           base: "#F0F4F8", surface: "#FFFFFF", accent: "#0052CC", text: "#1A2333", muted: "#5A6A84" },
-  { id: "amber",      label: "Amber",      tagline: "Warm trader console",          base: "#0A0600", surface: "#120C00", accent: "#FFD700", text: "#FFB000", muted: "#A07020" },
-  { id: "midnight",   label: "Midnight",   tagline: "Late-night deep blue",         base: "#010817", surface: "#05112A", accent: "#4D9FFF", text: "#E8F0FF", muted: "#7A99CC" },
-  { id: "matrix",     label: "Matrix",     tagline: "Decoded reality",              base: "#000300", surface: "#010601", accent: "#00FF41", text: "#00CC33", muted: "#007700" },
-  { id: "synthwave",  label: "Synthwave",  tagline: "Neon grids, 80s midnight",     base: "#0D001A", surface: "#170028", accent: "#FF007A", text: "#E8D5FF", muted: "#9966CC" },
-  { id: "deep-space", label: "Deep Space", tagline: "Cosmic observatory",           base: "#010108", surface: "#06060F", accent: "#7B5EA7", text: "#C8D0E8", muted: "#6870A0" },
-  { id: "mario",      label: "Mario",      tagline: "8-bit power-up",              base: "#5C94FC", surface: "#3A70DC", accent: "#F8C800", text: "#FCFCFC", muted: "#6888CC" },
-  { id: "gilded",     label: "Gilded",     tagline: "Black gold, no noise",         base: "#080600", surface: "#0E0C00", accent: "#C8941E", text: "#F0E6C8", muted: "#7A5E0A" },
-  { id: "bloodline",  label: "Bloodline",  tagline: "Dark market, red signals",     base: "#0F0003", surface: "#1A0008", accent: "#CC1A2F", text: "#F5C2C7", muted: "#883344" },
+// tone drives Dark / Light grouping in the picker. Mario is 'dark'
+// despite its blue base — the whole theme is a novelty and it groups
+// with the stylised themes rather than pretending to be a daytime
+// choice.
+type ThemeTone = "dark" | "light";
+const SWATCH_DATA: { id: FintrackTheme; label: string; tone: ThemeTone; tagline: string; base: string; surface: string; accent: string; text: string; muted: string }[] = [
+  { id: "void",       label: "Void",       tone: "dark",  tagline: "Terminal amber on void",       base: "#08090B", surface: "#0F1117", accent: "#F4A21E", text: "#CDD6F4", muted: "#6C7A96" },
+  { id: "phosphor",   label: "Phosphor",   tone: "dark",  tagline: "CRT phosphor green",           base: "#020802", surface: "#050F05", accent: "#7FFF00", text: "#39FF14", muted: "#1E8C0A" },
+  { id: "arctic",     label: "Arctic",     tone: "light", tagline: "Corporate daylight",           base: "#F0F4F8", surface: "#FFFFFF", accent: "#0052CC", text: "#1A2333", muted: "#5A6A84" },
+  { id: "parchment",  label: "Parchment",  tone: "light", tagline: "FT paper, newsprint red",      base: "#F5EBD8", surface: "#FFF8EC", accent: "#7A1F30", text: "#241A0C", muted: "#4B3818" },
+  { id: "slate",      label: "Slate",      tone: "light", tagline: "Granite desk, deep teal",      base: "#DFE6EE", surface: "#F0F4F8", accent: "#0E5766", text: "#141A22", muted: "#3E4A58" },
+  { id: "linen",      label: "Linen",      tone: "light", tagline: "Warm ledger, olive gold",      base: "#EEE7D6", surface: "#F8F2E3", accent: "#5A4610", text: "#241D0F", muted: "#4A3E1E" },
+  { id: "amber",      label: "Amber",      tone: "dark",  tagline: "Warm trader console",          base: "#0A0600", surface: "#120C00", accent: "#FFD700", text: "#FFB000", muted: "#A07020" },
+  { id: "midnight",   label: "Midnight",   tone: "dark",  tagline: "Late-night deep blue",         base: "#010817", surface: "#05112A", accent: "#4D9FFF", text: "#E8F0FF", muted: "#7A99CC" },
+  { id: "matrix",     label: "Matrix",     tone: "dark",  tagline: "Decoded reality",              base: "#000300", surface: "#010601", accent: "#00FF41", text: "#00CC33", muted: "#007700" },
+  { id: "synthwave",  label: "Synthwave",  tone: "dark",  tagline: "Neon grids, 80s midnight",     base: "#0D001A", surface: "#170028", accent: "#FF007A", text: "#E8D5FF", muted: "#9966CC" },
+  { id: "deep-space", label: "Deep Space", tone: "dark",  tagline: "Cosmic observatory",           base: "#010108", surface: "#06060F", accent: "#7B5EA7", text: "#C8D0E8", muted: "#6870A0" },
+  { id: "mario",      label: "Mario",      tone: "dark",  tagline: "8-bit power-up",              base: "#5C94FC", surface: "#3A70DC", accent: "#F8C800", text: "#FCFCFC", muted: "#6888CC" },
+  { id: "gilded",     label: "Gilded",     tone: "dark",  tagline: "Black gold, no noise",         base: "#080600", surface: "#0E0C00", accent: "#C8941E", text: "#F0E6C8", muted: "#7A5E0A" },
+  { id: "bloodline",  label: "Bloodline",  tone: "dark",  tagline: "Dark market, red signals",     base: "#0F0003", surface: "#1A0008", accent: "#CC1A2F", text: "#F5C2C7", muted: "#883344" },
 ];
 
 const SHORTCUTS = [
@@ -672,52 +680,82 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
   const visibleSwatches = SWATCH_DATA.filter(s => unlockedSwatchIds.has(s.id));
   const lockedSwatches = SWATCH_DATA.filter(s => !unlockedSwatchIds.has(s.id));
 
+  // Dark first, Light second: the product's default is dark and most
+  // users pick from there. Within each group: alphabetical, so the
+  // order stays stable as themes are added and there's no implicit
+  // "recommended" ranking. Mario stays in dark (novelty; see the
+  // SWATCH_DATA comment above).
+  const swatchesByTone = (tone: ThemeTone) =>
+    visibleSwatches
+      .filter((s) => s.tone === tone)
+      .sort((a, b) => a.label.localeCompare(b.label));
+  const groupedSwatches: { tone: ThemeTone; label: string; items: typeof visibleSwatches }[] = [
+    { tone: "dark",  label: "Dark",  items: swatchesByTone("dark") },
+    { tone: "light", label: "Light", items: swatchesByTone("light") },
+  ];
+
+  const renderSwatch = (s: typeof SWATCH_DATA[number]) => {
+    const isActive = theme === s.id;
+    const isHovered = hoveredTheme === s.id;
+    const reward = THEME_REWARDS.find(r => r.id === s.id);
+    const rarityColor = reward ? RARITY_COLOR[reward.rarity] : "var(--ft-dim)";
+    return (
+      <button
+        key={s.id}
+        onClick={() => setTheme(s.id)}
+        onMouseEnter={() => setHoveredTheme(s.id)}
+        onMouseLeave={() => setHoveredTheme(null)}
+        aria-pressed={isActive}
+        style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, outline: "none" }}
+      >
+        <div style={{ width: 64, height: 86, border: isActive ? `2px solid ${s.accent}` : isHovered ? `2px solid ${s.accent}88` : "2px solid transparent", boxShadow: isActive ? `0 0 10px ${s.accent}44` : isHovered ? `0 0 6px ${s.accent}22` : "none", overflow: "hidden", position: "relative", transition: "border-color 0.15s, box-shadow 0.15s" }}>
+          <div style={{ height: 18, background: s.base, display: "flex", alignItems: "center", paddingLeft: 5, gap: 3 }}>
+            {[s.accent, s.muted, s.muted].map((c,i) => <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: c, opacity: i === 0 ? 1 : 0.5 }} />)}
+          </div>
+          <div style={{ background: s.surface, padding: "5px", display: "flex", flexDirection: "column", gap: 4, height: 68 }}>
+            <div style={{ height: 4, background: s.text, borderRadius: 1, width: "70%", opacity: 0.7 }} />
+            <div style={{ height: 3, background: s.muted, borderRadius: 1, width: "90%", opacity: 0.5 }} />
+            <div style={{ height: 3, background: s.muted, borderRadius: 1, width: "55%", opacity: 0.4 }} />
+            <div style={{ marginTop: 4, display: "flex", justifyContent: "flex-end" }}>
+              <span style={{ width: 16, height: 8, background: s.accent, display: "block", borderRadius: 1 }} />
+            </div>
+            <div style={{ height: 3, background: s.accent, borderRadius: 1, width: "40%", opacity: 0.6 }} />
+          </div>
+          {isActive && <div style={{ position: "absolute", top: 3, right: 4, color: s.accent, lineHeight: 1 }}><Check size={9} /></div>}
+        </div>
+        <Text as="div" align="center">
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: isActive ? s.accent : "var(--ft-muted)", display: "block" }}>{s.label}</span>
+          {reward && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: rarityColor, display: "block", marginTop: 1 }}>{reward.rarity}</span>
+          )}
+          {!reward && (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-dim)", display: "block", marginTop: 1 }}>DEFAULT</span>
+          )}
+        </Text>
+      </button>
+    );
+  };
+
   return (
     <VStack gap={12}>
       <div style={PANEL_STYLE}>
         <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Theme</div>
-        <div style={{ padding: "16px", display: "grid", gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(72px, 1fr))" : "repeat(auto-fill, minmax(86px, 1fr))", gap: isMobile ? 8 : 12, background: "var(--ft-surface)" }}>
-          {visibleSwatches.map(s => {
-            const isActive = theme === s.id;
-            const isHovered = hoveredTheme === s.id;
-            const reward = THEME_REWARDS.find(r => r.id === s.id);
-            const rarityColor = reward ? RARITY_COLOR[reward.rarity] : "var(--ft-dim)";
-            return (
-              <button
-                key={s.id}
-                onClick={() => setTheme(s.id)}
-                onMouseEnter={() => setHoveredTheme(s.id)}
-                onMouseLeave={() => setHoveredTheme(null)}
-                aria-pressed={isActive}
-                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, outline: "none" }}
-              >
-                <div style={{ width: 64, height: 86, border: isActive ? `2px solid ${s.accent}` : isHovered ? `2px solid ${s.accent}88` : "2px solid transparent", boxShadow: isActive ? `0 0 10px ${s.accent}44` : isHovered ? `0 0 6px ${s.accent}22` : "none", overflow: "hidden", position: "relative", transition: "border-color 0.15s, box-shadow 0.15s" }}>
-                  <div style={{ height: 18, background: s.base, display: "flex", alignItems: "center", paddingLeft: 5, gap: 3 }}>
-                    {[s.accent, s.muted, s.muted].map((c,i) => <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: c, opacity: i === 0 ? 1 : 0.5 }} />)}
-                  </div>
-                  <div style={{ background: s.surface, padding: "5px", display: "flex", flexDirection: "column", gap: 4, height: 68 }}>
-                    <div style={{ height: 4, background: s.text, borderRadius: 1, width: "70%", opacity: 0.7 }} />
-                    <div style={{ height: 3, background: s.muted, borderRadius: 1, width: "90%", opacity: 0.5 }} />
-                    <div style={{ height: 3, background: s.muted, borderRadius: 1, width: "55%", opacity: 0.4 }} />
-                    <div style={{ marginTop: 4, display: "flex", justifyContent: "flex-end" }}>
-                      <span style={{ width: 16, height: 8, background: s.accent, display: "block", borderRadius: 1 }} />
-                    </div>
-                    <div style={{ height: 3, background: s.accent, borderRadius: 1, width: "40%", opacity: 0.6 }} />
-                  </div>
-                  {isActive && <div style={{ position: "absolute", top: 3, right: 4, color: s.accent, lineHeight: 1 }}><Check size={9} /></div>}
-                </div>
-                <Text as="div" align="center">
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: isActive ? s.accent : "var(--ft-muted)", display: "block" }}>{s.label}</span>
-                  {reward && (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: rarityColor, display: "block", marginTop: 1 }}>{reward.rarity}</span>
-                  )}
-                  {!reward && (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-dim)", display: "block", marginTop: 1 }}>DEFAULT</span>
-                  )}
+        <div style={{ background: "var(--ft-surface)" }}>
+          {groupedSwatches.map((group, idx) =>
+            group.items.length === 0 ? null : (
+              <div key={group.tone} style={{ padding: idx === 0 ? "12px 16px 4px" : "8px 16px 4px" }}>
+                <Text as="div" mono upper size={9} color="var(--ft-dim)" letterSpacing="0.1em" mb={10}>
+                  {group.label}
+                  <span style={{ marginLeft: 8, color: "var(--ft-border2)" }} className="pnum">
+                    {group.items.length}
+                  </span>
                 </Text>
-              </button>
-            );
-          })}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(72px, 1fr))" : "repeat(auto-fill, minmax(86px, 1fr))", gap: isMobile ? 8 : 12 }}>
+                  {group.items.map(renderSwatch)}
+                </div>
+              </div>
+            ),
+          )}
         </div>
         {lockedSwatches.length > 0 && (
           <div style={{ padding: "10px 16px", borderTop: "1px solid var(--ft-border)", background: "var(--ft-surface)", display: "flex", alignItems: "center", gap: 6 }}>

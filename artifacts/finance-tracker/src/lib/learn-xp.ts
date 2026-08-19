@@ -44,8 +44,15 @@ export interface ThemeReward {
 }
 
 export const THEME_REWARDS: ThemeReward[] = [
+  // First-class themes at 0 XP: void ships as default (implicit),
+  // phosphor + arctic + the three new light themes are unlocked for
+  // every user out of the box. Higher-XP entries below stay as
+  // rewards to earn through Learn.
   { id: "phosphor",   label: "Phosphor",   requiredXP: 0,    rarity: "COMMON",    accent: "#7FFF00", base: "#020802", description: "CRT phosphor green" },
   { id: "arctic",     label: "Arctic",     requiredXP: 0,    rarity: "COMMON",    accent: "#0052CC", base: "#F0F4F8", description: "Corporate daylight" },
+  { id: "parchment",  label: "Parchment",  requiredXP: 0,    rarity: "COMMON",    accent: "#7A1F30", base: "#F5EBD8", description: "FT paper, newsprint red" },
+  { id: "slate",      label: "Slate",      requiredXP: 0,    rarity: "COMMON",    accent: "#0E5766", base: "#DFE6EE", description: "Granite desk, deep teal" },
+  { id: "linen",      label: "Linen",      requiredXP: 0,    rarity: "COMMON",    accent: "#5A4610", base: "#EEE7D6", description: "Warm ledger, olive gold" },
   { id: "amber",      label: "Amber",      requiredXP: 200,  rarity: "UNCOMMON",  accent: "#FFD700", base: "#0A0600", description: "Warm trader console" },
   { id: "midnight",   label: "Midnight",   requiredXP: 400,  rarity: "UNCOMMON",  accent: "#4D9FFF", base: "#010817", description: "Late-night deep blue" },
   { id: "matrix",     label: "Matrix",     requiredXP: 650,  rarity: "RARE",      accent: "#00FF41", base: "#000300", description: "Decoded reality" },

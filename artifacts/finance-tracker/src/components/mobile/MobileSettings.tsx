@@ -142,26 +142,42 @@ export function MobileSettings({ onBack }: { onBack?: () => void }) {
           </SettingsRow>
           <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--ft-border)" }}>
             <Text as="div" size={13} weight={500} mb={10}>Accent colour</Text>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 8 }}>
-              {themes.map(t => {
-                const active = theme === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setTheme(t.id as FintrackTheme)}
-                    title={t.label}
-                    aria-label={t.label}
-                    aria-pressed={active}
-                    style={{
-                      width: 32, height: 32, borderRadius: 16,
-                      background: t.accent,
-                      border: active ? "3px solid var(--ft-text)" : "3px solid transparent",
-                      cursor: "pointer", flexShrink: 0, outline: "none",
-                    }}
-                  />
-                );
-              })}
-            </div>
+            {/* Grouped by tone: Dark first, Light second, alphabetical
+                within each group. Dark stays first because the product's
+                default is dark and most users pick from there. */}
+            {(["dark", "light"] as const).map((tone) => {
+              const items = themes
+                .filter((t) => t.tone === tone)
+                .sort((a, b) => a.label.localeCompare(b.label));
+              if (items.length === 0) return null;
+              return (
+                <div key={tone} style={{ marginBottom: 12 }}>
+                  <MonoLabel size={9} letterSpacing="0.1em" color="var(--ft-dim)">
+                    {tone === "dark" ? "Dark" : "Light"}
+                  </MonoLabel>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 8 }}>
+                    {items.map((t) => {
+                      const active = theme === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => setTheme(t.id as FintrackTheme)}
+                          title={t.label}
+                          aria-label={t.label}
+                          aria-pressed={active}
+                          style={{
+                            width: 32, height: 32, borderRadius: 16,
+                            background: t.accent,
+                            border: active ? "3px solid var(--ft-text)" : "3px solid transparent",
+                            cursor: "pointer", flexShrink: 0, outline: "none",
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
             <MonoLabel size={10} letterSpacing="0.08em" color="var(--ft-accent)">
               {themes.find(t => t.id === theme)?.label ?? theme}
             </MonoLabel>
