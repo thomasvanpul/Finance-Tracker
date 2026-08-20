@@ -154,8 +154,14 @@ function calcBillReliabilityScore(upcoming: UpcomingItem[], today: Date): number
   return 30;
 }
 
-function calcSpendingConsistencyScore(monthlyHistory: Array<{ expenses: number }>): number {
-  const totals = monthlyHistory.map((m) => m.expenses).filter((v) => v > 0);
+function calcSpendingConsistencyScore(monthlyHistory: Array<{ expenses: number | null }>): number {
+  // Null expenses mean the month had unconvertible transactions —
+  // omit them from the consistency calc rather than treating them as
+  // 0, which would spuriously inflate variance. Same argument as the
+  // dashboard cash-flow avg-line: unknown ≠ zero.
+  const totals = monthlyHistory
+    .map((m) => m.expenses)
+    .filter((v): v is number => v != null && v > 0);
   if (totals.length < 2) return 50;
   const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
   if (mean <= 0) return 50;
@@ -775,7 +781,9 @@ export default function HealthScore() {
     }
 
     function insightConsistency(): string {
-      const totals = last6Months.map((m) => m.expenses).filter((v) => v > 0);
+      const totals = last6Months
+        .map((m) => m.expenses)
+        .filter((v): v is number => v != null && v > 0);
       if (totals.length < 2) return "Need 2+ months of data for consistency analysis.";
       const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
       if (mean <= 0) return "Insufficient data.";

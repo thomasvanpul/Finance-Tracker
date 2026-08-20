@@ -8,8 +8,8 @@ type Period = "3M" | "6M" | "12M" | "ALL";
 const PERIODS: Period[] = ["3M", "6M", "12M", "ALL"];
 const PERIOD_MONTHS: Record<Period, number | null> = { "3M": 3, "6M": 6, "12M": 12, "ALL": null };
 
-function momDelta(current: number, prev: number): { label: string; color: string } | null {
-  if (!prev) return null;
+function momDelta(current: number, prev: number | null | undefined): { label: string; color: string } | null {
+  if (prev == null || prev === 0) return null;
   const pct = ((current - prev) / Math.abs(prev)) * 100;
   const sign = pct >= 0 ? "+" : "";
   return { label: `${sign}${pct.toFixed(0)}% MoM`, color: pct >= 0 ? "var(--ft-green)" : "var(--ft-red)" };
@@ -20,13 +20,21 @@ function currentYearMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function avg(values: number[]): number {
-  if (!values.length) return 0;
-  return values.reduce((s, v) => s + v, 0) / values.length;
+// Average over CONVERTIBLE months only. Null months (FX miss) are
+// omitted — including them as 0 would drag the mean down and mislabel
+// the "avg income" reference line on the chart. See the dashboard
+// monthly-fold test for why null means unknown, not zero.
+function avgNonNull(values: (number | null)[]): number {
+  const known = values.filter((v): v is number => v != null);
+  if (!known.length) return 0;
+  return known.reduce((s, v) => s + v, 0) / known.length;
 }
 
-type MonthEntry = { month: string; income: number; expenses: number; netSavings: number };
-type ChartEntry = MonthEntry & { net: number };
+type MonthEntry = { month: string; income: number | null; expenses: number | null; netSavings: number | null };
+// net is null if either side is null — matches the fold's "one null
+// poisons the month" invariant. Recharts drops null values from bars
+// and lines, so the visual is a gap where the month would sit.
+type ChartEntry = MonthEntry & { net: number | null };
 
 type PayloadEntry = { name?: string | number; value?: number | string | (number | string)[] };
 
@@ -40,11 +48,17 @@ type CustomTooltipProps = {
 
 function CashFlowTooltip({ active, payload, label, avgIncome, avgExpense }: CustomTooltipProps) {
   if (!active || !payload?.length || !label) return null;
-  const income = (payload.find(p => p.name === "income")?.value as number) ?? 0;
-  const expenses = (payload.find(p => p.name === "expenses")?.value as number) ?? 0;
-  const net = income - expenses;
-  const vsIncome = income - avgIncome;
-  const vsExpense = expenses - avgExpense;
+  // A null value here means the month had unconvertible transactions —
+  // fabricating "£0" in the tooltip would be the exact defect this
+  // whole change guards against. Show a "—" and skip the vs-avg
+  // comparison for the null field.
+  const incomeRaw = payload.find(p => p.name === "income")?.value;
+  const expensesRaw = payload.find(p => p.name === "expenses")?.value;
+  const income: number | null = typeof incomeRaw === "number" ? incomeRaw : null;
+  const expenses: number | null = typeof expensesRaw === "number" ? expensesRaw : null;
+  const net: number | null = income != null && expenses != null ? income - expenses : null;
+  const vsIncome = income != null ? income - avgIncome : null;
+  const vsExpense = expenses != null ? expenses - avgExpense : null;
   const parts = label.split("-");
   const monthLabel = new Date(parseInt(parts[0] ?? "0"), parseInt(parts[1] ?? "1") - 1).toLocaleString("en-GB", { month: "long", year: "numeric" });
   return (
@@ -54,18 +68,22 @@ function CashFlowTooltip({ active, payload, label, avgIncome, avgExpense }: Cust
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "2px 8px", alignItems: "center" }}>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Income</span>
-        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: "var(--ft-green)", textAlign: "right" }}>{formatGbp(income)}</span>
-        <span className="pnum" style={{ fontSize: 9, color: vsIncome >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-          {vsIncome >= 0 ? "+" : ""}{formatGbp(Math.abs(vsIncome))} avg
+        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: income == null ? "var(--ft-dim)" : "var(--ft-green)", textAlign: "right" }}>
+          {income == null ? "—" : formatGbp(income)}
+        </span>
+        <span className="pnum" style={{ fontSize: 9, color: vsIncome != null && vsIncome >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+          {vsIncome == null ? "" : `${vsIncome >= 0 ? "+" : ""}${formatGbp(Math.abs(vsIncome))} avg`}
         </span>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Expenses</span>
-        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: "var(--ft-red)", textAlign: "right" }}>{formatGbp(expenses)}</span>
-        <span className="pnum" style={{ fontSize: 9, color: vsExpense <= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-          {vsExpense >= 0 ? "+" : ""}{formatGbp(Math.abs(vsExpense))} avg
+        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: expenses == null ? "var(--ft-dim)" : "var(--ft-red)", textAlign: "right" }}>
+          {expenses == null ? "—" : formatGbp(expenses)}
+        </span>
+        <span className="pnum" style={{ fontSize: 9, color: vsExpense != null && vsExpense <= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
+          {vsExpense == null ? "" : `${vsExpense >= 0 ? "+" : ""}${formatGbp(Math.abs(vsExpense))} avg`}
         </span>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Net</span>
-        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)", textAlign: "right" }}>
-          {net >= 0 ? "+" : ""}{formatGbp(net)}
+        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: net == null ? "var(--ft-dim)" : (net >= 0 ? "var(--ft-green)" : "var(--ft-red)"), textAlign: "right" }}>
+          {net == null ? "—" : `${net >= 0 ? "+" : ""}${formatGbp(net)}`}
         </span>
         <span />
       </div>
@@ -122,10 +140,15 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const chartHeight = isExpanded ? 220 : 150;
 
-  const historyWithNet: ChartEntry[] = history.map(m => ({ ...m, net: m.income - m.expenses }));
+  // net is null when either side is null (FX-miss month) — Recharts
+  // drops null-valued datapoints, so those months render as a gap.
+  const historyWithNet: ChartEntry[] = history.map(m => ({
+    ...m,
+    net: m.income != null && m.expenses != null ? m.income - m.expenses : null,
+  }));
 
-  const avgIncome = avg(history.map(m => m.income));
-  const avgExpense = avg(history.map(m => m.expenses));
+  const avgIncome = avgNonNull(history.map(m => m.income));
+  const avgExpense = avgNonNull(history.map(m => m.expenses));
 
   const summaryItems = d ? [
     { label: "Income",      value: `+${formatGbp(d.thisMonth.income)}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income ?? 0) },

@@ -345,11 +345,15 @@ function SectionHeader({ title, right, accentColor = "var(--ft-accent)" }: {
 
 // ─── income statement table ───────────────────────────────────────────────────
 
+// income/expenses/netSavings are null when the month had any
+// unconvertible bucket. Rendering that as £0 would fabricate a
+// figure the API did not supply — see the dashboard
+// monthly-fold test for the fuller argument.
 interface MonthlyRow {
   month: string;
-  income: number;
-  expenses: number;
-  netSavings: number;
+  income: number | null;
+  expenses: number | null;
+  netSavings: number | null;
 }
 
 // ─── income statement row ─────────────────────────────────────────────────────
@@ -361,8 +365,14 @@ interface IncomeStatementRowProps {
 
 function IncomeStatementRow({ m, rowIdx }: IncomeStatementRowProps) {
   const [hov, setHov] = useState(false);
-  const margin = m.income > 0 ? ((m.income - m.expenses) / m.income) * 100 : 0;
-  const isNeg = m.netSavings < 0;
+  // Any null side means the row's economics are unknown — margin is
+  // meaningless and net cannot be recomputed. Render dashes instead of
+  // fabricating £0.
+  const canCompute = m.income != null && m.expenses != null;
+  const margin = canCompute && (m.income as number) > 0
+    ? (((m.income as number) - (m.expenses as number)) / (m.income as number)) * 100
+    : null;
+  const isNeg = m.netSavings != null && m.netSavings < 0;
   return (
     <tr
       onMouseEnter={() => setHov(true)}
@@ -378,27 +388,38 @@ function IncomeStatementRow({ m, rowIdx }: IncomeStatementRowProps) {
       }}
     >
       <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>{formatMonthLabel(m.month)}</td>
-      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.income > 0 ? "var(--ft-green)" : "var(--ft-muted)" }}>
-        <span className="pnum">+{formatGbp(m.income)}</span>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.income == null ? "var(--ft-dim)" : (m.income > 0 ? "var(--ft-green)" : "var(--ft-muted)") }}>
+        <span className="pnum">{m.income == null ? "—" : `+${formatGbp(m.income)}`}</span>
       </td>
-      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
-        <span className="pnum">−{formatGbp(m.expenses)}</span>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.expenses == null ? "var(--ft-dim)" : (m.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)") }}>
+        <span className="pnum">{m.expenses == null ? "—" : `−${formatGbp(m.expenses)}`}</span>
       </td>
-      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", fontWeight: 700, color: m.netSavings !== 0 ? (isNeg ? "var(--ft-red)" : "var(--ft-green)") : "var(--ft-muted)" }}>
-        <span className="pnum">{m.netSavings >= 0 ? "+" : ""}{formatGbp(m.netSavings)}</span>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", fontWeight: 700, color: m.netSavings == null ? "var(--ft-dim)" : (m.netSavings !== 0 ? (isNeg ? "var(--ft-red)" : "var(--ft-green)") : "var(--ft-muted)") }}>
+        <span className="pnum">{m.netSavings == null ? "—" : `${m.netSavings >= 0 ? "+" : ""}${formatGbp(m.netSavings)}`}</span>
       </td>
-      <td style={{ ...TD, textAlign: "right", color: margin < 0 ? "var(--ft-red)" : margin >= 20 ? "var(--ft-green)" : "var(--ft-amber)" }}>
-        <span className="pnum">{m.income > 0 ? `${margin.toFixed(1)}%` : "—"}</span>
+      <td style={{ ...TD, textAlign: "right", color: margin == null ? "var(--ft-dim)" : (margin < 0 ? "var(--ft-red)" : margin >= 20 ? "var(--ft-green)" : "var(--ft-amber)") }}>
+        <span className="pnum">{margin == null ? "—" : `${margin.toFixed(1)}%`}</span>
       </td>
     </tr>
   );
 }
 
 function IncomeStatementTable({ rows }: { rows: MonthlyRow[] }) {
-  const totals = rows.reduce(
-    (acc, r) => ({ income: acc.income + r.income, expenses: acc.expenses + r.expenses, net: acc.net + r.netSavings }),
+  // A total that sums across months where any month is null (FX-miss)
+  // would present a partial sum as if it were the real thing — same
+  // pnum failure as at the row level, escalated one aggregation up.
+  // If any month has a null in a column, the column total is null.
+  const totals = rows.reduce<{ income: number | null; expenses: number | null; net: number | null }>(
+    (acc, r) => ({
+      income:   acc.income   == null || r.income     == null ? null : acc.income   + r.income,
+      expenses: acc.expenses == null || r.expenses   == null ? null : acc.expenses + r.expenses,
+      net:      acc.net      == null || r.netSavings == null ? null : acc.net      + r.netSavings,
+    }),
     { income: 0, expenses: 0, net: 0 }
   );
+  const totalMargin = totals.income != null && totals.expenses != null && totals.income > 0
+    ? ((totals.income - totals.expenses) / totals.income) * 100
+    : null;
 
   return (
     <div className="ft-scroll-x">
@@ -418,17 +439,17 @@ function IncomeStatementTable({ rows }: { rows: MonthlyRow[] }) {
         <tfoot>
           <tr>
             <td style={{ ...TD_TOTAL, color: "var(--ft-dim)" }}>TOTAL</td>
-            <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.income > 0 ? "var(--ft-green)" : "var(--ft-muted)" }}>
-              <span className="pnum">+{formatGbp(totals.income)}</span>
+            <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.income == null ? "var(--ft-dim)" : (totals.income > 0 ? "var(--ft-green)" : "var(--ft-muted)") }}>
+              <span className="pnum">{totals.income == null ? "—" : `+${formatGbp(totals.income)}`}</span>
             </td>
-            <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
-              <span className="pnum">−{formatGbp(totals.expenses)}</span>
+            <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.expenses == null ? "var(--ft-dim)" : (totals.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)") }}>
+              <span className="pnum">{totals.expenses == null ? "—" : `−${formatGbp(totals.expenses)}`}</span>
             </td>
-            <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.net !== 0 ? (totals.net >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)" }}>
-              <span className="pnum">{totals.net >= 0 ? "+" : ""}{formatGbp(totals.net)}</span>
+            <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.net == null ? "var(--ft-dim)" : (totals.net !== 0 ? (totals.net >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)") }}>
+              <span className="pnum">{totals.net == null ? "—" : `${totals.net >= 0 ? "+" : ""}${formatGbp(totals.net)}`}</span>
             </td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: "var(--ft-muted)" }}>
-              <span className="pnum">{totals.income > 0 ? `${(((totals.income - totals.expenses) / totals.income) * 100).toFixed(1)}%` : "—"}</span>
+              <span className="pnum">{totalMargin == null ? "—" : `${totalMargin.toFixed(1)}%`}</span>
             </td>
           </tr>
         </tfoot>
@@ -524,7 +545,7 @@ function ExpenseReportTable({ categories, totalExpenses }: {
 // ─── cash flow row ────────────────────────────────────────────────────────────
 
 interface CashFlowRowProps {
-  m: MonthlyRow & { balance: number };
+  m: MonthlyRow & { balance: number | null };
   rowIdx: number;
 }
 
@@ -545,17 +566,17 @@ function CashFlowRow({ m, rowIdx }: CashFlowRowProps) {
       }}
     >
       <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>{formatMonthLabel(m.month)}</td>
-      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-green)" }}>
-        <span className="pnum">+{formatGbp(m.income)}</span>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.income == null ? "var(--ft-dim)" : "var(--ft-green)" }}>
+        <span className="pnum">{m.income == null ? "—" : `+${formatGbp(m.income)}`}</span>
       </td>
-      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-red)" }}>
-        <span className="pnum">−{formatGbp(m.expenses)}</span>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.expenses == null ? "var(--ft-dim)" : "var(--ft-red)" }}>
+        <span className="pnum">{m.expenses == null ? "—" : `−${formatGbp(m.expenses)}`}</span>
       </td>
-      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", fontWeight: 600, color: m.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-        <span className="pnum">{m.netSavings >= 0 ? "+" : ""}{formatGbp(m.netSavings)}</span>
+      <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", fontWeight: 600, color: m.netSavings == null ? "var(--ft-dim)" : (m.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") }}>
+        <span className="pnum">{m.netSavings == null ? "—" : `${m.netSavings >= 0 ? "+" : ""}${formatGbp(m.netSavings)}`}</span>
       </td>
-      <td style={{ ...TD, textAlign: "right", color: m.balance >= 0 ? "var(--ft-cyan)" : "var(--ft-red)" }}>
-        <span className="pnum">{m.balance >= 0 ? "+" : ""}{formatGbp(m.balance)}</span>
+      <td style={{ ...TD, textAlign: "right", color: m.balance == null ? "var(--ft-dim)" : (m.balance >= 0 ? "var(--ft-cyan)" : "var(--ft-red)") }}>
+        <span className="pnum">{m.balance == null ? "—" : `${m.balance >= 0 ? "+" : ""}${formatGbp(m.balance)}`}</span>
       </td>
     </tr>
   );
@@ -564,9 +585,18 @@ function CashFlowRow({ m, rowIdx }: CashFlowRowProps) {
 // ─── cash flow table ──────────────────────────────────────────────────────────
 
 function CashFlowTable({ rows }: { rows: MonthlyRow[] }) {
-  let runningBalance = 0;
+  // Running balance is a cumulative sum; once a month's netSavings is
+  // null, the sum for that month and every month after it is unknown
+  // — pretending otherwise (skip the null and continue accumulating)
+  // would show a "balance" that quietly excludes the unconvertible
+  // slice. Poison the running total from the first null onwards.
+  let runningBalance: number | null = 0;
   const withBalance = [...rows].reverse().map((r) => {
-    runningBalance += r.netSavings;
+    if (runningBalance == null || r.netSavings == null) {
+      runningBalance = null;
+    } else {
+      runningBalance += r.netSavings;
+    }
     return { ...r, balance: runningBalance };
   });
 
@@ -1088,6 +1118,10 @@ export default function Reports() {
     },
   ];
 
+  // Preserve nulls through to Recharts — it drops null-valued
+  // datapoints from bars and lines, which is the "gap" treatment
+  // for FX-miss months. Coercing to 0 here would put a fabricated
+  // bar on the chart.
   const trendChartData = useMemo(() => {
     return monthlyHistory.map((m) => ({
       month: formatMonthAbbr(m.month),
