@@ -10,6 +10,7 @@ import { toNodeHandler } from "better-auth/node";
 import router from "./routes";
 import healthRouter from "./routes/health";
 import authProvidersRouter from "./routes/auth-providers";
+import marketProvidersRouter from "./routes/market-providers";
 import { logger } from "./lib/logger";
 import { auth } from "./lib/better-auth";
 
@@ -165,6 +166,13 @@ app.use("/api", healthRouter);
 // requireAuth because the page consuming it is the sign-in page
 // itself. See routes/auth-providers.ts.
 app.use("/api", authProvidersRouter);
+// PUBLIC: market-provider health mirrors auth-providers' role for the
+// quote chain. Mounted BEFORE requireAuth so an operator hitting
+// /api/market/providers during an outage doesn't get 401 (which was
+// the original diagnosis: 401-not-404 proved requireAuth had run and
+// this route sat behind it). No userId is used inside the handler
+// and no key value is returned — see routes/market-providers.ts.
+app.use("/api", marketProvidersRouter);
 
 // Middleware that reads the Better Auth session and puts userId on the request.
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {

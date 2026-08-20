@@ -48,22 +48,14 @@ export function __setYahooForTesting(stub: any): void {
   stockCache.clear();
 }
 
-export type FxRatesData = {
-  base: string;
-  rates: Record<string, number>;
-  updatedAt: string;
-};
-
-export type StockPriceData = {
-  ticker: string;
-  price: number;
-  currency: string;
-  // Prior session close from Yahoo (regularMarketPreviousClose). Null
-  // when Yahoo doesn't return one — treat as "day change unavailable"
-  // rather than fabricate a zero delta.
-  previousClose: number | null;
-  updatedAt: string;
-};
+// Types now live in market-types.ts so market-adapters.ts can import them
+// without pulling yahoo-finance2 through a circular path. Re-exported here
+// so every existing caller (routes, consumers, tests) keeps working
+// against the same import path.
+export type { FxRatesData, StockPriceData, StockQuoteData } from "./market-types";
+import type { FxRatesData, StockPriceData, StockQuoteData } from "./market-types";
+import { classifyTicker, providersFor, orphanReason, type ProviderName } from "./market-classifier";
+import { alpacaFetchPrices, polygonFetchPrices, twelveDataFetchPrices, priceToQuote } from "./market-adapters";
 
 // Cache entries
 let fxCache: { data: FxRatesData; ts: number } | null = null;
@@ -248,34 +240,6 @@ export async function gbpTo(gbpAmount: number, targetCurrency: string): Promise<
   return gbpAmount * rate;
 }
 
-export type StockQuoteData = {
-  ticker: string;
-  price: number;
-  currency: string;
-  updatedAt: string;
-  pe: number | null;
-  forwardPe: number | null;
-  eps: number | null;
-  high52w: number | null;
-  low52w: number | null;
-  marketCap: number | null;
-  beta: number | null;
-  dividendYield: number | null;
-  analystTargetPrice: number | null;
-  displayName: string | null;
-  changePercent: number | null;
-  dayHigh: number | null;
-  dayLow: number | null;
-  volume: number | null;
-  previousClose: number | null;
-  nextEarningsDate: string | null;
-  marketState: string | null;
-  postMarketPrice: number | null;
-  postMarketChangePercent: number | null;
-  preMarketPrice: number | null;
-  preMarketChangePercent: number | null;
-};
-
 export type HistoryPoint = {
   date: string;
   open: number;
@@ -378,71 +342,285 @@ export type OptionsChain = {
 
 const quoteCache = new Map<string, { data: StockQuoteData; ts: number }>();
 
+// ── Cache-tier constants (stale-serve) ──────────────────────────────────────
+// Fresh: cached data returned as-is.
+// Stale-serve window: past fresh but within STALE_MAX_MS, cached data is
+// returned with { stale: true, updatedAt } so the UI shows the timestamp
+// rather than a dash. The updatedAt is the FETCH TIME of the original
+// call, never re-set to render-time — otherwise the freshness marker
+// would lie. A price from 12 minutes ago with a visible timestamp beats
+// a dash; a price from 12 minutes ago labelled "just now" is the opposite
+// of that.
+// Hard expire: past STALE_MAX_MS, cache miss.
+const STALE_MAX_MS = 30 * 60 * 1000; // 30 minutes
+
+// ── Chain-fetch helpers ─────────────────────────────────────────────────────
+// Two helpers — one for prices (light shape), one for quotes (Yahoo-rich).
+// The price chain is Yahoo → Alpaca → Polygon → Twelve Data. The quote
+// chain is Yahoo → chain-fallbacks-as-price-only. Only Yahoo returns the
+// rich analyst/options metadata; the fallback providers return a
+// price-only quote via priceToQuote which nulls the unknown fields. The
+// UI already renders those fields with "—" when null, so the degradation
+// is honest.
+
+// Yahoo price shape → StockPriceData
+async function yahooFetchPrice(ticker: string): Promise<StockPriceData> {
+  return withProvider("yahoo", async () => {
+    const quote = await yahooFinance.quote(ticker);
+    const price = quote?.regularMarketPrice ?? null;
+    if (typeof price !== "number" || price <= 0) {
+      throw new Error(`yahoo returned no price for ${ticker}`);
+    }
+    const previousClose =
+      typeof quote?.regularMarketPreviousClose === "number"
+        ? quote.regularMarketPreviousClose
+        : null;
+    return {
+      ticker,
+      price,
+      currency: quote?.currency ?? "USD",
+      previousClose,
+      updatedAt: new Date().toISOString(),
+      provider: "yahoo",
+    };
+  });
+}
+
+// Yahoo full-quote shape → StockQuoteData
+async function yahooFetchQuote(ticker: string): Promise<StockQuoteData> {
+  return withProvider("yahoo", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const q: any = await yahooFinance.quote(ticker);
+    const price = typeof q?.regularMarketPrice === "number" ? q.regularMarketPrice : null;
+    if (typeof price !== "number" || price <= 0) {
+      throw new Error(`yahoo returned no quote for ${ticker}`);
+    }
+    return {
+      ticker,
+      price,
+      currency: q?.currency ?? "USD",
+      updatedAt: new Date().toISOString(),
+      provider: "yahoo",
+      pe: typeof q?.trailingPE === "number" ? Math.round(q.trailingPE * 10) / 10 : null,
+      forwardPe: typeof q?.forwardPE === "number" ? Math.round(q.forwardPE * 10) / 10 : null,
+      eps: typeof q?.epsTrailingTwelveMonths === "number" ? Math.round(q.epsTrailingTwelveMonths * 100) / 100 : null,
+      high52w: typeof q?.fiftyTwoWeekHigh === "number" ? q.fiftyTwoWeekHigh : null,
+      low52w: typeof q?.fiftyTwoWeekLow === "number" ? q.fiftyTwoWeekLow : null,
+      marketCap: typeof q?.marketCap === "number" ? q.marketCap : null,
+      beta: typeof q?.beta === "number" ? Math.round(q.beta * 100) / 100 : null,
+      dividendYield: typeof q?.trailingAnnualDividendYield === "number" ? Math.round(q.trailingAnnualDividendYield * 10000) / 100 : null,
+      analystTargetPrice: typeof q?.targetMeanPrice === "number" ? q.targetMeanPrice : null,
+      displayName: q?.displayName ?? q?.longName ?? q?.shortName ?? null,
+      changePercent: typeof q?.regularMarketChangePercent === "number" ? Math.round(q.regularMarketChangePercent * 100) / 100 : null,
+      dayHigh: typeof q?.regularMarketDayHigh === "number" ? q.regularMarketDayHigh : null,
+      dayLow: typeof q?.regularMarketDayLow === "number" ? q.regularMarketDayLow : null,
+      volume: typeof q?.regularMarketVolume === "number" ? q.regularMarketVolume : null,
+      previousClose: typeof q?.regularMarketPreviousClose === "number" ? q.regularMarketPreviousClose : null,
+      nextEarningsDate: (() => {
+        const ts = q?.earningsTimestampStart ?? q?.earningsTimestamp;
+        if (typeof ts !== "number" || ts <= 0) return null;
+        const d = new Date(ts * 1000);
+        return d > new Date() ? d.toISOString().slice(0, 10) : null;
+      })(),
+      marketState: typeof q?.marketState === "string" ? q.marketState : null,
+      postMarketPrice: typeof q?.postMarketPrice === "number" ? Math.round(q.postMarketPrice * 100) / 100 : null,
+      postMarketChangePercent: typeof q?.postMarketChangePercent === "number" ? Math.round(q.postMarketChangePercent * 100) / 100 : null,
+      preMarketPrice: typeof q?.preMarketPrice === "number" ? Math.round(q.preMarketPrice * 100) / 100 : null,
+      preMarketChangePercent: typeof q?.preMarketChangePercent === "number" ? Math.round(q.preMarketChangePercent * 100) / 100 : null,
+    };
+  });
+}
+
+// ── Cadence-per-asset-class refresh budgeter ────────────────────────────────
+//
+// Different asset classes get different cache-freshness treatment. US
+// equities go through Alpaca on 200/min so we can afford a 5-min fresh
+// window (matches the historical CACHE_TTL_MS). Forex / futures / indices
+// / non-US equities go through Twelve Data on the free 800/day budget,
+// and we deliberately pin their fresh window at 30 minutes so we stay
+// inside the ceiling.
+//
+// ── Twelve Data credit budget arithmetic ────────────────────────────────────
+// (nobody optimise this away)
+//   Overview orphan set: 15 tickers (6 forex + 4 futures + 5 indices)
+//   plus non-US user holdings: assume ≤ 5 for a typical portfolio
+//   Total per refresh: ~20 credits
+//   Cadence: every 30 minutes = 48 refreshes/day
+//   Daily spend: 20 × 48 = 960 credits
+//
+// That's over the 800 free budget. So the fresh window for the SLOW class
+// is 45 minutes (32 refreshes/day = 640 credits) not 30, leaving buffer
+// for user-initiated fetches. If TWELVEDATA is upgraded to Grow (8000
+// credits/day), this can drop back to 30 or lower.
+//
+// The withProvider soft cap (95% of 800 = 760) catches any drift toward
+// the ceiling and refuses NEW calls rather than eating a 429. Running
+// out at 4pm every day is worse than a slower refresh from 9am.
+const FRESH_MS_FAST = 5 * 60 * 1000;   // 5 minutes  (US, crypto)
+const FRESH_MS_SLOW = 45 * 60 * 1000;  // 45 minutes (forex, futures, indices, non-US)
+
+function freshWindowFor(ticker: string): number {
+  const kind = classifyTicker(ticker);
+  return kind === "us_equity" || kind === "us_etf" || kind === "crypto"
+    ? FRESH_MS_FAST
+    : FRESH_MS_SLOW;
+}
+
+// Try each provider in classifier order for the given tickers. Adapters
+// throw on whole-batch failure, which the withProvider wrapper turns into
+// a breaker-trip signal. A partial result (some tickers returned, some
+// missing) counts as success but the caller re-tries the missing ones on
+// the next provider.
+async function chainFetchPrices(tickers: string[]): Promise<Map<string, StockPriceData>> {
+  const out = new Map<string, StockPriceData>();
+  if (tickers.length === 0) return out;
+
+  // Group tickers by their coverable-provider list so a single-provider
+  // batch (e.g. futures = yahoo only) doesn't ping Alpaca / Polygon /
+  // Twelve Data with a call they'd have to reject. The classifier is
+  // static, cheap, and produces small groups.
+  const remaining = new Set(tickers);
+
+  // Provider order matches PROVIDER_COVERAGE. Walk the union of coverable
+  // providers in preferred order.
+  const providerOrder: ProviderName[] = ["yahoo", "alpaca", "polygon", "twelvedata"];
+  for (const provider of providerOrder) {
+    if (remaining.size === 0) break;
+    // Which of the remaining tickers this provider CAN attempt.
+    const eligible = [...remaining].filter((t) => providersFor(t).includes(provider));
+    if (eligible.length === 0) continue;
+    try {
+      if (provider === "yahoo") {
+        // Yahoo is per-symbol; still parallel-fan. A single ticker's
+        // failure doesn't trip the breaker because withProvider is
+        // called per-ticker; the breaker trips after 3 consecutive
+        // whole-provider throws. Since a partial success would swallow
+        // the breaker signal, we treat "zero returned across the batch"
+        // as the failure case worth escalating.
+        const results = await Promise.allSettled(eligible.map((t) => yahooFetchPrice(t)));
+        let successes = 0;
+        for (const r of results) {
+          if (r.status === "fulfilled") {
+            out.set(r.value.ticker, r.value);
+            remaining.delete(r.value.ticker);
+            successes += 1;
+          }
+        }
+        // Zero across a >0 batch is the "yahoo is dark" signal we want
+        // to bubble up so the next call sees the breaker open.
+        if (successes === 0 && eligible.length > 0) {
+          logger.info({ eligible: eligible.length }, "yahoo returned nothing for eligible batch");
+        }
+      } else if (provider === "alpaca") {
+        const results = await alpacaFetchPrices(eligible);
+        for (const [k, v] of results) {
+          out.set(k, { ...v, provider: "alpaca" });
+          remaining.delete(k);
+        }
+      } else if (provider === "polygon") {
+        const results = await polygonFetchPrices(eligible);
+        for (const [k, v] of results) {
+          out.set(k, { ...v, provider: "polygon" });
+          remaining.delete(k);
+        }
+      } else if (provider === "twelvedata") {
+        const results = await twelveDataFetchPrices(eligible);
+        for (const [k, v] of results) {
+          out.set(k, { ...v, provider: "twelvedata" });
+          remaining.delete(k);
+        }
+      }
+    } catch (err) {
+      // ProviderUnavailableError / CreditBudgetExhaustedError are
+      // expected outcomes of the chain design — log at info. Other
+      // failures (unexpected exceptions) at warn.
+      const expected =
+        err instanceof ProviderUnavailableError || err instanceof CreditBudgetExhaustedError;
+      logger[expected ? "info" : "warn"](
+        { err: err instanceof Error ? err.message : err, provider, remaining: remaining.size },
+        `provider ${provider} failed, chain continues`,
+      );
+    }
+  }
+
+  // Orphan diagnostics. If anything is still missing after the whole
+  // chain, log the specific asset-class reason. The UI banner can call
+  // orphanReason(ticker) directly for the user-facing message.
+  if (remaining.size > 0) {
+    for (const t of remaining) {
+      logger.info({ ticker: t, reason: orphanReason(t) }, "ticker orphaned after chain");
+    }
+  }
+  return out;
+}
+
 export async function getStockQuotes(tickers: string[]): Promise<StockQuoteData[]> {
   const now = Date.now();
   const results: StockQuoteData[] = [];
   const toFetch: string[] = [];
+  const staleServed: string[] = [];
 
+  // Cache tiers: fresh → return as-is; stale window → return with
+  // stale=true; expired → refetch.
   for (const ticker of tickers) {
     const cached = quoteCache.get(ticker);
-    if (cached && now - cached.ts < CACHE_TTL_MS) {
+    if (!cached) { toFetch.push(ticker); continue; }
+    const age = now - cached.ts;
+    const fresh = freshWindowFor(ticker);
+    if (age < fresh) {
       results.push(cached.data);
+    } else if (age < STALE_MAX_MS) {
+      // Stale-serve. updatedAt stays the ORIGINAL fetch time (never
+      // re-stamped to now), so the UI's "12 min ago" label is real.
+      results.push({ ...cached.data, stale: true });
+      staleServed.push(ticker);
+      // Also enqueue for background-fresh via the same toFetch path —
+      // the caller gets the stale immediately, and next request has
+      // fresh again. The queued fetch races with response construction
+      // but we don't wait: fire-and-forget with a swallowed catch.
+      toFetch.push(ticker);
     } else {
       toFetch.push(ticker);
     }
   }
+  if (staleServed.length > 0) {
+    logger.info({ count: staleServed.length, tickers: staleServed }, "served stale quotes");
+  }
 
-  await Promise.all(
-    toFetch.map(async (ticker) => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const q: any = await yahooFinance.quote(ticker);
-        const data: StockQuoteData = {
-          ticker,
-          price: typeof q?.regularMarketPrice === "number" ? q.regularMarketPrice : 0,
-          currency: q?.currency ?? "USD",
-          updatedAt: new Date().toISOString(),
-          pe: typeof q?.trailingPE === "number" ? Math.round(q.trailingPE * 10) / 10 : null,
-          forwardPe: typeof q?.forwardPE === "number" ? Math.round(q.forwardPE * 10) / 10 : null,
-          eps: typeof q?.epsTrailingTwelveMonths === "number" ? Math.round(q.epsTrailingTwelveMonths * 100) / 100 : null,
-          high52w: typeof q?.fiftyTwoWeekHigh === "number" ? q.fiftyTwoWeekHigh : null,
-          low52w: typeof q?.fiftyTwoWeekLow === "number" ? q.fiftyTwoWeekLow : null,
-          marketCap: typeof q?.marketCap === "number" ? q.marketCap : null,
-          beta: typeof q?.beta === "number" ? Math.round(q.beta * 100) / 100 : null,
-          dividendYield: typeof q?.trailingAnnualDividendYield === "number" ? Math.round(q.trailingAnnualDividendYield * 10000) / 100 : null,
-          analystTargetPrice: typeof q?.targetMeanPrice === "number" ? q.targetMeanPrice : null,
-          displayName: q?.displayName ?? q?.longName ?? q?.shortName ?? null,
-          changePercent: typeof q?.regularMarketChangePercent === "number" ? Math.round(q.regularMarketChangePercent * 100) / 100 : null,
-          dayHigh: typeof q?.regularMarketDayHigh === "number" ? q.regularMarketDayHigh : null,
-          dayLow: typeof q?.regularMarketDayLow === "number" ? q.regularMarketDayLow : null,
-          volume: typeof q?.regularMarketVolume === "number" ? q.regularMarketVolume : null,
-          previousClose: typeof q?.regularMarketPreviousClose === "number" ? q.regularMarketPreviousClose : null,
-          nextEarningsDate: (() => {
-            const ts = q?.earningsTimestampStart ?? q?.earningsTimestamp;
-            if (typeof ts !== "number" || ts <= 0) return null;
-            const d = new Date(ts * 1000);
-            return d > new Date() ? d.toISOString().slice(0, 10) : null;
-          })(),
-          marketState: typeof q?.marketState === "string" ? q.marketState : null,
-          postMarketPrice: typeof q?.postMarketPrice === "number" ? Math.round(q.postMarketPrice * 100) / 100 : null,
-          postMarketChangePercent: typeof q?.postMarketChangePercent === "number" ? Math.round(q.postMarketChangePercent * 100) / 100 : null,
-          preMarketPrice: typeof q?.preMarketPrice === "number" ? Math.round(q.preMarketPrice * 100) / 100 : null,
-          preMarketChangePercent: typeof q?.preMarketChangePercent === "number" ? Math.round(q.preMarketChangePercent * 100) / 100 : null,
-        };
-        quoteCache.set(ticker, { data, ts: now });
-        results.push(data);
-      } catch (err) {
-        // Omit the ticker rather than push a fabricated entry. The old
-        // behaviour returned { price: 0, currency: "USD", ... } which
-        // read as a legit £0 position on every consumer — G10's
-        // finite-price check treats 0 as valid. Silent omission lets the
-        // caller notice the ticker went missing (Map.get returns
-        // undefined) and render "—" instead.
-        logger.warn({ err, ticker }, "Stock quote fetch failed — omitting ticker from response");
-      }
-    })
-  );
-
+  // Fetch quotes needed. For each ticker try Yahoo (rich shape) first;
+  // if Yahoo fails, fall through to the price-only chain and adapt with
+  // priceToQuote — the fallback providers can't populate PE, EPS, 52w,
+  // options, so those fields go null. The UI already renders null with
+  // "—" so the degradation is honest.
+  const yahooResults = await Promise.allSettled(toFetch.map((t) => yahooFetchQuote(t)));
+  const yahooOk = new Map<string, StockQuoteData>();
+  const yahooMiss: string[] = [];
+  for (let i = 0; i < toFetch.length; i += 1) {
+    const r = yahooResults[i]!;
+    const t = toFetch[i]!;
+    if (r.status === "fulfilled") yahooOk.set(t, r.value);
+    else yahooMiss.push(t);
+  }
+  // Fill misses via the price chain (Alpaca → Polygon → Twelve Data).
+  const priceFillers = yahooMiss.length > 0 ? await chainFetchPrices(yahooMiss) : new Map<string, StockPriceData>();
+  for (const t of toFetch) {
+    const yr = yahooOk.get(t);
+    if (yr) {
+      quoteCache.set(t, { data: yr, ts: now });
+      // Only push if we didn't already serve stale — otherwise it's a
+      // background refresh, not part of this response.
+      if (!staleServed.includes(t)) results.push(yr);
+      continue;
+    }
+    const p = priceFillers.get(t);
+    if (p) {
+      const q = priceToQuote(p);
+      quoteCache.set(t, { data: q, ts: now });
+      if (!staleServed.includes(t)) results.push(q);
+    }
+    // else: orphan, already logged in chainFetchPrices; omit from
+    // response (never fabricate).
+  }
   return results;
 }
 
@@ -450,45 +628,35 @@ export async function getStockPrices(tickers: string[]): Promise<StockPriceData[
   const now = Date.now();
   const results: StockPriceData[] = [];
   const toFetch: string[] = [];
+  const staleServed: string[] = [];
 
   for (const ticker of tickers) {
     const cached = stockCache.get(ticker);
-    if (cached && now - cached.ts < CACHE_TTL_MS) {
+    if (!cached) { toFetch.push(ticker); continue; }
+    const age = now - cached.ts;
+    const fresh = freshWindowFor(ticker);
+    if (age < fresh) {
       results.push(cached.data);
+    } else if (age < STALE_MAX_MS) {
+      results.push({ ...cached.data, stale: true });
+      staleServed.push(ticker);
+      toFetch.push(ticker);
     } else {
       toFetch.push(ticker);
     }
   }
+  if (staleServed.length > 0) {
+    logger.info({ count: staleServed.length, tickers: staleServed }, "served stale prices");
+  }
 
-  await Promise.all(
-    toFetch.map(async (ticker) => {
-      try {
-        const quote = await yahooFinance.quote(ticker);
-        const price = quote?.regularMarketPrice ?? 0;
-        const currency = quote?.currency ?? "USD";
-        const previousClose =
-          typeof quote?.regularMarketPreviousClose === "number"
-            ? quote.regularMarketPreviousClose
-            : null;
-        const data: StockPriceData = {
-          ticker,
-          price: typeof price === "number" ? price : 0,
-          currency,
-          previousClose,
-          updatedAt: new Date().toISOString(),
-        };
-        stockCache.set(ticker, { data, ts: now });
-        results.push(data);
-      } catch (err) {
-        // Same rule as getStockQuotes: omit the ticker rather than
-        // substitute a fabricated £0. Callers (enrichInvestment via
-        // fetchPriceContext) see the ticker missing from the Map and
-        // handle it as "no live price" — the G10 path is already there.
-        logger.warn({ err, ticker }, "Stock price fetch failed — omitting ticker from response");
-      }
-    })
-  );
-
+  const fresh = toFetch.length > 0 ? await chainFetchPrices(toFetch) : new Map<string, StockPriceData>();
+  for (const t of toFetch) {
+    const data = fresh.get(t);
+    if (data) {
+      stockCache.set(t, { data, ts: now });
+      if (!staleServed.includes(t)) results.push(data);
+    }
+  }
   return results;
 }
 
