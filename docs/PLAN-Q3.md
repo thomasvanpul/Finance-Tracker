@@ -106,3 +106,56 @@ than new. Empty states should say what to do next.
 Nothing ships without the check that would have caught the last defect of its
 class. Eight locks exist because eight things were rediscovered by hand. The
 next one should fail a test, not a screenshot.
+
+
+---
+
+## Appendix A · The scaling ladder
+
+Upgrade when the symptom appears, not before. Each step is triggered by
+something observable.
+
+| Users | Symptom you will see | What to do | Cost |
+|---|---|---|---|
+| 1–20 | none | Render free + keep-alive | £0 |
+| 20–100 | requests queue at peak; latency climbs under concurrent use | Render Starter — 0.5 CPU, no sleep | ~$7/mo |
+| 100–500 | bandwidth passes 5GB; CPU saturates | Render Standard + review API payload sizes | ~$25/mo |
+| 500+ | single instance saturates regardless | Horizontal scaling, CDN for assets, Neon connection pooling | varies |
+
+**The signal to move is always latency under load, never a projection.** Measure
+before upgrading; the 0.1 CPU ceiling arrives long before the bandwidth bill.
+
+**Cheapest wins first, at every step:** shrink API payloads, cache aggressively,
+and stop re-fetching unchanged data. A 50% payload reduction is worth more than
+a tier upgrade and costs nothing per month.
+
+---
+
+## Appendix B · AI provider strategy
+
+Free tiers are **shared across all users**, which is the number that matters:
+
+| Provider / model | Daily cap | At 100 users |
+|---|---|---|
+| Gemini Flash-Lite | 1,000 req/day | 10 messages each |
+| Groq llama-3.3-70b | 1,000 req/day | 10 messages each |
+| Groq 8B models | 14,400 req/day | 144 messages each |
+| OpenRouter free | 50/day (1,000 after $10 spend) | — |
+
+**Verified June–July 2026. These rot fast** — one provider pruned its free
+catalogue from twelve models to two overnight on 31 May 2026 and silently broke
+a running app. Gemini has already cut its free tier once. Re-verify before
+relying on any figure here.
+
+**The design that follows:**
+1. **Stack providers.** Each quota is independent, so routing across two or three
+   multiplies free capacity.
+2. **Route by task.** Cheap classification to a fast 8B model with a 14,400/day
+   ceiling; genuine reasoning to a larger one.
+3. **Fall back on exhaustion**, and treat a provider vanishing as expected rather
+   than exceptional.
+4. **Per-user daily budget, generous but finite.** Users should feel unlimited;
+   the provider quota must never be the thing that runs out, because when it does
+   it fails for everyone at once.
+5. **Alert when a lane dies.** The failure mode above was silent for forty-seven
+   consecutive calls.
