@@ -42,7 +42,14 @@ router.use(debtsRouter);
 router.use(sharedExpensesRouter);
 router.use(settingsRouter);
 router.use(aiRouter);
-router.use("/api/digest", digestRouter);
-router.use("/api/receipt", receiptRouter);
+// Mount prefixes here are RELATIVE — this router is itself already
+// mounted at /api by app.ts, so writing "/api/digest" here would give
+// the handler at /api/api/digest. Both of these shipped with that bug
+// and 404'd every call from the UI (receipt-parse from
+// quick-add-transaction.tsx, digest-send from settings.tsx). Property
+// test in app.route-mounts.test.ts locks the shape so a future addition
+// with the same typo fails at build time.
+router.use("/digest", digestRouter);
+router.use("/receipt", receiptRouter);
 
 export default router;
