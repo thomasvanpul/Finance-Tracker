@@ -102,14 +102,28 @@ const authLimiter = rateLimit({
   skip: () => IS_DEV,
 });
 
-// Strict per-user limiter for the AI endpoint — prevent Gemini cost exhaustion
-const aiLimiter = rateLimit({
+// Per-USER limiter for the AI endpoint (Gemini spend is our cost). This
+// is the one endpoint where a request costs real money, so the budget
+// belongs to the account, not the source IP.
+//
+// keyGenerator uses userId when available (the limiter is mounted after
+// requireAuth so it usually is) and falls back to req.ip on the narrow
+// window between requireAuth failure and this middleware — which
+// shouldn't be reachable but the fallback keeps the limiter safe rather
+// than crashing on undefined key.
+//
+// Per-IP was the previous shape and it got both cases backwards: users
+// behind carrier NAT / office wifi shared one Gemini budget between
+// them, while an abuser rotating IPs was never throttled at all.
+// req.ip → shared-budget-for-honest-users AND unlimited-for-attackers.
+export const aiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "AI rate limit exceeded. Please wait before sending more messages." },
   skip: () => IS_DEV,
+  keyGenerator: (req: Request) => (req as unknown as { userId?: string }).userId ?? req.ip ?? "unknown",
 });
 
 // General API limiter — guard all other financial endpoints
@@ -168,8 +182,21 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 }
 
-app.use("/api/ai", aiLimiter);
-app.use("/api", apiLimiter, requireAuth, router);
+// Order matters. apiLimiter first (per-IP throttle across everything),
+// then requireAuth (sets req.userId), THEN aiLimiter gated on /ai/*
+// paths — that gate has to sit inside the same mount as requireAuth or
+// aiLimiter would run before req.userId is populated. Then finally the
+// router.
+app.use(
+  "/api",
+  apiLimiter,
+  requireAuth,
+  (req, res, next) => {
+    if (req.path.startsWith("/ai/")) return aiLimiter(req, res, next);
+    return next();
+  },
+  router,
+);
 
 if (!IS_DEV) {
   const staticDir = path.resolve(__dirname, "../../finance-tracker/dist/public");
