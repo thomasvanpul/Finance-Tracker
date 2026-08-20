@@ -869,6 +869,15 @@ input[type="checkbox"]:checked {
   .ft-four-col           { grid-template-columns: repeat(3, 1fr) !important; }
   .ft-three-col          { grid-template-columns: repeat(2, 1fr) !important; }
   .ft-dashboard-insights { grid-template-columns: repeat(2, 1fr) !important; }
+  /* KPI bars pack 4–7 cells inline via `gridTemplateColumns:
+     "repeat(N, 1fr)"` and stayed N-column at every desktop width. At
+     the narrow end that gave each cell ~80–110px, tight enough that
+     labels wrapped over their neighbours. Drop to 3 columns to give
+     each cell room to breathe. The mobile @media rule below still
+     forces 3 columns at ≤767 viewport regardless — this rule fills
+     the gap between 768 viewport and ~900 content. */
+  .ft-kpi-bar,
+  .ft-kpi-bar.ft-kpi-grid { grid-template-columns: repeat(3, 1fr) !important; }
 }
 @container main-content (max-width: 700px) {
   .ft-five-col           { grid-template-columns: repeat(2, 1fr) !important; }
@@ -880,6 +889,10 @@ input[type="checkbox"]:checked {
   .ft-dashboard-two-col  { flex-direction: column !important; }
   .ft-chart-sidebar      { grid-template-columns: 1fr !important; }
   .ft-wardrobe-layout    { grid-template-columns: 1fr !important; }
+  /* KPI bars: drop to 2 columns at the tightest desktop-content widths.
+     Same rule the mobile amendment uses at ≤767 viewport. */
+  .ft-kpi-bar,
+  .ft-kpi-bar.ft-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
 /* ── Mobile bottom navigation ── */
