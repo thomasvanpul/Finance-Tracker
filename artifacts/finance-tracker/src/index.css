@@ -1604,6 +1604,15 @@ input[type="checkbox"]:checked {
 .ft-kpi-bar-cell {
   padding: var(--ft-metric-py) var(--ft-cell-px);
   border-right: 1px solid var(--ft-border);
+  /* min-width: 0 lets a 1fr grid column shrink below its min-content —
+     without it, a long single-word delta ("UNDER-DIVERSIFIED",
+     "DIVERSIFIED") forces the column wider than its 1fr share and
+     visibly overlaps into the next cell. The .pnum value CANNOT
+     shrink or wrap (financial figures ship in full or not at all, per
+     CLAUDE.md and pnum-invariant.test.ts) so it overflows visibly
+     when the cell is too narrow — that's the honest signal to widen
+     the strip. Labels and deltas are descriptive text and CAN wrap. */
+  min-width: 0;
 }
 .ft-kpi-bar-cell:last-child { border-right: none; }
 .ft-kpi-bar-cell-label {
@@ -1646,5 +1655,10 @@ input[type="checkbox"]:checked {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   margin-top: 2px;
+  /* Break long single-word labels ("UNDER-DIVERSIFIED",
+     "DIVERSIFIED") at character boundaries when the cell is narrower
+     than the word. Deltas are descriptive, so wrapping is honest;
+     unlike .pnum values, we're not lying about a number. */
+  overflow-wrap: anywhere;
 }
 
