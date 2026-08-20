@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   getFxRates,
   toBase,
@@ -7,11 +7,19 @@ import {
   getStockQuotes,
   __setYahooForTesting,
 } from "./market";
+import { __resetProviderHealthForTesting } from "./provider-health";
 
 // Yahoo is imported via require() at module scope, and vi.mock cannot
 // intercept that cleanly, so market.ts exposes __setYahooForTesting as a
 // test seam. Inject a stub whose .quote() always throws and every FX/
 // quote helper must refuse to invent numbers.
+//
+// The FX chain now falls through to Frankfurter when Yahoo fails, so
+// "honesty when EVERY provider fails" requires stubbing global fetch to
+// throw as well — otherwise Frankfurter would answer with real ECB
+// rates and the assertion "rates map is empty" would fail. The point
+// of this file is unchanged: prove no fabricated number is manufactured
+// locally when live data is unavailable.
 //
 // This test locks the door on two deleted defects at once:
 //   1. Eleven hardcoded FX fallbacks that substituted for missing rates
@@ -30,6 +38,18 @@ const throwingYahoo: any = {
 
 beforeEach(() => {
   __setYahooForTesting(throwingYahoo);
+  // Fresh circuit-breaker state per test — otherwise a test that trips
+  // the breaker leaves it open for the next one and the "chain refuses
+  // to fabricate" assertion could pass for the wrong reason (early
+  // ProviderUnavailableError rather than the intended provider-level
+  // failure). Test isolation, not decoration.
+  __resetProviderHealthForTesting();
+  // Stub the Frankfurter HTTP call to fail too — this file's invariant
+  // is "when the whole chain is dark, no invented data appears." A
+  // separate test (fx-fallback.test.ts) covers the success path.
+  vi.stubGlobal("fetch", async () => {
+    throw new Error("mocked network failure");
+  });
 });
 
 describe("FX honesty — no fabricated rate survives a fetch failure", () => {

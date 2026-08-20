@@ -1,10 +1,38 @@
 import { logger } from "./logger";
+import {
+  registerProvider,
+  withProvider,
+  ProviderUnavailableError,
+  CreditBudgetExhaustedError,
+} from "./provider-health";
 
 // yahoo-finance2 v3: default export is the YahooFinance class — must be instantiated
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const YahooFinance = require("yahoo-finance2").default;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let yahooFinance: any = new YahooFinance({ suppressNotices: ["yahooSurvey", "ripHistorical"] });
+
+// ── Provider registration ───────────────────────────────────────────────────
+// Registered once at module load. Environment presence is captured now; if a
+// key is added at runtime, the process must restart to pick it up (Render
+// restarts on env change anyway, so this is not a live-config concern).
+//
+// Twelve Data is intentionally registered even when unconfigured — the health
+// endpoint should surface "provider offline: no key" as a diagnosable state,
+// not silently omit it. Same rule as auth-providers listing providers as
+// unavailable rather than hiding them.
+registerProvider({ name: "yahoo", configured: true });
+registerProvider({ name: "frankfurter", configured: true });
+registerProvider({ name: "alpaca", configured: !!(process.env.ALPACA_KEY_ID && process.env.ALPACA_SECRET_KEY) });
+registerProvider({ name: "polygon", configured: !!process.env.POLYGON_API_KEY });
+registerProvider({
+  name: "twelvedata",
+  configured: !!process.env.TWELVEDATA_API_KEY,
+  // Free-tier "Basic" ceiling. Adjust if the plan is upgraded (Grow = 55/min,
+  // budgets scale accordingly). withProvider enforces a 95% soft cap so we
+  // stop at ~760 rather than 800.
+  creditsBudget: 800,
+});
 
 // Test seam. Vitest cannot cleanly mock a top-level `require(...)` call —
 // vi.mock intercepts ES imports, not CommonJS require paths — so tests
@@ -57,34 +85,132 @@ const FX_PAIRS: Record<string, string> = {
   INR: "GBPINR=X",
 };
 
+// Yahoo FX path — the original getter, now used as the first provider in
+// the chain. Kept per-pair-parallel because Yahoo does not offer a batch
+// quote endpoint for FX symbols and running them serially would multiply
+// the tail latency by 11.
+async function fxRatesFromYahoo(): Promise<Record<string, number>> {
+  return withProvider("yahoo", async () => {
+    const rates: Record<string, number> = {};
+    await Promise.all(
+      Object.entries(FX_PAIRS).map(async ([ccy, symbol]) => {
+        try {
+          const quote = await yahooFinance.quote(symbol);
+          const price = quote?.regularMarketPrice ?? null;
+          if (typeof price === "number" && price > 0) {
+            rates[ccy] = price;
+          }
+        } catch (err) {
+          // Per-symbol failure logged but doesn't fail the whole batch —
+          // Yahoo may still cover 10 of 11 pairs. If ZERO come back the
+          // outer throw below triggers the circuit breaker.
+          logger.warn({ err, symbol }, "yahoo FX pair failed");
+        }
+      })
+    );
+    // Fail the whole provider call if we got NOTHING — that's the signal
+    // Yahoo is broadly throttling us. A partial result (say 7 of 11)
+    // still counts as success for the breaker; the missing 4 will be
+    // filled by Frankfurter below.
+    if (Object.keys(rates).length === 0) {
+      throw new Error("yahoo returned no FX rates");
+    }
+    return rates;
+  });
+}
+
+// Frankfurter — free, unauthenticated, ECB reference rates. Daily
+// granularity. Covers every currency in FX_PAIRS. Endpoint returns a
+// single JSON object with a `rates` map so one HTTP call fills all
+// missing currencies — no per-pair loop needed.
+//
+// Reference: https://frankfurter.dev/ (open source, self-hostable if
+// the public instance ever moves).
+interface FrankfurterResponse {
+  amount: number;
+  base: string;
+  date: string;
+  rates: Record<string, number>;
+}
+async function fxRatesFromFrankfurter(missing: string[]): Promise<Record<string, number>> {
+  if (missing.length === 0) return {};
+  return withProvider("frankfurter", async () => {
+    const url = `https://api.frankfurter.dev/v1/latest?base=GBP&symbols=${missing.join(",")}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    if (!res.ok) throw new Error(`Frankfurter HTTP ${res.status}`);
+    const body = (await res.json()) as FrankfurterResponse;
+    // Frankfurter returns whole numbers as integers ("USD":1) and
+    // fractional ones as floats. Trust its output shape; a missing
+    // currency simply doesn't appear in `rates`, which we handle by
+    // leaving the outer rates map untouched for that currency.
+    const out: Record<string, number> = {};
+    for (const [ccy, rate] of Object.entries(body.rates ?? {})) {
+      if (typeof rate === "number" && rate > 0) out[ccy] = rate;
+    }
+    return out;
+  });
+}
+
 export async function getFxRates(): Promise<FxRatesData> {
   const now = Date.now();
   if (fxCache && now - fxCache.ts < CACHE_TTL_MS) return fxCache.data;
 
-  // Only real Yahoo prices land in this map. If a fetch fails, the
-  // currency is simply absent from rates — consumers see undefined and
-  // must render "—" or the native amount alone. Previously this file
-  // carried 11 hardcoded fallbacks (USD: 1.27, EUR: 1.17, MYR: 5.95,
-  // …) that silently substituted for missing rates and set updatedAt
-  // to now, so the app asserted freshness for fabricated data. Every
-  // converted figure in the product ran through this — a violation of
-  // CLAUDE.md's "never show a number the API did not supply" that was
-  // worse than the mobile MOCK_QUOTES defect ever was, because it lied
-  // in aggregate rather than per-ticker.
-  const rates: Record<string, number> = {};
-  await Promise.all(
-    Object.entries(FX_PAIRS).map(async ([ccy, symbol]) => {
-      try {
-        const quote = await yahooFinance.quote(symbol);
-        const price = quote?.regularMarketPrice ?? null;
-        if (typeof price === "number" && price > 0) {
-          rates[ccy] = price;
-        }
-      } catch (err) {
-        logger.warn({ err, symbol }, "FX rate fetch failed — currency omitted from response");
+  // Chain: Yahoo first (real-time, matches historical behaviour), then
+  // Frankfurter for anything Yahoo missed (daily ECB rate — fine for a
+  // personal-finance conversion, and it's what most consumer FX tools
+  // show as "today's rate" on weekends anyway).
+  //
+  // Only real numbers land in this map. Neither provider can substitute
+  // a fabricated fallback: the 11 hardcoded rates that used to live in
+  // this function silently lied in aggregate — every converted figure
+  // in the product depended on them, and the RM 4,120 → £4,120 defect
+  // grew out of exactly that class of mistake. See CLAUDE.md's "never
+  // show a number the API did not supply".
+  let rates: Record<string, number> = {};
+  try {
+    rates = await fxRatesFromYahoo();
+  } catch (err) {
+    // ProviderUnavailableError (circuit open) is expected during a Yahoo
+    // outage — log at info, not warn, so the log isn't noisy while the
+    // breaker is doing its job.
+    const isExpected = err instanceof ProviderUnavailableError;
+    logger[isExpected ? "info" : "warn"](
+      { err: err instanceof Error ? err.message : err },
+      "FX yahoo lane failed — falling through to Frankfurter",
+    );
+  }
+
+  const missing = Object.keys(FX_PAIRS).filter((ccy) => !(ccy in rates));
+  if (missing.length > 0) {
+    try {
+      const fallback = await fxRatesFromFrankfurter(missing);
+      let filled = 0;
+      for (const [ccy, rate] of Object.entries(fallback)) {
+        // Yahoo already provided this currency — do NOT overwrite. A
+        // real-time Yahoo quote is closer to "now" than yesterday's
+        // ECB fixing, and treating Frankfurter as authoritative for
+        // currencies Yahoo already answered would silently degrade
+        // freshness for the common case (Yahoo mostly works, one
+        // pair fails). Merge is fill-only, not overwrite.
+        if (ccy in rates) continue;
+        rates[ccy] = rate;
+        filled += 1;
       }
-    })
-  );
+      if (filled > 0) {
+        logger.info(
+          { filled, missingBefore: missing.length, currencies: Object.keys(fallback) },
+          "FX filled from Frankfurter fallback",
+        );
+      }
+    } catch (err) {
+      const isExpected =
+        err instanceof ProviderUnavailableError || err instanceof CreditBudgetExhaustedError;
+      logger[isExpected ? "info" : "warn"](
+        { err: err instanceof Error ? err.message : err, missing },
+        "FX Frankfurter fallback also failed — currencies stay unavailable",
+      );
+    }
+  }
 
   const data: FxRatesData = { base: "GBP", rates, updatedAt: new Date().toISOString() };
   fxCache = { data, ts: now };

@@ -86,6 +86,31 @@ than new. Empty states should say what to do next.
 
 ---
 
+## Phase 3.5 · Legal, before anyone else signs up
+
+Hard prerequisite for inviting friends or classmates. Not optional, not
+technical debt — the app stores other people's bank balances, salaries and
+debts, and UK GDPR does not care that you know them personally.
+
+**3.5.1 — Privacy policy and terms.** What is collected, lawful basis, retention
+period, every processor it is shared with (Neon, Render, Vercel, Yahoo, Alpaca,
+Polygon, Twelve Data, whichever AI provider), and the subject-access route.
+
+**3.5.2 — Consent at sign-up, not at the door.** Do NOT gate the site behind an
+agree-or-leave wall. Consent must be freely given and specific under UK GDPR,
+and a blanket page-load gate is the pattern regulators dislike — it is also bad
+UX for anyone who just wants to see what the product is. Capture agreement at
+account creation, link the documents plainly, and keep separate opt-ins for
+anything genuinely optional.
+
+**3.5.3 — Account deletion that works.** Cascades already exist; the
+user-facing route does not.
+
+**3.5.4 — Breach process.** ICO notification within 72 hours. Write down who
+does what before it is needed.
+
+---
+
 ## Phase 4 · Deferred deliberately
 
 - **3D AI assistant renders.** Wants Phase 1 settled first — render style follows
@@ -98,6 +123,35 @@ than new. Empty states should say what to do next.
   user generously and let the provider's free quota be the real ceiling. The
   limiter stays either way.
 - **iPad and iPhone app polish.** After Phase 1, so it is done once.
+
+- **Consistent AI quality across providers.** When the app routes between
+  vendors, the user should not feel the switch: route by task rather than by
+  availability alone, keep system prompts and tone consistent, and never send
+  reasoning work to a small model just because it has quota left. Note that
+  these are third-party APIs — they cannot be trained or fine-tuned here, so
+  consistency is a routing and prompting problem, not a training one.
+
+- **Cost efficiency audit.** Once there are real users and real numbers: review
+  every subscription and host choice against measured usage. Cheapest wins first
+  — payload reduction and caching beat tier upgrades and cost nothing monthly.
+  Do this with data, not projections.
+
+---
+
+## Phase 5 · Charging money — a different kind of project
+
+Not a feature. The moment money changes hands this stops being a personal
+project and becomes a business holding other people's financial data.
+
+Involves: a payment processor, VAT in both the UK and Malaysia, refund and
+cancellation terms, dunning, and a materially larger set of obligations than
+free software carries. Adding Stripe is the easy part.
+
+Worth doing eventually. Worth doing deliberately, with the Phase 3.5 documents
+already in place and real usage data showing what people would pay for.
+
+**Do not start this before there are users who would miss the product if it
+disappeared.**
 
 ---
 
