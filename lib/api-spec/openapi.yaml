@@ -2206,12 +2206,26 @@ components:
             properties:
               month:
                 type: string
+              # income/expenses/netSavings are NULLABLE, not just optional.
+              # A month with one or more unconvertible transactions (an FX
+              # rate the market API couldn't supply) emits nulls rather
+              # than partial or fabricated totals. Clients MUST render
+              # null as "unknown / dotted / —", never as £0 — a £0 income
+              # month reads as "nothing happened" when the reality is
+              # "we don't know the true income because we can't convert
+              # some of it". Same class of defect as the RM 4,120 → £4,120
+              # bug that the dashboard's per-tx skipping used to prevent
+              # for individual entries. See dashboard.monthly-fold.test.ts
+              # for the exact behaviour.
               income:
                 type: number
+                nullable: true
               expenses:
                 type: number
+                nullable: true
               netSavings:
                 type: number
+                nullable: true
               # C2-1: per-bucket asset composition snapshot for this
               # month. Null when no snapshot exists (see nw_snapshots
               # table — populated lazily on dashboard read for the

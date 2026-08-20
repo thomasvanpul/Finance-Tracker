@@ -59,9 +59,9 @@ export const GetDashboardResponse = zod.object({
 }),
   "monthlyHistory": zod.array(zod.object({
   "month": zod.string(),
-  "income": zod.number(),
-  "expenses": zod.number(),
-  "netSavings": zod.number(),
+  "income": zod.number().nullable(),
+  "expenses": zod.number().nullable(),
+  "netSavings": zod.number().nullable(),
   "composition": zod.object({
   "cash": zod.number(),
   "investment": zod.number(),

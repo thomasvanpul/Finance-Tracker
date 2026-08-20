@@ -298,7 +298,45 @@ async function processMyPayerExpenses(
 // a scalar (the current FX rate) — sum(a) * rate == sum(a * rate). Grouping
 // by (month, currency, type) reduces N transactions to at most 12 * |CCY| * 2
 // aggregate rows, each converted once.
-async function loadMonthlyAggregates(userId: string, earliestFrom: string, latestTo: string, baseCurrency: string) {
+
+// Pure reduction from converted buckets → per-month totals. Exported for
+// direct unit testing (dashboard.monthly-fold.test.ts) — the FX-miss
+// null propagation is load-bearing and must be verifiable without a live
+// DB or Yahoo Finance.
+//
+// Rules encoded here (do not relax without updating the test):
+//   1. Month with no buckets in `converted` at all → NOT emitted (caller
+//      renders 0 as the honest "no transactions" number).
+//   2. Month with buckets that ALL converted → { income, expenses } summed.
+//   3. Month with ANY null bucket → emitted as null. Consumer must render
+//      "unknown / dotted / —", NEVER a fabricated 0. The pnum invariant
+//      applied to a monthly total, per CLAUDE.md — "a number the API did
+//      not supply" is the exact defect this null is preventing.
+export interface MonthlyConvertedBucket { month: string; type: string; gbp: number | null }
+export type MonthlyFolded = Map<string, { income: number; expenses: number } | null>;
+export function foldMonthlyConverted(converted: readonly MonthlyConvertedBucket[]): MonthlyFolded {
+  const byMonth: MonthlyFolded = new Map();
+  for (const c of converted) {
+    // If we've already marked this month null (any prior bucket in the
+    // month had a null gbp), keep it null — one FX miss poisons the
+    // whole month. All-or-nothing per month is the right shape here:
+    // a month with two convertible USD txs + one unconvertible MYR tx
+    // has income neither fully summed nor honestly zero, so the whole
+    // total is unknown.
+    if (byMonth.get(c.month) === null) continue;
+    if (c.gbp == null) {
+      byMonth.set(c.month, null);
+      continue;
+    }
+    let entry = byMonth.get(c.month);
+    if (!entry) { entry = { income: 0, expenses: 0 }; byMonth.set(c.month, entry); }
+    if (c.type === "income") entry.income += c.gbp;
+    else if (c.type === "expense") entry.expenses += c.gbp;
+  }
+  return byMonth;
+}
+
+async function loadMonthlyAggregates(userId: string, earliestFrom: string, latestTo: string, baseCurrency: string): Promise<MonthlyFolded> {
   interface AggregateRow { month: string; currency: string; type: string; total: string }
   const rows = (await db
     .select({
@@ -317,7 +355,7 @@ async function loadMonthlyAggregates(userId: string, earliestFrom: string, lates
 
   // Convert each aggregated bucket to base once. Parallel because each
   // toBase is independent; the fxCache serves them all from one lookup.
-  const converted = await Promise.all(
+  const converted: MonthlyConvertedBucket[] = await Promise.all(
     rows.map(async (r) => ({
       month: r.month,
       type: r.type,
@@ -325,15 +363,7 @@ async function loadMonthlyAggregates(userId: string, earliestFrom: string, lates
     })),
   );
 
-  const byMonth = new Map<string, { income: number; expenses: number }>();
-  for (const c of converted) {
-    if (c.gbp == null) continue;
-    let entry = byMonth.get(c.month);
-    if (!entry) { entry = { income: 0, expenses: 0 }; byMonth.set(c.month, entry); }
-    if (c.type === "income") entry.income += c.gbp;
-    else if (c.type === "expense") entry.expenses += c.gbp;
-  }
-  return byMonth;
+  return foldMonthlyConverted(converted);
 }
 
 // ── Handler ──────────────────────────────────────────────────────────────────
@@ -480,8 +510,16 @@ router.get("/dashboard", async (req, res): Promise<void> => {
 
   // Level 4 — assemble monthlyHistory from aggregated totals + snapshots.
   // Pure in-memory work now; the old 12-SELECT loop is gone.
+  //
+  // Three cases per month:
+  //   (a) map has an object → sum: emit as numbers.
+  //   (b) map has `null` (explicit): at least one FX conversion failed
+  //       inside this month. Emit income/expenses/netSavings as null so
+  //       the UI renders "unknown / dotted", NOT a fabricated £0. See
+  //       foldMonthlyConverted above.
+  //   (c) map missing the month entirely: no transactions in that month.
+  //       Emit zeros — the honest "nothing happened" number.
   const monthlyHistory = ranges.map((range) => {
-    const agg = monthlyAggregates.get(range.month) ?? { income: 0, expenses: 0 };
     const snap = snapshotMap.get(range.month);
     const composition = snap
       ? {
@@ -492,11 +530,26 @@ router.get("/dashboard", async (req, res): Promise<void> => {
           other: parseFloat(snap.other),
         }
       : null;
+    const hasEntry = monthlyAggregates.has(range.month);
+    const agg = monthlyAggregates.get(range.month);
+    if (hasEntry && agg === null) {
+      // Case (b): FX miss somewhere in this month.
+      return {
+        month: range.month,
+        income: null,
+        expenses: null,
+        netSavings: null,
+        composition,
+      };
+    }
+    // Case (a) with buckets, or (c) with no transactions — both emit
+    // numbers. agg is either the summed object or missing (0/0 fallback).
+    const sum = agg ?? { income: 0, expenses: 0 };
     return {
       month: range.month,
-      income: Math.round(agg.income * 100) / 100,
-      expenses: Math.round(agg.expenses * 100) / 100,
-      netSavings: Math.round((agg.income - agg.expenses) * 100) / 100,
+      income: Math.round(sum.income * 100) / 100,
+      expenses: Math.round(sum.expenses * 100) / 100,
+      netSavings: Math.round((sum.income - sum.expenses) * 100) / 100,
       composition,
     };
   });

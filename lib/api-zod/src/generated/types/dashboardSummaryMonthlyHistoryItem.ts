@@ -9,8 +9,8 @@ import type { DashboardSummaryMonthlyHistoryItemComposition } from './dashboardS
 
 export type DashboardSummaryMonthlyHistoryItem = {
   month: string;
-  income: number;
-  expenses: number;
-  netSavings: number;
+  income: number | null;
+  expenses: number | null;
+  netSavings: number | null;
   composition?: DashboardSummaryMonthlyHistoryItemComposition;
 };
