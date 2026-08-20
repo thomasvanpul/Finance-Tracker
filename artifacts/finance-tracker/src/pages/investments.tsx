@@ -1157,7 +1157,14 @@ function InvKpiBar({ cells, style }: { cells: KpiCell[]; style?: React.CSSProper
   const primaryCount = cells.filter((c) => c.primary).length;
   const desktopCols = cells.length + primaryCount;
   return (
+    // ft-kpi-bar opts into the main-content container-query rules
+    // that drop this strip to 3-col at ≤900 content and 2-col at
+    // ≤700 content. Without the class, the inline
+    // gridTemplateColumns above stays 7-column at every desktop
+    // width and each cell shrinks past the point where its value +
+    // delta fit — the DIVERSIFIED overlap case.
     <div
+      className="ft-kpi-bar"
       style={{
         display: "grid",
         gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : `repeat(${desktopCols}, 1fr)`,
