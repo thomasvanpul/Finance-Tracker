@@ -9,9 +9,16 @@ Nothing here is started until the phase above it is done.
 
 **0.1 — Kill the cold starts.** Render gives 750 instance-hours/month; a 31-day
 month running 24/7 is 744. A keep-alive ping every 10 minutes to `/api/healthz`
-keeps the service permanently warm *within the free allowance*. This removes the
-50-second waits entirely. Caveats that remain: bandwidth is billable above 5GB,
-and 0.1 CPU is still slow under real load.
+keeps the service permanently warm *within the free allowance*.
+
+Instance hours measure **uptime, not traffic** — 744 hours whether there is one
+user or a hundred thousand, so this works at any scale. The ceilings that do
+bite are elsewhere: 5GB bandwidth (~100 users at 50MB each; 1000 users is about
+$7 of overage) and, first and hardest, **0.1 CPU with 512MB**, which will feel
+broken at tens of concurrent users regardless of everything else.
+
+So: free is correct now, and the signal to move is latency under load, not a
+bill.
 
 **0.2 — The three real bugs.**
 - Portfolio: "diversified" header overlaps content to its right.
@@ -26,20 +33,22 @@ one, and must be measured rather than assumed.
 
 ## Phase 1 · Design direction (decide, then apply everywhere)
 
-The palette review found the split plainly:
+Corrected after review — the first pass was wrong.
 
-| Chosen deliberately | Chosen by vibe |
-|---|---|
-| `parchment #7A1F30`, `slate #0E5766`, `linen #5A4610`, `arctic #0052CC` | `midnight #4D9FFF`, `phosphor #7FFF00`, `matrix #00FF41`, `synthwave #FF007A` |
+`matrix #00FF41` is *the* Matrix green, `phosphor #7FFF00` is P1 CRT phosphor,
+and `synthwave #FF007A` is the genre's own palette. Those three are deliberate
+references and their saturation is the point. Calling them vibe-coded was a
+misread.
 
-The right-hand column is pure saturated RGB — the exact tell being complained
-about. The left-hand column was built against a contrast table and looks nothing
-like it.
+The real offender is **`midnight #4D9FFF`** — generic "AI startup blue",
+referencing nothing, and the colour actually being reacted to.
 
-**1.1** Re-derive the four vibe-picked accents the same way the light themes were
-built: a stated contrast target, computed ratios, no eyeballing. Keep each
-theme's identity (matrix is still green, synthwave still hot) but at a chosen
-chroma rather than maximum.
+**1.1** Re-derive `midnight` only. Keep it a blue, but choose it against a
+contrast target the way `arctic`, `slate`, `parchment` and `linen` were chosen,
+rather than at maximum saturation. Report the computed ratios.
+
+Leave `matrix`, `phosphor` and `synthwave` alone. A theme that references
+something specific is allowed to be loud.
 
 **1.2** Then the wider look: spacing rhythm, type ladder, and the interactive
 polish — world clock on hover, currency and country marks, header behaviour.
@@ -81,9 +90,13 @@ than new. Empty states should say what to do next.
 
 - **3D AI assistant renders.** Wants Phase 1 settled first — render style follows
   the design language, not the reverse.
-- **Unlimited AI.** Every call bills Gemini. "Unlimited" is an unbounded bill and
-  removes the only protection against one user emptying the account. Raise the
-  ceiling; do not remove it. Revisit when there is a billing model.
+- **Unlimited AI.** "Unlimited for the user" is fine; "unlimited against the
+  provider" is not. Switching provider changes who bills you, it does not remove
+  the ceiling. Investigate free tiers that cap by daily quota rather than
+  per-call billing (Groq, Cerebras, and Gemini's own free tier — check which tier
+  the current key is on before assuming it costs anything). Then rate-limit per
+  user generously and let the provider's free quota be the real ceiling. The
+  limiter stays either way.
 - **iPad and iPhone app polish.** After Phase 1, so it is done once.
 
 ---
