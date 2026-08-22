@@ -22,14 +22,18 @@ import {
   FRESH_MS_MARKET,
 } from "./offline-cache";
 
-// Structural stand-in for TanStack Query's Query. dehydrate only touches
-// queryKey and state.status; we mirror that shape so the lock doesn't
-// depend on which query-core version pnpm resolved.
-function mockQuery(url: string, status: "success" | "pending" | "error" = "success"): {
+// Structural stand-in for TanStack Query's Query. dehydrate touches
+// queryKey, state.status and state.data; we mirror that shape so the
+// lock doesn't depend on which query-core version pnpm resolved.
+function mockQuery(
+  url: string,
+  status: "success" | "pending" | "error" = "success",
+  data: unknown = { ok: true },
+): {
   queryKey: readonly unknown[];
-  state: { status: string };
+  state: { status: string; data?: unknown };
 } {
-  return { queryKey: [url], state: { status } };
+  return { queryKey: [url], state: { status, data } };
 }
 
 describe("offline-cache · persist blacklist", () => {
@@ -70,12 +74,25 @@ describe("offline-cache · persist blacklist", () => {
     expect(shouldDehydrate(mockQuery("/api/auth/session"))).toBe(false);
   });
 
-  it("refuses to persist pending or errored queries", () => {
-    // TanStack Query already dehydrates only successful queries by
-    // default — this lock guarantees we didn't accidentally opt-in
-    // to persisting error rows, which would be a stale-error surface.
-    expect(shouldDehydrate(mockQuery("/api/dashboard", "pending"))).toBe(false);
-    expect(shouldDehydrate(mockQuery("/api/dashboard", "error"))).toBe(false);
+  it("persists a query with data even if the last fetch errored", () => {
+    // The load-bearing invariant for offline reload: hydrated
+    // queries → invalidate on app-resume → refetch fails offline →
+    // query moves to error state → next dehydrate must NOT drop the
+    // still-valid data. Filtering on status:success (the initial
+    // implementation) wiped the good snapshot to 85 bytes on every
+    // offline reload. Verified live with the persister:set trace.
+    expect(shouldDehydrate(mockQuery("/api/dashboard", "error", { netWorth: 229389 }))).toBe(true);
+  });
+
+  it("refuses to persist a query with no data (pending / initial error / undefined)", () => {
+    // Undefined data means the query never resolved — nothing to
+    // preserve. Persisting the empty envelope would just waste bytes.
+    // Build directly rather than through mockQuery — mockQuery's
+    // default value substitutes when data is explicitly undefined.
+    const pending = { queryKey: ["/api/dashboard"], state: { status: "pending", data: undefined } };
+    const errored = { queryKey: ["/api/dashboard"], state: { status: "error",   data: undefined } };
+    expect(shouldDehydrate(pending)).toBe(false);
+    expect(shouldDehydrate(errored)).toBe(false);
   });
 });
 

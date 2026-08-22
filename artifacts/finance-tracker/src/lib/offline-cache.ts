@@ -49,14 +49,15 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import { get, set, del } from "idb-keyval";
 
 // Structural shape of a Query for our purposes — reading queryKey and
-// state.status is all we need. Importing `type Query` from @tanstack/
-// react-query pulls a specific query-core version that pnpm may resolve
-// differently from the persist-client's own query-core (nominal type
-// mismatch on the `#private` field even when the runtime shape is
-// identical). This local structural type sidesteps that entirely.
+// state.status/data is all we need. Importing `type Query` from
+// @tanstack/react-query pulls a specific query-core version that pnpm
+// may resolve differently from the persist-client's own query-core
+// (nominal type mismatch on the `#private` field even when the runtime
+// shape is identical). This local structural type sidesteps that
+// entirely.
 type CacheableQuery = {
   queryKey: readonly unknown[];
-  state: { status: string };
+  state: { status: string; data?: unknown };
 };
 
 // Fresh windows. Beyond these, the query is stale-refetched when a
@@ -128,10 +129,42 @@ export function staleTimeFor(queryKey: readonly unknown[]): number {
 // The persister — reads/writes the entire dehydrated cache under
 // CACHE_KEY in IndexedDB. throttleTime batches writes so a burst of
 // queries in the first second doesn't triple-write the cache.
+// Guard: refuse to write an empty-snapshot envelope over an existing
+// good one. The persist package fires writes on every cache event —
+// including transient states where a query is momentarily removed
+// (GC, refetch race, in-flight retry) and the dehydrated output is
+// just the envelope with zero queries (~85 bytes on this app). If we
+// pass that through we blast the previous good snapshot; next cold
+// reload sees empty IDB and every widget renders as if it's a fresh
+// install. Diagnosed via the offline-verify harness — the read of
+// "onSuccess: 21 queries hydrated" turning into "0 queries hydrated"
+// on the next reload was the smoking gun.
+//
+// Heuristic: if the serialized payload has an empty queries array,
+// skip the write. This preserves the last-known-good snapshot until
+// a genuinely populated write replaces it.
+function persistedIsEmpty(value: string): boolean {
+  try {
+    const parsed = JSON.parse(value) as { clientState?: { queries?: unknown[] } };
+    return !parsed.clientState?.queries || parsed.clientState.queries.length === 0;
+  } catch {
+    // Malformed JSON — err on the side of writing so we don't get
+    // stuck. (createAsyncStoragePersister always stringifies, so
+    // this branch shouldn't hit in practice.)
+    return false;
+  }
+}
+
 export const persister = createAsyncStoragePersister({
   storage: {
     getItem: (key) => get<string>(key).then((v) => v ?? null),
-    setItem: (key, value) => set(key, value),
+    setItem: async (key, value) => {
+      if (typeof value === "string" && persistedIsEmpty(value)) {
+        // Skip. The existing snapshot (if any) stays untouched.
+        return;
+      }
+      return set(key, value);
+    },
     removeItem: (key) => del(key),
   },
   key: CACHE_KEY,
@@ -152,6 +185,18 @@ export function createOfflineQueryClient(): QueryClient {
         // dataUpdatedAt every time the user switches windows, which
         // muddies the "as of" signal.
         refetchOnWindowFocus: false,
+        // Don't refetch on reconnect — coming back online shouldn't
+        // wipe visible cached data before the fresh fetch completes.
+        // Explicit user pull-to-refresh (see layout.tsx) handles this.
+        refetchOnReconnect: false,
+        // CRITICAL for offline UX: don't refetch on component mount
+        // when we already have data. A hydrated query is ALWAYS "just
+        // mounted" on a cold reload; if refetchOnMount fires, the
+        // offline fetch fails and the widget flashes empty. Keeping
+        // the hydrated value on screen is the whole point of the
+        // read-path work. Fresh data lands via explicit refresh or
+        // an intentional invalidation.
+        refetchOnMount: false,
         // Retry once on transient failure. Offline = fetch throws
         // immediately, retry throws again, useQuery returns error →
         // the cached data (via persist) still renders. UI reads
@@ -174,11 +219,20 @@ export const persistOptions = {
   buster: CACHE_VERSION,
   dehydrateOptions: {
     shouldDehydrateQuery: (query: CacheableQuery) => {
-      // Persist only queries that have data (skip pending / error) and
-      // that aren't blacklisted. This is intersected with the default
-      // TanStack behaviour of persisting only "success" queries.
+      // Persist any query that HAS data, regardless of the last
+      // fetch's status. Key defect this guards against: on an offline
+      // reload the persister hydrates the client with 21 populated
+      // queries, then something (invalidate on app-resume, focus,
+      // route mount) triggers a refetch. Offline → refetch fails →
+      // query moves to error state → the "status === success"
+      // predicate drops the query from the next dehydrate → 85 bytes
+      // (empty envelope) is written over the good 72KB snapshot.
+      // Result: next reload has no cache. Persisting on data-present
+      // preserves the last known good value across error transitions,
+      // which is exactly what "showing you the last time you had
+      // signal" means.
       if (isBlacklisted(query)) return false;
-      return query.state.status === "success";
+      return query.state.data !== undefined;
     },
   },
 };

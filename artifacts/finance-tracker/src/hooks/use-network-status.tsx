@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { Network } from "@capacitor/network";
 
 export function useNetworkStatus() {
-  const [isOnline, setIsOnline] = useState(true);
+  // Initialise from navigator.onLine SYNCHRONOUSLY. A default of `true`
+  // creates a race window where the auth-gate's cached-session clear
+  // branch fires before the async status check completes — wiping the
+  // localStorage snapshot that offline reloads depend on. navigator.onLine
+  // is available on first render in every real browser.
+  const [isOnline, setIsOnline] = useState<boolean>(
+    () => (typeof navigator !== "undefined" ? navigator.onLine : true),
+  );
 
   useEffect(() => {
     let listenerHandle: any;

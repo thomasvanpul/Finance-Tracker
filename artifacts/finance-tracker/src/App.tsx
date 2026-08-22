@@ -65,10 +65,19 @@ const TradingJournal = lazy(() => import("@/pages/trading-journal"));
 // Matches the blank shell in auth-gate.tsx: still, no animation, no layout shift.
 const PageFallback = <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
 // QueryClient configured for offline use — see lib/offline-cache.ts for
-// staleTime / gcTime and the query blacklist. Wrapped by
-// PersistQueryClientProvider below so a cold reload without network
-// renders the last successfully-fetched data rather than an empty state.
-const queryClient = createOfflineQueryClient();
+// staleTime / gcTime and the query blacklist. Exported so main.tsx can
+// synchronously hydrate it from IndexedDB before React renders, which
+// eliminates the observer/hydrate race that otherwise leaves per-page
+// useQuery hooks stuck at status:pending forever (see main.tsx header).
+export const queryClient = createOfflineQueryClient();
+// Debug-only global reference for the offline verification harness
+// (scripts/src/verify-offline.ts). Reads the query cache directly via
+// page.evaluate() to prove hydration reaches the components. Safe to
+// leave in a production bundle: it's read-only introspection, no
+// secrets exposed, and DevTools consumers may find it handy too.
+if (typeof window !== "undefined") {
+  (window as unknown as { __NUMERIS_QC__?: unknown }).__NUMERIS_QC__ = queryClient;
+}
 
 function DefaultPageRedirector() {
   const [, navigate] = useLocation();

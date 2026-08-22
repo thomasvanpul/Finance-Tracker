@@ -57,9 +57,16 @@ catalog:
   '@replit/vite-plugin-dev-banner': ^0.1.1
   '@replit/vite-plugin-runtime-error-modal': ^0.0.6
   '@tailwindcss/vite': ^4.1.14
-  '@tanstack/react-query': ^5.90.21
-  '@tanstack/react-query-persist-client': ^5.90.21
-  '@tanstack/query-async-storage-persister': ^5.90.21
+  # These three MUST resolve to the same @tanstack/query-core minor.
+  # Cross-minor drift (persist-client at 5.101 vs react-query at
+  # 5.100) makes hydrate() silently no-op — the persist package's
+  # Query class won't populate a cache owned by the other version's
+  # Query class. Pinned to exact versions rather than a ^ range so
+  # pnpm never lets them drift apart on the next install. Bump all
+  # three together.
+  '@tanstack/react-query': 5.101.4
+  '@tanstack/react-query-persist-client': 5.101.4
+  '@tanstack/query-async-storage-persister': 5.101.4
   idb-keyval: ^6.2.2
   '@types/node': ^25.3.3
   '@types/react': ^19.2.0
@@ -96,6 +103,16 @@ allowBuilds:
   unrs-resolver: true
 
 overrides:
+  # Pin @tanstack/query-core to a single version. Without this, pnpm
+  # resolves two copies — one under @tanstack/react-query and one
+  # under @tanstack/react-query-persist-client — and hydrate() from
+  # the persist package silently fails to populate the react-query
+  # cache because the Query classes are nominally different despite
+  # having identical shape. Symptom: cold-reload offline shows every
+  # widget empty even though IndexedDB has the full snapshot. Diagnosed
+  # via the offline-verify harness (scripts/src/verify-offline.ts).
+  "@tanstack/query-core": "5.101.4"
+
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/freebsd-arm64": "-"
   "esbuild>@esbuild/freebsd-x64": "-"

@@ -26,9 +26,10 @@
 // No build-time env flag decides. Test-locked in
 // auth-providers.test.ts.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useAuthProviders, type ProviderId } from "@/lib/auth-providers";
+import { useNetworkStatus } from "@/hooks/use-network-status";
 import {
   classifyAuthError,
   makeAuthError,
@@ -188,11 +189,74 @@ function useBrowserWebAuthnSupport(): boolean {
   return supported;
 }
 
+// Cached session snapshot key. Persisted so a cold-reload with no
+// network can render the app for a user who WAS authenticated. The
+// server remains the source of truth: the moment the user is back
+// online, useSession() runs, and if the server says session=null
+// we clear this cache and bounce to sign-in. That's the right
+// asymmetry for an offline finance app — locked out on a plane is
+// worse than one extra tick of "believed authenticated, actually
+// not" that resolves immediately on reconnect.
+const LAST_SESSION_KEY = "ft-last-session-snapshot-v1";
+
+interface CachedSession {
+  userId: string;
+  savedAt: number;
+}
+
+function loadCachedSession(): CachedSession | null {
+  try {
+    const raw = localStorage.getItem(LAST_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedSession;
+    if (typeof parsed?.userId === "string" && typeof parsed?.savedAt === "number") return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedSession(userId: string): void {
+  try {
+    localStorage.setItem(LAST_SESSION_KEY, JSON.stringify({ userId, savedAt: Date.now() } satisfies CachedSession));
+  } catch {
+    /* quota exceeded — ignore, next fresh sign-in will retry */
+  }
+}
+
+function clearCachedSession(): void {
+  try {
+    localStorage.removeItem(LAST_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
   const { providers, passwordResetEnabled, passkeyEnabled, loading: providersLoading } = useAuthProviders();
   const browserSupportsWebAuthn = useBrowserWebAuthnSupport();
   const passkeyAvailable = passkeyEnabled && browserSupportsWebAuthn;
+  const isOnline = useNetworkStatus();
+
+  // Snapshot the current session on every successful load. Clear it
+  // on an explicit logout (server confirms no session while online).
+  useEffect(() => {
+    if (session?.user?.id) {
+      saveCachedSession(session.user.id);
+    } else if (!isPending && isOnline && !session) {
+      // Online + session check returned null → this is a real
+      // signed-out state, not a network failure. Wipe the snapshot
+      // so the next cold-reload doesn't falsely believe we're still
+      // signed in.
+      clearCachedSession();
+    }
+  }, [session, isPending, isOnline]);
+
+  // Cached-session fallback: only kicks in when the network is down
+  // AND we have a snapshot from a prior successful session. Never
+  // used while online — server is authoritative when reachable.
+  const cachedSession = useMemo(() => loadCachedSession(), []);
 
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
@@ -230,6 +294,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
   }
   if (session) {
+    return <>{children}</>;
+  }
+  // Offline + previously-signed-in → trust the snapshot and render the
+  // app. The persisted TanStack Query cache renders last-known data.
+  // Server re-authorises the moment we come back online (useSession
+  // re-runs, and if the server says no-session the effect above wipes
+  // the snapshot and next render bounces to sign-in).
+  if (!isOnline && cachedSession) {
     return <>{children}</>;
   }
 
