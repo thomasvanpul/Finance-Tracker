@@ -18,6 +18,7 @@ import {
   useGetTransactionSummary,
 } from "@workspace/api-client-react";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { StaleAsOf } from "@/components/StaleAsOf";
 import { AXIS_TICK } from "@/lib/chart-tokens";
 import { MonoTooltip, type TooltipEntry } from "@/components/mono-tooltip";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
@@ -1649,7 +1650,12 @@ function exportAccountsCSV(
 // ─── Main Accounts page ───────────────────────────────────────────────────────
 
 export default function Accounts() {
-  const { data: accounts, isLoading, isError, error } = useListAccounts();
+  // dataUpdatedAt + isStale power the StaleAsOf badge next to the KPI
+  // bar so a cached total is legible as cached, not presented as live.
+  const {
+    data: accounts, isLoading, isError, error,
+    dataUpdatedAt: accountsUpdatedAt, isStale: accountsIsStale,
+  } = useListAccounts();
   const { data: currencySettings } = useGetSettingsCurrency();
   const baseCurrency = currencySettings?.baseCurrency ?? "GBP";
   const isMobile = useIsMobile();
@@ -2299,7 +2305,17 @@ export default function Accounts() {
               <KpiCell
                 label="Net Worth"
                 value={<span className="pnum" style={{ color: netWorth >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>{formatGbp(netWorth)}</span>}
-                sub="cash + portfolio"
+                // Net worth inherits Total Cash's `?? 0` shortfall
+                // when any account has a null gbpEquivalent — the
+                // Total Cash cell already announces the count, but
+                // the Net Worth headline is the one a user reads
+                // first, so it needs the same caveat inline. Amber
+                // matches the mobile / net-worth widget treatment.
+                sub={
+                  unconvertibleCount > 0
+                    ? <span style={{ color: "var(--ft-amber)" }}>{unconvertibleCount} account{unconvertibleCount !== 1 ? "s" : ""} without FX — not in total</span>
+                    : "cash + portfolio"
+                }
                 accent="var(--ft-amber)"
                 icon={<Activity className="w-3.5 h-3.5" />}
                 isFinancial
@@ -2313,6 +2329,17 @@ export default function Accounts() {
               />
               </div>
             </div>
+
+            {/* Stale-as-of badge — only renders when the query is
+                past its fresh window or a refetch is in flight after
+                failure (i.e. offline). Reads dataUpdatedAt from
+                useListAccounts, never re-stamped. See StaleAsOf
+                header for the "never presented as live" rule. */}
+            {accountsIsStale && (
+              <div style={{ padding: "6px 14px", borderBottom: "1px solid var(--ft-border)", textAlign: "right" }}>
+                <StaleAsOf ts={accountsUpdatedAt} isFresh={false} />
+              </div>
+            )}
 
             {/* Currency exposure section */}
             {currencies.length > 1 && (

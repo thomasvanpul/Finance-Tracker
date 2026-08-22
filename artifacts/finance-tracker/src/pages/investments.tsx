@@ -19,6 +19,7 @@ import {
   type OptionsChain,
 } from "@workspace/api-client-react";
 import { formatGbp, formatPercent } from "@/lib/utils";
+import { StaleAsOf } from "@/components/StaleAsOf";
 import { getBaseCurrency } from "@/lib/currency-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1500,7 +1501,10 @@ function PortfolioPositionsTable({
 
 export default function Investments({ defaultTab }: { defaultTab?: TabId } = {}) {
   const { data: investments, isLoading, isError, error } = useListInvestments();
-  const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useGetInvestmentSummary();
+  const {
+    data: summary, isLoading: isSummaryLoading, isError: isSummaryError,
+    dataUpdatedAt: summaryUpdatedAt, isStale: summaryIsStale,
+  } = useGetInvestmentSummary();
   const createInv = useCreateInvestment();
   const updateInv = useUpdateInvestment();
   const deleteInv = useDeleteInvestment();
@@ -1930,8 +1934,19 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     {
       label: "PORTFOLIO VALUE",
       value: formatGbp(summary.totalValueGbp),
-      delta: investments && investments.length > 0 ? `${investments.length} position${investments.length !== 1 ? "s" : ""}` : undefined,
-      deltaPositive: null,
+      // Surface unavailablePositions the same way /accounts KPI
+      // surfaces unconvertibleAccounts. Server sums totalValueGbp
+      // over `priced` positions only (see routes/investments.ts) —
+      // any position without a live quote is silently excluded.
+      // Without this line the desktop user reads a value that
+      // understates their holdings and has no signal that some
+      // positions are missing. Mobile follows the same pattern.
+      delta: summary.unavailablePositions > 0
+        ? `${summary.unavailablePositions} unavailable — not in value`
+        : investments && investments.length > 0
+          ? `${investments.length} position${investments.length !== 1 ? "s" : ""}`
+          : undefined,
+      deltaPositive: summary.unavailablePositions > 0 ? false : null,
       primary: true,
     },
     {
@@ -1979,6 +1994,16 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
       <div>
         <div style={{ position: "relative" }}>
           <InvKpiBar cells={kpiCells} style={isMobile ? undefined : { paddingRight: 220 }} />
+          {/* Stale-as-of for the summary — same rule as accounts and
+              the dashboard net-worth widget. Only renders when the
+              query is past its fresh window or refetch is failing.
+              Positioned below the KPI bar so it reads as a caveat on
+              the totals above. */}
+          {summaryIsStale && summary && (
+            <div style={{ padding: "6px 14px", textAlign: "right" }}>
+              <StaleAsOf ts={summaryUpdatedAt} isFresh={false} />
+            </div>
+          )}
           <Button
             onClick={openAdd}
             size="sm"

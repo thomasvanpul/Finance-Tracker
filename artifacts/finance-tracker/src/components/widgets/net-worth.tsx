@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGetDashboard } from "@workspace/api-client-react";
+import { UnconvertibleAccountsBadge } from "@/components/UnconvertibleAccountsBadge";
+import { StaleAsOf } from "@/components/StaleAsOf";
 import { formatGbp, formatPercent } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import { useCountUp } from "@/hooks/use-count-up";
@@ -313,7 +315,12 @@ function AccountTableRow({ acct, isFirst }: AccountTableRowProps) {
 // ─── Main widget ──────────────────────────────────────────────────────────────
 
 export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
-  const { data: d, isLoading } = useGetDashboard();
+  // dataUpdatedAt drives the StaleAsOf badge — the honest fetch time,
+  // never re-stamped to render time. isStale is true past the query's
+  // fresh window, or whenever a refetch is in flight after failure.
+  // Both are what make a cached-but-not-live value legible to the user
+  // rather than presented as current.
+  const { data: d, isLoading, dataUpdatedAt, isStale } = useGetDashboard();
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [period, setPeriod] = useState<Period>("1M");
 
@@ -408,6 +415,18 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
           />
         ))}
       </div>
+
+      {/* Unconvertible-accounts warning + stale-as-of timestamp both
+          sit directly under the KPI strip so they read as caveats on
+          the totals above. The badge announces silent server-side
+          `?? 0` drops; StaleAsOf shows the fetch time when the data
+          is past its fresh window or offline. */}
+      {((d.unconvertibleAccounts ?? 0) > 0 || isStale) && (
+        <div style={{ padding: "6px 12px", borderTop: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <UnconvertibleAccountsBadge count={d.unconvertibleAccounts ?? 0} />
+          <StaleAsOf ts={dataUpdatedAt} isFresh={!isStale} />
+        </div>
+      )}
 
       {/* Month stats strip */}
       <div className="ft-three-col" style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
