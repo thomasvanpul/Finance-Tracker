@@ -11,6 +11,7 @@ import router from "./routes";
 import healthRouter from "./routes/health";
 import authProvidersRouter from "./routes/auth-providers";
 import marketProvidersRouter from "./routes/market-providers";
+import aiStatusRouter from "./routes/ai-status";
 import { logger } from "./lib/logger";
 import { auth } from "./lib/better-auth";
 
@@ -173,6 +174,13 @@ app.use("/api", authProvidersRouter);
 // this route sat behind it). No userId is used inside the handler
 // and no key value is returned — see routes/market-providers.ts.
 app.use("/api", marketProvidersRouter);
+// PUBLIC: /api/ai/status reports whether GEMINI_API_KEY is set on this
+// server. Same "diagnosable without shell" surface as the two above —
+// so the operator can `curl` production and see if AI is configured
+// without needing to sign in first. No user data, no key value. See
+// routes/ai-status.ts. Chat / receipt-split / categorize stay behind
+// requireAuth (they take user prompts and cost money to serve).
+app.use("/api", aiStatusRouter);
 
 // Middleware that reads the Better Auth session and puts userId on the request.
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {

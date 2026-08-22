@@ -95,9 +95,11 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
   }
 });
 
-router.get("/ai/status", (_req, res): void => {
-  res.json({ available: !!process.env.GEMINI_API_KEY });
-});
+// /ai/status moved to routes/ai-status.ts and mounted BEFORE requireAuth
+// so an operator can `curl` it from outside to check whether
+// GEMINI_API_KEY is configured on the deployed instance. The endpoint
+// reports capability only — no user data — matching the shape of
+// /api/auth-providers and /api/market/providers.
 
 // ── Bill split receipt analysis ───────────────────────────────────────────────
 
