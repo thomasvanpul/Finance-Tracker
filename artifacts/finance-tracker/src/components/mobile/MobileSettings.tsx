@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
+import { isThemeUnlocked } from "@/lib/learn-xp";
+import { useTotalXP } from "@/hooks/use-total-xp";
 import {
   useGetSettingsCurrency,
   useListConnections,
@@ -49,6 +51,11 @@ const DATE_FORMATS    = ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"] as const;
 export function MobileSettings({ onBack }: { onBack?: () => void }) {
   const { privacy, togglePrivacy }   = usePrivacy();
   const { theme, themes, setTheme }  = useFintrackTheme();
+  // Same XP source as the desktop settings picker so both surfaces
+  // gate on the same predicate. Without this, a mobile user could
+  // still tap a "locked" swatch and it would apply — the requiredXP
+  // ladder was decorative on mobile until this fix.
+  const learnXP = useTotalXP().total;
   const { data: currency }           = useGetSettingsCurrency();
   const currencyCode = (currency as { currency?: string } | undefined)?.currency ?? "GBP";
 
@@ -146,8 +153,15 @@ export function MobileSettings({ onBack }: { onBack?: () => void }) {
                 within each group. Dark stays first because the product's
                 default is dark and most users pick from there. */}
             {(["dark", "light"] as const).map((tone) => {
+              // Filter to unlocked themes only. Locked swatches used to
+              // render as clickable circles with no visual difference,
+              // and clicking applied the theme regardless — decorative
+              // ladder, no enforcement. Now they don't render at all;
+              // the desktop settings surface handles unlock discovery
+              // via its dedicated "N themes locked — earn XP" nudge.
               const items = themes
                 .filter((t) => t.tone === tone)
+                .filter((t) => isThemeUnlocked(t.id as FintrackTheme, learnXP))
                 .sort((a, b) => a.label.localeCompare(b.label));
               if (items.length === 0) return null;
               return (
@@ -161,7 +175,15 @@ export function MobileSettings({ onBack }: { onBack?: () => void }) {
                       return (
                         <button
                           key={t.id}
-                          onClick={() => setTheme(t.id as FintrackTheme)}
+                          // Belt-and-braces: even though items is
+                          // pre-filtered to unlocked, the onClick also
+                          // rejects a locked id — so a stale reference,
+                          // programmatic call, or future refactor can't
+                          // slip through. Same predicate on both sides.
+                          onClick={() => {
+                            if (!isThemeUnlocked(t.id as FintrackTheme, learnXP)) return;
+                            setTheme(t.id as FintrackTheme);
+                          }}
                           title={t.label}
                           aria-label={t.label}
                           aria-pressed={active}

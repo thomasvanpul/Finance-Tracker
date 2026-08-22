@@ -44,17 +44,31 @@ export interface ThemeReward {
 }
 
 export const THEME_REWARDS: ThemeReward[] = [
-  // First-class themes at 0 XP: void ships as default (implicit),
-  // phosphor + arctic + the three new light themes are unlocked for
-  // every user out of the box. Higher-XP entries below stay as
-  // rewards to earn through Learn.
+  // ── Free (requiredXP: 0) ──────────────────────────────────────────────
+  // Four themes ship free: void (default, implicit — not in this list),
+  // phosphor (dark, CRT green), arctic (light, corporate), parchment
+  // (light, warm paper). Two dark + two light — one distinctly cool and
+  // one distinctly warm on each side. The paid set below carries the
+  // variety rather than duplicating what's already free.
+  //
+  // Four free themes is the "nobody has to grind to make the app
+  // usable" threshold. Everything above is decoration, and decoration
+  // is what XP should buy.
   { id: "phosphor",   label: "Phosphor",   requiredXP: 0,    rarity: "COMMON",    accent: "#7FFF00", base: "#020802", description: "CRT phosphor green" },
   { id: "arctic",     label: "Arctic",     requiredXP: 0,    rarity: "COMMON",    accent: "#0052CC", base: "#F0F4F8", description: "Corporate daylight" },
   { id: "parchment",  label: "Parchment",  requiredXP: 0,    rarity: "COMMON",    accent: "#7A1F30", base: "#F5EBD8", description: "FT paper, newsprint red" },
-  { id: "slate",      label: "Slate",      requiredXP: 0,    rarity: "COMMON",    accent: "#0E5766", base: "#DFE6EE", description: "Granite desk, deep teal" },
-  { id: "linen",      label: "Linen",      requiredXP: 0,    rarity: "COMMON",    accent: "#5A4610", base: "#EEE7D6", description: "Warm ledger, olive gold" },
+  // ── Paid: UNCOMMON (200–500) ──────────────────────────────────────────
+  // Ladder alternates light/dark so a user of either tone-preference
+  // gets a reward at each early step. amber (dark warm) → slate (light
+  // cool grey) → midnight (dark blue) → linen (light warm ledger).
+  // slate + linen were previously free; moved here so the paid set
+  // gets variety and the free set keeps only one distinctly cool and
+  // one distinctly warm option per tone.
   { id: "amber",      label: "Amber",      requiredXP: 200,  rarity: "UNCOMMON",  accent: "#FFD700", base: "#0A0600", description: "Warm trader console" },
+  { id: "slate",      label: "Slate",      requiredXP: 300,  rarity: "UNCOMMON",  accent: "#0E5766", base: "#DFE6EE", description: "Granite desk, deep teal" },
   { id: "midnight",   label: "Midnight",   requiredXP: 400,  rarity: "UNCOMMON",  accent: "#4D9FFF", base: "#010817", description: "Late-night deep blue" },
+  { id: "linen",      label: "Linen",      requiredXP: 500,  rarity: "UNCOMMON",  accent: "#5A4610", base: "#EEE7D6", description: "Warm ledger, olive gold" },
+  // ── Paid: RARE / EPIC / LEGENDARY (650+) ──────────────────────────────
   { id: "matrix",     label: "Matrix",     requiredXP: 650,  rarity: "RARE",      accent: "#00FF41", base: "#000300", description: "Decoded reality" },
   { id: "synthwave",  label: "Synthwave",  requiredXP: 750,  rarity: "RARE",      accent: "#FF007A", base: "#0D001A", description: "Neon grids, 80s midnight" },
   { id: "deep-space", label: "Deep Space", requiredXP: 800,  rarity: "RARE",      accent: "#7B5EA7", base: "#010108", description: "Cosmic observatory" },
@@ -62,6 +76,25 @@ export const THEME_REWARDS: ThemeReward[] = [
   { id: "gilded",     label: "Gilded",     requiredXP: 1100, rarity: "EPIC",      accent: "#C8941E", base: "#080600", description: "Black gold, no noise" },
   { id: "bloodline",  label: "Bloodline",  requiredXP: 1300, rarity: "LEGENDARY", accent: "#CC1A2F", base: "#0F0003", description: "Dark market, red signals" },
 ];
+
+// Load-bearing helper for the settings picker enforcement gate. Both
+// desktop and mobile theme swatches previously wired `onClick={() =>
+// setTheme(id)}` with no lock check — the "Requires 300 XP" label was
+// decoration and a locked swatch still applied on click. This helper
+// centralises the rule so both pickers gate against the same predicate,
+// and so the invariant is grep-able ("isThemeUnlocked" appears only
+// where a theme choice should be gated).
+export function isThemeUnlocked(id: FintrackTheme, learnXP: number): boolean {
+  // void is the implicit default — not in THEME_REWARDS but always usable.
+  if (id === "void") return true;
+  const reward = THEME_REWARDS.find((r) => r.id === id);
+  // Unknown ids default to unlocked so a bad state doesn't lock the
+  // user out of a theme they legitimately have. Widening the type union
+  // without an accompanying THEME_REWARDS entry should surface via
+  // TypeScript rather than a silent lockout here.
+  if (!reward) return true;
+  return learnXP >= reward.requiredXP;
+}
 
 export const RARITY_COLOR: Record<ThemeRarity, string> = {
   COMMON:    "var(--ft-dim)",

@@ -29,7 +29,7 @@ import { Check, Lock } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
 import { useWidgets, WIDGET_REGISTRY } from "@/contexts/widgets-context";
-import { THEME_REWARDS } from "@/lib/learn-xp";
+import { THEME_REWARDS, isThemeUnlocked } from "@/lib/learn-xp";
 import { useTotalXP } from "@/hooks/use-total-xp";
 import { ThemeRewardsPanel } from "@/components/investments/learn-tab";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId } from "@/lib/bot-skins";
@@ -702,7 +702,14 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
     return (
       <button
         key={s.id}
-        onClick={() => setTheme(s.id)}
+        // Belt-and-braces: visibleSwatches already filters out locked
+        // themes, but the click handler also refuses a locked id so
+        // no future refactor / programmatic call can slip through.
+        // Same predicate used on mobile (see MobileSettings).
+        onClick={() => {
+          if (!isThemeUnlocked(s.id, learnXP)) return;
+          setTheme(s.id);
+        }}
         onMouseEnter={() => setHoveredTheme(s.id)}
         onMouseLeave={() => setHoveredTheme(null)}
         aria-pressed={isActive}
