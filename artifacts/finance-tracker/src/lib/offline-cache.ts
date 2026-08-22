@@ -130,12 +130,84 @@ export function staleTimeFor(queryKey: readonly unknown[]): number {
 // idb-keyval-backed storage adapter matching the shape the persister
 // expects. `entries` is optional but enables persisterGc (background
 // cleanup of expired entries) — worth including.
+//
+// ── Null / empty guards ────────────────────────────────────────────────────
+// Two related defects the raw persister carries out of the box:
+//
+//   1. Writes null. When customFetch's parseSuccessBody sees an empty
+//      response body (e.g. a 200 with content-length: 0 during a proxy
+//      hiccup or a bad deploy window) it returns `null`. TanStack Query
+//      accepts `null` as a valid resolved value; the persister then writes
+//      that null into IDB. Every subsequent cold-load restores null.
+//
+//   2. Returns null on restore. `retrieveQuery` in createPersister.js
+//      does `if (restoredData !== void 0) return`; null passes that
+//      check and gets returned. The QueryObserver treats it as a
+//      successful fetch that resolved to null. Downstream code that
+//      does `const rows = data ?? []` then reads "no data" and the
+//      widget shows an empty state — silently, forever, until the
+//      user manually invalidates.
+//
+// The fix has two halves and both belong at the storage boundary:
+//
+//   • isBanned() below rejects the shapes the codebase treats as "no
+//     data": null, empty array, empty object with zero keys. Genuine
+//     empty results (a user with 0 accounts on their first day) are
+//     tolerated the same way an offline miss is — the queryFn re-runs
+//     next time and produces the same empty result. Nothing is lost.
+//
+//   • setItem inspects the serialised payload and skips writes whose
+//     `state.data` is banned. getItem inspects on the way out and
+//     treats banned data as a cache miss (returns null → persister
+//     falls through to queryFn).
+//
+// Diagnosed 2026-08-23 from the /transactions "Summary unavailable"
+// and dashboard "No transactions yet" contradiction. Both surfaced
+// because two consumers of the same underlying data mapped to
+// distinct queryKeys (["/api/transactions"] vs ["/api/transactions",
+// {}]) — one had cached null, the other had real data.
+// Exported for the test lock — enumerates every shape the codebase
+// treats as "no data" and therefore refuses to cache. If a new
+// "empty-shaped" response type appears (rare), extend here AND add
+// a test case rather than papering over it downstream.
+export function isBannedCacheValue(value: unknown): boolean {
+  if (value === null || value === undefined) return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === "object") return Object.keys(value as object).length === 0;
+  return false;
+}
+function isBanned(value: unknown): boolean {
+  return isBannedCacheValue(value);
+}
+function persistedDataIsBanned(serialised: string): boolean {
+  try {
+    const parsed = JSON.parse(serialised) as { state?: { data?: unknown } };
+    return isBanned(parsed?.state?.data);
+  } catch {
+    // Malformed JSON → treat as banned so a corrupt entry doesn't
+    // persist. On restore we'd fail JSON.parse anyway and fall
+    // through to the queryFn.
+    return true;
+  }
+}
+
 const idbStorage = {
   getItem: async (key: string): Promise<string | null> => {
     const v = await get<string>(key);
-    return v ?? null;
+    if (v == null) return null;
+    // Fail-forward: if the stored entry has banned data, treat as
+    // a cache miss so the persister runs the queryFn instead of
+    // resolving to null. Also drop the entry so it stops taking
+    // up space.
+    if (persistedDataIsBanned(v)) {
+      await del(key);
+      return null;
+    }
+    return v;
   },
   setItem: async (key: string, value: string): Promise<void> => {
+    // Never overwrite a good snapshot with a banned one. See header.
+    if (persistedDataIsBanned(value)) return;
     await set(key, value);
   },
   removeItem: async (key: string): Promise<void> => {

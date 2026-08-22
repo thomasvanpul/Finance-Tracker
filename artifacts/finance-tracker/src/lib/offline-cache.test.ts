@@ -16,6 +16,7 @@ import { describe, it, expect } from "vitest";
 import {
   queryPersister,
   isBlacklistedForTests,
+  isBannedCacheValue,
   staleTimeFor,
   isSharedExpenseQuery,
   FRESH_MS_SHARED,
@@ -43,6 +44,56 @@ describe("offline-cache · persister shape", () => {
     expect(typeof p.persisterFn).toBe("function");
     expect(typeof p.persistQuery).toBe("function");
     expect(typeof p.retrieveQuery).toBe("function");
+  });
+});
+
+describe("offline-cache · banned cache values", () => {
+  // The load-bearing invariant behind the storage-adapter's setItem
+  // and getItem guards. Diagnosis path: /transactions "Summary
+  // unavailable" alert firing while the server returns 200 with real
+  // data. Root cause: customFetch resolves an empty body to `null`;
+  // TanStack Query accepts null as a valid resolved value; persister
+  // writes null; every subsequent cold-load restores null and every
+  // `data ?? []` downstream reads "no data".
+
+  it("null is banned — canonical case, produced by customFetch on empty body", () => {
+    expect(isBannedCacheValue(null)).toBe(true);
+  });
+
+  it("undefined is banned — TanStack Query treats this as no-data anyway", () => {
+    expect(isBannedCacheValue(undefined)).toBe(true);
+  });
+
+  it("empty array is banned — a widget that reads `data ?? []` cannot tell it apart from cache-miss", () => {
+    expect(isBannedCacheValue([])).toBe(true);
+  });
+
+  it("empty object is banned — same reasoning", () => {
+    expect(isBannedCacheValue({})).toBe(true);
+  });
+
+  it("populated array is NOT banned", () => {
+    expect(isBannedCacheValue([1])).toBe(false);
+    expect(isBannedCacheValue([{ id: 1 }])).toBe(false);
+  });
+
+  it("populated object is NOT banned even if fields are zero or null", () => {
+    // The summary endpoint's real response for a month with no
+    // income and £88.15 expenses. Zero-valued fields are not empty.
+    expect(isBannedCacheValue({ month: "2026-08", totalIncome: 0, totalExpenses: 88.15 })).toBe(false);
+    // All-zeros is still a real response — the user genuinely had
+    // no activity that month. This must not be rejected.
+    expect(isBannedCacheValue({ month: "2026-01", totalIncome: 0, totalExpenses: 0 })).toBe(false);
+    // A dashboard with a field explicitly set to null (FX-miss) is
+    // still a real response.
+    expect(isBannedCacheValue({ netWorth: null, totalCash: 100 })).toBe(false);
+  });
+
+  it("scalars are NOT banned", () => {
+    // e.g. a raw number or string response. Rare but possible.
+    expect(isBannedCacheValue(0)).toBe(false);
+    expect(isBannedCacheValue("")).toBe(false);
+    expect(isBannedCacheValue(false)).toBe(false);
   });
 });
 
