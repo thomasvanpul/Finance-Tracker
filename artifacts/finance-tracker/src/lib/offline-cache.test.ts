@@ -14,7 +14,8 @@
 
 import { describe, it, expect } from "vitest";
 import {
-  persistOptions,
+  queryPersister,
+  isBlacklistedForTests,
   staleTimeFor,
   isSharedExpenseQuery,
   FRESH_MS_SHARED,
@@ -22,77 +23,90 @@ import {
   FRESH_MS_MARKET,
 } from "./offline-cache";
 
-// Structural stand-in for TanStack Query's Query. dehydrate touches
-// queryKey, state.status and state.data; we mirror that shape so the
-// lock doesn't depend on which query-core version pnpm resolved.
-function mockQuery(
-  url: string,
-  status: "success" | "pending" | "error" = "success",
-  data: unknown = { ok: true },
-): {
+// The persister's `filters.predicate` runs on Query-shaped inputs. We
+// only reach for queryKey, so a minimal stand-in works and stays
+// insulated from query-core version drift.
+function mockQuery(url: string): {
   queryKey: readonly unknown[];
   state: { status: string; data?: unknown };
 } {
-  return { queryKey: [url], state: { status, data } };
+  return { queryKey: [url], state: { status: "success", data: { ok: true } } };
 }
 
-describe("offline-cache · persist blacklist", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const shouldDehydrate = (persistOptions as any).dehydrateOptions.shouldDehydrateQuery;
+describe("offline-cache · persister shape", () => {
+  it("uses experimental_createQueryPersister and exposes persisterFn", () => {
+    // Sanity: prove the persister is the experimental_createQueryPersister
+    // shape rather than a stub. If this changes, downstream expectations
+    // (per-query hydrate, filters.predicate gating) need re-checking.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const p = queryPersister as any;
+    expect(typeof p.persisterFn).toBe("function");
+    expect(typeof p.persistQuery).toBe("function");
+    expect(typeof p.retrieveQuery).toBe("function");
+  });
+});
 
+describe("offline-cache · blacklist", () => {
   it("persists user-owned data queries", () => {
-    expect(shouldDehydrate(mockQuery("/api/dashboard"))).toBe(true);
-    expect(shouldDehydrate(mockQuery("/api/transactions"))).toBe(true);
-    expect(shouldDehydrate(mockQuery("/api/accounts"))).toBe(true);
-    expect(shouldDehydrate(mockQuery("/api/budgets"))).toBe(true);
-    expect(shouldDehydrate(mockQuery("/api/goals"))).toBe(true);
-    expect(shouldDehydrate(mockQuery("/api/debts"))).toBe(true);
-    expect(shouldDehydrate(mockQuery("/api/subscriptions"))).toBe(true);
-    expect(shouldDehydrate(mockQuery("/api/upcoming"))).toBe(true);
-    expect(shouldDehydrate(mockQuery("/api/investments"))).toBe(true);
-    expect(shouldDehydrate(mockQuery("/api/shared-expenses"))).toBe(true);
+    expect(isBlacklistedForTests(["/api/dashboard"])).toBe(false);
+    expect(isBlacklistedForTests(["/api/transactions"])).toBe(false);
+    expect(isBlacklistedForTests(["/api/accounts"])).toBe(false);
+    expect(isBlacklistedForTests(["/api/budgets"])).toBe(false);
+    expect(isBlacklistedForTests(["/api/goals"])).toBe(false);
+    expect(isBlacklistedForTests(["/api/debts"])).toBe(false);
+    expect(isBlacklistedForTests(["/api/subscriptions"])).toBe(false);
+    expect(isBlacklistedForTests(["/api/upcoming"])).toBe(false);
+    expect(isBlacklistedForTests(["/api/investments"])).toBe(false);
+    expect(isBlacklistedForTests(["/api/shared-expenses"])).toBe(false);
   });
 
   it("refuses to persist market queries — they have their own stale-serve tier", () => {
-    // Regression lock: adding /api/market/* here would produce
-    // double-stale behaviour (this cache's timestamp + the market
-    // chain's stale-serve timestamp diverging).
-    expect(shouldDehydrate(mockQuery("/api/market/quotes"))).toBe(false);
-    expect(shouldDehydrate(mockQuery("/api/market/prices"))).toBe(false);
-    expect(shouldDehydrate(mockQuery("/api/market/history"))).toBe(false);
-    expect(shouldDehydrate(mockQuery("/api/market/news"))).toBe(false);
-    expect(shouldDehydrate(mockQuery("/api/market/fx-rates"))).toBe(false);
-    expect(shouldDehydrate(mockQuery("/api/market/providers"))).toBe(false);
+    expect(isBlacklistedForTests(["/api/market/quotes"])).toBe(true);
+    expect(isBlacklistedForTests(["/api/market/prices"])).toBe(true);
+    expect(isBlacklistedForTests(["/api/market/history"])).toBe(true);
+    expect(isBlacklistedForTests(["/api/market/news"])).toBe(true);
+    expect(isBlacklistedForTests(["/api/market/fx-rates"])).toBe(true);
+    expect(isBlacklistedForTests(["/api/market/providers"])).toBe(true);
   });
 
   it("refuses to persist AI / auth queries", () => {
     // AI responses must never be replayed from cache — LLM output is
     // per-request, and a stale answer with a fresh-looking timestamp
     // is worse than no answer.
-    expect(shouldDehydrate(mockQuery("/api/ai/coach"))).toBe(false);
-    expect(shouldDehydrate(mockQuery("/api/auth-providers"))).toBe(false);
-    expect(shouldDehydrate(mockQuery("/api/auth/session"))).toBe(false);
+    expect(isBlacklistedForTests(["/api/ai/coach"])).toBe(true);
+    expect(isBlacklistedForTests(["/api/auth-providers"])).toBe(true);
+    expect(isBlacklistedForTests(["/api/auth/session"])).toBe(true);
+  });
+});
+
+describe("offline-cache · staleTimeFor", () => {
+  it("shared expenses get the shorter 30-second window (another user's actions)", () => {
+    expect(staleTimeFor(["/api/shared-expenses"])).toBe(FRESH_MS_SHARED);
+    expect(staleTimeFor(["/api/owing"])).toBe(FRESH_MS_SHARED);
+    expect(isSharedExpenseQuery(["/api/shared-expenses/42"])).toBe(true);
   });
 
-  it("persists a query with data even if the last fetch errored", () => {
-    // The load-bearing invariant for offline reload: hydrated
-    // queries → invalidate on app-resume → refetch fails offline →
-    // query moves to error state → next dehydrate must NOT drop the
-    // still-valid data. Filtering on status:success (the initial
-    // implementation) wiped the good snapshot to 85 bytes on every
-    // offline reload. Verified live with the persister:set trace.
-    expect(shouldDehydrate(mockQuery("/api/dashboard", "error", { netWorth: 229389 }))).toBe(true);
+  it("user's own data gets the 5-minute window", () => {
+    expect(staleTimeFor(["/api/dashboard"])).toBe(FRESH_MS_USER_DATA);
+    expect(staleTimeFor(["/api/transactions"])).toBe(FRESH_MS_USER_DATA);
+    expect(staleTimeFor(["/api/accounts"])).toBe(FRESH_MS_USER_DATA);
   });
 
-  it("refuses to persist a query with no data (pending / initial error / undefined)", () => {
-    // Undefined data means the query never resolved — nothing to
-    // preserve. Persisting the empty envelope would just waste bytes.
-    // Build directly rather than through mockQuery — mockQuery's
-    // default value substitutes when data is explicitly undefined.
-    const pending = { queryKey: ["/api/dashboard"], state: { status: "pending", data: undefined } };
-    const errored = { queryKey: ["/api/dashboard"], state: { status: "error",   data: undefined } };
-    expect(shouldDehydrate(pending)).toBe(false);
-    expect(shouldDehydrate(errored)).toBe(false);
+  it("market queries get the 1-minute window (chain layers its own stale-serve on top)", () => {
+    expect(staleTimeFor(["/api/market/quotes"])).toBe(FRESH_MS_MARKET);
+  });
+
+  it("shared window is strictly shorter than user-data window", () => {
+    // Load-bearing invariant: if these ever equalise, the whole
+    // "settlement status is another person's action, treat it more
+    // aggressively stale" rationale collapses. Lock so a well-meaning
+    // "let's unify the timings" refactor fails here first.
+    expect(FRESH_MS_SHARED).toBeLessThan(FRESH_MS_USER_DATA);
+  });
+
+  it("mockQuery keeps a URL string as the first key element", () => {
+    // Sanity for the helper's shape — the blacklist depends on this.
+    expect(mockQuery("/api/dashboard").queryKey[0]).toBe("/api/dashboard");
   });
 });
 

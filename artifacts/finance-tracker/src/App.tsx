@@ -1,8 +1,8 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { loadFxOverrides } from "@/lib/currency-store";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createOfflineQueryClient, persistOptions } from "@/lib/offline-cache";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createOfflineQueryClient } from "@/lib/offline-cache";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
@@ -64,12 +64,11 @@ const TradingJournal = lazy(() => import("@/pages/trading-journal"));
 
 // Matches the blank shell in auth-gate.tsx: still, no animation, no layout shift.
 const PageFallback = <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
-// QueryClient configured for offline use — see lib/offline-cache.ts for
-// staleTime / gcTime and the query blacklist. Exported so main.tsx can
-// synchronously hydrate it from IndexedDB before React renders, which
-// eliminates the observer/hydrate race that otherwise leaves per-page
-// useQuery hooks stuck at status:pending forever (see main.tsx header).
-export const queryClient = createOfflineQueryClient();
+// QueryClient configured for offline use — see lib/offline-cache.ts. The
+// per-query persister is plugged in via defaultOptions.queries.persister
+// (experimental_createQueryPersister), so hydration is inline with fetch
+// rather than a separate provider-level restore. No observer race.
+const queryClient = createOfflineQueryClient();
 // Debug-only global reference for the offline verification harness
 // (scripts/src/verify-offline.ts). Reads the query cache directly via
 // page.evaluate() to prove hydration reaches the components. Safe to
@@ -281,7 +280,7 @@ function App() {
       <CategoryProvider>
       <TickersProvider>
       <WidgetsProvider>
-        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+        <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <AuthGate>
               <OnboardingGate>
@@ -294,7 +293,7 @@ function App() {
               </OnboardingGate>
             </AuthGate>
           </TooltipProvider>
-        </PersistQueryClientProvider>
+        </QueryClientProvider>
       </WidgetsProvider>
       </TickersProvider>
       </CategoryProvider>

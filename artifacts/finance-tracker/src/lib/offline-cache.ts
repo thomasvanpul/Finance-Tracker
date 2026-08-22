@@ -4,86 +4,86 @@
 // Every screen used to require the network. Cold-reload on a plane showed
 // skeletons then zeros — the summary read as "your net worth is £0" for a
 // user who genuinely didn't want that message. The read path solves it by
-// persisting TanStack Query's cache to IndexedDB so a cold boot with no
-// signal renders the last known data rather than an empty state.
+// persisting each TanStack Query response to IndexedDB so a cold boot
+// with no signal renders the last known data rather than an empty state.
+//
+// ── Why experimental_createQueryPersister and not PersistQueryClientProvider ─
+// Previous cut used PersistQueryClientProvider which restores the whole
+// cache in a useEffect after first render. That fought a race with per-
+// page useQuery hooks: the observer synchronously created a fresh query
+// (status: pending, no data) during first render before hydrate ran, then
+// hydrate's setState never landed the data in a way the observer picked
+// up. Dashboard worked because the layout mounted its query early enough;
+// per-page hooks (accounts, transactions, goals) lost the race.
+//
+// experimental_createQueryPersister wraps the queryFn per-query. On
+// fetch: if the query has no data AND storage has an entry, RETURN the
+// stored data as if it were the queryFn's result. No separate hydration
+// step, no race window. See:
+//   node_modules/.pnpm/@tanstack+query-persist-client-core@5.101.4/
+//   node_modules/@tanstack/query-persist-client-core/build/modern/
+//   createPersister.js
 //
 // ── Timestamp discipline (load-bearing) ─────────────────────────────────────
-// TanStack Query records `dataUpdatedAt` per query — the FETCH timestamp,
-// never re-stamped to render time. The UI must show that timestamp when
-// data is served stale. Re-stamping it to now would produce a 12-min-old
-// value labelled "just now" — the same defect the market chain guards
-// against. See [[project_fintrack_design]] and the stale-serve pattern in
-// lib/market.ts. Every widget that opts in to offline cache MUST render
-// its `dataUpdatedAt` via <StaleAsOf>.
+// The persister restores state.dataUpdatedAt from storage. TanStack Query
+// records that as the ORIGINAL fetch time — never re-stamped to render
+// time. The UI must show that timestamp via <StaleAsOf>. Re-stamping it
+// would produce a 12-min-old value labelled "just now" — the same defect
+// the market chain guards against. See [[project_fintrack_design]].
 //
 // ── What is cached, what isn't ──────────────────────────────────────────────
 // User-owned data is cacheable: transactions, accounts, budgets, goals,
 // debts, subscriptions, upcoming, investment positions, shared expenses,
-// dashboard summary, net-worth snapshots. Any request the user's own
-// device is the source of truth for.
+// dashboard summary, net-worth snapshots.
 //
 // Non-cacheable — must always miss when offline:
 //   • Live market quotes and history (already null-honest via chain)
 //   • News (per-request freshness matters)
 //   • AI responses (LLM calls, deliberately fresh)
 //   • Auth session / providers health (state changes trigger reauth)
-//   • Provider health snapshot (diagnostic; must not stale-lie)
 //
-// The blacklist is by URL prefix on the queryKey. Every generated hook
-// uses the URL as the first key element; we can filter on it.
+// Enforced by the persister's `filters` callback below.
 //
 // ── Aggressive-stale carve-out ──────────────────────────────────────────────
-// Shared expenses are cached (per user request) but with a shorter fresh
-// window than the user's own rows. A settlement status is another person's
-// action — showing "unsettled" when they paid two hours ago is the one
-// cached value that causes a real-world problem. Timestamp always visible.
-//
-// ── Storage sizing ──────────────────────────────────────────────────────────
-// IndexedDB via idb-keyval, single key holds the whole dehydrated cache.
-// Chrome/Safari IndexedDB quotas are ~1GB+ on desktop, less on mobile but
-// still measured in tens of MB — way more than the dashboard + txns +
-// accounts payload for a personal-scale account (< 1 MB gzipped).
+// Shared expenses are cached but with a shorter fresh window (30s vs 5min).
+// A settlement status is another person's action — showing "unsettled" when
+// they paid two hours ago is the one cached value that causes a real-world
+// problem. Timestamp always visible.
 
 import { QueryClient } from "@tanstack/react-query";
-import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
-import { get, set, del } from "idb-keyval";
+import { experimental_createQueryPersister } from "@tanstack/query-persist-client-core";
+import { get, set, del, entries } from "idb-keyval";
 
 // Structural shape of a Query for our purposes — reading queryKey and
-// state.status/data is all we need. Importing `type Query` from
-// @tanstack/react-query pulls a specific query-core version that pnpm
-// may resolve differently from the persist-client's own query-core
-// (nominal type mismatch on the `#private` field even when the runtime
-// shape is identical). This local structural type sidesteps that
-// entirely.
+// state.status/data is all we need. Local structural type sidesteps
+// nominal type mismatch on the `#private` field between query-core
+// versions.
 type CacheableQuery = {
   queryKey: readonly unknown[];
   state: { status: string; data?: unknown };
 };
 
-// Fresh windows. Beyond these, the query is stale-refetched when a
-// component mounts / window regains focus, BUT the cached value keeps
-// rendering with its dataUpdatedAt visible until the refetch lands.
-// These are per-query timings, not offline-vs-online — offline just
-// means the refetch fails and the cached value stays visible.
+// Fresh windows. Beyond these, the query is refetched when a component
+// mounts / window regains focus; offline just means the refetch fails
+// and the cached value stays visible.
 export const FRESH_MS_USER_DATA = 5 * 60 * 1000;      // 5 min for user's own rows
 export const FRESH_MS_SHARED    = 30 * 1000;          // 30 s for shared expenses — someone else's actions
 export const FRESH_MS_MARKET    = 60 * 1000;          // 1 min for market data (chain handles its own stale)
 
-// gcTime: how long an idle query stays in memory (and thus in the
-// dehydrated cache). 30 days keeps a returning user's data available
-// after a fortnight abroad; longer risks schema-drift bugs (a field
-// removed server-side but still present in cache).
+// gcTime: how long an idle query stays in memory (and thus is available
+// for persister lookup after remount). 30 days keeps a returning user's
+// data available after a fortnight abroad; longer risks schema-drift
+// bugs where a field removed server-side lingers in cache.
 export const GC_TIME_MS = 30 * 24 * 60 * 60 * 1000;
 
-// Persister storage key. Includes app version so a shipped schema
-// change doesn't try to rehydrate against a stale shape. Bump on
-// any breaking response-shape change.
+// Persister storage prefix + buster. Bumping either wipes stale entries
+// on next boot; use on any breaking response-shape change.
 const CACHE_VERSION = "v1";
-const CACHE_KEY = `numeris-query-cache-${CACHE_VERSION}`;
+const PERSISTER_PREFIX = `numeris-query-${CACHE_VERSION}`;
 
 // Query-key URL prefixes we must NEVER persist. The market chain has
 // its own stale-serve tier and its own timestamp discipline — cache
-// duplication here would end up serving quotes from the wrong tier.
+// duplication here would serve quotes from the wrong tier.
 const BLACKLIST_PREFIXES = [
   "/api/market/quotes",
   "/api/market/prices",
@@ -99,26 +99,27 @@ const BLACKLIST_PREFIXES = [
   "/api/healthz",
 ];
 
-// Match a query against the blacklist. TanStack Query keys generated by
-// orval look like `["/api/dashboard", {...params}]`. First element is
-// the URL; we prefix-match against it.
-function isBlacklisted(query: CacheableQuery): boolean {
-  const first = query.queryKey[0];
+// Exported for the test lock. Not part of the runtime surface anyone
+// else should call — the persister's `filters.predicate` is the only
+// place this is applied at runtime.
+export function isBlacklistedForTests(queryKey: readonly unknown[]): boolean {
+  const first = queryKey[0];
   if (typeof first !== "string") return false;
   return BLACKLIST_PREFIXES.some((prefix) => first.startsWith(prefix));
 }
 
-// Match shared-expenses queries for the shorter fresh window. Same
-// prefix approach as blacklist. Adds URL surface here as new shared
-// endpoints appear.
+function isBlacklisted(query: CacheableQuery): boolean {
+  return isBlacklistedForTests(query.queryKey);
+}
+
+// Match shared-expenses queries for the shorter fresh window.
 export function isSharedExpenseQuery(queryKey: readonly unknown[]): boolean {
   const first = queryKey[0];
   if (typeof first !== "string") return false;
   return first.startsWith("/api/shared-expenses") || first.startsWith("/api/owing");
 }
 
-// Fresh window for a given query, driving TanStack Query's staleTime.
-// Non-shared user data + everything else on the app default.
+// Fresh window for a given query.
 export function staleTimeFor(queryKey: readonly unknown[]): number {
   if (isSharedExpenseQuery(queryKey)) return FRESH_MS_SHARED;
   const first = queryKey[0];
@@ -126,113 +127,72 @@ export function staleTimeFor(queryKey: readonly unknown[]): number {
   return FRESH_MS_USER_DATA;
 }
 
-// The persister — reads/writes the entire dehydrated cache under
-// CACHE_KEY in IndexedDB. throttleTime batches writes so a burst of
-// queries in the first second doesn't triple-write the cache.
-// Guard: refuse to write an empty-snapshot envelope over an existing
-// good one. The persist package fires writes on every cache event —
-// including transient states where a query is momentarily removed
-// (GC, refetch race, in-flight retry) and the dehydrated output is
-// just the envelope with zero queries (~85 bytes on this app). If we
-// pass that through we blast the previous good snapshot; next cold
-// reload sees empty IDB and every widget renders as if it's a fresh
-// install. Diagnosed via the offline-verify harness — the read of
-// "onSuccess: 21 queries hydrated" turning into "0 queries hydrated"
-// on the next reload was the smoking gun.
-//
-// Heuristic: if the serialized payload has an empty queries array,
-// skip the write. This preserves the last-known-good snapshot until
-// a genuinely populated write replaces it.
-function persistedIsEmpty(value: string): boolean {
-  try {
-    const parsed = JSON.parse(value) as { clientState?: { queries?: unknown[] } };
-    return !parsed.clientState?.queries || parsed.clientState.queries.length === 0;
-  } catch {
-    // Malformed JSON — err on the side of writing so we don't get
-    // stuck. (createAsyncStoragePersister always stringifies, so
-    // this branch shouldn't hit in practice.)
-    return false;
-  }
-}
-
-export const persister = createAsyncStoragePersister({
-  storage: {
-    getItem: (key) => get<string>(key).then((v) => v ?? null),
-    setItem: async (key, value) => {
-      if (typeof value === "string" && persistedIsEmpty(value)) {
-        // Skip. The existing snapshot (if any) stays untouched.
-        return;
-      }
-      return set(key, value);
-    },
-    removeItem: (key) => del(key),
+// idb-keyval-backed storage adapter matching the shape the persister
+// expects. `entries` is optional but enables persisterGc (background
+// cleanup of expired entries) — worth including.
+const idbStorage = {
+  getItem: async (key: string): Promise<string | null> => {
+    const v = await get<string>(key);
+    return v ?? null;
   },
-  key: CACHE_KEY,
-  throttleTime: 1000,
+  setItem: async (key: string, value: string): Promise<void> => {
+    await set(key, value);
+  },
+  removeItem: async (key: string): Promise<void> => {
+    await del(key);
+  },
+  entries: async (): Promise<Array<[string, string]>> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const all = (await entries()) as Array<[any, any]>;
+    return all
+      .filter(([k, v]) => typeof k === "string" && typeof v === "string")
+      .map(([k, v]) => [k as string, v as string]);
+  },
+};
+
+// The per-query persister. `persisterFn` is what plugs into
+// QueryClient.defaultOptions.queries.persister — TanStack Query
+// invokes it in place of the raw queryFn.
+export const queryPersister = experimental_createQueryPersister({
+  storage: idbStorage,
+  prefix: PERSISTER_PREFIX,
+  buster: CACHE_VERSION,
+  maxAge: GC_TIME_MS,
+  // refetchOnRestore: false means a restored query is treated as fresh.
+  // We don't want the very act of restoring cached data to trigger a
+  // background refetch that fails offline and could confuse
+  // downstream error states. Explicit user pull-to-refresh drives
+  // fresh data.
+  refetchOnRestore: false,
+  // filters: only queries the callback returns true for are persisted
+  // AND restored. Blacklisted queries never touch IndexedDB.
+  filters: {
+    predicate: (query) => !isBlacklisted(query as CacheableQuery),
+  },
 });
 
-// The QueryClient. staleTime defaults are set per-query via the
-// wrapper hook getPersistQueryOptions() below rather than a single
-// global — a global staleTime would over-cache market data.
 export function createOfflineQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
       queries: {
+        // Plug the persister in as the query's fetch wrapper. This is
+        // where the whole "hydrate on demand" behaviour comes from.
+        persister: queryPersister.persisterFn,
         staleTime: FRESH_MS_USER_DATA,
         gcTime: GC_TIME_MS,
-        // Don't refetch on window focus for cached data — jarring on
-        // desktop when tabbing back. Focus-refetch would ALSO overwrite
-        // dataUpdatedAt every time the user switches windows, which
-        // muddies the "as of" signal.
+        // Don't refetch on window focus — jarring on desktop when
+        // tabbing back, and would overwrite dataUpdatedAt so the "as
+        // of" signal drifts.
         refetchOnWindowFocus: false,
         // Don't refetch on reconnect — coming back online shouldn't
         // wipe visible cached data before the fresh fetch completes.
         // Explicit user pull-to-refresh (see layout.tsx) handles this.
         refetchOnReconnect: false,
-        // CRITICAL for offline UX: don't refetch on component mount
-        // when we already have data. A hydrated query is ALWAYS "just
-        // mounted" on a cold reload; if refetchOnMount fires, the
-        // offline fetch fails and the widget flashes empty. Keeping
-        // the hydrated value on screen is the whole point of the
-        // read-path work. Fresh data lands via explicit refresh or
-        // an intentional invalidation.
-        refetchOnMount: false,
         // Retry once on transient failure. Offline = fetch throws
-        // immediately, retry throws again, useQuery returns error →
-        // the cached data (via persist) still renders. UI reads
-        // dataUpdatedAt for the timestamp.
+        // immediately, retry throws again, useQuery keeps whatever
+        // data the persister restored.
         retry: 1,
       },
     },
   });
 }
-
-// PersistQueryClientOptions consumed by the provider. dehydrateOptions
-// carries the blacklist so we don't persist market/AI/auth queries at
-// all — they'd waste IndexedDB space AND risk staleness-labelled UI
-// showing on a query that was designed to be always-live.
-export const persistOptions = {
-  persister,
-  maxAge: GC_TIME_MS,
-  // Bumping this string wipes the cache on next boot — use if a
-  // rehydration bug ships. Keep in sync with CACHE_VERSION above.
-  buster: CACHE_VERSION,
-  dehydrateOptions: {
-    shouldDehydrateQuery: (query: CacheableQuery) => {
-      // Persist any query that HAS data, regardless of the last
-      // fetch's status. Key defect this guards against: on an offline
-      // reload the persister hydrates the client with 21 populated
-      // queries, then something (invalidate on app-resume, focus,
-      // route mount) triggers a refetch. Offline → refetch fails →
-      // query moves to error state → the "status === success"
-      // predicate drops the query from the next dehydrate → 85 bytes
-      // (empty envelope) is written over the good 72KB snapshot.
-      // Result: next reload has no cache. Persisting on data-present
-      // preserves the last known good value across error transitions,
-      // which is exactly what "showing you the last time you had
-      // signal" means.
-      if (isBlacklisted(query)) return false;
-      return query.state.data !== undefined;
-    },
-  },
-};
