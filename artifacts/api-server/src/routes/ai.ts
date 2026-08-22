@@ -1,16 +1,17 @@
 import { Router, type IRouter } from "express";
 import { callGemini } from "../lib/gemini";
+import { getAiHealth } from "../lib/ai-config";
 
 const router: IRouter = Router();
 
-// Single Gemini model used across every AI route. Bumping here bumps
-// everywhere — grep for GEMINI_MODEL to find the change surface.
-//
-// If Google retires the current model, calls return 404 with a body
-// naming the model. callGemini logs that at warn-level so the
-// operator sees "model gemini-X-Y not found — try gemini-A-B" without
-// having to instrument anything.
-const GEMINI_MODEL = "gemini-2.0-flash";
+// Model comes from ai-config, which reads GEMINI_MODEL env var (default
+// gemini-3.7-flash). One source of truth — the next retirement is a
+// Render env change, not a code change. See lib/ai-config.ts header.
+// getAiHealth() returns { model, ... } — we read it per-request so a
+// live env change (rare but possible) picks up without a restart.
+function currentModel(): string {
+  return getAiHealth().model;
+}
 
 // Generic client-facing error for AI failures. The operator gets the
 // detail via logger (route + status + upstream body); the user does
@@ -75,7 +76,7 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
   }));
 
   const result = await callGemini({
-    model: GEMINI_MODEL,
+    model: currentModel(),
     apiKey,
     route: "ai.chat",
     body: {
@@ -166,7 +167,7 @@ Rules:
 - Return raw JSON only`;
 
   const call = await callGemini({
-    model: GEMINI_MODEL,
+    model: currentModel(),
     apiKey,
     route: "ai.receipt-split",
     body: {
@@ -238,7 +239,7 @@ router.post("/ai/receipt-scan", async (req, res): Promise<void> => {
   const safeMimeType = typeof mimeType === "string" && mimeType.length > 0 ? mimeType : "image/jpeg";
 
   const call = await callGemini({
-    model: GEMINI_MODEL,
+    model: currentModel(),
     apiKey,
     route: "ai.receipt-scan",
     body: {
@@ -343,7 +344,7 @@ Transactions:
 ${JSON.stringify(transactions.map((t) => ({ id: t.id, description: t.description, amount: t.amount, type: t.type })))}`;
 
   const call = await callGemini({
-    model: GEMINI_MODEL,
+    model: currentModel(),
     apiKey,
     route: "ai.batch-categorize",
     body: {

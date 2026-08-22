@@ -1,31 +1,43 @@
-// Public read-only "is AI configured on this server" endpoint.
+// Public read-only "is AI configured AND working on this server" endpoint.
 //
-// Follows the same shape as /api/auth-providers and /api/market/providers:
-// reports capability (env-key presence, not the key itself) so the
-// operator can diagnose "why isn't the AI panel doing anything" from
-// outside without shell access to the host. And so the sign-in-page
-// UI can decide whether to render an AI teaser without needing a
-// session first.
+// Prior version reported {available: <keyPresent>} — which was true the
+// entire time gemini-2.0-flash was dead (three months). Key-presence
+// is not the same as "the thing works". This endpoint now reports what
+// it actually knows: env key, configured model, and whether that model
+// was found in Google's models list at boot.
 //
-// Mounted BEFORE requireAuth in app.ts. Kept in its own router file
-// (not merged into routes/ai.ts) because everything else in ai.ts is
-// authenticated — chat, receipt-split, ai-categorize all take user
-// prompts and cost money to serve.
+// `available: true` now means BOTH the key is set AND the configured
+// model was verified live at last boot. A client that reads only
+// `available` continues to work but with truthful semantics.
 //
-// ── What this endpoint EXPOSES ──────────────────────────────────────────────
-//   • { available: true|false } — is GEMINI_API_KEY set?
-//
-// ── What this endpoint MUST NOT EXPOSE ──────────────────────────────────────
-//   • Any part of the API key (even hashed, even partial)
-//   • Any user data — this is public
-//   • Which model is used (Gemini-2.0-flash vs -pro) — leaks vendor cost
+// Mounted BEFORE requireAuth in app.ts. Same public-diagnostic category
+// as /api/auth-providers and /api/market/providers — no user data, no
+// key value, safe to expose so an operator can `curl` production and
+// see AI's true state without shell or session.
 
 import { Router, type IRouter } from "express";
+import { getAiHealth } from "../lib/ai-config";
 
 const router: IRouter = Router();
 
 router.get("/ai/status", (_req, res): void => {
-  res.json({ available: !!process.env.GEMINI_API_KEY });
+  const health = getAiHealth();
+  // available = key set AND model confirmed present in Google's list.
+  // A `null` modelVerified (boot check didn't run / errored) counts as
+  // NOT available — better to report "unknown, treat as broken" than
+  // false-optimistic. Once the boot check succeeds, this flips true.
+  const available = health.keyConfigured && health.modelVerified === true;
+  res.json({
+    available,
+    keyConfigured: health.keyConfigured,
+    model: health.model,
+    modelVerified: health.modelVerified,
+    modelVerifiedAt: health.modelVerifiedAt,
+    // lastError carries the fix-me sentence when verification failed
+    // (see ai-config.ts) so an operator sees the recovery step
+    // directly in the endpoint response, not just in Render logs.
+    lastError: health.lastError,
+  });
 });
 
 export default router;

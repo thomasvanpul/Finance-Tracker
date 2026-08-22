@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { alpacaStream } from "./lib/alpaca-stream";
+import { verifyModelAtBoot } from "./lib/ai-config";
 
 const rawPort = process.env["PORT"];
 
@@ -24,4 +25,9 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   alpacaStream.connect();
+  // Verify the configured Gemini model against Google's models list.
+  // Non-blocking — server is already accepting requests. If the model
+  // is dead, an error-level log fires with the fix-me sentence and
+  // /api/ai/status flips to available:false. See lib/ai-config.ts.
+  void verifyModelAtBoot();
 });
