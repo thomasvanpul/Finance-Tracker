@@ -43,6 +43,31 @@ misread.
 The real offender is **`midnight #4D9FFF`** — generic "AI startup blue",
 referencing nothing, and the colour actually being reacted to.
 
+### Hosting note — recorded 22 Aug 2026
+
+Render was chosen because `render.yaml` was already in the repo from the Replit
+era and Railway had expired, not because it was evaluated. Measured production
+TTFB from Kuala Lumpur is ~530ms on an endpoint that does no work: the service
+is in Frankfurt and each region-crossing round trip costs ~250ms.
+
+**Render pins each service to one region.** With a user base split between the
+UK and Malaysia, no single region is right — whichever is chosen, half the users
+pay the crossing.
+
+**Fly.io is the correct destination** if that split persists: it runs the same
+app in multiple regions with anycast routing, ~$3.32/mo per always-on
+shared-cpu-1x machine, so two regions is roughly the cost of one Render Starter.
+
+**But multi-region compute does not help with single-region data.** Neon sits in
+London; an API machine in Singapore still waits ~180ms per query. Real
+multi-region needs read replicas, which is a materially more complex system.
+
+**Therefore, in order:** reduce round-trip *count* first (free, helps both
+regions, larger effect than any hosting change), then revisit Fly with the
+database story solved. Do not migrate while annoyed.
+
+---
+
 **1.1** Re-derive `midnight` only. Keep it a blue, but choose it against a
 contrast target the way `arctic`, `slate`, `parchment` and `linen` were chosen,
 rather than at maximum saturation. Report the computed ratios.
@@ -135,6 +160,52 @@ does what before it is needed.
   every subscription and host choice against measured usage. Cheapest wins first
   — payload reduction and caching beat tier upgrades and cost nothing monthly.
   Do this with data, not projections.
+
+---
+
+## Phase 4.5 · Native apps — one codebase, three shells
+
+The React app stays the core. Nothing is rewritten.
+
+| Target | Tool | Notes |
+|---|---|---|
+| Web | Vercel + VitePWA | done; already installs to home screens |
+| iOS / iPadOS | **Capacitor** | native shell around the existing app; days not months |
+| macOS / Windows | **Tauri** | system webview, ~3MB bundles vs Electron's ~100MB |
+
+React Native is the wrong choice here — it would mean rewriting twelve mobile
+screens and twelve desktop pages for no gain.
+
+### What will actually block App Store approval
+
+**Guideline 4.2 (minimum functionality)** rejects thin website wrappers. A
+Capacitor build that is just the site in a box gets refused. Needs genuine
+native integration:
+
+- **Biometric unlock** — largely there already via passkeys
+- **Push notifications** — for shared-expense requests, the one thing in the app
+  that another person's action triggers
+- **Home screen widgets** — net worth or this month's spend
+- **Offline capability — the real gap.** Every screen currently requires the
+  network. A finance app showing nothing on a plane feels broken. Needs local
+  caching of the last known state, clearly marked stale (the stale-serve
+  pattern from the market work already establishes the vocabulary).
+
+Finance apps also get extra review scrutiny.
+
+### Costs
+
+- Apple Developer Program **$99/year** — covers iOS, iPadOS and Mac notarisation
+- Windows code signing **~$100–400/year**, or skip it and users see a SmartScreen
+  warning on install
+- Review: weeks of back-and-forth, not days
+
+### Sequencing
+
+Do this **after** the web app has real users. Shipping to the App Store before
+anyone uses the web version means iterating through review cycles on a product
+that is still changing weekly. The web app is where the learning happens; the
+shells come once the thing is stable.
 
 ---
 
