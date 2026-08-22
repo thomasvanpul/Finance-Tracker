@@ -1,7 +1,8 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { loadFxOverrides } from "@/lib/currency-store";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createOfflineQueryClient, persistOptions } from "@/lib/offline-cache";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
@@ -63,7 +64,11 @@ const TradingJournal = lazy(() => import("@/pages/trading-journal"));
 
 // Matches the blank shell in auth-gate.tsx: still, no animation, no layout shift.
 const PageFallback = <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
-const queryClient = new QueryClient();
+// QueryClient configured for offline use — see lib/offline-cache.ts for
+// staleTime / gcTime and the query blacklist. Wrapped by
+// PersistQueryClientProvider below so a cold reload without network
+// renders the last successfully-fetched data rather than an empty state.
+const queryClient = createOfflineQueryClient();
 
 function DefaultPageRedirector() {
   const [, navigate] = useLocation();
@@ -267,7 +272,7 @@ function App() {
       <CategoryProvider>
       <TickersProvider>
       <WidgetsProvider>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
           <TooltipProvider>
             <AuthGate>
               <OnboardingGate>
@@ -280,7 +285,7 @@ function App() {
               </OnboardingGate>
             </AuthGate>
           </TooltipProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </WidgetsProvider>
       </TickersProvider>
       </CategoryProvider>

@@ -58,6 +58,9 @@ catalog:
   '@replit/vite-plugin-runtime-error-modal': ^0.0.6
   '@tailwindcss/vite': ^4.1.14
   '@tanstack/react-query': ^5.90.21
+  '@tanstack/react-query-persist-client': ^5.90.21
+  '@tanstack/query-async-storage-persister': ^5.90.21
+  idb-keyval: ^6.2.2
   '@types/node': ^25.3.3
   '@types/react': ^19.2.0
   '@types/react-dom': ^19.2.0

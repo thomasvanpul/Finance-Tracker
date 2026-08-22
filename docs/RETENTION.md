@@ -139,3 +139,75 @@ Judged by churn-impact per unit of effort:
 
 Deliberately *not* first: more charts, more categories, more dashboard. The
 research is unanimous that better reporting of the past does not retain anyone.
+
+---
+
+## Passive value — what the app can notice on its own
+
+The organising idea: **the app should reach out when something real has
+happened, rather than wait to be opened.** Constrained by the F5 refusals — only
+when there is genuinely something to say, never manufactured urgency. That
+constraint is itself the differentiator: a finance app that pings you only when
+it matters is one people leave notifications enabled for.
+
+### Prerequisite: two small history tables
+
+Currently only *current* values are stored. Almost every useful observation is a
+comparison over time, so:
+
+- `fx_rate_history` — daily snapshot of the rate table. Tiny; one row per
+  currency pair per day.
+- price history on `subscriptions` — currently a single `amount`. Without
+  history, a price rise is invisible.
+
+Neither is expensive. Both unlock most of what follows.
+
+### The standout: FX transfer timing
+
+Unique to the multi-currency wedge, saves real money, needs zero user action.
+
+> GBP/MYR is 4.8% above its 90-day average. Moving the £2,000 you have sitting
+> in GBP now rather than at the average rate is worth about £96.
+
+Nobody in personal finance does this well, because most apps are single-country.
+For someone paid in one currency and spending in another — the exact audience —
+it is the most valuable thing the app could tell them, and it requires only rate
+history plus balances already held.
+
+Must respect the number rule: state the rate, the comparison window, and the
+assumption. Never imply a prediction about where rates go next.
+
+### The rest, ranked by concrete value
+
+**Subscription price rises.** "Spotify went from £9.99 to £12.99 in March."
+Silent price increases are among the most common quiet leaks, and the data is
+already tracked — it just is not compared over time.
+
+**Zombie subscriptions.** Paying for something with no matching activity, or two
+services that do the same thing.
+
+**Annual renewals before they hit.** The £89 charge people forget is coming.
+Upcoming already models this; it needs to arrive as a notice, not a page.
+
+**Runway.** "At current burn, your current account covers 23 days." Simple,
+computed from data held, and more actionable than any pie chart.
+
+**Income anomaly.** Paid late, or paid less than usual. For anyone on variable
+or freelance income this is the thing they actually worry about.
+
+**Unusual charge.** Materially larger than typical for that merchant. Adjacent
+to fraud detection without claiming to be it.
+
+**Bill drift.** Rent, energy or insurance rising over time — visible only with
+history.
+
+### Delivery
+
+The `briefing` page and the weekly digest route already exist. The digest was
+404ing since creation until 20 Aug, which means this surface has never actually
+been used.
+
+A weekly digest that says three true, specific things beats a daily one that
+says something generic. The test for including anything: **would this sentence
+be worth a push notification on its own?** If not, it does not belong in the
+digest either.
