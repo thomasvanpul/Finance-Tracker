@@ -1,6 +1,22 @@
 import { Router, type IRouter } from "express";
+import { callGemini } from "../lib/gemini";
 
 const router: IRouter = Router();
+
+// Single Gemini model used across every AI route. Bumping here bumps
+// everywhere — grep for GEMINI_MODEL to find the change surface.
+//
+// If Google retires the current model, calls return 404 with a body
+// naming the model. callGemini logs that at warn-level so the
+// operator sees "model gemini-X-Y not found — try gemini-A-B" without
+// having to instrument anything.
+const GEMINI_MODEL = "gemini-2.0-flash";
+
+// Generic client-facing error for AI failures. The operator gets the
+// detail via logger (route + status + upstream body); the user does
+// not need Google's raw error text, and Google's error messages can
+// mention model names / quota metadata that shouldn't cross the wire.
+const CLIENT_FAILURE = "The AI service is temporarily unavailable. Please try again in a moment.";
 
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LEN = 4000;
@@ -58,41 +74,22 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
     parts: [{ text: m.text }],
   }));
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const err = await response.text();
-      res.status(502).json({ error: `Gemini API error: ${response.status}`, detail: err });
-      return;
-    }
-
-    const data = (await response.json()) as {
-      candidates?: Array<{ content: { parts: Array<{ text: string }> } }>;
-      error?: { message: string };
-    };
-
-    if (data.error) {
-      res.status(502).json({ error: data.error.message });
-      return;
-    }
-
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    res.json({ text });
-  } catch {
-    res.status(502).json({ error: "Failed to reach AI service" });
+  const result = await callGemini({
+    model: GEMINI_MODEL,
+    apiKey,
+    route: "ai.chat",
+    body: {
+      contents,
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+    },
+  });
+  if (!result.ok) {
+    res.status(502).json({ error: CLIENT_FAILURE });
+    return;
   }
+  const text = result.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  res.json({ text });
 });
 
 // /ai/status moved to routes/ai-status.ts and mounted BEFORE requireAuth
@@ -168,55 +165,34 @@ Rules:
 - If you cannot read a value, use 0
 - Return raw JSON only`;
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: safeMime, data: imageBase64 } },
-              { text: prompt },
-            ],
-          }],
-          generationConfig: { maxOutputTokens: 1024, temperature: 0.1 },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const err = await response.text();
-      res.status(502).json({ error: `Gemini API error: ${response.status}`, detail: err });
-      return;
-    }
-
-    const data = (await response.json()) as {
-      candidates?: Array<{ content: { parts: Array<{ text: string }> } }>;
-      error?: { message: string };
-    };
-
-    if (data.error) {
-      res.status(502).json({ error: data.error.message });
-      return;
-    }
-
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-
-    let result: unknown;
-    try {
-      result = JSON.parse(cleaned);
-    } catch {
-      res.status(500).json({ error: "Failed to parse AI response", raw: rawText.slice(0, 500) });
-      return;
-    }
-
-    res.json(result);
-  } catch {
-    res.status(500).json({ error: "Failed to reach AI service" });
+  const call = await callGemini({
+    model: GEMINI_MODEL,
+    apiKey,
+    route: "ai.receipt-split",
+    body: {
+      contents: [{
+        parts: [
+          { inline_data: { mime_type: safeMime, data: imageBase64 } },
+          { text: prompt },
+        ],
+      }],
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.1 },
+    },
+  });
+  if (!call.ok) {
+    res.status(502).json({ error: CLIENT_FAILURE });
+    return;
   }
+  const rawText = call.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    res.status(500).json({ error: "Failed to parse AI response", raw: rawText.slice(0, 500) });
+    return;
+  }
+  res.json(parsed);
 });
 
 // ── Receipt scanning ──────────────────────────────────────────────────────────
@@ -261,76 +237,56 @@ router.post("/ai/receipt-scan", async (req, res): Promise<void> => {
 
   const safeMimeType = typeof mimeType === "string" && mimeType.length > 0 ? mimeType : "image/jpeg";
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
+  const call = await callGemini({
+    model: GEMINI_MODEL,
+    apiKey,
+    route: "ai.receipt-scan",
+    body: {
+      contents: [
+        {
+          parts: [
+            { inline_data: { mime_type: safeMimeType, data: imageBase64 } },
             {
-              parts: [
-                { inline_data: { mime_type: safeMimeType, data: imageBase64 } },
-                {
-                  text: 'Extract from this receipt: merchant name, total amount (number only), date (YYYY-MM-DD format), category (one of: Food & Drink, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Other), currency code. Return ONLY valid JSON: {"merchant": "...", "amount": 0.00, "date": "...", "category": "...", "currency": "GBP"}',
-                },
-              ],
+              text: 'Extract from this receipt: merchant name, total amount (number only), date (YYYY-MM-DD format), category (one of: Food & Drink, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Other), currency code. Return ONLY valid JSON: {"merchant": "...", "amount": 0.00, "date": "...", "category": "...", "currency": "GBP"}',
             },
           ],
-          generationConfig: { maxOutputTokens: 512, temperature: 0.1 },
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const err = await response.text();
-      res.status(502).json({ error: `Gemini API error: ${response.status}`, detail: err });
-      return;
-    }
-
-    const data = (await response.json()) as {
-      candidates?: Array<{ content: { parts: Array<{ text: string }> } }>;
-      error?: { message: string };
-    };
-
-    if (data.error) {
-      res.status(502).json({ error: data.error.message });
-      return;
-    }
-
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-
-    // Strip markdown code fences if Gemini wraps the JSON
-    const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-
-    let result: ReceiptScanResult;
-    try {
-      const parsed = JSON.parse(cleaned) as Record<string, unknown>;
-
-      const merchant = typeof parsed.merchant === "string" ? parsed.merchant : "Unknown";
-      const amount = typeof parsed.amount === "number" ? parsed.amount : parseFloat(String(parsed.amount ?? 0)) || 0;
-      const date = typeof parsed.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date)
-        ? parsed.date
-        : new Date().toISOString().slice(0, 10);
-      const rawCategory = typeof parsed.category === "string" ? parsed.category : "Other";
-      const category: ReceiptCategory = (RECEIPT_CATEGORIES as readonly string[]).includes(rawCategory)
-        ? (rawCategory as ReceiptCategory)
-        : "Other";
-      const currency = typeof parsed.currency === "string" && parsed.currency.length === 3
-        ? parsed.currency.toUpperCase()
-        : "GBP";
-
-      result = { merchant, amount, date, category, currency };
-    } catch {
-      res.status(500).json({ error: "Failed to parse AI response", raw: rawText.slice(0, 500) });
-      return;
-    }
-
-    res.json(result);
-  } catch {
-    res.status(500).json({ error: "Failed to reach AI service" });
+        },
+      ],
+      generationConfig: { maxOutputTokens: 512, temperature: 0.1 },
+    },
+  });
+  if (!call.ok) {
+    res.status(502).json({ error: CLIENT_FAILURE });
+    return;
   }
+  const rawText = call.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  // Strip markdown code fences if Gemini wraps the JSON
+  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+
+  let result: ReceiptScanResult;
+  try {
+    const parsed = JSON.parse(cleaned) as Record<string, unknown>;
+
+    const merchant = typeof parsed.merchant === "string" ? parsed.merchant : "Unknown";
+    const amount = typeof parsed.amount === "number" ? parsed.amount : parseFloat(String(parsed.amount ?? 0)) || 0;
+    const date = typeof parsed.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date)
+      ? parsed.date
+      : new Date().toISOString().slice(0, 10);
+    const rawCategory = typeof parsed.category === "string" ? parsed.category : "Other";
+    const category: ReceiptCategory = (RECEIPT_CATEGORIES as readonly string[]).includes(rawCategory)
+      ? (rawCategory as ReceiptCategory)
+      : "Other";
+    const currency = typeof parsed.currency === "string" && parsed.currency.length === 3
+      ? parsed.currency.toUpperCase()
+      : "GBP";
+
+    result = { merchant, amount, date, category, currency };
+  } catch {
+    res.status(500).json({ error: "Failed to parse AI response", raw: rawText.slice(0, 500) });
+    return;
+  }
+
+  res.json(result);
 });
 
 // ── Batch auto-categorize ─────────────────────────────────────────────────────
@@ -386,56 +342,36 @@ Available categories: ${AI_CATEGORIES.join(", ")}.
 Transactions:
 ${JSON.stringify(transactions.map((t) => ({ id: t.id, description: t.description, amount: t.amount, type: t.type })))}`;
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 4096, temperature: 0.1 },
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const err = await response.text();
-      res.status(502).json({ error: `Gemini API error: ${response.status}`, detail: err });
-      return;
-    }
-
-    const data = (await response.json()) as {
-      candidates?: Array<{ content: { parts: Array<{ text: string }> } }>;
-      error?: { message: string };
-    };
-
-    if (data.error) {
-      res.status(502).json({ error: data.error.message });
-      return;
-    }
-
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
-
-    // Strip markdown code fences if Gemini wraps the JSON
-    const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-
-    let suggestions: Array<{ id: number; category: string }>;
-    try {
-      const parsed = JSON.parse(cleaned) as unknown;
-      if (!Array.isArray(parsed)) throw new Error("Expected array");
-      suggestions = (parsed as Array<{ id: unknown; category: unknown }>)
-        .filter((item) => typeof item.id === "number" && typeof item.category === "string")
-        .map((item) => ({ id: item.id as number, category: item.category as string }));
-    } catch {
-      res.status(502).json({ error: "Failed to parse AI response", raw: rawText.slice(0, 500) });
-      return;
-    }
-
-    res.json({ suggestions });
-  } catch {
-    res.status(502).json({ error: "Failed to reach AI service" });
+  const call = await callGemini({
+    model: GEMINI_MODEL,
+    apiKey,
+    route: "ai.batch-categorize",
+    body: {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 4096, temperature: 0.1 },
+    },
+  });
+  if (!call.ok) {
+    res.status(502).json({ error: CLIENT_FAILURE });
+    return;
   }
+  const rawText = call.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
+  // Strip markdown code fences if Gemini wraps the JSON
+  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+
+  let suggestions: Array<{ id: number; category: string }>;
+  try {
+    const parsed = JSON.parse(cleaned) as unknown;
+    if (!Array.isArray(parsed)) throw new Error("Expected array");
+    suggestions = (parsed as Array<{ id: unknown; category: unknown }>)
+      .filter((item) => typeof item.id === "number" && typeof item.category === "string")
+      .map((item) => ({ id: item.id as number, category: item.category as string }));
+  } catch {
+    res.status(502).json({ error: "Failed to parse AI response", raw: rawText.slice(0, 500) });
+    return;
+  }
+
+  res.json({ suggestions });
 });
 
 export default router;
