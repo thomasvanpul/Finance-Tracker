@@ -1,23 +1,39 @@
+// AI routes. Every handler dispatches through the provider chain
+// (lib/ai-providers/chain.ts) rather than calling one vendor directly:
+//   • chainChat        walks Groq → Cerebras → Gemini
+//   • chainCategorize  walks Groq (small model) → Cerebras → Gemini
+//   • chainVision      walks Groq (qwen3.6-27b) → Cerebras (gemma) → Gemini
+//
+// Rationale: Gemini alone produced three separate failures inside a week
+// (retired model, silent catches, key-format mismatch). One provider is
+// a single point of failure and we already have the pattern from the
+// market chain.
+//
+// Every response carries servingProvider + reducedCapacity so the UI
+// can render a quiet "reduced capacity" chrome when we fall through
+// to Cerebras or Gemini. Same principle as the market stale-serve:
+// degraded is fine, degraded-and-silent is not.
+
 import { Router, type IRouter } from "express";
-import { callGemini } from "../lib/gemini";
-import { getGeminiModel } from "../lib/ai-config";
+import { getAiHealth } from "../lib/ai-config";
+import { chainChat, chainCategorize, chainVision } from "../lib/ai-providers/chain";
 
 const router: IRouter = Router();
 
-// TEMPORARY: this file still calls Gemini directly. The next commit
-// wires the chain (Groq → Cerebras → Gemini) via lib/ai-providers/
-// chain.ts and this helper goes away. Left in place so the endpoints
-// keep working until the chain lands, with the correct Gemini model
-// pulled from the shared ai-config source of truth.
-function currentModel(): string {
-  return getGeminiModel();
-}
-
-// Generic client-facing error for AI failures. The operator gets the
-// detail via logger (route + status + upstream body); the user does
-// not need Google's raw error text, and Google's error messages can
-// mention model names / quota metadata that shouldn't cross the wire.
+// Generic client-facing error when the whole chain is exhausted. The
+// operator gets provider-specific detail via the pino logs each
+// adapter emits; the user sees only this.
 const CLIENT_FAILURE = "The AI service is temporarily unavailable. Please try again in a moment.";
+
+// Return 503 if NO provider is currently keyed. Any request to an AI
+// endpoint when zero providers exist would fail anyway — telling the
+// caller "unconfigured" is more actionable than "temporarily
+// unavailable". `available` from getAiHealth() reflects verified state;
+// this pre-flight only checks keys since verification can be null
+// pending boot and we still want the chain to try.
+function anyProviderKeyed(): boolean {
+  return getAiHealth().providers.some((p) => p.keyConfigured);
+}
 
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LEN = 4000;
@@ -30,8 +46,7 @@ If asked about specific prices or live market data, clarify you don't have real-
 You can explain financial concepts, help interpret their data, suggest strategies, and answer "what if" scenarios.`;
 
 router.post("/ai/chat", async (req, res): Promise<void> => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!anyProviderKeyed()) {
     res.status(503).json({ error: "AI assistant is not configured on this server." });
     return;
   }
@@ -70,40 +85,32 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
     systemPrompt += `\n\n--- USER PORTFOLIO CONTEXT (read-only data) ---\n${safeContext}\n--- END CONTEXT ---`;
   }
 
-  const contents = messages.map((m) => ({
-    role: m.role,
-    parts: [{ text: m.text }],
-  }));
-
-  const result = await callGemini({
-    model: currentModel(),
-    apiKey,
+  const result = await chainChat({
+    messages,
+    systemPrompt,
     route: "ai.chat",
-    body: {
-      contents,
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
-    },
+    maxTokens: 1024,
+    temperature: 0.7,
   });
+
   if (!result.ok) {
     res.status(502).json({ error: CLIENT_FAILURE });
     return;
   }
-  const text = result.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  res.json({ text });
+  res.json({
+    text: result.text,
+    // Chain metadata — the UI reads reducedCapacity to render the
+    // "reduced capacity" chrome and can show servingProvider in a
+    // debug view. Both are diagnostic, not sensitive.
+    servingProvider: result.servingProvider,
+    reducedCapacity: result.reducedCapacity,
+  });
 });
-
-// /ai/status moved to routes/ai-status.ts and mounted BEFORE requireAuth
-// so an operator can `curl` it from outside to check whether
-// GEMINI_API_KEY is configured on the deployed instance. The endpoint
-// reports capability only — no user data — matching the shape of
-// /api/auth-providers and /api/market/providers.
 
 // ── Bill split receipt analysis ───────────────────────────────────────────────
 
 router.post("/ai/receipt-split", async (req, res): Promise<void> => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!anyProviderKeyed()) {
     res.status(503).json({ error: "AI assistant is not configured on this server." });
     return;
   }
@@ -166,25 +173,19 @@ Rules:
 - If you cannot read a value, use 0
 - Return raw JSON only`;
 
-  const call = await callGemini({
-    model: currentModel(),
-    apiKey,
+  const call = await chainVision({
+    imageBase64,
+    mimeType: safeMime,
+    prompt,
     route: "ai.receipt-split",
-    body: {
-      contents: [{
-        parts: [
-          { inline_data: { mime_type: safeMime, data: imageBase64 } },
-          { text: prompt },
-        ],
-      }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.1 },
-    },
+    maxTokens: 1024,
+    jsonMode: true,
   });
   if (!call.ok) {
     res.status(502).json({ error: CLIENT_FAILURE });
     return;
   }
-  const rawText = call.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const rawText = call.text;
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
   let parsed: unknown;
   try {
@@ -193,7 +194,13 @@ Rules:
     res.status(500).json({ error: "Failed to parse AI response", raw: rawText.slice(0, 500) });
     return;
   }
-  res.json(parsed);
+  // Wrap the AI's structured response so servingProvider + reducedCapacity
+  // are always present. Client reads `.result` for the receipt data.
+  res.json({
+    result: parsed,
+    servingProvider: call.servingProvider,
+    reducedCapacity: call.reducedCapacity,
+  });
 });
 
 // ── Receipt scanning ──────────────────────────────────────────────────────────
@@ -220,8 +227,7 @@ interface ReceiptScanResult {
 }
 
 router.post("/ai/receipt-scan", async (req, res): Promise<void> => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!anyProviderKeyed()) {
     res.status(503).json({ error: "AI assistant is not configured on this server." });
     return;
   }
@@ -238,30 +244,20 @@ router.post("/ai/receipt-scan", async (req, res): Promise<void> => {
 
   const safeMimeType = typeof mimeType === "string" && mimeType.length > 0 ? mimeType : "image/jpeg";
 
-  const call = await callGemini({
-    model: currentModel(),
-    apiKey,
+  const call = await chainVision({
+    imageBase64,
+    mimeType: safeMimeType,
+    prompt: 'Extract from this receipt: merchant name, total amount (number only), date (YYYY-MM-DD format), category (one of: Food & Drink, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Other), currency code. Return ONLY valid JSON: {"merchant": "...", "amount": 0.00, "date": "...", "category": "...", "currency": "GBP"}',
     route: "ai.receipt-scan",
-    body: {
-      contents: [
-        {
-          parts: [
-            { inline_data: { mime_type: safeMimeType, data: imageBase64 } },
-            {
-              text: 'Extract from this receipt: merchant name, total amount (number only), date (YYYY-MM-DD format), category (one of: Food & Drink, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Other), currency code. Return ONLY valid JSON: {"merchant": "...", "amount": 0.00, "date": "...", "category": "...", "currency": "GBP"}',
-            },
-          ],
-        },
-      ],
-      generationConfig: { maxOutputTokens: 512, temperature: 0.1 },
-    },
+    maxTokens: 512,
+    jsonMode: true,
   });
   if (!call.ok) {
     res.status(502).json({ error: CLIENT_FAILURE });
     return;
   }
-  const rawText = call.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  // Strip markdown code fences if Gemini wraps the JSON
+  const rawText = call.text;
+  // Strip markdown code fences if the model wraps the JSON
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
 
   let result: ReceiptScanResult;
@@ -287,7 +283,11 @@ router.post("/ai/receipt-scan", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(result);
+  res.json({
+    ...result,
+    servingProvider: call.servingProvider,
+    reducedCapacity: call.reducedCapacity,
+  });
 });
 
 // ── Batch auto-categorize ─────────────────────────────────────────────────────
@@ -308,8 +308,7 @@ const AI_CATEGORIES = [
 const MAX_BATCH_SIZE = 200;
 
 router.post("/ai/batch-categorize", async (req, res): Promise<void> => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!anyProviderKeyed()) {
     res.status(503).json({ error: "AI assistant is not configured on this server." });
     return;
   }
@@ -343,21 +342,17 @@ Available categories: ${AI_CATEGORIES.join(", ")}.
 Transactions:
 ${JSON.stringify(transactions.map((t) => ({ id: t.id, description: t.description, amount: t.amount, type: t.type })))}`;
 
-  const call = await callGemini({
-    model: currentModel(),
-    apiKey,
+  const call = await chainCategorize({
+    prompt,
     route: "ai.batch-categorize",
-    body: {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 4096, temperature: 0.1 },
-    },
+    maxTokens: 4096,
   });
   if (!call.ok) {
     res.status(502).json({ error: CLIENT_FAILURE });
     return;
   }
-  const rawText = call.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
-  // Strip markdown code fences if Gemini wraps the JSON
+  const rawText = call.text;
+  // Strip markdown code fences if the model wraps the JSON
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
 
   let suggestions: Array<{ id: number; category: string }>;
@@ -372,7 +367,11 @@ ${JSON.stringify(transactions.map((t) => ({ id: t.id, description: t.description
     return;
   }
 
-  res.json({ suggestions });
+  res.json({
+    suggestions,
+    servingProvider: call.servingProvider,
+    reducedCapacity: call.reducedCapacity,
+  });
 });
 
 export default router;
