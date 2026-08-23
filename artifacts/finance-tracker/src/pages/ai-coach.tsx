@@ -35,6 +35,13 @@ interface Message {
 // so nothing here posts financial data up.
 
 import { streamChat, type ChatServerEvent } from "@/lib/ai-chat-client";
+import {
+  StreamingProgress,
+  StreamingReducedCapacity,
+  StreamingCut,
+  StreamingError,
+  QueuedPromptChip,
+} from "@/components/ai-coach/streaming-meta";
 
 // (buildSpendingContext was here — a client-side assembler that shipped
 // the user's finances up in the request body. Removed 2026-08-23 along
@@ -99,20 +106,28 @@ const PERSONA_SUBTITLE: Record<PersonaId, string> = {
 };
 
 // ── Message renderer ──────────────────────────────────────────────────────────
+// Terminal-styled hairline rect (2px radius per constitution). User
+// right-aligned with accent left border; coach left-aligned with
+// blue left border and a small COACH tag. No per-message avatar,
+// no "QUERY #1" label — position + border colour convey role,
+// which is the anti-vibe rule against relentless labelling.
+//
+// Model output uses a small markdown pass (numbered lists, bullets,
+// H2s, **bold**) rendered with the same mono/tabular vocabulary the
+// rest of the app uses. Streaming states from ai-coach/streaming-meta
+// render inside the coach bubble.
 
-function MessageBubble({ msg, index }: { msg: Message; index: number }) {
-  const isUser = msg.role === "user";
-
-  const formatted = msg.text
+function renderMarkdown(text: string): React.ReactNode[] {
+  return text
     .split(/\n\n+/)
     .map((para, i) => {
       if (/^\d+\.\s/.test(para)) {
         const items = para.split(/\n/).filter(Boolean);
         return (
-          <ol key={i} style={{ margin: "8px 0", paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
+          <ol key={i} style={{ margin: "6px 0 0", paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
             {items.map((item, j) => (
               <li key={j} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 10, minWidth: 18, paddingTop: 1, flexShrink: 0, fontWeight: 700 }}>
+                <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 10, minWidth: 18, paddingTop: 2, flexShrink: 0, fontWeight: 700 }}>
                   {String(j + 1).padStart(2, "0")}
                 </span>
                 <Text as="span" mono size={12}>{item.replace(/^\d+\.\s/, "")}</Text>
@@ -124,7 +139,7 @@ function MessageBubble({ msg, index }: { msg: Message; index: number }) {
       if (/^[-*•]\s/.test(para)) {
         const items = para.split(/\n/).filter(Boolean);
         return (
-          <ul key={i} style={{ margin: "8px 0", paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
+          <ul key={i} style={{ margin: "6px 0 0", paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
             {items.map((item, j) => (
               <li key={j} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", marginTop: 3, flexShrink: 0, fontSize: 10 }}>▸</span>
@@ -136,7 +151,7 @@ function MessageBubble({ msg, index }: { msg: Message; index: number }) {
       }
       if (/^##\s/.test(para)) {
         return (
-          <div key={i} style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", margin: "12px 0 4px", borderBottom: "1px solid var(--ft-border)", paddingBottom: 4 }}>
+          <div key={i} style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.14em", textTransform: "uppercase", margin: "10px 0 4px" }}>
             {para.replace(/^##\s/, "")}
           </div>
         );
@@ -148,54 +163,58 @@ function MessageBubble({ msg, index }: { msg: Message; index: number }) {
       );
       return <p key={i} style={{ margin: "6px 0 0", fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.7 }}>{boldified}</p>;
     });
+}
 
+function MessageBubble({ msg }: { msg: Message; index: number }) {
+  const isUser = msg.role === "user";
   return (
     <div style={{
       display: "flex",
-      gap: 10,
       flexDirection: isUser ? "row-reverse" : "row",
-      alignItems: "flex-start",
-      marginBottom: 16,
-      animation: "fadeSlideIn 0.15s ease-out",
+      marginBottom: 14,
     }}>
       <div style={{
-        width: 28,
-        height: 28,
-        borderRadius: 2,
-        background: isUser ? "rgba(79,140,255,0.15)" : "rgba(245,158,11,0.10)",
-        border: `1px solid ${isUser ? "rgba(79,140,255,0.35)" : "rgba(245,158,11,0.3)"}`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-      }}>
-        {isUser
-          ? <Text as="span" mono size={10} weight={700} color="var(--ft-blue)" letterSpacing="0.05em">YOU</Text>
-          : <BotMessageSquare size={13} style={{ color: "var(--ft-amber)" }} />
-        }
-      </div>
-
-      <div style={{
-        maxWidth: "78%",
-        background: isUser ? "rgba(79,140,255,0.06)" : "var(--ft-surface)",
-        border: `1px solid ${isUser ? "rgba(79,140,255,0.18)" : "var(--ft-border)"}`,
-        borderLeft: isUser ? undefined : "2px solid var(--ft-amber)",
+        maxWidth: "80%",
+        background: isUser ? "var(--ft-raised)" : "var(--ft-surface)",
+        border: "1px solid var(--ft-border)",
+        borderLeft: `2px solid ${isUser ? "var(--ft-accent)" : "var(--ft-blue)"}`,
         borderRadius: 2,
         padding: "10px 14px",
-        lineHeight: 1.7,
         color: "var(--ft-text)",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
       }}>
-        {isUser && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-blue)", letterSpacing: "0.08em", marginBottom: 5, textTransform: "uppercase" }}>
-            Query #{index + 1}
-          </div>
-        )}
         {!isUser && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-amber)", letterSpacing: "0.08em", marginBottom: 6, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 5 }}>
-            <Sparkles size={9} /> AI Coach Response
+          <div style={{ marginBottom: 6 }}>
+            <MonoLabel as="span" size={8} color="var(--ft-dim)" letterSpacing="0.14em">COACH</MonoLabel>
           </div>
         )}
-        {formatted}
+
+        {msg.status === "streaming" && msg.caption && (
+          <div style={{ marginBottom: msg.text ? 6 : 0 }}>
+            <StreamingProgress caption={msg.caption} />
+          </div>
+        )}
+
+        {msg.text && (
+          isUser
+            ? <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.65 }}>{msg.text}</div>
+            : <div>{renderMarkdown(msg.text)}</div>
+        )}
+
+        {msg.status === "streaming" && !msg.caption && !msg.text && (
+          <StreamingProgress caption="Starting…" />
+        )}
+
+        {msg.status === "done" && msg.reducedCapacity && msg.servingProvider && (
+          <StreamingReducedCapacity provider={msg.servingProvider} />
+        )}
+        {msg.status === "cut" && msg.servingProvider && (
+          <StreamingCut provider={msg.servingProvider} reason={msg.cutReason ?? "unknown"} />
+        )}
+        {msg.status === "error" && (
+          <StreamingError message={msg.errorMessage ?? "AI temporarily unavailable."} />
+        )}
       </div>
     </div>
   );
@@ -650,12 +669,72 @@ export default function AiCoach() {
               </div>
             )}
 
-            {/* Smart Insights */}
+            {/* Universal data-grounded starters — visible even when no
+                smart insights fire. Each prompt is only shown when the
+                user actually has the underlying data (budgets/goals/
+                last-month/investments), so no starter references a table
+                the user hasn't filled in yet. */}
+            {(() => {
+              const starters: Array<{ label: string; text: string }> = [];
+              starters.push({
+                label: "How am I doing this month?",
+                text: "Give me a straight read on how I'm doing this month — income vs spend, savings rate, and one thing to focus on.",
+              });
+              if (lastMonthCategories.length > 0) {
+                starters.push({
+                  label: "What changed since last month?",
+                  text: "Compare this month vs last month. Which categories moved the most, what does the pattern say, and what should I do about it?",
+                });
+              }
+              if (budgets && (budgets as unknown[]).length > 0) {
+                starters.push({
+                  label: "Which budget is most at risk?",
+                  text: "Which of my budgets is most likely to blow this month? Give me the one to focus on and a specific action.",
+                });
+              }
+              if (goals && (goals as unknown[]).length > 0) {
+                starters.push({
+                  label: "Am I on pace for my goals?",
+                  text: "Am I on pace to hit my savings goals? Which one needs more attention and by how much?",
+                });
+              }
+              return (
+                <VStack gap={4} wide maxWidth={480}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8 }}>
+                    <MonoLabel as="span" size={8} letterSpacing="0.14em">Common questions</MonoLabel>
+                  </div>
+                  {starters.map((s) => (
+                    <button
+                      key={s.label}
+                      type="button"
+                      onClick={() => handleSend(s.text)}
+                      disabled={isStreaming || aiAvailable === false}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+                        padding: "9px 12px",
+                        background: "var(--ft-surface)",
+                        border: "1px solid var(--ft-border)",
+                        borderLeft: "2px solid var(--ft-accent)",
+                        cursor: isStreaming || aiAvailable === false ? "not-allowed" : "pointer",
+                        textAlign: "left",
+                        width: "100%",
+                        borderRadius: 2,
+                      }}
+                    >
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{s.label}</span>
+                      <MonoLabel as="span" size={8} color="var(--ft-dim)" letterSpacing="0.1em">↵</MonoLabel>
+                    </button>
+                  ))}
+                </VStack>
+              );
+            })()}
+
+            {/* Smart Insights — data-triggered "needs attention" cards */}
             {smartInsights.length > 0 && (
               <div style={{ width: "100%", maxWidth: 480 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, borderLeft: "3px solid var(--ft-amber)", paddingLeft: 8 }}>
                   <Zap size={10} style={{ color: "var(--ft-amber)" }} />
-                  <Text as="span" mono upper size={8} weight={700} color="var(--ft-amber)" letterSpacing="0.12em">Needs Attention</Text>
+                  <Text as="span" mono upper size={8} weight={700} color="var(--ft-amber)" letterSpacing="0.14em">Needs attention</Text>
                 </div>
                 <VStack gap={4}>
                   {smartInsights.map((item, i) => (
@@ -671,12 +750,12 @@ export default function AiCoach() {
               </div>
             )}
 
-            {/* Suggested prompts — persona-aware */}
+            {/* Persona-scoped prompts — flavour for the user's chosen focus */}
             <VStack gap={4} wide maxWidth={480}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8 }}>
-                <MonoLabel as="span" size={8} letterSpacing="0.12em">Suggested queries</MonoLabel>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, borderLeft: "3px solid var(--ft-blue)", paddingLeft: 8 }}>
+                <MonoLabel as="span" size={8} letterSpacing="0.14em">Persona picks</MonoLabel>
                 {primaryPersona && (
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", padding: "1px 6px", border: "1px solid var(--ft-accent)", letterSpacing: "0.06em" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-blue)", padding: "1px 6px", border: "1px solid var(--ft-blue)", letterSpacing: "0.06em" }}>
                     {primaryPersona.code}
                   </span>
                 )}
@@ -710,26 +789,21 @@ export default function AiCoach() {
                 index={messages.slice(0, i).filter(m => m.role === "user").length}
               />
             ))}
-            {/* Queued follow-ups typed while a stream is in flight. */}
+            {/* Queued follow-ups typed while a stream is in flight — shared visual. */}
             {pending.map((q, i) => (
-              <div key={`pending-${i}`} style={{ display: "flex", flexDirection: "row-reverse", marginBottom: 12 }}>
-                <div style={{
-                  maxWidth: "80%",
-                  padding: "8px 12px",
-                  border: "1px dashed var(--ft-border2)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11,
-                  color: "var(--ft-dim)",
-                  fontStyle: "italic",
-                }}>
-                  queued · {q}
-                </div>
+              <div key={`pending-${i}`} style={{ marginBottom: 12 }}>
+                <QueuedPromptChip text={q} />
               </div>
             ))}
-            {lastError && (
-              <div style={{ marginBottom: 16, padding: "10px 14px", background: "rgba(230,80,80,0.05)", border: "1px solid rgba(230,80,80,0.18)", fontSize: 11, color: "var(--ft-red)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "center", gap: 8 }}>
-                <AlertTriangle size={11} style={{ flexShrink: 0 }} />
-                {lastError}
+            {/* Note: lastError already surfaces INSIDE the streaming
+                bubble via StreamingError. The old page-level error
+                banner is redundant now that terminal states live
+                per-message. Kept a compact fallback below for the
+                narrow case where lastError is set but no bubble was
+                ever opened (fetch failed before applyEvent ran). */}
+            {lastError && messages[messages.length - 1]?.status !== "error" && (
+              <div style={{ marginBottom: 16, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "2px solid var(--ft-red)" }}>
+                <StreamingError message={lastError} />
               </div>
             )}
             <div ref={bottomRef} />
