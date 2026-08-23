@@ -597,9 +597,11 @@ export default function AiCoach() {
         </div>
       )}
       {aiAvailable === false && (
-        <div style={{ marginBottom: 12, padding: "10px 14px", background: "rgba(230,80,80,0.05)", border: "1px solid rgba(230,80,80,0.18)", fontSize: 11, color: "var(--ft-red)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "center", gap: 8 }}>
-          <AlertTriangle size={11} style={{ flexShrink: 0 }} />
-          AI assistant is not configured on this server. Add GEMINI_API_KEY to enable it.
+        <div style={{ marginBottom: 12, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "2px solid var(--ft-red)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "baseline", gap: 8 }}>
+          <MonoLabel as="span" size={9} color="var(--ft-red)" letterSpacing="0.14em">AI OFFLINE</MonoLabel>
+          <span style={{ fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5 }}>
+            No AI provider is currently configured or verified. Check /api/ai/status for the per-provider health (Groq, Cerebras, OpenRouter).
+          </span>
         </div>
       )}
 
