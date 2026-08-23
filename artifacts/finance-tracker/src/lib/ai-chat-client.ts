@@ -29,6 +29,11 @@ const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL ?? "")
 // hundred ms once running).
 export const NO_DATA_TIMEOUT_MS = 20_000;
 
+// Wire shape mirrors AiChatMessage in @workspace/api-zod's ai-chat
+// module. Kept hand-typed here rather than type-imported to keep
+// zod out of the client bundle (a type-only import gets erased,
+// but the marginal risk of drift is caught by the
+// ai-chat-contract test in api-server).
 export interface ChatWireMessage {
   role: "user" | "model";
   text: string;
@@ -153,7 +158,21 @@ export async function streamChat(
     // Only role + text on the wire. Nothing else (status/caption/etc)
     // is a wire concern. If the caller passes a richer Message shape
     // (which the AI Agent does) it must map to ChatWireMessage first.
-    const wireMessages: ChatWireMessage[] = messages.map((m) => ({ role: m.role, text: m.text }));
+    //
+    // Filter empty-text messages BEFORE sending — a streaming bubble
+    // that errored (or was cut) before receiving any tokens leaves
+    // text: "" on the model message in local state. Including that
+    // in a follow-up call 400'd the whole request server-side (the
+    // schema rejects empty text). Empty messages carry no useful
+    // history for the model either — dropping them silently is
+    // correct in both directions.
+    const wireMessages: ChatWireMessage[] = messages
+      .map((m) => ({ role: m.role, text: m.text }))
+      .filter((m) => m.text.length > 0);
+    if (wireMessages.length === 0) {
+      cb.onError("No message to send.");
+      return;
+    }
     const res = await fetch(`${API_BASE}/api/ai/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },

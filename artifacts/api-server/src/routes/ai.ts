@@ -22,6 +22,7 @@ import { getAiHealth } from "../lib/ai-config";
 import { chainChat, chainChatStream, chainCategorize, chainVision } from "../lib/ai-providers/chain";
 import { buildChatContext, buildCategorizeContext, buildReceiptScanContext, type ContextProgress } from "../lib/ai-context";
 import { logger } from "../lib/logger";
+import { AiChatRequestSchema } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -75,9 +76,10 @@ function anyProviderKeyed(): boolean {
   return getAiHealth().providers.some((p) => p.keyConfigured);
 }
 
-const MAX_MESSAGES = 20;
-const MAX_MESSAGE_LEN = 4000;
-const MAX_PATH_LEN = 200;
+// Message-count + text-length caps live in @workspace/api-zod
+// (AiChatRequestSchema) so the client sees the same limits without
+// a rename risk. Path is capped there too — no need for a separate
+// slice here.
 
 // Base system prompt. The USER PORTFOLIO CONTEXT block is appended
 // server-side after being built from the user's own rows via
@@ -121,31 +123,19 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
     return;
   }
 
-  const { messages, path } = req.body as {
-    messages?: Array<{ role: "user" | "model"; text: string }>;
-    path?: string;
-  };
-
-  if (!messages || !Array.isArray(messages) || messages.length === 0) {
-    res.status(400).json({ error: "messages array is required" });
+  // Body validation via the shared @workspace/api-zod schema so client
+  // and server can't drift on field names, role union, or length
+  // caps. The ai-chat-contract test locks the wire the client emits
+  // against this same schema.
+  const parsed = AiChatRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0];
+    res.status(400).json({
+      error: first ? `${first.path.join(".") || "body"}: ${first.message}` : "invalid request body",
+    });
     return;
   }
-
-  if (messages.length > MAX_MESSAGES) {
-    res.status(400).json({ error: `Too many messages (max ${MAX_MESSAGES})` });
-    return;
-  }
-
-  for (const m of messages) {
-    if (!["user", "model"].includes(m.role)) {
-      res.status(400).json({ error: "Invalid message role" });
-      return;
-    }
-    if (typeof m.text !== "string" || m.text.length === 0 || m.text.length > MAX_MESSAGE_LEN) {
-      res.status(400).json({ error: `Message text must be 1–${MAX_MESSAGE_LEN} characters` });
-      return;
-    }
-  }
+  const { messages, path } = parsed.data;
 
   // ── SSE mode ──
   // First-token latency (not total-completion latency) is the actual UX
@@ -168,7 +158,8 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
   res.flushHeaders();
 
   const totalStart = process.hrtime.bigint();
-  const safePath = typeof path === "string" ? path.slice(0, MAX_PATH_LEN) : undefined;
+  // path is already ≤200 chars per the schema.
+  const safePath = path;
 
   // Forward each real context stage to the client as it happens.
   // Names/details come from lib/ai-context.ts ContextProgress union —

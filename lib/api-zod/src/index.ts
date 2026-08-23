@@ -7,3 +7,7 @@
 // Do NOT re-add `export * from './generated/types'` — orval keeps
 // suggesting it and it breaks the build.
 export * from "./generated/api";
+// Hand-written schemas that orval doesn't generate — they cover
+// endpoints declared outside the OpenAPI surface (SSE stream routes)
+// where a generator-safe request/response is impractical.
+export * from "./ai-chat";
