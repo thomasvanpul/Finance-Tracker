@@ -1,7 +1,7 @@
 // Property lock on the aiLimiter's user-scoping.
 //
 // The failure mode being guarded against: keyGenerator falling back to
-// req.ip (the previous default) gets the Gemini-cost throttle exactly
+// req.ip (the previous default) gets the AI-cost throttle exactly
 // backwards. Two honest users behind carrier NAT share ONE budget;
 // an abuser rotating IPs is never throttled at ALL. Per-user is the
 // only shape that costs the actor.
@@ -105,7 +105,7 @@ describe("aiLimiter · buckets are per userId, not per source IP", () => {
     expect(
       await hit("user-bob"),
       "user-bob got 429 on their FIRST request. That means the limiter is keyed on req.ip, not userId — " +
-      "the bug that made carrier-NAT users share one Gemini budget while attackers rotating IPs went untouched. " +
+      "the bug that made carrier-NAT users share one AI budget while attackers rotating IPs went untouched. " +
       "Check keyGenerator in app.ts aiLimiter.",
     ).toBe(200);
   });

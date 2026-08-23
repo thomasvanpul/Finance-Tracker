@@ -1,5 +1,5 @@
 // Chain-dispatch invariants — the load-bearing correctness of the whole
-// Groq → Cerebras → Gemini architecture.
+// Groq → Cerebras → OpenRouter architecture.
 //
 // The rules that carry weight and must not silently regress:
 //
@@ -12,7 +12,7 @@
 //      already forbids.
 //   3. All providers throw → ok=false, servingProvider=null. The
 //      route surfaces CLIENT_FAILURE; the chain does not fabricate.
-//   4. Attempts happen in order (groq, cerebras, gemini) and stop
+//   4. Attempts happen in order (groq, cerebras, openrouter) and stop
 //      at the first success — subsequent providers are not called.
 //   5. triedProviders reports the exact walk for logging.
 
@@ -43,22 +43,18 @@ function stubProviderFetch(byUrl: Record<string, { status: number; body: string 
   });
 }
 
-// Small helpers to build the two response shapes the chain expects.
-function groqOrCerebras200(text: string): string {
+// All three providers speak the OpenAI chat-completions shape now that
+// Gemini has been removed — one response builder covers every lane.
+function openAi200(text: string): string {
   return JSON.stringify({
     choices: [{ message: { content: text }, finish_reason: "stop" }],
-  });
-}
-function gemini200(text: string): string {
-  return JSON.stringify({
-    candidates: [{ content: { parts: [{ text }] } }],
   });
 }
 
 const KEYS = {
   GROQ_API_KEY: "gsk_TEST_KEY_ABC",
   CEREBRAS_API_KEY: "csk_TEST_KEY_ABC",
-  GEMINI_API_KEY: "AIza_TEST_KEY_ABC",
+  OPENROUTER_API_KEY: "sk-or-v1-TEST_KEY_ABC",
 };
 
 beforeEach(() => {
@@ -69,7 +65,7 @@ beforeEach(() => {
   __resetProviderHealthForTesting();
   registerProvider({ name: "groq", configured: true });
   registerProvider({ name: "cerebras", configured: true });
-  registerProvider({ name: "gemini", configured: true });
+  registerProvider({ name: "openrouter", configured: true });
   vi.unstubAllGlobals();
 });
 
@@ -78,7 +74,7 @@ const MSG = { role: "user" as const, text: "hello" };
 describe("chainChat · primary success", () => {
   it("returns groq's response with reducedCapacity=false", async () => {
     stubProviderFetch({
-      "api.groq.com": { status: 200, body: groqOrCerebras200("from groq") },
+      "api.groq.com": { status: 200, body: openAi200("from groq") },
     });
     const result = await chainChat({ messages: [MSG], route: "test" });
     expect(result.ok).toBe(true);
@@ -96,7 +92,7 @@ describe("chainChat · fallthrough to secondary (reducedCapacity=true)", () => {
   it("Groq throws → Cerebras answers → reducedCapacity=true", async () => {
     stubProviderFetch({
       "api.groq.com":     { throws: "ECONNRESET" },
-      "api.cerebras.ai":  { status: 200, body: groqOrCerebras200("from cerebras") },
+      "api.cerebras.ai":  { status: 200, body: openAi200("from cerebras") },
     });
     const result = await chainChat({ messages: [MSG], route: "test" });
     expect(result.ok).toBe(true);
@@ -107,8 +103,8 @@ describe("chainChat · fallthrough to secondary (reducedCapacity=true)", () => {
     // the exact defect this whole architecture prevents.
     expect(result.reducedCapacity).toBe(true);
     expect(result.triedProviders).toEqual(["groq", "cerebras"]);
-    // Gemini was NOT called — chain stopped at first success.
-    expect(calls.filter((c) => c.url.includes("generativelanguage.googleapis"))).toHaveLength(0);
+    // OpenRouter was NOT called — chain stopped at first success.
+    expect(calls.filter((c) => c.url.includes("openrouter.ai"))).toHaveLength(0);
   });
 
   it("Groq returns non-2xx → Cerebras answers → reducedCapacity=true", async () => {
@@ -117,7 +113,7 @@ describe("chainChat · fallthrough to secondary (reducedCapacity=true)", () => {
     // distinct from "Groq down".
     stubProviderFetch({
       "api.groq.com":     { status: 429, body: '{"error":{"message":"rate limit"}}' },
-      "api.cerebras.ai":  { status: 200, body: groqOrCerebras200("from cerebras") },
+      "api.cerebras.ai":  { status: 200, body: openAi200("from cerebras") },
     });
     const result = await chainChat({ messages: [MSG], route: "test" });
     expect(result.servingProvider).toBe("cerebras");
@@ -126,34 +122,34 @@ describe("chainChat · fallthrough to secondary (reducedCapacity=true)", () => {
 });
 
 describe("chainChat · fallthrough to tertiary (reducedCapacity=true)", () => {
-  it("Groq + Cerebras both throw → Gemini answers → reducedCapacity=true", async () => {
+  it("Groq + Cerebras both throw → OpenRouter answers → reducedCapacity=true", async () => {
     stubProviderFetch({
-      "api.groq.com":                     { throws: "ECONNRESET" },
-      "api.cerebras.ai":                  { throws: "ECONNRESET" },
-      "generativelanguage.googleapis":    { status: 200, body: gemini200("from gemini") },
+      "api.groq.com":     { throws: "ECONNRESET" },
+      "api.cerebras.ai":  { throws: "ECONNRESET" },
+      "openrouter.ai":    { status: 200, body: openAi200("from openrouter") },
     });
     const result = await chainChat({ messages: [MSG], route: "test" });
     expect(result.ok).toBe(true);
-    expect(result.text).toBe("from gemini");
-    expect(result.servingProvider).toBe("gemini");
+    expect(result.text).toBe("from openrouter");
+    expect(result.servingProvider).toBe("openrouter");
     expect(result.reducedCapacity).toBe(true);
-    expect(result.triedProviders).toEqual(["groq", "cerebras", "gemini"]);
+    expect(result.triedProviders).toEqual(["groq", "cerebras", "openrouter"]);
   });
 });
 
 describe("chainChat · all providers fail", () => {
   it("every provider throws → ok=false, servingProvider=null, no fabricated text", async () => {
     stubProviderFetch({
-      "api.groq.com":                  { throws: "ECONNRESET" },
-      "api.cerebras.ai":               { throws: "ECONNRESET" },
-      "generativelanguage.googleapis": { throws: "ECONNRESET" },
+      "api.groq.com":     { throws: "ECONNRESET" },
+      "api.cerebras.ai":  { throws: "ECONNRESET" },
+      "openrouter.ai":    { throws: "ECONNRESET" },
     });
     const result = await chainChat({ messages: [MSG], route: "test" });
     expect(result.ok).toBe(false);
     expect(result.text).toBe("");
     expect(result.servingProvider).toBeNull();
     // Every provider was attempted — chain didn't give up early.
-    expect(result.triedProviders).toEqual(["groq", "cerebras", "gemini"]);
+    expect(result.triedProviders).toEqual(["groq", "cerebras", "openrouter"]);
     // reducedCapacity false when nothing served — there's no capacity
     // to report as reduced. The route reads ok=false and returns the
     // generic CLIENT_FAILURE.
@@ -166,7 +162,7 @@ describe("chainChat · all providers fail", () => {
     // guards against serving a blank chat bubble to the user.
     stubProviderFetch({
       "api.groq.com":     { status: 200, body: JSON.stringify({ choices: [{ message: { content: "" }, finish_reason: "length" }] }) },
-      "api.cerebras.ai":  { status: 200, body: groqOrCerebras200("real answer") },
+      "api.cerebras.ai":  { status: 200, body: openAi200("real answer") },
     });
     const result = await chainChat({ messages: [MSG], route: "test" });
     expect(result.text).toBe("real answer");
@@ -179,15 +175,15 @@ describe("chainChat · unconfigured providers are skipped", () => {
   it("no GROQ key → skips groq, tries cerebras first, serving=cerebras, reducedCapacity=true", async () => {
     // The reducedCapacity flip when a provider is unconfigured is
     // important: even if we THINK we're only running on Cerebras +
-    // Gemini today, we're still not on the primary chain. Same
+    // OpenRouter today, we're still not on the primary chain. Same
     // signal to the UI as a runtime fallthrough.
     delete process.env.GROQ_API_KEY;
     __resetProviderHealthForTesting();
     registerProvider({ name: "groq", configured: false });
     registerProvider({ name: "cerebras", configured: true });
-    registerProvider({ name: "gemini", configured: true });
+    registerProvider({ name: "openrouter", configured: true });
     stubProviderFetch({
-      "api.cerebras.ai": { status: 200, body: groqOrCerebras200("from cerebras") },
+      "api.cerebras.ai": { status: 200, body: openAi200("from cerebras") },
     });
     const result = await chainChat({ messages: [MSG], route: "test" });
     expect(result.servingProvider).toBe("cerebras");

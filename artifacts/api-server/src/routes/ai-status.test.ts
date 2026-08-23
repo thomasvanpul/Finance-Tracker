@@ -1,11 +1,15 @@
 // Endpoint lock for /api/ai/status (multi-provider shape).
 //
-// The endpoint's semantic contract, iterated three times to lock the
+// The endpoint's semantic contract, iterated four times to lock the
 // "AI IS BROKEN and status says it's fine" defect:
 //
-//   v1: {available: keyPresent}                    — invisible dead model
-//   v2: adds per-Gemini-model verification         — Gemini truthful
+//   v1: {available: keyPresent}                       — invisible dead model
+//   v2: adds per-Gemini-model verification            — Gemini truthful
 //   v3: reports per-provider (Groq, Cerebras, Gemini) — chain truthful
+//   v4: Gemini replaced by OpenRouter                 — no permanently
+//       red lane (Google's AI Studio issues AQ.-prefixed keys the
+//       Generative Language REST API cannot accept, so the Gemini lane
+//       was structurally impossible to make green on this account)
 //
 // `available` at the top level is true iff at least one provider has
 // keyConfigured AND modelsVerified=true. That means "the chain has a
@@ -32,7 +36,7 @@ async function callStatus(): Promise<any> {
 
 // Snapshot then restore process.env so tests don't leak.
 const ORIGINAL_ENV: Record<string, string | undefined> = {};
-const KEYS = ["GROQ_API_KEY", "CEREBRAS_API_KEY", "GEMINI_API_KEY", "GEMINI_MODEL"];
+const KEYS = ["GROQ_API_KEY", "CEREBRAS_API_KEY", "OPENROUTER_API_KEY"];
 
 beforeEach(() => {
   for (const k of KEYS) ORIGINAL_ENV[k] = process.env[k];
@@ -54,7 +58,7 @@ describe("/api/ai/status · available field truthfulness", () => {
     // omission would let an operator conclude a provider isn't
     // supported at all.
     const names = body.providers.map((p: { name: string }) => p.name).sort();
-    expect(names).toEqual(["cerebras", "gemini", "groq"]);
+    expect(names).toEqual(["cerebras", "groq", "openrouter"]);
     for (const p of body.providers) {
       expect(p.keyConfigured).toBe(false);
       expect(p.modelsVerified).toBeNull();
@@ -67,7 +71,7 @@ describe("/api/ai/status · available field truthfulness", () => {
     // just because a key exists. Once boot check confirms, this flips.
     process.env.GROQ_API_KEY = "gsk_sentinel";
     process.env.CEREBRAS_API_KEY = "csk_sentinel";
-    process.env.GEMINI_API_KEY = "AIza_sentinel";
+    process.env.OPENROUTER_API_KEY = "sk-or-v1-sentinel";
     __resetAiHealthForTesting();
     const body = await callStatus();
     expect(body.available).toBe(false);
@@ -82,25 +86,25 @@ describe("/api/ai/status · available field truthfulness", () => {
     // is the "chain has no live lane" condition — must report false.
     process.env.GROQ_API_KEY = "gsk_sentinel";
     process.env.CEREBRAS_API_KEY = "csk_sentinel";
-    process.env.GEMINI_API_KEY = "AIza_sentinel";
+    process.env.OPENROUTER_API_KEY = "sk-or-v1-sentinel";
     __resetAiHealthForTesting();
-    __setProviderHealthForTesting("groq",     { keyConfigured: true, modelsVerified: false, lastError: "CONFIGURED AI MODEL IS DEAD (groq)" });
-    __setProviderHealthForTesting("cerebras", { keyConfigured: true, modelsVerified: false, lastError: "CONFIGURED AI MODEL IS DEAD (cerebras)" });
-    __setProviderHealthForTesting("gemini",   { keyConfigured: true, modelsVerified: false, lastError: "CONFIGURED AI MODEL IS DEAD (gemini)" });
+    __setProviderHealthForTesting("groq",       { keyConfigured: true, modelsVerified: false, lastError: "CONFIGURED AI MODEL IS DEAD (groq)" });
+    __setProviderHealthForTesting("cerebras",   { keyConfigured: true, modelsVerified: false, lastError: "CONFIGURED AI MODEL IS DEAD (cerebras)" });
+    __setProviderHealthForTesting("openrouter", { keyConfigured: true, modelsVerified: false, lastError: "CONFIGURED AI MODEL IS DEAD (openrouter)" });
     const body = await callStatus();
     expect(body.available).toBe(false);
     // Fix-me sentence per provider — the operator sees exactly which
     // env var to change for which provider.
-    const groq     = body.providers.find((p: { name: string }) => p.name === "groq");
-    const cerebras = body.providers.find((p: { name: string }) => p.name === "cerebras");
-    const gemini   = body.providers.find((p: { name: string }) => p.name === "gemini");
+    const groq       = body.providers.find((p: { name: string }) => p.name === "groq");
+    const cerebras   = body.providers.find((p: { name: string }) => p.name === "cerebras");
+    const openrouter = body.providers.find((p: { name: string }) => p.name === "openrouter");
     expect(groq.lastError).toContain("groq");
     expect(cerebras.lastError).toContain("cerebras");
-    expect(gemini.lastError).toContain("gemini");
+    expect(openrouter.lastError).toContain("openrouter");
   });
 
   it("available=true when AT LEAST ONE provider is keyed AND verified", async () => {
-    // The point of the chain: one live lane is enough. Cerebras + Gemini
+    // The point of the chain: one live lane is enough. Cerebras + OpenRouter
     // dead, Groq live → chain serves via Groq → available:true.
     process.env.GROQ_API_KEY = "gsk_sentinel";
     __resetAiHealthForTesting();
@@ -109,12 +113,12 @@ describe("/api/ai/status · available field truthfulness", () => {
     expect(body.available).toBe(true);
   });
 
-  it("available=true when only the tertiary Gemini lane is live", async () => {
+  it("available=true when only the tertiary OpenRouter lane is live", async () => {
     // Regression guard: available shouldn't require the primary. Any
     // provider being live is enough.
-    process.env.GEMINI_API_KEY = "AIza_sentinel";
+    process.env.OPENROUTER_API_KEY = "sk-or-v1-sentinel";
     __resetAiHealthForTesting();
-    __setProviderHealthForTesting("gemini", { keyConfigured: true, modelsVerified: true, lastError: null });
+    __setProviderHealthForTesting("openrouter", { keyConfigured: true, modelsVerified: true, lastError: null });
     const body = await callStatus();
     expect(body.available).toBe(true);
   });
@@ -141,14 +145,14 @@ describe("/api/ai/status · response shape", () => {
   it("does not leak any API key in any field", async () => {
     process.env.GROQ_API_KEY = "gsk_SENTINEL_GROQ_9EE7";
     process.env.CEREBRAS_API_KEY = "csk_SENTINEL_CEREBRAS_9EE7";
-    process.env.GEMINI_API_KEY = "AIza_SENTINEL_GEMINI_9EE7";
+    process.env.OPENROUTER_API_KEY = "sk-or-v1-SENTINEL_OPENROUTER_9EE7";
     __resetAiHealthForTesting();
-    __setProviderHealthForTesting("groq",     { keyConfigured: true, modelsVerified: true, lastError: null });
-    __setProviderHealthForTesting("cerebras", { keyConfigured: true, modelsVerified: true, lastError: null });
-    __setProviderHealthForTesting("gemini",   { keyConfigured: true, modelsVerified: true, lastError: null });
+    __setProviderHealthForTesting("groq",       { keyConfigured: true, modelsVerified: true, lastError: null });
+    __setProviderHealthForTesting("cerebras",   { keyConfigured: true, modelsVerified: true, lastError: null });
+    __setProviderHealthForTesting("openrouter", { keyConfigured: true, modelsVerified: true, lastError: null });
     const body = await callStatus();
     const serialised = JSON.stringify(body);
-    for (const sentinel of ["SENTINEL_GROQ_9EE7", "SENTINEL_CEREBRAS_9EE7", "SENTINEL_GEMINI_9EE7"]) {
+    for (const sentinel of ["SENTINEL_GROQ_9EE7", "SENTINEL_CEREBRAS_9EE7", "SENTINEL_OPENROUTER_9EE7"]) {
       expect(serialised).not.toContain(sentinel);
     }
   });

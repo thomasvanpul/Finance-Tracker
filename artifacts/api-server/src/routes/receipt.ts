@@ -1,6 +1,23 @@
+// POST /api/receipt/parse — receipt-scan endpoint used by
+// quick-add-transaction on the mobile flow.
+//
+// Was calling gemini-2.0-flash directly. That model retired 1 June
+// 2026, and this route was the second half of the same "hardcoded
+// model, no boot verify" defect that ai-config.ts was written to
+// prevent — the /api/ai/* endpoints went through chainVision, this
+// one didn't. Routed through chainVision 2026-08-23 so every
+// vision-taking route now walks Groq → Cerebras → OpenRouter with
+// the shared circuit breaker and reduced-capacity signal.
+
 import { Router, type Request, type Response } from "express";
+import { chainVision } from "../lib/ai-providers/chain";
+import { logger } from "../lib/logger";
 
 const router = Router();
+
+// Same shape ai.ts's /ai/receipt-split emits on failure. Kept generic
+// so we don't leak upstream detail or model names to the client.
+const CLIENT_FAILURE = "The AI service is temporarily unavailable. Please try again in a moment.";
 
 router.post("/parse", async (req: Request, res: Response): Promise<void> => {
   const { imageBase64, mimeType = "image/jpeg" } = req.body as {
@@ -13,14 +30,7 @@ router.post("/parse", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    res.status(503).json({ error: "Gemini not configured" });
-    return;
-  }
-
-  try {
-    const prompt = `You are a receipt parser. Analyze this receipt image and extract transaction details.
+  const prompt = `You are a receipt parser. Analyze this receipt image and extract transaction details.
 Return ONLY a JSON object with these fields:
 {
   "description": "merchant or payee name (short, max 40 chars)",
@@ -31,48 +41,40 @@ Return ONLY a JSON object with these fields:
 }
 If you cannot read a field, omit it or use null. Return only valid JSON, no markdown.`;
 
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                { inline_data: { mime_type: mimeType, data: imageBase64 } },
-              ],
-            },
-          ],
-          generationConfig: { temperature: 0, maxOutputTokens: 256 },
-        }),
-      },
-    );
+  const chained = await chainVision({
+    imageBase64,
+    mimeType,
+    prompt,
+    route: "receipt.parse",
+    maxTokens: 256,
+    jsonMode: true,
+  });
 
-    if (!resp.ok) {
-      const err = await resp.text();
-      res.status(502).json({ error: "Gemini error", detail: err });
-      return;
-    }
+  if (!chained.ok) {
+    res.status(503).json({ error: CLIENT_FAILURE });
+    return;
+  }
 
-    const geminiData = (await resp.json()) as {
-      candidates?: Array<{
-        content?: { parts?: Array<{ text?: string }> };
-      }>;
-    };
-    const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  // Some models still wrap JSON in markdown despite jsonMode being on.
+  // Strip fences before parse, same defensive pattern as ai.ts.
+  const clean = chained.text
+    .replace(/```json?\n?/g, "")
+    .replace(/```/g, "")
+    .trim();
 
-    // Strip markdown code fences if present
-    const clean = text
-      .replace(/```json?\n?/g, "")
-      .replace(/```/g, "")
-      .trim();
+  try {
     const parsed = JSON.parse(clean) as unknown;
-
-    res.json(parsed);
+    res.json({
+      ...(parsed as Record<string, unknown>),
+      servingProvider: chained.servingProvider,
+      reducedCapacity: chained.reducedCapacity,
+    });
   } catch (err) {
-    res.status(500).json({ error: "Failed to parse receipt", detail: String(err) });
+    logger.warn(
+      { route: "receipt.parse", servingProvider: chained.servingProvider, err: String(err), textSample: clean.slice(0, 200) },
+      "receipt parse returned non-JSON text",
+    );
+    res.status(502).json({ error: "Could not parse receipt into JSON. Try a clearer image." });
   }
 });
 

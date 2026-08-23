@@ -104,9 +104,10 @@ const authLimiter = rateLimit({
   skip: () => IS_DEV,
 });
 
-// Per-USER limiter for the AI endpoint (Gemini spend is our cost). This
-// is the one endpoint where a request costs real money, so the budget
-// belongs to the account, not the source IP.
+// Per-USER limiter for the AI endpoint (per-provider quota + inference
+// spend is our cost). This is the one endpoint where a request costs
+// real money and free-tier quota, so the budget belongs to the account,
+// not the source IP.
 //
 // keyGenerator uses userId when available (the limiter is mounted after
 // requireAuth so it usually is) and falls back to req.ip on the narrow
@@ -115,8 +116,8 @@ const authLimiter = rateLimit({
 // than crashing on undefined key.
 //
 // Per-IP was the previous shape and it got both cases backwards: users
-// behind carrier NAT / office wifi shared one Gemini budget between
-// them, while an abuser rotating IPs was never throttled at all.
+// behind carrier NAT / office wifi shared one AI budget between them,
+// while an abuser rotating IPs was never throttled at all.
 // req.ip → shared-budget-for-honest-users AND unlimited-for-attackers.
 export const aiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -174,10 +175,11 @@ app.use("/api", authProvidersRouter);
 // this route sat behind it). No userId is used inside the handler
 // and no key value is returned — see routes/market-providers.ts.
 app.use("/api", marketProvidersRouter);
-// PUBLIC: /api/ai/status reports whether GEMINI_API_KEY is set on this
-// server. Same "diagnosable without shell" surface as the two above —
-// so the operator can `curl` production and see if AI is configured
-// without needing to sign in first. No user data, no key value. See
+// PUBLIC: /api/ai/status reports per-provider health for the whole
+// chain (Groq, Cerebras, OpenRouter). Same "diagnosable without shell"
+// surface as the two above — so the operator can `curl` production and
+// see which providers are configured + verified + which env vars to
+// set for retirements. No user data, no key value. See
 // routes/ai-status.ts. Chat / receipt-split / categorize stay behind
 // requireAuth (they take user prompts and cost money to serve).
 app.use("/api", aiStatusRouter);

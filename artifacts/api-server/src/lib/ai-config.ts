@@ -4,11 +4,13 @@
 // gemini-2.0-flash was shut down 1 June 2026 and the app kept calling it
 // for nearly three months. Groq killed llama-3.3-70b-versatile and
 // llama-3.1-8b-instant on 16 Aug 2026. Cerebras pruned its catalogue in
-// May. Every provider retires flash-family models on a cadence of months
-// to a year — hardcoding a model anywhere is a bug waiting to trip.
+// May. OpenRouter's free lineup rotates on a monthly cadence and has at
+// least one model already scheduled to sunset. Every provider retires
+// models on a cadence of months to a year — hardcoding a model anywhere
+// is a bug waiting to trip.
 //
-// This module gives all three providers (Groq, Cerebras, Gemini) the
-// same permanent shape:
+// This module gives all three providers (Groq, Cerebras, OpenRouter)
+// the same permanent shape:
 //
 //   1. Per-provider env vars for each task's model (default to a sane
 //      current name). The next retirement is a Render env change, not
@@ -26,6 +28,13 @@
 //      exposes this so the operator can `curl` production and see
 //      every provider's state.
 //
+// The Gemini lane was removed 2026-08-23. Google's AI Studio issues
+// this account AQ.-prefixed keys and the Generative Language REST
+// API only accepts AIza — the lane was permanently red, verifyGemini
+// always emitted the fix-me, /api/ai/status always reported one dead
+// provider. Replaced with OpenRouter, which uses genuinely working
+// keys and 18 free models to pick from.
+//
 // The circuit breaker + call-counting + per-provider registry come
 // from lib/provider-health.ts — same machinery the market chain uses.
 // This module handles boot verification and health reporting only.
@@ -34,25 +43,25 @@ import { logger } from "./logger";
 import { registerProvider } from "./provider-health";
 import { groqAllModels, groqApiKey } from "./ai-providers/groq";
 import { cerebrasAllModels, cerebrasApiKey } from "./ai-providers/cerebras";
-import { geminiApiKey } from "./ai-providers/gemini-shim";
-
-const DEFAULT_GEMINI_MODEL = "gemini-3.7-flash";
+import { openrouterAllModels, openrouterApiKey } from "./ai-providers/openrouter";
 
 // Per-provider model list endpoints. All three follow the same pattern
-// (GET /models with bearer or header auth) but differ in URL and
-// response shape — verifyOneProvider handles each accordingly.
+// (GET /models with bearer auth) and all three return the same shape
+// ({ data: [{ id }] }) — verifyOneProvider handles each with the same
+// parser. Kept as separate functions so provider-specific fix-me
+// sentences can name that provider's alternatives.
 const GROQ_MODELS_URL = "https://api.groq.com/openai/v1/models";
 const CEREBRAS_MODELS_URL = "https://api.cerebras.ai/v1/models";
-const GEMINI_MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
 
-export type AiProviderName = "groq" | "cerebras" | "gemini";
+export type AiProviderName = "groq" | "cerebras" | "openrouter";
 
 export interface AiProviderHealth {
   name: AiProviderName;
   keyConfigured: boolean;
   // Every model this provider is CONFIGURED to use, across all tasks.
   // For Groq that's chat + categorize + vision; for Cerebras chat +
-  // vision; for Gemini a single model handles all three tasks today.
+  // vision; for OpenRouter chat + categorize + vision.
   models: string[];
   // true → every configured model appeared in the provider's models
   //        list at last check.
@@ -97,13 +106,13 @@ function initState(): void {
     verifiedAt: null,
     lastError: !cerebrasApiKey() ? "CEREBRAS_API_KEY not set" : "verification pending",
   });
-  state.set("gemini", {
-    name: "gemini",
-    keyConfigured: !!geminiApiKey(),
-    models: [process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL],
+  state.set("openrouter", {
+    name: "openrouter",
+    keyConfigured: !!openrouterApiKey(),
+    models: openrouterAllModels(),
     modelsVerified: null,
     verifiedAt: null,
-    lastError: !geminiApiKey() ? "GEMINI_API_KEY not set" : "verification pending",
+    lastError: !openrouterApiKey() ? "OPENROUTER_API_KEY not set" : "verification pending",
   });
 }
 initState();
@@ -113,7 +122,7 @@ initState();
 // this the first call throws "not registered".
 registerProvider({ name: "groq", configured: !!groqApiKey() });
 registerProvider({ name: "cerebras", configured: !!cerebrasApiKey() });
-registerProvider({ name: "gemini", configured: !!geminiApiKey() });
+registerProvider({ name: "openrouter", configured: !!openrouterApiKey() });
 
 export function getAiHealth(): AiHealth {
   // Refresh keyConfigured live per call — Render pins env for the
@@ -127,37 +136,24 @@ export function getAiHealth(): AiHealth {
   return { available, providers };
 }
 
-// Legacy shape kept for a single caller in gemini-shim (which reads
-// the Gemini model string only). Returns the Gemini model so existing
-// getAiHealth().model consumers don't break; new callers should
-// prefer the multi-provider getAiHealth() shape.
-export function getGeminiModel(): string {
-  return process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-}
-
 function providerKeyConfigured(name: AiProviderName): boolean {
   if (name === "groq") return !!groqApiKey();
   if (name === "cerebras") return !!cerebrasApiKey();
-  return !!geminiApiKey();
+  return !!openrouterApiKey();
 }
 
 // ── Provider-specific verification ────────────────────────────────────────
 
-interface GroqModelsResponse {
+// All three providers return the same OpenAI-shape { data: [{ id }] }
+// from their /models endpoint. Groq additionally carries an `active`
+// flag we filter on; the others just list what's callable.
+interface ModelsResponse {
   data?: Array<{ id: string; active?: boolean }>;
   error?: { message?: string };
 }
-interface CerebrasModelsResponse {
-  data?: Array<{ id: string }>;
-  error?: { message?: string };
-}
-interface GeminiModelsResponse {
-  models?: Array<{ name?: string }>;
-  error?: { message?: string; code?: number };
-}
 
 // Redact the API key from any string that might land in a log or the
-// health endpoint. Same pattern as callGemini + callOpenAICompat.
+// health endpoint. Same pattern as callOpenAICompat.
 function redactKey(text: string, apiKey: string): string {
   if (!apiKey || apiKey.length < 8) return text;
   return text.split(apiKey).join(`[${apiKey.slice(0, 4).toUpperCase()}_KEY_REDACTED]`);
@@ -166,15 +162,15 @@ function redactKey(text: string, apiKey: string): string {
 // Model-name filter: from a raw list of every model the provider
 // exposes, narrow to just the "chat-flavour" candidates suitable as
 // GROQ_CHAT_MODEL etc. Callers who want the full list can log it
-// separately for the operator. Deliberately generic — matches the
-// pattern the Gemini fix-me sentence already uses.
+// separately for the operator.
 function shortlistCandidates(names: string[]): string[] {
   return names
     .filter((n) => {
       // Drop obvious non-chat outputs. Groq's list includes whisper +
-      // embedding + guard; Cerebras is smaller; Gemini has embedding +
-      // image + tuning variants.
-      if (/whisper|embedding|guard|orpheus|tts|imagen|veo|image-|tuning/i.test(n)) return false;
+      // embedding + guard; Cerebras is smaller; OpenRouter's full
+      // catalogue is massive — the filter cuts image/audio/embedding
+      // variants so the operator sees text-model candidates.
+      if (/whisper|embedding|guard|orpheus|tts|imagen|veo|image-|tuning|dall-e|stable-diffusion/i.test(n)) return false;
       return true;
     })
     .sort();
@@ -223,165 +219,66 @@ function emitFixMe(opts: {
   return fixMe;
 }
 
-// ── Groq verification ─────────────────────────────────────────────────────
-// GET https://api.groq.com/openai/v1/models
-// Response: OpenAI-shape { data: [{ id, active, ... }] }
-
-async function verifyGroq(): Promise<void> {
-  const apiKey = groqApiKey();
+// Generic verify-one-provider — parametrised on URL / key / configured
+// models / env vars for the fix-me sentence. All three providers speak
+// the same models-list shape so one implementation covers them.
+async function verifyOneProvider(opts: {
+  provider: AiProviderName;
+  url: string;
+  apiKey: string;
+  keyEnvVar: string;
+  configuredModels: string[];
+  modelEnvVars: string[];
+}): Promise<void> {
+  const { provider, url, apiKey, keyEnvVar, configuredModels, modelEnvVars } = opts;
   if (!apiKey) {
-    writeOutcome("groq", { verified: null, lastError: "GROQ_API_KEY not set — verification skipped" });
+    writeOutcome(provider, { verified: null, lastError: `${keyEnvVar} not set — verification skipped` });
     return;
   }
   let response: Response;
   try {
-    response = await fetch(GROQ_MODELS_URL, {
+    response = await fetch(url, {
       method: "GET",
       headers: { "Authorization": `Bearer ${apiKey}` },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    writeOutcome("groq", { verified: null, lastError: `models list fetch threw: ${redactKey(message, apiKey)}` });
-    logger.warn({ provider: "groq", err: message }, "AI provider verification failed at boot (network)");
+    writeOutcome(provider, { verified: null, lastError: `models list fetch threw: ${redactKey(message, apiKey)}` });
+    logger.warn({ provider, err: message }, "AI provider verification failed at boot (network)");
     return;
   }
   if (!response.ok) {
     let body = ""; try { body = await response.text(); } catch { /* ignore */ }
     const safe = redactKey(body, apiKey).slice(0, 500);
-    writeOutcome("groq", { verified: null, lastError: `models list HTTP ${response.status}: ${safe}` });
-    logger.warn({ provider: "groq", status: response.status, body: safe }, "AI provider verification failed at boot (upstream)");
+    writeOutcome(provider, { verified: null, lastError: `models list HTTP ${response.status}: ${safe}` });
+    logger.warn({ provider, status: response.status, body: safe }, "AI provider verification failed at boot (upstream)");
     return;
   }
-  let data: GroqModelsResponse;
-  try { data = (await response.json()) as GroqModelsResponse; }
+  let data: ModelsResponse;
+  try { data = (await response.json()) as ModelsResponse; }
   catch (err) {
-    writeOutcome("groq", { verified: null, lastError: `models list JSON parse failed: ${String(err)}` });
+    writeOutcome(provider, { verified: null, lastError: `models list JSON parse failed: ${String(err)}` });
     return;
   }
   const available = (data.data ?? [])
+    // Groq marks retired models with active:false; Cerebras and
+    // OpenRouter omit the field, which passes this filter as expected.
     .filter((m) => m.active !== false)
     .map((m) => m.id)
-    .filter((n) => typeof n === "string" && n.length > 0);
-  const configured = groqAllModels();
-  const missing = configured.filter((m) => !available.includes(m));
+    .filter((n): n is string => typeof n === "string" && n.length > 0);
+  const missing = configuredModels.filter((m) => !available.includes(m));
   if (missing.length === 0) {
-    writeOutcome("groq", { verified: true, lastError: null });
-    logger.info({ provider: "groq", models: configured, availableCount: available.length }, "AI provider verified live at boot");
+    writeOutcome(provider, { verified: true, lastError: null });
+    logger.info({ provider, models: configuredModels, availableCount: available.length }, "AI provider verified live at boot");
     return;
   }
   const fixMe = emitFixMe({
-    provider: "groq",
-    envVars: ["GROQ_CHAT_MODEL", "GROQ_CATEGORIZE_MODEL", "GROQ_VISION_MODEL"],
+    provider,
+    envVars: modelEnvVars,
     configuredMissing: missing,
     availableAll: available,
   });
-  writeOutcome("groq", { verified: false, lastError: fixMe });
-}
-
-// ── Cerebras verification ─────────────────────────────────────────────────
-// GET https://api.cerebras.ai/v1/models
-// Response: OpenAI-shape { data: [{ id }] }
-
-async function verifyCerebras(): Promise<void> {
-  const apiKey = cerebrasApiKey();
-  if (!apiKey) {
-    writeOutcome("cerebras", { verified: null, lastError: "CEREBRAS_API_KEY not set — verification skipped" });
-    return;
-  }
-  let response: Response;
-  try {
-    response = await fetch(CEREBRAS_MODELS_URL, {
-      method: "GET",
-      headers: { "Authorization": `Bearer ${apiKey}` },
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    writeOutcome("cerebras", { verified: null, lastError: `models list fetch threw: ${redactKey(message, apiKey)}` });
-    logger.warn({ provider: "cerebras", err: message }, "AI provider verification failed at boot (network)");
-    return;
-  }
-  if (!response.ok) {
-    let body = ""; try { body = await response.text(); } catch { /* ignore */ }
-    const safe = redactKey(body, apiKey).slice(0, 500);
-    writeOutcome("cerebras", { verified: null, lastError: `models list HTTP ${response.status}: ${safe}` });
-    logger.warn({ provider: "cerebras", status: response.status, body: safe }, "AI provider verification failed at boot (upstream)");
-    return;
-  }
-  let data: CerebrasModelsResponse;
-  try { data = (await response.json()) as CerebrasModelsResponse; }
-  catch (err) {
-    writeOutcome("cerebras", { verified: null, lastError: `models list JSON parse failed: ${String(err)}` });
-    return;
-  }
-  const available = (data.data ?? []).map((m) => m.id).filter((n) => typeof n === "string" && n.length > 0);
-  const configured = cerebrasAllModels();
-  const missing = configured.filter((m) => !available.includes(m));
-  if (missing.length === 0) {
-    writeOutcome("cerebras", { verified: true, lastError: null });
-    logger.info({ provider: "cerebras", models: configured, availableCount: available.length }, "AI provider verified live at boot");
-    return;
-  }
-  const fixMe = emitFixMe({
-    provider: "cerebras",
-    envVars: ["CEREBRAS_CHAT_MODEL", "CEREBRAS_VISION_MODEL"],
-    configuredMissing: missing,
-    availableAll: available,
-  });
-  writeOutcome("cerebras", { verified: false, lastError: fixMe });
-}
-
-// ── Gemini verification ───────────────────────────────────────────────────
-// GET https://generativelanguage.googleapis.com/v1beta/models
-// Response: { models: [{ name: "models/gemini-3.7-flash", ... }] }
-
-async function verifyGemini(): Promise<void> {
-  const apiKey = geminiApiKey();
-  if (!apiKey) {
-    writeOutcome("gemini", { verified: null, lastError: "GEMINI_API_KEY not set — verification skipped" });
-    return;
-  }
-  let response: Response;
-  try {
-    response = await fetch(GEMINI_MODELS_URL, {
-      method: "GET",
-      headers: { "x-goog-api-key": apiKey },
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    writeOutcome("gemini", { verified: null, lastError: `models list fetch threw: ${redactKey(message, apiKey)}` });
-    logger.warn({ provider: "gemini", err: message }, "AI provider verification failed at boot (network)");
-    return;
-  }
-  if (!response.ok) {
-    let body = ""; try { body = await response.text(); } catch { /* ignore */ }
-    const safe = redactKey(body, apiKey).slice(0, 500);
-    writeOutcome("gemini", { verified: null, lastError: `models list HTTP ${response.status}: ${safe}` });
-    logger.warn({ provider: "gemini", status: response.status, body: safe }, "AI provider verification failed at boot (upstream)");
-    return;
-  }
-  let data: GeminiModelsResponse;
-  try { data = (await response.json()) as GeminiModelsResponse; }
-  catch (err) {
-    writeOutcome("gemini", { verified: null, lastError: `models list JSON parse failed: ${String(err)}` });
-    return;
-  }
-  const available = (data.models ?? [])
-    .map((m) => (m.name ?? "").replace(/^models\//, ""))
-    .filter((n) => n.length > 0);
-  const configured = [getGeminiModel()];
-  const missing = configured.filter((m) => !available.includes(m));
-  if (missing.length === 0) {
-    writeOutcome("gemini", { verified: true, lastError: null });
-    logger.info({ provider: "gemini", models: configured, availableCount: available.length }, "AI provider verified live at boot");
-    return;
-  }
-  const fixMe = emitFixMe({
-    provider: "gemini",
-    envVars: ["GEMINI_MODEL"],
-    configuredMissing: missing,
-    availableAll: available.filter((n) => /flash|pro/.test(n)),
-  });
-  writeOutcome("gemini", { verified: false, lastError: fixMe });
+  writeOutcome(provider, { verified: false, lastError: fixMe });
 }
 
 /**
@@ -390,13 +287,38 @@ async function verifyGemini(): Promise<void> {
  * three run in parallel and never throw out (errors go into state).
  */
 export async function verifyProvidersAtBoot(): Promise<void> {
-  await Promise.all([verifyGroq(), verifyCerebras(), verifyGemini()]);
+  await Promise.all([
+    verifyOneProvider({
+      provider: "groq",
+      url: GROQ_MODELS_URL,
+      apiKey: groqApiKey(),
+      keyEnvVar: "GROQ_API_KEY",
+      configuredModels: groqAllModels(),
+      modelEnvVars: ["GROQ_CHAT_MODEL", "GROQ_CATEGORIZE_MODEL", "GROQ_VISION_MODEL"],
+    }),
+    verifyOneProvider({
+      provider: "cerebras",
+      url: CEREBRAS_MODELS_URL,
+      apiKey: cerebrasApiKey(),
+      keyEnvVar: "CEREBRAS_API_KEY",
+      configuredModels: cerebrasAllModels(),
+      modelEnvVars: ["CEREBRAS_CHAT_MODEL", "CEREBRAS_VISION_MODEL"],
+    }),
+    verifyOneProvider({
+      provider: "openrouter",
+      url: OPENROUTER_MODELS_URL,
+      apiKey: openrouterApiKey(),
+      keyEnvVar: "OPENROUTER_API_KEY",
+      configuredModels: openrouterAllModels(),
+      modelEnvVars: ["OPENROUTER_CHAT_MODEL", "OPENROUTER_CATEGORIZE_MODEL", "OPENROUTER_VISION_MODEL"],
+    }),
+  ]);
   // Re-register with the current keyConfigured state, in case env
   // was set between module load and the boot verify call. Belt-and-
   // braces: initState reads env, but so does this.
   registerProvider({ name: "groq", configured: !!groqApiKey() });
   registerProvider({ name: "cerebras", configured: !!cerebrasApiKey() });
-  registerProvider({ name: "gemini", configured: !!geminiApiKey() });
+  registerProvider({ name: "openrouter", configured: !!openrouterApiKey() });
 }
 
 // ── Test helpers ──────────────────────────────────────────────────────────

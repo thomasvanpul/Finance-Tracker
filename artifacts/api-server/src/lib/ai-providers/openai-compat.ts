@@ -45,10 +45,11 @@ export interface OpenAiMessage {
 export interface CallOpenAiCompatOpts {
   // Provider name registered via registerProvider() so withProvider can
   // find its breaker state. Must match exactly.
-  providerName: "groq" | "cerebras";
+  providerName: "groq" | "cerebras" | "openrouter";
   // Base URL WITHOUT trailing slash, WITHOUT /chat/completions.
-  //   Groq:     https://api.groq.com/openai/v1
-  //   Cerebras: https://api.cerebras.ai/v1
+  //   Groq:       https://api.groq.com/openai/v1
+  //   Cerebras:   https://api.cerebras.ai/v1
+  //   OpenRouter: https://openrouter.ai/api/v1
   baseUrl: string;
   apiKey: string;
   model: string;

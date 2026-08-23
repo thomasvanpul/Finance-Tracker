@@ -26,7 +26,7 @@ app.listen(port, (err) => {
   logger.info({ port }, "Server listening");
   alpacaStream.connect();
   // Verify every AI provider's configured models against its live
-  // models list — Groq, Cerebras, Gemini in parallel. Non-blocking:
+  // models list — Groq, Cerebras, OpenRouter in parallel. Non-blocking:
   // server is already accepting requests. If any provider's model is
   // dead, an error-level log fires with the provider-specific fix-me
   // sentence and /api/ai/status flips that provider to

@@ -1,9 +1,9 @@
 // Groq provider adapter — OpenAI-compatible chat completions.
 //
 // ── Env-driven models ─────────────────────────────────────────────────────
-// Each task's model is an env var with a sane current default. Same
-// pattern as GEMINI_MODEL — the next retirement is a Render env change,
-// not a code change. Groq killed llama-3.3-70b-versatile on 16 Aug 2026
+// Each task's model is an env var with a sane current default — the
+// next retirement is a Render env change, not a code change. Groq
+// killed llama-3.3-70b-versatile on 16 Aug 2026
 // (the deprecation that motivated this whole architecture) so the
 // defaults land on the current openai/gpt-oss-* family and qwen3.6-27b
 // for vision.

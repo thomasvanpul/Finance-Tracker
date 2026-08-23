@@ -1,17 +1,20 @@
 // AI routes. Every handler dispatches through the provider chain
 // (lib/ai-providers/chain.ts) rather than calling one vendor directly:
-//   • chainChat        walks Groq → Cerebras → Gemini
-//   • chainCategorize  walks Groq (small model) → Cerebras → Gemini
-//   • chainVision      walks Groq (qwen3.6-27b) → Cerebras (gemma) → Gemini
+//   • chainChat        walks Groq → Cerebras → OpenRouter
+//   • chainCategorize  walks Groq (small model) → Cerebras → OpenRouter (nano)
+//   • chainVision      walks Groq (qwen3.6-27b) → Cerebras (gemma) → OpenRouter (gemma-4-31b)
 //
-// Rationale: Gemini alone produced three separate failures inside a week
-// (retired model, silent catches, key-format mismatch). One provider is
-// a single point of failure and we already have the pattern from the
+// Rationale: Gemini alone produced three separate failures inside a
+// week (retired model, silent catches, key-format mismatch), and the
+// key format on this account is permanently incompatible with the
+// Generative Language REST API — so Gemini was pulled 2026-08-23 and
+// replaced with OpenRouter as the tertiary lane. One provider is a
+// single point of failure and we already have the pattern from the
 // market chain.
 //
 // Every response carries servingProvider + reducedCapacity so the UI
 // can render a quiet "reduced capacity" chrome when we fall through
-// to Cerebras or Gemini. Same principle as the market stale-serve:
+// to Cerebras or OpenRouter. Same principle as the market stale-serve:
 // degraded is fine, degraded-and-silent is not.
 
 import { Router, type IRouter } from "express";

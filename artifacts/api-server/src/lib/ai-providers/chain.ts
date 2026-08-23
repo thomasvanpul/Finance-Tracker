@@ -10,11 +10,18 @@
 // operator + user both need to know when we're serving from there.
 //
 // ── Provider order per task ──
-// Same order (Groq → Cerebras → Gemini) for all three. Groq's the
+// Same order (Groq → Cerebras → OpenRouter) for all three. Groq's the
 // primary because of headroom (30 RPM claimed, gpt-oss-* family
 // current); Cerebras is a real second (OpenAI-compatible, actually
-// serves, 5 RPM but fast inference); Gemini stays as backstop
-// because it works once a valid AIza key exists.
+// serves, 5 RPM but fast inference); OpenRouter is the tertiary
+// backstop (20 RPM / 50 RPD free-tier, all vendor-hosted open models,
+// OpenAI-compatible so no translation).
+//
+// (Gemini was the tertiary until 2026-08-23. Removed because this
+// account's key was AQ.-prefixed and the Generative Language REST
+// API only accepts AIza — a permanently red lane made /api/ai/status
+// dishonest. OpenRouter uses a genuinely working key, closing the
+// "third lane exists but never serves" gap.)
 //
 // If a provider's breaker is open, key is missing, or model was not
 // verified at boot, withProvider() throws pre-flight — the chain
@@ -33,15 +40,16 @@
 import { logger } from "../logger";
 import { groqChat, groqCategorize, groqVision } from "./groq";
 import { cerebrasChat, cerebrasCategorize, cerebrasVision } from "./cerebras";
-import { geminiChat, geminiCategorize, geminiVision } from "./gemini-shim";
+import { openrouterChat, openrouterCategorize, openrouterVision } from "./openrouter";
 import type { AiCallResult, AiProviderName, ChainResult, ChatMessage } from "./types";
 import type { OpenAiMessage } from "./openai-compat";
 
 // One order for every task. If a task ever needs a different chain
 // (e.g. vision skipping a text-only provider) we override per-task.
 // Today all three tasks use the same three-provider walk because
-// Groq/Cerebras/Gemini all support text, image, and JSON output.
-const CHAIN_ORDER: AiProviderName[] = ["groq", "cerebras", "gemini"];
+// Groq/Cerebras/OpenRouter all support text, image, and JSON output
+// via their OpenAI-compatible endpoints.
+const CHAIN_ORDER: AiProviderName[] = ["groq", "cerebras", "openrouter"];
 const PRIMARY: AiProviderName = "groq";
 
 // Walk providers in order, take first success. Every attempt is
@@ -102,11 +110,21 @@ async function walk(opts: {
   return { ok: false, text: "", servingProvider: null, reducedCapacity: false, triedProviders: tried };
 }
 
-// ── Chat ──────────────────────────────────────────────────────────────────
-// Groq/Cerebras use OpenAI message shape; Gemini uses its own
-// (user/model roles, parts). The adapter layer translates so the
-// route layer only builds one prompt shape.
+// Translate the neutral ChatMessage shape into OpenAI message shape,
+// prepending the system prompt (if any) as a leading system message.
+// All three current providers are OpenAI-compatible and accept a
+// system message in the messages array — one translator serves all.
+function toOpenAiMessages(messages: ChatMessage[], systemPrompt?: string): OpenAiMessage[] {
+  const out: OpenAiMessage[] = [];
+  if (systemPrompt) out.push({ role: "system", content: systemPrompt });
+  for (const m of messages) {
+    const role = m.role === "model" ? "assistant" : m.role;
+    out.push({ role: role as "user" | "assistant" | "system", content: m.text });
+  }
+  return out;
+}
 
+// ── Chat ──────────────────────────────────────────────────────────────────
 // System prompt owned by the route layer (ai.ts) and passed in — the
 // chain doesn't opine on prompt content, only on transport.
 export async function chainChat(opts: {
@@ -119,36 +137,13 @@ export async function chainChat(opts: {
   return walk({
     route: opts.route,
     attempt: async (provider) => {
-      if (provider === "groq" || provider === "cerebras") {
-        // Translate ChatMessage → OpenAI message shape. The
-        // system prompt becomes a leading "system" message (both
-        // Groq and Cerebras accept it in the messages array).
-        const openAi: OpenAiMessage[] = [];
-        if (opts.systemPrompt) openAi.push({ role: "system", content: opts.systemPrompt });
-        for (const m of opts.messages) {
-          const role = m.role === "model" ? "assistant" : m.role === "system" ? "system" : m.role;
-          openAi.push({ role: role as "user" | "assistant" | "system", content: m.text });
-        }
-        const fn = provider === "groq" ? groqChat : cerebrasChat;
-        return fn({
-          messages: openAi,
-          route: opts.route,
-          maxTokens: opts.maxTokens,
-          temperature: opts.temperature,
-        });
-      }
-      // provider === "gemini": Gemini expects user/model roles.
-      // System prompt goes into systemInstruction separately, not
-      // as a message.
-      const geminiMessages = opts.messages
-        .filter((m) => m.role !== "system")
-        .map((m) => ({
-          role: m.role === "assistant" ? "model" : "user",
-          text: m.text,
-        })) as Array<{ role: "user" | "model"; text: string }>;
-      return geminiChat({
-        messages: geminiMessages,
-        systemPrompt: opts.systemPrompt,
+      const openAi = toOpenAiMessages(opts.messages, opts.systemPrompt);
+      const fn =
+        provider === "groq" ? groqChat
+        : provider === "cerebras" ? cerebrasChat
+        : openrouterChat;
+      return fn({
+        messages: openAi,
         route: opts.route,
         maxTokens: opts.maxTokens,
         temperature: opts.temperature,
@@ -160,7 +155,8 @@ export async function chainChat(opts: {
 // ── Categorize ────────────────────────────────────────────────────────────
 // Single-prompt batch call. Uses Groq's smaller/faster gpt-oss-20b by
 // default (via GROQ_CATEGORIZE_MODEL) since categorize is high-volume
-// cheap work; falls through to Cerebras (chat model) then Gemini.
+// cheap work; falls through to Cerebras (chat model) then OpenRouter
+// (nano 9b by default — same small/fast role as Groq's categorize).
 
 export async function chainCategorize(opts: {
   prompt: string;
@@ -170,18 +166,22 @@ export async function chainCategorize(opts: {
   return walk({
     route: opts.route,
     attempt: async (provider) => {
-      if (provider === "groq") return groqCategorize({ prompt: opts.prompt, route: opts.route, maxTokens: opts.maxTokens });
-      if (provider === "cerebras") return cerebrasCategorize({ prompt: opts.prompt, route: opts.route, maxTokens: opts.maxTokens });
-      return geminiCategorize({ prompt: opts.prompt, route: opts.route, maxTokens: opts.maxTokens });
+      const fn =
+        provider === "groq" ? groqCategorize
+        : provider === "cerebras" ? cerebrasCategorize
+        : openrouterCategorize;
+      return fn({ prompt: opts.prompt, route: opts.route, maxTokens: opts.maxTokens });
     },
   });
 }
 
 // ── Vision ────────────────────────────────────────────────────────────────
 // Receipt scan / receipt split. All three providers support vision:
-//   Groq     → qwen/qwen3.6-27b (5 images/req, 20MB)
-//   Cerebras → gemma-4-31b       (2 images/req, 4MB)
-//   Gemini   → gemini-3.7-flash
+//   Groq       → qwen/qwen3.6-27b (5 images/req, 20MB)
+//   Cerebras   → gemma-4-31b       (2 images/req, 4MB)
+//   OpenRouter → google/gemma-4-31b:free (same architecture as Cerebras,
+//                different infra route — real redundancy at the
+//                platform level even if the model family is the same)
 // One image per request in all our current callers.
 
 export async function chainVision(opts: {
@@ -195,15 +195,11 @@ export async function chainVision(opts: {
   return walk({
     route: opts.route,
     attempt: async (provider) => {
-      if (provider === "groq") return groqVision(opts);
-      if (provider === "cerebras") return cerebrasVision(opts);
-      return geminiVision({
-        imageBase64: opts.imageBase64,
-        mimeType: opts.mimeType,
-        prompt: opts.prompt,
-        route: opts.route,
-        maxTokens: opts.maxTokens,
-      });
+      const fn =
+        provider === "groq" ? groqVision
+        : provider === "cerebras" ? cerebrasVision
+        : openrouterVision;
+      return fn(opts);
     },
   });
 }
