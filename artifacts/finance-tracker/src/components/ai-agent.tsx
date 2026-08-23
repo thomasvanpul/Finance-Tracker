@@ -16,7 +16,17 @@ export type AiStyle = "classic" | "wanderer" | "minimal";
 const STYLE_KEY = "numeris-ai-style";
 const HOTKEY = "g"; // press G (not inside input) to summon
 
-// ── Page context ──────────────────────────────────────────────────────────────
+// ── Page labels — display only ─────────────────────────────────────────────
+// Displayed under the header so the user sees which page context the
+// AI is using. The actual context is BUILT SERVER-SIDE from the
+// authenticated user's own data — the client no longer assembles or
+// posts financial state. Only the `path` string is sent.
+//
+// The old client-side buildContext(path) shipped one sentence ("the
+// user is on X") which was almost useless and lived next to the very
+// code that would have been tempted to grow into "the user is on X
+// and their net worth is £Y" — a leak vector by attractive nuisance.
+// Removed 2026-08-23. See lib/ai-context.ts.
 
 const PAGE_LABELS: Record<string, string> = {
   "/":             "Dashboard — financial overview with key metrics",
@@ -36,21 +46,16 @@ const PAGE_LABELS: Record<string, string> = {
   "/settings":     "Settings — app configuration",
 };
 
-function buildContext(path: string): string {
-  const page = PAGE_LABELS[path] ?? `Page: ${path}`;
-  return `The user is currently on: ${page}. Tailor your response to be relevant to this context when appropriate.`;
-}
-
 // ── API ───────────────────────────────────────────────────────────────────────
 
 const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL ?? "");
 
-async function sendChat(messages: Message[], context: string): Promise<string> {
+async function sendChat(messages: Message[], path: string): Promise<string> {
   const res = await fetch(`${API_BASE}/api/ai/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ messages, context }),
+    body: JSON.stringify({ messages, path }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -133,7 +138,7 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
     setMessages(next);
     setLoading(true);
     try {
-      const reply = await sendChat(next, buildContext(location));
+      const reply = await sendChat(next, location);
       setMessages((m) => [...m, { role: "model", text: reply }]);
     } catch (e) {
       setError((e as Error).message);

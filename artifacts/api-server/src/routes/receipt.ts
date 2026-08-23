@@ -11,6 +11,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { chainVision } from "../lib/ai-providers/chain";
+import { buildReceiptScanContext } from "../lib/ai-context";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -30,14 +31,20 @@ router.post("/parse", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const prompt = `You are a receipt parser. Analyze this receipt image and extract transaction details.
+  // Per-task context (L5 in lib/ai-context.ts): the user's own
+  // category vocabulary + base currency. NOT the full portfolio —
+  // a receipt-parse only needs to extract 5 fields from an image.
+  const userId = (req as unknown as { userId: string }).userId;
+  const scanCtx = await buildReceiptScanContext(userId);
+
+  const prompt = `${scanCtx.text}\n\nYou are a receipt parser. Analyze this receipt image and extract transaction details.
 Return ONLY a JSON object with these fields:
 {
   "description": "merchant or payee name (short, max 40 chars)",
   "amount": 12.50,
   "date": "YYYY-MM-DD",
   "type": "expense",
-  "category": "one of: Food, Dining, Groceries, Transport, Shopping, Entertainment, Health, Utilities, Travel, Other"
+  "category": "prefer one from the vocabulary above; if nothing fits, use one of: Food, Dining, Groceries, Transport, Shopping, Entertainment, Health, Utilities, Travel, Other"
 }
 If you cannot read a field, omit it or use null. Return only valid JSON, no markdown.`;
 

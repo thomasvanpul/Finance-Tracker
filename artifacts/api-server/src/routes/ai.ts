@@ -20,6 +20,7 @@
 import { Router, type IRouter } from "express";
 import { getAiHealth } from "../lib/ai-config";
 import { chainChat, chainCategorize, chainVision } from "../lib/ai-providers/chain";
+import { buildChatContext, buildCategorizeContext, buildReceiptScanContext } from "../lib/ai-context";
 
 const router: IRouter = Router();
 
@@ -40,13 +41,31 @@ function anyProviderKeyed(): boolean {
 
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LEN = 4000;
-const MAX_CONTEXT_LEN = 2000;
+const MAX_PATH_LEN = 200;
 
+// Base system prompt. The USER PORTFOLIO CONTEXT block is appended
+// server-side after being built from the user's own rows via
+// lib/ai-context.ts — the client no longer assembles or posts any
+// financial data. Keeping the delimiter and the "read-only data"
+// wording is load-bearing for prompt-injection separation: the model
+// treats what's between the delimiters as data, not instructions.
+//
+// The freshness / confidence paragraph is the ask from Thomas — the
+// model must not overstate certainty about numbers it read from the
+// data block, and must never guess a value shown as "unknown".
 const SYSTEM_PROMPT = `You are a smart financial assistant built into Finance Tracker, a personal finance application.
 You help users with: budgeting, expense tracking, investment analysis, tax planning, savings goals, debt management, and general financial questions.
-Keep responses concise and actionable. Use numbers and specifics when helpful. When the user shares financial details, provide tailored advice.
+Keep responses concise and actionable. Use numbers and specifics when helpful.
 If asked about specific prices or live market data, clarify you don't have real-time data access.
-You can explain financial concepts, help interpret their data, suggest strategies, and answer "what if" scenarios.`;
+You can explain financial concepts, help interpret their data, suggest strategies, and answer "what if" scenarios.
+
+The USER PORTFOLIO CONTEXT block below contains the user's own data as of the timestamp shown. Some values may be marked "unknown" — this means the app could not compute them (usually FX conversion failed or a live quote is missing). Never guess a value shown as "unknown". Never state a number as certain — the user's data can be stale or incomplete. If they ask about something not in the context (a specific transaction, holding, or merchant), say you can see aggregates only and suggest the relevant page.`;
+
+// requireAuth (app.ts) writes session.user.id to req.userId. Every
+// route below requires it — the caller mounts these behind auth.
+function userIdOf(req: import("express").Request): string {
+  return (req as unknown as { userId: string }).userId;
+}
 
 router.post("/ai/chat", async (req, res): Promise<void> => {
   if (!anyProviderKeyed()) {
@@ -54,9 +73,9 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
     return;
   }
 
-  const { messages, context } = req.body as {
+  const { messages, path } = req.body as {
     messages?: Array<{ role: "user" | "model"; text: string }>;
-    context?: string;
+    path?: string;
   };
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -80,13 +99,14 @@ router.post("/ai/chat", async (req, res): Promise<void> => {
     }
   }
 
-  // Context is passed as a separate user-data section, not appended to the system prompt,
-  // to reduce prompt injection surface area.
-  let systemPrompt = SYSTEM_PROMPT;
-  if (context && typeof context === "string") {
-    const safeContext = context.slice(0, MAX_CONTEXT_LEN);
-    systemPrompt += `\n\n--- USER PORTFOLIO CONTEXT (read-only data) ---\n${safeContext}\n--- END CONTEXT ---`;
-  }
+  // Build user context SERVER-SIDE. The client no longer sends
+  // financial data — only messages and the current path (for
+  // page-aware framing). Context stays inside the delimiters so
+  // the prompt-injection separation the SYSTEM_PROMPT relies on is
+  // preserved.
+  const safePath = typeof path === "string" ? path.slice(0, MAX_PATH_LEN) : undefined;
+  const context = await buildChatContext(userIdOf(req), safePath);
+  const systemPrompt = `${SYSTEM_PROMPT}\n\n--- USER PORTFOLIO CONTEXT (read-only data) ---\n${context.text}\n--- END CONTEXT ---`;
 
   const result = await chainChat({
     messages,
@@ -247,10 +267,17 @@ router.post("/ai/receipt-scan", async (req, res): Promise<void> => {
 
   const safeMimeType = typeof mimeType === "string" && mimeType.length > 0 ? mimeType : "image/jpeg";
 
+  // Per-task context (L5 in lib/ai-context.ts): base currency + the
+  // user's actual category vocabulary. NOT the full portfolio — a
+  // receipt-scan doesn't need balances, and shipping them widens the
+  // leak surface and wastes tokens on a call that only needs to
+  // extract 5 fields from an image.
+  const scanCtx = await buildReceiptScanContext(userIdOf(req));
+
   const call = await chainVision({
     imageBase64,
     mimeType: safeMimeType,
-    prompt: 'Extract from this receipt: merchant name, total amount (number only), date (YYYY-MM-DD format), category (one of: Food & Drink, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Other), currency code. Return ONLY valid JSON: {"merchant": "...", "amount": 0.00, "date": "...", "category": "...", "currency": "GBP"}',
+    prompt: `${scanCtx.text}\n\nExtract from this receipt: merchant name, total amount (number only), date (YYYY-MM-DD format), category (prefer one from the vocabulary above; if nothing fits, use one of: Food & Drink, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Other), currency code. Return ONLY valid JSON: {"merchant": "...", "amount": 0.00, "date": "...", "category": "...", "currency": "GBP"}`,
     route: "ai.receipt-scan",
     maxTokens: 512,
     jsonMode: true,
@@ -338,12 +365,15 @@ router.post("/ai/batch-categorize", async (req, res): Promise<void> => {
     }
   }
 
-  const prompt = `Categorize these financial transactions. Return ONLY a valid JSON array with objects containing "id" and "category" for each transaction. No markdown, no explanation — raw JSON only.
+  // Per-task context (L5): the user's OWN category vocabulary. The
+  // hardcoded AI_CATEGORIES fallback stays for a brand-new user with
+  // no categories yet — but for anyone else the model gets their
+  // actual labels so suggestions match what they already use. No
+  // balances, no counterparties, no currency exposure — none of that
+  // makes categorisation better and shipping it wastes quota.
+  const catCtx = await buildCategorizeContext(userIdOf(req));
 
-Available categories: ${AI_CATEGORIES.join(", ")}.
-
-Transactions:
-${JSON.stringify(transactions.map((t) => ({ id: t.id, description: t.description, amount: t.amount, type: t.type })))}`;
+  const prompt = `${catCtx.text}\n\nIf the user's vocabulary above is empty, fall back to: ${AI_CATEGORIES.join(", ")}.\n\nCategorize these financial transactions. Return ONLY a valid JSON array with objects containing "id" and "category" for each transaction. No markdown, no explanation — raw JSON only.\n\nTransactions:\n${JSON.stringify(transactions.map((t) => ({ id: t.id, description: t.description, amount: t.amount, type: t.type })))}`;
 
   const call = await chainCategorize({
     prompt,
