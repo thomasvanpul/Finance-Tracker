@@ -561,8 +561,18 @@ export default function AiCoach() {
   const srAccent = srColor;
   const srLabel = srPct == null ? "" : !srHasIncome ? "no income yet" : srPct >= 20 ? "on track" : srPct >= 10 ? "below target" : "low";
 
+  // Root: was `height: calc(100vh - 64px)`. The magic 64 guessed
+  // the chrome above <main> and got it wrong by 8px, so <main>
+  // overflowed by 60px — exactly the composer height at the
+  // bottom of this page. The old fix "set <main> to overflow:hidden"
+  // would have CLIPPED the composer (rendering the input
+  // unreachable), not shrunk the page. Correct fix: flex-shrink
+  // into whatever <main> gives us. layout.tsx makes <main> a flex
+  // column for /ai-coach via VIEWPORT_LOCKED_ROUTES; here we
+  // grow + minHeight0 so the transcript's scroller (:609) is
+  // the ONE active vertical scroller on the page.
   return (
-    <VStack height="calc(100vh - 64px)">
+    <VStack grow minHeight0>
       <PageHeader
         icon={Sparkles}
         title="AI Coach"

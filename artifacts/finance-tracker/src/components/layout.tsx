@@ -1165,8 +1165,17 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
   );
 }
 
+// Routes whose page root owns its own vertical scroll — <main> steps
+// back for these so the page can flex-shrink into the viewport
+// instead of overflowing it. Add here + set the page root to
+// `flex:1; minHeight:0` (NOT height:calc(100vh - X); that arithmetic
+// pattern is banned by lock #15 in api-server's viewport-arithmetic
+// test).
+const VIEWPORT_LOCKED_ROUTES = new Set<string>(["/settings", "/ai-coach"]);
+
 export function Layout({ children }: LayoutProps) {
   const [location, navigate] = useLocation();
+  const isViewportLocked = VIEWPORT_LOCKED_ROUTES.has(location);
   const { theme } = useFintrackTheme();
   const { local: clock } = useClock();
   const queryClient = useQueryClient();
@@ -2083,10 +2092,38 @@ export function Layout({ children }: LayoutProps) {
           </div>
         )}
 
-        {/* Main */}
+        {/* Main.
+            Routes in VIEWPORT_LOCKED_ROUTES own their own scroll and
+            need <main> to be a non-scrolling flex container so the
+            page root can shrink into the available space (via
+            flex:1 + minHeight:0). Unlocked routes keep today's
+            behaviour — <main> scrolls the page.
+
+            Do not switch <main> to overflow:hidden and leave the
+            child at height:calc(100vh - X): that clips the child
+            (the composer input on ai-coach) rather than shrinking
+            it. See scroll-audit measurements: settings overflowed
+            <main> by 76px, ai-coach by 60px — exactly the composer
+            height on ai-coach. Approach A (hide the overflow) was
+            explicitly rejected on this reason.
+
+            minHeight:0 on the inner is not optional. Flex children
+            default to min-content-sized (they refuse to shrink
+            below their content). Setting minHeight:0 lets flex:1
+            do the shrinking job it was designed for. */}
         <main
           className="ft-main"
-          style={{ flex: 1, overflowY: "auto", overflowX: "hidden", background: "var(--ft-base)", position: "relative" }}
+          style={{
+            flex: 1,
+            overflowY: isViewportLocked ? "hidden" : "auto",
+            overflowX: "hidden",
+            background: "var(--ft-base)",
+            position: "relative",
+            ...(isViewportLocked ? {
+              display: "flex",
+              flexDirection: "column",
+            } : {}),
+          }}
           {...(isMobile ? pullHandlers : {})}
           onScroll={isMobile ? dismissKeyboard : undefined}
         >
@@ -2121,12 +2158,26 @@ export function Layout({ children }: LayoutProps) {
               </span>
             </div>
           )}
+          {/* Inner padding decision on locked routes:
+              /settings and /ai-coach both want edge-to-edge control
+              of their layout (settings has a full-height nav rail
+              hugging left; ai-coach has a composer flush at bottom).
+              The default 20/24/32 padding fought both. On locked
+              routes: padding:0, and become a flex column with
+              flex:1 + minHeight:0 so the page root inside can
+              shrink to fit. */}
           <div
             className="ft-main-inner"
             style={{
-              padding: "20px 24px 32px",
+              padding: isViewportLocked ? 0 : "20px 24px 32px",
               transform: isMobile && pullY > 0 ? `translateY(${pullY * 0.3}px)` : undefined,
               transition: isMobile && pullY === 0 ? "transform 0.15s ease" : undefined,
+              ...(isViewportLocked ? {
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+              } : {}),
             }}
           >
             {children}

@@ -2491,8 +2491,26 @@ export default function Settings() {
   const activeLabel = allNavItems.find(i => i.id === activePanel)?.label ?? "Settings";
   const activeGroup = navGroups.find(g => g.items.some(i => i.id === activePanel)) ?? navGroups[0];
 
+  // Desktop root: was `height: calc(100vh - 48px)`. The magic 48
+  // guessed the chrome above <main> and got it wrong by 24px
+  // (measured 72, comprising the top-bar and any transient banner).
+  // Overflowing <main> forced a second scrollbar. Replaced with
+  // flex:1 minHeight:0 — <main> is the flex parent (via
+  // VIEWPORT_LOCKED_ROUTES in layout.tsx), and this root shrinks
+  // to fit whatever height <main> actually gives it. No arithmetic.
+  //
+  // Mobile keeps `height:auto` so settings flows into the mobile
+  // page scroll (index.css .ft-settings-layout mobile override
+  // matches this).
   return (
-    <div className="ft-settings-layout" style={{ display: "flex", height: isMobile ? "auto" : "calc(100vh - 48px)", overflow: isMobile ? "visible" : "hidden" }}>
+    <div
+      className="ft-settings-layout"
+      style={{
+        display: "flex",
+        overflow: isMobile ? "visible" : "hidden",
+        ...(isMobile ? { height: "auto" } : { flex: 1, minHeight: 0 }),
+      }}
+    >
 
       {isMobile ? (
         /* ── Mobile nav: two-level chip nav ── */

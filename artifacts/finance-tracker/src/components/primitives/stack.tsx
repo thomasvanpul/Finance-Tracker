@@ -52,6 +52,12 @@ interface StackProps {
   /** min-width numeric or string. Kept separate from minWidth0 to keep the
    *  common truncation-fix case a single-name boolean. */
   minWidth?: number | string;
+  /** min-height: 0 — the flexbox "child can shrink below its content" fix.
+   *  Needed when this stack is `grow` inside another flex column and its
+   *  own child owns a scroll (chat transcript, settings content). Without
+   *  minHeight:0 the child refuses to shrink below its content height and
+   *  the container overflows its parent, producing a second scrollbar. */
+  minHeight0?: boolean;
   /** max-width in px or CSS string. */
   maxWidth?: number | string;
   /** height in px or CSS string. Layout only — chrome (background, border)
@@ -89,6 +95,7 @@ function build(p: StackProps, direction: "row" | "column"): React.CSSProperties 
   if (p.minWidth0) s.minWidth = 0;
   if (p.minWidth !== undefined) s.minWidth = p.minWidth;
   if (p.maxWidth !== undefined) s.maxWidth = p.maxWidth;
+  if (p.minHeight0) s.minHeight = 0;
   if (p.height !== undefined) s.height = p.height;
   return s;
 }
