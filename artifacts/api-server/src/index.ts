@@ -2,6 +2,8 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { alpacaStream } from "./lib/alpaca-stream";
 import { verifyProvidersAtBoot } from "./lib/ai-config";
+import { migrateAtBoot } from "./lib/migrate";
+import { verifySchemaAtBoot } from "./lib/verify-schema";
 
 const rawPort = process.env["PORT"];
 
@@ -15,6 +17,42 @@ const port = Number(rawPort);
 
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
+}
+
+// ── Boot sequence ────────────────────────────────────────────────────────
+// Both DB steps below MUST succeed before app.listen(). If either
+// throws, we log at ERROR + exit 1 — Render sees the deploy fail and
+// keeps the previous instance serving.
+//
+// Order matters:
+//   1. migrateAtBoot — apply any pending SQL migrations from
+//      dist/drizzle. Idempotent no-op if the schema is already
+//      current.
+//   2. verifySchemaAtBoot — introspect information_schema and
+//      compare against what the code's drizzle schema expects. Catches
+//      the "code references a column that no migration created" case
+//      (someone forgot `drizzle-kit generate`) or the "journal wiped
+//      but tables present" case (the past force-push defect).
+//
+// Reason both exist: (1) fixes normal drift; (2) refuses to start on
+// abnormal drift that (1) couldn't catch. See src/lib/verify-schema.ts.
+try {
+  await migrateAtBoot();
+} catch (err) {
+  logger.error(
+    { err: err instanceof Error ? err.message : String(err) },
+    "database migration failed — refusing to start server. Previous instance will keep serving on Render.",
+  );
+  process.exit(1);
+}
+try {
+  await verifySchemaAtBoot();
+} catch (err) {
+  logger.error(
+    { err: err instanceof Error ? err.message : String(err) },
+    "schema drift check failed — refusing to start server. See fix-me sentence above.",
+  );
+  process.exit(1);
 }
 
 app.listen(port, (err) => {
@@ -32,5 +70,8 @@ app.listen(port, (err) => {
   // sentence and /api/ai/status flips that provider to
   // modelsVerified=false. `available` at the top level stays true so
   // long as ONE provider remains verified. See lib/ai-config.ts.
+  //
+  // AI verify is non-blocking because the chain has fallbacks. DB
+  // verify (above) IS blocking because the DB doesn't.
   void verifyProvidersAtBoot();
 });

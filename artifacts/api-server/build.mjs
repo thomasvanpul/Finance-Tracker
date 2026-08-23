@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { rm, cp } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -119,7 +119,22 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
   });
 }
 
-buildAll().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// Copy the drizzle migrations folder into the api-server dist so the
+// programmatic runtime migrator can find it via a __dirname-relative
+// path. Render strips dev deps in the runtime image, so drizzle-kit
+// is unavailable there — the in-process `drizzle-orm/node-postgres/
+// migrator` (a runtime dep) reads this folder and applies pending
+// migrations before app.listen(). See src/lib/migrate.ts.
+async function copyMigrations() {
+  const src = path.resolve(artifactDir, "../../lib/db/drizzle");
+  const dst = path.resolve(artifactDir, "dist/drizzle");
+  await cp(src, dst, { recursive: true });
+  console.log(`[build] copied migrations: ${src} → ${dst}`);
+}
+
+buildAll()
+  .then(copyMigrations)
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
