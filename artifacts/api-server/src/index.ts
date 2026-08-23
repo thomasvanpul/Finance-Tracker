@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { alpacaStream } from "./lib/alpaca-stream";
-import { verifyModelAtBoot } from "./lib/ai-config";
+import { verifyProvidersAtBoot } from "./lib/ai-config";
 
 const rawPort = process.env["PORT"];
 
@@ -25,9 +25,12 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   alpacaStream.connect();
-  // Verify the configured Gemini model against Google's models list.
-  // Non-blocking — server is already accepting requests. If the model
-  // is dead, an error-level log fires with the fix-me sentence and
-  // /api/ai/status flips to available:false. See lib/ai-config.ts.
-  void verifyModelAtBoot();
+  // Verify every AI provider's configured models against its live
+  // models list — Groq, Cerebras, Gemini in parallel. Non-blocking:
+  // server is already accepting requests. If any provider's model is
+  // dead, an error-level log fires with the provider-specific fix-me
+  // sentence and /api/ai/status flips that provider to
+  // modelsVerified=false. `available` at the top level stays true so
+  // long as ONE provider remains verified. See lib/ai-config.ts.
+  void verifyProvidersAtBoot();
 });

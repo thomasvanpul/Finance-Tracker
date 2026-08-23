@@ -1,16 +1,16 @@
 import { Router, type IRouter } from "express";
 import { callGemini } from "../lib/gemini";
-import { getAiHealth } from "../lib/ai-config";
+import { getGeminiModel } from "../lib/ai-config";
 
 const router: IRouter = Router();
 
-// Model comes from ai-config, which reads GEMINI_MODEL env var (default
-// gemini-3.7-flash). One source of truth — the next retirement is a
-// Render env change, not a code change. See lib/ai-config.ts header.
-// getAiHealth() returns { model, ... } — we read it per-request so a
-// live env change (rare but possible) picks up without a restart.
+// TEMPORARY: this file still calls Gemini directly. The next commit
+// wires the chain (Groq → Cerebras → Gemini) via lib/ai-providers/
+// chain.ts and this helper goes away. Left in place so the endpoints
+// keep working until the chain lands, with the correct Gemini model
+// pulled from the shared ai-config source of truth.
 function currentModel(): string {
-  return getAiHealth().model;
+  return getGeminiModel();
 }
 
 // Generic client-facing error for AI failures. The operator gets the
