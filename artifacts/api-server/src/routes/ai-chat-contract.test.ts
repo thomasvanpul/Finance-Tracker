@@ -30,10 +30,12 @@ interface ClientMessage {
 function buildClientWireBody(messages: ClientMessage[], path?: string): unknown {
   // Reproduce streamChat's actual construction (lib/ai-chat-client.ts):
   //   1. map to {role, text} only
-  //   2. filter empty-text messages
+  //   2. filter WHITESPACE-ONLY messages (m.text.trim().length > 0)
+  //      — the pre-trim filter passed " " through and 400'd on the
+  //      server. Both sides trim before treating text as content.
   const wireMessages = messages
     .map((m) => ({ role: m.role, text: m.text }))
-    .filter((m) => m.text.length > 0);
+    .filter((m) => m.text.trim().length > 0);
   return { messages: wireMessages, path };
 }
 
@@ -112,6 +114,61 @@ describe("wire contract · empty-text messages MUST be filtered", () => {
     expect(r.success).toBe(true);
     if (r.success) {
       expect(r.data.messages).toHaveLength(1);
+    }
+  });
+
+  // ── The whitespace bug this locks ──────────────────────────────────
+  // First iteration filtered `length > 0` which passed " " through and
+  // the server 400'd. Both sides trim before treating text as content.
+  // A user hitting spacebar then Enter must not produce a request.
+  it("a single-space message never reaches the wire (trimmed length is 0)", () => {
+    const body = buildClientWireBody([{ role: "user", text: " " }]);
+    expect((body as { messages: unknown[] }).messages).toHaveLength(0);
+    // The empty-messages guard in streamChat calls onError before the
+    // fetch runs; here we just verify the wire array is empty. The
+    // server never sees the request.
+  });
+
+  it("a newline-only or tab-only message never reaches the wire", () => {
+    for (const s of ["\n", "\n\n\n", "\t", "\t \t", "   "]) {
+      const body = buildClientWireBody([{ role: "user", text: s }]);
+      expect((body as { messages: unknown[] }).messages, `for input ${JSON.stringify(s)}`).toHaveLength(0);
+    }
+  });
+
+  it("if the client somehow POSTs a whitespace message, the server ALSO rejects it (belt to the client's braces)", () => {
+    // Skip the client filter and go straight to the schema — server
+    // must not depend on the client to have filtered. Any of these
+    // shapes hitting /api/ai/chat directly (curl, misbehaving client)
+    // should 400 with the same message.
+    for (const s of [" ", "\n", "\t\t", "     \n\n"]) {
+      const r = AiChatRequestSchema.safeParse({ messages: [{ role: "user", text: s }] });
+      expect(r.success, `expected server to reject ${JSON.stringify(s)}`).toBe(false);
+    }
+  });
+
+  it("preserves non-empty text verbatim, INCLUDING internal whitespace", () => {
+    // Normalisation is for the emptiness check only. If a user pastes
+    // code, the indentation must survive the wire round-trip.
+    const paste = `function hello() {\n  return 42;\n}`;
+    const body = buildClientWireBody([{ role: "user", text: paste }]);
+    const r = AiChatRequestSchema.safeParse(body);
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.messages[0].text).toBe(paste);
+    }
+  });
+
+  it("preserves leading/trailing whitespace when the message has real content", () => {
+    // A user typing " hello " should have their message sent as-is
+    // (with the surrounding whitespace). Only pure-whitespace is
+    // rejected, not padded-whitespace.
+    const padded = "  hello  ";
+    const body = buildClientWireBody([{ role: "user", text: padded }]);
+    const r = AiChatRequestSchema.safeParse(body);
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.messages[0].text).toBe(padded);
     }
   });
 });

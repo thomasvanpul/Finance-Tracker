@@ -159,16 +159,21 @@ export async function streamChat(
     // is a wire concern. If the caller passes a richer Message shape
     // (which the AI Agent does) it must map to ChatWireMessage first.
     //
-    // Filter empty-text messages BEFORE sending — a streaming bubble
-    // that errored (or was cut) before receiving any tokens leaves
-    // text: "" on the model message in local state. Including that
-    // in a follow-up call 400'd the whole request server-side (the
-    // schema rejects empty text). Empty messages carry no useful
-    // history for the model either — dropping them silently is
-    // correct in both directions.
+    // Filter WHITESPACE-ONLY messages BEFORE sending. First iteration
+    // filtered `length > 0` which passed " " through — server then
+    // 400'd with "message text must not be empty" (its trim-then-check
+    // rule). Both sides trim before treating a message as content:
+    //   · here — filter on m.text.trim().length so " ", "\n", tabs
+    //     never reach the wire
+    //   · server — AiChatMessageSchema in @workspace/api-zod trims
+    //     before .min(1)
+    // The trim is a NORMALISATION for the emptiness check, not for
+    // the payload — actual whitespace inside a non-empty message
+    // (line breaks, indentation in code the user pasted) is preserved
+    // and sent verbatim.
     const wireMessages: ChatWireMessage[] = messages
       .map((m) => ({ role: m.role, text: m.text }))
-      .filter((m) => m.text.length > 0);
+      .filter((m) => m.text.trim().length > 0);
     if (wireMessages.length === 0) {
       cb.onError("No message to send.");
       return;
