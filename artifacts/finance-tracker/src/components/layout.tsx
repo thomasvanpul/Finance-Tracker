@@ -996,8 +996,13 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
         </button>
       </div>
 
-      {/* Nav items */}
-      <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none" }}>
+      {/* Nav items — the outer sidebar column at :929 owns the vertical
+          scroll for this whole subtree. This wrapper stays flex:1 so
+          the header sibling at :933 doesn't get squeezed, but does NOT
+          add its own overflowY:auto — that was a nested scroll inside
+          the parent scroller and produced the "scroll stops, then
+          continues" double-scroll bug when the nav content overran. */}
+      <div style={{ flex: 1 }}>
         {sectionGroups.map((group, gi) => (
           <div key={`${group.label}-${gi}`}>
             <div style={{

@@ -590,7 +590,13 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
           flexDirection: "column",
           transform: isOpen ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.12s ease-out",
-          overflowY: "auto",
+          // NOTE: outer drawer is a three-band flex column
+          // (header · scrollable body · footer). The scroll owner is
+          // the body at :634 (kept, its thead uses position:sticky
+          // top:0 which needs the inner as its scrolling ancestor).
+          // Adding overflowY:auto here made this a nested-scroll pair
+          // with :634 — removed. Header/footer stay in the flex flow
+          // via flexShrink:0.
         }}
       >
         <div
