@@ -77,7 +77,7 @@ const SLING_SKIN: Record<BotSkinId, {
   ix: {
     border: "1px solid var(--ft-border2)", bg: "var(--ft-surface)",
     headerBg: "var(--ft-raised)", headerBorder: "var(--ft-border)",
-    titleText: "AI Financial Assistant", titleColor: "var(--ft-text)",
+    titleText: "AI Coach", titleColor: "var(--ft-text)",
     iconColor: "var(--ft-accent)", shadow: "0 12px 48px rgba(0,0,0,0.7)",
     tailColor: "var(--ft-border2)", tag: "Powered by Groq",
   },
@@ -293,7 +293,7 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
       }}>
         <Sparkles style={{ width: 13, height: 13, color: isWandererSling ? sk.iconColor : "var(--ft-accent)", flexShrink: 0 }} />
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: isWandererSling ? sk.titleColor : "var(--ft-text)" }}>
-          {isWandererSling ? sk.titleText : "AI Financial Assistant"}
+          {isWandererSling ? sk.titleText : "AI Coach"}
         </span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", marginLeft: 4 }}>
           {isWandererSling ? sk.tag : "Powered by Groq"}
@@ -551,7 +551,7 @@ export function AiAgent({ sidebarW }: { sidebarW?: number }) {
             cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
             transition: "background 0.15s, color 0.15s",
           }}
-          title={`${open ? "Close" : "Open"} AI Assistant (G)`}
+          title={`${open ? "Close" : "Open"} AI Coach (G)`}
         >
           {open ? <X className="w-4 h-4" /> : <BotMessageSquare className="w-4 h-4" />}
         </button>

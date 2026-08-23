@@ -195,7 +195,7 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
   {
     label: "AI & Help",
     items: [
-      { id: "ai",        label: "AI Assistant" },
+      { id: "ai",        label: "AI Coach" },
       { id: "shortcuts", label: "Shortcuts" },
     ],
   },
@@ -2573,7 +2573,7 @@ export default function Settings() {
                   return (
                     <div
                       key={item.id}
-                      title="Enable AI Wanderer first (AI & Help → AI Assistant)"
+                      title="Enable AI Wanderer first (AI & Help → AI Coach)"
                       style={{
                         display: "flex", alignItems: "center", gap: 6,
                         width: "100%", textAlign: "left",
