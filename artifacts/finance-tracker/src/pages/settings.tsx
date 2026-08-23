@@ -1467,7 +1467,7 @@ function AiSettingsPanel() {
           <div style={{ marginTop: 10 }}>
             <SettingsInfoRow label="Page awareness" value="Current page name sent with every message" />
             <SettingsInfoRow label="Financial context" value="Responses tailored to the active section" />
-            <SettingsInfoRow label="Powered by" value="Google Gemini 2.0 Flash" accent="var(--ft-accent)" />
+            <SettingsInfoRow label="Powered by" value="Groq → Cerebras → OpenRouter (chain fallback)" accent="var(--ft-accent)" />
           </div>
         </div>
       </div>

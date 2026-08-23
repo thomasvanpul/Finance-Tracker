@@ -171,6 +171,61 @@ describe("chainChat · all providers fail", () => {
   });
 });
 
+describe("chainChat · per-provider timeout (12s AbortController)", () => {
+  it("hanging Groq gets aborted at 12s and chain falls through to Cerebras", async () => {
+    // Load-bearing property: a chain built for redundancy MUST NOT
+    // become slower than a single provider under failure. Without
+    // the AbortController each hang stacked its full wait (60s+) →
+    // 3× hang could exceed 3 minutes and blow past Render's socket
+    // timeout — the client saw "Failed to fetch" while Node was
+    // still waiting on the first provider.
+    //
+    // Use fake timers to advance past PROVIDER_TIMEOUT_MS without
+    // actually sleeping. The fetch mock returns a promise that
+    // RESOLVES on abort signal (mirrors undici's real behaviour),
+    // so the fetch's own .catch fires.
+    vi.useFakeTimers();
+    const callSequence: string[] = [];
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      callSequence.push(url);
+      if (url.includes("api.groq.com")) {
+        // Hang until aborted. Resolves rejecting with AbortError
+        // when the signal fires, matching undici's contract.
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            const err = new Error("aborted") as Error & { name: string };
+            err.name = "AbortError";
+            reject(err);
+          });
+        });
+      }
+      if (url.includes("api.cerebras.ai")) {
+        return {
+          ok: true, status: 200, statusText: "OK",
+          text: async () => openAi200("cerebras served after groq timeout"),
+          json: async () => JSON.parse(openAi200("cerebras served after groq timeout")),
+        } as unknown as Response;
+      }
+      throw new Error(`unmatched fetch to ${url}`);
+    });
+
+    const chainPromise = chainChat({ messages: [MSG], route: "test" });
+    // Advance past the 12s timeout so the AbortController fires
+    // for Groq. The chain should then move to Cerebras, which
+    // resolves immediately.
+    await vi.advanceTimersByTimeAsync(13_000);
+    const result = await chainPromise;
+
+    expect(result.ok).toBe(true);
+    expect(result.text).toBe("cerebras served after groq timeout");
+    expect(result.servingProvider).toBe("cerebras");
+    expect(result.reducedCapacity).toBe(true);
+    expect(result.triedProviders).toEqual(["groq", "cerebras"]);
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+});
+
 describe("chainChat · unconfigured providers are skipped", () => {
   it("no GROQ key → skips groq, tries cerebras first, serving=cerebras, reducedCapacity=true", async () => {
     // The reducedCapacity flip when a provider is unconfigured is

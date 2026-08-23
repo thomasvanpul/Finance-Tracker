@@ -43,6 +43,7 @@ import {
 import type { AlertMetric, NewsItem, PriceAlert, QuoteData, Watchlist } from "./types";
 import { readAlerts, writeAlerts, readWatchlists, writeWatchlists } from "./types";
 import { AXIS_TICK, AXIS_LINE } from "@/lib/chart-tokens";
+import { oneShotInsight } from "@/lib/ai-chat-client";
 
 // Colour + label for a change-percent value. Returns "—" and a neutral
 // colour when the API didn't supply the value — never a fabricated zero
@@ -579,19 +580,16 @@ export function MarketsTab() {
     if (tldrMap[link] || tldrLoading[link]) return;
     setTldrLoading((p) => ({ ...p, [link]: true }));
     try {
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          messages: [{ role: "user", text: `In exactly one sentence, give a concise investment angle on this news headline. Be direct, mention if it's positive or negative for investors, and why. Headline: "${title}"` }],
-          context: `Ticker: ${selectedTicker ?? ""}`,
-        }),
+      // Server frames the response for the /investments page via
+      // buildChatContext. The ticker context lives in a plain-text
+      // prefix in the prompt — a ticker symbol is public reference
+      // data, not user financial state.
+      const ticker = selectedTicker ?? "";
+      const result = await oneShotInsight({
+        path: "/investments",
+        prompt: `In exactly one sentence, give a concise investment angle on this news headline about ticker ${ticker}. Be direct, mention if it's positive or negative for investors, and why. Headline: "${title}"`,
       });
-      if (res.ok) {
-        const d = await res.json() as { text: string };
-        setTldrMap((p) => ({ ...p, [link]: d.text.trim() }));
-      }
+      setTldrMap((p) => ({ ...p, [link]: result.text.trim() }));
     } catch { /* silently ignore */ }
     finally { setTldrLoading((p) => ({ ...p, [link]: false })); }
   };

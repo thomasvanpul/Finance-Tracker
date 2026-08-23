@@ -38,11 +38,11 @@
 // client so the UI can render the reduced-capacity chrome.
 
 import { logger } from "../logger";
-import { groqChat, groqCategorize, groqVision } from "./groq";
-import { cerebrasChat, cerebrasCategorize, cerebrasVision } from "./cerebras";
-import { openrouterChat, openrouterCategorize, openrouterVision } from "./openrouter";
+import { groqChat, groqChatStream, groqCategorize, groqVision } from "./groq";
+import { cerebrasChat, cerebrasChatStream, cerebrasCategorize, cerebrasVision } from "./cerebras";
+import { openrouterChat, openrouterChatStream, openrouterCategorize, openrouterVision } from "./openrouter";
 import type { AiCallResult, AiProviderName, ChainResult, ChatMessage } from "./types";
-import type { OpenAiMessage } from "./openai-compat";
+import type { OpenAiMessage, OpenAiStreamChunk } from "./openai-compat";
 
 // One order for every task. If a task ever needs a different chain
 // (e.g. vision skipping a text-only provider) we override per-task.
@@ -150,6 +150,110 @@ export async function chainChat(opts: {
       });
     },
   });
+}
+
+// ── Streaming chat ────────────────────────────────────────────────────────
+// Same walk order as chainChat, with one added invariant: once ANY
+// tokens have been yielded from a provider, we do NOT fall through
+// on a later error. Falling through mid-stream would swap the model
+// producing the answer partway through, and the user would see a
+// hybrid of two different completions — a lie about what came from
+// where. Cut the stream instead. If provider A errors before its
+// first token, we can safely fall through (client has seen nothing
+// from A yet). Client renders errors from `error` events.
+
+export type ChainStreamEvent =
+  | { kind: "attempt"; provider: AiProviderName; attemptIndex: number }
+  | { kind: "fallthrough"; from: AiProviderName; to: AiProviderName; reason: string }
+  | { kind: "token"; text: string }
+  | { kind: "done"; servingProvider: AiProviderName; reducedCapacity: boolean; triedProviders: AiProviderName[] }
+  | { kind: "cut"; servingProvider: AiProviderName; reason: string; triedProviders: AiProviderName[] }
+  | { kind: "exhausted"; triedProviders: AiProviderName[] };
+
+export async function* chainChatStream(opts: {
+  messages: ChatMessage[];
+  systemPrompt?: string;
+  route: string;
+  maxTokens?: number;
+  temperature?: number;
+}): AsyncGenerator<ChainStreamEvent> {
+  const openAi = toOpenAiMessages(opts.messages, opts.systemPrompt);
+  const order = CHAIN_ORDER;
+  const tried: AiProviderName[] = [];
+  let previousProvider: AiProviderName | null = null;
+
+  for (let i = 0; i < order.length; i++) {
+    const provider = order[i];
+    tried.push(provider);
+    if (previousProvider) {
+      yield { kind: "fallthrough", from: previousProvider, to: provider, reason: "previous provider failed before any tokens" };
+    }
+    yield { kind: "attempt", provider, attemptIndex: i };
+
+    let tokensEmitted = 0;
+    try {
+      const streamFn =
+        provider === "groq" ? groqChatStream
+        : provider === "cerebras" ? cerebrasChatStream
+        : openrouterChatStream;
+      const stream = streamFn({
+        messages: openAi,
+        route: opts.route,
+        maxTokens: opts.maxTokens,
+        temperature: opts.temperature,
+      });
+      for await (const chunk of stream) {
+        if (chunk.kind === "token") {
+          tokensEmitted += 1;
+          yield { kind: "token", text: chunk.text };
+        } else if (chunk.kind === "done") {
+          // Success — stream ended cleanly.
+          const reduced = provider !== PRIMARY;
+          if (reduced) {
+            logger.warn(
+              { route: opts.route, servingProvider: provider, tried, primary: PRIMARY, tokensEmitted },
+              "AI chain (streaming) served from fallback provider — reducedCapacity=true",
+            );
+          } else {
+            logger.info({ route: opts.route, servingProvider: provider, tokensEmitted }, "AI chain (streaming) served from primary");
+          }
+          yield { kind: "done", servingProvider: provider, reducedCapacity: reduced, triedProviders: tried };
+          return;
+        }
+      }
+      // Stream ended without an explicit "done" chunk — treat as clean
+      // completion if we got tokens, otherwise fall through.
+      if (tokensEmitted > 0) {
+        const reduced = provider !== PRIMARY;
+        yield { kind: "done", servingProvider: provider, reducedCapacity: reduced, triedProviders: tried };
+        return;
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (tokensEmitted > 0) {
+        // Mid-stream failure. Do NOT fall through — swapping providers
+        // now would blend two different completions. Cut cleanly and
+        // tell the caller.
+        logger.warn(
+          { route: opts.route, provider, tokensEmitted, err: message },
+          "AI chain (streaming) provider failed mid-stream — cutting cleanly, not falling through",
+        );
+        yield { kind: "cut", servingProvider: provider, reason: message, triedProviders: tried };
+        return;
+      }
+      // No tokens emitted — safe to move on.
+      logger.info(
+        { route: opts.route, provider, err: message },
+        "AI provider (streaming) threw before first token, chain continues",
+      );
+      previousProvider = provider;
+      continue;
+    }
+    previousProvider = provider;
+  }
+
+  logger.error({ route: opts.route, tried }, "AI chain (streaming) exhausted every provider — request fails");
+  yield { kind: "exhausted", triedProviders: tried };
 }
 
 // ── Categorize ────────────────────────────────────────────────────────────

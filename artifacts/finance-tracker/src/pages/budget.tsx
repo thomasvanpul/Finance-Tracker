@@ -14,6 +14,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListBudgetsQueryKey } from "@workspace/api-client-react";
+import { oneShotInsight } from "@/lib/ai-chat-client";
 import {
   BarChart,
   Bar,
@@ -465,23 +466,13 @@ function PanelHeader({
   );
 }
 
-// ── AI helper ────────────────────────────────────────────────────────────────
-
-async function callAI(context: string, prompt: string): Promise<string> {
-  const res = await fetch("/api/ai/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ messages: [{ role: "user", text: prompt }], context }),
-  });
-  if (!res.ok) throw new Error();
-  const { text } = await res.json() as { text: string };
-  return text;
-}
-
 const BUDGET_AI_CACHE_KEY = "ft-budget-ai-insight";
 
 // ── AiBudgetInsight component ─────────────────────────────────────────────────
+// Server reads budgets + this-month spend by category via
+// buildChatContext(userId, "/budget"). This component sends only the
+// prompt — the local budget-vs-spend arithmetic below is used for
+// local UI rendering (bar chart, chips), NEVER for prompt assembly.
 
 interface AiBudgetInsightProps {
   budgets: Budget[];
@@ -491,23 +482,10 @@ interface AiBudgetInsightProps {
   overBudgetCount: number;
 }
 
-function AiBudgetInsight({ budgets, spentByCategory, totalBudgeted, totalSpent, overBudgetCount }: AiBudgetInsightProps) {
+function AiBudgetInsight(_props: AiBudgetInsightProps) {
   const [insight, setInsight] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const fetchedRef = useRef(false);
-
-  function buildContext(): string {
-    const lines: string[] = [
-      `Total budget: £${totalBudgeted.toFixed(2)}, Total spent: £${totalSpent.toFixed(2)}, Categories over limit: ${overBudgetCount}`,
-      "Category breakdown:",
-    ];
-    for (const b of budgets) {
-      const spent = spentByCategory[b.category.toLowerCase()] ?? 0;
-      const pct = b.limit > 0 ? Math.round((spent / b.limit) * 100) : 0;
-      lines.push(`  ${b.category}: limit £${b.limit}, spent £${spent.toFixed(2)} (${pct}%)`);
-    }
-    return lines.join("\n");
-  }
 
   async function fetchInsight(force = false) {
     if (!force) {
@@ -520,11 +498,12 @@ function AiBudgetInsight({ budgets, spentByCategory, totalBudgeted, totalSpent, 
     }
     setLoading(true);
     try {
-      const context = buildContext();
-      const prompt = "In 2-3 sentences, analyze my budget adherence this month and give me the most important action to take.";
-      const text = await callAI(context, prompt);
-      sessionStorage.setItem(BUDGET_AI_CACHE_KEY, text);
-      setInsight(text);
+      const result = await oneShotInsight({
+        path: "/budget",
+        prompt: "In 2-3 sentences, analyze my budget adherence this month and give me the most important action to take.",
+      });
+      sessionStorage.setItem(BUDGET_AI_CACHE_KEY, result.text);
+      setInsight(result.text);
     } catch {
       setInsight(null);
     } finally {

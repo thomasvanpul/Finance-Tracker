@@ -9,6 +9,7 @@ import { formatGbp } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { FileText, RefreshCw, Loader2, AlertTriangle, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { oneShotInsight } from "@/lib/ai-chat-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,96 +58,11 @@ function saveCache(data: BriefingData) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch { /* noop */ }
 }
 
-// ─── Context builder ──────────────────────────────────────────────────────────
-
-function buildBriefingContext(
-  accounts: Array<{ name: string; currency: string; gbpEquivalent: number }> | undefined,
-  dashboard: { netWorth?: number; thisMonth?: { income?: number; expenses?: number; savingsRate?: number } } | undefined,
-  budgets: Budget[] | undefined,
-  thisTxs: Tx[],
-  lastTxs: Tx[],
-  investmentSummary: { totalValueGbp: number } | undefined,
-  investments: Investment[] | undefined,
-  goals: Goal[] | undefined,
-  subscriptions: Array<{ name: string; amount: number; frequency: string; active: boolean }> | undefined,
-): string {
-  const ym = nowYm();
-  const parts: string[] = [
-    `FINANCIAL BRIEFING CONTEXT — ${monthLabel(ym)}`,
-    `Today: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}`,
-  ];
-
-  if (dashboard?.netWorth != null) parts.push(`Net worth: ${formatGbp(dashboard.netWorth)}`);
-
-  if (accounts?.length) {
-    parts.push(`Accounts (${accounts.length}): ${accounts.map(a => `${a.name} ${formatGbp(a.gbpEquivalent)} ${a.currency}`).join("; ")}`);
-  }
-
-  if (dashboard?.thisMonth) {
-    const { income, expenses, savingsRate } = dashboard.thisMonth;
-    if (income != null) parts.push(`This month income: ${formatGbp(income)}`);
-    if (expenses != null) parts.push(`This month expenses: ${formatGbp(expenses)}`);
-    if (income != null && expenses != null) parts.push(`Monthly P&L: ${formatGbp(income - expenses)}`);
-    if (savingsRate != null) parts.push(`Savings rate: ${(savingsRate * 100).toFixed(1)}%`);
-  }
-
-  const thisMap = new Map<string, number>();
-  for (const tx of thisTxs) thisMap.set(tx.category, (thisMap.get(tx.category) ?? 0) + tx.gbpValue);
-  const lastMap = new Map<string, number>();
-  for (const tx of lastTxs) lastMap.set(tx.category, (lastMap.get(tx.category) ?? 0) + tx.gbpValue);
-
-  const sortedCats = [...thisMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  if (sortedCats.length) {
-    const catLines = sortedCats.map(([cat, amt]) => {
-      const prev = lastMap.get(cat);
-      if (prev && prev > 0) {
-        const pct = Math.round(((amt - prev) / prev) * 100);
-        return `${cat}: ${formatGbp(amt)} (${pct >= 0 ? "+" : ""}${pct}% vs last month)`;
-      }
-      return `${cat}: ${formatGbp(amt)}`;
-    });
-    parts.push(`Top spending categories:\n${catLines.join("\n")}`);
-  }
-
-  if (budgets?.length && thisMap.size) {
-    const perf = budgets.map(b => {
-      const spent = thisMap.get(b.category) ?? 0;
-      const pct = b.monthlyLimit > 0 ? Math.round((spent / b.monthlyLimit) * 100) : 0;
-      return `${b.category}: ${formatGbp(spent)}/${formatGbp(b.monthlyLimit)} (${pct}%)`;
-    });
-    parts.push(`Budget performance:\n${perf.join("\n")}`);
-  }
-
-  if (goals?.length) {
-    const goalLines = goals.map(g => {
-      const pct = g.target > 0 ? Math.round((g.current / g.target) * 100) : 0;
-      const days = g.deadline ? Math.ceil((new Date(g.deadline).getTime() - Date.now()) / 86400000) : null;
-      return `${g.name}: ${formatGbp(g.current)}/${formatGbp(g.target)} (${pct}%)${days != null ? ` — ${days} days left` : ""}`;
-    });
-    parts.push(`Goals:\n${goalLines.join("\n")}`);
-  }
-
-  if (investmentSummary) parts.push(`Portfolio total: ${formatGbp(investmentSummary.totalValueGbp)}`);
-  if (investments?.length) {
-    const top = investments.slice(0, 5);
-    parts.push(`Top holdings: ${top.map(i => `${i.ticker} ${formatGbp(i.gbpValue)}`).join(", ")}`);
-  }
-
-  if (subscriptions?.length) {
-    const active = subscriptions.filter(s => s.active);
-    const monthlyTotal = active.reduce((s, sub) => {
-      const monthly = sub.frequency === "monthly" ? sub.amount
-        : sub.frequency === "annual" ? sub.amount / 12
-        : sub.frequency === "weekly" ? sub.amount * 4.33 : sub.amount;
-      return s + monthly;
-    }, 0);
-    parts.push(`Active subscriptions: ${active.length} totalling ~${formatGbp(monthlyTotal)}/month`);
-  }
-
-  return parts.join("\n");
-}
-
 // ─── AI call ──────────────────────────────────────────────────────────────────
+// Context assembly is server-side (lib/ai-context.ts, buildChatContext).
+// This page sends only the prompt — the server reads accounts, net
+// worth, monthly P&L, budgets, goals, portfolio, subscriptions from
+// the authenticated user's own rows.
 
 const SCHEMA_INSTRUCTION = `
 Respond with ONLY valid JSON in this exact structure (no markdown, no prose outside JSON):
@@ -167,24 +83,14 @@ Respond with ONLY valid JSON in this exact structure (no markdown, no prose outs
     {"level": "red|amber|green", "description": "risk description"}
   ]
 }
-Be direct. Use exact GBP figures from the data. British English. No generic advice.`;
+Be direct. Use exact GBP figures from the context provided. British English. No generic advice.`;
 
-async function generateBriefing(context: string): Promise<BriefingData> {
-  const res = await fetch("/api/ai/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({
-      messages: [{ role: "user", text: `Generate my monthly financial intelligence briefing for ${monthLabel(nowYm())}.${SCHEMA_INSTRUCTION}` }],
-      context,
-    }),
+async function generateBriefing(): Promise<BriefingData> {
+  const result = await oneShotInsight({
+    path: "/briefing",
+    prompt: `Generate my monthly financial intelligence briefing for ${monthLabel(nowYm())}.${SCHEMA_INSTRUCTION}`,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error ?? "AI generation failed");
-  }
-  const { text } = await res.json() as { text: string };
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const jsonMatch = result.text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("AI response was not valid JSON");
   const parsed = JSON.parse(jsonMatch[0]) as Omit<BriefingData, "generatedAt" | "month">;
   return { ...parsed, generatedAt: new Date().toISOString(), month: nowYm() };
@@ -496,22 +402,11 @@ export default function Briefing() {
     ((txRaw ?? []) as Tx[]).filter(t => t.date.startsWith(lastYm) && t.type === "expense"),
     [txRaw, lastYm]);
 
-  const context = useMemo(() => buildBriefingContext(
-    accountsRaw as any,
-    dashboard,
-    budgetsRaw as Budget[],
-    thisTxs, lastTxs,
-    invSummary as { totalValueGbp: number } | undefined,
-    investmentsRaw as Investment[],
-    goalsRaw as Goal[],
-    subsRaw as any,
-  ), [accountsRaw, dashboard, budgetsRaw, thisTxs, lastTxs, invSummary, investmentsRaw, goalsRaw, subsRaw]);
-
   const generate = useCallback(async () => {
     setGenerating(true);
     setError(null);
     try {
-      const result = await generateBriefing(context);
+      const result = await generateBriefing();
       saveCache(result);
       setBriefing(result);
     } catch (e) {
@@ -519,7 +414,7 @@ export default function Briefing() {
     } finally {
       setGenerating(false);
     }
-  }, [context]);
+  }, []);
 
   const rating = briefing ? RATING_STYLES[briefing.situationRating] ?? RATING_STYLES.healthy : null;
 
@@ -627,7 +522,7 @@ export default function Briefing() {
             "FINANCIAL INTELLIGENCE REPORT",
             `PERIOD: ${monthLabel(ym)}`,
             "CLASSIFICATION: PERSONAL",
-            "POWERED BY GEMINI",
+            "POWERED BY GROQ",
           ].map((label, i, arr) => (
             <span key={label} style={{ display: "flex", alignItems: "center" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", padding: "0 20px" }}>
@@ -942,7 +837,7 @@ export default function Briefing() {
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
             <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
-              GENERATED {new Date(briefing.generatedAt).toLocaleString("en-GB")} · POWERED BY GOOGLE GEMINI
+              GENERATED {new Date(briefing.generatedAt).toLocaleString("en-GB")} · POWERED BY GROQ
             </Text>
             <HStack gap={8} align="center">
               <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">

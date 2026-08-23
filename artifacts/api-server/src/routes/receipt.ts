@@ -35,7 +35,11 @@ router.post("/parse", async (req: Request, res: Response): Promise<void> => {
   // category vocabulary + base currency. NOT the full portfolio —
   // a receipt-parse only needs to extract 5 fields from an image.
   const userId = (req as unknown as { userId: string }).userId;
+
+  const totalStart = process.hrtime.bigint();
+  const ctxStart = process.hrtime.bigint();
   const scanCtx = await buildReceiptScanContext(userId);
+  const ctxMs = Number(process.hrtime.bigint() - ctxStart) / 1_000_000;
 
   const prompt = `${scanCtx.text}\n\nYou are a receipt parser. Analyze this receipt image and extract transaction details.
 Return ONLY a JSON object with these fields:
@@ -48,6 +52,7 @@ Return ONLY a JSON object with these fields:
 }
 If you cannot read a field, omit it or use null. Return only valid JSON, no markdown.`;
 
+  const modelStart = process.hrtime.bigint();
   const chained = await chainVision({
     imageBase64,
     mimeType,
@@ -56,6 +61,20 @@ If you cannot read a field, omit it or use null. Return only valid JSON, no mark
     maxTokens: 256,
     jsonMode: true,
   });
+  const modelMs = Number(process.hrtime.bigint() - modelStart) / 1_000_000;
+  const totalMs = Number(process.hrtime.bigint() - totalStart) / 1_000_000;
+  logger.info(
+    {
+      route: "receipt.parse",
+      ctxMs, modelMs, totalMs,
+      contextChars: prompt.length,
+      servingProvider: chained.servingProvider,
+      reducedCapacity: chained.reducedCapacity,
+      triedProviders: chained.triedProviders,
+      ok: chained.ok,
+    },
+    "ai.timing",
+  );
 
   if (!chained.ok) {
     res.status(503).json({ error: CLIENT_FAILURE });

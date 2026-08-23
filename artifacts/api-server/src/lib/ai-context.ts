@@ -743,11 +743,37 @@ export async function assembleChatContext(raw: ChatContextRaw): Promise<AiContex
   return assemble(header, sections, generatedAt);
 }
 
-export async function buildChatContext(userId: string, path?: string): Promise<AiContext> {
+// Progress callback surface. Every stage name corresponds to a REAL
+// point in the pipeline where work is actually about to happen — the
+// caller (SSE route) forwards these to the client so the user sees
+// what the server is doing, not a scripted animation. L3 still holds:
+// stage names carry no user data, only pipeline metadata.
+export type ContextProgress =
+  | { stage: "loading-settings"; detail: string }
+  | { stage: "loading-rows"; detail: string }
+  | { stage: "computing-debts"; detail: string }
+  | { stage: "assembling"; detail: string }
+  | { stage: "ready"; detail: string };
+
+export async function buildChatContext(
+  userId: string,
+  path?: string,
+  onProgress?: (event: ContextProgress) => void,
+): Promise<AiContext> {
+  const emit = (event: ContextProgress): void => { if (onProgress) onProgress(event); };
+
   // Base currency first (needed by computeDebtsSummary + toBase calls in
   // the assembler). One extra await for one small query — negligible.
+  emit({ stage: "loading-settings", detail: "Loading your base currency" });
   const baseCurrency = await getBaseCurrency(userId);
-  const [accounts, investments, budgets, monthTxs, upcoming, goals, subscriptions, debts] = await Promise.all([
+
+  // These progress messages describe what IS happening now — the
+  // Promise.all below actually runs these queries in parallel. The
+  // client renders them one at a time as they arrive, which naturally
+  // matches "here's what I'm looking at" rather than pretending each
+  // takes discrete sequential time.
+  emit({ stage: "loading-rows", detail: "Reading your accounts, transactions, budgets, goals" });
+  const rowsStart = Promise.all([
     db.select().from(accountsTable).where(eq(accountsTable.userId, userId)),
     db.select().from(investmentsTable).where(eq(investmentsTable.userId, userId)),
     db.select().from(budgetsTable).where(eq(budgetsTable.userId, userId)),
@@ -758,11 +784,18 @@ export async function buildChatContext(userId: string, path?: string): Promise<A
       eq(subscriptionsTable.userId, userId),
       eq(subscriptionsTable.active, true),
     )),
-    computeDebtsSummary(userId, baseCurrency),
   ]);
-  return assembleChatContext({
+
+  emit({ stage: "computing-debts", detail: "Computing debts and shared expenses" });
+  const [rows, debts] = await Promise.all([rowsStart, computeDebtsSummary(userId, baseCurrency)]);
+  const [accounts, investments, budgets, monthTxs, upcoming, goals, subscriptions] = rows;
+
+  emit({ stage: "assembling", detail: "Assembling context (FX conversion, rollups)" });
+  const ctx = await assembleChatContext({
     baseCurrency, accounts, investments, budgets, monthTxs, upcoming, goals, subscriptions, debts, path,
   });
+  emit({ stage: "ready", detail: `Context ready (${ctx.text.length} chars${ctx.sectionsDropped.length ? `, ${ctx.sectionsDropped.length} sections omitted` : ""})` });
+  return ctx;
 }
 
 // ── Categorize context — user's category list, nothing else ─────────────

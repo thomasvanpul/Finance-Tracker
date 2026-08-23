@@ -37,7 +37,7 @@
 // a paid variant just means dropping the suffix — boot verify still
 // works because the model list endpoint returns both.
 
-import { callOpenAICompat, type OpenAiMessage } from "./openai-compat";
+import { callOpenAICompat, callOpenAICompatStream, type OpenAiMessage, type OpenAiStreamChunk } from "./openai-compat";
 import type { AiCallResult } from "./types";
 
 const BASE_URL = "https://openrouter.ai/api/v1";
@@ -71,6 +71,24 @@ export function openrouterChat(opts: {
   temperature?: number;
 }): Promise<AiCallResult> {
   return callOpenAICompat({
+    providerName: "openrouter",
+    baseUrl: BASE_URL,
+    apiKey: openrouterApiKey(),
+    model: openrouterChatModel(),
+    route: opts.route,
+    messages: opts.messages,
+    maxTokens: opts.maxTokens,
+    temperature: opts.temperature,
+  });
+}
+
+export function openrouterChatStream(opts: {
+  messages: OpenAiMessage[];
+  route: string;
+  maxTokens?: number;
+  temperature?: number;
+}): AsyncGenerator<OpenAiStreamChunk> {
+  return callOpenAICompatStream({
     providerName: "openrouter",
     baseUrl: BASE_URL,
     apiKey: openrouterApiKey(),

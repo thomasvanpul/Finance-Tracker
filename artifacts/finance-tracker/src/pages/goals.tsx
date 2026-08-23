@@ -13,6 +13,7 @@ import {
   getListGoalsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { oneShotInsight } from "@/lib/ai-chat-client";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 interface HistoryEntry {
@@ -848,34 +849,12 @@ interface AiGoalCoachProps {
   goalItems: GoalCoachItem[];
 }
 
-async function callAI(context: string, prompt: string): Promise<string> {
-  const res = await fetch("/api/ai/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ messages: [{ role: "user", text: prompt }], context }),
-  });
-  if (!res.ok) throw new Error();
-  const { text } = await res.json() as { text: string };
-  return text;
-}
-
 const GOALS_AI_CACHE_KEY = "ft-goals-ai-coach";
 
 function AiGoalCoach({ goalItems }: AiGoalCoachProps) {
   const [insights, setInsights] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
   const fetchedRef = useRef(false);
-
-  function buildContext(): string {
-    const lines: string[] = ["Active goals:"];
-    for (const g of goalItems) {
-      const dl = g.daysRemaining !== null ? `${g.daysRemaining} days remaining` : "no deadline";
-      const shortfall = g.monthlyShortfall > 0 ? `monthly shortfall £${g.monthlyShortfall.toFixed(2)}` : "on track";
-      lines.push(`  ${g.name}: ${g.pctFunded.toFixed(0)}% funded, ${dl}, ${shortfall}`);
-    }
-    return lines.join("\n");
-  }
 
   function parseInsights(text: string): string[] {
     const numbered = text.match(/\d+[\.\)]\s+(.+?)(?=\d+[\.\)]|$)/gs);
@@ -910,10 +889,13 @@ function AiGoalCoach({ goalItems }: AiGoalCoachProps) {
     }
     setLoading(true);
     try {
-      const context = buildContext();
-      const prompt = "Give me 2 specific actionable insights about my goals progress. Each insight should be one sentence with a concrete recommendation.";
-      const text = await callAI(context, prompt);
-      const parsed = parseInsights(text);
+      // Server reads goals + their progress via buildChatContext(userId, "/goals").
+      // Prompt describes WHAT we want; server has WHAT'S TRUE.
+      const result = await oneShotInsight({
+        path: "/goals",
+        prompt: "Give me 2 specific actionable insights about my goals progress. Each insight should be one sentence with a concrete recommendation.",
+      });
+      const parsed = parseInsights(result.text);
       sessionStorage.setItem(GOALS_AI_CACHE_KEY, JSON.stringify(parsed));
       setInsights(parsed);
     } catch {

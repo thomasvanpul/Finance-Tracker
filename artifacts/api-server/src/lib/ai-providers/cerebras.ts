@@ -20,7 +20,7 @@
 // Cerebras prunes again the boot verify will name whatever it does
 // return — see verifyProvidersAtBoot for the fix-me sentence.
 
-import { callOpenAICompat, type OpenAiMessage } from "./openai-compat";
+import { callOpenAICompat, callOpenAICompatStream, type OpenAiMessage, type OpenAiStreamChunk } from "./openai-compat";
 import type { AiCallResult } from "./types";
 
 const BASE_URL = "https://api.cerebras.ai/v1";
@@ -52,6 +52,24 @@ export function cerebrasChat(opts: {
   temperature?: number;
 }): Promise<AiCallResult> {
   return callOpenAICompat({
+    providerName: "cerebras",
+    baseUrl: BASE_URL,
+    apiKey: cerebrasApiKey(),
+    model: cerebrasChatModel(),
+    route: opts.route,
+    messages: opts.messages,
+    maxTokens: opts.maxTokens,
+    temperature: opts.temperature,
+  });
+}
+
+export function cerebrasChatStream(opts: {
+  messages: OpenAiMessage[];
+  route: string;
+  maxTokens?: number;
+  temperature?: number;
+}): AsyncGenerator<OpenAiStreamChunk> {
+  return callOpenAICompatStream({
     providerName: "cerebras",
     baseUrl: BASE_URL,
     apiKey: cerebrasApiKey(),

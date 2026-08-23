@@ -222,6 +222,13 @@ function emitFixMe(opts: {
 // Generic verify-one-provider — parametrised on URL / key / configured
 // models / env vars for the fix-me sentence. All three providers speak
 // the same models-list shape so one implementation covers them.
+// Boot-time verify runs once per provider — capped shorter than the
+// runtime chain timeout because a slow /models list at boot shouldn't
+// block the process from serving traffic. If a provider takes >8s just
+// to enumerate its models, treat that as an outage for verification
+// purposes; the runtime chain will still try it (with its own 12s cap).
+const VERIFY_TIMEOUT_MS = 8_000;
+
 async function verifyOneProvider(opts: {
   provider: AiProviderName;
   url: string;
@@ -235,18 +242,29 @@ async function verifyOneProvider(opts: {
     writeOutcome(provider, { verified: null, lastError: `${keyEnvVar} not set — verification skipped` });
     return;
   }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
   let response: Response;
   try {
     response = await fetch(url, {
       method: "GET",
       headers: { "Authorization": `Bearer ${apiKey}` },
+      signal: controller.signal,
     });
   } catch (err) {
+    clearTimeout(timer);
     const message = err instanceof Error ? err.message : String(err);
+    const timedOut = err instanceof Error && err.name === "AbortError";
+    if (timedOut) {
+      writeOutcome(provider, { verified: null, lastError: `models list timed out after ${VERIFY_TIMEOUT_MS}ms` });
+      logger.warn({ provider, timeoutMs: VERIFY_TIMEOUT_MS }, "AI provider verification timed out at boot");
+      return;
+    }
     writeOutcome(provider, { verified: null, lastError: `models list fetch threw: ${redactKey(message, apiKey)}` });
     logger.warn({ provider, err: message }, "AI provider verification failed at boot (network)");
     return;
   }
+  clearTimeout(timer);
   if (!response.ok) {
     let body = ""; try { body = await response.text(); } catch { /* ignore */ }
     const safe = redactKey(body, apiKey).slice(0, 500);

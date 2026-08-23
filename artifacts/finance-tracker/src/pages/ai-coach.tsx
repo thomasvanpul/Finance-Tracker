@@ -9,106 +9,39 @@ import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitiv
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+// Model messages grow token-by-token from the SSE stream. `caption`
+// carries the real server-side progress state (never fabricated) so
+// the coach shows "Reading your accounts" / "Asking Groq" rather
+// than a dead spinner. See lib/ai-chat-client.ts for the wire format
+// and lib/ai-context.ts for the source of progress events.
+type MessageStatus = "streaming" | "done" | "cut" | "error";
+
 interface Message {
   role: "user" | "model";
   text: string;
+  status?: MessageStatus;
+  caption?: string;
+  servingProvider?: string | null;
+  reducedCapacity?: boolean;
+  cutReason?: string;
+  errorMessage?: string;
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
+// Shared streaming client. This page used to have its own sendChat +
+// client-side buildSpendingContext — the second copy of the exact
+// leak vector ai-agent.tsx already closed. Both surfaces now go
+// through the same server-side context assembly (lib/ai-context.ts),
+// so nothing here posts financial data up.
 
-async function sendChat(messages: Message[], context: string): Promise<string> {
-  const res = await fetch("/api/ai/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ messages, context }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error ?? "Failed to get response");
-  }
-  const data = (await res.json()) as { text: string };
-  return data.text;
-}
+import { streamChat, type ChatServerEvent } from "@/lib/ai-chat-client";
 
-// ── Context builder ───────────────────────────────────────────────────────────
-
-function buildSpendingContext(
-  accounts: Array<{ name: string; balance: string; gbpEquivalent: number }> | undefined,
-  dashboard: { netWorth?: number; thisMonth?: { income?: number; expenses?: number; savingsRate?: number } } | undefined,
-  budgets: Array<{ category: string; monthlyLimit: number }> | undefined,
-  topCategories: Array<{ category: string; total: number }>,
-  lastMonthCategories: Array<{ category: string; total: number }>,
-  investmentSummary: { totalValueGbp: number } | undefined,
-  goals: Array<{ target: number; current: number }> | undefined,
-  personaLabel?: string,
-): string {
-  const parts: string[] = ["USER'S FINANCIAL SNAPSHOT:"];
-  if (personaLabel) {
-    parts.push(`User profile: ${personaLabel}. Tailor advice to this focus area.`);
-  }
-
-  if (dashboard?.netWorth != null) {
-    parts.push(`Net worth: ${formatGbp(dashboard.netWorth)}`);
-  }
-
-  if (accounts?.length) {
-    const totalGbp = accounts.reduce((s, a) => s + a.gbpEquivalent, 0);
-    parts.push(`Total liquid assets: ${formatGbp(totalGbp)} across ${accounts.length} account(s)`);
-  }
-
-  if (investmentSummary != null) {
-    parts.push(`Investment portfolio value: ${formatGbp(investmentSummary.totalValueGbp)}`);
-  }
-
-  if (dashboard?.thisMonth) {
-    const { income, expenses, savingsRate } = dashboard.thisMonth;
-    if (income != null) parts.push(`This month income: ${formatGbp(income)}`);
-    if (expenses != null) parts.push(`This month expenses: ${formatGbp(expenses)}`);
-    if (income != null && expenses != null) parts.push(`This month net: ${formatGbp(income - expenses)}`);
-    if (savingsRate != null) parts.push(`Savings rate: ${(savingsRate * 100).toFixed(1)}%`);
-  }
-
-  if (goals?.length) {
-    const activeGoals = goals.filter(g => g.current < g.target);
-    const totalNeeded = activeGoals.reduce((s, g) => s + (g.target - g.current), 0);
-    parts.push(`Savings goals: ${activeGoals.length} active (${formatGbp(totalNeeded)} still needed)`);
-  }
-
-  if (budgets?.length) {
-    const thisMonth = new Date().toISOString().slice(0, 7);
-    parts.push(`Monthly budgets: ${budgets.length} active — ${budgets.map(b => `${b.category} £${b.monthlyLimit}`).join(", ")}`);
-    const overLimit = budgets.filter(b => {
-      const spent = topCategories.find(c => c.category === b.category)?.total ?? 0;
-      return spent > b.monthlyLimit;
-    });
-    if (overLimit.length > 0) {
-      parts.push(`Budgets over limit this month: ${overLimit.length} (${overLimit.map(b => b.category).join(", ")})`);
-    }
-    void thisMonth;
-  }
-
-  if (topCategories.length) {
-    const lastMonthMap = new Map(lastMonthCategories.map(c => [c.category, c.total]));
-    const withChange = topCategories.slice(0, 5).map(c => {
-      const prev = lastMonthMap.get(c.category);
-      if (prev != null && prev > 0) {
-        const pct = Math.round(((c.total - prev) / prev) * 100);
-        const sign = pct >= 0 ? "+" : "";
-        return `${c.category} ${formatGbp(c.total)} (${sign}${pct}% vs last month)`;
-      }
-      return `${c.category} ${formatGbp(c.total)}`;
-    });
-    parts.push(`Top spending categories this month: ${withChange.join(", ")}`);
-  }
-
-  if (lastMonthCategories.length) {
-    parts.push(`Last month top categories: ${lastMonthCategories.slice(0, 5).map(c => `${c.category} ${formatGbp(c.total)}`).join(", ")}`);
-  }
-
-  parts.push("Use this data to give specific, actionable advice tailored to their situation.");
-  return parts.join("\n");
-}
+// (buildSpendingContext was here — a client-side assembler that shipped
+// the user's finances up in the request body. Removed 2026-08-23 along
+// with the same pattern in ai-agent.tsx. The server now builds
+// context from the authenticated user's own rows via lib/ai-context.ts.
+// SmartInsights below still uses local data — but only to render
+// prompt suggestions in the sidebar, never to build a payload.)
 
 // ── Suggested prompts — organised by persona ─────────────────────────────────
 
@@ -158,11 +91,11 @@ const PROMPTS_BY_PERSONA: Record<PersonaId, Prompt[]> = {
 };
 
 const PERSONA_SUBTITLE: Record<PersonaId, string> = {
-  market:  "Market & investment analysis powered by Gemini",
-  budget:  "Spending control & budget advice powered by Gemini",
-  wealth:  "Long-term wealth planning powered by Gemini",
-  social:  "Expense & social spending insights powered by Gemini",
-  full:    "Complete financial analysis powered by Gemini",
+  market:  "Market & investment analysis powered by Groq",
+  budget:  "Spending control & budget advice powered by Groq",
+  wealth:  "Long-term wealth planning powered by Groq",
+  social:  "Expense & social spending insights powered by Groq",
+  full:    "Complete financial analysis powered by Groq",
 };
 
 // ── Message renderer ──────────────────────────────────────────────────────────
@@ -415,16 +348,9 @@ export default function AiCoach() {
   const coachSubtitle = PERSONA_SUBTITLE[primaryPersonaId];
   const suggestedPrompts = PROMPTS_BY_PERSONA[primaryPersonaId];
 
-  const spendingContext = buildSpendingContext(
-    accounts as any,
-    dashboard,
-    budgets as any,
-    topCategories,
-    lastMonthCategories,
-    investmentSummary as { totalValueGbp: number } | undefined,
-    goals as Array<{ target: number; current: number }> | undefined,
-    primaryPersona ? `${primaryPersona.label} — ${primaryPersona.tagline}` : undefined,
-  );
+  // primaryPersona is still used elsewhere (subtitle, prompt suggestions).
+  // No longer feeds context assembly — that's server-side now.
+  void primaryPersona;
 
   const SESSION_KEY = "nr-ai-coach-msgs";
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -434,8 +360,8 @@ export default function AiCoach() {
     } catch { return []; }
   });
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<string[]>([]);
+  const streaming = useRef(false);
   const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -456,33 +382,77 @@ export default function AiCoach() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages]);
 
-  const handleSend = useCallback(async (text?: string) => {
+  // Apply one SSE event to the latest model bubble.
+  const applyEvent = useCallback((event: ChatServerEvent) => {
+    setMessages((prev) => {
+      const idx = prev.length - 1;
+      if (idx < 0 || prev[idx].role !== "model") return prev;
+      const next = [...prev];
+      const m: Message = { ...next[idx] };
+      if (event.type === "progress") m.caption = event.detail;
+      else if (event.type === "attempt") m.caption = `Asking ${event.provider}`;
+      else if (event.type === "fallthrough") m.caption = `${event.from} failed → trying ${event.to}`;
+      else if (event.type === "token") { m.text = (m.text ?? "") + event.text; m.caption = undefined; }
+      else if (event.type === "done") { m.status = "done"; m.servingProvider = event.servingProvider; m.reducedCapacity = event.reducedCapacity; m.caption = undefined; }
+      else if (event.type === "cut") { m.status = "cut"; m.servingProvider = event.servingProvider; m.cutReason = event.reason; m.caption = undefined; }
+      else if (event.type === "error") { m.status = "error"; m.errorMessage = event.message; m.caption = undefined; }
+      next[idx] = m;
+      return next;
+    });
+  }, []);
+
+  const runPrompt = useCallback(async (prompt: string, history: Message[]) => {
+    streaming.current = true;
+    setMessages([...history, { role: "user", text: prompt }, { role: "model", text: "", status: "streaming" }]);
+    const nextHistory: Message[] = [...history, { role: "user", text: prompt }];
+    // Send `/ai-coach` as the path so server-side buildChatContext can
+    // page-aware its framing. Financial data comes from the DB, not from
+    // this page's local state.
+    await streamChat(nextHistory, "/ai-coach", {
+      onEvent: applyEvent,
+      onError: (message) => applyEvent({ type: "error", message }),
+    });
+    streaming.current = false;
+  }, [applyEvent]);
+
+  useEffect(() => {
+    if (streaming.current) return;
+    if (pending.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last && last.role === "model" && last.status === "streaming") return;
+    const [nextPrompt, ...rest] = pending;
+    setPending(rest);
+    void runPrompt(nextPrompt, messages);
+  }, [pending, messages, runPrompt]);
+
+  const handleSend = useCallback((text?: string) => {
     const msg = (text ?? input).trim();
-    if (!msg || loading) return;
+    if (!msg) return;
     setInput("");
-    setError(null);
-    const next: Message[] = [...messages, { role: "user", text: msg }];
-    setMessages(next);
-    setLoading(true);
-    try {
-      const reply = await sendChat(next, spendingContext);
-      setMessages(m => [...m, { role: "model", text: reply }]);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
+    if (streaming.current) {
+      setPending((q) => [...q, msg]);
+      return;
     }
-  }, [input, loading, messages, spendingContext]);
+    void runPrompt(msg, messages);
+  }, [input, messages, runPrompt]);
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
+  // Derived state — no separate loading/error refs. streaming.current is
+  // a ref that flips inside runPrompt; components that need to react
+  // to the streaming state (input placeholder, disabled buttons) read
+  // it via the last-message status which lives in React state.
+  const lastMessage = messages[messages.length - 1];
+  const isStreaming = lastMessage?.role === "model" && lastMessage.status === "streaming";
+  const lastError = lastMessage?.role === "model" && lastMessage.status === "error" ? lastMessage.errorMessage : null;
+
   const reset = () => {
     setMessages([]);
-    setError(null);
+    setPending([]);
     setInput("");
     try { sessionStorage.removeItem(SESSION_KEY); } catch { /* noop */ }
   };
@@ -692,7 +662,7 @@ export default function AiCoach() {
                     <SmartInsightCard
                       key={i}
                       item={item}
-                      loading={loading}
+                      loading={isStreaming}
                       aiAvailable={aiAvailable}
                       onSend={handleSend}
                     />
@@ -715,7 +685,7 @@ export default function AiCoach() {
                 <SuggestedPromptButton
                   key={prompt.label}
                   prompt={prompt}
-                  loading={loading}
+                  loading={isStreaming}
                   aiAvailable={aiAvailable}
                   onSend={handleSend}
                 />
@@ -740,25 +710,26 @@ export default function AiCoach() {
                 index={messages.slice(0, i).filter(m => m.role === "user").length}
               />
             ))}
-            {loading && (
-              <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 16 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 2, background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <BotMessageSquare size={13} style={{ color: "var(--ft-amber)" }} />
-                </div>
-                <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "2px solid var(--ft-amber)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                  <HStack gap={4} align="center">
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-amber)", display: "inline-block", animation: "pulse 1.2s ease-in-out 0s infinite" }} />
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-amber)", display: "inline-block", animation: "pulse 1.2s ease-in-out 0.2s infinite" }} />
-                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-amber)", display: "inline-block", animation: "pulse 1.2s ease-in-out 0.4s infinite" }} />
-                  </HStack>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>Analysing…</span>
+            {/* Queued follow-ups typed while a stream is in flight. */}
+            {pending.map((q, i) => (
+              <div key={`pending-${i}`} style={{ display: "flex", flexDirection: "row-reverse", marginBottom: 12 }}>
+                <div style={{
+                  maxWidth: "80%",
+                  padding: "8px 12px",
+                  border: "1px dashed var(--ft-border2)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--ft-dim)",
+                  fontStyle: "italic",
+                }}>
+                  queued · {q}
                 </div>
               </div>
-            )}
-            {error && (
+            ))}
+            {lastError && (
               <div style={{ marginBottom: 16, padding: "10px 14px", background: "rgba(230,80,80,0.05)", border: "1px solid rgba(230,80,80,0.18)", fontSize: 11, color: "var(--ft-red)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "center", gap: 8 }}>
                 <AlertTriangle size={11} style={{ flexShrink: 0 }} />
-                {error}
+                {lastError}
               </div>
             )}
             <div ref={bottomRef} />
@@ -787,8 +758,8 @@ export default function AiCoach() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder={isEmpty ? "Ask anything about your finances…" : "Follow-up question…"}
-            disabled={loading || aiAvailable === false}
+            placeholder={isStreaming ? "Ask a follow-up (queued while replying)…" : isEmpty ? "Ask anything about your finances…" : "Follow-up question…"}
+            disabled={aiAvailable === false}
             rows={2}
             style={{
               flex: 1,
@@ -808,30 +779,27 @@ export default function AiCoach() {
           <button
             type="button"
             onClick={() => handleSend()}
-            disabled={loading || !input.trim() || aiAvailable === false}
-            title="Send (Enter)"
+            disabled={!input.trim() || aiAvailable === false}
+            title={isStreaming ? "Queue follow-up (Enter)" : "Send (Enter)"}
             style={{
               width: 40,
               height: 40,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: loading || !input.trim() ? "var(--ft-raised)" : "var(--ft-accent)",
-              border: `1px solid ${loading || !input.trim() ? "var(--ft-border2)" : "var(--ft-accent)"}`,
+              background: !input.trim() ? "var(--ft-raised)" : "var(--ft-accent)",
+              border: `1px solid ${!input.trim() ? "var(--ft-border2)" : "var(--ft-accent)"}`,
               borderRadius: 2,
-              cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+              cursor: !input.trim() ? "not-allowed" : "pointer",
               flexShrink: 0,
               transition: "background 0.15s, border-color 0.15s",
             }}
           >
-            {loading
-              ? <Loader2 size={15} style={{ color: "var(--ft-dim)", animation: "spin 1s linear infinite" }} />
-              : <Send size={15} style={{ color: loading || !input.trim() ? "var(--ft-dim)" : "var(--ft-bg, #0D1117)" }} />
-            }
+            <Send size={15} style={{ color: !input.trim() ? "var(--ft-dim)" : "var(--ft-bg, #0D1117)" }} />
           </button>
         </div>
         <div style={{ marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
-          Spending data is sent securely to Gemini · Not stored by Google
+          Streamed from Groq / Cerebras / OpenRouter · Context assembled server-side, never posted from this page
         </div>
       </div>
 

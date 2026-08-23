@@ -21,6 +21,7 @@ import {
 import { formatGbp, formatPercent } from "@/lib/utils";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { getBaseCurrency } from "@/lib/currency-store";
+import { oneShotInsight } from "@/lib/ai-chat-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -805,74 +806,56 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
 const AI_COMMENTARY_CACHE_KEY = "ft-investments-ai-commentary";
 const AI_COMMENTARY_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
-async function callAI(context: string, prompt: string): Promise<string> {
-  const res = await fetch("/api/ai/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ messages: [{ role: "user", text: prompt }], context }),
-  });
-  if (!res.ok) throw new Error();
-  const { text } = await res.json() as { text: string };
-  return text;
-}
-
 interface AiPortfolioCommentaryProps {
   investments: Array<{ ticker: string; gbpValue: number; quantity?: number }>;
   totalValue: number;
 }
+
+// Prompt is a static instruction — the server reads holdings, weights,
+// and concentration from buildChatContext(userId, "/investments").
+// The old buildPrompt() inlined a full ticker × £ × weight matrix
+// into the prompt text (bypassing the removed `context:` field). Now
+// gone — the model reads the portfolio from the currency-exposure and
+// net-position sections of the context.
+const PORTFOLIO_COMMENTARY_PROMPT =
+  "Analyse my investment portfolio in exactly 3-4 sentences. Cover: " +
+  "(1) composition — mention the top 3 holdings by weight; " +
+  "(2) concentration risk — flag any position over 30%; " +
+  "(3) diversification assessment; " +
+  "(4) one forward-looking observation. " +
+  "Be concise, factual, and professional. No bullet points. No headings. Plain prose only.";
 
 function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentaryProps) {
   const [commentary, setCommentary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(true);
 
-  const top3 = [...investments]
-    .sort((a, b) => b.gbpValue - a.gbpValue)
-    .slice(0, 3);
-
-  const topTicker = top3[0]?.ticker ?? "";
-  const topPct = totalValue > 0 && top3[0] ? (top3[0].gbpValue / totalValue) * 100 : 0;
+  // Local UI-only stats for the chip row below the commentary. These
+  // stay client-side because they're rendered locally, never sent
+  // in a prompt — the model reads the same figures from
+  // buildChatContext on the server.
+  const holdingCount = investments.length;
+  const top1 = [...investments].sort((a, b) => b.gbpValue - a.gbpValue)[0];
+  const topTicker = top1?.ticker ?? "";
+  const topPct = totalValue > 0 && top1 ? (top1.gbpValue / totalValue) * 100 : 0;
   const isConcentrated = investments.some(
     (inv) => totalValue > 0 && (inv.gbpValue / totalValue) * 100 > 30,
   );
-
-  const annualYield = (() => {
-    // Rough placeholder — no yield data at this component level, so omit
-    return null;
-  })();
-
-  const holdingCount = investments.length;
-
-  const buildPrompt = () => {
-    const rows = investments
-      .map((inv) => {
-        const pct = totalValue > 0 ? ((inv.gbpValue / totalValue) * 100).toFixed(1) : "0.0";
-        return `${inv.ticker}: £${inv.gbpValue.toFixed(0)} (${pct}%)`;
-      })
-      .join(", ");
-    return (
-      `Analyse this investment portfolio in exactly 3-4 sentences. Cover: ` +
-      `(1) composition — mention the top 3 holdings by weight; ` +
-      `(2) concentration risk — flag any position over 30%; ` +
-      `(3) diversification assessment; ` +
-      `(4) one forward-looking observation. ` +
-      `Be concise, factual, and professional. No bullet points. No headings. Plain prose only.\n\n` +
-      `Portfolio (total £${totalValue.toFixed(0)}): ${rows}`
-    );
-  };
+  const annualYield: number | null = null; // no yield data at this component level
 
   const fetchCommentary = async () => {
     if (investments.length === 0 || totalValue <= 0) return;
     setLoading(true);
     try {
-      const prompt = buildPrompt();
-      const text = await callAI("", prompt);
-      setCommentary(text);
+      const result = await oneShotInsight({
+        path: "/investments",
+        prompt: PORTFOLIO_COMMENTARY_PROMPT,
+      });
+      setCommentary(result.text);
       try {
         sessionStorage.setItem(
           AI_COMMENTARY_CACHE_KEY,
-          JSON.stringify({ text, ts: Date.now() }),
+          JSON.stringify({ text: result.text, ts: Date.now() }),
         );
       } catch { /* storage quota — silently ignore */ }
     } catch {

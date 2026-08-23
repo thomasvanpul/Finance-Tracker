@@ -60,6 +60,7 @@ import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { oneShotInsight } from "@/lib/ai-chat-client";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -763,17 +764,15 @@ interface AiInsightsPanelProps {
   budgetStatus: string;
 }
 
-function AiInsightsPanel({ netWorth, income, expenses, savingsRate, topCategories, budgetStatus }: AiInsightsPanelProps) {
+// Props are for the parent's own summary chips — this component uses
+// none of them to build a prompt. Server reads dashboard state via
+// buildChatContext(userId, "/").
+function AiInsightsPanel(_props: AiInsightsPanelProps) {
   const [insights, setInsights] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
   const fetchedRef = useRef(false);
 
-  const contextStr = useMemo(() => {
-    const top3 = topCategories.slice(0, 3).map(c => `${c.name}:${formatGbp(c.amount)}`).join(", ");
-    return `NW:${formatGbp(netWorth)} Inc:${formatGbp(income)} Exp:${formatGbp(expenses)} SR:${Math.round(savingsRate)}% Top:${top3} ${budgetStatus}`.slice(0, 400);
-  }, [netWorth, income, expenses, savingsRate, topCategories, budgetStatus]);
-
-  const fetchInsights = async (ctx: string) => {
+  const fetchInsights = async () => {
     try {
       const statusRes = await fetch("/api/ai/status", { credentials: "include" });
       if (!statusRes.ok) return; // no skeleton flash — AI unavailable
@@ -781,19 +780,11 @@ function AiInsightsPanel({ netWorth, income, expenses, savingsRate, topCategorie
       if (!available) return; // confirmed unavailable — stay hidden, no flash
 
       setLoading(true); // only show skeleton after confirming AI is reachable
-      const prompt = `You are a concise personal finance analyst. Given this dashboard snapshot: ${ctx}\n\nWrite exactly 3 short, punchy, data-specific insight sentences (1 sentence each). Each should be actionable and reference actual numbers from the context. Respond with only the 3 sentences, one per line, no numbering, no extra text.`;
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          messages: [{ role: "user", text: prompt }],
-          context: ctx,
-        }),
+      const result = await oneShotInsight({
+        path: "/",
+        prompt: "You are a concise personal finance analyst. Given the dashboard snapshot in the portfolio context, write exactly 3 short, punchy, data-specific insight sentences (1 sentence each). Each should be actionable and reference actual numbers from the context. Respond with only the 3 sentences, one per line, no numbering, no extra text.",
       });
-      if (!res.ok) { setLoading(false); return; }
-      const data = await res.json() as { text: string };
-      const lines = data.text
+      const lines = result.text
         .split("\n")
         .map((l: string) => l.trim())
         .filter((l: string) => l.length > 0)
@@ -813,10 +804,8 @@ function AiInsightsPanel({ netWorth, income, expenses, savingsRate, topCategorie
     fetchedRef.current = true;
     const cached = loadCachedInsights();
     if (cached) { setInsights(cached); return; }
-    const timer = setTimeout(() => fetchInsights(contextStr), 500);
+    const timer = setTimeout(() => fetchInsights(), 500);
     return () => clearTimeout(timer);
-  // contextStr is built from stable props — intentionally only run on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleRefresh = () => {
@@ -824,7 +813,7 @@ function AiInsightsPanel({ netWorth, income, expenses, savingsRate, topCategorie
     setInsights(null);
     setLoading(false);
     fetchedRef.current = false;
-    void fetchInsights(contextStr);
+    void fetchInsights();
   };
 
   // Don't render anything until we know the result (avoids layout shift)

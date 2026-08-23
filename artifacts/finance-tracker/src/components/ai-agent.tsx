@@ -1,14 +1,26 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageSquare, X, Send, Loader2, BotMessageSquare, Sparkles } from "lucide-react";
+import { X, Send, Loader2, BotMessageSquare, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 import { AiWanderer } from "@/components/ai-wanderer";
 import { getBotSkin, type BotSkinId } from "@/lib/bot-skins";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+// Model messages grow token-by-token as the stream progresses. The
+// caption field carries real server-side progress state ("Reading your
+// accounts", "Asking Groq", "Groq failed → trying Cerebras") — never
+// fabricated "thinking…" text. If no data field is set, don't render.
+type MessageStatus = "streaming" | "done" | "cut" | "error";
+
 interface Message {
   role: "user" | "model";
   text: string;
+  status?: MessageStatus;
+  caption?: string;              // real progress caption from server
+  servingProvider?: string | null;
+  reducedCapacity?: boolean;
+  cutReason?: string;
+  errorMessage?: string;
 }
 
 export type AiStyle = "classic" | "wanderer" | "minimal";
@@ -48,22 +60,12 @@ const PAGE_LABELS: Record<string, string> = {
 
 // ── API ───────────────────────────────────────────────────────────────────────
 
-const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL ?? "");
+// SSE streaming + no-data watchdog lives in a shared module so this
+// component and pages/ai-coach.tsx use exactly the same wire contract
+// and both benefit from the watchdog + honest error messages.
+import { streamChat, type ChatServerEvent } from "@/lib/ai-chat-client";
 
-async function sendChat(messages: Message[], path: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/ai/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ messages, path }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: string }).error ?? "Failed to get response");
-  }
-  const data = (await res.json()) as { text: string };
-  return data.text;
-}
+const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL ?? "");
 
 // ── Skin-specific sling box themes ────────────────────────────────────────────
 
@@ -77,7 +79,7 @@ const SLING_SKIN: Record<BotSkinId, {
     headerBg: "var(--ft-raised)", headerBorder: "var(--ft-border)",
     titleText: "AI Financial Assistant", titleColor: "var(--ft-text)",
     iconColor: "var(--ft-accent)", shadow: "0 12px 48px rgba(0,0,0,0.7)",
-    tailColor: "var(--ft-border2)", tag: "Powered by Gemini",
+    tailColor: "var(--ft-border2)", tag: "Powered by Groq",
   },
   mario: {
     border: "3px solid #e3170a", bg: "#0d0400",
@@ -117,8 +119,12 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
   const [location] = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Queue of user prompts typed while a stream is in flight. Sent
+  // FIFO once the current stream ends. Rendered as a small pill list
+  // above the input so the user sees what's queued and can't wonder
+  // whether their message was dropped.
+  const [pending, setPending] = useState<string[]>([]);
+  const streaming = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -129,23 +135,88 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
     }
   }, [messages, open]);
 
-  const handleSend = useCallback(async () => {
+  // Handle one server event by mutating the last model message in the
+  // list. We use functional setMessages so state updates arriving
+  // during React 18's automatic batching still compose correctly.
+  const applyEvent = useCallback((event: ChatServerEvent) => {
+    setMessages((prev) => {
+      const next = [...prev];
+      // The last message is the streaming model bubble we just added.
+      const idx = next.length - 1;
+      if (idx < 0 || next[idx].role !== "model") return prev;
+      const m = { ...next[idx] };
+      if (event.type === "progress") {
+        m.caption = event.detail;
+      } else if (event.type === "attempt") {
+        m.caption = `Asking ${event.provider}`;
+      } else if (event.type === "fallthrough") {
+        m.caption = `${event.from} failed → trying ${event.to}`;
+      } else if (event.type === "token") {
+        m.text = (m.text ?? "") + event.text;
+        // Once tokens are arriving, drop the progress caption — the
+        // text itself is the progress signal.
+        m.caption = undefined;
+      } else if (event.type === "done") {
+        m.status = "done";
+        m.servingProvider = event.servingProvider;
+        m.reducedCapacity = event.reducedCapacity;
+        m.caption = undefined;
+      } else if (event.type === "cut") {
+        m.status = "cut";
+        m.servingProvider = event.servingProvider;
+        m.cutReason = event.reason;
+        m.caption = undefined;
+      } else if (event.type === "error") {
+        m.status = "error";
+        m.errorMessage = event.message;
+        m.caption = undefined;
+      }
+      next[idx] = m;
+      return next;
+    });
+  }, []);
+
+  // Drive one prompt through the stream — used by handleSend AND by
+  // the pending-queue drain when a previous stream completes.
+  const runPrompt = useCallback(async (prompt: string, history: Message[]) => {
+    streaming.current = true;
+    // Open a fresh model bubble in the streaming state. The stream
+    // callback will mutate this specific bubble via applyEvent.
+    setMessages([...history, { role: "user", text: prompt }, { role: "model", text: "", status: "streaming" }]);
+    const nextHistory: Message[] = [...history, { role: "user", text: prompt }];
+    await streamChat(nextHistory, location, {
+      onEvent: applyEvent,
+      onError: (message) => applyEvent({ type: "error", message }),
+    });
+    streaming.current = false;
+  }, [applyEvent, location]);
+
+  // Drain queue after each stream ends. Effect re-runs when pending
+  // grows OR when messages settle — the ref guard prevents concurrent
+  // drains if a fast follow-up arrives just as one stream ends.
+  useEffect(() => {
+    if (streaming.current) return;
+    if (pending.length === 0) return;
+    // Only drain when the last stream is in a terminal state.
+    const last = messages[messages.length - 1];
+    if (last && last.role === "model" && last.status === "streaming") return;
+    const [nextPrompt, ...rest] = pending;
+    setPending(rest);
+    void runPrompt(nextPrompt, messages);
+  }, [pending, messages, runPrompt]);
+
+  const handleSend = useCallback(() => {
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text) return;
     setInput("");
-    setError(null);
-    const next: Message[] = [...messages, { role: "user", text }];
-    setMessages(next);
-    setLoading(true);
-    try {
-      const reply = await sendChat(next, location);
-      setMessages((m) => [...m, { role: "model", text: reply }]);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
+    // If a stream is already running, enqueue and let the effect
+    // drain when it completes. Input stays live either way.
+    if (streaming.current) {
+      setPending((q) => [...q, text]);
+      return;
     }
-  }, [input, loading, messages, location]);
+    void runPrompt(text, messages);
+  }, [input, messages, runPrompt]);
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -225,7 +296,7 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
           {isWandererSling ? sk.titleText : "AI Financial Assistant"}
         </span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", marginLeft: 4 }}>
-          {isWandererSling ? sk.tag : "Powered by Gemini"}
+          {isWandererSling ? sk.tag : "Powered by Groq"}
         </span>
         <button
           onClick={onClose}
@@ -277,25 +348,67 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
               wordBreak: "break-word",
               borderRadius: 0,
             }}>
-              {msg.text}
+              {/* Real progress caption (server-driven, not fabricated).
+                  Shown when we're streaming and haven't received tokens
+                  yet OR between the last token and the done event. */}
+              {msg.status === "streaming" && msg.caption && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: msg.text ? 6 : 0 }}>
+                  <Loader2 style={{ width: 10, height: 10, color: "var(--ft-accent)", animation: "ai-spin 1s linear infinite" }} />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{msg.caption}</span>
+                </div>
+              )}
+              {/* Token stream (or final text) */}
+              {msg.text && <div>{msg.text}</div>}
+              {/* Empty streaming bubble with no caption yet — bare spinner */}
+              {msg.status === "streaming" && !msg.caption && !msg.text && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Loader2 style={{ width: 10, height: 10, color: "var(--ft-accent)", animation: "ai-spin 1s linear infinite" }} />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>Starting…</span>
+                </div>
+              )}
+              {/* Terminal states — always honest about how the response ended. */}
+              {msg.status === "cut" && (
+                <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+                  Response ended early — {msg.servingProvider} disconnected. Ask again to retry.
+                </div>
+              )}
+              {msg.status === "error" && (
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-red)" }}>
+                  {msg.errorMessage ?? "AI temporarily unavailable."}
+                </div>
+              )}
+              {/* Reduced-capacity chrome — small, non-alarming. */}
+              {msg.status === "done" && msg.reducedCapacity && (
+                <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+                  Reduced capacity · served by {msg.servingProvider}
+                </div>
+              )}
             </div>
           </div>
         ))}
-        {loading && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "var(--ft-raised)", width: "fit-content", border: "1px solid var(--ft-border2)" }}>
-            <Loader2 style={{ width: 11, height: 11, color: "var(--ft-accent)", animation: "ai-spin 1s linear infinite" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>Thinking…</span>
+        {/* Queued follow-ups — user typed while a stream was running. */}
+        {pending.map((q, i) => (
+          <div key={`pending-${i}`} style={{ display: "flex", flexDirection: "row-reverse", gap: 8 }}>
+            <div style={{
+              maxWidth: "84%",
+              background: "transparent",
+              color: "var(--ft-muted)",
+              padding: "6px 10px",
+              fontSize: 11,
+              lineHeight: 1.5,
+              border: "1px dashed var(--ft-border2)",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              fontStyle: "italic",
+            }}>
+              queued · {q}
+            </div>
           </div>
-        )}
-        {error && (
-          <div style={{ padding: "6px 10px", background: "rgba(248,113,113,0.08)", border: "1px solid var(--ft-red)", fontSize: 11, color: "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
-            {error}
-          </div>
-        )}
+        ))}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
+      {/* Input — stays live during streams; typed follow-ups queue. */}
       <div style={{ borderTop: "1px solid var(--ft-border)", padding: "8px", display: "flex", gap: 6, background: "var(--ft-raised)", flexShrink: 0 }}>
         <textarea
           ref={inputRef}
@@ -303,8 +416,7 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKey}
-          disabled={loading}
-          placeholder="Ask about your finances…"
+          placeholder={streaming.current ? "Ask a follow-up (queued while replying)…" : "Ask about your finances…"}
           style={{
             flex: 1, resize: "none", fontFamily: "var(--font-sans)", fontSize: 12,
             background: "var(--ft-surface)", border: "1px solid var(--ft-border2)",
@@ -314,12 +426,12 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
         <button
           type="button"
           onClick={handleSend}
-          disabled={loading || !input.trim()}
+          disabled={!input.trim()}
           style={{
             width: 36, height: 36, alignSelf: "flex-end", flexShrink: 0,
-            background: input.trim() && !loading ? "var(--ft-accent)" : "var(--ft-border2)",
-            color: input.trim() && !loading ? "var(--ft-base)" : "var(--ft-muted)",
-            border: "none", cursor: input.trim() && !loading ? "pointer" : "not-allowed",
+            background: input.trim() ? "var(--ft-accent)" : "var(--ft-border2)",
+            color: input.trim() ? "var(--ft-base)" : "var(--ft-muted)",
+            border: "none", cursor: input.trim() ? "pointer" : "not-allowed",
             display: "flex", alignItems: "center", justifyContent: "center",
             transition: "background 0.1s",
           }}

@@ -18,7 +18,7 @@
 // exist so we can bump chat and categorize independently (e.g. move
 // chat to 120b while categorize stays on 20b for volume).
 
-import { callOpenAICompat, type OpenAiMessage } from "./openai-compat";
+import { callOpenAICompat, callOpenAICompatStream, type OpenAiMessage, type OpenAiStreamChunk } from "./openai-compat";
 import type { AiCallResult } from "./types";
 
 const BASE_URL = "https://api.groq.com/openai/v1";
@@ -56,6 +56,24 @@ export function groqChat(opts: {
   temperature?: number;
 }): Promise<AiCallResult> {
   return callOpenAICompat({
+    providerName: "groq",
+    baseUrl: BASE_URL,
+    apiKey: groqApiKey(),
+    model: groqChatModel(),
+    route: opts.route,
+    messages: opts.messages,
+    maxTokens: opts.maxTokens,
+    temperature: opts.temperature,
+  });
+}
+
+export function groqChatStream(opts: {
+  messages: OpenAiMessage[];
+  route: string;
+  maxTokens?: number;
+  temperature?: number;
+}): AsyncGenerator<OpenAiStreamChunk> {
+  return callOpenAICompatStream({
     providerName: "groq",
     baseUrl: BASE_URL,
     apiKey: groqApiKey(),
