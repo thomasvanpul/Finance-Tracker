@@ -1,8 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Loader2, BotMessageSquare, Sparkles } from "lucide-react";
+import { X, Send, BotMessageSquare, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 import { AiWanderer } from "@/components/ai-wanderer";
 import { getBotSkin, type BotSkinId } from "@/lib/bot-skins";
+import { MonoLabel } from "@/components/primitives";
+import {
+  StreamingProgress,
+  StreamingReducedCapacity,
+  StreamingCut,
+  StreamingError,
+  QueuedPromptChip,
+} from "@/components/ai-coach/streaming-meta";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -274,141 +282,74 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
         maxHeight: 520,
       }),
       background: isWandererSling ? sk.bg : "var(--ft-surface)",
+      // Wanderer skins keep their character-shaped border. Default
+      // panel uses a 2px accent left-border for identity + hairline
+      // right/bottom, no box-shadow (constitution — data surfaces).
       border: isWandererSling ? sk.border : "1px solid var(--ft-border2)",
+      borderLeft: isWandererSling ? sk.border : "2px solid var(--ft-accent)",
       display: "flex",
       flexDirection: "column",
-      boxShadow: isWandererSling ? sk.shadow : "0 12px 48px rgba(0,0,0,0.7)",
       overflow: "hidden",
     }}>
       {isWandererSling && <div style={tailStyle} />}
-      {/* Header */}
+      {/* ── Header ── hairline structure, mono type ladder ── */}
       <div style={{
         background: isWandererSling ? sk.headerBg : "var(--ft-raised)",
         borderBottom: `1px solid ${isWandererSling ? sk.headerBorder : "var(--ft-border)"}`,
         padding: "8px 12px",
         display: "flex",
-        alignItems: "center",
-        gap: 8,
+        alignItems: "baseline",
+        gap: 10,
         flexShrink: 0,
       }}>
-        <Sparkles style={{ width: 13, height: 13, color: isWandererSling ? sk.iconColor : "var(--ft-accent)", flexShrink: 0 }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: isWandererSling ? sk.titleColor : "var(--ft-text)" }}>
+        <span aria-hidden style={{ color: isWandererSling ? sk.iconColor : "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1 }}>◇</span>
+        <MonoLabel size={10} color={isWandererSling ? sk.titleColor : "var(--ft-text)"} letterSpacing="0.14em">
           {isWandererSling ? sk.titleText : "AI Coach"}
-        </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", marginLeft: 4 }}>
-          {isWandererSling ? sk.tag : "Powered by Groq"}
-        </span>
+        </MonoLabel>
+        <MonoLabel size={9} color="var(--ft-muted)" letterSpacing="0.1em">
+          · {isWandererSling ? sk.tag : "GROQ · CEREBRAS · OPENROUTER"}
+        </MonoLabel>
         <button
           onClick={onClose}
-          style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", padding: 2, display: "flex" }}
+          aria-label="Close AI Coach"
+          style={{
+            marginLeft: "auto", background: "none", border: "none",
+            cursor: "pointer", color: "var(--ft-muted)", padding: "2px 4px",
+            display: "flex", alignSelf: "center",
+          }}
         >
           <X style={{ width: 13, height: 13 }} />
         </button>
       </div>
 
-      {/* Page context indicator */}
+      {/* ── Context strip — page label ── */}
       <div style={{
         background: "var(--ft-base)",
         borderBottom: "1px solid var(--ft-border)",
-        padding: "4px 12px",
-        fontFamily: "var(--font-mono)",
-        fontSize: 9,
-        color: "var(--ft-muted)",
+        padding: "5px 12px",
+        display: "flex",
+        alignItems: "baseline",
+        gap: 8,
         flexShrink: 0,
       }}>
-        Context: {PAGE_LABELS[location] ?? location}
+        <MonoLabel size={8} color="var(--ft-dim)" letterSpacing="0.14em">CONTEXT</MonoLabel>
+        <MonoLabel size={9} color="var(--ft-muted)">{PAGE_LABELS[location] ?? location}</MonoLabel>
       </div>
 
-      {/* Messages */}
+      {/* ── Message list ── */}
       <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: 10 }}>
-        {messages.length === 0 && (
-          <div style={{ textAlign: "center", padding: "28px 16px" }}>
-            <Sparkles style={{ width: 28, height: 28, color: "var(--ft-border2)", margin: "0 auto 10px" }} />
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.7, margin: 0 }}>
-              Ask me anything about your finances.
-              <br />Budgeting · investments · tax · goals.
-            </p>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-border2)", marginTop: 8 }}>
-              I know which page you're on and can give contextual advice.
-            </p>
-          </div>
-        )}
+        {messages.length === 0 && <EmptyState location={location} onPick={(prompt) => { setInput(prompt); setTimeout(() => inputRef.current?.focus(), 10); }} />}
         {messages.map((msg, i) => (
-          <div key={i} style={{ display: "flex", flexDirection: msg.role === "user" ? "row-reverse" : "row", gap: 8, alignItems: "flex-start" }}>
-            <div style={{
-              maxWidth: "84%",
-              background: msg.role === "user" ? "var(--ft-accent)" : "var(--ft-raised)",
-              color: msg.role === "user" ? "var(--ft-base)" : "var(--ft-text)",
-              padding: "8px 11px",
-              fontSize: 12,
-              lineHeight: 1.6,
-              border: "1px solid",
-              borderColor: msg.role === "user" ? "var(--ft-accent)" : "var(--ft-border2)",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              borderRadius: 0,
-            }}>
-              {/* Real progress caption (server-driven, not fabricated).
-                  Shown when we're streaming and haven't received tokens
-                  yet OR between the last token and the done event. */}
-              {msg.status === "streaming" && msg.caption && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: msg.text ? 6 : 0 }}>
-                  <Loader2 style={{ width: 10, height: 10, color: "var(--ft-accent)", animation: "ai-spin 1s linear infinite" }} />
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{msg.caption}</span>
-                </div>
-              )}
-              {/* Token stream (or final text) */}
-              {msg.text && <div>{msg.text}</div>}
-              {/* Empty streaming bubble with no caption yet — bare spinner */}
-              {msg.status === "streaming" && !msg.caption && !msg.text && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <Loader2 style={{ width: 10, height: 10, color: "var(--ft-accent)", animation: "ai-spin 1s linear infinite" }} />
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>Starting…</span>
-                </div>
-              )}
-              {/* Terminal states — always honest about how the response ended. */}
-              {msg.status === "cut" && (
-                <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
-                  Response ended early — {msg.servingProvider} disconnected. Ask again to retry.
-                </div>
-              )}
-              {msg.status === "error" && (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-red)" }}>
-                  {msg.errorMessage ?? "AI temporarily unavailable."}
-                </div>
-              )}
-              {/* Reduced-capacity chrome — small, non-alarming. */}
-              {msg.status === "done" && msg.reducedCapacity && (
-                <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
-                  Reduced capacity · served by {msg.servingProvider}
-                </div>
-              )}
-            </div>
-          </div>
+          <MessageBubble key={i} msg={msg} />
         ))}
-        {/* Queued follow-ups — user typed while a stream was running. */}
+        {/* Queued follow-ups — typed while streaming, sent in turn. */}
         {pending.map((q, i) => (
-          <div key={`pending-${i}`} style={{ display: "flex", flexDirection: "row-reverse", gap: 8 }}>
-            <div style={{
-              maxWidth: "84%",
-              background: "transparent",
-              color: "var(--ft-muted)",
-              padding: "6px 10px",
-              fontSize: 11,
-              lineHeight: 1.5,
-              border: "1px dashed var(--ft-border2)",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              fontStyle: "italic",
-            }}>
-              queued · {q}
-            </div>
-          </div>
+          <QueuedPromptChip key={`pending-${i}`} text={q} />
         ))}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input — stays live during streams; typed follow-ups queue. */}
+      {/* ── Input — stays live during streams ── */}
       <div style={{ borderTop: "1px solid var(--ft-border)", padding: "8px", display: "flex", gap: 6, background: "var(--ft-raised)", flexShrink: 0 }}>
         <textarea
           ref={inputRef}
@@ -418,22 +359,25 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
           onKeyDown={handleKey}
           placeholder={streaming.current ? "Ask a follow-up (queued while replying)…" : "Ask about your finances…"}
           style={{
-            flex: 1, resize: "none", fontFamily: "var(--font-sans)", fontSize: 12,
+            flex: 1, resize: "none",
+            fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.5,
             background: "var(--ft-surface)", border: "1px solid var(--ft-border2)",
-            color: "var(--ft-text)", padding: "6px 8px", lineHeight: 1.5, outline: "none", borderRadius: 0,
+            color: "var(--ft-text)", padding: "6px 8px", outline: "none", borderRadius: 2,
           }}
         />
         <button
           type="button"
           onClick={handleSend}
           disabled={!input.trim()}
+          aria-label={streaming.current ? "Queue follow-up (Enter)" : "Send (Enter)"}
           style={{
             width: 36, height: 36, alignSelf: "flex-end", flexShrink: 0,
-            background: input.trim() ? "var(--ft-accent)" : "var(--ft-border2)",
+            background: input.trim() ? "var(--ft-accent)" : "var(--ft-raised)",
             color: input.trim() ? "var(--ft-base)" : "var(--ft-muted)",
-            border: "none", cursor: input.trim() ? "pointer" : "not-allowed",
+            border: `1px solid ${input.trim() ? "var(--ft-accent)" : "var(--ft-border2)"}`,
+            cursor: input.trim() ? "pointer" : "not-allowed",
             display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "background 0.1s",
+            borderRadius: 2,
           }}
         >
           <Send style={{ width: 13, height: 13 }} />
@@ -441,9 +385,124 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
       </div>
 
       <style>{`
-        @keyframes ai-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes sling-in { 0%{opacity:0;transform:scale(0.7) translateY(12px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
       `}</style>
+    </div>
+  );
+}
+
+// ── Empty state (floating panel) ─────────────────────────────────────────
+// Small, compact. Three tap-to-fill example prompts scoped to the
+// current page — the coach page has a richer data-grounded variant
+// (see EmptyStateSuggestions in pages/ai-coach.tsx). Here we keep
+// the panel light because the floating surface is transient.
+const PAGE_STARTERS: Record<string, string[]> = {
+  "/":              ["How am I doing this month?", "What changed since last month?", "Any red flags in my spending?"],
+  "/accounts":      ["Which account has the most idle cash?", "Am I over-concentrated in one currency?"],
+  "/transactions":  ["Anything unusual in the last week?", "Which category grew fastest?"],
+  "/budget":        ["Which budget is most at risk?", "How can I claw back this month?"],
+  "/goals":         ["Am I on pace for my goals?", "Which goal needs the most work?"],
+  "/owing":         ["Who owes me the most?", "Who should I settle up with first?"],
+  "/investments":   ["Any concentration risk?", "How is my portfolio balanced?"],
+  "/subscriptions": ["Which subscriptions cost most per year?", "Which look inactive?"],
+};
+const DEFAULT_STARTERS = ["How am I doing this month?", "Can I afford a £500 spend this week?", "What changed since last month?"];
+
+function EmptyState({ location, onPick }: { location: string; onPick: (prompt: string) => void }) {
+  const starters = PAGE_STARTERS[location] ?? DEFAULT_STARTERS;
+  return (
+    <div style={{ padding: "20px 4px 12px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
+        <MonoLabel size={9} color="var(--ft-dim)" letterSpacing="0.14em">READY</MonoLabel>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.5 }}>
+          Ask about your finances. I read your accounts, budgets and goals server-side.
+        </span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <MonoLabel size={8} color="var(--ft-dim)" letterSpacing="0.14em">TRY</MonoLabel>
+        {starters.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onPick(s)}
+            style={{
+              textAlign: "left",
+              padding: "8px 10px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--ft-text)",
+              background: "var(--ft-surface)",
+              border: "1px solid var(--ft-border)",
+              borderLeft: "2px solid var(--ft-accent)",
+              cursor: "pointer",
+              lineHeight: 1.5,
+              borderRadius: 2,
+            }}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Message bubble ─────────────────────────────────────────────────────
+// Terminal-styled hairline rect (2px radius, not pill). User right,
+// model left. Accent left-border marks role. Streaming captions +
+// reduced-capacity + cut + error render inside via shared visuals.
+function MessageBubble({ msg }: { msg: Message }) {
+  const isUser = msg.role === "user";
+  return (
+    <div style={{ display: "flex", flexDirection: isUser ? "row-reverse" : "row" }}>
+      <div style={{
+        maxWidth: "86%",
+        background: isUser ? "var(--ft-raised)" : "var(--ft-surface)",
+        color: "var(--ft-text)",
+        padding: "8px 11px",
+        border: "1px solid var(--ft-border)",
+        borderLeft: `2px solid ${isUser ? "var(--ft-accent)" : "var(--ft-blue)"}`,
+        borderRadius: 2,
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+      }}>
+        {/* Role tag — small mono glyph, tabular. */}
+        {!isUser && (
+          <div style={{ marginBottom: 4 }}>
+            <MonoLabel size={8} color="var(--ft-dim)" letterSpacing="0.14em">COACH</MonoLabel>
+          </div>
+        )}
+
+        {/* Progress caption before tokens arrive, or between last token and done. */}
+        {msg.status === "streaming" && msg.caption && (
+          <div style={{ marginBottom: msg.text ? 6 : 0 }}>
+            <StreamingProgress caption={msg.caption} />
+          </div>
+        )}
+
+        {/* Body text (grows token by token). */}
+        {msg.text && (
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.65 }}>
+            {msg.text}
+          </div>
+        )}
+
+        {/* Empty streaming state — no caption, no tokens yet. */}
+        {msg.status === "streaming" && !msg.caption && !msg.text && (
+          <StreamingProgress caption="Starting…" />
+        )}
+
+        {/* Terminal meta strips. */}
+        {msg.status === "done" && msg.reducedCapacity && msg.servingProvider && (
+          <StreamingReducedCapacity provider={msg.servingProvider} />
+        )}
+        {msg.status === "cut" && msg.servingProvider && (
+          <StreamingCut provider={msg.servingProvider} reason={msg.cutReason ?? "unknown"} />
+        )}
+        {msg.status === "error" && (
+          <StreamingError message={msg.errorMessage ?? "AI temporarily unavailable."} />
+        )}
+      </div>
     </div>
   );
 }
