@@ -8,7 +8,6 @@ import {
   useListSubscriptions,
   useListUpcoming,
 } from "@workspace/api-client-react";
-import type { AppScreen } from "./MobileApp";
 import { MobileEmptyState } from "./mobile-ui";
 import { BlockField } from "@/components/primitives/block-field";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
@@ -56,7 +55,9 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 type ViewMode = "blocks" | "bands" | "ring";
 
 interface MobileHomeProps {
-  onNavigate: (screen: AppScreen) => void;
+  // Placeholder — MobileHome takes no runtime props today. The empty
+  // interface stays so PhoneShell can pass future context (persona
+  // overrides, tab-scoped fx rates) without changing the call site.
 }
 
 // ── Holdings composition (pure, testable) ────────────────────────────────────

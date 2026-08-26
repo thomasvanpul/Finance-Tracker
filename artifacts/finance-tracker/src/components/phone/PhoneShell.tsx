@@ -191,7 +191,7 @@ export function PhoneShell() {
       >
         <Switch>
           <Route path="/">
-            {() => <MobileHome onNavigate={() => {}} />}
+            {() => <MobileHome />}
           </Route>
 
           <Route path="/worth" component={WorthStub} />
