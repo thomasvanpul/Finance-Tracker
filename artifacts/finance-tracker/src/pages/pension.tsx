@@ -22,6 +22,10 @@ import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitiv
 
 const PENSION_KEY = "ft-pension";
 const ISA_KEY = "ft-isa";
+// Stable id so the "assumes N%/yr growth" pill on the Projected Pot
+// caption can scroll + focus this specific input (G11 · disclosure
+// contract). Rendered on the input at line ~1311.
+const GROWTH_RATE_INPUT_ID = "pension-growth-rate-input";
 const ISA_ANNUAL_ALLOWANCE = 20_000;
 const STATE_PENSION_ANNUAL = 11_502;
 const ANNUAL_ALLOWANCE = 60_000; // 2024/25 UK pension annual allowance
@@ -286,7 +290,7 @@ function InputRow({ label, help, children }: {
 function KpiBar({
   projectedPot, totalContributions, totalGrowth, monthlyIncomeFromPot,
   monthlyStatePension, includeStatePension, yearsToRetirement, retirementAge,
-  currentPot, targetMonthlyIncome,
+  currentPot, targetMonthlyIncome, growthRate, onFocusGrowthRate,
 }: {
   projectedPot: number;
   totalContributions: number;
@@ -298,6 +302,13 @@ function KpiBar({
   retirementAge: number;
   currentPot: number;
   targetMonthlyIncome: number | null;
+  // Disclosed model assumption. Rendered inline on the Projected Pot
+  // caption ("assumes N%/yr growth") and wired to a callback that
+  // scrolls + focuses the growth-rate input. Per G11 · disclosure
+  // contract: a conventional pension-model assumption is legitimate
+  // IF the user can see the value at the render point and change it.
+  growthRate: number;
+  onFocusGrowthRate: () => void;
 }) {
   const totalMonthlyIncome = monthlyIncomeFromPot + monthlyStatePension;
   // No target → no track/on-track claim, no pill, no colour. The health
@@ -333,7 +344,30 @@ function KpiBar({
           {fmtBig(Math.round(projectedPot))}
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
-          at age {retirementAge} · in {yearsToRetirement}yr
+          at age {retirementAge} · in {yearsToRetirement}yr ·{" "}
+          {/* Disclosure of the growth-rate assumption at the point the
+              projection reads. Clickable — scrolls to and focuses the
+              growth-rate input so "change it" is one interaction away
+              from where the £X hero renders. */}
+          <button
+            type="button"
+            data-testid="growth-rate-disclosure"
+            onClick={onFocusGrowthRate}
+            style={{
+              background: "none",
+              border: "none",
+              padding: 0,
+              margin: 0,
+              cursor: "pointer",
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              color: "var(--ft-accent)",
+              textDecoration: "underline",
+              textUnderlineOffset: 2,
+            }}
+          >
+            assumes {growthRate}%/yr growth
+          </button>
         </div>
       </div>
 
@@ -562,7 +596,7 @@ function PensionHealthBlock({
         )}
 
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 10, lineHeight: 1.6 }}>
-          Income = pot ÷ 240 months{includeStatePension ? ` + £${Math.round(STATE_PENSION_ANNUAL / 12)}/mo state pension` : ""} · Assumes constant growth rate to retirement
+          Income = pot ÷ 240 months{includeStatePension ? ` + £${Math.round(STATE_PENSION_ANNUAL / 12)}/mo state pension` : ""} · Assumes {growthRate}%/yr growth to retirement
         </div>
       </div>
     </div>
@@ -1146,6 +1180,15 @@ function PensionSection() {
             retirementAge={inputs.retirementAge}
             currentPot={inputs.currentPot}
             targetMonthlyIncome={inputs.targetMonthlyIncome}
+            growthRate={inputs.growthRate}
+            onFocusGrowthRate={() => {
+              const el = document.getElementById(GROWTH_RATE_INPUT_ID);
+              if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                (el as HTMLInputElement).focus({ preventScroll: true });
+                (el as HTMLInputElement).select();
+              }
+            }}
           />
         )}
       </div>
@@ -1278,7 +1321,7 @@ function PensionSection() {
           </div>
 
           <InputRow label="Annual Growth Rate (%)" help="Expected investment growth per year">
-            <input type="number" min={0} max={20} step={0.5} value={inputs.growthRate} onChange={e => set("growthRate", Math.max(0, Math.min(20, Number(e.target.value))))} style={numInputStyle} />
+            <input id={GROWTH_RATE_INPUT_ID} type="number" min={0} max={20} step={0.5} value={inputs.growthRate} onChange={e => set("growthRate", Math.max(0, Math.min(20, Number(e.target.value))))} style={numInputStyle} />
           </InputRow>
 
           {/* Target income — nullable. Empty input → null (not 0) so

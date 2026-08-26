@@ -155,7 +155,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1601, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 449, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 236, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 739, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 773, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
   { path: "artifacts/finance-tracker/src/pages/year-review.tsx", line: 1270, reason: "chart max denominator: empty topCats → 1 to avoid /0" },
 
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the
@@ -229,13 +229,20 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // cell means the assumption is disclosed at the point the projection
   // renders. Different class from targetMonthlyIncome / currentAge,
   // both of which invented personal state.
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 103, reason: "retirementAge fresh-install default (67 = UK State Pension age, Pensions Act 2014). Documented external fact, not an invented personal number. Disclosed at render as 'at age 67 · in Nyr' on the Projected Pot cell." },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 107, reason: "retirementAge fresh-install default (67 = UK State Pension age, Pensions Act 2014). Documented external fact, not an invented personal number. Disclosed at render as 'at age 67 · in Nyr' on the Projected Pot cell." },
   //
-  // growthRate — DEFERRED, see docs/BACKLOG.md § G11. Decision pending
-  // (fix at source OR keep with inline disclosure at the projection
-  // point). Reported ground truth in the backlog entry so the deferral
-  // is visible outside this test file.
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 104, reason: "growthRate default 7% — deferred; see docs/BACKLOG.md § G11. Choice between null-by-default and disclosed-assumption pending operator sign-off." },
+  // growthRate default 7% — G11 resolved via disclosure contract.
+  // A conventional pension-model assumption is legitimate IF the user
+  // can see the value at the render point and change it. Enforced in
+  // three places, any of which failing means the pill silently
+  // becomes wrong: the "assumes N%/yr growth" clickable pill in the
+  // Projected Pot caption (KpiBar), the "Assumes N%/yr growth to
+  // retirement" footer in PensionHealthBlock, and the onFocusGrowthRate
+  // handler that scrolls + focuses the growth-rate input. All three
+  // are locked by pension-growth-rate-disclosure.test.ts. If any is
+  // removed, that test fails before this allowlist entry can silently
+  // become a lie about what the code does.
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 108, reason: "growthRate default 7% — legitimate conventional model assumption, disclosed at the render point via the 'assumes N%/yr growth' clickable pill on the Projected Pot caption (KpiBar) and the health-block footer, with a click handler that scrolls + focuses the input. Contract locked by pension-growth-rate-disclosure.test.ts." },
 ];
 
 // ── Scanner ────────────────────────────────────────────────────────────────
