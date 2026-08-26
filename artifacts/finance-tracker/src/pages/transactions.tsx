@@ -380,116 +380,78 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
   );
 }
 
-// ── Wise-style empty state preview ────────────────────────────────────────────
+// ── Honest empty state for an empty ledger ──────────────────────────────────
+//
+// Replaces the earlier TxFeedPreview + PREVIEW_ROWS pattern. That component
+// rendered six fabricated £ rows (Rent -£1100, Sainsbury's -£67.40, Monthly
+// Salary +£3700, TfL -£4.80, Pret -£5.95, Spotify -£11.99) directly beneath a
+// "0 entries" header, in £ regardless of account currency. Even at 45% opacity
+// they read as content, not decoration, and any MYR-account user saw the
+// currency mismatch. "Never show a number the API did not supply" applies to
+// preview/dimmed rows too.
 
-const PREVIEW_ICONS: Record<string, React.ReactNode> = {
-  housing: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1.5 6.5L7 1.5l5.5 5M3 5.5V12h3V9h2v3h3V5.5" />
-    </svg>
-  ),
-  groceries: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 1.5h2l1.5 6.5h6l1-4H4.5" />
-      <circle cx="6" cy="11.5" r="0.75" fill="currentColor" stroke="none" />
-      <circle cx="10" cy="11.5" r="0.75" fill="currentColor" stroke="none" />
-    </svg>
-  ),
-  income: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1.5" y="4" width="11" height="8" rx="0.5" />
-      <path d="M4.5 4V3a.5.5 0 01.5-.5h4a.5.5 0 01.5.5v1" />
-      <path d="M1.5 7h11" />
-    </svg>
-  ),
-  transport: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2.5" y="1.5" width="9" height="8" rx="1" />
-      <path d="M2.5 6.5h9M5 1.5V6.5M9 1.5V6.5" />
-      <path d="M4 9.5L2 12M10 9.5l2 2.5" />
-    </svg>
-  ),
-  eatingout: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 1.5v4a2.5 2.5 0 005 0v-4" />
-      <path d="M6.5 5.5v7" />
-      <path d="M4 3.5h5" />
-    </svg>
-  ),
-  subscriptions: (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3.5" y="1" width="7" height="12" rx="1" />
-      <path d="M5.5 10.5h3" />
-      <circle cx="7" cy="3" r="0.5" fill="currentColor" stroke="none" />
-    </svg>
-  ),
-};
-
-const PREVIEW_ROWS = [
-  { iconKey: "housing",      label: "Rent",           category: "Housing",       amount: -1100,  income: false, date: "Today" },
-  { iconKey: "groceries",    label: "Sainsbury's",    category: "Groceries",     amount: -67.4,  income: false, date: "Today" },
-  { iconKey: "income",       label: "Monthly Salary", category: "Income",        amount: 3700,   income: true,  date: "Yesterday" },
-  { iconKey: "transport",    label: "TfL Contactless",category: "Transport",     amount: -4.8,   income: false, date: "Yesterday" },
-  { iconKey: "eatingout",    label: "Pret A Manger",  category: "Eating Out",    amount: -5.95,  income: false, date: "Tue 27 Jul" },
-  { iconKey: "subscriptions",label: "Spotify",        category: "Subscriptions", amount: -11.99, income: false, date: "Mon 26 Jul" },
-];
-
-function TxFeedPreview({ openAdd }: { openAdd: () => void }) {
-  const mono: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
-  const grouped = PREVIEW_ROWS.reduce<Record<string, typeof PREVIEW_ROWS>>((acc, r) => {
-    if (!acc[r.date]) acc[r.date] = [];
-    acc[r.date].push(r);
-    return acc;
-  }, {});
-
+function TxLedgerEmpty({ openAdd }: { openAdd: () => void }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100vh - 260px)" }}>
-      {/* Preview feed */}
-      <div style={{ flex: 1, opacity: 0.45, pointerEvents: "none", userSelect: "none" }}>
-        {Object.entries(grouped).map(([date, rows]) => (
-          <div key={date}>
-            {/* Date header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 16px 4px", background: "var(--ft-base)", borderBottom: "1px solid var(--ft-border)", borderTop: "1px solid var(--ft-border)" }}>
-              <span style={{ ...mono, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)" }}>{date}</span>
-              <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginLeft: "auto" }}>
-                {rows.reduce((s, r) => s + r.amount, 0) >= 0
-                  ? `+£${Math.abs(rows.reduce((s, r) => s + r.amount, 0)).toFixed(2)}`
-                  : `-£${Math.abs(rows.reduce((s, r) => s + r.amount, 0)).toFixed(2)}`}
-              </span>
-            </div>
-            {rows.map((r, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: "1px solid var(--ft-border)", background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
-                {/* Category icon */}
-                <div style={{ width: 28, height: 28, borderRadius: 2, border: "1px solid var(--ft-border)", background: "var(--ft-surface)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-muted)", flexShrink: 0 }}>
-                  {PREVIEW_ICONS[r.iconKey]}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</div>
-                  <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>{r.category}</div>
-                </div>
-                <div style={{ ...mono, fontSize: 12, fontWeight: 700, color: r.income ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
-                  {r.income ? "+" : "−"}£{Math.abs(r.amount).toFixed(2)}
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 14,
+        padding: "60px 24px",
+        minHeight: "calc(100vh - 260px)",
+        border: "1px solid var(--ft-border)",
+        background: "var(--ft-surface)",
+        fontFamily: "var(--font-mono)",
+        textAlign: "center",
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        — NO TRANSACTIONS —
       </div>
-      {/* CTA overlay */}
-      <div style={{ padding: "28px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, borderTop: "1px solid var(--ft-border)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Your transaction feed</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center", maxWidth: 340, lineHeight: 1.7 }}>
-          Transactions appear here as you add them. Import a bank CSV for instant history, or add manually.
-        </div>
-        <HStack gap={10}>
-          <button onClick={openAdd} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px 20px", cursor: "pointer" }}>
-            + Add transaction
-          </button>
-          <a href="/import" style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "none", color: "var(--ft-accent)", border: "1px solid var(--ft-border2)", padding: "8px 20px", cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
-            Import CSV
-          </a>
-        </HStack>
+      <div style={{ fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", maxWidth: 340, lineHeight: 1.7 }}>
+        Your transaction feed will appear here. Import a bank CSV for instant history, or add manually. Rows show once you have data.
       </div>
+      <HStack gap={10}>
+        <button
+          type="button"
+          onClick={openAdd}
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            background: "var(--ft-accent)",
+            color: "var(--ft-base)",
+            border: "none",
+            padding: "10px 20px",
+            cursor: "pointer",
+            fontWeight: 700,
+          }}
+        >
+          + Add transaction
+        </button>
+        <a
+          href="/import"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            background: "none",
+            color: "var(--ft-accent)",
+            border: "1px solid var(--ft-border2)",
+            padding: "10px 20px",
+            cursor: "pointer",
+            textDecoration: "none",
+            display: "inline-block",
+            fontWeight: 700,
+          }}
+        >
+          Import CSV
+        </a>
+      </HStack>
     </div>
   );
 }
@@ -2935,7 +2897,7 @@ export default function Transactions() {
               {filtered.length === 0 && (
                 hasFilters
                   ? <EmptyState title="No matches" description="No transactions match the current filters." minHeight="calc(100vh - 260px)" />
-                  : <TxFeedPreview openAdd={openAdd} />
+                  : <TxLedgerEmpty openAdd={openAdd} />
               )}
               {hasMoreFlat && (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 0", borderBottom: "1px solid var(--ft-border)" }}>
@@ -2988,7 +2950,7 @@ export default function Transactions() {
               {dayGroups.length === 0 && (
                 hasFilters
                   ? <EmptyState title="No matches" description="No transactions match the current filters." minHeight="calc(100vh - 260px)" />
-                  : <TxFeedPreview openAdd={openAdd} />
+                  : <TxLedgerEmpty openAdd={openAdd} />
               )}
               {hasMoreDayGroups && (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 0", borderBottom: "1px solid var(--ft-border)" }}>
@@ -3053,7 +3015,7 @@ export default function Transactions() {
               {merchantGroups.length === 0 && (
                 hasFilters
                   ? <EmptyState title="No matches" description="No transactions match the current filters." minHeight="calc(100vh - 260px)" />
-                  : <TxFeedPreview openAdd={openAdd} />
+                  : <TxLedgerEmpty openAdd={openAdd} />
               )}
             </>
           )}
