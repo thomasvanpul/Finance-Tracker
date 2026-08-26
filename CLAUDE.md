@@ -177,3 +177,10 @@ could not supply — that inventory is more valuable than the feature.
 | `docs/AI-DESIGN-TELLS.md` | before producing any design |
 | `docs/STYLE-INVENTORY.md` | touching styling — 11,715 inline style objects, measured |
 | `docs/MOBILE-INVENTORY.md` | mobile architecture and routing |
+
+## Obsidian vault — memory layer
+
+Thomas keeps his external memory at `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/vault_general`.
+Read `hot.md`, then `AI-RULES.md`, then `index.md` (a router — pick an area, open that area index only).
+Read `Atlas/Working-Preferences.md` for how he wants you to behave.
+Write decisions, constraints and status changes back to it as they happen. Full spec in `~/.claude/CLAUDE.md`.
