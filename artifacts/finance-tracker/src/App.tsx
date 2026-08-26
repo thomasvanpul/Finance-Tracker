@@ -49,13 +49,11 @@ const CashFlow       = lazy(() => import("@/pages/cashflow"));
 const YearReview     = lazy(() => import("@/pages/year-review"));
 const Import         = lazy(() => import("@/pages/import"));
 const Recurring      = lazy(() => import("@/pages/recurring"));
-const Learn          = lazy(() => import("@/pages/learn"));
 const AiCoach        = lazy(() => import("@/pages/ai-coach"));
 const Decisions      = lazy(() => import("@/pages/decisions"));
 const Fire           = lazy(() => import("@/pages/fire"));
 const Pension        = lazy(() => import("@/pages/pension"));
 const Calculators    = lazy(() => import("@/pages/calculators"));
-const Wardrobe       = lazy(() => import("@/pages/wardrobe"));
 const Projection     = lazy(() => import("@/pages/projection"));
 const Briefing       = lazy(() => import("@/pages/briefing"));
 const Business       = lazy(() => import("@/pages/business"));
@@ -173,7 +171,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/fire": "FIRE · Numeris",
   "/pension": "Pension · Numeris",
   "/calculators": "Calculators · Numeris",
-  "/wardrobe": "Wardrobe · Numeris",
   "/projection": "Projection · Numeris",
   "/subscriptions": "Subscriptions · Numeris",
   "/tax": "Tax · Numeris",
@@ -181,7 +178,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/calendar": "Calendar · Numeris",
   "/split": "Split · Numeris",
   "/recurring": "Recurring · Numeris",
-  "/learn": "Learn · Numeris",
   "/cashflow": "Cash Flow · Numeris",
   "/year-review": "Year Review · Numeris",
   "/import": "Import · Numeris",
@@ -230,7 +226,6 @@ function Router() {
         <Route path="/fire" component={Fire} />
         <Route path="/pension" component={Pension} />
         <Route path="/calculators" component={Calculators} />
-        <Route path="/wardrobe" component={Wardrobe} />
         <Route path="/projection" component={Projection} />
         <Route path="/subscriptions" component={Subscriptions} />
         <Route path="/tax" component={Tax} />
@@ -239,7 +234,6 @@ function Router() {
         <Route path="/split" component={Split} />
         <Route path="/shared" component={SharedExpenses} />
         <Route path="/recurring" component={Recurring} />
-        <Route path="/learn" component={Learn} />
         <Route path="/cashflow" component={CashFlow} />
         <Route path="/year-review" component={YearReview} />
         <Route path="/import" component={Import} />

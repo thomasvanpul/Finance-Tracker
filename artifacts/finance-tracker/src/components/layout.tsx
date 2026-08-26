@@ -16,7 +16,7 @@ import { CommandPalette, useCommandPalette } from "@/components/command-palette"
 import { QuickAddTransaction, useQuickAdd } from "@/components/quick-add-transaction";
 import { GlobalSearch, useGlobalSearch } from "@/components/global-search";
 import { KeyboardShortcuts, useKeyboardShortcuts } from "@/components/keyboard-shortcuts";
-import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, ChevronLeft, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Home, CreditCard, ArrowLeftRight, BarChart2, PieChart, LineChart, TrendingUp, FileText, Briefcase, Activity, Target, Calendar, RefreshCw, Users, BookOpen, Grid3X3, X } from "lucide-react";
+import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, ChevronLeft, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Home, CreditCard, ArrowLeftRight, BarChart2, PieChart, LineChart, TrendingUp, FileText, Briefcase, Activity, Target, Calendar, RefreshCw, Users, Grid3X3, X } from "lucide-react";
 import { Logo, LogoMark } from "@/components/logo";
 import { formatGbp } from "@/lib/utils";
 import { setBaseCurrency } from "@/lib/currency-store";
@@ -94,7 +94,6 @@ const NAV_SECTIONS = [
       { href: "/recurring",     label: "Recurring",    code: "G·U" },
       { href: "/calculators",   label: "Calculators",  code: "G·F" },
       { href: "/import",        label: "Import",       code: "G·J" },
-      { href: "/learn",         label: "Learn",        code: "G·Q" },
     ],
   },
   {
@@ -122,7 +121,7 @@ const SECONDARY_HREFS = new Set([
   "/tax",
   "/owing", "/split", "/subscriptions", "/calendar",
   "/health-score", "/cashflow", "/reports", "/projection", "/briefing",
-  "/recurring", "/calculators", "/import", "/learn",
+  "/recurring", "/calculators", "/import",
   "/business", "/family", "/trading",
 ]);
 
@@ -133,9 +132,9 @@ const G_KEY_MAP: Record<string, string> = {
   x: "/split", c: "/subscriptions", w: "/net-worth",
   y: "/tax", h: "/health-score",
   f: "/calculators", k: "/calendar",
-  s: "/settings", q: "/learn",
+  s: "/settings",
   v: "/cashflow", e: "/year-review", j: "/import",
-  g: "/ai-coach", z: "/wardrobe", "8": "/decisions", "9": "/briefing",
+  g: "/ai-coach", "8": "/decisions", "9": "/briefing",
   // Power-user shortcuts not shown in sidebar
   m: "/mortgage", p: "/pension", "0": "/fire",
   "5": "/projection",
@@ -169,7 +168,6 @@ const HREF_ICON_MAP: Record<string, React.ElementType> = {
   "/recurring":     RefreshCw,
   "/calculators":   Grid3X3,
   "/import":        ArrowLeftRight,
-  "/learn":         BookOpen,
   "/business":      Briefcase,
   "/family":        Users,
   "/trading":       TrendingUp,
@@ -202,7 +200,6 @@ const HREF_SECTION_MAP: Record<string, string> = {
   "/recurring":     "TOOLS",
   "/calculators":   "TOOLS",
   "/import":        "TOOLS",
-  "/learn":         "TOOLS",
   "/business":      "ADVANCED",
   "/family":        "ADVANCED",
   "/trading":       "ADVANCED",
@@ -1381,7 +1378,7 @@ export function Layout({ children }: LayoutProps) {
   const allItems = NAV_SECTIONS.flatMap(s => s.items).concat(BOTTOM_ITEMS);
   const UNLISTED_LABELS: Record<string, string> = {
     "/fire": "FIRE", "/mortgage": "Mortgage", "/pension": "Pension",
-    "/wardrobe": "Wardrobe", "/year-review": "Year Review",
+    "/year-review": "Year Review",
     "/whatif": "What If", "/portfolio": "Portfolio",
     "/upcoming": "Upcoming", "/net-worth-history": "Net Worth",
     "/trading-journal": "Trading", "/family-finance": "Family",
@@ -2266,7 +2263,6 @@ const MORE_SECTIONS = [
     label: "LIFE",
     items: [
       { href: "/owing",          label: "Owing",         Icon: Users,       desc: "Shared expenses" },
-      { href: "/learn",          label: "Learn",         Icon: BookOpen,    desc: "Finance guides" },
       { href: "/settings",       label: "Settings",      Icon: Settings2,   desc: "Preferences" },
     ],
   },
@@ -2290,7 +2286,6 @@ const NAV_CUSTOMISE_OPTIONS = [
   { href: "/upcoming",       label: "Upcoming",  Icon: Calendar },
   { href: "/subscriptions",  label: "Recurring", Icon: RefreshCw },
   { href: "/owing",          label: "Owing",     Icon: Users },
-  { href: "/learn",          label: "Learn",     Icon: BookOpen },
   { href: "/settings",       label: "Settings",  Icon: Settings2 },
 ];
 

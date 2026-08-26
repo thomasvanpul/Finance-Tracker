@@ -94,10 +94,8 @@ const SECTIONS: MoreSection[] = [
       { key: "mortgage",    href: "/mortgage",    label: "Mortgage" },
       { key: "tax",         href: "/tax",         label: "Tax" },
       { key: "calendar",    href: "/calendar",    label: "Calendar" },
-      { key: "wardrobe",    href: "/wardrobe",    label: "Wardrobe" },
       { key: "business",    href: "/business",    label: "Business" },
       { key: "trading",     href: "/trading",     label: "Trading" },
-      { key: "learn",       href: "/learn",       label: "Learn" },
     ],
   },
   {

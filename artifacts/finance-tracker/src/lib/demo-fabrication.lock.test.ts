@@ -138,8 +138,8 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // toggled by the user, and no financial value is invented.
   { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1510, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
   { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1512, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 677, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 678, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 676, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 677, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
 
 const ALLOWLIST_B: readonly AllowEntry[] = [
@@ -177,7 +177,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // values in JSX-style variable initializers. Non-currency.
   { path: "artifacts/finance-tracker/src/components/ai-wanderer.tsx", line: 1003, reason: "sidebar-width fallback: 212px, matches the default rail width in layout.tsx" },
   { path: "artifacts/finance-tracker/src/components/currency-mark.tsx", line: 41, reason: "SVG font-size in px based on character count (18 or 22)" },
-  { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1238, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
+  { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1235, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
   { path: "artifacts/finance-tracker/src/components/matrix-rain.tsx", line: 91, reason: "matrix-rain glyph scale (1.4 or 1) — animation randomisation, not currency" },
   { path: "artifacts/finance-tracker/src/components/page-transition.tsx", line: 59, reason: "CSS opacity for fade transition (0 or 1)" },
   { path: "artifacts/finance-tracker/src/components/primitives/block-field.tsx", line: 161, reason: "grid-column count for hero/no-hero layout" },

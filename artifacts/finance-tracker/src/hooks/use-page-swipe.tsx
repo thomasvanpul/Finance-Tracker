@@ -15,7 +15,6 @@ const PAGE_SEQUENCE = [
   "/owing",
   "/upcoming",
   "/subscriptions",
-  "/learn",
 ];
 
 export function usePageSwipe() {

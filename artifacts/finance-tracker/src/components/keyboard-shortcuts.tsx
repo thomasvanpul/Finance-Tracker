@@ -22,7 +22,7 @@ const STATIC_SECTIONS: ShortcutSection[] = [
       ["G Y", "Tax"],            ["G K", "Calendar"],
       ["G F", "Calculators"],    ["G J", "Import"],
       ["G S", "Settings"],       ["G G", "AI Coach"],
-      ["G Q", "Learn"],          ["G E", "Year Review"],
+      ["G E", "Year Review"],
     ],
   },
   {
@@ -47,8 +47,8 @@ const STATIC_SECTIONS: ShortcutSection[] = [
   {
     label: "POWER USER",
     rows: [
-      ["G X", "Bill Split"],     ["G Z", "Wardrobe"],
-      ["G 8", "Decisions"],      ["G M", "Mortgage"],
+      ["G X", "Bill Split"],     ["G 8", "Decisions"],
+      ["G M", "Mortgage"],
       ["G P", "Pension"],        ["G 0", "FIRE Calc"],
       ["G 5", "Projection"],
     ],

@@ -25,7 +25,6 @@ export const ALL_NAV_HREFS: string[] = [
   "/recurring",
   "/calculators",
   "/import",
-  "/learn",
   "/fire",
   "/pension",
   "/whatif",

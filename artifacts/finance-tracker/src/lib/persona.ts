@@ -97,7 +97,7 @@ export const PERSONAS: Persona[] = [
     pinnedHrefs: ["/portfolio", "/investments", "/calendar"],
     visibleHrefs: [
       "/", "/portfolio", "/investments", "/calendar", "/decisions",
-      "/ai-coach", "/net-worth", "/calculators", "/learn", "/settings",
+      "/ai-coach", "/net-worth", "/calculators", "/settings",
     ],
   },
   {

@@ -62,7 +62,6 @@ const PAGE_LABELS: Record<string, string> = {
   "/analytics":    "Analytics — spending patterns and insights",
   "/health-score": "Health Score — financial health rating",
   "/tax":          "Tax — tax estimates and records",
-  "/learn":        "Learn — financial education hub",
   "/settings":     "Settings — app configuration",
 };
 

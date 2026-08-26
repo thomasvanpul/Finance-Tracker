@@ -136,7 +136,6 @@ const ALL_NAV_ITEMS_FOR_SETTINGS = [
   { href: "/recurring",     label: "Recurring",    section: "TOOLS" },
   { href: "/whatif",        label: "Calculators",  section: "TOOLS" },
   { href: "/import",        label: "Import",       section: "TOOLS" },
-  { href: "/learn",         label: "Learn",        section: "TOOLS" },
 ];
 
 // Nav items a market persona should not see (bank-only surfaces).
