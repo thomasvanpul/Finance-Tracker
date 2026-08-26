@@ -220,6 +220,30 @@
   --ft-space-8: 48px;    /* hero blocks, empty-state top-block internal */
 }
 
+/* ── Phone screen-transition keyframes ─────────────────────────────────────
+   One-sided animation: React remounts the content wrapper on location
+   change (via key={location}); the new element plays its enter keyframe.
+   Direction distinguishes intent:
+     ft-phone-tab-in   — 8px slide + fade, for tab-to-tab moves.
+                         Under Mobile Amendment :65 200ms cap on
+                         mobile-general transitions (uses --ft-motion-base).
+     ft-phone-push-in  — full slide-from-right + partial fade, for
+                         drills into a directory item. Uses
+                         --ft-motion-screen (240ms, under Amendment :65
+                         cap for sheets, drawers and screen transitions).
+   Transforms and opacity only — both are compositor-only in WKWebView,
+   so cellular / mid-range hardware doesn't drop frames. Amendment :67
+   permits elevation on floating surfaces (the tab bar itself); this is
+   the motion story for the content that sits ABOVE the tab bar. */
+@keyframes ft-phone-tab-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes ft-phone-push-in {
+  from { opacity: 0.6; transform: translateX(100%); }
+  to   { opacity: 1;   transform: translateX(0); }
+}
+
 /* ── Physical chrome heights ────────────────────────────────────────────────
    Rendered height of shell elements — kept as tokens so page paddings that
    need to clear the tab bar / header don't hard-code a magic number that

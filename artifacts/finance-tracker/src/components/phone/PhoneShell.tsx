@@ -172,7 +172,40 @@ function PhoneNotFound()  { return <div style={{ ...placeholderStyle, fontSize: 
 // (Also referenced by the DIRECTORY tab's active-tab logic in PhoneTabBar
 // so those legacy URLs don't leave the tab bar without an active item.)
 
+// WRAPPED_ROUTES defines which URLs the shell wraps around a desktop page
+// via DirectoryItemScreen. Those URLs get the "push" animation (slide from
+// right) — they read as drilling deeper. Everything else (the five tab
+// URLs and their aliases) gets the "tab" animation — subtle 8px slide +
+// fade. See index.css @keyframes ft-phone-tab-in / ft-phone-push-in.
+const WRAPPED_ROUTES_SET: ReadonlySet<string> = new Set(WRAPPED_ROUTES);
+
+function AnimatedRoute({ location, children }: { location: string; children: React.ReactNode }) {
+  const isPush = WRAPPED_ROUTES_SET.has(location);
+  // key={location} triggers an unmount/remount on URL change, which
+  // fires the animation on the newly-mounted element. Reduced-motion
+  // collapses both --ft-motion-* variables to 0ms via the @media block
+  // in index.css:189–194, so this becomes an instant swap.
+  return (
+    <div
+      key={location}
+      style={{
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        animation: isPush
+          ? "ft-phone-push-in var(--ft-motion-screen) var(--ft-ease) both"
+          : "ft-phone-tab-in var(--ft-motion-base) var(--ft-ease) both",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function PhoneShell() {
+  const [location] = useLocation();
   return (
     <div
       style={{
@@ -194,6 +227,7 @@ export function PhoneShell() {
           paddingTop: "env(safe-area-inset-top, 0px)",
         }}
       >
+       <AnimatedRoute location={location}>
         <Switch>
           <Route path="/">
             {() => <MobileHome />}
@@ -244,6 +278,7 @@ export function PhoneShell() {
 
           <Route component={PhoneNotFound} />
         </Switch>
+       </AnimatedRoute>
       </div>
       <PhoneTabBar />
     </div>

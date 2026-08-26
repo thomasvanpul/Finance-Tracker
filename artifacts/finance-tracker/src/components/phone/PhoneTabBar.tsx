@@ -53,6 +53,14 @@ export function PhoneTabBar() {
         gridTemplateColumns: "repeat(5, 1fr)",
         background: "var(--ft-surface)",
         borderTop: "1px solid var(--ft-border)",
+        // Mobile Amendment :67 permits elevation on floating surfaces.
+        // The border above keeps the hairline separation between content
+        // and chrome; the shadow above THAT gives the tab bar the sense
+        // of hovering, so scrolled content feels like it slides UNDER
+        // the bar. Desktop Constitution's "no box-shadow on data" doesn't
+        // apply — the tab bar is chrome, and the shadow is spread on
+        // whitespace above the bar, not on data.
+        boxShadow: "0 -8px 24px rgba(0, 0, 0, 0.12)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
