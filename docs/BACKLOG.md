@@ -536,6 +536,51 @@ renderer for a decorative avatar is real battery and bundle cost.
   marked flaky with a stated cause. If it turns out to be a real bug
   the description is upgraded.
 
+- **G12 · Sign-in screen is the FIRST thing App Review opens — needs its
+  own pass + a demo account in App Store Connect review-notes.** A
+  reviewer who cannot sign in files a rejection without opening
+  anything else, so the login/signup surface is the highest-blast-
+  radius screen in the whole submission. Thomas's own description
+  after touching it on device: "always been a big damn mess" — he
+  cannot tell which account to use, and if the person paying for the
+  app cannot, a reviewer with two minutes and a checklist certainly
+  cannot.
+  **Two separable problems, both required:**
+    (1) The screen. Sign-in vs sign-up affordance, passkey vs email
+        clarity, error rendering, forgot-password discoverability.
+        Currently mixes all four flows in one form and the primary
+        action changes label based on hidden state.
+    (2) The reviewer path. App Store Connect review-notes must carry
+        a working demo email + password, an explanation of what to
+        click to sign in with it, and any 2FA test codes. Missing
+        credentials in review-notes is a Guideline 2.1 rejection on
+        its own.
+  **Done when:** (a) the sign-in/up screen has been redesigned and
+  shipped with the primary path visible in five seconds by someone
+  who has never seen it, and (b) App Store Connect submission
+  includes a demo account whose credentials the reviewer can copy-
+  paste, with review-notes text that says exactly what to do.
+  **Blocked by:** G13 (native auth architecture — resolves what
+  "signing in" even means on native). Design pass on the screen can
+  proceed in parallel; the demo account cannot be created until we
+  know whether native auth uses bearer tokens or session cookies,
+  because the fixtures differ.
+
+- **G13 · Native auth architecture — CANNOT authenticate in the
+  Capacitor WebView, requires architectural decision.** Verified 26-Aug
+  against pension WebView build: `src/lib/auth-client.ts:14` falls
+  back to `${window.location.origin}/api/auth`. In the WebView the
+  origin is `capacitor://localhost`; the sign-in POST resolves inside
+  the local bundle, never leaves the device, better-auth returns
+  `server_error`, which `auth-errors.ts:59` renders as "Something
+  went wrong on our end." — a lie: the request never left. Nine other
+  relative `/api` fetch sites (transactions, dashboard, settings,
+  reports, split, ai-coach, ai-agent, markets-tab, auth-errors) break
+  the same way. See the 26-Aug session report for the four-option
+  decision (CapacitorHttp / server.hostname / bearer-token plugin /
+  other). RESOLUTION PENDING — architectural choice affects cookie
+  budget, offline, and Guideline 4.2 risk differently.
+
 - **G11 · Pension `growthRate ?? 7` — RESOLVED via disclosure contract
   (path b).** The 7% default is a conventional pension-model
   assumption, not a personal fact. Operator's decision: legitimate IF
