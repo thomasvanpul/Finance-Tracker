@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { Component, type ReactNode } from "react";
 import { setBaseUrl } from "@workspace/api-client-react";
+import { initNativeAuth, isNativeShell } from "./lib/native-auth";
 import App from "./App";
 import "./index.css";
 
@@ -23,13 +24,26 @@ class RootErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
   }
 }
 
-// Leave the base URL empty in both dev and production so every request is
-// same-origin: the Vite proxy handles it locally, Vercel's /api/* rewrite
-// handles it in production. A cross-domain base makes the session cookie
-// third-party and Safari drops it. VITE_API_URL is an escape hatch only.
-if (!import.meta.env.DEV && import.meta.env.VITE_API_URL) {
+// Web: leave the base URL empty so every request is same-origin — the
+// Vite proxy handles it locally, Vercel's /api/* rewrite handles it in
+// production. A cross-domain base makes the session cookie third-party
+// and Safari drops it. VITE_API_URL is an escape hatch only.
+//
+// Native (Capacitor iOS): origin is `capacitor://localhost`, so relative
+// /api paths cannot reach the server. VITE_NATIVE_API_URL is baked into
+// the native bundle at build time and is set as the api-client's base
+// URL — every relative /api call in the app then gets the API host
+// prepended before it leaves the WebView. Auth switches to bearer
+// tokens (see lib/native-auth.ts); the cookie path is unused.
+if (isNativeShell() && import.meta.env.VITE_NATIVE_API_URL) {
+  setBaseUrl(import.meta.env.VITE_NATIVE_API_URL as string);
+} else if (!import.meta.env.DEV && import.meta.env.VITE_API_URL) {
   setBaseUrl(import.meta.env.VITE_API_URL as string);
 }
+
+// Wire the Authorization: Bearer <token> flow. No-op on web (the
+// getter returns null so no header is added; cookies keep working).
+initNativeAuth();
 
 // Apply stored accent override synchronously before first render to avoid FOUC
 try {

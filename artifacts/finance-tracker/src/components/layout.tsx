@@ -1367,6 +1367,11 @@ export function Layout({ children }: LayoutProps) {
 
   const handleSignOut = async () => {
     await authClient.signOut();
+    // Clear the native bearer token if we have one. No-op on web.
+    // Without this a fresh sign-in on the same device inherits the
+    // previous session's token via the in-memory cache in native-auth.ts.
+    const { clearNativeAuthToken } = await import("@/lib/native-auth");
+    await clearNativeAuthToken();
     queryClient.clear();
   };
 

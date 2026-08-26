@@ -596,7 +596,11 @@ export default function Profile() {
   }, null);
 
   function handleSignOut() {
-    authClient.signOut().then(() => {
+    authClient.signOut().then(async () => {
+      // Clear the native bearer token — no-op on web. See the same
+      // pattern in components/layout.tsx.
+      const { clearNativeAuthToken } = await import("@/lib/native-auth");
+      await clearNativeAuthToken();
       queryClient.clear();
       navigate("/");
     });
