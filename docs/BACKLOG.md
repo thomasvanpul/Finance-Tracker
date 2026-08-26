@@ -566,20 +566,82 @@ renderer for a decorative avatar is real battery and bundle cost.
   know whether native auth uses bearer tokens or session cookies,
   because the fixtures differ.
 
-- **G13 · Native auth architecture — CANNOT authenticate in the
-  Capacitor WebView, requires architectural decision.** Verified 26-Aug
-  against pension WebView build: `src/lib/auth-client.ts:14` falls
-  back to `${window.location.origin}/api/auth`. In the WebView the
-  origin is `capacitor://localhost`; the sign-in POST resolves inside
-  the local bundle, never leaves the device, better-auth returns
-  `server_error`, which `auth-errors.ts:59` renders as "Something
-  went wrong on our end." — a lie: the request never left. Nine other
-  relative `/api` fetch sites (transactions, dashboard, settings,
-  reports, split, ai-coach, ai-agent, markets-tab, auth-errors) break
-  the same way. See the 26-Aug session report for the four-option
-  decision (CapacitorHttp / server.hostname / bearer-token plugin /
-  other). RESOLUTION PENDING — architectural choice affects cookie
-  budget, offline, and Guideline 4.2 risk differently.
+- **G13 · Native auth architecture — bearer plugin picked, code
+  landed, awaits device verification.** Decision: option 3 (better-
+  auth `bearer` plugin) over CapacitorHttp because the AI-chat SSE
+  stream depends on `Response.body` streaming which CapacitorHttp
+  does not support (the streaming Coach and floating assistant are
+  headline features and can't break silently on native). Landed
+  across five commits:
+    1/5 · server: `bearer()` plugin + twoFactor issuer 'Fintrack' → 'Numeris'
+    2/5 · client: `lib/native-auth.ts` + `setAuthTokenGetter` wiring
+    3/5 · retrofit 10 direct `/api` fetch sites through `apiFetch`
+    4/5 · hide passkey in native + auth-errors correctness fix
+          (no more "Something went wrong on our end" for requests
+          that never left the device)
+    5/5 · lock #17 (no raw `fetch("/api/…")` outside `apiFetch`) +
+          this manual checklist
+  Locked at the source-scan level by lock #17 in
+  `artifacts/finance-tracker/src/lib/api-fetch.lock.test.ts` (a new
+  raw /api fetch fails a test naming file:line before it can ship
+  and silently break native).
+
+  **Environment (Render):** set `ALLOWED_ORIGINS` to include
+  `capacitor://localhost` so the CORS middleware doesn't reject
+  requests from the native shell. Existing web origin unchanged.
+
+  **Environment (native build):** set `VITE_NATIVE_API_URL` at
+  build time to the production API URL (e.g. `https://finance-
+  tracker-api.onrender.com`). Only used when
+  `Capacitor.isNativePlatform()` is true; web bundle ignores it.
+
+  **Runtime verification checklist — must be walked on device.** The
+  automated tests cover shape (types, source patterns, hit lists).
+  They cannot cover "does bearer flow actually work on iOS". Every
+  step below is a real device / simulator interaction. A mocked
+  version would pass against broken code and is worse than no test:
+
+    [ ] `npx cap sync ios && npx cap open ios` builds without error
+    [ ] App launches on iOS Simulator; blank page or launch fail
+        means the webDir bundle isn't packaged (see 726c01f)
+    [ ] Sign-up form submits and returns to a logged-in shell
+        (previously: "server_error → Something went wrong on our end")
+    [ ] Xcode network inspector shows the sign-up POST leaving the
+        device with target = the VITE_NATIVE_API_URL host
+    [ ] Sign-up response has header `set-auth-token: <opaque>`
+    [ ] Kill and relaunch app — still signed in. If sign-in screen
+        appears, the token did not persist to Preferences
+    [ ] Any authenticated call (Dashboard load) — Xcode shows the
+        request carries `Authorization: Bearer <same token>`
+    [ ] AI Coach / floating assistant streams tokens (not a wait-
+        then-dump). Confirms SSE works via WebView native fetch
+        rather than CapacitorHttp
+    [ ] Sign out — subsequent authenticated call fails 401
+    [ ] Sign in as a different user — first request carries the
+        NEW token, not the previous one (clearNativeAuthToken did
+        its job)
+    [ ] Passkey button is HIDDEN on native (visible on web);
+        clicking is not possible so it cannot silently fail
+    [ ] With airplane mode on, sign-in shows "Your device is offline"
+        NOT "Something went wrong on our end"
+    [ ] With airplane mode off but VITE_NATIVE_API_URL pointing at
+        a bad host, sign-in shows "Could not reach the server" NOT
+        "The server responded with an error"
+
+  **Why no CI runtime test.** Every step above needs the real
+  Capacitor shell, real WKWebView, real @capacitor/preferences (which
+  is UserDefaults on iOS, not a JS mock), and a real HTTPS response
+  with the `set-auth-token` header set by the real better-auth server.
+  A CI test that mocks any of those would pass against broken code —
+  a mocked Preferences that always succeeds would pass whether the
+  real Preferences works or not; a mocked Capacitor detection that
+  returns true would pass whether isNativePlatform detects correctly
+  or not. The operator's rule: a test that cannot fail against broken
+  code is worse than no test. This checklist is the honest version.
+
+  **G13 closes when:** every checkbox above ticks on a real device
+  or simulator, recorded in a session note with commit SHA. Not on
+  green CI alone.
 
 - **G11 · Pension `growthRate ?? 7` — RESOLVED via disclosure contract
   (path b).** The 7% default is a conventional pension-model
