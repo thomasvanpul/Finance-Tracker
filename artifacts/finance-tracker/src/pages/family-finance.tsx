@@ -508,7 +508,7 @@ function IncomeLegendItem({
   color,
 }: {
   name: string;
-  gbp: number;
+  gbp: number | null;
   pct: number;
   color: string;
 }) {
@@ -540,7 +540,7 @@ function IncomeLegendItem({
           fontVariantNumeric: "tabular-nums",
         }}
       >
-        {formatGbp(gbp)} ({pct}%)
+        {gbp == null ? "—" : formatGbp(gbp)} ({pct}%)
       </span>
     </div>
   );
@@ -1070,13 +1070,13 @@ function MemberCard({
 }: {
   member: FamilyMember;
   accounts: { id: number; name: string; currency: string; balance: number; gbpEquivalent: number | null }[];
-  monthlyIncome: number;
+  monthlyIncome: number | null;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const [hovered, setHovered] = useState<boolean>(false);
   const linkedAccounts = accounts.filter((a) => member.accountIds.includes(String(a.id)));
-  const memberIncome = (member.incomeShare / 100) * monthlyIncome;
+  const memberIncome = monthlyIncome != null ? (member.incomeShare / 100) * monthlyIncome : null;
   const linkedBalance = linkedAccounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
   const accentHex = roleCssVar(member.color);
 
@@ -1127,7 +1127,7 @@ function MemberCard({
 
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         {statRow("Income share", (
-          <span className="pnum">{member.incomeShare}% · {formatGbp(memberIncome)}/mo</span>
+          <span className="pnum">{member.incomeShare}% · {memberIncome == null ? "—" : formatGbp(memberIncome)}/mo</span>
         ))}
         {linkedBalance > 0 && statRow("Balance", (
           <span className="pnum" style={{ color: linkedBalance >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
@@ -1202,22 +1202,27 @@ export default function FamilyFinance() {
   const [showAddTimeline, setShowAddTimeline] = useState(false);
 
   // ── Household KPIs ───────────────────────────────────────────────────────────
-  const netWorth = dashboard?.netWorth ?? 0;
-  const monthlyIncome = dashboard?.thisMonth?.income ?? 0;
-  const monthlyExpenses = dashboard?.thisMonth?.expenses ?? 0;
+  // Nullable. A `?? 0` coalesce would render £0 across every household KPI
+  // during load, which reads as "your household has no money" — the exact
+  // shape of the defect this commit set is removing.
+  const netWorth = dashboard?.netWorth ?? null;
+  const monthlyIncome = dashboard?.thisMonth?.income ?? null;
+  const monthlyExpenses = dashboard?.thisMonth?.expenses ?? null;
   const savingsRate =
-    monthlyIncome > 0
+    monthlyIncome != null && monthlyIncome > 0 && monthlyExpenses != null
       ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100
-      : 0;
+      : null;
 
   // ── Income allocation chart data ──────────────────────────────────────────────
+  // gbp is null when we do not yet know household income — never a
+  // fabricated £0 slice.
   const incomeChartData = useMemo(() => {
     if (members.length === 0) return [];
     const total = members.reduce((s, m) => s + m.incomeShare, 0) || 1;
     return members.map((m) => ({
       name: m.name,
       pct: Math.round((m.incomeShare / total) * 100),
-      gbp: (m.incomeShare / 100) * monthlyIncome,
+      gbp: monthlyIncome != null ? (m.incomeShare / 100) * monthlyIncome : null,
       color: m.color,
     }));
   }, [members, monthlyIncome]);
@@ -1509,42 +1514,46 @@ export default function FamilyFinance() {
         >
           <KpiCell
             label="Net Worth"
-            value={formatGbp(netWorth)}
-            sub={netWorth >= 0 ? "positive equity" : "net deficit"}
-            color={netWorth >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-            accentColor={netWorth >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+            value={netWorth == null ? "—" : formatGbp(netWorth)}
+            sub={netWorth == null ? "loading" : netWorth >= 0 ? "positive equity" : "net deficit"}
+            color={netWorth == null ? "var(--ft-dim)" : netWorth >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+            accentColor={netWorth == null ? "var(--ft-border2)" : netWorth >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
           />
           <KpiCell
             label="Monthly Income"
-            value={formatGbp(monthlyIncome)}
+            value={monthlyIncome == null ? "—" : formatGbp(monthlyIncome)}
             sub="this month"
-            color="var(--ft-text)"
+            color={monthlyIncome == null ? "var(--ft-dim)" : "var(--ft-text)"}
             accentColor="var(--ft-cyan)"
           />
           <KpiCell
             label="Monthly Expenses"
-            value={formatGbp(monthlyExpenses)}
+            value={monthlyExpenses == null ? "—" : formatGbp(monthlyExpenses)}
             sub="this month"
-            color="var(--ft-red)"
+            color={monthlyExpenses == null ? "var(--ft-dim)" : "var(--ft-red)"}
             accentColor="var(--ft-red)"
           />
           <KpiCell
             label="Savings Rate"
-            value={`${savingsRate.toFixed(1)}%`}
-            sub={`${formatGbp(monthlyIncome - monthlyExpenses)} saved/mo`}
+            value={savingsRate == null ? "—" : `${savingsRate.toFixed(1)}%`}
+            sub={monthlyIncome == null || monthlyExpenses == null ? "loading" : `${formatGbp(monthlyIncome - monthlyExpenses)} saved/mo`}
             color={
-              savingsRate >= 20
-                ? "var(--ft-green)"
-                : savingsRate >= 10
-                ? "var(--ft-amber)"
-                : "var(--ft-red)"
+              savingsRate == null
+                ? "var(--ft-dim)"
+                : savingsRate >= 20
+                  ? "var(--ft-green)"
+                  : savingsRate >= 10
+                    ? "var(--ft-amber)"
+                    : "var(--ft-red)"
             }
             accentColor={
-              savingsRate >= 20
-                ? "var(--ft-green)"
-                : savingsRate >= 10
-                ? "var(--ft-amber)"
-                : "var(--ft-red)"
+              savingsRate == null
+                ? "var(--ft-border2)"
+                : savingsRate >= 20
+                  ? "var(--ft-green)"
+                  : savingsRate >= 10
+                    ? "var(--ft-amber)"
+                    : "var(--ft-red)"
             }
           />
           <div

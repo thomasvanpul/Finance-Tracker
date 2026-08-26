@@ -292,14 +292,17 @@ function saveReachedMilestones(ms: number[]): void {
 }
 
 export function NetWorthMilestonesWidget() {
-  const { data: dash } = useGetDashboard();
+  const { data: dash, isLoading } = useGetDashboard();
   const { toast } = useToast();
-  const netWorth = dash?.netWorth ?? 0;
+  const netWorth = dash?.netWorth ?? null;
 
-  const reached = useMemo(() => MILESTONES_GBP.filter(m => netWorth >= m), [netWorth]);
+  const reached = useMemo(
+    () => netWorth == null ? [] : MILESTONES_GBP.filter(m => netWorth >= m),
+    [netWorth],
+  );
 
   useEffect(() => {
-    if (!dash) return;
+    if (!dash || netWorth == null) return;
     const stored = loadReachedMilestones();
     const storedSet = new Set(stored);
     const newlyReached = reached.filter(m => !storedSet.has(m));
@@ -311,17 +314,25 @@ export function NetWorthMilestonesWidget() {
       });
       saveReachedMilestones([...stored, ...newlyReached]);
     }
-  }, [dash, reached, toast]);
+  }, [dash, netWorth, reached, toast]);
 
-  const next = MILESTONES_GBP.find(m => netWorth < m);
-  const progress = next ? Math.min((netWorth / next) * 100, 100) : 100;
+  const next = netWorth != null ? MILESTONES_GBP.find(m => netWorth < m) : undefined;
+  const progress = next && netWorth != null ? Math.min((netWorth / next) * 100, 100) : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 140 }}>
       <div style={{ padding: "10px 14px 6px", borderBottom: "1px solid var(--ft-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Text as="span" mono upper size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.12em">NET WORTH MILESTONES</Text>
-        <Text as="span" mono size={9} color="var(--ft-muted)">{reached.length} / {MILESTONES_GBP.length}</Text>
+        <Text as="span" mono size={9} color="var(--ft-muted)">{netWorth == null ? "—" : `${reached.length} / ${MILESTONES_GBP.length}`}</Text>
       </div>
+      {netWorth == null && (
+        <VStack padding="14px" grow>
+          <Text as="div" mono size={10} color="var(--ft-dim)">
+            {isLoading ? "Loading net worth…" : "Waiting for net worth data — milestones fill in once accounts are connected or transactions imported."}
+          </Text>
+        </VStack>
+      )}
+      {netWorth != null && (
       <VStack gap={8} padding="10px 14px" grow>
         <HStack gap={4} wrap>
           {MILESTONES_GBP.map(m => {
@@ -356,6 +367,7 @@ export function NetWorthMilestonesWidget() {
           </div>
         )}
       </VStack>
+      )}
     </div>
   );
 }

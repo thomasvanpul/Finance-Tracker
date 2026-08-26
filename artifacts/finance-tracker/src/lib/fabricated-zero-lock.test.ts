@@ -92,8 +92,12 @@ const BASELINE_FILES: ReadonlySet<string> = new Set([
   "artifacts/finance-tracker/src/components/global-search.tsx",
   "artifacts/finance-tracker/src/components/mobile/MobileAccounts.tsx",
   "artifacts/finance-tracker/src/components/mobile/MobileAnalytics.tsx",
-  "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx",
-  "artifacts/finance-tracker/src/components/mobile/MobileNetWorth.tsx",
+  // MobileHome.tsx removed 26-Aug — same Correction-3 sweep: portfolio total
+  // in computeHoldings, hero net worth / mtd delta / unconvertible / owing
+  // are now all nullable-guarded.
+  // MobileNetWorth.tsx removed 26-Aug — Correction 3 rewrote every
+  // `?? 0` on money fields in this file (netWorth, mtdDelta, unconvertible,
+  // owing summary, portfolio total) into loading/unknown/real-0 handling.
   "artifacts/finance-tracker/src/components/mobile/widgets.tsx",
   "artifacts/finance-tracker/src/components/notifications-panel.tsx",
   "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx",

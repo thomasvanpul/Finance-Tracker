@@ -251,12 +251,19 @@ export default function Projection() {
   const dateFrom = useMemo(() => get3MonthsAgo(), []);
   const { data: recentTxs } = useListTransactions({ dateFrom });
 
-  const { startNetWorth, avgMonthlySavings } = useMemo(() => {
-    const nw = dash?.netWorth ?? 0;
-    if (!recentTxs || recentTxs.length === 0) return { startNetWorth: nw, avgMonthlySavings: 500 };
+  // Projection needs a real starting net worth and a real 3-month savings
+  // baseline. A `?? 0` on netWorth plus a `: 500` fabricated £/mo default
+  // would project growth from "£0 with £500/mo saved" for a user who
+  // supplied nothing — the exact silent-fabrication pattern this pass
+  // exists to remove.
+  const { startNetWorth, avgMonthlySavings, hasEnoughData } = useMemo(() => {
+    const nw = dash?.netWorth ?? null;
+    if (nw == null || !recentTxs || recentTxs.length === 0) {
+      return { startNetWorth: 0, avgMonthlySavings: 0, hasEnoughData: false };
+    }
     const income = recentTxs.filter(t => t.type === "income").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
     const expenses = recentTxs.filter(t => t.type === "expense").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
-    return { startNetWorth: nw, avgMonthlySavings: Math.max(0, (income - expenses) / 3) };
+    return { startNetWorth: nw, avgMonthlySavings: Math.max(0, (income - expenses) / 3), hasEnoughData: true };
   }, [dash, recentTxs]);
 
   const effectiveSavings = avgMonthlySavings * (1 + savingsAdj / 100);
@@ -306,6 +313,21 @@ export default function Projection() {
     { label: `IN ${horizon}Y — BASE ${annualRate}%`, value: formatGbp(finalBase), color: "var(--ft-green)", accent: "var(--ft-green)", show: true },
     { label: `IN ${horizon}Y — BULL ${bullRate}%`, value: formatGbp(finalBull), color: "var(--ft-blue)", accent: "var(--ft-blue)", show: showScenarios },
   ].filter(k => k.show);
+
+  if (!hasEnoughData) {
+    return (
+      <div>
+        <PageHeader
+          icon={TrendingUp}
+          title="NET WORTH PROJECTION"
+          subtitle="compound growth model · three scenarios · milestone tracker"
+        />
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "24px 20px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7 }}>
+          Projection needs a real net worth and at least a few months of income and expenses to establish a savings baseline. Connect an account or import transactions and the three scenarios fill in.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

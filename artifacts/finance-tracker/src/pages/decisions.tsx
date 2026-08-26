@@ -107,12 +107,16 @@ function buildDecisions(
 
   // Decision engine works off GBP totals; unconvertible accounts are
   // excluded — a fabricated 0 would fire spurious "idle cash" alerts.
+  // Same argument for the portfolio total: if the summary has not loaded
+  // yet, treating portfolio as £0 makes cashRatio look 100% cash and
+  // fires the idle-cash decision on partial data. Skip the whole
+  // cash-vs-portfolio decision when the portfolio side is not known.
   const totalCashGbp = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
-  const portfolioGbp = summary?.totalValueGbp ?? 0;
-  const totalWealth = totalCashGbp + portfolioGbp;
-  const cashRatio = totalWealth > 0 ? totalCashGbp / totalWealth : 1;
+  const portfolioGbp = summary?.totalValueGbp ?? null;
+  const totalWealth = portfolioGbp != null ? totalCashGbp + portfolioGbp : null;
+  const cashRatio = totalWealth != null && totalWealth > 0 ? totalCashGbp / totalWealth : null;
 
-  if (totalCashGbp > 5000 && cashRatio > 0.6) {
+  if (portfolioGbp != null && cashRatio != null && totalCashGbp > 5000 && cashRatio > 0.6) {
     const idleGbp = totalCashGbp - portfolioGbp * 0.4;
     const annualCost = Math.max(0, idleGbp) * 0.045;
     out.push({
@@ -160,7 +164,7 @@ function buildDecisions(
 
   // G10: skip unpriced positions in decision heuristics. A concentration
   // or loss alert without a live price would be based on a stale value.
-  if (portfolioGbp > 500) {
+  if (portfolioGbp != null && portfolioGbp > 500) {
     investments.forEach((inv) => {
       if (inv.gbpValue == null) return;
       const pct = portfolioGbp > 0 ? inv.gbpValue / portfolioGbp : 0;

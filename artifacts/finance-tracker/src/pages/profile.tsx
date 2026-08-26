@@ -574,7 +574,9 @@ export default function Profile() {
 
   const accountCount = accounts?.length ?? 0;
   const activeDebts = (debts ?? []).filter(d => d.status === "pending").length;
-  const netWorth = dashboard?.netWorth ?? 0;
+  // Nullable so the profile snapshot doesn't render a fabricated £0 net worth
+  // for a user whose dashboard hasn't hydrated yet.
+  const netWorth = dashboard?.netWorth ?? null;
 
   const sortedByDate = [...txList].sort((a, b) => a.date.localeCompare(b.date));
   const firstTx = sortedByDate[0];
@@ -1103,7 +1105,7 @@ export default function Profile() {
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
         <div style={{ padding: "8px 14px 4px", ...MONO_LABEL }}>Portfolio Snapshot</div>
         <KpiStrip items={[
-          { label: "Net Worth", value: formatGbp(netWorth), accent: netWorth >= 0 ? "var(--ft-blue)" : "var(--ft-red)" },
+          { label: "Net Worth", value: netWorth == null ? "—" : formatGbp(netWorth), accent: netWorth == null ? "var(--ft-border2)" : netWorth >= 0 ? "var(--ft-blue)" : "var(--ft-red)" },
           { label: "Accounts", value: String(accountCount) },
           { label: "Transactions", value: String(txCount) },
           { label: "Active Debts", value: String(activeDebts), accent: activeDebts > 0 ? "var(--ft-amber)" : "var(--ft-dim)" },

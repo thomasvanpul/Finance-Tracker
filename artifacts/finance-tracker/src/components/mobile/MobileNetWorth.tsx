@@ -189,8 +189,8 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
             netWorth={netWorth}
             rows={byType[bucket]}
             note={
-              bucket === "investment" && (data?.portfolio.totalValueGbp ?? 0) > 0
-                ? `Includes ${nfmt(data?.portfolio.totalValueGbp ?? 0, { symbol: "£" })} in portfolio positions`
+              bucket === "investment" && data?.portfolio.totalValueGbp != null && data.portfolio.totalValueGbp > 0
+                ? `Includes ${nfmt(data.portfolio.totalValueGbp, { symbol: "£" })} in portfolio positions`
                 : undefined
             }
           />

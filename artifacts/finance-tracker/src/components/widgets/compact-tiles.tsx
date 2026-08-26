@@ -337,24 +337,30 @@ function CashFlowCol({ label, value, color, borderRight }: CashFlowColProps) {
 
 // net-worth: FULL WIDTH — hero card
 export function CompactNetWorth() {
-  const { data: dash } = useGetDashboard();
+  const { data: dash, isLoading } = useGetDashboard();
   const nw = dash?.netWorth ?? null;
-  const income = dash?.thisMonth?.income ?? 0;
-  const expenses = dash?.thisMonth?.expenses ?? 0;
-  const savingsRate = dash?.thisMonth?.savingsRate ?? 0;
-  const net = income - expenses;
+  // Three states, never conflated: loading → skeleton on the hero, unknown →
+  // "—", real 0 → "£0.00". A `?? 0` here would silently render £0 IN / £0 OUT
+  // during load and read as "you earn and spend nothing".
+  const income = dash?.thisMonth?.income ?? null;
+  const expenses = dash?.thisMonth?.expenses ?? null;
+  const savingsRate = dash?.thisMonth?.savingsRate ?? null;
+  const net = income != null && expenses != null ? income - expenses : null;
   const now = new Date();
   const monthLabel = now.toLocaleString("en-GB", { month: "long", year: "numeric" });
 
-  if (nw === null) return (
+  if (isLoading || nw === null) return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "3px solid var(--ft-accent)", padding: "20px 14px" }}>
       <span style={{ ...LABEL, opacity: 0.5 }}>NET WORTH</span>
+      <div style={{ ...MONO, fontSize: 34, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "-0.04em", lineHeight: 1, marginTop: 8 }}>
+        {isLoading ? "…" : "—"}
+      </div>
     </div>
   );
 
-  const netColor = net >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+  const netColor = net != null && net >= 0 ? "var(--ft-green)" : "var(--ft-red)";
   const nwColor = nw >= 0 ? "var(--ft-text)" : "var(--ft-red)";
-  const sign = net >= 0 ? "+" : "−";
+  const sign = net != null && net >= 0 ? "+" : "−";
 
   return (
     <Link href="/net-worth" style={{ display: "block" }}>
@@ -375,15 +381,17 @@ export function CompactNetWorth() {
             {formatGbp(nw)}
           </div>
           {/* MTD delta pill */}
-          {net !== 0 && (
+          {net != null && net !== 0 && (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: `color-mix(in srgb, ${netColor} 12%, transparent)`, border: `1px solid ${netColor}44`, padding: "3px 8px", marginBottom: 10 }}>
               <span style={{ ...MONO, fontSize: 10, fontWeight: 700, color: netColor, letterSpacing: "-0.01em" }}>
                 {sign}{formatGbp(Math.abs(net))} this month
               </span>
             </div>
           )}
-          {/* 3-stat strip: IN / OUT / SAVED */}
-          {income > 0 && (
+          {/* 3-stat strip: IN / OUT / SAVED. Requires all three fields to be
+              non-null; if any is missing, the strip stays hidden rather than
+              rendering "£0" as a placeholder. */}
+          {income != null && expenses != null && savingsRate != null && income > 0 && (
             <div style={{ display: "flex", borderTop: "1px solid var(--ft-border)", paddingTop: 10, gap: 0 }}>
               {[
                 { label: "IN", value: formatGbp(income), color: "var(--ft-green)" },
@@ -510,11 +518,14 @@ export function CompactCashFlow() {
   const income = dash?.thisMonth?.income ?? null;
   const expenses = dash?.thisMonth?.expenses ?? null;
   if (income === null) return <LoadingTile label="CASH FLOW" accent="var(--ft-green)" />;
-  const net = (income ?? 0) - (expenses ?? 0);
-  const netColor = net !== 0 ? (net >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)";
-  const sign = net >= 0 ? "+" : "";
-  const incomeColor = (income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-muted)";
-  const expensesColor = (expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-muted)";
+  // income is guaranteed above; expenses may still be null. Never re-default
+  // to 0 here — a "£0" OUT column next to a real IN column reads as "spent
+  // nothing", not "no data yet". Each column decides its own value.
+  const net = expenses != null ? income - expenses : null;
+  const netColor = net == null ? "var(--ft-dim)" : net !== 0 ? (net >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)";
+  const sign = net != null && net >= 0 ? "+" : "";
+  const incomeColor = income > 0 ? "var(--ft-green)" : "var(--ft-muted)";
+  const expensesColor = expenses == null ? "var(--ft-dim)" : expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)";
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-green)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 12, height: 34 }}>
@@ -522,9 +533,9 @@ export function CompactCashFlow() {
         <span style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>THIS MONTH</span>
       </div>
       <div style={{ display: "flex", alignItems: "stretch" }}>
-        <CashFlowCol label="IN"  value={formatGbp(income ?? 0)}      color={incomeColor}   borderRight={true} />
-        <CashFlowCol label="OUT" value={formatGbp(expenses ?? 0)}    color={expensesColor} borderRight={true} />
-        <CashFlowCol label="NET" value={`${sign}${formatGbp(net)}`}  color={netColor}      borderRight={false} />
+        <CashFlowCol label="IN"  value={formatGbp(income)}                            color={incomeColor}   borderRight={true} />
+        <CashFlowCol label="OUT" value={expenses == null ? "—" : formatGbp(expenses)} color={expensesColor} borderRight={true} />
+        <CashFlowCol label="NET" value={net == null ? "—" : `${sign}${formatGbp(net)}`} color={netColor}    borderRight={false} />
       </div>
     </div>
   );
@@ -934,12 +945,23 @@ export function CompactEmergencyFund() {
 
 // nw-milestones: HALF WIDTH
 export function CompactNwMilestones() {
-  const { data: dash } = useGetDashboard();
-  const nw = dash?.netWorth ?? 0;
+  const { data: dash, isLoading } = useGetDashboard();
+  const nw = dash?.netWorth ?? null;
   const MILESTONES = [1_000, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000];
+  const label = (n: number) => n >= 1_000_000 ? `£${n / 1_000_000}M` : n >= 1_000 ? `£${n / 1_000}K` : `£${n}`;
+  if (nw == null) {
+    return (
+      <Tile
+        label="MILESTONE"
+        accent="var(--ft-accent)"
+        href="/"
+        primary="—"
+        secondary={isLoading ? "Loading…" : "Waiting for net worth"}
+      />
+    );
+  }
   const next = MILESTONES.find(m => nw < m);
   const pct = next ? Math.min(100, (nw / next) * 100) : 100;
-  const label = (n: number) => n >= 1_000_000 ? `£${n / 1_000_000}M` : n >= 1_000 ? `£${n / 1_000}K` : `£${n}`;
   return (
     <Tile
       label="MILESTONE"

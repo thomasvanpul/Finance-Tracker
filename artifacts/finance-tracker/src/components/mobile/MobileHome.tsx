@@ -94,8 +94,13 @@ export function computeHoldings(d: HoldingsInput | null | undefined): Holdings {
   }
   // Portfolio positions live in a separate table from accounts. An investment
   // account itself holds the uninvested cash (part of buckets.investment via
-  // its 'investment' type); the position value is added here.
-  buckets.investment += d?.portfolio?.totalValueGbp ?? 0;
+  // its 'investment' type); the position value is added here. Skip when
+  // portfolio total is null — same argument as the FX-null skip on
+  // accountBreakdown above: adding a fabricated 0 shrinks the bucket the
+  // block-field visualisation is trying to show honestly.
+  if (d?.portfolio?.totalValueGbp != null) {
+    buckets.investment += d.portfolio.totalValueGbp;
+  }
   return buckets;
 }
 
@@ -303,7 +308,11 @@ export function MobileHome(_props: MobileHomeProps) {
                 letterSpacing="-0.035em"
                 numeric
               >
-                {nfmt(dashboard?.portfolio.totalValueGbp ?? 0)}
+                {dashboardLoading
+                  ? "…"
+                  : dashboard?.portfolio.totalValueGbp != null
+                    ? nfmt(dashboard.portfolio.totalValueGbp)
+                    : "—"}
               </Text>
             </HStack>
             {/* 24h delta. Uses dashData.portfolio.dayChange* from P1b.
@@ -545,9 +554,11 @@ export function MobileHome(_props: MobileHomeProps) {
                 : "—"
             }
             valueColor={
-              (dashboard?.portfolio.totalPlPercent ?? 0) >= 0
-                ? "var(--ft-green)"
-                : "var(--ft-red)"
+              dashboard?.portfolio.totalPlPercent == null
+                ? "var(--ft-dim)"
+                : dashboard.portfolio.totalPlPercent >= 0
+                  ? "var(--ft-green)"
+                  : "var(--ft-red)"
             }
             onClick={() => navigate("/portfolio")}
           />

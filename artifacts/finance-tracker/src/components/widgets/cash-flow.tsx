@@ -150,9 +150,12 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
   const avgIncome = avgNonNull(history.map(m => m.income));
   const avgExpense = avgNonNull(history.map(m => m.expenses));
 
+  // momDelta already handles null/undefined prev — passing `?? 0` here forces
+  // it onto a fabricated zero baseline and turns "no previous month" into
+  // "+∞% MoM" instead of the honest "—".
   const summaryItems = d ? [
-    { label: "Income",      value: `+${formatGbp(d.thisMonth.income)}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income ?? 0) },
-    { label: "Expenses",    value: `−${formatGbp(d.thisMonth.expenses)}`, color: d.thisMonth.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses ?? 0) },
+    { label: "Income",      value: `+${formatGbp(d.thisMonth.income)}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income) },
+    { label: "Expenses",    value: `−${formatGbp(d.thisMonth.expenses)}`, color: d.thisMonth.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses) },
     { label: "Net Savings", value: `${d.thisMonth.netSavings >= 0 ? "+" : ""}${formatGbp(d.thisMonth.netSavings)}`, color: d.thisMonth.netSavings !== 0 ? (d.thisMonth.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", delta: null },
   ] : [];
 

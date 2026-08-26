@@ -86,11 +86,14 @@ function buildMiniDecisions(
 ): MiniDecision[] {
   const out: MiniDecision[] = [];
   const totalCashGbp = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
-  const portfolioGbp = summary?.totalValueGbp ?? 0;
-  const totalWealth = totalCashGbp + portfolioGbp;
-  const cashRatio = totalWealth > 0 ? totalCashGbp / totalWealth : 1;
+  // Same argument as pages/decisions.tsx: if summary hasn't loaded,
+  // treating portfolio as £0 spuriously fires the idle-cash decision on
+  // partial data. Gate cash-vs-portfolio decisions on knowing both sides.
+  const portfolioGbp = summary?.totalValueGbp ?? null;
+  const totalWealth = portfolioGbp != null ? totalCashGbp + portfolioGbp : null;
+  const cashRatio = totalWealth != null && totalWealth > 0 ? totalCashGbp / totalWealth : null;
 
-  if (totalCashGbp > 5000 && cashRatio > 0.6) {
+  if (portfolioGbp != null && cashRatio != null && totalCashGbp > 5000 && cashRatio > 0.6) {
     const idleGbp = totalCashGbp - portfolioGbp * 0.4;
     const annualCost = Math.max(0, idleGbp) * 0.045;
     out.push({ id: "idle-cash", priority: idleGbp > 20000 ? "critical" : idleGbp > 10000 ? "high" : "medium", kind: "cash", title: `${formatGbp(totalCashGbp)} idle cash — ${formatGbp(annualCost)}/yr lost`, annualCost, href: "/accounts" });
@@ -98,7 +101,7 @@ function buildMiniDecisions(
   if (investments.length === 0 && totalCashGbp > 1000) {
     out.push({ id: "no-investments", priority: "high", kind: "portfolio", title: "Not invested yet", annualCost: totalCashGbp * 0.05, href: "/portfolio" });
   }
-  if (portfolioGbp > 500) {
+  if (portfolioGbp != null && portfolioGbp > 500) {
     // G10: concentration checks require a live price. Silently skipping
     // unpriced positions here is correct — they weren't in portfolioGbp
     // either, so a "% of portfolio" calc would divide by an unrelated total.
