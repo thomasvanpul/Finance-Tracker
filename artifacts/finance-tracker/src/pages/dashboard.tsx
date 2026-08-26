@@ -2179,30 +2179,6 @@ const OV_LABEL: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize
 const OV_SURFACE: React.CSSProperties = { background: "var(--ft-surface)", border: "1px solid var(--ft-border)" };
 const OV_CLIP: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, minWidth: 0 };
 
-const DEMO_ACCOUNTS = [
-  { id: "d1", name: "Barclays Current",    currency: "GBP", gbpEquivalent: 3842.15 },
-  { id: "d2", name: "Marcus Savings",      currency: "GBP", gbpEquivalent: 8120.00 },
-  { id: "d3", name: "Wise USD Jar",        currency: "USD", gbpEquivalent: 1298.40 },
-  { id: "d4", name: "Monzo Flex",          currency: "GBP", gbpEquivalent: -320.00 },
-  { id: "d5", name: "Chase Saver",         currency: "GBP", gbpEquivalent: 2400.00 },
-];
-
-const DEMO_TX_ROWS = [
-  { id: "t1", description: "Monthly Salary",    gbpValue: 3700,   type: "income",   date: "", category: "Income" },
-  { id: "t2", description: "Rent",              gbpValue: 1100,   type: "expense",  date: "", category: "Housing" },
-  { id: "t3", description: "Sainsbury's",       gbpValue: 67.4,   type: "expense",  date: "", category: "Groceries" },
-  { id: "t4", description: "TfL Contactless",   gbpValue: 4.8,    type: "expense",  date: "", category: "Transport" },
-  { id: "t5", description: "Pret A Manger",     gbpValue: 5.95,   type: "expense",  date: "", category: "Eating Out" },
-  { id: "t6", description: "Spotify Premium",   gbpValue: 11.99,  type: "expense",  date: "", category: "Subscriptions" },
-];
-
-const DEMO_BILLS = [
-  { id: "b1", description: "Council Tax",  gbpEquivalent: 142, dueDate: "2026-08-02", type: "expense" },
-  { id: "b2", description: "Sky Broadband",gbpEquivalent: 39.99, dueDate: "2026-08-05", type: "expense" },
-  { id: "b3", description: "Amazon Prime", gbpEquivalent: 8.99, dueDate: "2026-08-10", type: "expense" },
-  { id: "b4", description: "Gym Membership",gbpEquivalent: 29.99, dueDate: "2026-08-15", type: "expense" },
-];
-
 function DashboardOverview() {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const { data: dash } = useGetDashboard();
@@ -2212,47 +2188,39 @@ function DashboardOverview() {
   const { data: recentTxs = [] } = useListTransactions({ dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const { data: upcoming = [] } = useListUpcoming();
 
-  const isDemo = accounts.length === 0 && recentTxs.length === 0;
-
-  const netWorth = isDemo ? 15340.55 : (dash?.netWorth ?? null);
-  const income = isDemo ? 3700 : (dash?.thisMonth?.income ?? 0);
-  const expenses = isDemo ? 1514.14 : (dash?.thisMonth?.expenses ?? 0);
-  const savingsRate = isDemo ? 59 : (dash?.thisMonth?.savingsRate ?? 0);
+  // No isDemo/DEMO_* fabrications. netWorth null → "—" (existing honest
+  // path at :2270). income === 0 hides the this-month strip via existing
+  // `income > 0` gates. sortedAccounts/txRows/upcomingBills empty → each
+  // panel below already renders its own honest empty state.
+  const netWorth = dash?.netWorth ?? null;
+  const income = dash?.thisMonth?.income ?? 0;
+  const expenses = dash?.thisMonth?.expenses ?? 0;
+  const savingsRate = dash?.thisMonth?.savingsRate ?? 0;
   const net = income - expenses;
   const netColor = net > 0 ? "var(--ft-green)" : net < 0 ? "var(--ft-red)" : "var(--ft-muted)";
 
-  const sortedAccounts = useMemo(() =>
-    isDemo
-      ? DEMO_ACCOUNTS
-      // Unconvertible accounts sort to the bottom (-Infinity) of the
-      // desc sort — the top-6 slice still surfaces the largest real
-      // holdings, without shuffling.
-      : [...accounts].sort((a, b) => (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity)).slice(0, 6),
-    [accounts, isDemo]
+  // Unconvertible accounts sort to the bottom (-Infinity) of the desc
+  // sort — the top-6 slice still surfaces the largest real holdings,
+  // without shuffling.
+  const sortedAccounts = useMemo(
+    () => [...accounts].sort((a, b) => (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity)).slice(0, 6),
+    [accounts]
   );
-  const txRows = useMemo(() => (isDemo ? DEMO_TX_ROWS : recentTxs.slice(0, 6)) as Array<{ id: string | number; description: string; gbpValue: number | null; type: string; date: string; category?: string }>, [recentTxs, isDemo]);
-  const upcomingBills = useMemo(() =>
-    isDemo
-      ? DEMO_BILLS
-      : (upcoming as Array<{ id: string | number; description: string; gbpEquivalent: number; dueDate: string; type: string }>)
-          .filter(u => u.type === "expense")
-          .slice(0, 4),
-    [upcoming, isDemo]
+  const txRows = useMemo(
+    () => recentTxs.slice(0, 6) as Array<{ id: string | number; description: string; gbpValue: number | null; type: string; date: string; category?: string }>,
+    [recentTxs]
+  );
+  const upcomingBills = useMemo(
+    () => (upcoming as Array<{ id: string | number; description: string; gbpEquivalent: number; dueDate: string; type: string }>)
+      .filter(u => u.type === "expense")
+      .slice(0, 4),
+    [upcoming]
   );
 
   const C = (color: string) => ({ color });
 
   return (
     <VStack gap={8} marginTop={8}>
-
-      {/* Demo mode banner */}
-      {isDemo && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 12px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-amber)" }}>
-          <Text as="span" mono size={9} weight={700} color="var(--ft-amber)" letterSpacing="0.1em">DEMO</Text>
-          <Text as="span" mono size={9} color="var(--ft-dim)">Sample data — add accounts and transactions to see your real dashboard</Text>
-          <a href="/import" style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", fontWeight: 700, textDecoration: "none", letterSpacing: "0.06em", flexShrink: 0 }}>IMPORT →</a>
-        </div>
-      )}
 
       {/* ── Hero: Net Worth ── */}
       <Link href="/net-worth">

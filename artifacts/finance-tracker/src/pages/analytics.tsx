@@ -115,6 +115,21 @@ function PanelHeader({ title, right }: { title: string; right?: React.ReactNode 
   );
 }
 
+// Not-enough-data empty state that keeps the panel's chrome visible so a new
+// user can still see the capability. Never render numbers, bars, rows or dates
+// in this slot — the whole point is to replace fabricated content with an
+// honest sentence about what the panel is waiting for.
+function PanelEmpty({ title, message }: { title: string; message: string }) {
+  return (
+    <div style={panelStyle}>
+      <PanelHeader title={title} />
+      <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.02em", lineHeight: 1.6 }}>
+        {message}
+      </div>
+    </div>
+  );
+}
+
 // ─── sub-components ──────────────────────────────────────────────────────────
 
 // ─── This-month split data row ────────────────────────────────────────────────
@@ -469,72 +484,6 @@ function AnnotationRow({ annotation: a, index: ai, onDelete }: AnnotationRowProp
 }
 
 interface Tx { id: number; date: string; description: string; type: string; category: string; gbpValue: number; accountName: string; currency: string; nativeAmount: number; }
-
-// ─── Demo transactions (shown when no real data exists) ──────────────────────
-
-function makeDemoTxs(): Tx[] {
-  const rows: Array<[number, string, string, string, number]> = [
-    // id, type, category, description, gbpValue
-    // ── month 0 (current) ──
-    [1,  "income",  "Salary",        "Monthly Salary",       3700],
-    [2,  "expense", "Housing",       "Rent",                 1100],
-    [3,  "expense", "Groceries",     "Sainsbury's",           92],
-    [4,  "expense", "Groceries",     "Tesco",                 67],
-    [5,  "expense", "Transport",     "TfL Monthly",           84],
-    [6,  "expense", "Transport",     "Fuel",                  65],
-    [7,  "expense", "Eating Out",    "Wagamama",              34],
-    [8,  "expense", "Eating Out",    "Pret A Manger",         18],
-    [9,  "expense", "Subscriptions", "Netflix",               17],
-    [10, "expense", "Subscriptions", "Spotify",               11],
-    [11, "expense", "Subscriptions", "iCloud",                 3],
-    [12, "expense", "Healthcare",    "Pharmacy",              12],
-    [13, "expense", "Recreation",    "Cinema",                28],
-    [14, "expense", "Clothing",      "ASOS",                  54],
-    [15, "expense", "Eating Out",    "JustEat",               22],
-    [16, "expense", "Groceries",     "Lidl",                  41],
-    [17, "expense", "Transport",     "National Rail",         38],
-    // ── month 1 ──
-    [18, "income",  "Salary",        "Monthly Salary",       3700],
-    [19, "expense", "Housing",       "Rent",                 1100],
-    [20, "expense", "Groceries",     "Sainsbury's",           88],
-    [21, "expense", "Groceries",     "Tesco",                 73],
-    [22, "expense", "Transport",     "TfL Monthly",           84],
-    [23, "expense", "Transport",     "Fuel",                  71],
-    [24, "expense", "Eating Out",    "Pho",                   29],
-    [25, "expense", "Subscriptions", "Netflix",               17],
-    [26, "expense", "Subscriptions", "Spotify",               11],
-    [27, "expense", "Healthcare",    "Dental",                85],
-    [28, "expense", "Recreation",    "Gym",                   40],
-    [29, "expense", "Recreation",    "Steam",                 19],
-    [30, "expense", "Eating Out",    "Costa",                 12],
-    [31, "expense", "Groceries",     "Lidl",                  38],
-    // ── month 2 ──
-    [32, "income",  "Salary",        "Monthly Salary",       3700],
-    [33, "income",  "Freelance",     "Side Project",          450],
-    [34, "expense", "Housing",       "Rent",                 1100],
-    [35, "expense", "Groceries",     "Sainsbury's",           94],
-    [36, "expense", "Groceries",     "Waitrose",              55],
-    [37, "expense", "Transport",     "TfL Monthly",           84],
-    [38, "expense", "Eating Out",    "Dishoom",               48],
-    [39, "expense", "Subscriptions", "Netflix",               17],
-    [40, "expense", "Subscriptions", "Spotify",               11],
-    [41, "expense", "Subscriptions", "Adobe",                 55],
-    [42, "expense", "Healthcare",    "Pharmacy",               8],
-    [43, "expense", "Clothing",      "Zara",                  79],
-    [44, "expense", "Recreation",    "Gym",                   40],
-    [45, "expense", "Eating Out",    "Deliveroo",             31],
-  ];
-
-  const now = new Date();
-  return rows.map(([id, type, category, description, gbpValue]) => {
-    const monthOffset = id <= 17 ? 0 : id <= 31 ? 1 : 2;
-    const d = new Date(now.getFullYear(), now.getMonth() - monthOffset, 5 + (id % 20));
-    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    return { id, date, description, type, category, gbpValue, accountName: "Demo Bank", currency: "GBP", nativeAmount: gbpValue };
-  });
-}
-
-const DEMO_TXS = makeDemoTxs();
 
 // ─── Category Drill-Through Drawer ───────────────────────────────────────────
 
@@ -2245,14 +2194,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
 
   // Waterfall is meaningless without income to split against.
   if (income === 0) {
-    return (
-      <div style={panelStyle}>
-        <PanelHeader title="Cash Flow Waterfall" />
-        <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.02em", lineHeight: 1.6 }}>
-          Cash flow waterfall needs at least one income transaction this month. Log or import income and the split fills in.
-        </div>
-      </div>
-    );
+    return <PanelEmpty title="Cash Flow Waterfall" message="Cash flow waterfall needs at least one income transaction this month. Log or import income and the split fills in." />;
   }
 
   const bucketAmounts: Record<string, number> = {};
@@ -2261,14 +2203,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
     bucketAmounts[cat] = (bucketAmounts[cat] || 0) + Math.abs(tx.gbpValue);
   }
 
-  const useMock = Object.keys(bucketAmounts).length < 2;
-  const mockBuckets: [string, number][] = [
-    ["Housing",       800], ["Groceries", 280], ["Transport", 190],
-    ["Eating Out",    145], ["Subscriptions", 95], ["Other", 190],
-  ];
-  const activeBuckets: [string, number][] = useMock
-    ? mockBuckets
-    : Object.entries(bucketAmounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const activeBuckets: [string, number][] = Object.entries(bucketAmounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
   const totalExp = activeBuckets.reduce((s, [, v]) => s + v, 0);
   const savings  = income - totalExp;
@@ -2300,7 +2235,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
         title="Cash Flow Waterfall"
         right={
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: savingsColor, fontWeight: 700, letterSpacing: "0.06em" }}>
-            {savingsRate >= 0 ? "+" : ""}{savingsRate.toFixed(0)}% saved · {useMock ? "demo data" : "this month"}
+            {savingsRate >= 0 ? "+" : ""}{savingsRate.toFixed(0)}% saved · this month
           </span>
         }
       />
@@ -2377,27 +2312,20 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
       catTotals[raw] = (catTotals[raw] || 0) + Math.abs(tx.gbpValue);
     }
 
-    const usesMock = Object.keys(catTotals).length < 2;
-
-    const mockSpend: Record<string, number> = {
-      housing: 2250, groceries: 870, transport: 540, "eating out": 390,
-      recreation: 420, clothing: 160, subscriptions: 269, healthcare: 45,
-    };
-
     return UK_BENCHMARKS.map(b => {
       let actual = 0;
-      if (usesMock) {
-        actual = (mockSpend[b.mapKeys[0]] ?? b.monthly * 2.8) / 3;
-      } else {
-        for (const key of b.mapKeys) {
-          actual += catTotals[key] ?? 0;
-        }
-        actual /= 3; // monthly avg over 3 months
+      for (const key of b.mapKeys) {
+        actual += catTotals[key] ?? 0;
       }
+      actual /= 3; // monthly avg over 3 months
       const diff = actual > 0 ? Math.round(((actual - b.monthly) / b.monthly) * 100) : null;
-      return { cat: b.cat, actual: Math.round(actual), benchmark: b.monthly, diff, hasMock: usesMock };
+      return { cat: b.cat, actual: Math.round(actual), benchmark: b.monthly, diff };
     }).filter(r => r.actual > 0);
   }, [expenses]);
+
+  if (rows.length === 0) {
+    return <PanelEmpty title="Category Benchmark · UK Avg" message="Benchmarking needs 3 months of transactions across at least one recognised category before it can compare you to the ONS Family Spending 2022/23 dataset." />;
+  }
 
   const maxVal = Math.max(...rows.flatMap(r => [r.actual, r.benchmark]));
 
@@ -2468,7 +2396,7 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
           <Text as="span" mono size={7.5} color="var(--ft-dim)">over avg</Text>
         </div>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>
-          {rows[0]?.hasMock ? "demo data — connect accounts to see real comparison" : "3-month rolling avg"}
+          3-month rolling avg
         </span>
       </div>
     </div>
@@ -2477,11 +2405,9 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
 
 // ─── Spending Anomaly Detector ───────────────────────────────────────────────
 
-function SpendingAnomalies({ expenses, isDemo }: { expenses: Tx[]; isDemo: boolean }) {
-  const rows = useMemo(() => {
+function SpendingAnomalies({ expenses }: { expenses: Tx[] }) {
+  const anomalies = useMemo(() => {
     const m0 = monthsAgoStr(0);
-    const m1 = monthsAgoStr(1);
-    const m2 = monthsAgoStr(2);
     const m3 = monthsAgoStr(3);
 
     // Build 3-month category average (months 1-3, not current)
@@ -2495,19 +2421,11 @@ function SpendingAnomalies({ expenses, isDemo }: { expenses: Tx[]; isDemo: boole
       }
     }
 
-    // Current month transactions with z-score style outlier detection
+    // Current month transactions with z-score style outlier detection.
+    // Requires at least 3 tx this month to have any statistical meaning —
+    // fewer and we honestly say so rather than fabricating headline entries.
     const thisMonth = expenses.filter(t => t.date.startsWith(m0));
-    const useMock = isDemo || thisMonth.length < 3;
-
-    const mockAnomalies = [
-      { description: "Weekend in Edinburgh", category: "Travel", amount: 312, catAvg: 54, sigma: 4.8, date: m0 + "-06" },
-      { description: "IKEA furniture run", category: "Home",     amount: 228, catAvg: 0,  sigma: 9.9, date: m0 + "-14" },
-      { description: "Michelin restaurant", category: "Eating Out", amount: 147, catAvg: 31, sigma: 3.8, date: m0 + "-21" },
-      { description: "Annual gym membership", category: "Recreation", amount: 480, catAvg: 40, sigma: 5.5, date: m0 + "-03" },
-      { description: "Emergency dentist", category: "Healthcare", amount: 195, catAvg: 0, sigma: 9.9, date: m0 + "-18" },
-    ];
-
-    if (useMock) return { rows: mockAnomalies, isMock: true };
+    if (thisMonth.length < 3) return null;
 
     const catStats: Record<string, { mean: number; std: number }> = {};
     for (const [cat, vals] of Object.entries(baseline)) {
@@ -2516,7 +2434,7 @@ function SpendingAnomalies({ expenses, isDemo }: { expenses: Tx[]; isDemo: boole
       catStats[cat] = { mean, std };
     }
 
-    const anomalies = thisMonth
+    return thisMonth
       .map(tx => {
         const s = catStats[tx.category];
         if (!s || s.std < 1) return null;
@@ -2527,13 +2445,14 @@ function SpendingAnomalies({ expenses, isDemo }: { expenses: Tx[]; isDemo: boole
       .filter(Boolean)
       .sort((a, b) => (b!.sigma - a!.sigma))
       .slice(0, 8) as { description: string; category: string; amount: number; catAvg: number; sigma: number; date: string }[];
-
-    return { rows: anomalies, isMock: false };
   }, [expenses]);
 
-  const { rows: anomalies, isMock } = rows;
-
-  if (anomalies.length === 0) return null;
+  if (anomalies === null) {
+    return <PanelEmpty title="Spending Anomalies" message="Anomaly detection needs at least 3 transactions this month plus a 3-month baseline. Log or import more to unlock outlier flags." />;
+  }
+  if (anomalies.length === 0) {
+    return <PanelEmpty title="Spending Anomalies" message="No transactions this month are more than 2σ above your 3-month category baseline. Nothing unusual to flag." />;
+  }
 
   return (
     <div style={panelStyle}>
@@ -2541,7 +2460,7 @@ function SpendingAnomalies({ expenses, isDemo }: { expenses: Tx[]; isDemo: boole
         title="Spending Anomalies"
         right={
           <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
-            {isMock ? "demo data" : "vs 3-month category baseline · current month"}
+            vs 3-month category baseline · current month
           </Text>
         }
       />
@@ -2590,18 +2509,6 @@ function SpendingAnomalies({ expenses, isDemo }: { expenses: Tx[]; isDemo: boole
 function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
   const data = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => monthsAgoStr(5 - i));
-    const useMock = allTxs.length < 10;
-
-    if (useMock) {
-      const mockBase = 14200;
-      return months.map((ym, i) => {
-        const inc = 3700 + (i % 3 === 0 ? 450 : 0);
-        const exp = 1100 + 280 + 190 + 74 + 31 + 47 + 35;
-        const saved = inc - exp;
-        return { month: ym.slice(5), income: inc, expenses: exp, saved, cumulative: mockBase + saved * (i + 1) };
-      });
-    }
-
     let cum = 0;
     return months.map(ym => {
       const txs = allTxs.filter(t => t.date.startsWith(ym));
@@ -2612,6 +2519,12 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
       return { month: ym.slice(5), income, expenses, saved, cumulative: cum };
     });
   }, [allTxs]);
+
+  // Six empty bars with a fake cumulative line would tell the user nothing
+  // honest about their monthly delta. Wait for real activity.
+  if (allTxs.length === 0) {
+    return <PanelEmpty title="Monthly Net Delta · 6M" message="Monthly income/expense deltas appear here once transactions are logged or imported." />;
+  }
 
   const maxVal = Math.max(...data.map(d => Math.max(d.income, d.expenses)));
 
@@ -2680,20 +2593,8 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
       );
     }
 
-    const useMock = expenses.length < 10;
-    const mockHistory: Record<string, [number, number, number]> = {
-      Housing:       [1100, 1100, 1100],
-      Groceries:     [199,  183,  200],
-      Transport:     [155,  187,  142],
-      "Eating Out":  [61,   65,   74],
-      Subscriptions: [45,   45,   31],
-      Recreation:    [59,   42,   28],
-      Clothing:      [79,   54,   0],
-      Healthcare:    [8,    85,   12],
-    };
-
     return cats.map(cat => {
-      const history = useMock ? mockHistory[cat] ?? [0, 0, 0] : catMonths[cat];
+      const history = catMonths[cat];
       const m3 = history[0], m2 = history[1], m1 = history[2];
       const avg = (m3 + m2 + m1) / 3;
       // weighted forecast: recent months weighted more
@@ -2703,6 +2604,10 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
       return { cat, m3, m2, m1, avg: Math.round(avg), forecast: Math.round(forecast), trend, changePct };
     }).filter(r => r.avg > 0);
   }, [expenses]);
+
+  if (rows.length === 0) {
+    return <PanelEmpty title="Category Forecast · Next Month" message="Next-month forecasts need at least one recognised category with spend over the last 3 months." />;
+  }
 
   const maxVal = Math.max(...rows.map(r => Math.max(r.m3, r.m2, r.m1, r.forecast)));
 
@@ -2772,10 +2677,7 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
       { label: "£250+",    min: 250, max: Infinity },
     ];
 
-    const useMock = expenses.length < 10;
-    const mockAmounts = [18, 43, 67, 11, 8, 2, 33, 74, 22, 95, 1100, 310, 88, 12, 45, 66, 28, 14, 41, 55, 17, 85, 3, 195, 39, 480];
-
-    const amounts = useMock ? mockAmounts : expenses.map(t => t.gbpValue);
+    const amounts = expenses.map(t => t.gbpValue);
 
     return buckets.map(b => {
       const items = amounts.filter(a => a >= b.min && a < b.max);
@@ -2783,6 +2685,10 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
       return { label: b.label, count: items.length, total, avg: items.length > 0 ? total / items.length : 0 };
     });
   }, [expenses]);
+
+  if (expenses.length === 0) {
+    return <PanelEmpty title="Transaction Size Distribution" message="A distribution histogram needs real expense transactions. Import or log some and the bucket counts fill in." />;
+  }
 
   const maxCount = Math.max(...data.map(d => d.count));
 
@@ -3051,19 +2957,9 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
 // ─── Financial Runway ────────────────────────────────────────────────────────
 
 function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
+  const hasEnoughData = allTxs.filter(t => t.type === "expense").length >= 5;
   const data = useMemo(() => {
-    const useMock = allTxs.filter(t => t.type === "expense").length < 5;
-    if (useMock) {
-      return {
-        monthlyBurn: 2185,
-        netSavings: 8500,
-        runwayMonths: 3.9,
-        monthlyIncome: 3700,
-        savingsRate: 40.9,
-        trend: [1200, 980, 1450, 870, 2100, 1380, 1950, 1100, 1750, 1280, 1620, 2185],
-      };
-    }
-    const now = new Date();
+    if (!hasEnoughData) return null;
     const months: number[] = [];
     for (let i = 0; i < 6; i++) {
       const ym = monthsAgoStr(i);
@@ -3085,7 +2981,11 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
       savingsRate,
       trend: months.reverse(),
     };
-  }, [allTxs]);
+  }, [allTxs, hasEnoughData]);
+
+  if (!data) {
+    return <PanelEmpty title="Financial Runway" message="Runway needs at least 5 expense transactions to compute a meaningful monthly burn rate." />;
+  }
 
   const { runwayMonths, monthlyBurn, netSavings, monthlyIncome, savingsRate, trend } = data;
   const isInfinite = !isFinite(runwayMonths);
@@ -3176,18 +3076,14 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
 function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
   const [rate, setRate] = useState(5);
 
+  const hasIncome = allTxs.some(t => t.type === "income");
   const data = useMemo(() => {
-    const useMock = allTxs.filter(t => t.type === "income").length === 0;
-    const monthlyIncome = useMock ? 3700 : (() => {
-      const inc = allTxs.filter(t => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-      const months = Math.max(1, new Set(allTxs.map(t => getYYYYMM(t.date))).size);
-      return inc / months;
-    })();
-    const monthlyExpenses = useMock ? 2185 : (() => {
-      const exp = allTxs.filter(t => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
-      const months = Math.max(1, new Set(allTxs.map(t => getYYYYMM(t.date))).size);
-      return exp / months;
-    })();
+    if (!hasIncome) return null;
+    const inc = allTxs.filter(t => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
+    const months = Math.max(1, new Set(allTxs.map(t => getYYYYMM(t.date))).size);
+    const monthlyIncome = inc / months;
+    const exp = allTxs.filter(t => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+    const monthlyExpenses = exp / months;
     const monthlySavings = Math.max(0, monthlyIncome - monthlyExpenses);
     const r = rate / 100 / 12;
     const points: Array<{ year: number; conservative: number; current: number; optimistic: number }> = [];
@@ -3202,7 +3098,11 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
       });
     }
     return { points, monthlySavings };
-  }, [allTxs, rate]);
+  }, [allTxs, rate, hasIncome]);
+
+  if (!data) {
+    return <PanelEmpty title="Savings Projection" message="Compound projection needs at least one income transaction to establish a monthly savings rate." />;
+  }
 
   const { points, monthlySavings } = data;
   const maxVal = Math.max(...points.map(p => p.optimistic), 1);
@@ -3277,21 +3177,6 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
 
 function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
   const data = useMemo(() => {
-    const useMock = allTxs.filter(t => t.type === "income").length === 0;
-    if (useMock) {
-      const inc = 3700;
-      const cats = [
-        { category: "Housing",       spend: 1100, color: "var(--ft-blue)" },
-        { category: "Groceries",     spend: 280,  color: "var(--ft-green)" },
-        { category: "Transport",     spend: 95,   color: "var(--ft-cyan)" },
-        { category: "Eating Out",    spend: 165,  color: "var(--ft-amber)" },
-        { category: "Subscriptions", spend: 42,   color: "var(--ft-accent)" },
-        { category: "Health",        spend: 55,   color: "var(--ft-red)" },
-        { category: "Other",         spend: 448,  color: "var(--ft-muted)" },
-        { category: "Savings",       spend: 1515, color: "var(--ft-green)", isSavings: true },
-      ];
-      return { cats: cats.map(c => ({ ...c, pct: (c.spend / inc) * 100 })), totalIncome: inc };
-    }
     const totalIncome = allTxs.filter(t => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
     if (totalIncome === 0) return { cats: [], totalIncome: 0 };
     const months = Math.max(1, new Set(allTxs.map(t => getYYYYMM(t.date))).size);
@@ -3313,7 +3198,9 @@ function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
   const { cats, totalIncome } = data;
   const mono: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
 
-  if (cats.length === 0) return null;
+  if (cats.length === 0) {
+    return <PanelEmpty title="Paycheck Allocation" message="Allocation needs at least one income transaction to work out where each pound goes." />;
+  }
 
   return (
     <div style={panelStyle}>
@@ -3397,36 +3284,21 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
   }, [allTxs]);
 
   if (!hasEnoughData) {
-    return (
-      <div style={panelStyle}>
-        <PanelHeader title="FIRE Tracker" />
-        <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.02em", lineHeight: 1.6 }}>
-          FIRE calculation needs at least one income and one expense transaction in the last 3 months.
-        </div>
-      </div>
-    );
+    return <PanelEmpty title="FIRE Tracker" message="FIRE calculation needs at least one income and one expense transaction in the last 3 months." />;
   }
 
-  const useMock = allTxs.length < 10;
-  const displayNW = useMock ? 15340 : currentNW;
-  const displayFI = useMock ? 540000 : fiNumber;
-  const displayPct = useMock ? (15340 / 540000) * 100 : progressPct;
-  const displayYears = useMock ? 22.4 : yearsToFI;
-  const displayMonthlyBurn = useMock ? 1800 : monthlyBurn;
-  const displayContrib = useMock ? 1515 : monthlyContrib;
+  const displayNW = currentNW;
+  const displayFI = fiNumber;
+  const displayPct = progressPct;
+  const displayYears = yearsToFI;
+  const displayMonthlyBurn = monthlyBurn;
+  const displayContrib = monthlyContrib;
 
   const gaugeColor = displayPct >= 75 ? "var(--ft-green)" : displayPct >= 40 ? "var(--ft-amber)" : "var(--ft-accent)";
 
   return (
     <div style={panelStyle}>
-      <PanelHeader
-        title="FIRE Tracker"
-        right={
-          useMock
-            ? <span style={{ ...mono, fontSize: 9, color: "var(--ft-amber)" }}>demo data</span>
-            : null
-        }
-      />
+      <PanelHeader title="FIRE Tracker" />
       <VStack gap={16} padding={isMobile ? "14px 12px" : "16px 16px"}>
 
         {/* Progress arc + FI number */}
@@ -3509,9 +3381,7 @@ export default function Analytics() {
     saveAnnotations(next);
   }, []);
 
-  const rawTxs = (txs ?? []) as Tx[];
-  const isDemo = rawTxs.length === 0;
-  const allTxs = isDemo ? DEMO_TXS : rawTxs;
+  const allTxs = (txs ?? []) as Tx[];
   const expenses = useMemo(() => allTxs.filter(t => t.type === "expense"), [allTxs]);
   const budgetTotal = useMemo(
     () => (rawBudgets as Array<{ monthlyLimit?: number }>).reduce((s, b) => s + (b.monthlyLimit ?? 0), 0),
@@ -3589,15 +3459,6 @@ export default function Analytics() {
           </div>
         );
       })()}
-
-      {/* ── Demo mode banner ── */}
-      {isDemo && (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "5px 14px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
-          <Text as="span" weight={700} color="var(--ft-amber)">DEMO MODE</Text>
-          <span>Showing sample data · import transactions to see your real analytics</span>
-          <a href="/import" style={{ marginLeft: "auto", color: "var(--ft-accent)", textDecoration: "none", fontWeight: 700, flexShrink: 0 }}>IMPORT →</a>
-        </div>
-      )}
 
       {/* ── Tab navigation ── */}
       <div
@@ -3690,7 +3551,7 @@ export default function Analytics() {
           <CalendarHeatmap expenses={expenses} />
           <TopMerchants expenses={expenses} />
           <CategoryBenchmark expenses={expenses} />
-          <SpendingAnomalies expenses={expenses} isDemo={isDemo} />
+          <SpendingAnomalies expenses={expenses} />
           <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
             <BiggestTransactions expenses={expenses} />
             <RecurringVsOneOff expenses={expenses} />
