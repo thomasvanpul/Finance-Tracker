@@ -16,8 +16,8 @@ import { Onboarding } from "@/components/onboarding";
 import { isOnboardingComplete, LS_ONBOARDING_FOLLOWUP_KEY } from "@/lib/persona";
 import { hydratePersonaFromServer } from "@/lib/persona-sync";
 import NotFound from "@/pages/not-found";
-import { useIsMobile, MOBILE_BREAKPOINT } from "@/hooks/use-mobile";
-import { MobileApp, MOBILE_ROUTES } from "@/components/mobile/MobileApp";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { PhoneShell } from "@/components/phone/PhoneShell";
 import { PageTransitionOverlay } from "@/components/page-transition";
 
 // Dashboard is eager — it is the landing route; a lazy round-trip here buys nothing.
@@ -90,26 +90,19 @@ function DefaultPageRedirector() {
     if (followUp) {
       localStorage.removeItem(LS_ONBOARDING_FOLLOWUP_KEY);
       if (window.location.pathname === (import.meta.env.BASE_URL.replace(/\/$/, "") || "/")) {
-        const isMobileFu = window.innerWidth < MOBILE_BREAKPOINT;
-        if (!isMobileFu || MOBILE_ROUTES.has(followUp)) {
-          sessionStorage.setItem("ft-active-default-page", followUp);
-          navigate(followUp);
-          return;
-        }
+        sessionStorage.setItem("ft-active-default-page", followUp);
+        navigate(followUp);
+        return;
       }
     }
     const page = localStorage.getItem("nr-default-page");
     if (!page || page === "/") return;
     if (window.location.pathname !== (import.meta.env.BASE_URL.replace(/\/$/, "") || "/")) return;
-    // useIsMobile() is undefined on first render (its own effect hasn't run
-    // yet), so we read the viewport directly. Prevents a mobile user's
-    // stored default (e.g. /fire) from dumping them onto a bare desktop
-    // page with no mobile shell on cold open.
-    const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
-    if (isMobile && !MOBILE_ROUTES.has(page)) return;
-    // Remember the current default so an in-session persona flip
-    // (below) can tell "user is on their old default" from "user
-    // navigated somewhere on purpose".
+    // PhoneShell owns 100% of route resolution at phone widths, so the
+    // "is this URL safe on mobile?" gate the old MOBILE_ROUTES set
+    // enforced is no longer needed — every URL App.tsx knows about has a
+    // phone-shell entry, either as a tab/legacy-alias or as a wrapped
+    // directory item (see components/phone/PhoneShell.tsx).
     sessionStorage.setItem("ft-active-default-page", page);
     navigate(page);
   }, [navigate]);
@@ -130,8 +123,6 @@ function DefaultPageRedirector() {
       const onOldDefault = oldDefault != null && here === oldDefault;
       if (!onRoot && !onOldDefault) return;
       if (here === newDefault) return; // already there
-      const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
-      if (isMobile && !MOBILE_ROUTES.has(newDefault)) return;
       sessionStorage.setItem("ft-active-default-page", newDefault);
       navigate(newDefault);
     };
@@ -199,11 +190,11 @@ function Router() {
     document.title = PAGE_TITLES[location] ?? "Numeris";
   }, [location]);
 
-  // Mobile shell owns the routes in MOBILE_ROUTES (derived from
-  // SCREEN_TO_PATH in MobileApp.tsx). Anything else — MobileMore hrefs
-  // to /fire, /tax etc., or /transactions (excluded so deep links keep
-  // desktop swipe-delete) — falls through to the desktop Layout below.
-  if (isMobile && MOBILE_ROUTES.has(location)) return <MobileApp />;
+  // PhoneShell owns 100% of route resolution at phone widths. There is
+  // no MOBILE_ROUTES gate — every route in the desktop <Switch> below
+  // has a matching entry inside PhoneShell (tab, tab alias, or wrapped
+  // directory item). See docs/BACKLOG.md § D5 for the shell invariant.
+  if (isMobile) return <PhoneShell />;
 
   return (
     <Layout>
