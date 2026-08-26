@@ -155,7 +155,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1601, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 449, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 236, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 702, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 729, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
   { path: "artifacts/finance-tracker/src/pages/year-review.tsx", line: 1270, reason: "chart max denominator: empty topCats → 1 to avoid /0" },
 
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the
@@ -164,8 +164,14 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/lib/learn-xp.ts", line: 28, reason: "XP progress cap: no next tier → 100% (at cap)" },
   { path: "artifacts/finance-tracker/src/pages/analytics-helpers.ts", line: 36, reason: "pct-change fallback: curr === 0 branch returns 0; else 100 (∞ growth from 0 baseline)" },
   { path: "artifacts/finance-tracker/src/pages/fire.tsx", line: 418, reason: "coast-FIRE progress cap: coastNeeded <= 0 → 100% (already coasted)" },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 285, reason: "target-income progress: no target → 100% (target undefined)" },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 389, reason: "target-income progress cap: no target → 100% (target undefined)" },
+  // pension.tsx:285 and :389 were the "100% bar when target undefined"
+  // sites — a fabricated goal-completion signal for a user who set no
+  // target. Fixed 26-Aug: targetMonthlyIncome nullable end-to-end
+  // (PensionInputs type + loadPension), KpiBar KPI cell shows "NO TARGET"
+  // in muted colour, PensionHealthBlock short-circuits to a "Target not
+  // set" empty state. Root cause (fabricated £2,500/mo defaults at
+  // pension.tsx :91 and :103) removed at the source rather than
+  // caught downstream.
 
   // UI dimensions, font sizes, opacities, layout constants — pixel/percent
   // values in JSX-style variable initializers. Non-currency.
@@ -208,6 +214,21 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   //     surfaces APR-less debts in a separate "APR needed" panel with an
   //     empty input and "no interest cost" placeholder. Payoff strategy
   //     never runs against an invented rate.
+
+  // ── PENDING REVIEW · surfaced by widening Shape B to non-style PropertyAssignments 26-Aug ──
+  // The PropertyAssignment exclusion in isInValueSlot was narrowed to
+  // style/layout keys and JSX-attribute contexts (its whole purpose was
+  // to skip `{ opacity: hover ? 0.5 : 1 }`-style noise). Widening it
+  // caught the intended target (pension.tsx :91 `targetMonthlyIncome ??
+  // 2500`, now fixed) plus the three below. These are pension form
+  // defaults for a fresh install; unlike targetMonthlyIncome they
+  // don't invent a financial GOAL, they invent inputs that flow into
+  // the projection. Not deciding by exclusion — allowlisted here as
+  // "pending operator decision" so the lock stays green while the
+  // discussion happens.
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 92, reason: "PENDING REVIEW · currentAge fresh-install default (30). User's own age; they'll adjust immediately on first use. Feeds yearsToRetirement." },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 93, reason: "PENDING REVIEW · retirementAge fresh-install default (67 = UK state pension age). Almost every UK user uses this ±2yr. Feeds yearsToRetirement." },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 94, reason: "PENDING REVIEW · growthRate fresh-install default (7% annual). Closer to targetMonthlyIncome shape — the user may not have a specific view and the 7% assumption then silently drives every projection number." },
 ];
 
 // ── Scanner ────────────────────────────────────────────────────────────────
@@ -242,10 +263,46 @@ function walk(dir: string): string[] {
   return out;
 }
 
+// Style-shaped property keys — pension.tsx:91 was invisible to Shape B
+// because the earlier universal PropertyAssignment exclusion (to keep
+// JSX styling noise out) also hid every fabricated financial default
+// living in a defaults/config/initial-state object. Defaults naturally
+// live in object literals, so the exclusion had to narrow to what is
+// actually CSS/layout, not "any property assignment".
+//
+// The pattern here is: exact-name match for well-known one-word style
+// props, plus a prefix match for the boring compound families (padding*,
+// margin*, border*, font*, text*, min*/max* dimensions, stroke*, dash*,
+// offset*). A property whose name doesn't hit this vocabulary is
+// treated as a value slot — the same as any variable initializer.
+const STYLE_KEY_EXACT = new Set<string>([
+  "opacity", "top", "left", "right", "bottom", "gap", "zIndex",
+  "transform", "transformOrigin", "transition", "animation", "filter",
+  "position", "display", "overflow", "overflowX", "overflowY", "visibility",
+  "flex", "flexGrow", "flexShrink", "flexBasis", "flexWrap", "flexDirection",
+  "gridColumn", "gridRow", "gridArea", "columnGap", "rowGap",
+  "alignItems", "alignSelf", "alignContent", "justifyContent", "justifyItems", "justifySelf",
+  "rotate", "scale", "skew", "translate",
+  "size", "radius", "thickness",
+  "lineHeight", "letterSpacing", "wordSpacing",
+  "duration", "delay", "iterations", "cursor",
+  // Primitive component shorthand props (see components/primitives/*):
+  "pt", "pb", "pl", "pr", "py", "px", "mt", "mb", "ml", "mr", "my", "mx",
+  "w", "h", "wrap", "align", "justify", "grow",
+]);
+
+const STYLE_KEY_PREFIX = /^(padding|margin|border|font|text|min|max|stroke|dash|offset|inset|outline|scroll)/;
+
+function isStyleKey(name: string): boolean {
+  if (STYLE_KEY_EXACT.has(name)) return true;
+  return STYLE_KEY_PREFIX.test(name);
+}
+
 // True when `node` sits directly (walking up through Parenthesized /
 // As / Non-null / Satisfies expressions) at a variable initializer, an
-// assignment RHS, or a returned/arrow-body position — the "value-slot"
-// shapes where a fabricated literal is what a user reads on screen.
+// assignment RHS, a returned/arrow-body position, or a PropertyAssignment
+// whose key is NOT a JSX/CSS style key — the "value-slot" shapes where
+// a fabricated literal is what a user reads on screen.
 function isInValueSlot(node: ts.Node): boolean {
   let current = node.parent as ts.Node | undefined;
   while (
@@ -271,13 +328,28 @@ function isInValueSlot(node: ts.Node): boolean {
   ) {
     return true;
   }
-  // Deliberately NOT PropertyAssignment. Ternaries inside object-literal
-  // properties (`{ opacity: hover ? 0.5 : 1, fontSize: mobile ? 12 : 9 }`)
-  // are almost always JSX styling in this codebase, dominated by CSS
-  // dimensions, font weights, and opacities. The FinancialRunway-shape
-  // fabrication (`return { monthlyBurn: 2185, ... }` inside a useMock
-  // branch) is caught by Shape A via the `useMock =` flag on the containing
-  // if-branch, not by Shape B — so this exclusion loses nothing.
+  // PropertyAssignment — narrow exclusion (only skip when the property
+  // name is a style/layout key, or the containing object is inside a
+  // JSX attribute). Everything else — defaults objects, config objects,
+  // initial-state seeds — is a value slot.
+  if (ts.isPropertyAssignment(current)) {
+    const keyName = ts.isIdentifier(current.name) ? current.name.text
+      : ts.isStringLiteral(current.name) ? current.name.text
+      : null;
+    if (keyName && isStyleKey(keyName)) return false;
+    // Walk further up to see if we're inside a JSX attribute value —
+    // `<div style={{ myKey: cond ? … : 3700 }}>`. That's still styling
+    // even if the individual key isn't in the vocabulary.
+    let up: ts.Node | undefined = current.parent;
+    while (up) {
+      if (ts.isJsxAttribute(up) || ts.isJsxExpression(up) || ts.isJsxSpreadAttribute(up)) return false;
+      // Object literal deeply nested inside a JSX attribute counts too.
+      // Stop climbing at Statement / Block boundaries — no JSX beyond.
+      if (ts.isStatement(up) || ts.isBlock(up) || ts.isSourceFile(up)) break;
+      up = up.parent;
+    }
+    return true;
+  }
   return false;
 }
 

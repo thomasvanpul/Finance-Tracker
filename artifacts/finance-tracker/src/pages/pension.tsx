@@ -36,7 +36,12 @@ interface PensionInputs {
   retirementAge: number;
   growthRate: number;
   includeStatePension: boolean;
-  targetMonthlyIncome: number;
+  // Nullable. A fabricated £2,500/mo default silently rendered as the
+  // user's own retirement goal — appeared on the "target: £X" line, in
+  // the shortfall calc, in the Pension Health panel header, and in the
+  // "on track"/"needs attention" colour pill. See the 26-Aug audit
+  // report and Lock #16 · Shape B for the same-class defect elsewhere.
+  targetMonthlyIncome: number | null;
 }
 
 interface IsaStore {
@@ -88,7 +93,10 @@ function loadPension(): PensionInputs {
         retirementAge: stored.retirementAge ?? 67,
         growthRate: stored.growthRate ?? 7,
         includeStatePension: stored.includeStatePension ?? true,
-        targetMonthlyIncome: stored.targetMonthlyIncome ?? 2500,
+        // No fabricated default — see PensionInputs type comment. A stored
+        // 0 (legacy fresh installs before this fix) is also treated as
+        // "not set" so the health panel doesn't wrongly assert "ON TRACK".
+        targetMonthlyIncome: stored.targetMonthlyIncome != null && stored.targetMonthlyIncome > 0 ? stored.targetMonthlyIncome : null,
       };
     }
   } catch { /* ignore */ }
@@ -100,7 +108,7 @@ function loadPension(): PensionInputs {
     retirementAge: 67,
     growthRate: 7,
     includeStatePension: true,
-    targetMonthlyIncome: 2500,
+    targetMonthlyIncome: null,
   };
 }
 
@@ -279,14 +287,18 @@ function KpiBar({
   yearsToRetirement: number;
   retirementAge: number;
   currentPot: number;
-  targetMonthlyIncome: number;
+  targetMonthlyIncome: number | null;
 }) {
   const totalMonthlyIncome = monthlyIncomeFromPot + monthlyStatePension;
-  const onTrackPct = targetMonthlyIncome > 0 ? (totalMonthlyIncome / targetMonthlyIncome) * 100 : 100;
-  const onTrack = onTrackPct >= 100;
-  const closeToTrack = onTrackPct >= 75;
-  const trackColor = onTrack ? "var(--ft-green)" : closeToTrack ? "var(--ft-amber)" : "var(--ft-red)";
-  const trackLabel = onTrack ? "ON TRACK" : closeToTrack ? "CLOSE" : "OFF TRACK";
+  // No target → no track/on-track claim, no pill, no colour. The health
+  // KPI cell drops its progress signal until the user tells us what they
+  // are aiming for.
+  const hasTarget = targetMonthlyIncome != null && targetMonthlyIncome > 0;
+  const onTrackPct = hasTarget ? (totalMonthlyIncome / targetMonthlyIncome) * 100 : null;
+  const onTrack = onTrackPct != null && onTrackPct >= 100;
+  const closeToTrack = onTrackPct != null && onTrackPct >= 75;
+  const trackColor = !hasTarget ? "var(--ft-muted)" : onTrack ? "var(--ft-green)" : closeToTrack ? "var(--ft-amber)" : "var(--ft-red)";
+  const trackLabel = !hasTarget ? "NO TARGET" : onTrack ? "ON TRACK" : closeToTrack ? "CLOSE" : "OFF TRACK";
 
   const fmtBig = (v: number) =>
     v >= 1_000_000 ? `£${(v / 1_000_000).toFixed(2)}M` : `£${(v / 1000).toFixed(0)}k`;
@@ -360,7 +372,7 @@ function KpiBar({
           {formatGbp(Math.round(totalMonthlyIncome))}
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
-          {includeStatePension ? `incl. £${Math.round(monthlyStatePension)}/mo state` : "excl. state pension"} · target: <span className="pnum">{formatGbp(targetMonthlyIncome)}</span>
+          {includeStatePension ? `incl. £${Math.round(monthlyStatePension)}/mo state` : "excl. state pension"} · target: <span className="pnum">{hasTarget ? formatGbp(targetMonthlyIncome) : "—"}</span>
         </div>
       </div>
     </div>
@@ -374,19 +386,34 @@ function PensionHealthBlock({
   yearsToRetirement, currentPot, growthRate, includeStatePension,
 }: {
   totalMonthlyIncome: number;
-  targetMonthlyIncome: number;
+  targetMonthlyIncome: number | null;
   monthlyTotal: number;
   yearsToRetirement: number;
   currentPot: number;
   growthRate: number;
   includeStatePension: boolean;
 }) {
+  // No target means no health signal. A "Pension Health · ON TRACK" panel
+  // built off `targetMonthlyIncome > 0 ? real : 100` painted a green bar
+  // for a user who had entered nothing — asserting completion of a goal
+  // that was never set. Show an honest empty state instead.
+  if (targetMonthlyIncome == null || targetMonthlyIncome <= 0) {
+    return (
+      <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 16 }}>
+        <PanelHeader color="var(--ft-muted)">Pension Health — Target not set</PanelHeader>
+        <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7, letterSpacing: "0.02em" }}>
+          Enter a <strong style={{ color: "var(--ft-text)" }}>target monthly income</strong> in the form above and this panel fills in: on-track score, shortfall estimate, required extra contribution, and years-to-fix.
+        </div>
+      </div>
+    );
+  }
+
   const monthlyStatePension = includeStatePension ? STATE_PENSION_ANNUAL / 12 : 0;
   const annualTargetIncome = targetMonthlyIncome * 12;
   const annualCurrentIncome = totalMonthlyIncome * 12;
   const shortfallMonthly = Math.max(0, targetMonthlyIncome - totalMonthlyIncome);
   const shortfallAnnual = shortfallMonthly * 12;
-  const onTrackPct = targetMonthlyIncome > 0 ? Math.min(100, (totalMonthlyIncome / targetMonthlyIncome) * 100) : 100;
+  const onTrackPct = Math.min(100, (totalMonthlyIncome / targetMonthlyIncome) * 100);
   const onTrack = onTrackPct >= 100;
 
   // Required pot to hit target (pot / 240 + state pension = target)
@@ -1205,9 +1232,22 @@ function PensionSection() {
             <input type="number" min={0} max={20} step={0.5} value={inputs.growthRate} onChange={e => set("growthRate", Math.max(0, Math.min(20, Number(e.target.value))))} style={numInputStyle} />
           </InputRow>
 
-          {/* Target income */}
+          {/* Target income — nullable. Empty input → null (not 0) so
+              downstream reads render "—" rather than treating 0 as an
+              achieved goal. */}
           <InputRow label="Target Monthly Income (£)" help="What you want in retirement">
-            <input type="number" min={0} step={100} value={inputs.targetMonthlyIncome || ""} onChange={e => set("targetMonthlyIncome", Number(e.target.value) || 0)} style={numInputStyle} />
+            <input
+              type="number"
+              min={0}
+              step={100}
+              placeholder="—"
+              value={inputs.targetMonthlyIncome ?? ""}
+              onChange={e => {
+                const v = Number(e.target.value);
+                set("targetMonthlyIncome", Number.isFinite(v) && v > 0 ? v : null);
+              }}
+              style={numInputStyle}
+            />
           </InputRow>
 
           {/* State pension toggle */}
