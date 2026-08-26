@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { twoFactor } from "better-auth/plugins";
+import { twoFactor, bearer } from "better-auth/plugins";
 import { passkey } from "@better-auth/passkey";
 import { db, userTable, sessionTable, accountTable, verificationTable, twoFactorTable, passkeyTable } from "@workspace/db";
 import { logger } from "./logger";
@@ -140,7 +140,24 @@ export const auth = betterAuth({
       : {}),
   },
   plugins: [
-    twoFactor({ issuer: "Fintrack" }),
+    // TOTP two-factor. `issuer` is the string the authenticator app
+    // (Authy, 1Password, Google Authenticator, etc.) permanently
+    // records against the user's enrolled secret and shows in its
+    // account list — "Fintrack: user@example.com" until the user
+    // deletes and re-enrols. It is the one place a rename cannot be
+    // retroactively applied to existing users, so the value has to
+    // match the shipping product name.
+    twoFactor({ issuer: "Numeris" }),
+    // Bearer-token plugin — accepts `Authorization: Bearer <token>`
+    // alongside session cookies. Ships an opaque token on the sign-in
+    // response as `set-auth-token`. Needed for the Capacitor iOS
+    // shell, which loads from `capacitor://localhost` and cannot use
+    // cross-scheme cookies — Safari's ITP blocks them and better-
+    // auth's session_token never rides the request. Web keeps the
+    // cookie path; native switches to bearer via the client's
+    // setAuthTokenGetter wired at boot (lib/native-auth.ts).
+    // See docs/BACKLOG.md § G13 for the full decision.
+    bearer(),
     // Passkey plugin — WebAuthn platform-authenticator sign-in.
     // rpName is the human-readable relying-party label the browser
     // shows in the passkey UI ("Sign in to Numeris"). rpID must be
@@ -149,6 +166,11 @@ export const auth = betterAuth({
     // so no override is needed here. origin is the fully-qualified
     // URL(s) allowed to complete WebAuthn — production frontend
     // plus the dev localhost origins already covered above.
+    //
+    // NB: WebAuthn is not usable from the Capacitor WebView
+    // (`capacitor://localhost` cannot bind to Associated Domains).
+    // The client hides the passkey button in native builds — this
+    // registration still stands for web users. See G14.
     passkey({
       rpName: "Numeris",
       origin: allowedOrigins.length ? allowedOrigins[0] : "http://localhost:4321",
