@@ -717,18 +717,29 @@ export function CompactTransactionCalendar() {
 
 // cash-flow-sankey: HALF WIDTH
 export function CompactCashFlowSankey() {
-  const { data: dash } = useGetDashboard();
-  const income = dash?.thisMonth?.income ?? 0;
-  const expenses = dash?.thisMonth?.expenses ?? 0;
-  const saved = Math.max(0, income - expenses);
-  const savePct = income > 0 ? Math.round((saved / income) * 100) : 0;
+  const { data: dash, isLoading } = useGetDashboard();
+  // Distinguish loading from "no income yet". A `?? 0` coalesce would show
+  // "No income" during load, which is a lie about what we know.
+  const income = dash?.thisMonth?.income ?? null;
+  const expenses = dash?.thisMonth?.expenses ?? null;
+  const saved = income != null && expenses != null ? Math.max(0, income - expenses) : null;
+  const savePct = income != null && income > 0 && saved != null ? Math.round((saved / income) * 100) : null;
+  const hasIncome = income != null && income > 0;
+  const primary = isLoading ? "…" : hasIncome ? formatGbp(income) : income == null ? "—" : "No income";
+  const secondary = isLoading
+    ? "Loading…"
+    : hasIncome && expenses != null && savePct != null
+      ? `${formatGbp(expenses)} out · ${savePct}% saved`
+      : income == null
+        ? "Waiting for data"
+        : "Add transactions";
   return (
     <Tile
       label="FLOW"
       accent="var(--ft-cyan)"
       href="/analytics"
-      primary={income > 0 ? formatGbp(income) : "No income"}
-      secondary={income > 0 ? `${formatGbp(expenses)} out · ${savePct}% saved` : "Add transactions"}
+      primary={primary}
+      secondary={secondary}
     />
   );
 }

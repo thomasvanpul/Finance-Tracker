@@ -1790,11 +1790,13 @@ interface CryptoWallet {
 }
 
 interface CryptoPrices {
-  ETH: number;
-  BTC: number;
+  ETH: number | null;
+  BTC: number | null;
 }
 
-const DEFAULT_CRYPTO_PRICES: CryptoPrices = { ETH: 2500, BTC: 60000 };
+// No DEFAULT_CRYPTO_PRICES. A hard-coded £2500/ETH £60000/BTC would silently
+// value every user's wallets at fabricated prices and roll that into net
+// worth downstream. Prices start unknown ("—") and the user overrides them.
 
 function loadCryptoWallets(): CryptoWallet[] {
   try {
@@ -1811,9 +1813,13 @@ function saveCryptoWallets(wallets: CryptoWallet[]) {
 function loadCryptoPrices(): CryptoPrices {
   try {
     const raw = localStorage.getItem(CRYPTO_PRICES_KEY);
-    if (!raw) return { ...DEFAULT_CRYPTO_PRICES };
-    return { ...DEFAULT_CRYPTO_PRICES, ...JSON.parse(raw) } as CryptoPrices;
-  } catch { return { ...DEFAULT_CRYPTO_PRICES }; }
+    if (!raw) return { ETH: null, BTC: null };
+    const parsed = JSON.parse(raw) as Partial<CryptoPrices>;
+    return {
+      ETH: typeof parsed.ETH === "number" && parsed.ETH > 0 ? parsed.ETH : null,
+      BTC: typeof parsed.BTC === "number" && parsed.BTC > 0 ? parsed.BTC : null,
+    };
+  } catch { return { ETH: null, BTC: null }; }
 }
 
 function saveCryptoPrices(prices: CryptoPrices) {
@@ -1875,9 +1881,10 @@ function CryptoWalletsPanel() {
   const [formChain, setFormChain] = useState<"ETH" | "BTC">("ETH");
   const [formError, setFormError] = useState("");
 
-  // Price override form
-  const [priceEth, setPriceEth] = useState(String(prices.ETH));
-  const [priceBtc, setPriceBtc] = useState(String(prices.BTC));
+  // Price override form. Empty when no price is set — the input placeholder
+  // prompts the user, never a fabricated default value that would look real.
+  const [priceEth, setPriceEth] = useState(prices.ETH != null ? String(prices.ETH) : "");
+  const [priceBtc, setPriceBtc] = useState(prices.BTC != null ? String(prices.BTC) : "");
 
   const persistWallets = useCallback((updated: CryptoWallet[]) => {
     setWallets(updated);
@@ -1950,12 +1957,18 @@ function CryptoWalletsPanel() {
     saveCryptoPrices(updated);
   };
 
-  const totalValueGbp = wallets.reduce((acc, w) => {
+  // Total counts only wallets that BOTH have a synced balance AND a real
+  // price for their chain. `unpriced` tallies the ones we had to skip so we
+  // can caveat the total honestly rather than under-reporting it silently.
+  const { totalValueGbp, unpricedCount } = wallets.reduce<{ totalValueGbp: number; unpricedCount: number }>((acc, w) => {
     if (w.balance == null) return acc;
-    return acc + w.balance * (w.chain === "ETH" ? prices.ETH : prices.BTC);
-  }, 0);
+    const price = w.chain === "ETH" ? prices.ETH : prices.BTC;
+    if (price == null) return { totalValueGbp: acc.totalValueGbp, unpricedCount: acc.unpricedCount + 1 };
+    return { totalValueGbp: acc.totalValueGbp + w.balance * price, unpricedCount: acc.unpricedCount };
+  }, { totalValueGbp: 0, unpricedCount: 0 });
 
   const hasSynced = wallets.some(w => w.balance != null);
+  const hasAnyPricedValue = wallets.some(w => w.balance != null && (w.chain === "ETH" ? prices.ETH : prices.BTC) != null);
 
   return (
     <VStack gap={12}>
@@ -1965,9 +1978,17 @@ function CryptoWalletsPanel() {
         <div style={HEADER_STYLE}>
           <Text as="span" color="var(--ft-accent)">·</Text> Crypto Wallets
           <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-            {hasSynced && (
+            {hasSynced && hasAnyPricedValue && (
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
                 Total ≈ £<span className="pnum">{totalValueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}</span>
+                {unpricedCount > 0 && (
+                  <span style={{ color: "var(--ft-dim)", marginLeft: 6 }}>· {unpricedCount} unpriced</span>
+                )}
+              </span>
+            )}
+            {hasSynced && !hasAnyPricedValue && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                Total — set a price below to value your wallets
               </span>
             )}
             <button
@@ -2067,8 +2088,9 @@ function CryptoWalletsPanel() {
         ) : (
           wallets.map(wallet => {
             const isSyncing = syncingIds.has(wallet.id);
-            const valueGbp = wallet.balance != null
-              ? wallet.balance * (wallet.chain === "ETH" ? prices.ETH : prices.BTC)
+            const priceForChain = wallet.chain === "ETH" ? prices.ETH : prices.BTC;
+            const valueGbp = wallet.balance != null && priceForChain != null
+              ? wallet.balance * priceForChain
               : null;
 
             return (
@@ -2101,9 +2123,13 @@ function CryptoWalletsPanel() {
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
                         {wallet.balance.toFixed(6)} {wallet.chain}
                       </span>
-                      {valueGbp != null && (
+                      {valueGbp != null ? (
                         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
                           ≈ £{valueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}
+                        </span>
+                      ) : (
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                          ≈ £— · set {wallet.chain} price below
                         </span>
                       )}
                     </HStack>
@@ -2164,6 +2190,7 @@ function CryptoWalletsPanel() {
               type="number"
               min={1}
               step={100}
+              placeholder="Enter ETH price"
               value={priceEth}
               onChange={e => setPriceEth(e.target.value)}
               style={{ ...CRYPTO_INPUT_STYLE, width: "100%" }}
@@ -2173,6 +2200,7 @@ function CryptoWalletsPanel() {
               type="number"
               min={1}
               step={1000}
+              placeholder="Enter BTC price"
               value={priceBtc}
               onChange={e => setPriceBtc(e.target.value)}
               style={{ ...CRYPTO_INPUT_STYLE, width: "100%" }}

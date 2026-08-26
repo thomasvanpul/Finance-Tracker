@@ -51,15 +51,18 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
   const now = new Date();
   const monthShortMixed = now.toLocaleDateString("en-GB", { month: "short" });
 
-  const netWorth = data?.netWorth ?? 0;
-  const mtdDelta = data?.thisMonth.netSavings ?? 0;
-  const priorNw = netWorth - mtdDelta;
-  const mtdPct = priorNw > 0 ? (mtdDelta / priorNw) * 100 : 0;
+  // Distinguish loading (isLoading), unknown (null) and real zero. Never
+  // coerce null → 0 in a rendered slot — the whole page would confidently
+  // show "£0" while the API was still in flight.
+  const netWorth = data?.netWorth ?? null;
+  const mtdDelta = data?.thisMonth.netSavings ?? null;
+  const priorNw = netWorth != null && mtdDelta != null ? netWorth - mtdDelta : null;
+  const mtdPct = priorNw != null && priorNw > 0 && mtdDelta != null ? (mtdDelta / priorNw) * 100 : null;
   const unconvertibleAccounts = data?.unconvertibleAccounts ?? 0;
 
   const holdings = computeHoldings(data);
-  const owedByMe = data?.owing.totalIOwe ?? 0;
-  const pendingCount = data?.owing.pendingCount ?? 0;
+  const owedByMe = data?.owing.totalIOwe ?? null;
+  const pendingCount = data?.owing.pendingCount ?? null;
 
   // Group accounts by type for the per-type sections. Portfolio positions
   // are surfaced only through the block field's `invested` bucket — they
@@ -111,19 +114,25 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
             letterSpacing="-0.035em"
             numeric
           >
-            {nfmt(netWorth)}
+            {isLoading ? "…" : netWorth != null ? nfmt(netWorth) : "—"}
           </Text>
         </HStack>
-        <Text
-          as="div"
-          mono
-          size={12}
-          mt={6}
-          color={mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-          numeric
-        >
-          {nfmt(mtdDelta, { sign: true, symbol: "£" })} · {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
-        </Text>
+        {mtdDelta != null && mtdPct != null ? (
+          <Text
+            as="div"
+            mono
+            size={12}
+            mt={6}
+            color={mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+            numeric
+          >
+            {nfmt(mtdDelta, { sign: true, symbol: "£" })} · {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
+          </Text>
+        ) : (
+          <Text as="div" mono size={12} mt={6} color="var(--ft-dim)">
+            {isLoading ? "…" : "—"} since 1 {monthShortMixed}
+          </Text>
+        )}
         {unconvertibleAccounts > 0 && (
           <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
             {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
@@ -137,7 +146,7 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
       </div>
 
       {/* Liabilities strip (outlined, no depth) */}
-      {owedByMe > 0 && (
+      {owedByMe != null && owedByMe > 0 && (
         <HStack align="start" gap={12} padding="18px 18px 0">
           {/* Outlined glyph — a claim is not material you hold, per
               MOBILE-CONCEPT.md §"Liabilities are outlined with no depth".
@@ -163,7 +172,7 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
             color="var(--ft-red)"
             numeric
           >
-            CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount} {pendingCount === 1 ? "DEBT" : "DEBTS"}
+            CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount ?? 0} {pendingCount === 1 ? "DEBT" : "DEBTS"}
           </Text>
         </HStack>
       )}
@@ -202,11 +211,11 @@ function TypeSection({
 }: {
   label: string;
   total: number;
-  netWorth: number;
+  netWorth: number | null;
   rows: Array<{ id: number; name: string; balance: number; gbpEquivalent: number | null; currency: string }>;
   note?: string;
 }) {
-  const pct = netWorth > 0 ? Math.round((total / netWorth) * 100) : 0;
+  const pct = netWorth != null && netWorth > 0 ? Math.round((total / netWorth) * 100) : null;
   // Border-top on the section is a one-off surface treatment (a divider
   // between sections in the vertical column). Kept inline per the
   // primitives-family rule — Stack owns layout, PanelBox owns surface,
@@ -223,7 +232,7 @@ function TypeSection({
     >
       <HStack align="baseline" justify="between" gap={10}>
         <MonoLabel as="span" size={11} letterSpacing="0.16em">
-          {label} · {pct}%
+          {label}{pct != null && ` · ${pct}%`}
         </MonoLabel>
         <Text as="span" mono size={13} weight={600} numeric>
           £{nfmt(total)}

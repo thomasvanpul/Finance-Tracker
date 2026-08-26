@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { useGetDashboard, useListTransactions, useListAccounts, useListGoals, useListUpcoming, useListBudgets } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatGbp, formatGbpOrDash } from "@/lib/utils";
 import { TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
 import { usePrivacy } from "@/contexts/privacy-context";
+import { Skeleton } from "@/components/skeleton";
 
 function today() { return new Date().toISOString().slice(0, 10); }
 function firstOfMonth() {
@@ -39,19 +40,27 @@ function ProgressRing({ pct, size = 48, stroke = 5 }: { pct: number; size?: numb
 
 export function NetWorthWidget() {
   const { privacy } = usePrivacy();
-  const { data: dash } = useGetDashboard();
-  const netWorth  = dash?.netWorth ?? 0;
-  const netSavings = dash?.thisMonth?.netSavings ?? 0;
-  const positive   = netSavings >= 0;
+  const { data: dash, isLoading } = useGetDashboard();
+  // Three states, never conflated:
+  //   isLoading  → skeleton
+  //   value null → "—" (dash?.netWorth === null when FX is unavailable)
+  //   value 0    → "£0.00" — a real zero is real information, not fabricated
+  const netWorth  = dash?.netWorth ?? null;
+  const netSavings = dash?.thisMonth?.netSavings ?? null;
+  const positive   = netSavings != null && netSavings >= 0;
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 12, padding: "20px 20px 16px" }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
         Net Worth
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 34, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-        {privacy ? "••••••" : formatGbp(netWorth)}
-      </div>
-      {netSavings !== 0 && (
+      {isLoading ? (
+        <Skeleton width={180} height={34} />
+      ) : (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 34, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+          {privacy ? "••••••" : formatGbpOrDash(netWorth)}
+        </div>
+      )}
+      {!isLoading && netSavings != null && netSavings !== 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 12, color: positive ? "var(--ft-green)" : "var(--ft-red)" }}>
           {positive ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
           <span>{positive ? "+" : ""}{privacy ? "••••" : formatGbp(netSavings)} this month</span>
@@ -63,33 +72,38 @@ export function NetWorthWidget() {
 
 export function ThisMonthWidget() {
   const { privacy } = usePrivacy();
-  const { data: dash } = useGetDashboard();
-  const income     = dash?.thisMonth?.income ?? 0;
-  const expenses   = dash?.thisMonth?.expenses ?? 0;
-  const netSavings = dash?.thisMonth?.netSavings ?? 0;
-  const savingsRate = dash?.thisMonth?.savingsRate ?? 0;
-  const spendRatio  = income > 0 ? Math.min(expenses / income, 1) : 0;
-  const positive    = netSavings >= 0;
+  const { data: dash, isLoading } = useGetDashboard();
+  const income      = dash?.thisMonth?.income ?? null;
+  const expenses    = dash?.thisMonth?.expenses ?? null;
+  const netSavings  = dash?.thisMonth?.netSavings ?? null;
+  const savingsRate = dash?.thisMonth?.savingsRate ?? null;
+  const spendRatio  = income != null && income > 0 && expenses != null ? Math.min(expenses / income, 1) : 0;
+  const positive    = netSavings != null && netSavings >= 0;
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 12, padding: "16px 20px" }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 14 }}>
         This Month
       </div>
+      {isLoading ? (
+        <Skeleton width="100%" height={80} />
+      ) : (
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "var(--ft-dim)" }}>Income</span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-green)" }}>
-            +{privacy ? "••••" : formatGbp(income)}
+            {income != null && `+${privacy ? "••••" : formatGbp(income)}`}
+            {income == null && "—"}
           </span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "var(--ft-dim)" }}>Spent</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: spendRatio > 0.9 ? "var(--ft-red)" : spendRatio > 0.7 ? "var(--ft-amber)" : "var(--ft-text)" }}>
-              −{privacy ? "••••" : formatGbp(expenses)}
+              {expenses != null && `−${privacy ? "••••" : formatGbp(expenses)}`}
+              {expenses == null && "—"}
             </span>
           </div>
-          {income > 0 && (
+          {income != null && income > 0 && (
             <div style={{ height: 4, background: "var(--ft-raised)", borderRadius: 2, overflow: "hidden" }}>
               <div style={{ height: "100%", borderRadius: 2, width: `${spendRatio * 100}%`, background: spendRatio > 0.9 ? "var(--ft-red)" : spendRatio > 0.7 ? "var(--ft-amber)" : "var(--ft-accent)" }} />
             </div>
@@ -98,13 +112,15 @@ export function ThisMonthWidget() {
         <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 4, borderTop: "1px solid var(--ft-border)" }}>
           <span style={{ fontSize: 13, color: "var(--ft-dim)" }}>Saved</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>{Math.round(savingsRate)}%</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>{savingsRate != null ? `${Math.round(savingsRate)}%` : "—"}</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: positive ? "var(--ft-green)" : "var(--ft-red)" }}>
-              {positive ? "+" : "−"}{privacy ? "••••" : formatGbp(Math.abs(netSavings))}
+              {netSavings != null && `${positive ? "+" : "−"}${privacy ? "••••" : formatGbp(Math.abs(netSavings))}`}
+              {netSavings == null && "—"}
             </span>
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

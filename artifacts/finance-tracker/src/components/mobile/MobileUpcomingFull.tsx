@@ -41,7 +41,7 @@ function shortDate(dueDate: string): string {
 
 export function MobileUpcomingFull({ onBack }: { onBack?: () => void }) {
   const { data: items = [], isLoading } = useListUpcoming();
-  const { data: summary } = useGetUpcomingSummary();
+  const { data: summary, isLoading: summaryLoading } = useGetUpcomingSummary();
   const pending: UpcomingItem[] = items.filter((i) => i.status === "pending");
 
   if (!isLoading && items.length === 0) {
@@ -58,9 +58,11 @@ export function MobileUpcomingFull({ onBack }: { onBack?: () => void }) {
   }
 
   const sortedPending = [...pending].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-  const expectedIn = summary?.expectedIncome30d ?? 0;
-  const committedOut = summary?.committedOutgoings30d ?? 0;
-  const net30 = expectedIn - committedOut;
+  // See dashboard/mobile-hero refactor — never coerce a missing API field to 0
+  // in a rendered value slot. Loading, unknown and real zero are three states.
+  const expectedIn = summary?.expectedIncome30d ?? null;
+  const committedOut = summary?.committedOutgoings30d ?? null;
+  const net30 = expectedIn != null && committedOut != null ? expectedIn - committedOut : null;
 
   return (
     <div
@@ -95,23 +97,23 @@ export function MobileUpcomingFull({ onBack }: { onBack?: () => void }) {
             size={34}
             weight={600}
             letterSpacing="-0.035em"
-            color={net30 >= 0 ? "var(--ft-text)" : "var(--ft-red)"}
+            color={net30 == null ? "var(--ft-dim)" : net30 >= 0 ? "var(--ft-text)" : "var(--ft-red)"}
             numeric
           >
-            {net30 < 0 ? "−" : ""}{nfmt(Math.abs(net30), { decimals: 2 })}
+            {summaryLoading ? "…" : net30 == null ? "—" : `${net30 < 0 ? "−" : ""}${nfmt(Math.abs(net30), { decimals: 2 })}`}
           </Text>
         </HStack>
         <HStack gap={14} marginTop={8} align="baseline">
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">IN</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
-              +£{nfmt(expectedIn, { decimals: 2 })}
+              {expectedIn == null ? "—" : `+£${nfmt(expectedIn, { decimals: 2 })}`}
             </Text>
           </HStack>
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">OUT</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
-              −£{nfmt(committedOut, { decimals: 2 })}
+              {committedOut == null ? "—" : `−£${nfmt(committedOut, { decimals: 2 })}`}
             </Text>
           </HStack>
         </HStack>

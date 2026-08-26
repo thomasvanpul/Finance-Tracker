@@ -46,7 +46,7 @@ function daysAgo(dateStr: string): number {
 export function MobileOwing({ onBack }: { onBack?: () => void }) {
   const [, navigate] = useLocation();
   const { data: debts = [], isLoading } = useListDebts();
-  const { data: summary } = useGetDebtSummary();
+  const { data: summary, isLoading: summaryLoading } = useGetDebtSummary();
 
   const pending: DebtRow[] = debts.filter((d) => d.status === "pending");
 
@@ -65,9 +65,12 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
     );
   }
 
-  const toMe = summary?.totalOwedToMe ?? 0;
-  const byMe = summary?.totalIOwe ?? 0;
-  const net = summary?.netGbp ?? toMe - byMe;
+  // Distinguish loading, unknown and real zero. A `?? 0` on the summary
+  // fields would render authoritative "£0.00" tiles for OWED TO ME / I OWE
+  // during load. Real zeros still render 0; nulls render —.
+  const toMe = summary?.totalOwedToMe ?? null;
+  const byMe = summary?.totalIOwe ?? null;
+  const net = summary?.netGbp ?? (toMe != null && byMe != null ? toMe - byMe : null);
 
   const sorted = [...pending].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -103,23 +106,23 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
             size={34}
             weight={600}
             letterSpacing="-0.035em"
-            color={net >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+            color={net == null ? "var(--ft-dim)" : net >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             numeric
           >
-            {net < 0 ? "−" : "+"}{nfmt(Math.abs(net), { decimals: 2 })}
+            {summaryLoading ? "…" : net == null ? "—" : `${net < 0 ? "−" : "+"}${nfmt(Math.abs(net), { decimals: 2 })}`}
           </Text>
         </HStack>
         <HStack gap={14} marginTop={8} align="baseline">
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">OWED TO ME</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
-              +£{nfmt(toMe, { decimals: 2 })}
+              {toMe == null ? "—" : `+£${nfmt(toMe, { decimals: 2 })}`}
             </Text>
           </HStack>
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">I OWE</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
-              −£{nfmt(byMe, { decimals: 2 })}
+              {byMe == null ? "—" : `−£${nfmt(byMe, { decimals: 2 })}`}
             </Text>
           </HStack>
         </HStack>

@@ -64,7 +64,9 @@ export function MobileInvestments() {
   // filter, so prefer it when present.
   const totalValue = summary?.totalValueGbp ?? priced.reduce((s, i) => s + i.gbpValue, 0);
   const totalPl = summary?.totalPlGbp ?? priced.reduce((s, i) => s + i.plGbp, 0);
-  const totalPlPct = summary?.totalPlPercent ?? 0;
+  // Percent has no honest fallback — a 0.00% badge next to a real +£3.20 P&L
+  // reads as "no movement", the exact opposite of what happened.
+  const totalPlPct = summary?.totalPlPercent ?? null;
   const sorted = [...positions].sort(
     (a, b) => (b.gbpValue ?? -Infinity) - (a.gbpValue ?? -Infinity),
   );
@@ -120,7 +122,7 @@ export function MobileInvestments() {
             color={totalPl >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             numeric
           >
-            {totalPl >= 0 ? "+" : "−"}{nfmt(Math.abs(totalPlPct), { decimals: 2 })}%
+            {totalPlPct == null ? "—" : `${totalPl >= 0 ? "+" : "−"}${nfmt(Math.abs(totalPlPct), { decimals: 2 })}%`}
           </Text>
         </HStack>
       </VStack>

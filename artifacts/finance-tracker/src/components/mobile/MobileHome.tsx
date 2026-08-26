@@ -117,7 +117,7 @@ export function MobileHome(_props: MobileHomeProps) {
   const dateFrom = `${monthStr}-01`;
   const dateTo = now.toISOString().slice(0, 10);
 
-  const { data: dashboard } = useGetDashboard();
+  const { data: dashboard, isLoading: dashboardLoading } = useGetDashboard();
   const { data: _monthSummary } = useGetTransactionSummary({ month: monthStr });
   const { data: txns = [] } = useListTransactions({ dateFrom, dateTo });
   const { data: subs = [] } = useListSubscriptions();
@@ -128,14 +128,17 @@ export function MobileHome(_props: MobileHomeProps) {
   const { data: upcomingItems = [] } = useListUpcoming();
 
   // ── Derived from real data ──
-  const netWorth = dashboard?.netWorth ?? 0;
+  // Three states preserved: loading (dashboardLoading), unknown (null) and
+  // real zero (0). A `?? 0` coalesce would render an authoritative £0.00
+  // during load that a user cannot distinguish from an actual zero.
+  const netWorth = dashboard?.netWorth ?? null;
   // MTD delta: uses thisMonth.netSavings as a proxy for month-to-date net worth
   // change. Exact NW delta would need daily NW snapshots; the API does not carry
   // them. Approximation is acceptable per the concept — the number rule still
   // stands.
-  const mtdDelta = dashboard?.thisMonth.netSavings ?? 0;
-  const priorNw = netWorth - mtdDelta;
-  const mtdPct = priorNw > 0 ? (mtdDelta / priorNw) * 100 : 0;
+  const mtdDelta = dashboard?.thisMonth.netSavings ?? null;
+  const priorNw = netWorth != null && mtdDelta != null ? netWorth - mtdDelta : null;
+  const mtdPct = priorNw != null && priorNw > 0 && mtdDelta != null ? (mtdDelta / priorNw) * 100 : null;
 
   const holdings = computeHoldings(dashboard);
   const totalCash = holdings.cash;
@@ -145,8 +148,8 @@ export function MobileHome(_props: MobileHomeProps) {
   const unconvertibleAccounts = dashboard?.unconvertibleAccounts ?? 0;
   const persona = useActivePersona();
 
-  const owedByMe = dashboard?.owing.totalIOwe ?? 0;
-  const pendingCount = dashboard?.owing.pendingCount ?? 0;
+  const owedByMe = dashboard?.owing.totalIOwe ?? null;
+  const pendingCount = dashboard?.owing.pendingCount ?? null;
   // C2-4: top counterparties (up to 3) for the CLAIMED strip. When
   // the API returns them we list names; if the endpoint is old
   // (deployed API one commit behind), we fall back to the count-only
@@ -343,20 +346,26 @@ export function MobileHome(_props: MobileHomeProps) {
                 letterSpacing="-0.035em"
                 numeric
               >
-                {nfmt(netWorth)}
+                {dashboardLoading ? "…" : netWorth != null ? nfmt(netWorth) : "—"}
               </Text>
             </HStack>
-            <Text
-              as="div"
-              mono
-              size={12}
-              mt={6}
-              color={mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-              numeric
-            >
-              {nfmt(mtdDelta, { sign: true, symbol: "£" })} ·{" "}
-              {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
-            </Text>
+            {mtdDelta != null && mtdPct != null ? (
+              <Text
+                as="div"
+                mono
+                size={12}
+                mt={6}
+                color={mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+                numeric
+              >
+                {nfmt(mtdDelta, { sign: true, symbol: "£" })} ·{" "}
+                {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
+              </Text>
+            ) : (
+              <Text as="div" mono size={12} mt={6} color="var(--ft-dim)">
+                {dashboardLoading ? "…" : "—"} since 1 {monthShortMixed}
+              </Text>
+            )}
             {unconvertibleAccounts > 0 && (
               <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
                 {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
@@ -411,7 +420,7 @@ export function MobileHome(_props: MobileHomeProps) {
             C2-4: when the API supplies topPending, list up to 3
             counterparties by name + amount underneath the total.
             If not (older API), only the count line renders. */}
-        {owedByMe > 0 && (
+        {owedByMe != null && owedByMe > 0 && (
           <VStack gap={4} padding="18px 18px 0">
             <HStack align="start" gap={12}>
               <div
@@ -432,7 +441,7 @@ export function MobileHome(_props: MobileHomeProps) {
                 color="var(--ft-red)"
                 numeric
               >
-                CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount}{" "}
+                CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount ?? 0}{" "}
                 {pendingCount === 1 ? "DEBT" : "DEBTS"}
               </Text>
             </HStack>
