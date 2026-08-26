@@ -1,7 +1,11 @@
 import { createAuthClient } from "better-auth/react";
 import { twoFactorClient } from "better-auth/client/plugins";
 import { passkeyClient } from "@better-auth/passkey/client";
-import { isNativeShell, captureAuthTokenFromResponse } from "./native-auth";
+import {
+  isNativeShell,
+  captureAuthTokenFromResponse,
+  getBearerTokenForAuthClient,
+} from "./native-auth";
 
 // Web: same-origin. In dev the Vite proxy forwards /api to the local API; in
 // production Vercel rewrites /api/* to the Render service (see vercel.json).
@@ -31,14 +35,38 @@ function computeAuthBase(): string {
 export const authClient = createAuthClient({
   baseURL: computeAuthBase(),
   plugins: [twoFactorClient(), passkeyClient()],
-  // On every successful auth-endpoint response, inspect for the
-  // `set-auth-token` header set by better-auth's bearer plugin
-  // (server-side G13 · 1/5). captureAuthTokenFromResponse is a no-op
-  // on web — it only writes to Preferences when isNativeShell() is
-  // true. The bearer plugin sends the header on sign-in / sign-up
-  // and no-ops elsewhere; this callback stays quiet on all other
-  // endpoints because the header is absent.
+  // Two hooks — both essential, and previously only one was wired.
+  //
+  //   auth.token → the request-side hook. @better-fetch calls this
+  //   before every request and, IF the promise resolves to a truthy
+  //   string, attaches `Authorization: Bearer <t>`. On web it resolves
+  //   to `undefined` (isNativeShell false → loadNativeAuthToken null →
+  //   getBearerTokenForAuthClient bridges to undefined) — @better-fetch's
+  //   `if (!token) return headers` short-circuit at dist/index.js:131-136
+  //   fires and no header is added. On native it resolves to the stored
+  //   bearer token from @capacitor/preferences.
+  //
+  //   The 28-Aug device failure was this hook missing entirely —
+  //   captureAuthTokenFromResponse (below) stored the token from
+  //   sign-up's response, but nothing on the request side ever sent
+  //   it back. authClient's own $fetch pipeline runs completely
+  //   separately from api-client-react's customFetch, so the token
+  //   getter registered via setAuthTokenGetter did NOT cover the
+  //   get-session and other authClient calls. Three parallel wires;
+  //   this hook was the third and was missing.
+  //
+  //   onSuccess → the response-side hook. Inspects every successful
+  //   auth-endpoint response for the `set-auth-token` header emitted
+  //   by better-auth's bearer plugin, and stashes it in Preferences.
+  //   captureAuthTokenFromResponse is a no-op on web — it only writes
+  //   when isNativeShell() is true. The bearer plugin sets the header
+  //   only on sign-in / sign-up; this hook stays quiet on every other
+  //   endpoint because the header is absent.
   fetchOptions: {
+    auth: {
+      type: "Bearer",
+      token: getBearerTokenForAuthClient,
+    },
     onSuccess: (ctx: { response: Response }) => {
       void captureAuthTokenFromResponse(ctx.response);
     },

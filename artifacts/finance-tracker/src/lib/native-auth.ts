@@ -113,3 +113,19 @@ export function initNativeAuth(): void {
   // token in memory instead of an async round-trip to Preferences.
   void hydrateCache();
 }
+
+// Bearer-token resolver for better-auth's client-side $fetch pipeline
+// (@better-fetch/fetch). Called on EVERY authClient request. Returns:
+//   - undefined on web (isNativeShell() false → loadNativeAuthToken()
+//     null-shorts → we bridge null → undefined). @better-fetch's Bearer
+//     branch at index.js:131-136 checks `if (!token) return headers`,
+//     so undefined means no Authorization header is added and the web
+//     cookie path continues unchanged.
+//   - the stored token on native (isNativeShell() true → loadNative
+//     AuthToken returns the string from Preferences).
+// Named export rather than an inline closure so its behaviour is
+// testable in isolation — see native-auth.test.ts.
+export async function getBearerTokenForAuthClient(): Promise<string | undefined> {
+  const token = await loadNativeAuthToken();
+  return token ?? undefined;
+}
