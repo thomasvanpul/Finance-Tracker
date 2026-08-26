@@ -24,6 +24,7 @@ export function MobileAccounts() {
     return (
       <div className="mobile-scroll" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <MobileEmptyState
+          scope="screen"
           label="NO ACCOUNTS"
           title="Nothing to show yet."
           description="Connect Wise or Revolut, or add an account by hand. Balances appear here as soon as the sync completes."

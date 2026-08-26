@@ -64,6 +64,7 @@ export function MobileSubscriptions({ onBack }: { onBack?: () => void }) {
       <div className="mobile-scroll" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <MobileScreenHeader title="Subscriptions" onBack={onBack} />
         <MobileEmptyState
+          scope="section"
           label="NO SUBSCRIPTIONS"
           title="Nothing tracked."
           description="Add a subscription and Numeris keeps a running monthly total and per-item due dates."

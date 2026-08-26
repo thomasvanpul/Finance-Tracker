@@ -55,6 +55,7 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
       <div className="mobile-scroll" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <MobileScreenHeader title="Owing" onBack={onBack} />
         <MobileEmptyState
+          scope="screen"
           label="NOTHING OWED"
           title="Nothing tracked yet."
           description="Log a shared expense or a debt and Numeris keeps score."

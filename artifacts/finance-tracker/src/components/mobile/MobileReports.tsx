@@ -203,6 +203,7 @@ export function MobileReports({ onBack }: { onBack?: () => void }) {
       {nothingAtAll ? (
         <div style={{ padding: "16px 18px" }}>
           <MobileEmptyState
+            scope="screen"
             label="NO ACTIVITY"
             title="No transactions in the last six months."
             description="Import a bank statement or log a transaction manually to fill in the roll-up."

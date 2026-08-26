@@ -38,6 +38,7 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
       <div className="mobile-scroll" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <MobileScreenHeader title="Holdings" onBack={onBack} />
         <MobileEmptyState
+          scope="screen"
           label="NO NET WORTH"
           title="Nothing tracked yet."
           description="Connect an account to start tracking net worth over time."

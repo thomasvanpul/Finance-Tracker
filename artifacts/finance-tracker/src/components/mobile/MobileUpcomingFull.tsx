@@ -49,6 +49,7 @@ export function MobileUpcomingFull({ onBack }: { onBack?: () => void }) {
       <div className="mobile-scroll" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <MobileScreenHeader title="Upcoming" onBack={onBack} />
         <MobileEmptyState
+          scope="section"
           label="NOTHING UPCOMING"
           title="No bills or income scheduled."
           description="Add subscriptions or recurring items and they'll appear here on their due date."

@@ -32,6 +32,7 @@ export function MobileGoals() {
       <div className="mobile-scroll" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <MobileScreenHeader title="Goals" />
         <MobileEmptyState
+          scope="section"
           label="NO GOALS"
           title="No savings goals yet."
           description="Set a savings target and Numeris tracks how far you've come and how far to go."

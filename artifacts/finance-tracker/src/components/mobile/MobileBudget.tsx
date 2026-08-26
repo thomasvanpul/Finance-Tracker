@@ -38,6 +38,7 @@ export function MobileBudget() {
       <div className="mobile-scroll" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <MobileScreenHeader title="Budget" />
         <MobileEmptyState
+          scope="section"
           label="NO BUDGETS"
           title="Nothing to track yet."
           description="Set a monthly limit for any category and this screen shows how it's doing."

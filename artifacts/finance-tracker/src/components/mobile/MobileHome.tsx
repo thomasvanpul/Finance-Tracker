@@ -246,6 +246,7 @@ export function MobileHome(_props: MobileHomeProps) {
           if (persona === "market") {
             return (
               <MobileEmptyState
+                scope="screen"
                 label="NO HOLDINGS"
                 title="Add your first holding."
                 description="Type a ticker and Numeris tracks it from the market. No bank connection needed — enter a few tickers once and the home screen fills in whenever prices move."
@@ -256,6 +257,7 @@ export function MobileHome(_props: MobileHomeProps) {
           }
           return (
             <MobileEmptyState
+              scope="screen"
               label="NO ACCOUNTS"
               title="Nothing to show yet."
               description="Connect a bank account or add one by hand. Once one is connected the home screen fills in on its own."

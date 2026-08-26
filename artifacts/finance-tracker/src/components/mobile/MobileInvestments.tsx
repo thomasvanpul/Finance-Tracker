@@ -46,6 +46,7 @@ export function MobileInvestments() {
       <div className="mobile-scroll" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <MobileScreenHeader title="Investments" />
         <MobileEmptyState
+          scope="screen"
           label="NO INVESTMENTS"
           title="No holdings yet."
           description="Add a position to see current value, unrealised P&L and per-ticker performance."

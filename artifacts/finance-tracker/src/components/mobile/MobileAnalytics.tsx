@@ -33,6 +33,7 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
       <div className="mobile-scroll" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <MobileScreenHeader title="Analytics" onBack={onBack} />
         <MobileEmptyState
+          scope="screen"
           label="NO TRANSACTIONS"
           title="No analytics yet."
           description="Log or import transactions and Analytics fills in — spend by category, income vs expense, month-over-month."
