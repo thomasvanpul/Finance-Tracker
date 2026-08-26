@@ -163,6 +163,41 @@ shared in `mobile-format.ts`.
 and `useWidgetVisibility` all deleted; every consumer was another
 dead file in the same cluster.
 
+### D4 · Full iPhone-native mobile redesign — SCOPING (26 Aug 2026)
+Thomas dropped the mid-September App Store date on 26 Aug 2026 with
+"ship it right rather than ship it soon" and chose a full iPhone-
+native mobile redesign. The earlier phased plan (ship the current
+mobile ports behind the tab bar and iterate later) is SUPERSEDED.
+
+**Scope decision (open):** which routes get a dedicated `Mobile*`
+shell versus which stay desktop-only-on-mobile versus which merge.
+Instinct from Thomas: `/upcoming` + `/subscriptions` + `/recurring`
+may collapse into one surface. Independent analysis pending in the
+session note. Do NOT start any redesign work until the tab structure
+is agreed — it's a product decision, not a build decision.
+
+**Blocking bug fixed (26 Aug 2026):** `safe-area-inset-top` was
+used in exactly ONE place (`components/mobile/MobileApp.tsx:75`)
+while `safe-area-inset-bottom` was used in 22. Every mobile-reachable
+surface that renders top chrome outside `MobileApp`'s padded wrapper
+had the iOS status-bar clock drawing directly over it. Fixed by
+adding safe-area-top to three root containers:
+  - `components/layout.tsx:1898` — `.ft-header`, fixes all 25
+    desktop-fallthrough routes at once
+  - `components/onboarding.tsx:120` — first-run persona questionnaire
+  - `components/auth-gate.tsx:783` — sign-in / sign-up screen
+Verified: typecheck clean, 160/160 tests green. Onboarding-wizard
+(centered modal, not top chrome) intentionally not touched.
+
+### D5 · Lock: every mobile-nav route resolves to a `Mobile*` component — PROPOSED
+Class of bug this prevents: adding a route to `MOBILE_ROUTES` (in
+`components/mobile/MobileApp.tsx`) without adding the matching
+`AppScreen` render branch, or removing a `Mobile*` render branch
+without dropping the path from `MOBILE_ROUTES` — either produces a
+route that resolves to the fallback `screen === "home"` and silently
+serves MobileHome under a wrong URL. See D5 in the session note for
+the AST design and the honest "what it can't catch" section.
+
 ---
 
 ## E. UI systems — prerequisite for desktop alignment
@@ -566,8 +601,11 @@ renderer for a decorative avatar is real battery and bundle cost.
   know whether native auth uses bearer tokens or session cookies,
   because the fixtures differ.
 
-- **G13 · Native auth architecture — bearer plugin picked, code
-  landed, awaits device verification.** Decision: option 3 (better-
+- **G13 · Native auth architecture — DONE (26 Aug 2026).** Device
+  test passed on real iPhone; sign-in, session persistence, and
+  authenticated calls all wire the bearer token as designed.
+  Historical context below is retained because the checklist is the
+  reference for any future native-auth regression. Decision: option 3 (better-
   auth `bearer` plugin) over CapacitorHttp because the AI-chat SSE
   stream depends on `Response.body` streaming which CapacitorHttp
   does not support (the streaming Coach and floating assistant are

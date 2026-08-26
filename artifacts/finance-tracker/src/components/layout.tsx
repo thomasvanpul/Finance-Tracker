@@ -1896,15 +1896,17 @@ export function Layout({ children }: LayoutProps) {
 
         {/* Top bar */}
         <header className="ft-header" style={{
-          height: 48,
+          minHeight: 48,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 20px",
+          paddingTop: "calc(env(safe-area-inset-top, 0px))",
           background: "var(--ft-surface)",
           borderBottom: "1px solid var(--ft-border)",
           flexShrink: 0,
           gap: 16,
+          boxSizing: "content-box",
         }}>
           {/* Brand + breadcrumb */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>

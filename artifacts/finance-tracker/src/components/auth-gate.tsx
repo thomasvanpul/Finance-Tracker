@@ -789,7 +789,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "center",
-        padding: "48px 20px 40px",
+        padding: "max(48px, calc(env(safe-area-inset-top, 0px) + 24px)) 20px max(40px, calc(env(safe-area-inset-bottom, 0px) + 16px))",
         boxSizing: "border-box",
       }}
     >

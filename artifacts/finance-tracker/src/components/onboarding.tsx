@@ -127,6 +127,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        paddingTop: "env(safe-area-inset-top, 0px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
       {/* Top bar */}
