@@ -2,8 +2,9 @@ import React from "react";
 
 interface SkeletonProps {
   width?: string | number;
-  height?: number;
+  height?: number | string;
   lines?: number;
+  radius?: number;
 }
 
 const shimmerStyle = `
@@ -22,13 +23,14 @@ function injectKeyframes() {
   document.head.appendChild(style);
 }
 
-export function Skeleton({ width = "100%", height = 12, lines = 1 }: SkeletonProps) {
+export function Skeleton({ width = "100%", height = 12, lines = 1, radius = 0 }: SkeletonProps) {
   injectKeyframes();
 
   const barStyle: React.CSSProperties = {
     display: "block",
     width: typeof width === "number" ? `${width}px` : width,
     height: height,
+    borderRadius: radius,
     background:
       "linear-gradient(90deg, var(--ft-border) 25%, var(--ft-raised) 50%, var(--ft-border) 75%)",
     backgroundSize: "200% 100%",

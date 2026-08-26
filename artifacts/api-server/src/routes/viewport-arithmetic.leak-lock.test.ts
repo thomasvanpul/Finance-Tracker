@@ -35,7 +35,37 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = join(dirname(__filename), "..", "..", "..", "..");
-const PAGES_DIR = join(REPO_ROOT, "artifacts", "finance-tracker", "src", "pages");
+const FT_SRC = join(REPO_ROOT, "artifacts", "finance-tracker", "src");
+const PAGES_DIR = join(FT_SRC, "pages");
+
+// Scan roots — widened from pages/ only, after four sites shipped with
+// the flash pattern outside pages/ (App.tsx:64, auth-gate.tsx:302,
+// PhoneShell.tsx:59, notifications-panel.tsx:594). The original scope
+// covered where pages LIVE, not where the flash actually renders.
+const SCAN_ROOTS: readonly string[] = [
+  PAGES_DIR,
+  join(FT_SRC, "components"),
+  join(FT_SRC, "App.tsx"),
+  join(FT_SRC, "main.tsx"),
+];
+
+// Files where full-viewport fill is legitimate — no shell above them at
+// render time, so filling the viewport is the right response, not a bug.
+// Every entry justifies itself to a reviewer. Weakening the ban with a
+// new EXEMPT entry is a visible diff.
+const EXEMPT_FILES: ReadonlySet<string> = new Set([
+  // Boot-time error rendering, before ThemeProvider / AuthGate / any
+  // shell mounts. Full viewport is correct — there's no chrome to fit
+  // inside. Deliberately allowed.
+  "artifacts/finance-tracker/src/main.tsx",
+  // Sign-in page root at auth-gate.tsx:786 is legitimately a full-page
+  // container — displayed BEFORE any shell mounts, no chrome above.
+  // The pre-auth loading placeholder at :302 was fixed in the same
+  // commit that widened this lock (renders PhoneScreenSkeleton inside
+  // a flex column instead). File-level exemption because the sign-in
+  // form's minHeight:100dvh is a legitimate page-root fill.
+  "artifacts/finance-tracker/src/components/auth-gate.tsx",
+]);
 
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -47,6 +77,18 @@ function walk(dir: string): string[] {
     else if (st.isFile() && (full.endsWith(".ts") || full.endsWith(".tsx"))) out.push(full);
   }
   return out;
+}
+
+// Enumerate every source file under SCAN_ROOTS. Roots may be directories
+// (walked recursively) or single files (added directly).
+function collectSources(): string[] {
+  const files: string[] = [];
+  for (const root of SCAN_ROOTS) {
+    const st = statSync(root);
+    if (st.isDirectory()) files.push(...walk(root));
+    else if (st.isFile()) files.push(root);
+  }
+  return files;
 }
 
 // Detection strategy (measured, not naive):
@@ -81,6 +123,20 @@ const CALC_VIEWPORT = /calc\(100(?:vh|dvh)\b/g;
 // versions).
 const PROP_ANY = /\b(minHeight|maxHeight|height)\s*[:=]/g;
 
+// Ban B — bare 100vh / 100dvh on `minHeight` or `height` OUTSIDE
+// src/pages/. Inside pages/ this pattern is a legitimate empty-state
+// fill (a page root with no data yet growing to visible space). Inside
+// shell / component code (App.tsx, PhoneShell, layout children,
+// notifications, Suspense fallbacks) it is the "cream rectangle" flash
+// pattern the shape-matching skeleton replaces — it overflows the shell
+// slot and produces layout shift when real content arrives.
+//
+// Matches: minHeight: "100vh" | "100dvh"  (string or template literal
+// value forms). Deliberately NOT a `calc()` match — Ban A already covers
+// `height: calc(100vh - N)` under both scopes.
+const BARE_VIEWPORT_MIN_H =
+  /\b(minHeight|height)\s*[:=]\s*(?:["'`])100(?:vh|dvh)(?:["'`])/g;
+
 // Strip line comments and block comments so a comment describing
 // the banned pattern (this test's docstring, or a "removed X" note
 // in a page) doesn't false-trigger. Simple stripper — good enough
@@ -111,18 +167,22 @@ function stripComments(src: string): string {
   return stripped.join("\n");
 }
 
-interface Hit { file: string; line: number; snippet: string }
+interface Hit { file: string; line: number; snippet: string; kind: "A" | "B" }
 
 function scan(): Hit[] {
   const hits: Hit[] = [];
-  for (const file of walk(PAGES_DIR)) {
+  for (const file of collectSources()) {
     if (file.endsWith(".test.ts") || file.endsWith(".test.tsx")) continue;
+    const rel = relative(REPO_ROOT, file);
+    if (EXEMPT_FILES.has(rel)) continue;
     const src = stripComments(readFileSync(file, "utf-8"));
     // Per-line detection so we can walk backwards from a calc match
     // to its nearest property assignment.
     const lines = src.split("\n");
+    const inPages = file.startsWith(PAGES_DIR);
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      // ── Ban A · height: calc(100vh|100dvh - N). Applies everywhere. ──
       CALC_VIEWPORT.lastIndex = 0;
       let calcMatch: RegExpExecArray | null;
       while ((calcMatch = CALC_VIEWPORT.exec(line)) !== null) {
@@ -139,14 +199,29 @@ function scan(): Hit[] {
         if (!lastPropMatch) continue;
         const prop = lastPropMatch[1];
         // minHeight and maxHeight are ALLOWED to use viewport
-        // arithmetic — that's the empty-state-fills-viewport
-        // pattern several pages use legitimately.
+        // arithmetic (Ban A specifically) — that's the empty-state
+        // fills-viewport pattern several pages use legitimately.
+        // Ban B (below) governs bare 100vh|100dvh on minHeight.
         if (prop === "minHeight" || prop === "maxHeight") continue;
-        // prop is "height" — banned.
         hits.push({
-          file: relative(PAGES_DIR, file),
+          file: rel,
           line: i + 1,
           snippet: line.trim().slice(0, 120),
+          kind: "A",
+        });
+      }
+      // ── Ban B · minHeight|height: "100vh"|"100dvh" OUTSIDE src/pages. ──
+      // Inside pages/ this is the "empty state fills the visible area"
+      // pattern — legitimate. Outside pages/ it is the flash pattern.
+      if (inPages) continue;
+      BARE_VIEWPORT_MIN_H.lastIndex = 0;
+      let bareMatch: RegExpExecArray | null;
+      while ((bareMatch = BARE_VIEWPORT_MIN_H.exec(line)) !== null) {
+        hits.push({
+          file: rel,
+          line: i + 1,
+          snippet: line.trim().slice(0, 120),
+          kind: "B",
         });
       }
     }
@@ -155,15 +230,29 @@ function scan(): Hit[] {
 }
 
 describe("viewport-arithmetic lock (#15)", () => {
-  it("no page under src/pages/ uses `height: calc(100vh|100dvh - N)`", () => {
+  it("no viewport arithmetic (Ban A) or bare-viewport minHeight (Ban B) in scanned scope", () => {
     const hits = scan();
     if (hits.length > 0) {
-      throw new Error(
-        `Viewport arithmetic is banned in page roots (pages/**). Chrome above <main> changes and this pattern hard-codes a guess at it — when the guess is wrong the page overflows <main> and produces a second scrollbar; when someone tries to "fix" the overflow by clipping <main>, the child gets clipped instead of shrunk (on /ai-coach that clipped the composer input, a control that stopped working while looking present).\n\n` +
-        `Correct pattern: add the route to VIEWPORT_LOCKED_ROUTES in layout.tsx and give the page root \`flex:1; minHeight:0\` (or \`<VStack grow minHeight0>\`). See commit 4f95155 (settings + ai-coach applied this shape).\n\n` +
-        `minHeight: calc(...) is NOT banned — that's a legitimate way to make empty-state cards fill visible space.\n\n` +
-        `Offenders:\n  ${hits.map((h) => `${h.file}:${h.line} — ${h.snippet}`).join("\n  ")}`,
-      );
+      const banA = hits.filter((h) => h.kind === "A");
+      const banB = hits.filter((h) => h.kind === "B");
+      const parts: string[] = [];
+      if (banA.length > 0) {
+        parts.push(
+          `Ban A (${banA.length}) · height: calc(100vh|100dvh - N) — viewport arithmetic in page or shell roots.\n` +
+          `Chrome above <main> (or above a fixed panel) changes and this pattern hard-codes a guess at it. When the guess is wrong the container overflows its parent and produces a second scrollbar or shoves the layout; when someone tries to "fix" the overflow by clipping the parent, the child gets clipped instead of shrunk (on /ai-coach that clipped the composer input, a control that stopped working while looking present).\n` +
+          `Correct pattern: flex column parent with the child at flex:1; minHeight:0 (or <VStack grow minHeight0>), or the CSS-native top/bottom pair on fixed panels (position:fixed; top: N; bottom: 0).\n` +
+          `Offenders:\n  ${banA.map((h) => `${h.file}:${h.line} — ${h.snippet}`).join("\n  ")}`,
+        );
+      }
+      if (banB.length > 0) {
+        parts.push(
+          `Ban B (${banB.length}) · bare minHeight|height: "100vh"|"100dvh" in shell / component code.\n` +
+          `This is the "cream rectangle" flash pattern — a Suspense fallback or session-loading placeholder that overflows its slot inside a shell that already has a header and tab bar. On phone the tab bar gets shoved for the flash duration; on desktop the main scroll region gets pushed.\n` +
+          `Correct pattern: render a shape-matching skeleton sized to the slot via flex:1; minHeight:0. See components/phone/PhoneScreenSkeleton.tsx. If this file is genuinely pre-shell (boot-time error rendering, sign-in page root with no chrome above), add it to EXEMPT_FILES with a reviewer-facing reason.\n` +
+          `Offenders:\n  ${banB.map((h) => `${h.file}:${h.line} — ${h.snippet}`).join("\n  ")}`,
+        );
+      }
+      throw new Error(`Lock #15 · viewport-arithmetic ban:\n\n${parts.join("\n\n")}`);
     }
     expect(hits).toEqual([]);
   });

@@ -18,6 +18,7 @@ import { hydratePersonaFromServer } from "@/lib/persona-sync";
 import NotFound from "@/pages/not-found";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PhoneShell } from "@/components/phone/PhoneShell";
+import { PhoneScreenSkeleton } from "@/components/phone/PhoneScreenSkeleton";
 import { PageTransitionOverlay } from "@/components/page-transition";
 
 // Dashboard is eager — it is the landing route; a lazy round-trip here buys nothing.
@@ -60,8 +61,11 @@ const Business       = lazy(() => import("@/pages/business"));
 const FamilyFinance  = lazy(() => import("@/pages/family-finance"));
 const TradingJournal = lazy(() => import("@/pages/trading-journal"));
 
-// Matches the blank shell in auth-gate.tsx: still, no animation, no layout shift.
-const PageFallback = <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
+// Shape-matching skeleton for lazy-loaded desktop pages. Sizes to the
+// Suspense slot via flex:1; minHeight:0 — no more full-viewport cream
+// rectangle overflow. See components/phone/PhoneScreenSkeleton.tsx and
+// lock #15 (viewport-arithmetic.leak-lock) for the pattern replaced.
+const PageFallback = <PhoneScreenSkeleton shape="header-list" />;
 // QueryClient configured for offline use — see lib/offline-cache.ts. The
 // per-query persister is plugged in via defaultOptions.queries.persister
 // (experimental_createQueryPersister), so hydration is inline with fetch

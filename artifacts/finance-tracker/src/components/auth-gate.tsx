@@ -39,6 +39,7 @@ import {
 } from "@/lib/auth-errors";
 import { HStack, VStack, Text, PanelBox } from "@/components/primitives";
 import { Logo } from "@/components/logo";
+import { PhoneScreenSkeleton } from "@/components/phone/PhoneScreenSkeleton";
 
 type Mode = "signin" | "signup" | "forgot" | "reset" | "twofa";
 
@@ -299,7 +300,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (isPending) {
-    return <div style={{ minHeight: "100vh", background: "var(--ft-base)" }} />;
+    // Session-loading placeholder. Uses the same shape-matching skeleton
+    // as the rest of the app so the pre-auth flash is gone. Wrapped in
+    // a flex column filling the viewport since there is no shell above
+    // auth-gate to give it a flex slot.
+    return (
+      <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "var(--ft-base)" }}>
+        <PhoneScreenSkeleton shape="plain" />
+      </div>
+    );
   }
   if (session) {
     return <>{children}</>;

@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { MobileHome } from "@/components/mobile/MobileHome";
 import { PhoneTabBar } from "./PhoneTabBar";
 import { DirectoryScreen } from "./DirectoryScreen";
+import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 
 // Directory-wrapped desktop pages. Lazy-loaded so the phone bundle doesn't
 // pay for pages a phone user may never visit.
@@ -56,7 +57,11 @@ export const WRAPPED_ROUTES: readonly string[] = [
   "/profile", "/settings",
 ];
 
-const PageFallback = <div style={{ minHeight: "100dvh", background: "var(--ft-base)" }} />;
+// Shape-matching skeleton for lazy-loaded directory items. Sizes to
+// DirectoryItemScreen's content slot via flex:1; minHeight:0 — the old
+// minHeight:100dvh pattern printed a full-viewport cream rectangle that
+// also shoved the tab bar (:59 in the pre-fix source).
+const PageFallback = <PhoneScreenSkeleton shape="header-list" />;
 
 // A wrapped route is a desktop page rendered inside DirectoryItemScreen
 // on phone. It is a stopgap. Every wrapping is a live iPad-audit defect
