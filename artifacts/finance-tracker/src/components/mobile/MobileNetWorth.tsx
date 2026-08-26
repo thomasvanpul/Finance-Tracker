@@ -89,7 +89,7 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
         WebkitFontSmoothing: "antialiased",
         overflowY: "auto",
         overflowX: "hidden",
-        paddingBottom: "calc(60px + env(safe-area-inset-bottom, 0px) + 16px)",
+        paddingBottom: "calc(var(--ft-tab-bar-h) + env(safe-area-inset-bottom, 0px) + 16px)",
       }}
     >
       <MobileScreenHeader title="Holdings" onBack={onBack} />

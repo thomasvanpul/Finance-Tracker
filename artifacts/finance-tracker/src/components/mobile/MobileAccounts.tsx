@@ -65,7 +65,7 @@ export function MobileAccounts() {
         WebkitFontSmoothing: "antialiased",
         overflowY: "auto",
         overflowX: "hidden",
-        paddingBottom: "calc(60px + env(safe-area-inset-bottom, 0px) + 16px)",
+        paddingBottom: "calc(var(--ft-tab-bar-h) + env(safe-area-inset-bottom, 0px) + 16px)",
       }}
     >
       {/* Top bar */}
@@ -307,7 +307,7 @@ function CurrencySection({
                 // Text made the pill visibly taller in the AFTER render).
                 <span
                   style={{
-                    fontSize: 9,
+                    fontSize: 11,
                     padding: "1px 5px",
                     borderRadius: 2,
                     background: "var(--ft-raised)",

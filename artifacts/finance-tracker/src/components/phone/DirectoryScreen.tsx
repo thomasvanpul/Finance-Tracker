@@ -185,7 +185,7 @@ export function DirectoryScreen() {
                 margin: 0,
                 padding: "20px 16px 8px",
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: "0.12em",
                 color: "var(--ft-dim)",

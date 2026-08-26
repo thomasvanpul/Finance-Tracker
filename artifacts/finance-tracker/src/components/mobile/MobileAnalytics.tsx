@@ -81,7 +81,7 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
         display: "flex",
         flexDirection: "column",
         overflowY: "auto",
-        paddingBottom: "calc(74px + env(safe-area-inset-bottom, 0px) + 16px)",
+        paddingBottom: "calc(var(--ft-tab-bar-h) + env(safe-area-inset-bottom, 0px) + 16px)",
         background: "var(--ft-base)",
         color: "var(--ft-text)",
       }}

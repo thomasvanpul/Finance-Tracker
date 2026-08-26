@@ -148,14 +148,15 @@
    amendment no longer inspects inline style strings.
 */
 :root {
-  --ft-text-xs:      10px;
-  --ft-text-sm:      12px;
-  --ft-text-body:    14px;
-  --ft-text-md:      15px;
-  --ft-text-lg:      17px;
-  --ft-text-xl:      20px;
-  --ft-text-hero:    22px;
-  --ft-text-premium: 34px;
+  --ft-text-xs:          11px;   /* was 10; Mobile Amendment :77 sets the phone floor at 11 */
+  --ft-text-sm:          12px;
+  --ft-text-body:        14px;
+  --ft-text-md:          15px;
+  --ft-text-lg:          17px;
+  --ft-text-xl:          20px;
+  --ft-text-hero:        22px;
+  --ft-text-primary-num: 30px;   /* Mobile Amendment :77 primary number ≥28; sits between hero (22 on phone) and premium (34). Desktop reaches ≥28 via --ft-text-hero at 768+. */
+  --ft-text-premium:     34px;
 }
 @media (min-width: 768px) {
   :root {
@@ -172,9 +173,10 @@
    is a figure the user cannot read. Motion is for interaction feedback and
    theme transitions only. */
 :root {
-  --ft-motion-fast: 120ms;  /* press states, hover */
-  --ft-motion-base: 200ms;  /* theme crossfade, colour changes */
-  --ft-motion-slow: 320ms;  /* sheets, drawers, tab panels */
+  --ft-motion-fast:   120ms;  /* press states, hover, data-value state changes (Mobile Amendment :66 keeps the 150ms cap on data) */
+  --ft-motion-base:   200ms;  /* theme crossfade, colour changes, phone tab-content crossfade */
+  --ft-motion-screen: 240ms;  /* phone screen push/pop; under Mobile Amendment :65 cap of 250 */
+  --ft-motion-slow:   320ms;  /* desktop sheets, drawers, tab panels — ABOVE the phone :65 cap; don't use inside a phone shell */
   --ft-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Crossfades colour tokens when the theme changes. Colour only: never
@@ -187,9 +189,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --ft-motion-fast: 0ms;
-    --ft-motion-base: 0ms;
-    --ft-motion-slow: 0ms;
+    --ft-motion-fast:   0ms;
+    --ft-motion-base:   0ms;
+    --ft-motion-screen: 0ms;
+    --ft-motion-slow:   0ms;
   }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -197,6 +200,32 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ── Spacing scale ──────────────────────────────────────────────────────────
+   Nine steps, deliberately not continuous (Mobile Amendment :85 "sparse and
+   confident beats dense and cramped"). Step 6→7 skips 20 on purpose: 24 and
+   32 do different jobs and 20 is the ad-hoc value that fills the gap when
+   the author felt 24 was "too much". Force the choice.
+   Every step used via `var(--ft-space-N)` so density changes reach every
+   caller. */
+:root {
+  --ft-space-1:  2px;    /* hairline separators, border widths */
+  --ft-space-2:  4px;    /* tight rhythm inside a row (label ↔ value gap) */
+  --ft-space-3:  8px;    /* default gap between related things */
+  --ft-space-4: 12px;    /* default row padding-y; Amendment :68 uniform within a list */
+  --ft-space-5: 16px;    /* default screen-edge inset (iOS convention) */
+  --ft-space-6: 24px;    /* section vertical padding, group boundaries */
+  --ft-space-7: 32px;    /* screen-level headers, empty-state top block */
+  --ft-space-8: 48px;    /* hero blocks, empty-state top-block internal */
+}
+
+/* ── Physical chrome heights ────────────────────────────────────────────────
+   Rendered height of shell elements — kept as tokens so page paddings that
+   need to clear the tab bar / header don't hard-code a magic number that
+   silently goes stale when the chrome changes. See mobile-pb below. */
+:root {
+  --ft-tab-bar-h: 64px;  /* PhoneTabBar rendered height: 44 minHeight + 10+10 padding-y */
 }
 
 /* Density: affects row/cell padding, not page zoom */
@@ -269,7 +298,7 @@ body.density-comfortable {
 
 /* ── Safe-area-aware bottom padding for mobile screens ── */
 .mobile-pb {
-  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 16px);
+  padding-bottom: calc(var(--ft-tab-bar-h) + env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 /* ── Minimum touch target for interactive elements on mobile ── */

@@ -31,7 +31,7 @@ function ProgressRing({ pct, size = 48, stroke = 5 }: { pct: number; size?: numb
         style={{ transition: "stroke-dashoffset 0.1s ease" }}
       />
       <text x={size / 2} y={size / 2 + 4} textAnchor="middle"
-        style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, fill: "var(--ft-text)" }}>
+        style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, fill: "var(--ft-text)" }}>
         {Math.round(pct)}%
       </text>
     </svg>
@@ -50,7 +50,7 @@ export function NetWorthWidget() {
   const positive   = netSavings != null && netSavings >= 0;
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 12, padding: "20px 20px 16px" }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
         Net Worth
       </div>
       {isLoading ? (
@@ -81,7 +81,7 @@ export function ThisMonthWidget() {
   const positive    = netSavings != null && netSavings >= 0;
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 12, padding: "16px 20px" }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 14 }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 14 }}>
         This Month
       </div>
       {isLoading ? (
@@ -131,7 +131,7 @@ export function AccountsWidget() {
   if (accounts.length === 0) return null;
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 12, overflow: "hidden" }}>
-      <div style={{ padding: "12px 16px 8px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
+      <div style={{ padding: "12px 16px 8px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
         Accounts
       </div>
       <div style={{ display: "flex", overflowX: "auto", gap: 10, padding: "0 16px 16px", scrollbarWidth: "none" }}>
@@ -147,7 +147,7 @@ export function AccountsWidget() {
               {privacy ? "••••" : acc.gbpEquivalent == null ? "—" : formatGbp(acc.gbpEquivalent)}
             </div>
             {acc.currency !== "GBP" && (
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginTop: 2 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", marginTop: 2 }}>
                 {acc.currency} {privacy ? "••••" : acc.balance.toLocaleString()}
               </div>
             )}
@@ -163,7 +163,7 @@ export function GoalsWidget() {
   if (goals.length === 0) return null;
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 12, overflow: "hidden" }}>
-      <div style={{ padding: "12px 16px 8px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
+      <div style={{ padding: "12px 16px 8px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
         Goals
       </div>
       <div style={{ display: "flex", overflowX: "auto", gap: 10, padding: "0 16px 16px", scrollbarWidth: "none" }}>
@@ -195,7 +195,7 @@ export function UpcomingWidget() {
   if (next.length === 0) return null;
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 12, overflow: "hidden" }}>
-      <div style={{ padding: "12px 16px 4px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
+      <div style={{ padding: "12px 16px 4px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
         Upcoming
       </div>
       {next.map((it, i) => {
@@ -208,7 +208,7 @@ export function UpcomingWidget() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: days <= 3 ? "var(--ft-red)" : "var(--ft-text)", lineHeight: 1 }}>
                 {days === 0 ? "!" : days}
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textTransform: "uppercase" }}>
                 {days === 0 ? "today" : "days"}
               </div>
             </div>
@@ -235,8 +235,8 @@ export function RecentTxnsWidget({ onViewAll }: { onViewAll: () => void }) {
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 12, overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px 4px" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Recent</div>
-        <button onClick={onViewAll} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", color: "var(--ft-accent)", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Recent</div>
+        <button onClick={onViewAll} style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.06em", color: "var(--ft-accent)", background: "none", border: "none", cursor: "pointer", textTransform: "uppercase" }}>
           See all →
         </button>
       </div>
@@ -283,7 +283,7 @@ export function BudgetWidget() {
   if (budgets.length === 0) return null;
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 12, overflow: "hidden" }}>
-      <div style={{ padding: "12px 16px 4px", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Budget</div>
+      <div style={{ padding: "12px 16px 4px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Budget</div>
       {budgets.slice(0, 5).map((b, i) => {
         const spent = spendByCategory[b.category.toLowerCase()] ?? 0;
         const pct = b.limit > 0 ? (spent / b.limit) * 100 : 0;

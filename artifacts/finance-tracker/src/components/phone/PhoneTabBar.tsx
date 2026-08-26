@@ -68,7 +68,7 @@ export function PhoneTabBar() {
               alignItems: "center",
               justifyContent: "center",
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 11,
               letterSpacing: "0.08em",
               color: active ? "var(--ft-accent)" : "var(--ft-dim)",
               textDecoration: "none",

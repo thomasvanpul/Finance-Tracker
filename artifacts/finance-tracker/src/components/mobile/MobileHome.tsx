@@ -279,7 +279,7 @@ export function MobileHome(_props: MobileHomeProps) {
         WebkitFontSmoothing: "antialiased",
         overflowY: "auto",
         overflowX: "hidden",
-        paddingBottom: "calc(60px + env(safe-area-inset-bottom, 0px) + 16px)",
+        paddingBottom: "calc(var(--ft-tab-bar-h) + env(safe-area-inset-bottom, 0px) + 16px)",
       }}
       className="mobile-scroll"
     >
@@ -732,8 +732,8 @@ function RingView({ holdings }: { holdings: Holdings }) {
         {BUCKET_ORDER.filter((k) => holdings[k] > 0).map((k) => (
           <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 10, height: 10, background: BUCKET_COLOR[k], flex: "none" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", color: "var(--ft-dim)" }}>{BUCKET_LABEL[k]}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", marginLeft: "auto" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.08em", color: "var(--ft-dim)" }}>{BUCKET_LABEL[k]}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", marginLeft: "auto" }}>
               {Math.round((holdings[k] / total) * 100)}%
             </span>
           </div>
@@ -840,7 +840,7 @@ function BandsView({ months }: { months: BandsMonth[] }) {
         {BUCKET_ORDER.map((k) => (
           <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 10, height: 10, background: BUCKET_COLOR[k], flex: "none" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", color: "var(--ft-dim)" }}>{BUCKET_LABEL[k]}</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.08em", color: "var(--ft-dim)" }}>{BUCKET_LABEL[k]}</span>
           </div>
         ))}
       </div>

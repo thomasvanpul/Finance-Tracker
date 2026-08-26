@@ -98,7 +98,7 @@ export function MobileSettings({ onBack }: { onBack?: () => void }) {
         style={{
           flex: 1,
           overflowY: "auto",
-          paddingBottom: "calc(72px + env(safe-area-inset-bottom, 0px) + 16px)",
+          paddingBottom: "calc(var(--ft-tab-bar-h) + env(safe-area-inset-bottom, 0px) + 16px)",
         }}
       >
         {/* Sync status — honest: no fake timestamp. */}
@@ -113,7 +113,7 @@ export function MobileSettings({ onBack }: { onBack?: () => void }) {
           <button
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9.5,
+              fontSize: 11,
               fontWeight: 700,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
@@ -546,7 +546,7 @@ function MobileConnectionRow({ connection }: { connection: Connection }) {
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: 11,
             letterSpacing: "0.08em",
             fontWeight: 700,
             color,
@@ -568,7 +568,7 @@ function MobileConnectionRow({ connection }: { connection: Connection }) {
             border: "1px solid var(--ft-red)44",
             background: "var(--ft-red)11",
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 11,
             color: "var(--ft-red)",
           }}
         >
@@ -704,7 +704,7 @@ function MobileAddConnectionForm({ onDone }: { onDone: () => void }) {
             border: "1px solid var(--ft-red)44",
             background: "var(--ft-red)11",
             fontFamily: "var(--font-mono)",
-            fontSize: 10.5,
+            fontSize: 11,
             color: "var(--ft-red)",
           }}
         >

@@ -80,7 +80,7 @@ export function MobileGoals() {
         display: "flex",
         flexDirection: "column",
         overflowY: "auto",
-        paddingBottom: "calc(74px + env(safe-area-inset-bottom, 0px) + 16px)",
+        paddingBottom: "calc(var(--ft-tab-bar-h) + env(safe-area-inset-bottom, 0px) + 16px)",
         background: "var(--ft-base)",
         color: "var(--ft-text)",
       }}
@@ -145,7 +145,7 @@ export function MobileGoals() {
                 {r.complete && (
                   <span
                     style={{
-                      fontSize: 9,
+                      fontSize: 11,
                       padding: "1px 5px",
                       borderRadius: 2,
                       background: "var(--ft-raised)",

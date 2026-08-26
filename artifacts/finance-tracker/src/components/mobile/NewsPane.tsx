@@ -137,7 +137,7 @@ export function NewsPane({ onOpenInvestments }: { onOpenInvestments?: () => void
                 alignItems: "baseline",
                 gap: 8,
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 11,
                 color: "var(--ft-dim)",
                 letterSpacing: "0.06em",
               }}
