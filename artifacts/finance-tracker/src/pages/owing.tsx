@@ -215,14 +215,16 @@ function StrategyTab() {
   }
 
   const strategyDebts = useMemo<StrategyDebt[]>(() => {
-    // Payoff strategies need a GBP balance to sort against APR. Debts
-    // whose FX conversion is unavailable are excluded rather than run
-    // through as £0 (which would produce a spurious "already paid off"
-    // priority ordering).
+    // Payoff strategies need three things per debt: a GBP balance (so we
+    // can sort by size), and an APR (so we can compute interest cost). A
+    // fabricated 20% APR default here would silently invent an interest
+    // cost the user never entered — the same class of defect as an FX-
+    // less balance treated as £0. Include only debts with BOTH real.
     return pendingDebts
       .filter((d): d is typeof d & { gbpEquivalent: number } => d.gbpEquivalent != null)
+      .filter(d => aprOverrides[d.id] !== undefined)
       .map(d => {
-        const apr = aprOverrides[d.id] ?? 20;
+        const apr = aprOverrides[d.id] as number;
         const balance = d.gbpEquivalent;
         const minimumPayment = Math.max(balance * 0.02, 1);
         return {
@@ -234,6 +236,14 @@ function StrategyTab() {
         };
       });
   }, [pendingDebts, aprOverrides]);
+
+  // Debts that ARE in the payoff picture (real GBP balance) but the user
+  // hasn't told us the APR for yet. Surface them so they can be included
+  // rather than silently dropped from the strategy.
+  const debtsAwaitingApr = useMemo(
+    () => pendingDebts.filter(d => d.gbpEquivalent != null && aprOverrides[d.id] === undefined),
+    [pendingDebts, aprOverrides]
+  );
 
   const totalBalance = useMemo(() => strategyDebts.reduce((s, d) => s + d.balance, 0), [strategyDebts]);
   const totalMinimums = useMemo(() => strategyDebts.reduce((s, d) => s + d.minimumPayment, 0), [strategyDebts]);
@@ -382,6 +392,90 @@ function StrategyTab() {
         </div>
       )}
 
+      {/* Debts waiting for a real APR. Displayed above the payoff order so
+          the "set a rate" CTA is visible before the user reads a strategy
+          that excludes them. No interest is computed until they enter one. */}
+      {debtsAwaitingApr.length > 0 && (
+        <PanelBox borderTop="2px solid var(--ft-amber)">
+          <PanelHeader>APR needed · {debtsAwaitingApr.length} debt{debtsAwaitingApr.length !== 1 ? "s" : ""} not in strategy</PanelHeader>
+          <div style={{ padding: "8px 14px 4px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6 }}>
+            Enter each debt's annual interest rate to include it in the payoff strategy. We won't guess a default — interest cost depends entirely on the rate, and inventing one would misprice the payoff order.
+          </div>
+          <VStack gap={6} padding={10}>
+            {debtsAwaitingApr.map(d => (
+              <div
+                key={d.id}
+                style={{
+                  background: "var(--ft-base)",
+                  border: "1px solid var(--ft-border)",
+                  borderLeft: "3px solid var(--ft-amber)",
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>
+                    {d.personName} — {d.description}
+                  </div>
+                  <Text as="div" mono size={9} color="var(--ft-dim)">
+                    Balance: <span className="pnum">{formatGbp(d.gbpEquivalent!)}</span>
+                  </Text>
+                </div>
+                <HStack gap={6} align="center">
+                  <MonoLabel as="span" letterSpacing="0.06em">APR</MonoLabel>
+                  <input
+                    type="number"
+                    placeholder="—"
+                    min={0}
+                    max={100}
+                    step={0.1}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value);
+                      if (!Number.isNaN(v)) setApr(d.id, v);
+                    }}
+                    style={{
+                      background: "var(--ft-surface)",
+                      border: "1px solid var(--ft-border2)",
+                      color: "var(--ft-amber)",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      height: 24,
+                      width: 60,
+                      padding: "0 6px",
+                      outline: "none",
+                      textAlign: "right",
+                    }}
+                  />
+                  <Text as="span" mono size={9} color="var(--ft-dim)">%</Text>
+                </HStack>
+                <div style={{ textAlign: "right", minWidth: 90 }}>
+                  <Text as="div" mono size={11} color="var(--ft-dim)" weight={700}>—</Text>
+                  <Text as="div" mono size={9} color="var(--ft-dim)">no interest cost</Text>
+                </div>
+              </div>
+            ))}
+          </VStack>
+        </PanelBox>
+      )}
+
+      {/* Payoff strategy cannot run when no debt has an APR — say so. */}
+      {strategyDebts.length === 0 && pendingDebts.filter(d => d.gbpEquivalent != null).length > 0 && (
+        <div style={{
+          background: "rgba(163,113,247,0.05)",
+          border: "1px solid var(--ft-border2)",
+          padding: "14px 16px",
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          color: "var(--ft-dim)",
+          lineHeight: 1.7,
+        }}>
+          Payoff strategy needs at least one debt with an APR entered. Set a rate for a debt above and the avalanche / snowball comparison, total-interest tile, and monthly payoff order all populate.
+        </div>
+      )}
+
       {/* Summary strip */}
       {result && (
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
@@ -426,7 +520,9 @@ function StrategyTab() {
             {result.payoffOrder.map((po, i) => {
               const debt = strategyDebts.find(d => d.id === po.id);
               if (!debt) return null;
-              const apr = aprOverrides[po.id] ?? 20;
+              // strategyDebts is filtered to APR-set debts only, so this
+              // lookup is always defined; no fabricated fallback needed.
+              const apr = aprOverrides[po.id] as number;
               return (
                 <div
                   key={po.id}

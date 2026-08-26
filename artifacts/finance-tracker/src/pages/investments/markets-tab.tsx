@@ -1371,9 +1371,15 @@ export function MarketsTab() {
                       {(() => {
                         const eps = q.eps ?? 0;
                         const bv = detail?.bookValue ?? 0;
-                        const gr = detail?.revenueGrowth != null ? detail.revenueGrowth / 100 : 0.08;
+                        // Revenue growth is a required DCF input. A fabricated
+                        // 8% default silently priced every ticker the API had
+                        // no growth data for at "generic-large-cap" growth,
+                        // then rendered a "DCF Estimate" the user read as a
+                        // fair-value target. Now DCF is null when growth is
+                        // unknown and the row shows the honest "—".
+                        const gr = detail?.revenueGrowth != null ? detail.revenueGrowth / 100 : null;
                         const g = (eps > 0 && bv > 0) ? grahamNumber(eps, bv) : null;
-                        const d = (eps > 0) ? dcfValue(eps, gr, 0.10, 15) : null;
+                        const d = (eps > 0 && gr != null) ? dcfValue(eps, gr, 0.10, 15) : null;
                         return (<>
                           <HStack gap={8} justify="between">
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Graham Number</span>
@@ -1383,6 +1389,11 @@ export function MarketsTab() {
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>DCF Estimate</span>
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: d != null && d > 0 ? (q.price < d ? "var(--ft-green)" : "var(--ft-amber)") : "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{d != null && d > 0 ? `$${d.toFixed(2)}` : "—"}</span>
                           </HStack>
+                          {gr == null && (
+                            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em", lineHeight: 1.5 }}>
+                              DCF needs a revenue-growth input the provider did not supply for this ticker.
+                            </div>
+                          )}
                           {g != null && g > 0 && (
                             <HStack gap={8} justify="between">
                               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Margin of Safety</span>

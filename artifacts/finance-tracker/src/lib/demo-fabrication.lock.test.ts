@@ -199,14 +199,15 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/lib/ix-engine.ts", line: 215, reason: "streak counter: not-yesterday → reset to 1 (day count, not currency)" },
   { path: "artifacts/finance-tracker/src/pages/health-score.tsx", line: 746, reason: "savings-rate percentile threshold selector (10% or 20%), not a currency value" },
 
-  // ── The two items below are borderline; flagged for future review ──
-  // Neither is caught by Shape A. Both are silent numeric fallbacks that
-  // flow into financial computation. Left in the allowlist because they
-  // shipped before this lock existed and fall outside the four-commit
-  // scope; earmarked for a follow-up pass.
-  { path: "artifacts/finance-tracker/src/pages/investments/markets-tab.tsx", line: 1374, reason: "TODO REVIEW · assumes 8% revenue growth when API missing — flows into valuation model. Fallback shipped 2026-08-23; consider surfacing 'growth unknown' rather than assuming." },
-  { path: "artifacts/finance-tracker/src/pages/owing.tsx", line: 225, reason: "TODO REVIEW · 20% APR default when user hasn't set an override — flows into interest-cost calc. Argued as UX form default; consider prompt for explicit rate." },
-  { path: "artifacts/finance-tracker/src/pages/owing.tsx", line: 429, reason: "TODO REVIEW · same 20% APR default as :225, in the payoff-strategy view." },
+  // Three earlier entries here (markets-tab.tsx:1374 8% revenue growth,
+  // owing.tsx:225 + :429 20% APR default) were the defect, not exceptions.
+  // Allowlisting them was resolving a failing check by weakening it. Fixed:
+  //   • markets-tab.tsx now renders DCF as "—" plus "growth data unavailable"
+  //     when the provider omits revenueGrowth. No fabricated 8% assumption.
+  //   • owing.tsx StrategyTab filters strategyDebts to APR-set debts only,
+  //     surfaces APR-less debts in a separate "APR needed" panel with an
+  //     empty input and "no interest cost" placeholder. Payoff strategy
+  //     never runs against an invented rate.
 ];
 
 // ── Scanner ────────────────────────────────────────────────────────────────
