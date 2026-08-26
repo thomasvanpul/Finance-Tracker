@@ -633,7 +633,12 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
     if (apiBudgets.length > 0) {
       return apiBudgets.map((b) => ({ label: b.category, base: b.monthlyLimit, cut: 0 }));
     }
-    const share = baseExpenses > 0 ? baseExpenses : 2500;
+    // Without a real budget or a real expense baseline, the sliders would
+    // sit on a fabricated £2500/month split that reads as the user's own.
+    if (baseExpenses <= 0) {
+      return [];
+    }
+    const share = baseExpenses;
     return [
       { label: "Housing", base: Math.round(share * 0.35), cut: 0 },
       { label: "Food & Groceries", base: Math.round(share * 0.15), cut: 0 },
@@ -679,6 +684,17 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
       apply: (cats) => cats.map((c) => c.label === "Transport" ? { ...c, cut: 50 } : c),
     },
   ];
+
+  if (categories.length === 0) {
+    return (
+      <div>
+        <SectionTitle label="Expense Cut Calculator" accentColor="var(--ft-green)" />
+        <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", padding: "20px 16px", lineHeight: 1.7, letterSpacing: "0.02em" }}>
+          Add a budget or import transactions to model expense cuts. The sliders need a baseline monthly figure to work against.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

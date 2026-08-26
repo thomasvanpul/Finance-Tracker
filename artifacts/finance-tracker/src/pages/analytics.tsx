@@ -2238,10 +2238,22 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
   const prevYYMM = monthsAgoStr(1);
 
   const incomeThisMonth = allTxs.filter(t => t.gbpValue > 0 && t.date.startsWith(current)).reduce((s, t) => s + t.gbpValue, 0);
-  const income = incomeThisMonth > 50 ? incomeThisMonth : 3700;
+  const income = incomeThisMonth;
 
   const thisMonthExp = expenses.filter(t => t.date.startsWith(current));
   const prevMonthExp = expenses.filter(t => t.date.startsWith(prevYYMM));
+
+  // Waterfall is meaningless without income to split against.
+  if (income === 0) {
+    return (
+      <div style={panelStyle}>
+        <PanelHeader title="Cash Flow Waterfall" />
+        <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.02em", lineHeight: 1.6 }}>
+          Cash flow waterfall needs at least one income transaction this month. Log or import income and the split fills in.
+        </div>
+      </div>
+    );
+  }
 
   const bucketAmounts: Record<string, number> = {};
   for (const tx of thisMonthExp) {
@@ -3339,19 +3351,21 @@ function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
 function FireTracker({ allTxs }: { allTxs: Tx[] }) {
   const isMobile = useIsMobile();
 
-  const { fiNumber, currentNW, monthlyContrib, yearsToFI, progressPct, monthlyBurn } = useMemo(() => {
+  const { fiNumber, currentNW, monthlyContrib, yearsToFI, progressPct, monthlyBurn, hasEnoughData } = useMemo(() => {
     const now = new Date();
     const m3ago = monthsAgoStr(3);
 
     const recentExpenses = allTxs.filter(t => t.type === "expense" && t.date >= m3ago);
     const recentIncome = allTxs.filter(t => t.type === "income" && t.date >= m3ago);
 
-    const monthlyBurn = recentExpenses.length > 0
-      ? recentExpenses.reduce((s, t) => s + t.gbpValue, 0) / 3
-      : 1500;
-    const monthlyIncome = recentIncome.length > 0
-      ? recentIncome.reduce((s, t) => s + t.gbpValue, 0) / 3
-      : 2500;
+    // FIRE calculation requires real income and real expenses over the last 3
+    // months. Without both we cannot honestly compute burn rate or years-to-FI.
+    if (recentExpenses.length === 0 || recentIncome.length === 0) {
+      return { fiNumber: 0, currentNW: 0, monthlyContrib: 0, yearsToFI: 0, progressPct: 0, monthlyBurn: 0, hasEnoughData: false };
+    }
+
+    const monthlyBurn = recentExpenses.reduce((s, t) => s + t.gbpValue, 0) / 3;
+    const monthlyIncome = recentIncome.reduce((s, t) => s + t.gbpValue, 0) / 3;
     const monthlyContrib = Math.max(0, monthlyIncome - monthlyBurn);
 
     const annualExpenses = monthlyBurn * 12;
@@ -3379,8 +3393,19 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
 
     const progressPct = fiNumber > 0 ? Math.min(100, (nw / fiNumber) * 100) : 0;
 
-    return { fiNumber, currentNW: nw, monthlyContrib, yearsToFI, progressPct, monthlyBurn };
+    return { fiNumber, currentNW: nw, monthlyContrib, yearsToFI, progressPct, monthlyBurn, hasEnoughData: true };
   }, [allTxs]);
+
+  if (!hasEnoughData) {
+    return (
+      <div style={panelStyle}>
+        <PanelHeader title="FIRE Tracker" />
+        <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.02em", lineHeight: 1.6 }}>
+          FIRE calculation needs at least one income and one expense transaction in the last 3 months.
+        </div>
+      </div>
+    );
+  }
 
   const useMock = allTxs.length < 10;
   const displayNW = useMock ? 15340 : currentNW;
