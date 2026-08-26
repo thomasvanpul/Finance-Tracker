@@ -2,6 +2,7 @@ import { Switch, Route, useLocation } from "wouter";
 import { lazy, Suspense } from "react";
 import { MobileHome } from "@/components/mobile/MobileHome";
 import { PhoneTabBar } from "./PhoneTabBar";
+import { DirectoryScreen } from "./DirectoryScreen";
 
 // Directory-wrapped desktop pages. Lazy-loaded so the phone bundle doesn't
 // pay for pages a phone user may never visit.
@@ -157,7 +158,6 @@ const placeholderStyle: React.CSSProperties = {
 function WorthStub()      { return <div style={placeholderStyle}>WORTH</div>; }
 function SpendingStub()   { return <div style={placeholderStyle}>SPENDING</div>; }
 function UpcomingStub()   { return <div style={placeholderStyle}>UPCOMING</div>; }
-function DirectoryStub()  { return <div style={placeholderStyle}>DIRECTORY</div>; }
 function PhoneNotFound()  { return <div style={{ ...placeholderStyle, fontSize: 14 }}>Route not wired</div>; }
 
 // The tab screens absorb legacy URLs while the merge tabs are being built.
@@ -197,7 +197,7 @@ export function PhoneShell() {
           <Route path="/worth" component={WorthStub} />
           <Route path="/spending" component={SpendingStub} />
           <Route path="/upcoming" component={UpcomingStub} />
-          <Route path="/directory" component={DirectoryStub} />
+          <Route path="/directory" component={DirectoryScreen} />
 
           <Route path="/accounts" component={WorthStub} />
           <Route path="/net-worth" component={WorthStub} />
