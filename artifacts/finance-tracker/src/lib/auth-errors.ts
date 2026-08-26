@@ -31,8 +31,18 @@ export type AuthErrorKind =
   | "rate_limited"           // 429 from the auth-limiter middleware
   | "two_factor_wrong"       // TOTP code did not verify
   | "server_waking"          // network timeout during Render cold start
-  | "server_error"           // 500 or unknown API failure
-  | "network"                // fetch itself threw (offline, DNS, …)
+  | "server_error"           // 5xx from the API — the server DID
+                             //   respond and told us it errored. Do
+                             //   NOT map unknown failures here — see
+                             //   `unreachable` for those.
+  | "unreachable"            // request never got a response. Could be
+                             //   the device (offline, DNS, CORS reject),
+                             //   the network in between, a broken
+                             //   build config (native shell missing
+                             //   VITE_NATIVE_API_URL), or the server.
+                             //   We can't tell from here.
+  | "network"                // fetch itself threw a network TypeError
+                             //   (offline is the common case)
   ;
 
 export interface AuthError {
@@ -58,8 +68,17 @@ const MESSAGES: Record<AuthErrorKind, string> = {
   rate_limited:        "Too many attempts. Wait a minute, then try again.",
   two_factor_wrong:    "That 6-digit code did not match.",
   server_waking:       "The server is waking up. This can take up to a minute on the free tier.",
-  server_error:        "Something went wrong on our end. Try again in a moment.",
-  network:             "Could not reach the server. Check your connection.",
+  // 5xx from the API — the server responded and reported an error on
+  // its side. Do not use this for "we never got a response" — that
+  // would put the blame in the wrong place.
+  server_error:        "The server responded with an error. Try again in a moment.",
+  // No response at all. Names the two most likely causes so a
+  // reviewer / user has something to check other than "retry blindly".
+  // "Something went wrong on our end" was the previous wording for
+  // this case — false when the request never left the device (the
+  // native-shell config bug that lost us a whole session).
+  unreachable:         "Could not reach the server. Check your connection; if it still fails, this is more likely a client-side network or config issue than a server one.",
+  network:             "Your device is offline. Reconnect, then try again.",
 };
 
 const DEFAULT_ACTIONS: Partial<Record<AuthErrorKind, AuthError["action"]>> = {
@@ -68,6 +87,7 @@ const DEFAULT_ACTIONS: Partial<Record<AuthErrorKind, AuthError["action"]>> = {
   reset_token_invalid: { label: "Request a new link", intent: "forgot" },
   server_waking:   { label: "Retry", intent: "retry" },
   server_error:    { label: "Retry", intent: "retry" },
+  unreachable:     { label: "Retry", intent: "retry" },
   network:         { label: "Retry", intent: "retry" },
 };
 
@@ -86,9 +106,16 @@ export function makeAuthError(kind: AuthErrorKind): AuthError {
 // nobody expected here will simply route to "server_error"
 // rather than misclaim a specific cause.
 export function classifyAuthError(err: unknown): AuthError {
-  // Network-layer throw (fetch failed, DNS, offline)
+  // Network-layer throw (fetch failed, DNS, offline, CORS reject).
+  // Distinguish "device is offline" (no network at all) from "request
+  // never got a response for some other reason" (DNS, CORS, cross-
+  // origin block, native shell missing VITE_NATIVE_API_URL). The
+  // browser's own online/offline signal is the clearest tell we have.
   if (err instanceof TypeError && /fetch|network|failed to fetch/i.test(err.message)) {
-    return makeAuthError("network");
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return makeAuthError("network");
+    }
+    return makeAuthError("unreachable");
   }
 
   // Better-auth error object shape
@@ -147,7 +174,17 @@ export function classifyAuthError(err: unknown): AuthError {
     return makeAuthError("server_error");
   }
 
-  return makeAuthError("server_error");
+  // Unknown failure. Do NOT map to `server_error` — the classifier
+  // arriving here means we could not identify the failure OR
+  // extract a status code, which means we do not know that the
+  // server ever responded. `unreachable` is the honest bucket.
+  //
+  // Historical bug this prevents: a native shell whose /api call
+  // resolved inside `capacitor://localhost` and never left the
+  // device was rendered as "Something went wrong on our end" — a
+  // literal falsehood about where the failure happened. Cost one
+  // session to diagnose; the fix is a code path, not a copy tweak.
+  return makeAuthError("unreachable");
 }
 
 // Cold-start heuristic. Called AFTER an initial fetch failure.

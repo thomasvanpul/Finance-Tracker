@@ -28,6 +28,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { isNativeShell } from "@/lib/native-auth";
 import { useAuthProviders, type ProviderId } from "@/lib/auth-providers";
 import { useNetworkStatus } from "@/hooks/use-network-status";
 import {
@@ -171,18 +172,25 @@ const LINK_BTN: React.CSSProperties = {
   textUnderlineOffset: 2,
 };
 
-// Double-gate for the passkey button: the server must have the plugin
-// wired (passkeyEnabled from /auth-providers) AND the browser must
-// implement WebAuthn (window.PublicKeyCredential). Either half missing
-// means the control cannot work and we do not render it. Feature-
-// detected on mount, refreshed if the window regains focus after the
-// user enables the feature in browser settings.
+// Triple-gate for the passkey button. All three must be true:
+//   1. Server plugin wired (passkeyEnabled from /auth-providers).
+//   2. Browser implements WebAuthn (window.PublicKeyCredential).
+//   3. NOT running in the Capacitor native shell.
+//
+// WebAuthn in the Capacitor WebView requires the origin to be an
+// HTTPS domain bound to the app via Associated Domains + an
+// apple-app-site-association file. `capacitor://localhost` is not
+// eligible; the JS call throws NotAllowedError. A native bridge
+// (e.g. @capacitor-community/passkey wrapping ASAuthorizationController)
+// is a separate track logged as G14 in the backlog. Until that lands
+// the button clicks silently fail — worse than not showing it at all,
+// which is why the third gate exists.
 function useBrowserWebAuthnSupport(): boolean {
   const [supported, setSupported] = useState<boolean>(
-    () => typeof window !== "undefined" && "PublicKeyCredential" in window,
+    () => typeof window !== "undefined" && "PublicKeyCredential" in window && !isNativeShell(),
   );
   useEffect(() => {
-    const check = () => setSupported(typeof window !== "undefined" && "PublicKeyCredential" in window);
+    const check = () => setSupported(typeof window !== "undefined" && "PublicKeyCredential" in window && !isNativeShell());
     window.addEventListener("focus", check);
     return () => window.removeEventListener("focus", check);
   }, []);
@@ -309,9 +317,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     try {
       await fn();
     } catch (err) {
-      // Network / cold-start disambiguation
+      // Cold-start disambiguation. Both `network` (device offline) and
+      // `unreachable` (request never got a response) can be a Render
+      // cold start — a health probe that succeeds within 3s tells us it
+      // wasn't. `network` is caught here for historical reasons; the
+      // wider `unreachable` bucket added in the auth-errors correctness
+      // fix is the one native-shell config bugs land in.
       const initial = classifyAuthError(err);
-      if (initial.kind === "network") {
+      if (initial.kind === "network" || initial.kind === "unreachable") {
         const cold = await looksLikeColdStart();
         setError(cold ? makeAuthError("server_waking") : initial);
       } else {
