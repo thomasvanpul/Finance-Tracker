@@ -1,6 +1,8 @@
-# Deploying Fintrack (free tier)
+# Deploying Numeris (free tier)
 
-This uses **Render** (hosts the app) + **Neon** (Postgres database), both free.
+This uses **Render** (hosts the API) + **Vercel** (hosts the SPA) + **Neon**
+(Postgres database), all free. The live SPA is at financetracker.work and the
+live API is at `https://numeris-api.onrender.com`.
 
 Claude can't create these accounts or click through their dashboards for you —
 you'll need to do the account setup steps yourself. Everything else (config
@@ -38,8 +40,11 @@ files, code) is already prepared in this repo.
    ```bash
    DATABASE_URL="<your neon url>" pnpm --filter @workspace/db run push
    ```
-7. Render gives you a URL like `https://fintrack-xxxx.onrender.com` — that's
-   your live app. Visit it, enter the `APP_PASSWORD` you set, and you're in.
+7. Render will give you a URL matching the service name in `render.yaml`
+   (currently `numeris-api`, so `https://numeris-api.onrender.com`). Point the
+   Vercel SPA's `/api/*` rewrite at that URL in
+   `artifacts/finance-tracker/vercel.json`. Visit the Vercel domain, enter the
+   `APP_PASSWORD` you set, and you're in.
 
 ## Notes
 

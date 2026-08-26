@@ -12,7 +12,7 @@ Workspace glob: `artifacts/*`, `lib/*`, `lib/integrations/*`, `scripts`
 
 **What it does:** Express 5 REST API server. Handles auth (via `better-auth`), all CRUD routes for the domain (accounts, transactions, upcoming, investments, debts, budgets, goals, subscriptions), market data (FX rates, stock prices via `yahoo-finance2`), Wise bank sync, CSV import, real-time stock streaming (Alpaca WebSocket in `lib/alpaca-stream.ts`), an AI digest/receipt-reading endpoint, and a `/healthz` check. Built with esbuild (`build.mjs`) into `dist/index.mjs`.
 
-**Status:** Live and active. This is the primary backend. The live deployment is on Railway at `https://fintrack-production-ddc0.up.railway.app` — that URL is hardcoded in the root `vercel.json` rewrites and in `artifacts/finance-tracker/.env.local`.
+**Status:** Live and active. This is the primary backend. The live deployment is on **Render** at `https://numeris-api.onrender.com` — that URL is the destination of the `/api/*` rewrite in `artifacts/finance-tracker/vercel.json`, which is the vercel config Vercel actually reads (project Root Directory = `artifacts/finance-tracker`, per `CLAUDE.md`). Verified 26-Aug via `curl -D- https://financetracker.work/api/auth/get-session` returning 200 with `x-render-origin-server: Render`. The root `vercel.json` still points at the old Railway URL and is dead config — see the note further down and BACKLOG § G3.
 
 Key files:
 - `src/app.ts` — Express setup, CORS, Helmet, rate-limiting, pino logging
@@ -26,7 +26,7 @@ Key files:
 
 **What it does:** The web + mobile frontend. A Vite/React SPA named "Numeris". Serves as the user-facing app for all finance features. Also contains Tauri configuration (for desktop .dmg/.exe) and Capacitor configuration (for iOS/Android native). The mobile path is rendered at runtime via a `useIsMobile()` hook in `App.tsx` — `<MobileApp>` vs. the full desktop layout.
 
-**Status:** Live and active. Deployed on Vercel (frontend) and proxies `/api/*` to the Railway backend. The PWA manifest and service worker are configured via `vite-plugin-pwa`.
+**Status:** Live and active. Deployed on Vercel (frontend) and proxies `/api/*` to the Render backend. The PWA manifest and service worker are configured via `vite-plugin-pwa`.
 
 Key files:
 - `src/App.tsx` — wouter router, all page imports, `MobileApp` vs desktop branching
@@ -149,26 +149,32 @@ Four deploy configs exist. Two are live/real. Two are dormant.
 
 ### Vercel — **live, frontend only**
 
-`vercel.json` (root):
+Vercel's project **Root Directory is set to `artifacts/finance-tracker`** (per `CLAUDE.md`), so the vercel config Vercel actually reads is:
+
+`artifacts/finance-tracker/vercel.json`:
 ```json
 {
   "buildCommand": "pnpm --filter @workspace/finance-tracker run build",
-  "outputDirectory": "artifacts/finance-tracker/public",
+  "outputDirectory": "public",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://fintrack-production-ddc0.up.railway.app/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://numeris-api.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
 ```
-Vercel hosts only the SPA static build. All `/api/*` requests are rewritten to Railway. The `VITE_API_URL` in `artifacts/finance-tracker/.env.local` is `https://fintrack-production-ddc0.up.railway.app` confirming Railway is the active backend host.
+Vercel hosts only the SPA static build. All `/api/*` requests are rewritten to Render. Confirmed 26-Aug via `curl -D- https://financetracker.work/api/auth/get-session` returning 200 with `x-render-origin-server: Render` in the response headers.
 
-### Railway — **live, backend only**
+### Root `vercel.json` — **DEAD DECOY, pending decision**
 
-`railway.toml` builds and starts `@workspace/api-server`. The live URL `https://fintrack-production-ddc0.up.railway.app` is embedded in both the root `vercel.json` and the frontend's `.env.local`. This is the confirmed active API host.
+There is a second `vercel.json` at the repo root that points at `https://fintrack-production-ddc0.up.railway.app` (a Railway app that no longer exists — curl returns `{"status":"error","code":404,"message":"Application not found"}`). This file is not read by the live Vercel project (see above; Root Directory = `artifacts/finance-tracker` means only the config in that subdirectory is loaded). It caused most of a session of misdirection when the operator's grep for the API URL found the wrong host. Tracked in **BACKLOG § G3**; deletion pending confirmation that no other Vercel project is linked to the repo root.
 
-### Render — **dormant / fallback doc only**
+### Render — **live, backend only**
 
-`render.yaml` specifies the same `api-server` build/start commands and is a valid config, but `DEPLOYMENT.md` describes it as the primary deploy target for a free-tier setup. The presence of a live Railway URL in `.env.local` and `vercel.json` indicates Railway has superseded the Render setup. Render is not currently serving traffic.
+`render.yaml` specifies the `api-server` build/start commands (service name `numeris-api`, region `frankfurt`, plan `free`, healthCheckPath `/api/healthz`). The live URL is `https://numeris-api.onrender.com`. This is the confirmed active API host as of 26-Aug.
+
+### Railway — **NOT in use**
+
+`railway.toml` exists in the repo and describes the same `api-server` build/start pattern. The old Railway URL is embedded in the dead root `vercel.json` above and in several docs (README.md, DEPLOYMENT.md, INVENTORY.md prose) that are being updated. No Railway service is currently serving traffic; the URL in those references returns 404.
 
 ### Replit — **dev environment only**
 
@@ -256,7 +262,7 @@ A fully custom token layer in `src/index.css`. All tokens are prefixed `--ft-*` 
 
 **The Expo comment is misleading.** The comment `# Must be this exact version because expo requires it` in `pnpm-workspace.yaml` next to the React 19.1.0 pin does not reflect reality — there is no Expo app. The pin may be correct for other reasons (peer dep compatibility) but the comment is wrong.
 
-**Render vs. Railway conflict.** `DEPLOYMENT.md` describes Render as the intended deploy target and gives step-by-step Render instructions. The actual live deploy is on Railway. The Render config is syntactically valid but not in use. The two configs are not contradictory in content (both build/start `api-server`) but the documentation and live reality are misaligned.
+**Render vs. Railway conflict — RESOLVED 26-Aug in favour of Render.** Earlier revisions of these notes had it backwards. Render is the live backend (`numeris-api.onrender.com`, verified via curl to the SPA's /api/auth/get-session returning 200 with `x-render-origin-server` in the response). Railway is no longer serving traffic — the URL embedded in the root `vercel.json` returns 404. `railway.toml` remains in the repo but is unused config.
 
 **No migration history.** The use of `drizzle-kit push` means there is no version-controlled migration trail. Any schema change that has been pushed is unrecoverable from source code alone. If the database is dropped, the current schema can be reproduced from code, but the data and the history of how the schema evolved cannot.
 
@@ -266,4 +272,4 @@ A fully custom token layer in `src/index.css`. All tokens are prefixed `--ft-*` 
 
 **`alpacaStream.connect()` fires unconditionally on server start** (`src/index.ts`). If `ALPACA_API_KEY` / `ALPACA_SECRET_KEY` are absent (common in dev or fresh deploys), the connection will fail silently or error on startup. There is no conditional check visible in the entry point.
 
-**Two `vercel.json` files.** The root `vercel.json` is the actual Vercel project config (with API proxy rewrites pointing to Railway). `artifacts/finance-tracker/vercel.json` is a different, simpler config (SPA rewrite only, no API proxy). These are not identical and could cause confusion — the root one is what Vercel uses.
+**Two `vercel.json` files, and the root one is DEAD DECOY — corrected 26-Aug.** Earlier text here had it backwards. The live Vercel project has Root Directory = `artifacts/finance-tracker`, so `artifacts/finance-tracker/vercel.json` (which correctly rewrites `/api/*` → `numeris-api.onrender.com`) is the one Vercel reads. The root `vercel.json` points at a dead Railway URL and is not read by the live project — but it will mislead anyone who greps for the API URL and finds it first. Tracked in **BACKLOG § G3**; the operator is holding on deletion until it is confirmed no other Vercel project is linked to the repo root. Local `.vercel/project.json` is linked to a project named `finance-tracker-api-server` — likely a legacy api-server project, not the live SPA; unverifiable from the repo alone, needs `vercel projects ls` on the operator's account.
