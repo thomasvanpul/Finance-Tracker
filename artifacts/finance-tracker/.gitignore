@@ -1,2 +1,6 @@
 .vercel
 .env*
+
+# Vite builds to public/, not dist/. A stray dist/ silently became the
+# Capacitor webDir target once already (see commit message for details).
+dist/
