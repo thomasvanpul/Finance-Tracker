@@ -136,10 +136,10 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // Preview-mode UI state — theme-swatch preview, widget-carousel preview.
   // Not a data fabrication; the "preview" here is a controlled UI state
   // toggled by the user, and no financial value is invented.
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1509, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1511, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 676, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 677, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1510, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1512, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 677, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 678, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
 
 const ALLOWLIST_B: readonly AllowEntry[] = [
@@ -192,7 +192,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1273, reason: "chart bar height in px (34 mobile / 40 desktop)" },
   { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 437, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 441, reason: "popup position fallback: no anchor rect → 100px default" },
-  { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 819, reason: "chart bar min height in px (4px)" },
+  { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 820, reason: "chart bar min height in px (4px)" },
   { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 526, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
   { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 527, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
 

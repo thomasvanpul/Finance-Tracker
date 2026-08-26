@@ -15,6 +15,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
+import { apiFetch } from "@/lib/api-fetch";
 import { formatGbp, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
@@ -230,7 +231,7 @@ function formatTaxYear(startYear: number): string {
 }
 
 async function downloadTaxYearCsv(year: number): Promise<void> {
-  const res = await fetch(`/api/export/tax-year/${year}`, { credentials: "include" });
+  const res = await apiFetch(`/api/export/tax-year/${year}`, { credentials: "include" });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Unknown error" }));
     throw new Error((err as { error: string }).error ?? "Failed to download CSV");

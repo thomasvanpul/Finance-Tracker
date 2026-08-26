@@ -9,6 +9,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { applyAutoCategory } from "@/lib/auto-cat";
+import { apiFetch } from "@/lib/api-fetch";
 import { useLocation } from "wouter";
 import { useActivePersona } from "@/lib/persona-hook";
 
@@ -63,7 +64,9 @@ function buildInitialState() {
   };
 }
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+// API_BASE removed — /api requests route through apiFetch, which
+// handles web (relative), native (VITE_NATIVE_API_URL), and the
+// bearer-token header. See lib/api-fetch.ts + G13 · 3/5.
 
 function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -126,7 +129,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
     setScanState("scanning");
     try {
       const imageBase64 = await readFileAsBase64(file);
-      const response = await fetch(`${API_BASE}/api/receipt/parse`, {
+      const response = await apiFetch("/api/receipt/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64, mimeType: file.type }),

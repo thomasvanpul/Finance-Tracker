@@ -23,6 +23,7 @@ import {
   ComposedChart, Customized,
 } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { apiFetch } from "@/lib/api-fetch";
 import { ChartAnalysisModal } from "@/components/investments/chart-analysis-modal";
 import { StatDrillModal } from "@/components/investments/stat-drill-modal";
 import { grahamNumber, dcfValue } from "@/components/investments/black-scholes";
@@ -569,7 +570,7 @@ export function MarketsTab() {
     newsAbortRef.current = controller;
     lastNewsTicker.current = ticker;
     setNews([]); setNewsError(false); setNewsFetching(true);
-    fetch(`/api/market/news?ticker=${encodeURIComponent(ticker)}`, { credentials: "include", signal: controller.signal })
+    apiFetch(`/api/market/news?ticker=${encodeURIComponent(ticker)}`, { credentials: "include", signal: controller.signal })
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d)) setNews(d); else setNewsError(true); })
       .catch((e) => { if (e.name !== "AbortError") setNewsError(true); })

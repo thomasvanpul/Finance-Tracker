@@ -10,6 +10,7 @@ import {
   getGetTransactionSummaryQueryKey,
   getListDebtsQueryKey,
 } from "@workspace/api-client-react";
+import { apiFetch } from "@/lib/api-fetch";
 import { formatGbp } from "@/lib/utils";
 import { computeBalances, minimumTransfers, type Transfer } from "@/lib/split-math";
 import { PageHeader } from "@/components/page-header";
@@ -343,7 +344,7 @@ function ReceiptAnalysisPanel({
     setStatus("loading");
     setError("");
     try {
-      const res = await fetch("/api/ai/receipt-split", {
+      const res = await apiFetch("/api/ai/receipt-split", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: receiptImage, mimeType: receiptMimeType, members }),

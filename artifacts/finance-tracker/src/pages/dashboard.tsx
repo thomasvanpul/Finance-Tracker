@@ -22,6 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+import { apiFetch } from "@/lib/api-fetch";
 import { useWidgets, WIDGET_REGISTRY, type WidgetId, type WidgetSpan } from "@/contexts/widgets-context";
 import { NetWorthWidget } from "@/components/widgets/net-worth";
 import { AccountsSummaryWidget } from "@/components/widgets/accounts-summary";
@@ -786,7 +787,7 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
 
   const fetchInsights = async () => {
     try {
-      const statusRes = await fetch("/api/ai/status", { credentials: "include" });
+      const statusRes = await apiFetch("/api/ai/status", { credentials: "include" });
       if (!statusRes.ok) return; // no skeleton flash — AI unavailable
       const { available } = await statusRes.json() as { available: boolean };
       if (!available) return; // confirmed unavailable — stay hidden, no flash

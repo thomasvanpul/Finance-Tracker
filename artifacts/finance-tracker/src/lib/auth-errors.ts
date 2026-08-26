@@ -1,3 +1,5 @@
+import { apiFetch } from "./api-fetch";
+
 // Auth error taxonomy.
 //
 // One string ("Could not reach the server") has meant: bad
@@ -159,7 +161,10 @@ export async function looksLikeColdStart(): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3000);
   try {
-    const res = await fetch("/api/healthz", {
+    // apiFetch prepends the native API base on Capacitor iOS — otherwise
+    // the health probe resolves inside the local bundle and returns
+    // "ok" instantly, hiding a genuinely cold server.
+    const res = await apiFetch("/api/healthz", {
       method: "GET",
       signal: controller.signal,
     });

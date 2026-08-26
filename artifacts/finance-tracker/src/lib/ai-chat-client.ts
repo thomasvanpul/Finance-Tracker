@@ -19,7 +19,13 @@
 // generator and collect() its tokens — don't add a JSON variant
 // that would drift.
 
-const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL ?? "");
+// SSE stream needs raw Response.body (a ReadableStream), which
+// @workspace/api-client-react's customFetch does not surface — it
+// parses to JSON/text/blob. apiFetch is the raw-fetch wrapper and
+// preserves streaming. It also handles native VITE_NATIVE_API_URL
+// prefixing and the bearer-token header (G13 · option 3), so the
+// SSE path works identically on web and in the Capacitor shell.
+import { apiFetch } from "./api-fetch";
 
 // No-bytes-received watchdog. A streaming response is fine as long
 // as bytes keep flowing; what we're guarding against is the socket
@@ -178,7 +184,7 @@ export async function streamChat(
       cb.onError("No message to send.");
       return;
     }
-    const res = await fetch(`${API_BASE}/api/ai/chat`, {
+    const res = await apiFetch("/api/ai/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
       credentials: "include",

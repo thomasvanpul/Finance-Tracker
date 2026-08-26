@@ -13,6 +13,7 @@ import {
   getListAccountsQueryKey,
   getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
+import { apiFetch } from "@/lib/api-fetch";
 import { formatGbp, formatNative, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PrivDesc } from "@/contexts/privacy-context";
@@ -1133,7 +1134,7 @@ export default function Transactions() {
 
         let suggestions: Array<{ id: number; category: string }> = [];
         try {
-          const res = await fetch("/api/ai/batch-categorize", {
+          const res = await apiFetch("/api/ai/batch-categorize", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ transactions: batch }),

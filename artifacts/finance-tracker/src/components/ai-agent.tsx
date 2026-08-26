@@ -72,8 +72,11 @@ const PAGE_LABELS: Record<string, string> = {
 // component and pages/ai-coach.tsx use exactly the same wire contract
 // and both benefit from the watchdog + honest error messages.
 import { streamChat, type ChatServerEvent } from "@/lib/ai-chat-client";
+import { apiFetch } from "@/lib/api-fetch";
 
-const API_BASE = import.meta.env.DEV ? "" : (import.meta.env.VITE_API_URL ?? "");
+// API_BASE removed — /api requests route through apiFetch, which handles
+// both the web (relative) and native (VITE_NATIVE_API_URL) cases and
+// attaches the bearer token on native. See lib/api-fetch.ts + G13 · 3/5.
 
 // ── Skin-specific sling box themes ────────────────────────────────────────────
 
@@ -550,7 +553,7 @@ export function AiAgent({ sidebarW }: { sidebarW?: number }) {
 
   // Check availability
   useEffect(() => {
-    fetch(`${API_BASE}/api/ai/status`, { credentials: "include" })
+    apiFetch("/api/ai/status", { credentials: "include" })
       .then((r) => r.json())
       .then((d: { available: boolean }) => setAvailable(d.available))
       .catch(() => setAvailable(false));

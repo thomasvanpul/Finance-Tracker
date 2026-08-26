@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Send, Loader2, BotMessageSquare, Sparkles, RotateCcw, TrendingDown, Target, PiggyBank, AlertTriangle, Zap, TrendingUp, BarChart2, Flame, Shield, Users } from "lucide-react";
 import { useListTransactions, useListAccounts, useGetDashboard, useListBudgets, useGetInvestmentSummary, useListGoals, useListInvestments } from "@workspace/api-client-react";
+import { apiFetch } from "@/lib/api-fetch";
 import { formatGbp } from "@/lib/utils";
 import { PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
@@ -392,7 +393,7 @@ export default function AiCoach() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/api/ai/status", { credentials: "include", signal: controller.signal })
+    apiFetch("/api/ai/status", { credentials: "include", signal: controller.signal })
       .then(r => r.json())
       .then((d: { available: boolean }) => setAiAvailable(d.available))
       .catch((e) => { if (e.name !== "AbortError") setAiAvailable(false); });

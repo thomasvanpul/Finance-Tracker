@@ -101,11 +101,15 @@ describe("AI chat whitespace lock · the SHIPPED client filter, read from disk",
 
   it("the guard's short-circuit precedes the fetch call in source order", () => {
     // Guard AFTER the fetch is the same defect wearing the right words.
+    // Accept `/api/ai/chat` in a string literal ("…"), a template literal
+    // (`…`) or the apiFetch("…") form added in G13 · 3/5 — the invariant
+    // is guard-before-fetch, not a specific quote character.
     const src = clientSource();
     const guardAt = src.indexOf("wireMessages.length === 0");
-    const fetchAt = src.indexOf("/api/ai/chat`");
+    const fetchMatch = /(?:apiFetch|fetch)\(["'`]\/api\/ai\/chat/.exec(src);
     expect(guardAt, "empty-wire guard not found").toBeGreaterThan(-1);
-    expect(fetchAt, "fetch to /api/ai/chat not found").toBeGreaterThan(-1);
+    expect(fetchMatch, "fetch/apiFetch to /api/ai/chat not found").not.toBeNull();
+    const fetchAt = fetchMatch!.index;
     expect(
       guardAt < fetchAt,
       `${CLIENT_REL}: the empty-wire guard must run BEFORE the fetch, not after it.`,

@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { apiFetch } from "@/lib/api-fetch";
 import { getAiStyle, setAiStylePref, type AiStyle } from "@/components/ai-agent";
 import { loadCatRules, saveCatRules, type CatRule } from "@/lib/auto-cat";
 import { PERSONAS, loadPersonaIds, applyPersonas, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_INSIGHT_PREVIEWS, PERSONA_BG, widgetIdsForPersona, type PersonaId } from "@/lib/persona";
@@ -1718,7 +1719,7 @@ function DigestPanel() {
   const sendNow = async () => {
     setSending(true);
     try {
-      const res = await fetch("/api/digest/send", { method: "POST", credentials: "include" });
+      const res = await apiFetch("/api/digest/send", { method: "POST", credentials: "include" });
       const data = await res.json();
       if (data.ok) {
         toast({ title: "Digest sent!", description: "Check your inbox for this week's summary." });
@@ -2479,7 +2480,7 @@ export default function Settings() {
   // Data export
   const handleExportBackup = async () => {
     try {
-      const res = await fetch("/api/export/backup");
+      const res = await apiFetch("/api/export/backup");
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
