@@ -36,7 +36,7 @@ Key files:
 - `src/components/widgets/` — 20 draggable dashboard widgets
 - `src/components/ui/` — shadcn/ui "new-york" variant components, extended with custom inputs (`field.tsx`, `item.tsx`, `kbd.tsx`, `input-group.tsx`, `button-group.tsx`, `empty.tsx`)
 - `src/index.css` — design-system token layer (`--ft-*` CSS variables, three density modes, font stack: IBM Plex Sans / JetBrains Mono / Space Grotesk)
-- `capacitor.config.ts` — app ID `work.financetracker.app`, appName `Numeris`, webDir `dist`
+- `capacitor.config.ts` — app ID `com.thomasvp.numeris`, appName `Numeris`, webDir `dist`
 - `src-tauri/tauri.conf.json` — productName `Numeris`, devUrl `http://localhost:4321`, Tauri 2.x
 - `vercel.json` (inside this package) — SPA rewrite only; a separate root-level `vercel.json` handles the full monorepo deploy with API proxy rewrites
 

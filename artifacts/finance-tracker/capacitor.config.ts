@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'work.financetracker.app',
+  appId: 'com.thomasvp.numeris',
   appName: 'Numeris',
   webDir: 'dist'
 };
