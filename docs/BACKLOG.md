@@ -604,15 +604,34 @@ renderer for a decorative avatar is real battery and bundle cost.
     [ ] `npx cap sync ios && npx cap open ios` builds without error
     [ ] App launches on iOS Simulator; blank page or launch fail
         means the webDir bundle isn't packaged (see 726c01f)
-    [ ] Sign-up form submits and returns to a logged-in shell
-        (previously: "server_error → Something went wrong on our end")
-    [ ] Xcode network inspector shows the sign-up POST leaving the
-        device with target = the VITE_NATIVE_API_URL host
-    [ ] Sign-up response has header `set-auth-token: <opaque>`
+    [ ] Sign-up POST /api/auth/sign-up/email visible in Xcode
+        network inspector, target = the VITE_NATIVE_API_URL host,
+        response is HTTP 200
+    [ ] Sign-up response carries header `set-auth-token: <opaque>`
+        (better-auth's bearer plugin — see G13 · 1/5)
+    [ ] IMMEDIATELY after that POST returns, the very next request
+        (typically GET /api/auth/get-session fired by useSession)
+        carries `Authorization: Bearer <same token as set-auth-
+        token above>`. THIS IS THE STEP THAT CAUGHT THE 28-Aug
+        FAILURE — token capture was wired, token SENDING via
+        authClient's own $fetch pipeline was not. If the header is
+        absent, the session flip never happens and the app is stuck
+        on the auth gate. Do not accept "sign-up worked, session
+        will follow" — the get-session request must show the header
+        outbound on the wire, or the fix is not landed.
+    [ ] get-session response body has a non-null `user` object.
+        Null is the failure signature of the previous checkbox
+        (server got no auth, returned unauthenticated).
+    [ ] Auth gate disappears; app shell is visible with the signed-
+        in user's email at the top-right
+    [ ] Any authenticated non-auth call (e.g. Dashboard load —
+        GET /api/dashboard) — Xcode shows the request carries
+        `Authorization: Bearer <same token>`. Two headers cover two
+        separate code paths (auth-client's own $fetch vs api-client-
+        react's customFetch); a bug on either half breaks half the
+        app, not all of it.
     [ ] Kill and relaunch app — still signed in. If sign-in screen
         appears, the token did not persist to Preferences
-    [ ] Any authenticated call (Dashboard load) — Xcode shows the
-        request carries `Authorization: Bearer <same token>`
     [ ] AI Coach / floating assistant streams tokens (not a wait-
         then-dump). Confirms SSE works via WebView native fetch
         rather than CapacitorHttp
@@ -627,6 +646,20 @@ renderer for a decorative avatar is real battery and bundle cost.
     [ ] With airplane mode off but VITE_NATIVE_API_URL pointing at
         a bad host, sign-in shows "Could not reach the server" NOT
         "The server responded with an error"
+
+  **Why the checklist expanded 28-Aug.** Original step ordering said
+  "Sign-up form submits and returns to a logged-in shell" — a
+  behavioural check that lumps three separate wire events into one
+  observation. When the operator ran it, sign-up succeeded on the
+  server but the shell never appeared. That single ambiguous
+  checkbox couldn't isolate whether (a) the POST failed, (b) the
+  set-auth-token header was missing, (c) the token wasn't captured,
+  (d) the next request lacked the Authorization header, or (e) the
+  session response was unauthenticated. It was (d) — token capture
+  worked, token sending in authClient's own $fetch pipeline didn't.
+  The rewrite above breaks the single "returns to a logged-in shell"
+  step into six wire-observable checkboxes so the next equivalent
+  bug is isolated by which specific checkbox is the first to fail.
 
   **Why no CI runtime test.** Every step above needs the real
   Capacitor shell, real WKWebView, real @capacitor/preferences (which
