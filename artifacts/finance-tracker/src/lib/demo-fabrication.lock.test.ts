@@ -155,7 +155,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1601, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 449, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 236, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 729, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 739, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
   { path: "artifacts/finance-tracker/src/pages/year-review.tsx", line: 1270, reason: "chart max denominator: empty topCats → 1 to avoid /0" },
 
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the
@@ -215,20 +215,27 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   //     empty input and "no interest cost" placeholder. Payoff strategy
   //     never runs against an invented rate.
 
-  // ── PENDING REVIEW · surfaced by widening Shape B to non-style PropertyAssignments 26-Aug ──
-  // The PropertyAssignment exclusion in isInValueSlot was narrowed to
-  // style/layout keys and JSX-attribute contexts (its whole purpose was
-  // to skip `{ opacity: hover ? 0.5 : 1 }`-style noise). Widening it
-  // caught the intended target (pension.tsx :91 `targetMonthlyIncome ??
-  // 2500`, now fixed) plus the three below. These are pension form
-  // defaults for a fresh install; unlike targetMonthlyIncome they
-  // don't invent a financial GOAL, they invent inputs that flow into
-  // the projection. Not deciding by exclusion — allowlisted here as
-  // "pending operator decision" so the lock stays green while the
-  // discussion happens.
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 92, reason: "PENDING REVIEW · currentAge fresh-install default (30). User's own age; they'll adjust immediately on first use. Feeds yearsToRetirement." },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 93, reason: "PENDING REVIEW · retirementAge fresh-install default (67 = UK state pension age). Almost every UK user uses this ±2yr. Feeds yearsToRetirement." },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 94, reason: "PENDING REVIEW · growthRate fresh-install default (7% annual). Closer to targetMonthlyIncome shape — the user may not have a specific view and the 7% assumption then silently drives every projection number." },
+  // ── Pension defaults, surfaced when Shape B widened to non-style PropertyAssignments (26-Aug) ──
+  //
+  // pension.tsx:92 currentAge — REMOVED. Fixed at source: currentAge is
+  // nullable, projection short-circuits to an "enter your current age"
+  // empty state until entered. Assuming 30 was inventing a personal
+  // fact and driving every projected number off it.
+  //
+  // Documented external fact — legitimate default. 67 is the UK State
+  // Pension age (Pensions Act 2014 · gov.uk/state-pension-age), not a
+  // number invented about this specific user. Users can review the
+  // input and change it; the "at age 67" caption on the Projected Pot
+  // cell means the assumption is disclosed at the point the projection
+  // renders. Different class from targetMonthlyIncome / currentAge,
+  // both of which invented personal state.
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 103, reason: "retirementAge fresh-install default (67 = UK State Pension age, Pensions Act 2014). Documented external fact, not an invented personal number. Disclosed at render as 'at age 67 · in Nyr' on the Projected Pot cell." },
+  //
+  // growthRate — DEFERRED, see docs/BACKLOG.md § G11. Decision pending
+  // (fix at source OR keep with inline disclosure at the projection
+  // point). Reported ground truth in the backlog entry so the deferral
+  // is visible outside this test file.
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 104, reason: "growthRate default 7% — deferred; see docs/BACKLOG.md § G11. Choice between null-by-default and disclosed-assumption pending operator sign-off." },
 ];
 
 // ── Scanner ────────────────────────────────────────────────────────────────

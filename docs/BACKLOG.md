@@ -520,6 +520,55 @@ renderer for a decorative avatar is real battery and bundle cost.
   `investments.tsx` is 2,753 lines (was 5,092 at the start of E4);
   `markets-tab.tsx` is 2,047 lines.
 
+- **G10 · api-server suite intermittently loses ~5 tests — INVESTIGATE
+  after mobile.** Observed once in ~8 runs: 5 failed / 294 passed for
+  `pnpm --filter @workspace/api-server test --run`, all from a single
+  test file whose name I could not identify in that run because the
+  output scrolled. Every run prints
+  `ERR_ERL_KEY_GEN_IPV6` warnings from `express-rate-limit` in
+  `app.rate-limit.test.ts` (21 tests) and `app.ai-limiter.test.ts`,
+  both timing-dependent and the obvious first suspects. Suite is fine
+  in seven of eight runs. A suite that fails one run in eight is a
+  suite that will start being ignored — kill the flake before that
+  happens, but do not chase it now.
+  **Done when:** the failure is reproduced with `--reporter=verbose`,
+  the specific test names named here, and either fixed or explicitly
+  marked flaky with a stated cause. If it turns out to be a real bug
+  the description is upgraded.
+
+- **G11 · Pension `growthRate ?? 7` — DECIDE fix-vs-disclose.** The
+  fabricated £2,500/mo target and the demographic-age default have
+  both been fixed at the source. `growthRate` is different: 7% is a
+  conventional long-term equity-return assumption, not a personal
+  fact about the user (like age) or a goal they never chose (like
+  target income). The question is whether the current rendering
+  discloses it at the point the projection is read.
+  **Ground truth (verified 26-Aug against pension.tsx at 8c895da):**
+  the top-of-page KpiBar renders "Projected Pot · £660k · at age 67 ·
+  in 37yr" with no growth-rate mention in any of the four cells. The
+  PensionHealthBlock footer says *"Income = pot ÷ 240 months …
+  Assumes constant growth rate to retirement"* — flags that an
+  assumption exists but does not state the value. The `SensitivityTable`
+  ("Return Scenario Analysis") below the health block does highlight
+  the selected rate row inside a multi-rate matrix, but the user has
+  to scroll past three panels to reach it.
+  **Two candidate paths:**
+    (a) Null-by-default like currentAge and targetMonthlyIncome —
+        projection doesn't run until user enters a rate. Consistent
+        with the two other fixes, no fabrication.
+    (b) Keep 7% as a disclosed default. Add the rate to the Projected
+        Pot cell caption ("at age 67 · in 37yr · assumes 7%/yr growth")
+        and inline an adjust link that scrolls to the growth-rate
+        input, or make the caption itself a clickable pill. Matches
+        the operator's stated exception for "explicitly labelled
+        assumption on the projection itself".
+  **Interim:** allowlist entry at `pension.tsx:94` cites this backlog
+  item as the reason for deferral, so the deferral is visible in a
+  place other than a test file.
+  **Done when:** either (a) or (b) is applied end-to-end, the allowlist
+  entry is removed, and this backlog item is closed with the commit
+  reference.
+
 ---
 
 ## Superseded

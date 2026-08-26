@@ -32,7 +32,15 @@ interface PensionInputs {
   currentPot: number;
   employeeContrib: number;
   employerContrib: number;
-  currentAge: number;
+  // Nullable. A fabricated 30 for currentAge invented the user's own age
+  // — a personal fact they know and would immediately correct on first
+  // use — and it silently drove `yearsToRetirement` and therefore every
+  // projected number. Now null-by-default: projection short-circuits
+  // to an "enter your current age" empty state until they enter one.
+  currentAge: number | null;
+  // Retirement age keeps its default. 67 is the UK State Pension age
+  // (Pensions Act 2014); it is a documented external fact users can
+  // review and change, not a made-up personal number.
   retirementAge: number;
   growthRate: number;
   includeStatePension: boolean;
@@ -89,7 +97,9 @@ function loadPension(): PensionInputs {
         currentPot: stored.currentPot ?? 0,
         employeeContrib: stored.employeeContrib ?? 0,
         employerContrib: stored.employerContrib ?? 0,
-        currentAge: stored.currentAge ?? 30,
+        // Fresh-install null for currentAge; a stored 0 is treated as
+        // "not set" (legacy installs that predate this fix).
+        currentAge: stored.currentAge != null && stored.currentAge > 0 ? stored.currentAge : null,
         retirementAge: stored.retirementAge ?? 67,
         growthRate: stored.growthRate ?? 7,
         includeStatePension: stored.includeStatePension ?? true,
@@ -104,7 +114,7 @@ function loadPension(): PensionInputs {
     currentPot: 0,
     employeeContrib: 0,
     employerContrib: 0,
-    currentAge: 30,
+    currentAge: null,
     retirementAge: 67,
     growthRate: 7,
     includeStatePension: true,
@@ -1050,26 +1060,41 @@ function PensionSection() {
     setInputs(prev => ({ ...prev, [key]: value }));
   }
 
-  const yearsToRetirement = Math.max(0, inputs.retirementAge - inputs.currentAge);
+  // yearsToRetirement is null when we do not yet know the user's current
+  // age. Every downstream calc (projectedPot, totalContributions, chart
+  // series) short-circuits rather than running against a fabricated
+  // "you-are-30" assumption; the render below shows an empty-state
+  // Pension Overview until the user enters an age.
+  const currentAge = inputs.currentAge;
+  const yearsToRetirement = currentAge != null && currentAge > 0
+    ? Math.max(0, inputs.retirementAge - currentAge)
+    : null;
   const monthlyTotal = inputs.employeeContrib + inputs.employerContrib;
 
-  const projectedPot = useMemo(() => calcPotFV(inputs.currentPot, monthlyTotal, inputs.growthRate, yearsToRetirement),
-    [inputs.currentPot, monthlyTotal, inputs.growthRate, yearsToRetirement]);
+  const projectedPot = useMemo(
+    () => yearsToRetirement != null
+      ? calcPotFV(inputs.currentPot, monthlyTotal, inputs.growthRate, yearsToRetirement)
+      : null,
+    [inputs.currentPot, monthlyTotal, inputs.growthRate, yearsToRetirement]
+  );
 
-  const monthlyIncomeFromPot = projectedPot / 240;
+  const monthlyIncomeFromPot = projectedPot != null ? projectedPot / 240 : null;
   const monthlyStatePension = inputs.includeStatePension ? STATE_PENSION_ANNUAL / 12 : 0;
-  const totalMonthlyIncome = monthlyIncomeFromPot + monthlyStatePension;
+  const totalMonthlyIncome = monthlyIncomeFromPot != null ? monthlyIncomeFromPot + monthlyStatePension : null;
 
-  const totalContributions = inputs.currentPot + monthlyTotal * yearsToRetirement * 12;
-  const totalGrowth = Math.max(0, projectedPot - totalContributions);
+  const totalContributions = yearsToRetirement != null
+    ? inputs.currentPot + monthlyTotal * yearsToRetirement * 12
+    : null;
+  const totalGrowth = projectedPot != null && totalContributions != null
+    ? Math.max(0, projectedPot - totalContributions)
+    : null;
 
-  const chartData = useMemo(() => buildChartData(
-    inputs.currentPot,
-    inputs.employeeContrib,
-    inputs.employerContrib,
-    inputs.growthRate,
-    yearsToRetirement,
-  ), [inputs.currentPot, inputs.employeeContrib, inputs.employerContrib, inputs.growthRate, yearsToRetirement]);
+  const chartData = useMemo(
+    () => yearsToRetirement != null
+      ? buildChartData(inputs.currentPot, inputs.employeeContrib, inputs.employerContrib, inputs.growthRate, yearsToRetirement)
+      : [],
+    [inputs.currentPot, inputs.employeeContrib, inputs.employerContrib, inputs.growthRate, yearsToRetirement]
+  );
 
   // Build contribution breakdown bar chart (last few years + now)
   const contribBreakdownData = useMemo(() => {
@@ -1101,18 +1126,28 @@ function PensionSection() {
       {/* KPI Row */}
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 16 }}>
         <PanelHeader color="var(--ft-green)">Pension Overview</PanelHeader>
-        <KpiBar
-          projectedPot={projectedPot}
-          totalContributions={totalContributions}
-          totalGrowth={totalGrowth}
-          monthlyIncomeFromPot={monthlyIncomeFromPot}
-          monthlyStatePension={monthlyStatePension}
-          includeStatePension={inputs.includeStatePension}
-          yearsToRetirement={yearsToRetirement}
-          retirementAge={inputs.retirementAge}
-          currentPot={inputs.currentPot}
-          targetMonthlyIncome={inputs.targetMonthlyIncome}
-        />
+        {yearsToRetirement == null || projectedPot == null || totalContributions == null || totalGrowth == null || monthlyIncomeFromPot == null ? (
+          // Age unknown → projection cannot honestly run. A fabricated
+          // "age 30" default fed every projected number here (and the
+          // "in 37yr" caption) with no user input. Empty state until
+          // they enter it.
+          <div style={{ padding: "24px 20px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7, letterSpacing: "0.02em" }}>
+            Enter your <strong style={{ color: "var(--ft-text)" }}>current age</strong> in the form on the right and this row fills in: projected pot at retirement, total contributions, investment growth, and monthly retirement income.
+          </div>
+        ) : (
+          <KpiBar
+            projectedPot={projectedPot}
+            totalContributions={totalContributions}
+            totalGrowth={totalGrowth}
+            monthlyIncomeFromPot={monthlyIncomeFromPot}
+            monthlyStatePension={monthlyStatePension}
+            includeStatePension={inputs.includeStatePension}
+            yearsToRetirement={yearsToRetirement}
+            retirementAge={inputs.retirementAge}
+            currentPot={inputs.currentPot}
+            targetMonthlyIncome={inputs.targetMonthlyIncome}
+          />
+        )}
       </div>
 
       {/* Grid: chart + inputs */}
@@ -1193,7 +1228,19 @@ function PensionSection() {
             <input type="number" min={0} step={10} value={inputs.employerContrib || ""} onChange={e => set("employerContrib", Number(e.target.value) || 0)} style={numInputStyle} />
           </InputRow>
           <InputRow label="Current Age" help="Your age today">
-            <input type="number" min={16} max={80} step={1} value={inputs.currentAge} onChange={e => set("currentAge", Number(e.target.value))} style={numInputStyle} />
+            <input
+              type="number"
+              min={16}
+              max={80}
+              step={1}
+              placeholder="—"
+              value={inputs.currentAge ?? ""}
+              onChange={e => {
+                const v = Number(e.target.value);
+                set("currentAge", Number.isFinite(v) && v > 0 ? v : null);
+              }}
+              style={numInputStyle}
+            />
           </InputRow>
 
           {/* Retirement age with inline label */}
@@ -1204,7 +1251,9 @@ function PensionSection() {
                   Retirement Age
                 </div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
-                  {yearsToRetirement}yr to go · retire {new Date().getFullYear() + yearsToRetirement}
+                  {yearsToRetirement != null
+                    ? <>{yearsToRetirement}yr to go · retire {new Date().getFullYear() + yearsToRetirement}</>
+                    : <>enter current age to see years-to-retirement</>}
                 </div>
               </div>
               <input type="number" min={50} max={90} step={1} value={inputs.retirementAge} onChange={e => set("retirementAge", Number(e.target.value))} style={numInputStyle} />
@@ -1293,7 +1342,7 @@ function PensionSection() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
                 <HStack justify="between">
                   <Text as="span" color="var(--ft-muted)">From pension pot</Text>
-                  <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{formatGbp(Math.round(monthlyIncomeFromPot))}</span>
+                  <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{monthlyIncomeFromPot != null ? formatGbp(Math.round(monthlyIncomeFromPot)) : "—"}</span>
                 </HStack>
                 {inputs.includeStatePension && (
                   <HStack justify="between">
@@ -1303,7 +1352,7 @@ function PensionSection() {
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2 }}>
                   <Text as="span" weight={600} color="var(--ft-text)">Total</Text>
-                  <span className="pnum" style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{formatGbp(Math.round(totalMonthlyIncome))}</span>
+                  <span className="pnum" style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{totalMonthlyIncome != null ? formatGbp(Math.round(totalMonthlyIncome)) : "—"}</span>
                 </div>
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 8 }}>Assumes 20-yr drawdown · pot / 240 months</div>
@@ -1349,27 +1398,39 @@ function PensionSection() {
                 <ContribLegendDot key={label} color={color} label={label} />
               ))}
             </div>
-            {/* Employer/employee ratio note */}
+            {/* Employer/employee ratio note. The ratio itself is computable
+                without an age; the projected-pot tail is only shown when
+                we can actually project it (age known). */}
             {monthlyTotal > 0 && (
               <div style={{ marginTop: 10, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                 Employee <span className="pnum">{inputs.employeeContrib > 0 ? ((inputs.employeeContrib / monthlyTotal) * 100).toFixed(0) : 0}%</span> ·
-                Employer <span className="pnum">{inputs.employerContrib > 0 ? ((inputs.employerContrib / monthlyTotal) * 100).toFixed(0) : 0}%</span> of total contributions ·
-                Projected pot: <span className="pnum">{fmtPot(Math.round(projectedPot))}</span>
+                Employer <span className="pnum">{inputs.employerContrib > 0 ? ((inputs.employerContrib / monthlyTotal) * 100).toFixed(0) : 0}%</span> of total contributions
+                {projectedPot != null && (
+                  <>
+                    {" · "}
+                    Projected pot: <span className="pnum">{fmtPot(Math.round(projectedPot))}</span>
+                  </>
+                )}
               </div>
             )}
           </div>
         </div>
       )}
 
-      <PensionHealthBlock
-        totalMonthlyIncome={totalMonthlyIncome}
-        targetMonthlyIncome={inputs.targetMonthlyIncome}
-        monthlyTotal={monthlyTotal}
-        yearsToRetirement={yearsToRetirement}
-        currentPot={inputs.currentPot}
-        growthRate={inputs.growthRate}
-        includeStatePension={inputs.includeStatePension}
-      />
+      {/* Health-and-sensitivity blocks are age-dependent — same argument
+          as the KpiBar guard above. StatePensionPanel and AnnualAllowance
+          are age-independent so they render either way. */}
+      {yearsToRetirement != null && totalMonthlyIncome != null && totalContributions != null ? (
+        <PensionHealthBlock
+          totalMonthlyIncome={totalMonthlyIncome}
+          targetMonthlyIncome={inputs.targetMonthlyIncome}
+          monthlyTotal={monthlyTotal}
+          yearsToRetirement={yearsToRetirement}
+          currentPot={inputs.currentPot}
+          growthRate={inputs.growthRate}
+          includeStatePension={inputs.includeStatePension}
+        />
+      ) : null}
 
       <StatePensionPanel
         includeStatePension={inputs.includeStatePension}
@@ -1378,14 +1439,16 @@ function PensionSection() {
 
       <AnnualAllowanceSection monthlyTotal={monthlyTotal} />
 
-      <SensitivityTable
-        currentPot={inputs.currentPot}
-        monthlyTotal={monthlyTotal}
-        yearsToRetirement={yearsToRetirement}
-        totalContributions={totalContributions}
-        includeStatePension={inputs.includeStatePension}
-        selectedRate={inputs.growthRate}
-      />
+      {yearsToRetirement != null && totalContributions != null ? (
+        <SensitivityTable
+          currentPot={inputs.currentPot}
+          monthlyTotal={monthlyTotal}
+          yearsToRetirement={yearsToRetirement}
+          totalContributions={totalContributions}
+          includeStatePension={inputs.includeStatePension}
+          selectedRate={inputs.growthRate}
+        />
+      ) : null}
     </div>
   );
 }
