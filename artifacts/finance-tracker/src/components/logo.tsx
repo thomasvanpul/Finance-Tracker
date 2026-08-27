@@ -4,6 +4,15 @@ import { useState } from "react";
 const DIAG_LEN = 24.2;
 const VERT_LEN = 18.5;
 
+// Stroke widths — one constant per element, used by BOTH hover and rest
+// paths. Previously two paths carried slightly different fudge factors
+// (verticals 2.2/2.3, diagonal 2.2/2.4) that drifted rather than
+// deliberately encoded a hover-thicken effect. If a future hover-weight
+// change is wanted, edit the constants — the paths follow.
+const STROKE_VERT = 2.2;
+const STROKE_DIAG = 2.2;
+const STROKE_RING = 1.6;   // element-level baseline; keyframes still animate it during the burst
+
 export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; size?: number }) {
   return (
     <svg
@@ -131,20 +140,20 @@ export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; si
       {hovered
         ? <line key="hl" className="nr-draw-l"
             x1="6" y1="23" x2="6" y2="5"
-            stroke="var(--ft-text)" strokeWidth="2.3" strokeLinecap="round" />
+            stroke="var(--ft-text)" strokeWidth={STROKE_VERT} strokeLinecap="round" />
         : <line key="il"
             x1="6" y1="23" x2="6" y2="5"
-            stroke="var(--ft-text)" strokeWidth="2.2" strokeLinecap="round" opacity="0.85" />
+            stroke="var(--nr-mark-vert)" strokeWidth={STROKE_VERT} strokeLinecap="round" />
       }
 
       {/* ── Diagonal ── */}
       {hovered
         ? <line key="hd" className="nr-draw-d"
             x1="6" y1="23" x2="22" y2="5"
-            stroke="var(--ft-accent)" strokeWidth="2.4" strokeLinecap="round" />
+            stroke="var(--ft-accent)" strokeWidth={STROKE_DIAG} strokeLinecap="round" />
         : <line key="id" className="nr-idle-diag"
             x1="6" y1="23" x2="22" y2="5"
-            stroke="var(--ft-accent)" strokeWidth="2.2" strokeLinecap="round" />
+            stroke="var(--ft-accent)" strokeWidth={STROKE_DIAG} strokeLinecap="round" />
       }
 
       {/* ── Traveling dot along diagonal (hover only) ── */}
@@ -157,17 +166,17 @@ export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; si
       {hovered
         ? <line key="hr" className="nr-draw-r"
             x1="22" y1="5" x2="22" y2="23"
-            stroke="var(--ft-text)" strokeWidth="2.3" strokeLinecap="round" />
+            stroke="var(--ft-text)" strokeWidth={STROKE_VERT} strokeLinecap="round" />
         : <line key="ir"
             x1="22" y1="5" x2="22" y2="23"
-            stroke="var(--ft-text)" strokeWidth="2.2" strokeLinecap="round" opacity="0.85" />
+            stroke="var(--nr-mark-vert)" strokeWidth={STROKE_VERT} strokeLinecap="round" />
       }
 
       {/* ── Burst rings (hover only, timed after draw completes) ── */}
       {hovered && (
         <>
-          <circle key="r1" className="nr-ring-1" cx="22" cy="5" r="2.8" fill="none" stroke="var(--ft-accent)" opacity="0" />
-          <circle key="r2" className="nr-ring-2" cx="22" cy="5" r="2.8" fill="none" stroke="var(--ft-accent)" opacity="0" />
+          <circle key="r1" className="nr-ring-1" cx="22" cy="5" r="2.8" fill="none" stroke="var(--ft-accent)" strokeWidth={STROKE_RING} opacity="0" />
+          <circle key="r2" className="nr-ring-2" cx="22" cy="5" r="2.8" fill="none" stroke="var(--ft-accent)" strokeWidth={STROKE_RING} opacity="0" />
         </>
       )}
 

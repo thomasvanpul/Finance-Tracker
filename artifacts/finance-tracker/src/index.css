@@ -252,6 +252,22 @@
   --ft-tab-bar-h: 64px;  /* PhoneTabBar rendered height: 44 minHeight + 10+10 padding-y */
 }
 
+/* ── Logo mark tokens ───────────────────────────────────────────────────────
+   The logo mark composes two vertical strokes as scaffolding and one
+   diagonal as the featured stroke (accent colour, breathing idle
+   animation, traveling dot on hover). Verticals sit slightly back at
+   rest so the composition has a clear hierarchy — the diagonal is the
+   star. On hover, verticals brighten to full --ft-text.
+
+   --nr-mark-vert is theme-derived via color-mix so a theme change
+   updates the sit-back colour automatically. Value picked to match the
+   85%-opacity-of-text look the mark had historically, without the
+   drift and the "internal relationship inverts across the idle
+   breathing cycle" wobble the opacity attribute produced. */
+:root {
+  --nr-mark-vert: color-mix(in oklab, var(--ft-text), transparent 15%);
+}
+
 /* Density: affects row/cell padding, not page zoom */
 :root {
   --ft-cell-py: 7px;
