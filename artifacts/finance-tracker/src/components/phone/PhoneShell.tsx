@@ -4,32 +4,28 @@ import { MobileHome } from "@/components/mobile/MobileHome";
 import { PhoneTabBar } from "./PhoneTabBar";
 import { DirectoryScreen } from "./DirectoryScreen";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
+import { DesktopOnlyScreen } from "./DesktopOnlyScreen";
 
 // Directory-wrapped desktop pages. Lazy-loaded so the phone bundle doesn't
-// pay for pages a phone user may never visit.
+// pay for pages a phone user may never visit. Only pages that phone users
+// can reach (see WRAPPED_ROUTES below); desktop-only pages are NOT lazy-
+// imported here because the phone shell never renders them.
 const Owing          = lazy(() => import("@/pages/owing"));
 const Settings       = lazy(() => import("@/pages/settings"));
 const Profile        = lazy(() => import("@/pages/profile"));
 const Reports        = lazy(() => import("@/pages/reports"));
 const Goals          = lazy(() => import("@/pages/goals"));
-const HealthScore    = lazy(() => import("@/pages/health-score"));
 const WhatIf         = lazy(() => import("@/pages/whatif"));
 const Tax            = lazy(() => import("@/pages/tax"));
 const Mortgage       = lazy(() => import("@/pages/mortgage"));
 const Split          = lazy(() => import("@/pages/split"));
-const SharedExpenses = lazy(() => import("@/pages/shared-expenses"));
-const YearReview     = lazy(() => import("@/pages/year-review"));
 const Import         = lazy(() => import("@/pages/import"));
-const AiCoach        = lazy(() => import("@/pages/ai-coach"));
 const Decisions      = lazy(() => import("@/pages/decisions"));
 const Fire           = lazy(() => import("@/pages/fire"));
 const Pension        = lazy(() => import("@/pages/pension"));
 const Calculators    = lazy(() => import("@/pages/calculators"));
 const Projection     = lazy(() => import("@/pages/projection"));
 const Briefing       = lazy(() => import("@/pages/briefing"));
-const Business       = lazy(() => import("@/pages/business"));
-const FamilyFinance  = lazy(() => import("@/pages/family-finance"));
-const TradingJournal = lazy(() => import("@/pages/trading-journal"));
 
 // WRAPPED_ROUTES — the ratchet baseline for the D5 lock. Every string here
 // MUST be wrapped by wrappedRoute() below; every wrappedRoute() call MUST
@@ -39,22 +35,34 @@ const TradingJournal = lazy(() => import("@/pages/trading-journal"));
 // artifacts/finance-tracker/src/components/phone/wrapped-routes.lock.test.ts
 // (added in a later commit).
 export const WRAPPED_ROUTES: readonly string[] = [
-  // Plan
-  "/goals", "/health-score",
-  // Calculators
+  // Calculators (7)
   "/whatif", "/pension", "/fire", "/projection", "/mortgage", "/tax", "/calculators",
-  // People & money
-  "/owing", "/split", "/shared",
-  // Assistant
-  "/ai-coach", "/briefing",
-  // Reports
-  "/reports", "/year-review", "/decisions",
-  // Separate contexts (localStorage-only storage — see docs/BACKLOG.md § D6)
-  "/business", "/family", "/trading",
-  // Data
+  // Reports (3)
+  "/reports", "/decisions", "/briefing",
+  // People (2)
+  "/owing", "/split",
+  // Goals (1)
+  "/goals",
+  // Data (1)
   "/import",
-  // Settings
+  // Settings (2)
   "/profile", "/settings",
+];
+
+// DESKTOP_ONLY_ROUTES — the phone shell knows these URLs but does NOT
+// render their content. A phone user following a deep link to any of
+// them lands on DesktopOnlyScreen, which explains the state and offers
+// a route back to /directory. Amendment lines followed (:78, :82).
+//
+// Cross-checked at build time by Lock #18 alongside WRAPPED_ROUTES:
+//   - every string here MUST be handled by a desktopOnlyRoute() call
+//   - every desktopOnlyRoute() call MUST have its path in this list
+//   - WRAPPED_ROUTES ∩ DESKTOP_ONLY_ROUTES MUST be empty
+//   - both sets stay disjoint from the tab-URL set
+export const DESKTOP_ONLY_ROUTES: readonly string[] = [
+  "/business", "/family", "/trading",
+  "/health-score", "/year-review",
+  "/shared", "/ai-coach",
 ];
 
 // Shape-matching skeleton for lazy-loaded directory items. Sizes to
@@ -84,6 +92,20 @@ function wrappedRoute(
           </Suspense>
         </DirectoryItemScreen>
       )}
+    </Route>
+  );
+}
+
+// desktopOnlyRoute — the phone shell knows this URL but renders
+// DesktopOnlyScreen (an explainer that offers a route back). Same
+// identifier discipline as wrappedRoute so Lock #18 can parse both by
+// AST. Body copy is route-specific so the user learns where the feature
+// actually lives — for /ai-coach that means naming the floating
+// assistant on phone.
+function desktopOnlyRoute(path: string, title: string, body: string) {
+  return (
+    <Route key={path} path={path}>
+      {() => <DesktopOnlyScreen title={title} body={body} />}
     </Route>
   );
 }
@@ -252,8 +274,9 @@ export function PhoneShell() {
           <Route path="/subscriptions" component={UpcomingStub} />
           <Route path="/calendar" component={UpcomingStub} />
 
-          {wrappedRoute("/goals", Goals, "Goals")}
-          {wrappedRoute("/health-score", HealthScore, "Health Score")}
+          {/* Wrapped desktop pages — the D5 ratchet keeps this list
+              equal to WRAPPED_ROUTES. Only routes phones can usefully
+              open at 390px land here. */}
           {wrappedRoute("/whatif", WhatIf, "What If")}
           {wrappedRoute("/pension", Pension, "Pension")}
           {wrappedRoute("/fire", Fire, "FIRE")}
@@ -261,20 +284,26 @@ export function PhoneShell() {
           {wrappedRoute("/mortgage", Mortgage, "Mortgage")}
           {wrappedRoute("/tax", Tax, "Tax")}
           {wrappedRoute("/calculators", Calculators, "Calculators")}
+          {wrappedRoute("/reports", Reports, "Reports")}
+          {wrappedRoute("/decisions", Decisions, "Decisions")}
+          {wrappedRoute("/briefing", Briefing, "Briefing")}
           {wrappedRoute("/owing", Owing, "Owing")}
           {wrappedRoute("/split", Split, "Split")}
-          {wrappedRoute("/shared", SharedExpenses, "Shared")}
-          {wrappedRoute("/ai-coach", AiCoach, "AI Coach")}
-          {wrappedRoute("/briefing", Briefing, "Briefing")}
-          {wrappedRoute("/reports", Reports, "Reports")}
-          {wrappedRoute("/year-review", YearReview, "Year Review")}
-          {wrappedRoute("/decisions", Decisions, "Decisions")}
-          {wrappedRoute("/business", Business, "Business")}
-          {wrappedRoute("/family", FamilyFinance, "Family")}
-          {wrappedRoute("/trading", TradingJournal, "Trading")}
+          {wrappedRoute("/goals", Goals, "Goals")}
           {wrappedRoute("/import", Import, "Import")}
           {wrappedRoute("/profile", Profile, "Profile")}
           {wrappedRoute("/settings", Settings, "Settings")}
+
+          {/* Desktop-only URLs — phone shell renders DesktopOnlyScreen.
+              Each explainer names the alternative on phone if one exists
+              (e.g. the floating assistant for /ai-coach). */}
+          {desktopOnlyRoute("/business", "Business", "Business finance uses a separate context that's easier to work with on a larger screen. Open Numeris on your Mac or iPad to use it.")}
+          {desktopOnlyRoute("/family", "Family", "Household finance uses a separate context that's easier to work with on a larger screen. Open Numeris on your Mac or iPad to use it.")}
+          {desktopOnlyRoute("/trading", "Trading", "The trading journal captures per-trade notes and P&L on a wider grid. Open Numeris on your Mac or iPad to use it.")}
+          {desktopOnlyRoute("/health-score", "Health Score", "The health-score breakdown is denser than a phone can render honestly. Open Numeris on your Mac or iPad to see it.")}
+          {desktopOnlyRoute("/year-review", "Year Review", "The annual retrospective is a dense read that's easier on a larger screen. Open Numeris on your Mac or iPad.")}
+          {desktopOnlyRoute("/shared", "Shared expenses", "Joint-account sharing lives on desktop right now. Open Numeris on your Mac or iPad to use it.")}
+          {desktopOnlyRoute("/ai-coach", "AI Coach", "On phone the AI Coach lives in the floating assistant — tap the AI button at the bottom-right of any screen to chat.")}
 
           <Route component={PhoneNotFound} />
         </Switch>
