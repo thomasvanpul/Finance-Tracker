@@ -119,6 +119,41 @@ Never point local development at production.
   carries a `style?` escape hatch, and none of them accepts a prop that leaks
   across the split.
 
+- **A new feature needs a home before it needs a route.** Every route
+  addition — sidebar entry on desktop, directory entry on phone — answers two
+  questions in the PR body before it lands:
+
+  1. **Where does it live?** Which of the phone's five tabs (HOME · WORTH ·
+     SPENDING · UPCOMING · DIRECTORY) OR which desktop sidebar section. The
+     five tabs and the desktop sidebar are the app's structure, not
+     decoration. A feature that cannot name a home is a feature without a
+     job — the structure of the app is meant to answer "where would a user
+     look for this."
+  2. **What does it replace or extend?** A section inside an existing screen;
+     a lens/segment inside a tab; a directory entry that opens a modal or a
+     subscreen. A new route is the exception. The exception is argued for on
+     its own merits — *"why can't this be a lens on WORTH", "why can't this
+     be a section inside SPENDING", "why can't this open as a sheet from
+     the directory".*
+
+  The default is: a section inside an existing screen. A new URL is a claim
+  that this feature is one of the ~20 things a user will ever look for by
+  name. If it's not one of those twenty, it's chrome, and chrome doesn't
+  get a URL.
+
+  **Failure symptom, in this repo:** 40 routes on the phone, 30 of which
+  cannot be found by a phone user without a search box; 30 entries in the
+  desktop sidebar for the same reason. That is what produced the current
+  shape — one feature at a time, each with a defensible argument for its
+  own route, and the aggregate shape is unfindable. This rule is what
+  stops the next iteration from producing it again.
+
+  **Same discipline from the other direction:** the Mobile Amendment
+  (`artifacts/finance-tracker/src/index.css:82`) requires that every screen
+  has *"at least one thing the user can do, not only read."* A screen
+  without a job doesn't earn a home; a home without a job doesn't earn a
+  URL. The two rules meet in the middle.
+
 ## Design rules
 
 `artifacts/finance-tracker/src/index.css` opens with the Anti-Vibe Constitution
