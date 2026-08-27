@@ -5,6 +5,7 @@ import {
   useListAccounts,
   useGetMarketQuotes,
   getGetMarketQuotesQueryKey,
+  useGetFxRates,
   type StockQuote,
 } from "@workspace/api-client-react";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
@@ -119,6 +120,23 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
     },
   );
 
+  // FX rates: the RATE for GBP/{ccy} comes from useGetFxRates, NOT from
+  // useGetMarketQuotes for the =X ticker. The two endpoints answer
+  // different questions (rate vs full quote) and rely on different
+  // provider chains — Yahoo → Frankfurter fallback on the FX side,
+  // Yahoo → Twelve Data (no Frankfurter) on the quote side. When Yahoo
+  // fails on a per-symbol basis for GBPMYR=X, the FX endpoint still has
+  // a rate because Frankfurter fills it in; the quote endpoint returns
+  // nothing. This pane was previously reading BOTH rate and change from
+  // the quote and rendering "—" for the rate while a converted account
+  // balance three rows above used the working (Frankfurter) rate. The
+  // screen contradicted itself. See defect #1 note (26 Aug session).
+  //
+  // Change % still comes from useGetMarketQuotes when the quote is
+  // available — Frankfurter can't compute a day-change (no
+  // previousClose). "—" when the quote is missing is honest.
+  const { data: fxRates } = useGetFxRates();
+
   const quoteMap = useMemo(() => {
     const m = new Map<string, QuoteExt>();
     for (const q of quotes as QuoteExt[]) m.set(q.ticker, q);
@@ -188,12 +206,19 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
           const q = quoteMap.get(f.pair);
           const isFirst = heldPositions.length === 0 && i === 0;
           const isLast = i === heldForeignCurrencies.length - 1;
+          // Rate from useGetFxRates (Yahoo → Frankfurter fallback).
+          // Change % from useGetMarketQuotes when available; "—" when
+          // the =X quote orphaned out of the yahoo/twelvedata chain.
+          const rate = fxRates?.rates[f.ccy];
+          const rateSafe = typeof rate === "number" && Number.isFinite(rate) && rate > 0 ? rate : null;
+          const chg = q?.changePercent ?? null;
           return (
             <FxRow
               key={`fx-${f.ccy}`}
               ccy={f.ccy}
               nativeSum={f.nativeSum}
-              quote={q}
+              rate={rateSafe}
+              chg={chg}
               isFirst={isFirst}
               isLast={isLast}
             />
@@ -266,18 +291,22 @@ function PositionRow({ ticker, shares, quote, isFirst, isLast, onClick }: Positi
 
 // ── FX row ──────────────────────────────────────────────────────────────────
 // GBP/XXX · rate · change% · "your XXX N ≈ £abc" relevance line.
+//
+// Rate and change are separately sourced by the parent — see the comment
+// on the useGetFxRates call in MarketPane. Rate is scalar and can come
+// from Frankfurter when Yahoo is down; change requires previousClose and
+// only comes from the quote endpoint.
 
 interface FxRowProps {
   ccy: string;
   nativeSum: number;
-  quote?: QuoteExt;
+  rate: number | null;
+  chg: number | null;
   isFirst: boolean;
   isLast: boolean;
 }
 
-function FxRow({ ccy, nativeSum, quote, isFirst, isLast }: FxRowProps) {
-  const chg = quote?.changePercent ?? null;
-  const rate = typeof quote?.price === "number" && Number.isFinite(quote.price) && quote.price > 0 ? quote.price : null;
+function FxRow({ ccy, nativeSum, rate, chg, isFirst, isLast }: FxRowProps) {
   const baseEquivalent = rate != null && rate > 0 ? nativeSum / rate : null;
   const sym = CURRENCY_SYMBOLS[ccy] ?? `${ccy} `;
   return (
