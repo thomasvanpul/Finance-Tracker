@@ -735,6 +735,50 @@ renderer for a decorative avatar is real battery and bundle cost.
   not "is it a number we made up", it is "are we presenting it as the
   user's data or as our assumption".
 
+- **G18 · MarketPane's GBP-as-base assumption — LOGGED, not fixed.**
+  The FX disagreement on MobileHome (defect #1, 27 Aug session) was
+  fixed in commit `af8c785` by routing the FX rate through
+  `useGetFxRates` instead of `useGetMarketQuotes`. That fixed the
+  visible contradiction (rate = "—" while balance-sheet used 5.49)
+  but preserved the client-side GBP-as-base assumption because a
+  wider redesign is how these become permanent. Five specific sites
+  in `src/components/mobile/MarketPane.tsx` still hardcode GBP:
+
+  1. **:36–48** — `FX_PAIR_TICKERS` map keys foreign currencies to
+     `GBP${ccy}=X` tickers only. For an MYR-baseline user with USD
+     holdings, the ticker should be `MYR${ccy}=X` (or an inverted
+     `${ccy}MYR=X`), not GBP-rooted. Yahoo's FX pair coverage is
+     asymmetric; needs verification before flipping.
+  2. **:88** — `if (a.currency === "GBP") continue;` skips accounts
+     whose currency is GBP, assuming they don't need conversion. For
+     an MYR-baseline user, GBP accounts DO need conversion — they're
+     as foreign as USD or EUR. Fix: `if (a.currency ===
+     getBaseCurrency()) continue;`
+  3. **:303** — FX row label reads `GBP/{ccy}`. For an MYR-baseline
+     user this labels the rate direction wrong. Fix: `{baseCurrency}/{ccy}`.
+  4. **:307** — Rate rendering assumes GBP-per-foreign semantics; if
+     the client fetched a native-base rate table (see #1) the direction
+     would be inverted and the caption ("your RM N ≈ £X") wouldn't
+     hold either.
+  5. **:315** — The relevance caption `your {sym}{nfmt(nativeSum)} ≈
+     {formatMoney(baseEquivalent, getBaseCurrency())}` uses
+     `getBaseCurrency()` correctly for the ≈ conversion — that one
+     is already dynamic. But it depends on `baseEquivalent =
+     nativeSum / rate` where `rate` is the GBP-rooted rate. When the
+     ticker scheme changes (see #1) the arithmetic direction inverts.
+
+  **Why not fix in the same commit as the FX-source rename:** each of
+  the five sites depends on the other four. Flipping the ticker scheme
+  without flipping the label reads as a bug; flipping labels without
+  the tickers renders the wrong rate. A single reviewable diff needs
+  all five together plus a re-verification that useGetFxRates on the
+  MYR-base path returns a rate the client can interpret in the new
+  direction.
+
+  **Same defect class as the raw-£ purge (26 Aug).** Track this here
+  so it doesn't become "the wider redesign" and stay unfixed for
+  months.
+
 ---
 
 ## Superseded
