@@ -526,7 +526,8 @@ export interface InvestmentUpdate {
 export interface InvestmentSummary {
   totalValueGbp: number;
   totalPlGbp: number;
-  totalPlPercent: number;
+  /** @nullable */
+  totalPlPercent: number | null;
   positions: number;
   unavailablePositions: number;
 }
@@ -981,7 +982,8 @@ export type DashboardSummaryAccountBreakdownItem = {
 export type DashboardSummaryPortfolio = {
   totalValueGbp: number;
   totalPlGbp: number;
-  totalPlPercent: number;
+  /** @nullable */
+  totalPlPercent: number | null;
   /** @nullable */
   dayChangeGbp: number | null;
   /** @nullable */

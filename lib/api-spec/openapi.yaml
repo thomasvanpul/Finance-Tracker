@@ -1657,8 +1657,12 @@ components:
           type: number
         totalPlGbp:
           type: number
+        # Nullable: percentage is undefined when the portfolio's cost
+        # basis is zero (no holdings). Rendering "+0.00%" for a user who
+        # holds nothing is a fabricated return the data does not support;
+        # null signals "no return to compute" so consumers render "—".
         totalPlPercent:
-          type: number
+          type: ["number", "null"]
         positions:
           type: integer
         unavailablePositions:
@@ -2144,8 +2148,10 @@ components:
               type: number
             totalPlGbp:
               type: number
+            # Nullable: undefined when the portfolio has no cost basis
+            # (empty portfolio). Same reason as InvestmentSummary above.
             totalPlPercent:
-              type: number
+              type: ["number", "null"]
             # Intraday delta = sum over positions of shares * (price - previousClose),
             # converted to base. NULL when ANY contributing position lacks previousClose
             # or its FX leg — a half-computed delta is a lie on the headline that

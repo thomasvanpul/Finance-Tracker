@@ -36,7 +36,7 @@ export const GetDashboardResponse = zod.object({
   "portfolio": zod.object({
   "totalValueGbp": zod.number(),
   "totalPlGbp": zod.number(),
-  "totalPlPercent": zod.number(),
+  "totalPlPercent": zod.number().nullable(),
   "dayChangeGbp": zod.number().nullable(),
   "dayChangePercent": zod.number().nullable()
 }),
@@ -408,7 +408,7 @@ export const CreateInvestmentBody = zod.object({
 export const GetInvestmentSummaryResponse = zod.object({
   "totalValueGbp": zod.number(),
   "totalPlGbp": zod.number(),
-  "totalPlPercent": zod.number(),
+  "totalPlPercent": zod.number().nullable(),
   "positions": zod.number(),
   "unavailablePositions": zod.number()
 })

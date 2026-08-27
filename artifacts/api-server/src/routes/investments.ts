@@ -52,12 +52,14 @@ router.get("/investments/summary", async (req, res): Promise<void> => {
   const totalValueGbp = priced.reduce((s, i) => s + (i.gbpValue ?? 0), 0);
   const totalPlGbp = priced.reduce((s, i) => s + (i.plGbp ?? 0), 0);
   const totalCostGbp = totalValueGbp - totalPlGbp;
-  const totalPlPercent = totalCostGbp > 0 ? (totalPlGbp / totalCostGbp) * 100 : 0;
+  // No cost basis → no return to compute. Null, not 0. See dashboard.ts
+  // portfolioPlPercent for the same rule and reason.
+  const totalPlPercent: number | null = totalCostGbp > 0 ? (totalPlGbp / totalCostGbp) * 100 : null;
   res.json(
     GetInvestmentSummaryResponse.parse({
       totalValueGbp: Math.round(totalValueGbp * 100) / 100,
       totalPlGbp: Math.round(totalPlGbp * 100) / 100,
-      totalPlPercent: Math.round(totalPlPercent * 100) / 100,
+      totalPlPercent: totalPlPercent == null ? null : Math.round(totalPlPercent * 100) / 100,
       positions: enriched.length,
       unavailablePositions: enriched.length - priced.length,
     })

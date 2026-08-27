@@ -7,18 +7,22 @@ import { useActivePersona } from "@/lib/persona-hook";
 import { useMemo } from "react";
 import { Link } from "wouter";
 
-function KpiValue({ raw, color, fmt }: { raw: number; color: string; fmt: (v: number) => string }) {
-  const animated = useCountUp(raw);
+function KpiValue({ raw, color, fmt }: { raw: number | null; color: string; fmt: (v: number) => string }) {
+  // Null-value (an unknown or undefined-in-the-data case) renders as
+  // "—" per the app-wide "no fabricated number" rule. Never fall
+  // through to fmt(raw ?? 0) — that reintroduces the fabricated-zero
+  // defect Lock #16 was written to prevent.
+  const animated = useCountUp(raw ?? 0);
   return (
     <PrivNum className="text-xs font-bold font-mono whitespace-nowrap" style={{ color }}>
-      {fmt(animated)}
+      {raw == null ? "—" : fmt(animated)}
     </PrivNum>
   );
 }
 
 interface KpiItem {
   label: string;
-  raw: number;
+  raw: number | null;
   color: string;
   fmt: (v: number) => string;
 }
@@ -44,7 +48,7 @@ export function KpiBar() {
         return [
           { label: "Portfolio", raw: data.portfolio.totalValueGbp, color: "var(--ft-blue)", fmt },
           { label: "P&L", raw: data.portfolio.totalPlGbp, color: data.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt },
-          { label: "Return", raw: data.portfolio.totalPlPercent, color: data.portfolio.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt: fmtPct },
+          { label: "Return", raw: data.portfolio.totalPlPercent, color: (data.portfolio.totalPlPercent ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt: fmtPct },
           { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt },
         ];
       case "budget":

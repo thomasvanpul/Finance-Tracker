@@ -1193,7 +1193,7 @@ function InvKpiBar({ cells, style }: { cells: KpiCell[]; style?: React.CSSProper
 
 interface PortfolioPositionsTableProps {
   investments: Investment[];
-  summary: { totalValueGbp: number; totalPlGbp: number; totalPlPercent: number } | null | undefined;
+  summary: { totalValueGbp: number; totalPlGbp: number; totalPlPercent: number | null } | null | undefined;
   quoteMap: Map<string, QuoteData>;
   classMap: Record<number, AssetClass>;
   tickerFilter: string;
@@ -1466,8 +1466,10 @@ function PortfolioPositionsTable({
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "none", color: summary.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
                   {summary.totalPlGbp >= 0 ? "+" : ""}{formatBaseMoney(summary.totalPlGbp)}
                 </td>
-                <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 11, borderBottom: "none", color: summary.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
-                  {summary.totalPlPercent >= 0 ? "▲" : "▼"} {Math.abs(summary.totalPlPercent).toFixed(2)}%
+                <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 11, borderBottom: "none", color: summary.totalPlPercent == null ? "var(--ft-dim)" : summary.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
+                  {summary.totalPlPercent == null
+                    ? "—"
+                    : `${summary.totalPlPercent >= 0 ? "▲" : "▼"} ${Math.abs(summary.totalPlPercent).toFixed(2)}%`}
                 </td>
                 <td style={{ ...TD, borderBottom: "none" }} />
                 <td style={{ ...TD, borderBottom: "none", borderRight: "none" }} />
@@ -1935,7 +1937,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     {
       label: "TOTAL P&L",
       value: `${summary.totalPlGbp >= 0 ? "+" : ""}${formatBaseMoney(summary.totalPlGbp)}`,
-      delta: `${summary.totalPlPercent >= 0 ? "▲" : "▼"} ${Math.abs(summary.totalPlPercent).toFixed(2)}%`,
+      delta: summary.totalPlPercent == null
+        ? "—"
+        : `${summary.totalPlPercent >= 0 ? "▲" : "▼"} ${Math.abs(summary.totalPlPercent).toFixed(2)}%`,
       deltaPositive: summary.totalPlGbp >= 0,
     },
     {

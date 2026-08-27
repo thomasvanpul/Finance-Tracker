@@ -2676,7 +2676,7 @@ export default function Dashboard() {
     const netSavings = dashData.thisMonth?.netSavings ?? 0;
     const portfolioVal = dashData.portfolio?.totalValueGbp ?? 0;
     const portfolioPl  = dashData.portfolio?.totalPlGbp ?? 0;
-    const portfolioPct = dashData.portfolio?.totalPlPercent ?? 0;
+    const portfolioPct = dashData.portfolio?.totalPlPercent ?? null;
     // Intraday delta (P1b). Nullable — the server returns null when
     // ANY contributing position lacks previousClose or an FX leg.
     // Do NOT coerce to 0: the market persona's headline needs to
@@ -2751,8 +2751,14 @@ export default function Dashboard() {
     // wealth-persona use if it grows one.
     const PORTFOLIO_RETURN: KpiCellData = {
       label: "RETURN",
-      value: portfolioVal > 0 ? `${portfolioPct >= 0 ? "+" : ""}${portfolioPct.toFixed(2)}%` : "–",
-      valueColor: portfolioPct >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+      // Null return means no cost basis (empty portfolio) — no percent
+      // to compute. Renders "—", never a fabricated "+0.00%".
+      value: portfolioPct == null
+        ? "–"
+        : `${portfolioPct >= 0 ? "+" : ""}${portfolioPct.toFixed(2)}%`,
+      valueColor: portfolioPct == null
+        ? "var(--ft-dim)"
+        : portfolioPct >= 0 ? "var(--ft-green)" : "var(--ft-red)",
     };
     // Intraday portfolio delta — the market persona's headline.
     // Renders "—" when the API returns null (any position missing

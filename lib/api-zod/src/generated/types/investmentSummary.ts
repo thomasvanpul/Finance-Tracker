@@ -9,7 +9,8 @@
 export interface InvestmentSummary {
   totalValueGbp: number;
   totalPlGbp: number;
-  totalPlPercent: number;
+  /** @nullable */
+  totalPlPercent: number | null;
   positions: number;
   unavailablePositions: number;
 }

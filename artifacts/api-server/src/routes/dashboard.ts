@@ -568,7 +568,10 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const netLiquidity = totalCash - committedOut + expectedIn;
   const netWorth = totalCash + portfolioValueGbp;
   const portfolioPlGbp = portfolioValueGbp - portfolioCostGbp;
-  const portfolioPlPercent = portfolioCostGbp > 0 ? (portfolioPlGbp / portfolioCostGbp) * 100 : 0;
+  // No cost basis (empty portfolio) → no return to compute. Null, not 0
+  // — a "+0.00%" render for a user who holds nothing is a fabricated
+  // return the data does not support. Client renders "—" when null.
+  const portfolioPlPercent: number | null = portfolioCostGbp > 0 ? (portfolioPlGbp / portfolioCostGbp) * 100 : null;
   const dayChangePercent: number | null =
     dayChangeGbp == null || dayChangePrevValueGbp == null || dayChangePrevValueGbp === 0
       ? null
@@ -585,7 +588,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       portfolio: {
         totalValueGbp: Math.round(portfolioValueGbp * 100) / 100,
         totalPlGbp: Math.round(portfolioPlGbp * 100) / 100,
-        totalPlPercent: Math.round(portfolioPlPercent * 100) / 100,
+        totalPlPercent: portfolioPlPercent == null ? null : Math.round(portfolioPlPercent * 100) / 100,
         dayChangeGbp: dayChangeGbp == null ? null : Math.round(dayChangeGbp * 100) / 100,
         dayChangePercent: dayChangePercent == null ? null : Math.round(dayChangePercent * 100) / 100,
       },
