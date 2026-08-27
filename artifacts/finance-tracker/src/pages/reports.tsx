@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/api-fetch";
-import { formatGbp, formatDate } from "@/lib/utils";
+import { formatBaseMoney, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
@@ -268,7 +268,7 @@ function TrendTooltip({ active, payload, label }: {
       {payload.map((p) => (
         <div key={p.name} style={{ display: "flex", justifyContent: "space-between", gap: 16, color: p.color, marginBottom: 2 }}>
           <Text as="span" color="var(--ft-dim)">{p.name}</Text>
-          <span className="pnum">{p.value < 0 ? "−" : ""}{formatGbp(Math.abs(p.value))}</span>
+          <span className="pnum">{p.value < 0 ? "−" : ""}{formatBaseMoney(Math.abs(p.value))}</span>
         </div>
       ))}
     </div>
@@ -290,7 +290,7 @@ function DonutTooltip({ active, payload }: {
       fontSize: 10,
     }}>
       <Text as="span" color="var(--ft-muted)">{p.name}: </Text>
-      <span className="pnum" style={{ color: "var(--ft-text)" }}>{formatGbp(p.value)}</span>
+      <span className="pnum" style={{ color: "var(--ft-text)" }}>{formatBaseMoney(p.value)}</span>
     </div>
   );
 }
@@ -390,13 +390,13 @@ function IncomeStatementRow({ m, rowIdx }: IncomeStatementRowProps) {
     >
       <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>{formatMonthLabel(m.month)}</td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.income == null ? "var(--ft-dim)" : (m.income > 0 ? "var(--ft-green)" : "var(--ft-muted)") }}>
-        <span className="pnum">{m.income == null ? "—" : `+${formatGbp(m.income)}`}</span>
+        <span className="pnum">{m.income == null ? "—" : `+${formatBaseMoney(m.income)}`}</span>
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.expenses == null ? "var(--ft-dim)" : (m.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)") }}>
-        <span className="pnum">{m.expenses == null ? "—" : `−${formatGbp(m.expenses)}`}</span>
+        <span className="pnum">{m.expenses == null ? "—" : `−${formatBaseMoney(m.expenses)}`}</span>
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", fontWeight: 700, color: m.netSavings == null ? "var(--ft-dim)" : (m.netSavings !== 0 ? (isNeg ? "var(--ft-red)" : "var(--ft-green)") : "var(--ft-muted)") }}>
-        <span className="pnum">{m.netSavings == null ? "—" : `${m.netSavings >= 0 ? "+" : ""}${formatGbp(m.netSavings)}`}</span>
+        <span className="pnum">{m.netSavings == null ? "—" : `${m.netSavings >= 0 ? "+" : ""}${formatBaseMoney(m.netSavings)}`}</span>
       </td>
       <td style={{ ...TD, textAlign: "right", color: margin == null ? "var(--ft-dim)" : (margin < 0 ? "var(--ft-red)" : margin >= 20 ? "var(--ft-green)" : "var(--ft-amber)") }}>
         <span className="pnum">{margin == null ? "—" : `${margin.toFixed(1)}%`}</span>
@@ -441,13 +441,13 @@ function IncomeStatementTable({ rows }: { rows: MonthlyRow[] }) {
           <tr>
             <td style={{ ...TD_TOTAL, color: "var(--ft-dim)" }}>TOTAL</td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.income == null ? "var(--ft-dim)" : (totals.income > 0 ? "var(--ft-green)" : "var(--ft-muted)") }}>
-              <span className="pnum">{totals.income == null ? "—" : `+${formatGbp(totals.income)}`}</span>
+              <span className="pnum">{totals.income == null ? "—" : `+${formatBaseMoney(totals.income)}`}</span>
             </td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.expenses == null ? "var(--ft-dim)" : (totals.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)") }}>
-              <span className="pnum">{totals.expenses == null ? "—" : `−${formatGbp(totals.expenses)}`}</span>
+              <span className="pnum">{totals.expenses == null ? "—" : `−${formatBaseMoney(totals.expenses)}`}</span>
             </td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.net == null ? "var(--ft-dim)" : (totals.net !== 0 ? (totals.net >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)") }}>
-              <span className="pnum">{totals.net == null ? "—" : `${totals.net >= 0 ? "+" : ""}${formatGbp(totals.net)}`}</span>
+              <span className="pnum">{totals.net == null ? "—" : `${totals.net >= 0 ? "+" : ""}${formatBaseMoney(totals.net)}`}</span>
             </td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: "var(--ft-muted)" }}>
               <span className="pnum">{totalMargin == null ? "—" : `${totalMargin.toFixed(1)}%`}</span>
@@ -491,7 +491,7 @@ function ExpenseReportRow({ cat, amount, i, totalExpenses }: ExpenseReportRowPro
         {cat}
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color }}>
-        <span className="pnum">−{formatGbp(amount)}</span>
+        <span className="pnum">−{formatBaseMoney(amount)}</span>
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>
         <span className="pnum">{pct.toFixed(1)}%</span>
@@ -530,7 +530,7 @@ function ExpenseReportTable({ categories, totalExpenses }: {
           <tr>
             <td style={{ ...TD_TOTAL }}>TOTAL EXPENSES</td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: totalExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
-              <span className="pnum">−{formatGbp(totalExpenses)}</span>
+              <span className="pnum">−{formatBaseMoney(totalExpenses)}</span>
             </td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: "var(--ft-muted)" }}>
               <span className="pnum">100%</span>
@@ -568,16 +568,16 @@ function CashFlowRow({ m, rowIdx }: CashFlowRowProps) {
     >
       <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>{formatMonthLabel(m.month)}</td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.income == null ? "var(--ft-dim)" : "var(--ft-green)" }}>
-        <span className="pnum">{m.income == null ? "—" : `+${formatGbp(m.income)}`}</span>
+        <span className="pnum">{m.income == null ? "—" : `+${formatBaseMoney(m.income)}`}</span>
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.expenses == null ? "var(--ft-dim)" : "var(--ft-red)" }}>
-        <span className="pnum">{m.expenses == null ? "—" : `−${formatGbp(m.expenses)}`}</span>
+        <span className="pnum">{m.expenses == null ? "—" : `−${formatBaseMoney(m.expenses)}`}</span>
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", fontWeight: 600, color: m.netSavings == null ? "var(--ft-dim)" : (m.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") }}>
-        <span className="pnum">{m.netSavings == null ? "—" : `${m.netSavings >= 0 ? "+" : ""}${formatGbp(m.netSavings)}`}</span>
+        <span className="pnum">{m.netSavings == null ? "—" : `${m.netSavings >= 0 ? "+" : ""}${formatBaseMoney(m.netSavings)}`}</span>
       </td>
       <td style={{ ...TD, textAlign: "right", color: m.balance == null ? "var(--ft-dim)" : (m.balance >= 0 ? "var(--ft-cyan)" : "var(--ft-red)") }}>
-        <span className="pnum">{m.balance == null ? "—" : `${m.balance >= 0 ? "+" : ""}${formatGbp(m.balance)}`}</span>
+        <span className="pnum">{m.balance == null ? "—" : `${m.balance >= 0 ? "+" : ""}${formatBaseMoney(m.balance)}`}</span>
       </td>
     </tr>
   );
@@ -655,7 +655,7 @@ function NetWorthTableRow({ r, i }: NetWorthTableRowProps) {
       <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>{r.label}</td>
       <td style={{ ...TD, textAlign: "right", color: r.color, fontWeight: 700 }}>
         <span className="pnum">
-          {r.value === null ? "—" : r.isPct ? `${(r.value as number).toFixed(1)}%` : `${r.prefix ?? ""}${formatGbp(r.value as number)}`}
+          {r.value === null ? "—" : r.isPct ? `${(r.value as number).toFixed(1)}%` : `${r.prefix ?? ""}${formatBaseMoney(r.value as number)}`}
         </span>
       </td>
     </tr>
@@ -740,7 +740,7 @@ function WaterfallChart({ income, expenses, categories }: {
               return (
                 <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "7px 12px", fontFamily: "var(--font-mono)", fontSize: 10 }}>
                   <div style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 3 }}>{label}</div>
-                  <div className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{formatGbp(val)}</div>
+                  <div className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{formatBaseMoney(val)}</div>
                 </div>
               );
             }}
@@ -788,14 +788,14 @@ function CategorySparklineRow({ cat, amount, i, totalExpenses, sparkVals, last3M
           {sparkVals.length > 0 && (
             <HStack gap={2} align="end" height={16}>
               {sparkVals.map((v, si) => (
-                <div key={si} title={`${last3Months[si]?.month ?? ""}: ${formatGbp(v)}`}
+                <div key={si} title={`${last3Months[si]?.month ?? ""}: ${formatBaseMoney(v)}`}
                   style={{ width: 5, height: sparkMax > 0 ? `${Math.max(2, (v / sparkMax) * 16)}px` : "2px", background: color, opacity: 0.5 + (si / sparkVals.length) * 0.5, borderRadius: 1 }}
                 />
               ))}
             </HStack>
           )}
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>{pct.toFixed(1)}%</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color }}> −{formatGbp(amount)}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color }}> −{formatBaseMoney(amount)}</span>
         </HStack>
       </HStack>
       <div style={{ height: 3, background: "var(--ft-border)", overflow: "hidden" }}>
@@ -836,7 +836,7 @@ function DowBarItem({ label, val, dowMax, isWeekend, isHighest }: DowBarItemProp
       }}
     >
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2, opacity: val > 0 ? 1 : 0.4 }}>
-        {formatGbp(val)}
+        {formatBaseMoney(val)}
       </div>
       <HStack align="end" justify="center" wide height={64}>
         <div style={{ width: "70%", height: barHeight, background: isHighest ? barColor : `${barColor}99`, borderRadius: "2px 2px 0 0" }} />
@@ -898,7 +898,7 @@ function BiggestTxRow({ tx, rowIdx }: BiggestTxRowProps) {
       <div style={{ width: 140, minWidth: 140, padding: "7px 12px", textAlign: "right", color: typeColor, fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
         <span className="pnum">
           {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
-          {formatGbp(Math.abs(tx.gbpValue))}
+          {formatBaseMoney(Math.abs(tx.gbpValue))}
         </span>
       </div>
     </div>
@@ -1075,26 +1075,26 @@ export default function Reports() {
   const kpiTiles: KpiTile[] = [
     {
       label: "Total Income",
-      value: `+${formatGbp(income)}`,
+      value: `+${formatBaseMoney(income)}`,
       color: income > 0 ? "var(--ft-green)" : "var(--ft-muted)",
       delta: priorIncome !== null ? income - priorIncome : null,
-      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatGbp(Math.abs(d))}`,
+      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(d))}`,
       deltaGoodDir: 1,
     },
     {
       label: "Total Expenses",
-      value: `-${formatGbp(expenses)}`,
+      value: `-${formatBaseMoney(expenses)}`,
       color: expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",
       delta: priorExpenses !== null ? expenses - priorExpenses : null,
-      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatGbp(Math.abs(d))} spend`,
+      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(d))} spend`,
       deltaGoodDir: -1,
     },
     {
       label: "Net Savings",
-      value: `${netSavings >= 0 ? "+" : ""}${formatGbp(netSavings)}`,
+      value: `${netSavings >= 0 ? "+" : ""}${formatBaseMoney(netSavings)}`,
       color: netSavings !== 0 ? (netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)",
       delta: priorIncome !== null && priorExpenses !== null ? netSavings - (priorIncome - priorExpenses) : null,
-      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatGbp(Math.abs(d))}`,
+      deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(d))}`,
       deltaGoodDir: 1,
     },
     {

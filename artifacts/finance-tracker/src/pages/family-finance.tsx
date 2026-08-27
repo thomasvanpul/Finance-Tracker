@@ -14,7 +14,7 @@ import {
   Home,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { AXIS_TICK } from "@/lib/chart-tokens";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -540,7 +540,7 @@ function IncomeLegendItem({
           fontVariantNumeric: "tabular-nums",
         }}
       >
-        {gbp == null ? "—" : formatGbp(gbp)} ({pct}%)
+        {gbp == null ? "—" : formatBaseMoney(gbp)} ({pct}%)
       </span>
     </div>
   );
@@ -623,7 +623,7 @@ function SpendingLegendRow({
             fontVariantNumeric: "tabular-nums",
           }}
         >
-          {formatGbp(value)} · {pct}%
+          {formatBaseMoney(value)} · {pct}%
         </span>
       </div>
       <ProgressBar pct={value / total} color={roleCssVar(color)} height={3} />
@@ -772,7 +772,7 @@ function TimelineRow({
                 flexShrink: 0,
               }}
             >
-              {formatGbp(entry.amount)}
+              {formatBaseMoney(entry.amount)}
             </span>
           )}
           <button
@@ -893,10 +893,10 @@ function BudgetRow({
         </button>
       </div>
       <div style={{ padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center" }}>
-        <span className="pnum">{formatGbp(b.monthlyLimit)}</span>
+        <span className="pnum">{formatBaseMoney(b.monthlyLimit)}</span>
       </div>
       <div style={{ padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 12, color: pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-text)", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center" }}>
-        <span className="pnum">{formatGbp(actual)}</span>
+        <span className="pnum">{formatBaseMoney(actual)}</span>
       </div>
       <HStack align="center" padding="8px 12px">
         <div style={{ width: "100%" }}>
@@ -1005,7 +1005,7 @@ function GoalRow({
 
         <div style={{ textAlign: "right", flexShrink: 0, minWidth: 130 }}>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: pct >= 1 ? "var(--ft-green)" : "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>
-            {formatGbp(g.currentAmount)} / {formatGbp(g.targetAmount)}
+            {formatBaseMoney(g.currentAmount)} / {formatBaseMoney(g.targetAmount)}
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
             {Math.round(pct * 100)}% funded
@@ -1069,7 +1069,7 @@ function MemberCard({
   onDelete,
 }: {
   member: FamilyMember;
-  accounts: { id: number; name: string; currency: string; balance: number; gbpEquivalent: number | null }[];
+  accounts: { id: number; name: string; currency: string; balance: number; baseEquivalent: number | null }[];
   monthlyIncome: number | null;
   onEdit: () => void;
   onDelete: () => void;
@@ -1077,7 +1077,7 @@ function MemberCard({
   const [hovered, setHovered] = useState<boolean>(false);
   const linkedAccounts = accounts.filter((a) => member.accountIds.includes(String(a.id)));
   const memberIncome = monthlyIncome != null ? (member.incomeShare / 100) * monthlyIncome : null;
-  const linkedBalance = linkedAccounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+  const linkedBalance = linkedAccounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
   const accentHex = roleCssVar(member.color);
 
   const statRow = (label: string, value: React.ReactNode) => (
@@ -1127,11 +1127,11 @@ function MemberCard({
 
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         {statRow("Income share", (
-          <span className="pnum">{member.incomeShare}% · {memberIncome == null ? "—" : formatGbp(memberIncome)}/mo</span>
+          <span className="pnum">{member.incomeShare}% · {memberIncome == null ? "—" : formatBaseMoney(memberIncome)}/mo</span>
         ))}
         {linkedBalance > 0 && statRow("Balance", (
           <span className="pnum" style={{ color: linkedBalance >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-            {formatGbp(linkedBalance)}
+            {formatBaseMoney(linkedBalance)}
           </span>
         ))}
         {statRow("Accounts", (
@@ -1514,21 +1514,21 @@ export default function FamilyFinance() {
         >
           <KpiCell
             label="Net Worth"
-            value={netWorth == null ? "—" : formatGbp(netWorth)}
+            value={netWorth == null ? "—" : formatBaseMoney(netWorth)}
             sub={netWorth == null ? "loading" : netWorth >= 0 ? "positive equity" : "net deficit"}
             color={netWorth == null ? "var(--ft-dim)" : netWorth >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             accentColor={netWorth == null ? "var(--ft-border2)" : netWorth >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
           />
           <KpiCell
             label="Monthly Income"
-            value={monthlyIncome == null ? "—" : formatGbp(monthlyIncome)}
+            value={monthlyIncome == null ? "—" : formatBaseMoney(monthlyIncome)}
             sub="this month"
             color={monthlyIncome == null ? "var(--ft-dim)" : "var(--ft-text)"}
             accentColor="var(--ft-cyan)"
           />
           <KpiCell
             label="Monthly Expenses"
-            value={monthlyExpenses == null ? "—" : formatGbp(monthlyExpenses)}
+            value={monthlyExpenses == null ? "—" : formatBaseMoney(monthlyExpenses)}
             sub="this month"
             color={monthlyExpenses == null ? "var(--ft-dim)" : "var(--ft-red)"}
             accentColor="var(--ft-red)"
@@ -1536,7 +1536,7 @@ export default function FamilyFinance() {
           <KpiCell
             label="Savings Rate"
             value={savingsRate == null ? "—" : `${savingsRate.toFixed(1)}%`}
-            sub={monthlyIncome == null || monthlyExpenses == null ? "loading" : `${formatGbp(monthlyIncome - monthlyExpenses)} saved/mo`}
+            sub={monthlyIncome == null || monthlyExpenses == null ? "loading" : `${formatBaseMoney(monthlyIncome - monthlyExpenses)} saved/mo`}
             color={
               savingsRate == null
                 ? "var(--ft-dim)"
@@ -1844,7 +1844,7 @@ export default function FamilyFinance() {
                   <XAxis
                     type="number"
                     tick={{ ...AXIS_TICK, fontSize: 9 }}
-                    tickFormatter={(v) => formatGbp(v)}
+                    tickFormatter={(v) => formatBaseMoney(v)}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -1865,7 +1865,7 @@ export default function FamilyFinance() {
                       fontSize: 11,
                       color: "var(--ft-text)",
                     }}
-                    formatter={(v: number) => [formatGbp(v), "Income"]}
+                    formatter={(v: number) => [formatBaseMoney(v), "Income"]}
                   />
                   <Bar dataKey="gbp" radius={0}>
                     {incomeChartData.map((entry) => (
@@ -1934,7 +1934,7 @@ export default function FamilyFinance() {
                         fontSize: 11,
                         color: "var(--ft-text)",
                       }}
-                      formatter={(v: number) => [formatGbp(v), "Spent"]}
+                      formatter={(v: number) => [formatBaseMoney(v), "Spent"]}
                     />
                   </PieChart>
                 </ResponsiveContainer>

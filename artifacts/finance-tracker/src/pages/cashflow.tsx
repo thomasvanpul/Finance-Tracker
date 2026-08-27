@@ -5,7 +5,7 @@ import {
   useListAccounts,
   useListSubscriptions,
 } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { TrendingUp } from "lucide-react";
@@ -35,12 +35,12 @@ interface UpcomingItem {
   description: string;
   category: string;
   type: string;
-  gbpEquivalent: number;
+  baseEquivalent: number;
   status: string;
 }
 
 interface Account {
-  gbpEquivalent: number;
+  baseEquivalent: number;
 }
 
 interface SubForCashflow {
@@ -260,17 +260,17 @@ function buildProjection(
       const scheduled = upcomingByDate[dateStr] ?? [];
       for (const item of scheduled) {
         const impact =
-          item.type === "income" ? item.gbpEquivalent : -item.gbpEquivalent;
+          item.type === "income" ? item.baseEquivalent : -item.baseEquivalent;
         balance += impact;
         events.push(
-          `${item.description} ${item.type === "income" ? "+" : "-"}${formatGbp(Math.abs(item.gbpEquivalent))}`
+          `${item.description} ${item.type === "income" ? "+" : "-"}${formatBaseMoney(Math.abs(item.baseEquivalent))}`
         );
       }
 
       const subsOnDay = subsByDate[dateStr] ?? [];
       for (const sub of subsOnDay) {
         balance -= sub.amount;
-        events.push(`${sub.name} (sub) -${formatGbp(sub.amount)}`);
+        events.push(`${sub.name} (sub) -${formatBaseMoney(sub.amount)}`);
       }
     }
 
@@ -367,7 +367,7 @@ function EventRow({ row }: EventRowProps) {
         fontWeight: 700,
         color: row.balance >= 0 ? "var(--ft-green)" : "var(--ft-red)",
       }}>
-        {formatGbp(row.balance)}
+        {formatBaseMoney(row.balance)}
       </td>
     </tr>
   );
@@ -446,7 +446,7 @@ function CfTooltip({ active, payload, label: dateLbl }: {
     }}>
       <div style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 4 }}>{dateLbl}</div>
       <div className="pnum" style={{ color: bal >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 700, fontSize: 13 }}>
-        {formatGbp(bal)}
+        {formatBaseMoney(bal)}
       </div>
     </div>
   );
@@ -497,7 +497,7 @@ export default function CashflowPage() {
   );
 
   const startingBalance = useMemo(
-    () => accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0),
+    () => accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0),
     [accounts]
   );
 
@@ -695,14 +695,14 @@ export default function CashflowPage() {
             <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
                 Base: 3-month avg net/day = <span className="pnum" style={{ color: baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-                  {baseMonthlyNet >= 0 ? "+" : ""}{formatGbp(baseMonthlyNet)}/mo
+                  {baseMonthlyNet >= 0 ? "+" : ""}{formatBaseMoney(baseMonthlyNet)}/mo
                 </span>
               </div>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
-                Avg income: <span className="pnum" style={{ color: "var(--ft-green)" }}>+{formatGbp(baseDailyIncome * 30)}/mo</span>
+                Avg income: <span className="pnum" style={{ color: "var(--ft-green)" }}>+{formatBaseMoney(baseDailyIncome * 30)}/mo</span>
               </div>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
-                Avg expense: <span className="pnum" style={{ color: "var(--ft-red)" }}>-{formatGbp(baseDailyExpense * 30)}/mo</span>
+                Avg expense: <span className="pnum" style={{ color: "var(--ft-red)" }}>-{formatBaseMoney(baseDailyExpense * 30)}/mo</span>
               </div>
               <button
                 onClick={() => setMultipliers(DEFAULT_MULTIPLIERS)}
@@ -733,7 +733,7 @@ export default function CashflowPage() {
         const msgs: Record<string, string> = {
           market:  isNegativeTrend
             ? `Monthly net is negative — shore up cash flow before deploying to investment positions.`
-            : `Monthly net +${formatGbp(baseMonthlyNet)}: ${horizon}d forecast shows investable surplus trajectory.`,
+            : `Monthly net +${formatBaseMoney(baseMonthlyNet)}: ${horizon}d forecast shows investable surplus trajectory.`,
           budget:  isNegativeTrend
             ? `Spending exceeds income on trend — use the scenario toggles to model expense cuts.`
             : `On track. Use pessimistic scenario to stress-test your budget against unexpected costs.`,
@@ -769,34 +769,34 @@ export default function CashflowPage() {
       >
         <KpiTile
           label="Today's Balance"
-          value={formatGbp(startingBalance)}
+          value={formatBaseMoney(startingBalance)}
           color="var(--ft-text)"
           accentTop="var(--ft-cyan)"
         />
         <KpiTile
           label={`Projected (${horizon}d)`}
-          value={formatGbp(finalBalance)}
+          value={formatBaseMoney(finalBalance)}
           color={finalBalance >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
           accentTop={finalBalance >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-          sub={finalBalance !== startingBalance ? `${finalBalance >= startingBalance ? "+" : ""}${formatGbp(finalBalance - startingBalance)} change` : null}
+          sub={finalBalance !== startingBalance ? `${finalBalance >= startingBalance ? "+" : ""}${formatBaseMoney(finalBalance - startingBalance)} change` : null}
         />
         <KpiTile
           label="Avg Net / Month"
-          value={`${baseMonthlyNet >= 0 ? "+" : ""}${formatGbp(Math.abs(baseMonthlyNet))}`}
+          value={`${baseMonthlyNet >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(baseMonthlyNet))}`}
           color={baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
           accentTop={baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-          sub={`${baseDailyIncome > 0 ? `in ${formatGbp(baseDailyIncome * 30)}/mo` : "no income"} · out ${formatGbp(baseDailyExpense * 30)}/mo`}
+          sub={`${baseDailyIncome > 0 ? `in ${formatBaseMoney(baseDailyIncome * 30)}/mo` : "no income"} · out ${formatBaseMoney(baseDailyExpense * 30)}/mo`}
         />
         <KpiTile
           label="Lowest Point"
-          value={formatGbp(lowestPoint === Infinity ? 0 : lowestPoint)}
+          value={formatBaseMoney(lowestPoint === Infinity ? 0 : lowestPoint)}
           color={lowestPoint < 0 ? "var(--ft-red)" : "var(--ft-muted)"}
           accentTop={lowestPoint < 0 ? "var(--ft-red)" : undefined}
           sub={lowestPoint < 0 ? "dips below zero" : null}
         />
         <KpiTile
           label="Highest Point"
-          value={formatGbp(highestPoint === -Infinity ? 0 : highestPoint)}
+          value={formatBaseMoney(highestPoint === -Infinity ? 0 : highestPoint)}
           color="var(--ft-green)"
           accentTop="var(--ft-green)"
         />
@@ -822,12 +822,12 @@ export default function CashflowPage() {
             letterSpacing: "-0.03em",
             lineHeight: 1,
           }}>
-            {formatGbp(finalBalance)}
+            {formatBaseMoney(finalBalance)}
           </div>
           <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>
             <span className="pnum">{finalBalance >= startingBalance
-              ? `+${formatGbp(finalBalance - startingBalance)}`
-              : `${formatGbp(finalBalance - startingBalance)}`}</span> vs today
+              ? `+${formatBaseMoney(finalBalance - startingBalance)}`
+              : `${formatBaseMoney(finalBalance - startingBalance)}`}</span> vs today
           </div>
         </div>
 
@@ -858,7 +858,7 @@ export default function CashflowPage() {
           }}>
             <div style={{ ...labelStyle, color: "var(--ft-red)", marginBottom: 4 }}>WARNING — BALANCE GOES NEGATIVE</div>
             <div style={{ ...mono, fontSize: 12, color: "var(--ft-red)" }}>
-              Lowest projected: <span className="pnum">{formatGbp(lowestPoint)}</span>
+              Lowest projected: <span className="pnum">{formatBaseMoney(lowestPoint)}</span>
             </div>
           </div>
         )}

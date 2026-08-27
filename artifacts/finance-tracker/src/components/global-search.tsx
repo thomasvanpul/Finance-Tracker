@@ -8,7 +8,7 @@ import {
   useListGoals,
   useListInvestments,
 } from "@workspace/api-client-react";
-import { formatGbp, formatDate } from "@/lib/utils";
+import { formatBaseMoney, formatDate } from "@/lib/utils";
 
 type ResultKind = "transaction" | "account" | "investment" | "iou" | "goal";
 
@@ -105,7 +105,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "transaction" as ResultKind,
             primary: tx.description,
             secondary: tx.category,
-            tertiary: `${formatDate(tx.date)} · ${tx.gbpValue == null ? "—" : (tx.type === "income" ? "+" : "-") + formatGbp(tx.gbpValue)}`,
+            tertiary: `${formatDate(tx.date)} · ${tx.gbpValue == null ? "—" : (tx.type === "income" ? "+" : "-") + formatBaseMoney(tx.gbpValue)}`,
             amountColor:
               tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
             navigateTo: `/transactions?q=${encodeURIComponent(tx.description)}`,
@@ -120,7 +120,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "account" as ResultKind,
             primary: a.name,
             secondary: a.currency,
-            tertiary: formatGbp(a.balance),
+            tertiary: formatBaseMoney(a.balance),
             navigateTo: `/accounts?highlight=${a.id}`,
           }))),
         ...((investments ?? [])
@@ -135,7 +135,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "investment" as ResultKind,
             primary: inv.ticker,
             secondary: inv.name,
-            tertiary: inv.gbpValue != null ? formatGbp(inv.gbpValue) : "—",
+            tertiary: inv.gbpValue != null ? formatBaseMoney(inv.gbpValue) : "—",
             amountColor: (inv.plGbp ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)",
             navigateTo: "/investments",
           }))),
@@ -151,7 +151,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "iou" as ResultKind,
             primary: d.personName,
             secondary: d.description,
-            tertiary: d.gbpEquivalent == null ? "—" : formatGbp(d.gbpEquivalent),
+            tertiary: d.baseEquivalent == null ? "—" : formatBaseMoney(d.baseEquivalent),
             navigateTo: "/owing",
           }))),
         ...((goals ?? [])
@@ -166,7 +166,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
               kind: "goal" as ResultKind,
               primary: `${g.emoji ? g.emoji + " " : ""}${g.name}`,
               secondary: `${pct}% complete`,
-              tertiary: `${formatGbp(current)} of ${formatGbp(target)}`,
+              tertiary: `${formatBaseMoney(current)} of ${formatBaseMoney(target)}`,
               amountColor: current >= target ? "var(--ft-green)" : undefined,
               navigateTo: `/goals?highlight=${g.id}`,
             };

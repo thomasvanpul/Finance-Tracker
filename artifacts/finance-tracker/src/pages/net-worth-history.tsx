@@ -22,7 +22,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -220,14 +220,14 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Toolti
       </div>
       {d.netWorth !== undefined && (
         <Text as="div" weight={700} color="var(--ft-text)">
-          Net Worth: {formatGbp(d.netWorth)}
+          Net Worth: {formatBaseMoney(d.netWorth)}
         </Text>
       )}
       {d.totalAssets !== undefined && (
-        <Text as="div" color="var(--ft-green)">Assets: {formatGbp(d.totalAssets)}</Text>
+        <Text as="div" color="var(--ft-green)">Assets: {formatBaseMoney(d.totalAssets)}</Text>
       )}
       {d.totalLiabilities !== undefined && d.totalLiabilities > 0 && (
-        <Text as="div" color="var(--ft-red)">Liabilities: {formatGbp(d.totalLiabilities)}</Text>
+        <Text as="div" color="var(--ft-red)">Liabilities: {formatBaseMoney(d.totalLiabilities)}</Text>
       )}
       {d.note && (
         <div style={{ color: "var(--ft-muted)", marginTop: 4, fontSize: 9 }}>Note: {d.note}</div>
@@ -369,7 +369,7 @@ function AllocationDonut({ slices }: { slices: AllocationSlice[] }) {
                 {sl.name}
               </span>
               <Text as="span" mono size={10} weight={600} color="var(--ft-text)">
-                {formatGbp(sl.value)}
+                {formatBaseMoney(sl.value)}
               </Text>
               <Text as="span" mono size={9} color="var(--ft-muted)">
                 {pct}%
@@ -411,7 +411,7 @@ function MilestoneRow({ m, isHit, currentNW }: { m: { value: number; date: strin
         flexShrink: 0,
       }} />
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: isHit ? "var(--ft-text)" : "var(--ft-muted)", minWidth: 80, flexShrink: 0, whiteSpace: "nowrap" }}>
-        {formatGbp(m.value)}
+        {formatBaseMoney(m.value)}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, whiteSpace: "nowrap", minWidth: 0 }}>
         {isHit ? `Reached ${shortDate(m.date)}` : "Not yet reached"}
@@ -450,11 +450,11 @@ function SnapshotRow({ e, prev, onDelete, deleteConfirmDate }: {
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "7px 8px", whiteSpace: "nowrap" }}>
         {new Date(e.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
       </td>
-      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)", padding: "7px 8px" }}>{formatGbp(e.totalAssets)}</td>
-      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: e.totalLiabilities > 0 ? "var(--ft-red)" : "var(--ft-dim)", padding: "7px 8px" }}>{e.totalLiabilities > 0 ? formatGbp(e.totalLiabilities) : "—"}</td>
-      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: e.netWorth >= 0 ? "var(--ft-text)" : "var(--ft-red)", padding: "7px 8px" }}>{formatGbp(e.netWorth)}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)", padding: "7px 8px" }}>{formatBaseMoney(e.totalAssets)}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: e.totalLiabilities > 0 ? "var(--ft-red)" : "var(--ft-dim)", padding: "7px 8px" }}>{e.totalLiabilities > 0 ? formatBaseMoney(e.totalLiabilities) : "—"}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: e.netWorth >= 0 ? "var(--ft-text)" : "var(--ft-red)", padding: "7px 8px" }}>{formatBaseMoney(e.netWorth)}</td>
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: delta === null ? "var(--ft-dim)" : delta >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 8px" }}>
-        {delta === null ? "—" : `${delta >= 0 ? "+" : ""}${formatGbp(delta)}`}
+        {delta === null ? "—" : `${delta >= 0 ? "+" : ""}${formatBaseMoney(delta)}`}
       </td>
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: deltaPct === null ? "var(--ft-dim)" : deltaPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 8px" }}>
         {deltaPct === null ? "—" : `${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%`}
@@ -505,16 +505,16 @@ function MonthlyStatsRow({ row, isLatest, athDiff }: {
         {row.label}{isLatest ? " ←" : ""}
       </td>
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: row.endNW >= 0 ? "var(--ft-text)" : "var(--ft-red)", padding: "7px 12px" }}>
-        {formatGbp(row.endNW)}
+        {formatBaseMoney(row.endNW)}
       </td>
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: row.momDelta === null ? "var(--ft-dim)" : row.momDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 12px" }}>
-        {row.momDelta === null ? "—" : `${row.momDelta >= 0 ? "+" : ""}${formatGbp(row.momDelta)}`}
+        {row.momDelta === null ? "—" : `${row.momDelta >= 0 ? "+" : ""}${formatBaseMoney(row.momDelta)}`}
       </td>
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: row.momPct === null ? "var(--ft-dim)" : row.momPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 12px" }}>
         {row.momPct === null ? "—" : `${row.momPct >= 0 ? "+" : ""}${row.momPct.toFixed(1)}%`}
       </td>
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: athDiff === null ? "var(--ft-dim)" : athDiff >= 0 ? "var(--ft-cyan)" : "var(--ft-red)", padding: "7px 12px" }}>
-        {athDiff === null ? "—" : athDiff >= 0 ? "ATH" : formatGbp(athDiff)}
+        {athDiff === null ? "—" : athDiff >= 0 ? "ATH" : formatBaseMoney(athDiff)}
       </td>
     </tr>
   );
@@ -540,8 +540,8 @@ function TargetRateRow({ r, yrs, nw10, nw20, isCagr, currentNW, targetNw, arriva
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isCagr ? "var(--ft-accent)" : "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{r}%{isCagr ? " ←" : ""}</td>
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{yrs !== null ? `${yrs.toFixed(1)} yrs` : currentNW >= targetNw ? "Already reached" : "—"}</td>
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{arrivalYear(r)}</td>
-      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{formatGbp(Math.round(nw10))}</td>
-      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{formatGbp(Math.round(nw20))}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{formatBaseMoney(Math.round(nw10))}</td>
+      <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{formatBaseMoney(Math.round(nw20))}</td>
     </tr>
   );
 }
@@ -579,17 +579,17 @@ export default function NetWorthHistory() {
   const { data: rawDebts = [] } = useListDebts();
 
   const liveAssets = useMemo(() => {
-    const accountTotal = (rawAccounts as Array<{ gbpEquivalent?: number }>)
-      .reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+    const accountTotal = (rawAccounts as Array<{ baseEquivalent?: number }>)
+      .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
     const investTotal = (invSummary as { totalValueGbp?: number } | undefined)?.totalValueGbp ?? 0;
     return Math.round((accountTotal + investTotal) * 100) / 100;
   }, [rawAccounts, invSummary]);
 
   const liveLiabilities = useMemo(() => {
     return Math.round(
-      (rawDebts as Array<{ direction?: string; gbpEquivalent?: number; status?: string }>)
+      (rawDebts as Array<{ direction?: string; baseEquivalent?: number; status?: string }>)
         .filter((d) => d.direction === "i_owe_them" && d.status === "pending")
-        .reduce((s, d) => s + (d.gbpEquivalent ?? 0), 0)
+        .reduce((s, d) => s + (d.baseEquivalent ?? 0), 0)
       * 100
     ) / 100;
   }, [rawDebts]);
@@ -884,7 +884,7 @@ export default function NetWorthHistory() {
           <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Net Worth</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1, whiteSpace: "nowrap" }}>
-              {formatGbp(currentNW)}
+              {formatBaseMoney(currentNW)}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
               {cagr !== null ? <Text as="span" color="var(--ft-cyan)">{cagr >= 0 ? "+" : ""}{cagr.toFixed(1)}% CAGR</Text> : "as of today"}
@@ -895,7 +895,7 @@ export default function NetWorthHistory() {
           <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${mtdChange === null ? "var(--ft-border)" : mtdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>MTD Change</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: mtdChange === null ? "var(--ft-muted)" : mtdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
-              {mtdChange === null ? "—" : `${mtdChange >= 0 ? "+" : ""}${formatGbp(mtdChange)}`}
+              {mtdChange === null ? "—" : `${mtdChange >= 0 ? "+" : ""}${formatBaseMoney(mtdChange)}`}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>month to date</div>
           </div>
@@ -904,7 +904,7 @@ export default function NetWorthHistory() {
           <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${ytdChange === null ? "var(--ft-border)" : ytdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>YTD Change</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: ytdChange === null ? "var(--ft-muted)" : ytdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
-              {ytdChange === null ? "—" : `${ytdChange >= 0 ? "+" : ""}${formatGbp(ytdChange)}`}
+              {ytdChange === null ? "—" : `${ytdChange >= 0 ? "+" : ""}${formatBaseMoney(ytdChange)}`}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>year to date</div>
           </div>
@@ -913,7 +913,7 @@ export default function NetWorthHistory() {
           <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-cyan)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>All-Time High</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-cyan)", lineHeight: 1 }}>
-              {allTimeHigh ? formatGbp(allTimeHigh.netWorth) : "—"}
+              {allTimeHigh ? formatBaseMoney(allTimeHigh.netWorth) : "—"}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
               {allTimeHigh ? shortDate(allTimeHigh.date) : ""}
@@ -924,7 +924,7 @@ export default function NetWorthHistory() {
           <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-amber)", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Best Single Month</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>
-              {bestMonthIncrease > 0 ? `+${formatGbp(bestMonthIncrease)}` : (allTimeLow ? formatGbp(allTimeLow.netWorth) : "—")}
+              {bestMonthIncrease > 0 ? `+${formatBaseMoney(bestMonthIncrease)}` : (allTimeLow ? formatBaseMoney(allTimeLow.netWorth) : "—")}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
               {bestMonthIncrease > 0 ? "largest single gain" : (allTimeLow ? shortDate(allTimeLow.date) : "")}
@@ -937,9 +937,9 @@ export default function NetWorthHistory() {
       {liveAssets > 0 && history.length === 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
           {[
-            { label: "Live Assets", value: formatGbp(liveAssets), color: "var(--ft-green)" },
-            { label: "Live Liabilities", value: formatGbp(liveLiabilities), color: "var(--ft-red)" },
-            { label: "Current Net Worth", value: formatGbp(liveAssets - liveLiabilities), color: (liveAssets - liveLiabilities) >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
+            { label: "Live Assets", value: formatBaseMoney(liveAssets), color: "var(--ft-green)" },
+            { label: "Live Liabilities", value: formatBaseMoney(liveLiabilities), color: "var(--ft-red)" },
+            { label: "Current Net Worth", value: formatBaseMoney(liveAssets - liveLiabilities), color: (liveAssets - liveLiabilities) >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
           ].map((cell, i) => (
             <div key={cell.label} style={{ padding: "12px 16px", background: "var(--ft-surface)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{cell.label}</div>
@@ -971,7 +971,7 @@ export default function NetWorthHistory() {
                 style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "3px 10px", border: "1px solid color-mix(in srgb, var(--ft-blue) 40%, transparent)", background: "color-mix(in srgb, var(--ft-blue) 8%, transparent)", color: "var(--ft-blue)", cursor: "pointer" }}
                 title={`Auto-fill: Assets £${liveAssets.toLocaleString()} · Liabilities £${liveLiabilities.toLocaleString()}`}
               >
-                ↻ Auto-fill ({formatGbp(liveAssets - liveLiabilities)} net)
+                ↻ Auto-fill ({formatBaseMoney(liveAssets - liveLiabilities)} net)
               </button>
             )}
           </div>
@@ -996,7 +996,7 @@ export default function NetWorthHistory() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 12 }}>
                 Net worth:{" "}
                 <span className="pnum" style={{ fontWeight: 700, color: (parseFloat(formAssets) - (parseFloat(formLiabilities) || 0)) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-                  {formatGbp(parseFloat(formAssets) - (parseFloat(formLiabilities) || 0))}
+                  {formatBaseMoney(parseFloat(formAssets) - (parseFloat(formLiabilities) || 0))}
                 </span>
               </div>
             )}
@@ -1063,7 +1063,7 @@ export default function NetWorthHistory() {
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                   Projected 12m:{" "}
                   <span className="pnum" style={{ color: projectedIn12Months >= currentNW ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600 }}>
-                    {formatGbp(projectedIn12Months)}
+                    {formatBaseMoney(projectedIn12Months)}
                   </span>
                   {" "}
                   <Text as="span" size={8} color="var(--ft-dim)">(linear trend)</Text>
@@ -1182,7 +1182,7 @@ export default function NetWorthHistory() {
               <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickLine={false} axisLine={{ stroke: "var(--ft-border)" }} minTickGap={40} />
               <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} tickLine={false} axisLine={false} width={52} />
               <Tooltip
-                formatter={(value: number, name: string) => [formatGbp(value), name === "totalAssets" ? "Assets" : "Liabilities"]}
+                formatter={(value: number, name: string) => [formatBaseMoney(value), name === "totalAssets" ? "Assets" : "Liabilities"]}
                 contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
               />
               <Area type="monotone" dataKey="totalAssets" stroke="var(--ft-green)" strokeWidth={1.5} fill="url(#assetsGrad)" dot={false} />
@@ -1225,8 +1225,8 @@ export default function NetWorthHistory() {
                   return (
                     <div style={{ marginTop: 12 }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 5 }}>
-                        Next: <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{formatGbp(nextLevel)}</span>
-                        {" — "}<span className="pnum" style={{ color: "var(--ft-cyan)" }}>{formatGbp(remaining)} to go</span>
+                        Next: <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{formatBaseMoney(nextLevel)}</span>
+                        {" — "}<span className="pnum" style={{ color: "var(--ft-cyan)" }}>{formatBaseMoney(remaining)} to go</span>
                       </div>
                       <div style={{ height: 4, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
                         <div style={{ height: "100%", width: `${pct}%`, background: "var(--ft-accent)" }} />
@@ -1247,12 +1247,12 @@ export default function NetWorthHistory() {
                 <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
                   <div style={{ padding: "8px 12px", background: "var(--ft-raised)" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Total Assets</div>
-                    <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatGbp(latestEntry.totalAssets)}</div>
+                    <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(latestEntry.totalAssets)}</div>
                   </div>
                   <div style={{ padding: "8px 12px", background: "var(--ft-raised)" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Total Liabilities</div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: latestEntry.totalLiabilities > 0 ? "var(--ft-red)" : "var(--ft-dim)" }}>
-                      {latestEntry.totalLiabilities > 0 ? formatGbp(latestEntry.totalLiabilities) : "£0"}
+                      {latestEntry.totalLiabilities > 0 ? formatBaseMoney(latestEntry.totalLiabilities) : "£0"}
                     </div>
                   </div>
                 </div>
@@ -1309,12 +1309,12 @@ export default function NetWorthHistory() {
                         {row.label}{isLatest ? " ←" : ""}
                       </Text>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: row.endNW >= 0 ? "var(--ft-text)" : "var(--ft-red)" }}>
-                        {formatGbp(row.endNW)}
+                        {formatBaseMoney(row.endNW)}
                       </span>
                     </HStack>
                     <HStack gap={12}>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: row.momDelta === null ? "var(--ft-dim)" : row.momDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-                        {row.momDelta === null ? "—" : `${row.momDelta >= 0 ? "+" : ""}${formatGbp(row.momDelta)}`}
+                        {row.momDelta === null ? "—" : `${row.momDelta >= 0 ? "+" : ""}${formatBaseMoney(row.momDelta)}`}
                       </span>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: row.momPct === null ? "var(--ft-dim)" : row.momPct >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                         {row.momPct === null ? "—" : `${row.momPct >= 0 ? "+" : ""}${row.momPct.toFixed(1)}%`}
@@ -1422,9 +1422,9 @@ export default function NetWorthHistory() {
               <div>
                 <div style={{ padding: "12px 16px 0" }}>
                   <HStack gap={4} justify="between" wrap marginBottom={6}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Current: <span className="pnum">{formatGbp(currentNW)}</span></span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Remaining: <span className="pnum">{formatGbp(remaining)}</span></span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Target: <span className="pnum">{formatGbp(targetNw)}</span></span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Current: <span className="pnum">{formatBaseMoney(currentNW)}</span></span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Remaining: <span className="pnum">{formatBaseMoney(remaining)}</span></span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>Target: <span className="pnum">{formatBaseMoney(targetNw)}</span></span>
                   </HStack>
                   <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", position: "relative" }}>
                     <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: pct >= 100 ? "var(--ft-green)" : "var(--ft-accent)", transition: "width 0.25s ease" }} />
@@ -1535,7 +1535,7 @@ export default function NetWorthHistory() {
                       </Text>
                       <HStack gap={8} align="center">
                         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: e.netWorth >= 0 ? "var(--ft-text)" : "var(--ft-red)" }}>
-                          {formatGbp(e.netWorth)}
+                          {formatBaseMoney(e.netWorth)}
                         </span>
                         <button
                           onClick={() => handleDeleteEntry(e.date)}
@@ -1558,16 +1558,16 @@ export default function NetWorthHistory() {
                     </HStack>
                     <HStack gap={10} wrap>
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>
-                        A: {formatGbp(e.totalAssets)}
+                        A: {formatBaseMoney(e.totalAssets)}
                       </span>
                       {e.totalLiabilities > 0 && (
                         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)" }}>
-                          L: {formatGbp(e.totalLiabilities)}
+                          L: {formatBaseMoney(e.totalLiabilities)}
                         </span>
                       )}
                       {delta !== null && (
                         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: delta >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-                          {delta >= 0 ? "+" : ""}{formatGbp(delta)}
+                          {delta >= 0 ? "+" : ""}{formatBaseMoney(delta)}
                           {deltaPct !== null && ` (${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%)`}
                         </span>
                       )}

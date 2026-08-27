@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useGetDashboard, useListTransactions, useListUpcoming, useListDebts, useListGoals, useListBudgets } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 
 interface Alert {
   id: string;
@@ -202,14 +202,14 @@ export function SmartAlertsWidget() {
             id: `budget-critical-${key}`,
             level: "critical",
             title: `${budget.category} budget exceeded`,
-            detail: `${formatGbp(total)} spent of ${formatGbp(budget.monthlyLimit)} limit (${Math.round(pct * 100)}%)`,
+            detail: `${formatBaseMoney(total)} spent of ${formatBaseMoney(budget.monthlyLimit)} limit (${Math.round(pct * 100)}%)`,
           });
         } else if (pct >= alertRules.budgetWarningPct / 100) {
           result.push({
             id: `budget-warn-${key}`,
             level: "warn",
             title: `${budget.category} budget at ${Math.round(pct * 100)}%`,
-            detail: `${formatGbp(total)} of ${formatGbp(budget.monthlyLimit)} used`,
+            detail: `${formatBaseMoney(total)} of ${formatBaseMoney(budget.monthlyLimit)} used`,
           });
         }
       }
@@ -223,7 +223,7 @@ export function SmartAlertsWidget() {
             id: `large-tx-${tx.id}`,
             level: "info",
             title: `Large transaction: ${tx.description}`,
-            detail: `${formatGbp(tx.gbpValue)} on ${tx.date} — ${tx.accountName}`,
+            detail: `${formatBaseMoney(tx.gbpValue)} on ${tx.date} — ${tx.accountName}`,
           });
         }
       }
@@ -240,9 +240,9 @@ export function SmartAlertsWidget() {
             id: `upcoming-${item.id}`,
             level: "warn",
             title: `Due soon: ${item.description}`,
-            detail: item.gbpEquivalent == null
+            detail: item.baseEquivalent == null
               ? `Due ${item.dueDate} — GBP not available`
-              : `${formatGbp(item.gbpEquivalent)} due ${item.dueDate}`,
+              : `${formatBaseMoney(item.baseEquivalent)} due ${item.dueDate}`,
           });
         }
       }
@@ -256,12 +256,12 @@ export function SmartAlertsWidget() {
         return daysSince > 90;
       });
       if (overdueDebts.length > 0) {
-        const total = overdueDebts.reduce((s, d) => s + (d.gbpEquivalent ?? 0), 0);
+        const total = overdueDebts.reduce((s, d) => s + (d.baseEquivalent ?? 0), 0);
         result.push({
           id: `overdue-debts-${overdueDebts.length}`,
           level: "warn",
           title: `${overdueDebts.length} IOU${overdueDebts.length > 1 ? "s" : ""} older than 90 days`,
-          detail: `${formatGbp(total)} in long-outstanding debts — consider settling`,
+          detail: `${formatBaseMoney(total)} in long-outstanding debts — consider settling`,
         });
       }
     }
@@ -274,7 +274,7 @@ export function SmartAlertsWidget() {
           id: `goal-achieved-${g.id}`,
           level: "success",
           title: `Goal achieved: ${g.name}`,
-          detail: `${formatGbp(current)} saved — target of ${formatGbp(target)} reached`,
+          detail: `${formatBaseMoney(current)} saved — target of ${formatBaseMoney(target)} reached`,
         });
       }
     }

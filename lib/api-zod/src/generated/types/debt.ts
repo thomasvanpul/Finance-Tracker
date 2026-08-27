@@ -23,7 +23,7 @@ export interface Debt {
   /** @nullable */
   accountId?: number | null;
   /** @nullable */
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   createdAt: string;
   /** @nullable */
   linkedEmail?: string | null;

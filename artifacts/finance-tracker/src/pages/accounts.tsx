@@ -17,7 +17,7 @@ import {
   useGetFxRates,
   useGetTransactionSummary,
 } from "@workspace/api-client-react";
-import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { formatBaseMoney, formatNative, formatDate } from "@/lib/utils";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { AXIS_TICK } from "@/lib/chart-tokens";
 import { MonoTooltip, type TooltipEntry } from "@/components/mono-tooltip";
@@ -998,7 +998,7 @@ function MonthSpendingRow({ category, total, maxSpend }: MonthSpendingRowProps) 
     >
       <HStack justify="between" marginBottom={2}>
         <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{category}</span>
-        <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", flexShrink: 0, whiteSpace: "nowrap", marginLeft: 4 }}>{formatGbp(total)}</span>
+        <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", flexShrink: 0, whiteSpace: "nowrap", marginLeft: 4 }}>{formatBaseMoney(total)}</span>
       </HStack>
       <div style={{ height: 3, background: "var(--ft-raised)", borderRadius: 1 }}>
         <div style={{ height: "100%", width: `${pct}%`, background: "var(--ft-red)", borderRadius: 1 }} />
@@ -1047,7 +1047,7 @@ function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex
           share-percentage on the right slides; either is honest.
           A clipped £11,371→£1… is not. */}
       <span className="pnum" style={{ fontSize: 10, color: total == null ? "var(--ft-dim)" : "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-        {total == null ? "—" : formatGbp(total)}
+        {total == null ? "—" : formatBaseMoney(total)}
       </span>
       <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", marginLeft: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>
         {total == null ? `no FX · ${acctCount}a` : `${pct.toFixed(0)}% · ${acctCount}a`}
@@ -1297,7 +1297,7 @@ interface AccountRowProps {
     name: string;
     currency: string;
     balance: number;
-    gbpEquivalent: number | null;
+    baseEquivalent: number | null;
     isWiseLinked: boolean;
     lastSyncedAt?: string | null;
   };
@@ -1476,7 +1476,7 @@ function AccountTableRow({
               {sparkBars.bars.map((v, bi) => {
                 const h = Math.max(2, (Math.abs(v) / sparkBars.maxAbs) * 12);
                 return (
-                  <div key={bi} title={`${v >= 0 ? "+" : ""}${formatGbp(v)}`} style={{ width: 4, height: h, background: v >= 0 ? "var(--ft-green)" : "var(--ft-red)", opacity: 0.75 }} />
+                  <div key={bi} title={`${v >= 0 ? "+" : ""}${formatBaseMoney(v)}`} style={{ width: 4, height: h, background: v >= 0 ? "var(--ft-green)" : "var(--ft-red)", opacity: 0.75 }} />
                 );
               })}
             </HStack>
@@ -1493,9 +1493,9 @@ function AccountTableRow({
             figure in the account's own currency. */}
         <div
           className="pnum"
-          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.gbpEquivalent == null ? "var(--ft-dim)" : account.gbpEquivalent < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", ...privacyStyle }}
+          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.baseEquivalent == null ? "var(--ft-dim)" : account.baseEquivalent < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", ...privacyStyle }}
         >
-          {account.gbpEquivalent == null ? "—" : formatGbp(account.gbpEquivalent)}
+          {account.baseEquivalent == null ? "—" : formatBaseMoney(account.baseEquivalent)}
         </div>
 
         {/* Health */}
@@ -1614,7 +1614,7 @@ function MonthlySummaryCell({ label, value, color }: MonthlySummaryCellProps) {
 // ─── CSV export ──────────────────────────────────────────────────────────────
 
 function exportAccountsCSV(
-  accounts: { name: string; currency: string; balance: number; gbpEquivalent: number | null; isWiseLinked: boolean }[],
+  accounts: { name: string; currency: string; balance: number; baseEquivalent: number | null; isWiseLinked: boolean }[],
   meta: Record<string, AccountMeta>
 ) {
   const rows = [
@@ -1628,7 +1628,7 @@ function exportAccountsCSV(
         // Empty cell — not "0.00" — when the FX conversion was not
         // available. A downstream spreadsheet reading "0.00" would sum
         // it into user totals; blank keeps the accounting honest.
-        a.gbpEquivalent == null ? "" : a.gbpEquivalent.toFixed(2),
+        a.baseEquivalent == null ? "" : a.baseEquivalent.toFixed(2),
         a.isWiseLinked ? "Wise" : "Manual",
         m?.targetBalance != null ? m.targetBalance.toFixed(2) : "",
         m?.apy != null ? m.apy.toFixed(2) : "",
@@ -1786,8 +1786,8 @@ export default function Accounts() {
     // Sort by GBP equivalent — unconvertible accounts sink to the
     // bottom of a descending sort, top of an ascending one, so a
     // rate-outage doesn't shuffle real balances.
-    if (accountSort === "balance-high") list = [...list].sort((a, b) => (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity));
-    else if (accountSort === "balance-low") list = [...list].sort((a, b) => (a.gbpEquivalent ?? Infinity) - (b.gbpEquivalent ?? Infinity));
+    if (accountSort === "balance-high") list = [...list].sort((a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity));
+    else if (accountSort === "balance-low") list = [...list].sort((a, b) => (a.baseEquivalent ?? Infinity) - (b.baseEquivalent ?? Infinity));
     else if (accountSort === "name-az") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
     else if (accountSort === "name-za") list = [...list].sort((a, b) => b.name.localeCompare(a.name));
     else if (accountSort === "currency") list = [...list].sort((a, b) => a.currency.localeCompare(b.currency));
@@ -2146,13 +2146,13 @@ export default function Accounts() {
         if (!pid || pid === "full") return null;
         // Persona strip totals skip unconvertible accounts; message
         // just reads a slightly lower figure rather than lying via 0.
-        const totalCash = (accounts ?? []).reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+        const totalCash = (accounts ?? []).reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
         const portfolio = (dashData as { portfolio?: { totalValueGbp?: number } } | undefined)?.portfolio?.totalValueGbp ?? 0;
         const msgs: Record<string, string | null> = {
-          market:  totalCash > 0 ? `${formatGbp(totalCash)} cash available — allocate surplus to investment positions via Portfolio.` : null,
+          market:  totalCash > 0 ? `${formatBaseMoney(totalCash)} cash available — allocate surplus to investment positions via Portfolio.` : null,
           budget:  `Your accounts are the source of truth for your budget — reconcile against your budget limits monthly.`,
-          wealth:  `Cash + portfolio = ${formatGbp(totalCash + portfolio)}. Ensure cash earns yield (HYSA/money market) while idle.`,
-          social:  totalCash > 0 ? `${formatGbp(totalCash)} liquid — keep enough buffer for group trip deposits and shared expenses.` : null,
+          wealth:  `Cash + portfolio = ${formatBaseMoney(totalCash + portfolio)}. Ensure cash earns yield (HYSA/money market) while idle.`,
+          social:  totalCash > 0 ? `${formatBaseMoney(totalCash)} liquid — keep enough buffer for group trip deposits and shared expenses.` : null,
         };
         const msg = msgs[pid];
         if (!msg) return null;
@@ -2217,8 +2217,8 @@ export default function Accounts() {
         // KPI bar total: skip unconvertible accounts. If any exist,
         // the KPI cell below appends " · N NO FX" so the total isn't
         // silently lower than the underlying holdings.
-        const totalCash = accounts!.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
-        const unconvertibleCount = accounts!.filter(a => a.gbpEquivalent == null).length;
+        const totalCash = accounts!.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+        const unconvertibleCount = accounts!.filter(a => a.baseEquivalent == null).length;
         const currencies = [...new Set(accounts!.map(a => a.currency))] as string[];
         const lastSync = accounts!
           .map(a => a.lastSyncedAt)
@@ -2264,8 +2264,8 @@ export default function Accounts() {
         // that appears zero-width.
         const currencyTotals = currencies.map(c => {
           const rows = accounts!.filter(a => a.currency === c);
-          const allNull = rows.length > 0 && rows.every(a => a.gbpEquivalent == null);
-          const total = allNull ? null : rows.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+          const allNull = rows.length > 0 && rows.every(a => a.baseEquivalent == null);
+          const total = allNull ? null : rows.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
           return { currency: c, total };
         }).sort((a, b) => (b.total ?? -Infinity) - (a.total ?? -Infinity));
 
@@ -2279,14 +2279,14 @@ export default function Accounts() {
               >
               <KpiCell
                 label="Total Cash"
-                value={<span className="pnum" style={{ color: totalCash < 0 ? "var(--ft-red)" : "var(--ft-green)" }}>{formatGbp(totalCash)}</span>}
+                value={<span className="pnum" style={{ color: totalCash < 0 ? "var(--ft-red)" : "var(--ft-green)" }}>{formatBaseMoney(totalCash)}</span>}
                 sub={
                   unconvertibleCount > 0
                     ? <span style={{ color: "var(--ft-amber)" }}>{unconvertibleCount} account{unconvertibleCount !== 1 ? "s" : ""} without FX — not in total</span>
                     : nwDelta !== null
                       ? <span style={{ color: nwDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)", display: "inline-flex", alignItems: "center", gap: 3 }}>
                           {nwDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          <span className="pnum">{nwDelta >= 0 ? "+" : ""}{formatGbp(nwDelta)}</span> vs yesterday
+                          <span className="pnum">{nwDelta >= 0 ? "+" : ""}{formatBaseMoney(nwDelta)}</span> vs yesterday
                         </span>
                       : <span style={{ color: "var(--ft-dim)" }}>{accounts!.length} account{accounts!.length !== 1 ? "s" : ""}</span>
                 }
@@ -2296,7 +2296,7 @@ export default function Accounts() {
               />
               <KpiCell
                 label="Total Portfolio"
-                value={<span className="pnum" style={{ color: "var(--ft-cyan)" }}>{formatGbp(portfolioVal)}</span>}
+                value={<span className="pnum" style={{ color: "var(--ft-cyan)" }}>{formatBaseMoney(portfolioVal)}</span>}
                 sub="investments (GBP)"
                 accent="var(--ft-cyan)"
                 icon={<TrendingUp className="w-3.5 h-3.5" />}
@@ -2304,9 +2304,9 @@ export default function Accounts() {
               />
               <KpiCell
                 label="Net Worth"
-                value={<span className="pnum" style={{ color: netWorth >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>{formatGbp(netWorth)}</span>}
+                value={<span className="pnum" style={{ color: netWorth >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>{formatBaseMoney(netWorth)}</span>}
                 // Net worth inherits Total Cash's `?? 0` shortfall
-                // when any account has a null gbpEquivalent — the
+                // when any account has a null baseEquivalent — the
                 // Total Cash cell already announces the count, but
                 // the Net Worth headline is the one a user reads
                 // first, so it needs the same caveat inline. Amber
@@ -2349,7 +2349,7 @@ export default function Accounts() {
                     CURRENCY EXPOSURE — {currencies.length} currencies
                   </Text>
                   <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
-                    {baseCurrency} base · <span className="pnum">{formatGbp(totalCash)}</span> total
+                    {baseCurrency} base · <span className="pnum">{formatBaseMoney(totalCash)}</span> total
                   </span>
                 </HStack>
                 {/* Stacked bar */}
@@ -2360,7 +2360,7 @@ export default function Accounts() {
                       <div
                         key={currency}
                         style={{ width: `${pct}%`, background: ACCT_COLORS[i % ACCT_COLORS.length], minWidth: pct > 1 ? 3 : 0 }}
-                        title={total == null ? `${currency}: no FX` : `${currency}: ${pct.toFixed(1)}% · ${formatGbp(total)}`}
+                        title={total == null ? `${currency}: no FX` : `${currency}: ${pct.toFixed(1)}% · ${formatBaseMoney(total)}`}
                       />
                     );
                   })}
@@ -2427,10 +2427,10 @@ export default function Accounts() {
                         a rate for. The KPI cell above surfaces the count. */}
                     <div style={{ display: "flex", height: 4, borderRadius: 0, overflow: "hidden", gap: 1, marginBottom: 5 }}>
                       {[...accounts!]
-                        .filter((a): a is typeof a & { gbpEquivalent: number } => a.gbpEquivalent != null)
-                        .sort((a, b) => b.gbpEquivalent - a.gbpEquivalent)
+                        .filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null)
+                        .sort((a, b) => b.baseEquivalent - a.baseEquivalent)
                         .map((a, i) => {
-                          const pct = totalCash > 0 ? (a.gbpEquivalent / totalCash) * 100 : 0;
+                          const pct = totalCash > 0 ? (a.baseEquivalent / totalCash) * 100 : 0;
                           return (
                             <div key={a.id} style={{ width: `${pct}%`, background: ACCT_ALLOC_COLORS[i % ACCT_ALLOC_COLORS.length], minWidth: pct > 0.5 ? 2 : 0 }} title={`${a.name}: ${pct.toFixed(1)}%`} />
                           );
@@ -2438,11 +2438,11 @@ export default function Accounts() {
                     </div>
                     <VStack gap={2}>
                       {[...accounts!]
-                        .filter((a): a is typeof a & { gbpEquivalent: number } => a.gbpEquivalent != null)
-                        .sort((a, b) => b.gbpEquivalent - a.gbpEquivalent)
+                        .filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null)
+                        .sort((a, b) => b.baseEquivalent - a.baseEquivalent)
                         .slice(0, 5)
                         .map((a, i) => {
-                          const pct = totalCash > 0 ? (a.gbpEquivalent / totalCash) * 100 : 0;
+                          const pct = totalCash > 0 ? (a.baseEquivalent / totalCash) * 100 : 0;
                           return (
                             <AccountAllocationRow
                               key={a.id}
@@ -2464,14 +2464,14 @@ export default function Accounts() {
                       project. An account whose FX is missing is
                       excluded rather than projected as £0/month. */}
                   {(() => {
-                    const apyAccounts = accounts!.filter((a): a is typeof a & { gbpEquivalent: number } => {
+                    const apyAccounts = accounts!.filter((a): a is typeof a & { baseEquivalent: number } => {
                       const m = accountMeta[a.name];
-                      return !!(m?.apy && m.apy > 0 && a.gbpEquivalent != null && a.gbpEquivalent > 0);
+                      return !!(m?.apy && m.apy > 0 && a.baseEquivalent != null && a.baseEquivalent > 0);
                     });
                     if (apyAccounts.length === 0) return null;
                     const totalMonthly = apyAccounts.reduce((s, a) => {
                       const apy = accountMeta[a.name]?.apy ?? 0;
-                      return s + (a.gbpEquivalent * (apy / 100)) / 12;
+                      return s + (a.baseEquivalent * (apy / 100)) / 12;
                     }, 0);
                     const totalAnnual = totalMonthly * 12;
                     return (
@@ -2482,11 +2482,11 @@ export default function Accounts() {
                         <VStack gap={4}>
                           <div>
                             <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>Monthly</div>
-                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatGbp(totalMonthly)}</div>
+                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatBaseMoney(totalMonthly)}</div>
                           </div>
                           <div>
                             <Text as="div" mono size={9} color="var(--ft-dim)">Annual</Text>
-                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatGbp(totalAnnual)}</div>
+                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatBaseMoney(totalAnnual)}</div>
                           </div>
                           <Text as="div" mono size={9} color="var(--ft-dim)">
                             {apyAccounts.length} account{apyAccounts.length !== 1 ? "s" : ""} with APY
@@ -2854,8 +2854,8 @@ export default function Accounts() {
                 }}
               >
                 {/* Table footer total: skips unconvertible entries. */}
-                {formatGbp(
-                  filteredAccounts.reduce((sum, a) => sum + (a.gbpEquivalent ?? 0), 0)
+                {formatBaseMoney(
+                  filteredAccounts.reduce((sum, a) => sum + (a.baseEquivalent ?? 0), 0)
                 )}
               </div>
               <div
@@ -2881,24 +2881,24 @@ export default function Accounts() {
         // Balance sheet: sign requires a GBP value, so unconvertible
         // accounts fall into neither the overdraft nor the assets side
         // of this strip. The KPI cell above surfaces the count.
-        const overdraftAccounts = accounts!.filter((a): a is typeof a & { gbpEquivalent: number } => a.gbpEquivalent != null && a.gbpEquivalent < 0);
-        const positiveAccounts = accounts!.filter((a): a is typeof a & { gbpEquivalent: number } => a.gbpEquivalent != null && a.gbpEquivalent >= 0);
-        const totalOwed = overdraftAccounts.reduce((s, a) => s + Math.abs(a.gbpEquivalent), 0);
-        const totalAssets = positiveAccounts.reduce((s, a) => s + a.gbpEquivalent, 0);
+        const overdraftAccounts = accounts!.filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null && a.baseEquivalent < 0);
+        const positiveAccounts = accounts!.filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null && a.baseEquivalent >= 0);
+        const totalOwed = overdraftAccounts.reduce((s, a) => s + Math.abs(a.baseEquivalent), 0);
+        const totalAssets = positiveAccounts.reduce((s, a) => s + a.baseEquivalent, 0);
         return (
           <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "8px 16px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
               Balance Sheet
             </span>
             <HStack gap={4} grow minWidth={100} height={6}>
-              <div style={{ flex: totalAssets, background: "var(--ft-green)", opacity: 0.8 }} title={`Assets: ${formatGbp(totalAssets)}`} />
-              {totalOwed > 0 && <div style={{ flex: totalOwed, background: "var(--ft-red)", opacity: 0.8 }} title={`Liabilities: ${formatGbp(totalOwed)}`} />}
+              <div style={{ flex: totalAssets, background: "var(--ft-green)", opacity: 0.8 }} title={`Assets: ${formatBaseMoney(totalAssets)}`} />
+              {totalOwed > 0 && <div style={{ flex: totalOwed, background: "var(--ft-red)", opacity: 0.8 }} title={`Liabilities: ${formatBaseMoney(totalOwed)}`} />}
             </HStack>
             <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
               <HStack gap={5} align="center">
                 <div style={{ width: 8, height: 8, background: "var(--ft-green)" }} />
                 <span className="pnum" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>
-                  {formatGbp(totalAssets)}
+                  {formatBaseMoney(totalAssets)}
                 </span>
                 <Text as="span" mono size={9} color="var(--ft-dim)">assets</Text>
               </HStack>
@@ -2907,7 +2907,7 @@ export default function Accounts() {
                   <HStack gap={5} align="center">
                     <div style={{ width: 8, height: 8, background: "var(--ft-red)" }} />
                     <span className="pnum" style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)" }}>
-                      -{formatGbp(totalOwed)}
+                      -{formatBaseMoney(totalOwed)}
                     </span>
                     <Text as="span" mono size={9} color="var(--ft-dim)">
                       {overdraftAccounts.length} overdraft acct{overdraftAccounts.length !== 1 ? "s" : ""}
@@ -2916,7 +2916,7 @@ export default function Accounts() {
                   <HStack gap={5} align="center">
                     <Text as="span" mono size={9} color="var(--ft-dim)">net</Text>
                     <span className="pnum" style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: (totalAssets - totalOwed) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-                      {formatGbp(totalAssets - totalOwed)}
+                      {formatBaseMoney(totalAssets - totalOwed)}
                     </span>
                   </HStack>
                 </>
@@ -2978,7 +2978,7 @@ export default function Accounts() {
                         active={p.active}
                         payload={p.payload as TooltipEntry[]}
                         label={String(p.label ?? "")}
-                        formatter={(v, name) => [formatGbp(v), name === "income" ? "Income" : name === "expense" ? "Expenses" : "Net"]}
+                        formatter={(v, name) => [formatBaseMoney(v), name === "income" ? "Income" : name === "expense" ? "Expenses" : "Net"]}
                       />
                     )}
                   />
@@ -3008,9 +3008,9 @@ export default function Accounts() {
           {monthlySummary ? (
             <VStack gap={10} padding="12px 16px">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <MonthlySummaryCell label="INCOME" value={formatGbp(monthlySummary.totalIncome)} color="var(--ft-green)" />
-                <MonthlySummaryCell label="EXPENSES" value={formatGbp(monthlySummary.totalExpenses)} color="var(--ft-red)" />
-                <MonthlySummaryCell label="NET SAVINGS" value={formatGbp(monthlySummary.netSavings)} color={monthlySummary.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)"} />
+                <MonthlySummaryCell label="INCOME" value={formatBaseMoney(monthlySummary.totalIncome)} color="var(--ft-green)" />
+                <MonthlySummaryCell label="EXPENSES" value={formatBaseMoney(monthlySummary.totalExpenses)} color="var(--ft-red)" />
+                <MonthlySummaryCell label="NET SAVINGS" value={formatBaseMoney(monthlySummary.netSavings)} color={monthlySummary.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)"} />
                 <MonthlySummaryCell label="SAVINGS RATE" value={`${monthlySummary.savingsRate.toFixed(1)}%`} color={monthlySummary.savingsRate >= 20 ? "var(--ft-green)" : monthlySummary.savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)"} />
               </div>
               {monthSpending.length > 0 && (

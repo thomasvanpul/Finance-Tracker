@@ -5,7 +5,7 @@
 //
 // ── Why this exists ────────────────────────────────────────────────────────
 // The server + several client widgets sum GBP-equivalents with `?? 0`,
-// which silently drops accounts whose gbpEquivalent is null (rate
+// which silently drops accounts whose baseEquivalent is null (rate
 // unavailable). The dashboard endpoint at least exposes an
 // `unconvertibleAccounts` counter next to `totalCash`/`netWorth` so the
 // UI can tell the user "your total excludes N accounts". Mobile already

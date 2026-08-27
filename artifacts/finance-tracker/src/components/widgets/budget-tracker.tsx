@@ -8,7 +8,7 @@ import {
 import { getListBudgetsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useListTransactions } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import type { Budget } from "@workspace/api-client-react";
 
@@ -230,7 +230,7 @@ function BudgetCard({
             minWidth: 0,
           }}
         >
-          {formatGbp(s)}
+          {formatBaseMoney(s)}
         </span>
         <span
           style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
@@ -259,7 +259,7 @@ function BudgetCard({
             />
           ) : (
             <span className="pnum" title="Click to edit">
-              / {formatGbp(budget.monthlyLimit)}
+              / {formatBaseMoney(budget.monthlyLimit)}
             </span>
           )}
         </span>
@@ -269,7 +269,7 @@ function BudgetCard({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         {remaining > 0 && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-            rem <span className="pnum" style={{ color: over ? "var(--ft-red)" : "var(--ft-green)" }}>{formatGbp(remaining)}</span>
+            rem <span className="pnum" style={{ color: over ? "var(--ft-red)" : "var(--ft-green)" }}>{formatBaseMoney(remaining)}</span>
           </span>
         )}
         {daysPassed > 2 && catProjected > 0 && (
@@ -284,7 +284,7 @@ function BudgetCard({
           >
             <span style={{ color: "var(--ft-dim)" }}>proj </span>
             <span className="pnum" style={{ color: catProjOver ? "var(--ft-red)" : "var(--ft-muted)" }}>
-              {formatGbp(catProjected)}
+              {formatBaseMoney(catProjected)}
             </span>
             {catProjOver && (
               <span style={{ color: "var(--ft-red)", marginLeft: 3 }}>▲</span>
@@ -494,10 +494,10 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {formatGbp(totalSpent)}
+                  {formatBaseMoney(totalSpent)}
                 </span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>
-                  / <span className="pnum">{formatGbp(totalLimit)}</span>
+                  / <span className="pnum">{formatBaseMoney(totalLimit)}</span>
                 </span>
                 {totalOver && (
                   <span
@@ -509,7 +509,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                       textTransform: "uppercase",
                     }}
                   >
-                    OVER <span className="pnum">{formatGbp(totalSpent - totalLimit)}</span>
+                    OVER <span className="pnum">{formatBaseMoney(totalSpent - totalLimit)}</span>
                   </span>
                 )}
               </div>
@@ -521,7 +521,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                     className="pnum"
                     style={{ color: totalOver ? "var(--ft-red)" : "var(--ft-green)" }}
                   >
-                    {formatGbp(Math.max(totalLimit - totalSpent, 0))}
+                    {formatBaseMoney(Math.max(totalLimit - totalSpent, 0))}
                   </span>
                 </span>
                 {daysPassed > 2 && projectedSpend > 0 && (
@@ -531,7 +531,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                       className="pnum"
                       style={{ color: projectedOver ? "var(--ft-red)" : "var(--ft-muted)" }}
                     >
-                      {formatGbp(projectedSpend)}
+                      {formatBaseMoney(projectedSpend)}
                     </span>
                     {projectedOver && (
                       <span style={{ color: "var(--ft-red)", marginLeft: 2 }}>▲</span>

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useListAccounts, useListTransactions } from "@workspace/api-client-react";
 import { WidgetShell } from "./widget-shell";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 
 function monthsAgo(n: number): string {
   const d = new Date();
@@ -39,7 +39,7 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
     const txs = (txData ?? []) as Tx[];
     const accs = accounts ?? [];
 
-    const totalCash = accs.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+    const totalCash = accs.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
 
     // Monthly expense totals for last 3 full months
     const monthExpenses: number[] = [];
@@ -135,9 +135,9 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
         {/* Stats row */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginTop: 4 }}>
           {([
-            ["CASH", formatGbp(totalCash), "var(--ft-blue)"],
-            ["AVG BURN", `${formatGbp(avgBurn)}/mo`, "var(--ft-red)"],
-            ["DAILY", `${formatGbp(dailyBurn)}/d`, "var(--ft-dim)"],
+            ["CASH", formatBaseMoney(totalCash), "var(--ft-blue)"],
+            ["AVG BURN", `${formatBaseMoney(avgBurn)}/mo`, "var(--ft-red)"],
+            ["DAILY", `${formatBaseMoney(dailyBurn)}/d`, "var(--ft-dim)"],
           ] as [string, string, string][]).map(([lbl, val, col]) => (
             <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>

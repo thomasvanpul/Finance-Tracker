@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useListUpcoming } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ type SubscriptionRowItem = {
   description: string;
   dueDate: string;
   frequency: string;
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   status?: string;
 };
 
@@ -146,7 +146,7 @@ type SubscriptionRowProps = {
 
 function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
   const [hov, setHov] = useState(false);
-  const monthly = item.gbpEquivalent == null ? null : toMonthly(item.gbpEquivalent, item.frequency);
+  const monthly = item.baseEquivalent == null ? null : toMonthly(item.baseEquivalent, item.frequency);
   const daysUntil = Math.ceil(
     (new Date(item.dueDate).getTime() - Date.now()) / 86400000
   );
@@ -250,7 +250,7 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
                 color: monthly == null ? "var(--ft-dim)" : "var(--ft-cyan)",
               }}
             >
-              {monthly == null ? "—" : `−${formatGbp(monthly)}`}
+              {monthly == null ? "—" : `−${formatBaseMoney(monthly)}`}
             </span>
             <span
               style={{
@@ -294,11 +294,11 @@ export function SubscriptionTrackerWidget() {
   });
 
   const monthlyTotal = subs.reduce(
-    (s, item) => s + toMonthly(item.gbpEquivalent ?? 0, item.frequency),
+    (s, item) => s + toMonthly(item.baseEquivalent ?? 0, item.frequency),
     0
   );
   const yearlyTotal = monthlyTotal * 12;
-  const subsWithoutFx = subs.filter((item) => item.gbpEquivalent == null).length;
+  const subsWithoutFx = subs.filter((item) => item.baseEquivalent == null).length;
 
   // Count urgencies
   const urgentCount = subs.filter((item) => {
@@ -357,7 +357,7 @@ export function SubscriptionTrackerWidget() {
                   lineHeight: 1,
                 }}
               >
-                −{formatGbp(monthlyTotal)}
+                −{formatBaseMoney(monthlyTotal)}
               </div>
               <div
                 style={{
@@ -398,7 +398,7 @@ export function SubscriptionTrackerWidget() {
                   lineHeight: 1,
                 }}
               >
-                −{formatGbp(yearlyTotal)}
+                −{formatBaseMoney(yearlyTotal)}
               </div>
               {/* Urgency indicators */}
               <div

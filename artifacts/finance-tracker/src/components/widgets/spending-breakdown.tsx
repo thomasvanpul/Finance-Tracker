@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
@@ -110,7 +110,7 @@ function CategoryBarRow({ cat, amount, pct, color, rank, prevHasData, trend }: C
             </span>
           )}
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{pct.toFixed(0)}%</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color }}>−{formatGbp(amount)}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color }}>−{formatBaseMoney(amount)}</span>
         </span>
       </div>
       <div style={{ height: 5, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
@@ -160,7 +160,7 @@ function VsLastMonthRow({ cat, amount, prev, color }: VsLastMonthRowProps) {
   const [hov, setHov] = useState(false);
   const delta = amount - prev;
   const deltaColor = delta > 0 ? "var(--ft-red)" : delta < 0 ? "var(--ft-green)" : "var(--ft-dim)";
-  const deltaLabel = delta === 0 ? "—" : `${delta > 0 ? "+" : ""}${formatGbp(Math.abs(delta))}`;
+  const deltaLabel = delta === 0 ? "—" : `${delta > 0 ? "+" : ""}${formatBaseMoney(Math.abs(delta))}`;
   const pctChange = prev > 0 ? Math.round((delta / prev) * 100) : null;
 
   return (
@@ -254,7 +254,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
       </button>
 
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>
-        −{formatGbp(total)}
+        −{formatBaseMoney(total)}
       </span>
     </div>
   );
@@ -317,7 +317,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => [formatGbp(value), ""]}
+              formatter={(value: number) => [formatBaseMoney(value), ""]}
               contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10 }}
             />
           </PieChart>

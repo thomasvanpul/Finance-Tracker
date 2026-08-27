@@ -14,7 +14,7 @@ export interface Account {
   currency: AccountCurrency;
   balance: number;
   /** @nullable */
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   type: AccountType;
   isWiseLinked: boolean;
   /** @nullable */

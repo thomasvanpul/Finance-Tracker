@@ -6,7 +6,7 @@ import {
   XAxis, YAxis, Tooltip, ReferenceLine,
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { TrendingUp } from "lucide-react";
@@ -69,7 +69,7 @@ function CustomTooltip({ active, payload, label }: {
       {payload.map((p) => (
         <div key={p.name} style={{ display: "flex", justifyContent: "space-between", gap: 16, color: p.color }}>
           <span>{p.name}</span>
-          <span style={{ fontWeight: 700 }} className="pnum">{formatGbp(p.value)}</span>
+          <span style={{ fontWeight: 700 }} className="pnum">{formatBaseMoney(p.value)}</span>
         </div>
       ))}
     </div>
@@ -307,11 +307,11 @@ export default function Projection() {
   };
 
   const kpiItems = [
-    { label: "CURRENT NET WORTH", value: formatGbp(startNetWorth), color: "var(--ft-text)", accent: "var(--ft-border)", show: true },
-    { label: "TOTAL GAIN (BASE)", value: `+${formatGbp(gainBase)}`, color: gainBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", accent: gainBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", show: true },
-    { label: `IN ${horizon}Y — BEAR ${bearRate}%`, value: formatGbp(finalBear), color: "var(--ft-red)", accent: "var(--ft-red)", show: showScenarios },
-    { label: `IN ${horizon}Y — BASE ${annualRate}%`, value: formatGbp(finalBase), color: "var(--ft-green)", accent: "var(--ft-green)", show: true },
-    { label: `IN ${horizon}Y — BULL ${bullRate}%`, value: formatGbp(finalBull), color: "var(--ft-blue)", accent: "var(--ft-blue)", show: showScenarios },
+    { label: "CURRENT NET WORTH", value: formatBaseMoney(startNetWorth), color: "var(--ft-text)", accent: "var(--ft-border)", show: true },
+    { label: "TOTAL GAIN (BASE)", value: `+${formatBaseMoney(gainBase)}`, color: gainBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", accent: gainBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", show: true },
+    { label: `IN ${horizon}Y — BEAR ${bearRate}%`, value: formatBaseMoney(finalBear), color: "var(--ft-red)", accent: "var(--ft-red)", show: showScenarios },
+    { label: `IN ${horizon}Y — BASE ${annualRate}%`, value: formatBaseMoney(finalBase), color: "var(--ft-green)", accent: "var(--ft-green)", show: true },
+    { label: `IN ${horizon}Y — BULL ${bullRate}%`, value: formatBaseMoney(finalBull), color: "var(--ft-blue)", accent: "var(--ft-blue)", show: showScenarios },
   ].filter(k => k.show);
 
   if (!hasEnoughData) {
@@ -379,7 +379,7 @@ export default function Projection() {
           <HStack justify="between" marginBottom={10}>
             <span style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>MONTHLY SAVINGS</span>
             <span style={{ ...mono, fontSize: 14, color: "var(--ft-accent)", fontWeight: 700 }}>
-              <span className="pnum">{formatGbp(Math.round(effectiveSavings))}</span>/mo
+              <span className="pnum">{formatBaseMoney(Math.round(effectiveSavings))}</span>/mo
             </span>
           </HStack>
           <input type="range" min={-50} max={100} step={5} value={savingsAdj}
@@ -388,7 +388,7 @@ export default function Projection() {
           />
           <div style={{ display: "flex", justifyContent: "space-between", ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 6 }}>
             <span>-50%</span>
-            <span>Base: <span className="pnum">{formatGbp(Math.round(avgMonthlySavings))}</span>/mo</span>
+            <span>Base: <span className="pnum">{formatBaseMoney(Math.round(avgMonthlySavings))}</span>/mo</span>
             <span>+100%</span>
           </div>
           <div style={{ marginTop: 8, ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
@@ -551,17 +551,17 @@ export default function Projection() {
           <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-blue)", padding: "8px 14px", borderBottom: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-blue)", background: "var(--ft-raised)", fontWeight: 700 }}>
             BASE SCENARIO BREAKDOWN
           </div>
-          <BreakdownRow label="Starting net worth" value={formatGbp(startNetWorth)} color="var(--ft-text)" />
-          <BreakdownRow label={`Contributions over ${horizon}y`} value={formatGbp(Math.round(effectiveSavings * horizon * 12))} color="var(--ft-muted)" />
-          <BreakdownRow label="Investment returns" value={formatGbp(Math.round(gainBase - effectiveSavings * horizon * 12))} color="var(--ft-green)" />
-          <BreakdownRow label={`Final value (${horizon}y)`} value={formatGbp(finalBase)} color="var(--ft-green)" bold />
+          <BreakdownRow label="Starting net worth" value={formatBaseMoney(startNetWorth)} color="var(--ft-text)" />
+          <BreakdownRow label={`Contributions over ${horizon}y`} value={formatBaseMoney(Math.round(effectiveSavings * horizon * 12))} color="var(--ft-muted)" />
+          <BreakdownRow label="Investment returns" value={formatBaseMoney(Math.round(gainBase - effectiveSavings * horizon * 12))} color="var(--ft-green)" />
+          <BreakdownRow label={`Final value (${horizon}y)`} value={formatBaseMoney(finalBase)} color="var(--ft-green)" bold />
           <div style={{ padding: "12px 14px" }}>
             <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 8 }}>
               SCENARIO RANGE AT {horizon} YEARS
             </div>
             <HStack gap={8} align="center">
               <span style={{ ...mono, fontSize: 10, color: "var(--ft-red)", fontWeight: 600 }}>
-                <span className="pnum">{formatGbp(finalBear)}</span>
+                <span className="pnum">{formatBaseMoney(finalBear)}</span>
               </span>
               <div style={{ flex: 1, height: 6, background: "var(--ft-raised)", borderRadius: 3, overflow: "hidden", position: "relative" }}>
                 <div style={{
@@ -583,11 +583,11 @@ export default function Projection() {
                 }} />
               </div>
               <span style={{ ...mono, fontSize: 10, color: "var(--ft-blue)", fontWeight: 600 }}>
-                <span className="pnum">{formatGbp(finalBull)}</span>
+                <span className="pnum">{formatBaseMoney(finalBull)}</span>
               </span>
             </HStack>
             <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 6, textAlign: "center" }}>
-              ▲ baseline <span className="pnum">{formatGbp(finalBase)}</span> · upside: +<span className="pnum">{formatGbp(finalBull - finalBase)}</span> · downside: −<span className="pnum">{formatGbp(finalBase - finalBear)}</span>
+              ▲ baseline <span className="pnum">{formatBaseMoney(finalBase)}</span> · upside: +<span className="pnum">{formatBaseMoney(finalBull - finalBase)}</span> · downside: −<span className="pnum">{formatBaseMoney(finalBase - finalBear)}</span>
             </div>
           </div>
         </div>

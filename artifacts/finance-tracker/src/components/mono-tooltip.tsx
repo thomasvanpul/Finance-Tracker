@@ -1,4 +1,4 @@
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 
 // Shared Recharts tooltip that puts every value inside a `.pnum` span, so
 // numbers get tabular figure alignment AND respect privacy-mode blur. Use
@@ -44,7 +44,7 @@ export function MonoTooltip({
       {payload.map((entry, i) => {
         const rawVal = typeof entry.value === "number" ? entry.value : 0;
         const name = String(entry.name ?? "");
-        const [displayVal, displayName] = formatter ? formatter(rawVal, name) : [formatGbp(rawVal), name];
+        const [displayVal, displayName] = formatter ? formatter(rawVal, name) : [formatBaseMoney(rawVal), name];
         return (
           <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {entry.color && (

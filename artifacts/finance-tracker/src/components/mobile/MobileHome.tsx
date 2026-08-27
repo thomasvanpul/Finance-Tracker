@@ -70,7 +70,7 @@ interface MobileHomeProps {
 export type AccountType = "cash" | "investment" | "pension" | "property" | "other";
 
 export interface HoldingsInput {
-  accountBreakdown?: Array<{ type: AccountType; gbpEquivalent: number | null }>;
+  accountBreakdown?: Array<{ type: AccountType; baseEquivalent: number | null }>;
   portfolio?: { totalValueGbp?: number };
 }
 // Bucket keys match the DB column values 1:1 so the loop is `buckets[a.type]`
@@ -90,8 +90,8 @@ export function computeHoldings(d: HoldingsInput | null | undefined): Holdings {
     // a fabricated 0 would shrink the wrong bucket. Total shown on
     // the NET WORTH headline (dashboard.netWorth) already matches
     // this skip-based sum.
-    if (a.gbpEquivalent == null) continue;
-    buckets[a.type] += a.gbpEquivalent;
+    if (a.baseEquivalent == null) continue;
+    buckets[a.type] += a.baseEquivalent;
   }
   // Portfolio positions live in a separate table from accounts. An investment
   // account itself holds the uninvested cash (part of buckets.investment via
@@ -1021,7 +1021,7 @@ type Acct = {
   name: string;
   currency: string;
   balance: number;
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
 };
 
 function AccountsList({ accounts }: { accounts: Acct[] }) {
@@ -1055,7 +1055,7 @@ function AccountsList({ accounts }: { accounts: Acct[] }) {
           <Text as="span" size={14}>{a.name}</Text>
           {a.currency === "GBP" ? (
             <Text as="span" mono size={13} numeric>
-              {a.gbpEquivalent == null ? "—" : nfmt(a.gbpEquivalent)}
+              {a.baseEquivalent == null ? "—" : nfmt(a.baseEquivalent)}
             </Text>
           ) : (
             // Foreign account row: native amount always honest; the
@@ -1065,8 +1065,8 @@ function AccountsList({ accounts }: { accounts: Acct[] }) {
                 {(CURRENCY_SYMBOLS[a.currency] ?? a.currency + " ") +
                   nfmt(a.balance)} ≈
               </Text>
-              <Text as="span" mono size={13} color={a.gbpEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
-                {a.gbpEquivalent == null ? "—" : nfmt(a.gbpEquivalent)}
+              <Text as="span" mono size={13} color={a.baseEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
+                {a.baseEquivalent == null ? "—" : nfmt(a.baseEquivalent)}
               </Text>
             </HStack>
           )}

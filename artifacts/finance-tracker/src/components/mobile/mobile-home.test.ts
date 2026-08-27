@@ -5,12 +5,12 @@ describe("computeHoldings — categorises from account.type (no residual)", () =
   it("sums per bucket by account type and adds portfolio to invested", () => {
     const h = computeHoldings({
       accountBreakdown: [
-        { type: "cash",       gbpEquivalent: 12260 },
-        { type: "cash",       gbpEquivalent:  4004 },
-        { type: "investment", gbpEquivalent:   690 },
-        { type: "pension",    gbpEquivalent:  7300 },
-        { type: "property",   gbpEquivalent: 94600 },
-        { type: "other",      gbpEquivalent:   150 },
+        { type: "cash",       baseEquivalent: 12260 },
+        { type: "cash",       baseEquivalent:  4004 },
+        { type: "investment", baseEquivalent:   690 },
+        { type: "pension",    baseEquivalent:  7300 },
+        { type: "property",   baseEquivalent: 94600 },
+        { type: "other",      baseEquivalent:   150 },
       ],
       portfolio: { totalValueGbp: 8380 },
     });
@@ -35,7 +35,7 @@ describe("computeHoldings — categorises from account.type (no residual)", () =
   it("cash-only wallet has cash and nothing else", () => {
     const h = computeHoldings({
       accountBreakdown: [
-        { type: "cash", gbpEquivalent: 12260 },
+        { type: "cash", baseEquivalent: 12260 },
       ],
     });
     expect(h).toEqual({
@@ -58,7 +58,7 @@ describe("computeHoldings — categorises from account.type (no residual)", () =
     // portfolio.totalValueGbp. Both add to the same visual bucket.
     const h = computeHoldings({
       accountBreakdown: [
-        { type: "investment", gbpEquivalent: 690 },
+        { type: "investment", baseEquivalent: 690 },
       ],
       portfolio: { totalValueGbp: 8380 },
     });
@@ -73,8 +73,8 @@ describe("computeHoldings — categorises from account.type (no residual)", () =
     // totalCash inputs at all — only the categorised breakdown.
     const h = computeHoldings({
       accountBreakdown: [
-        { type: "cash",     gbpEquivalent: 12260 },
-        { type: "property", gbpEquivalent: 94600 },
+        { type: "cash",     baseEquivalent: 12260 },
+        { type: "property", baseEquivalent: 94600 },
       ],
       portfolio: { totalValueGbp: 8380 },
     });

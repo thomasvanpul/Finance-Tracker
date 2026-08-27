@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { useListAccounts, useCreateTransaction, useListTransactions } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { applyAutoCategory } from "@/lib/auto-cat";
 import { loadPersonaIds, PERSONA_COLORS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
@@ -1356,7 +1356,7 @@ function ImportRow({
           fontVariantNumeric: "tabular-nums",
         }}
       >
-        {row.type === "income" ? "+" : "−"}{formatGbp(Math.abs(row.amount))}
+        {row.type === "income" ? "+" : "−"}{formatBaseMoney(Math.abs(row.amount))}
       </td>
       <td style={{ ...tdStyle, textAlign: "center" }}>
         <span

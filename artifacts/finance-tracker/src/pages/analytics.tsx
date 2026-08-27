@@ -5,7 +5,7 @@ import { useListTransactions, useListBudgets } from "@workspace/api-client-react
 import { Skeleton as FtSkeleton } from "@/components/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { MonoTooltip, monoTooltipStyle, type TooltipEntry } from "@/components/mono-tooltip";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS } from "@/lib/persona";
 import {
   AreaChart, Area, BarChart, Bar, ComposedChart, Line,
@@ -262,12 +262,12 @@ function CategoryRow({ row: r, catMax, totalSpend, onCategoryClick, rowIndex: ri
         <span style={{ color: "var(--ft-accent)", marginRight: 5, fontSize: 9 }}>→</span>
         {r.cat}
       </td>
-      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-accent)" }}>{formatGbp(r.total)}</td>
+      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-accent)" }}>{formatBaseMoney(r.total)}</td>
       {!isMobile && <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-muted)" }}>{r.pctOfTotal.toFixed(1)}%</td>}
       {!isMobile && <td style={{ ...td, textAlign: "right", color: "var(--ft-muted)" }}>{r.count}</td>}
-      {!isMobile && <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-dim)" }}>{formatGbp(r.avg)}</td>}
-      <td className="pnum" style={{ ...td, textAlign: "right" }}>{r.thisM > 0 ? formatGbp(r.thisM) : "—"}</td>
-      {!isMobile && <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-dim)" }}>{r.lastM > 0 ? formatGbp(r.lastM) : "—"}</td>}
+      {!isMobile && <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-dim)" }}>{formatBaseMoney(r.avg)}</td>}
+      <td className="pnum" style={{ ...td, textAlign: "right" }}>{r.thisM > 0 ? formatBaseMoney(r.thisM) : "—"}</td>
+      {!isMobile && <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-dim)" }}>{r.lastM > 0 ? formatBaseMoney(r.lastM) : "—"}</td>}
       <td className="pnum" style={{ ...td, textAlign: "right", color: chgColor, fontWeight: 700 }}>{arrow} {r.change !== 0 ? `${Math.abs(r.change).toFixed(0)}%` : "—"}</td>
       {!isMobile && (
         <td style={{ ...td, paddingLeft: 8, paddingRight: 12 }}>
@@ -325,9 +325,9 @@ function MerchantRow({ merchant: m, maxTotal, index: i, isMobile }: MerchantRowP
         </td>
       )}
       <td style={{ ...td, textAlign: "right", color: "var(--ft-muted)" }}>{m.count}</td>
-      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-accent)", fontWeight: 600 }}>{formatGbp(m.total)}</td>
-      {!isMobile && <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-muted)" }}>{formatGbp(m.avg)}</td>}
-      <td className="pnum" style={{ ...td, textAlign: "right" }}>{m.thisM > 0 ? formatGbp(m.thisM) : "—"}</td>
+      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-accent)", fontWeight: 600 }}>{formatBaseMoney(m.total)}</td>
+      {!isMobile && <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-muted)" }}>{formatBaseMoney(m.avg)}</td>}
+      <td className="pnum" style={{ ...td, textAlign: "right" }}>{m.thisM > 0 ? formatBaseMoney(m.thisM) : "—"}</td>
       {!isMobile && (
         <td className="pnum" style={{ ...td, textAlign: "right", color: chgColor, fontSize: 10 }}>
           {m.change !== 0 ? `${m.change > 0 ? "▲" : "▼"}${Math.abs(m.change).toFixed(0)}%` : "—"}
@@ -365,7 +365,7 @@ function BigTxRow({ tx: t, index: i, max }: BigTxRowProps) {
       </td>
       <td style={{ ...td, color: "var(--ft-muted)" }}>{t.category || "Other"}</td>
       <td style={{ ...td, color: "var(--ft-dim)" }}>{t.date}</td>
-      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-red)", fontWeight: 700 }}>{formatGbp(t.gbpValue)}</td>
+      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-red)", fontWeight: 700 }}>{formatBaseMoney(t.gbpValue)}</td>
     </tr>
   );
 }
@@ -391,7 +391,7 @@ function RecurringRow({ item: r, index: i }: RecurringRowProps) {
     >
       <td style={{ ...td, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis" }}>{r.desc}</td>
       <td style={{ ...td, textAlign: "right", color: "var(--ft-muted)" }}>{r.count}</td>
-      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-amber)", fontWeight: 600 }}>{formatGbp(r.total)}</td>
+      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-amber)", fontWeight: 600 }}>{formatBaseMoney(r.total)}</td>
     </tr>
   );
 }
@@ -438,7 +438,7 @@ function IncomeSourceRow({ cat, total, grandTotal, colorIndex, isLast }: IncomeS
         <div style={{ height: "100%", width: `${Math.round(pct * 100)}%`, background: color }} />
       </div>
       <div className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", textAlign: "right" as const }}>{Math.round(pct * 100)}%</div>
-      <div className="pnum" style={{ ...mono, fontSize: 11, fontWeight: 600, color, textAlign: "right" as const }}>{formatGbp(total)}</div>
+      <div className="pnum" style={{ ...mono, fontSize: 11, fontWeight: 600, color, textAlign: "right" as const }}>{formatBaseMoney(total)}</div>
     </div>
   );
 }
@@ -572,7 +572,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
           </div>
           <HStack gap={12} align="center">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
-              {rangedExpenses.length} tx · <span className="pnum">{formatGbp(totalForCategory)}</span>
+              {rangedExpenses.length} tx · <span className="pnum">{formatBaseMoney(totalForCategory)}</span>
             </span>
             <button
               onClick={onClose}
@@ -605,7 +605,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
                   <tr key={t.id} style={{ background: ri % 2 === 0 ? "transparent" : "color-mix(in srgb, var(--ft-raised) 30%, transparent)" }}>
                     <td style={{ ...td, fontSize: 10, color: "var(--ft-dim)", padding: "6px 12px", minWidth: 80 }}>{t.date}</td>
                     <td style={{ ...td, fontSize: 11, padding: "6px 12px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}>{t.description || "—"}</td>
-                    <td className="pnum" style={{ ...td, fontSize: 11, fontWeight: 700, color: "var(--ft-red)", textAlign: "right", padding: "6px 12px" }}>{formatGbp(t.gbpValue)}</td>
+                    <td className="pnum" style={{ ...td, fontSize: 11, fontWeight: 700, color: "var(--ft-red)", textAlign: "right", padding: "6px 12px" }}>{formatBaseMoney(t.gbpValue)}</td>
                     <td style={{ ...td, fontSize: 9, color: "var(--ft-muted)", padding: "6px 12px", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>{t.accountName || "—"}</td>
                   </tr>
                 ))}
@@ -717,13 +717,13 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
   const cells: { label: string; value: string; delta?: React.ReactNode; valueColor?: string }[] = [
     {
       label: "Avg Monthly Spend",
-      value: avgMonthly > 0 ? formatGbp(avgMonthly) : "—",
+      value: avgMonthly > 0 ? formatBaseMoney(avgMonthly) : "—",
       delta: <span style={{ color: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }}>6-month avg</span>,
     },
     {
       label: "Highest Category",
       value: topCat ? topCat[0] : "—",
-      delta: topCat ? <span className="pnum" style={{ color: "var(--ft-accent)", fontSize: 9, fontFamily: "var(--font-mono)" }}>{formatGbp(topCat[1])}</span> : null,
+      delta: topCat ? <span className="pnum" style={{ color: "var(--ft-accent)", fontSize: 9, fontFamily: "var(--font-mono)" }}>{formatBaseMoney(topCat[1])}</span> : null,
       valueColor: "var(--ft-text)",
     },
     {
@@ -734,13 +734,13 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
     },
     {
       label: "Volatility",
-      value: volatility > 0 ? formatGbp(volatility) : "—",
+      value: volatility > 0 ? formatBaseMoney(volatility) : "—",
       delta: <Text as="span" mono size={9} color="var(--ft-dim)">σ monthly</Text>,
     },
     {
       label: "Best Month",
       value: bestMonthLabel,
-      delta: bestMonthEntry ? <span className="pnum" style={{ color: "var(--ft-green)", fontSize: 9, fontFamily: "var(--font-mono)" }}>{formatGbp(bestMonthEntry[1])}</span> : null,
+      delta: bestMonthEntry ? <span className="pnum" style={{ color: "var(--ft-green)", fontSize: 9, fontFamily: "var(--font-mono)" }}>{formatBaseMoney(bestMonthEntry[1])}</span> : null,
       valueColor: "var(--ft-text)",
     },
     {
@@ -796,16 +796,16 @@ function KpiStrip({ expenses, range, onRangeChange }: { expenses: Tx[]; range: R
   const tiles = [
     {
       label: "This Month",
-      value: formatGbp(thisMonthSpend),
+      value: formatBaseMoney(thisMonthSpend),
       sub: delta !== 0 ? (
         <span style={{ color: delta > 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 10, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-          {delta > 0 ? "▲" : "▼"} <span className="pnum">{formatGbp(Math.abs(delta))}</span> MoM
+          {delta > 0 ? "▲" : "▼"} <span className="pnum">{formatBaseMoney(Math.abs(delta))}</span> MoM
         </span>
       ) : null,
     },
-    { label: "Daily Average", value: formatGbp(dailyAvg), sub: <span style={{ ...ftLabel }}>over {days}d</span> },
-    { label: "Largest Single", value: largest ? formatGbp(largest.gbpValue) : "—", sub: <span style={{ ...ftLabel, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{largest?.description ?? "—"}</span> },
-    { label: "Top Category", value: topCat ? formatGbp(topCat[1]) : "—", sub: <span style={{ ...ftLabel }}>{topCat?.[0] ?? "—"}</span> },
+    { label: "Daily Average", value: formatBaseMoney(dailyAvg), sub: <span style={{ ...ftLabel }}>over {days}d</span> },
+    { label: "Largest Single", value: largest ? formatBaseMoney(largest.gbpValue) : "—", sub: <span style={{ ...ftLabel, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{largest?.description ?? "—"}</span> },
+    { label: "Top Category", value: topCat ? formatBaseMoney(topCat[1]) : "—", sub: <span style={{ ...ftLabel }}>{topCat?.[0] ?? "—"}</span> },
     { label: "Transactions", value: String(ranged.length), sub: <span style={{ ...ftLabel }}>in range</span> },
   ];
 
@@ -898,7 +898,7 @@ function SpendingVelocity({ allExpenses, budgetTotal, range, onRangeChange }: {
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
                       {entry.color && <div style={{ width: 6, height: 6, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />}
                       <Text as="span" size={9} color="var(--ft-dim)">{String(entry.name ?? "")}</Text>
-                      <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{formatGbp(typeof entry.value === "number" ? entry.value : 0)}</span>
+                      <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{formatBaseMoney(typeof entry.value === "number" ? entry.value : 0)}</span>
                     </div>
                   ))}
                 </div>
@@ -973,7 +973,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
             <ComposedChart data={bars} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
               <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
-              <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={String(p.label ?? "")} formatter={(v, n) => [formatGbp(v), n]} />} />
+              <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={String(p.label ?? "")} formatter={(v, n) => [formatBaseMoney(v), n]} />} />
               <Bar dataKey="income" fill="var(--ft-green)" opacity={0.8} radius={[0, 0, 0, 0]} maxBarSize={20} />
               <Bar dataKey="expense" fill="var(--ft-red)" opacity={0.8} radius={[0, 0, 0, 0]} maxBarSize={20} />
               <Line type="monotone" dataKey="net" stroke="var(--ft-accent)" strokeWidth={1.5} dot={<LineDot stroke="var(--ft-accent)" />} activeDot={{ r: 4, fill: "var(--ft-accent)", strokeWidth: 0 }} />
@@ -1087,9 +1087,9 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
           {/* Split panel data rows */}
           <div style={{ width: "100%", borderTop: "1px solid var(--ft-border)", marginTop: 10 }}>
             {[
-              { label: "Income", value: formatGbp(curIncome), color: "var(--ft-green)" },
-              { label: "Expense", value: formatGbp(curExpense), color: "var(--ft-red)" },
-              { label: "Net", value: formatGbp(curIncome - curExpense), color: curIncome >= curExpense ? "var(--ft-green)" : "var(--ft-red)" },
+              { label: "Income", value: formatBaseMoney(curIncome), color: "var(--ft-green)" },
+              { label: "Expense", value: formatBaseMoney(curExpense), color: "var(--ft-red)" },
+              { label: "Net", value: formatBaseMoney(curIncome - curExpense), color: curIncome >= curExpense ? "var(--ft-green)" : "var(--ft-red)" },
             ].map((row, i) => (
               <SplitRow
                 key={row.label}
@@ -1195,7 +1195,7 @@ function CategoryIntelligence({ expenses, range, onCategoryClick }: CategoryInte
       </div>
       <div style={{ padding: "4px 12px 6px", borderTop: "1px solid var(--ft-border)" }}>
         <span style={{ ...ftLabel }}>Click row to drill into transactions · Total in range: </span>
-        <span className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-accent)" }}>{formatGbp(totalSpend)}</span>
+        <span className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-accent)" }}>{formatBaseMoney(totalSpend)}</span>
       </div>
     </div>
   );
@@ -1364,14 +1364,14 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
               boxShadow: "none",
             }}>
               <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 5, letterSpacing: "0.06em" }}>
-                {tooltip.day.date} · <span className="pnum">{formatGbp(tooltip.day.total)}</span>
+                {tooltip.day.date} · <span className="pnum">{formatBaseMoney(tooltip.day.total)}</span>
               </div>
               {tooltip.day.txs.slice(0, 5).map(t => (
                 <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
                   <span style={{ color: "var(--ft-muted)", fontSize: 9, whiteSpace: "nowrap", maxWidth: 130 }}>
                     {t.description || t.category || "—"}
                   </span>
-                  <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, fontSize: 9, flexShrink: 0 }}>{formatGbp(t.gbpValue)}</span>
+                  <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, fontSize: 9, flexShrink: 0 }}>{formatBaseMoney(t.gbpValue)}</span>
                 </div>
               ))}
               {tooltip.day.txs.length > 5 && (
@@ -1439,7 +1439,7 @@ function SpendingHeatmap({ expenses }: { expenses: Tx[] }) {
                   const isMax = val === maxVal && val > 0;
                   return (
                     <td key={wi} style={{ padding: "3px 3px" }}>
-                      <div title={formatGbp(val)} className="pnum" style={{
+                      <div title={formatBaseMoney(val)} className="pnum" style={{
                         background: heatBg,
                         border: isMax ? "1px solid var(--ft-amber)" : "1px solid var(--ft-border)",
                         height: 32,
@@ -1452,17 +1452,17 @@ function SpendingHeatmap({ expenses }: { expenses: Tx[] }) {
                         color: intensity > 0.5 ? "var(--ft-text)" : "var(--ft-muted)",
                         minWidth: 58,
                         cursor: "default",
-                      }}>{val === 0 ? "—" : formatGbp(val)}</div>
+                      }}>{val === 0 ? "—" : formatBaseMoney(val)}</div>
                     </td>
                   );
                 })}
-                <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-accent)", paddingLeft: 12 }}>{formatGbp(rowTotals[di])}</td>
+                <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-accent)", paddingLeft: 12 }}>{formatBaseMoney(rowTotals[di])}</td>
               </tr>
             ))}
             <tr style={{ borderTop: "1px solid var(--ft-border2)" }}>
               <td style={{ ...td, color: "var(--ft-dim)", fontSize: 9, fontWeight: 600 }}>Total</td>
-              {colTotals.map((v, wi) => <td key={wi} className="pnum" style={{ ...td, textAlign: "center", color: "var(--ft-accent)" }}>{formatGbp(v)}</td>)}
-              <td className="pnum" style={{ ...td, textAlign: "right", fontWeight: 700 }}>{formatGbp(expenses.reduce((s, t) => s + t.gbpValue, 0))}</td>
+              {colTotals.map((v, wi) => <td key={wi} className="pnum" style={{ ...td, textAlign: "center", color: "var(--ft-accent)" }}>{formatBaseMoney(v)}</td>)}
+              <td className="pnum" style={{ ...td, textAlign: "right", fontWeight: 700 }}>{formatBaseMoney(expenses.reduce((s, t) => s + t.gbpValue, 0))}</td>
             </tr>
           </tbody>
         </table>
@@ -1488,7 +1488,7 @@ function DayOfWeekPatterns({ expenses }: { expenses: Tx[] }) {
           <BarChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
             <XAxis dataKey="name" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
-            <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={String(p.label ?? "")} formatter={(v) => [formatGbp(v), "Spend"]} />} />
+            <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={String(p.label ?? "")} formatter={(v) => [formatBaseMoney(v), "Spend"]} />} />
             <Bar dataKey="total" radius={[0, 0, 0, 0]} maxBarSize={28}>
               {data.map((d, i) => <Cell key={i} fill={d.weekend ? "var(--ft-amber)" : "var(--ft-accent)"} opacity={0.85} />)}
             </Bar>
@@ -1579,7 +1579,7 @@ function MonthDayPattern({ expenses }: { expenses: Tx[] }) {
           <BarChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
             <XAxis dataKey="day" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} interval={4} />
             <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
-            <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={p.label != null ? `Day ${p.label}` : ""} formatter={(v) => [formatGbp(v), "Day total"]} />} />
+            <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={p.label != null ? `Day ${p.label}` : ""} formatter={(v) => [formatBaseMoney(v), "Day total"]} />} />
             <Bar dataKey="total" radius={[0, 0, 0, 0]} maxBarSize={12}>
               {data.map((d, i) => {
                 const intensity = d.total / maxVal;
@@ -1649,8 +1649,8 @@ function RecurringVsOneOff({ expenses }: { expenses: Tx[] }) {
       <PanelHeader title="Recurring vs One-Off" />
       <div style={{ padding: "10px 12px" }}>
         <HStack justify="between" marginBottom={5}>
-          <span style={{ ...mono, fontSize: 11, color: "var(--ft-amber)" }}>Recurring <span className="pnum">{formatGbp(recurring)}</span> (<span className="pnum">{recPct}%</span>)</span>
-          <span style={{ ...mono, fontSize: 11, color: "var(--ft-muted)" }}>One-off <span className="pnum">{formatGbp(oneOff)}</span> (<span className="pnum">{100 - recPct}%</span>)</span>
+          <span style={{ ...mono, fontSize: 11, color: "var(--ft-amber)" }}>Recurring <span className="pnum">{formatBaseMoney(recurring)}</span> (<span className="pnum">{recPct}%</span>)</span>
+          <span style={{ ...mono, fontSize: 11, color: "var(--ft-muted)" }}>One-off <span className="pnum">{formatBaseMoney(oneOff)}</span> (<span className="pnum">{100 - recPct}%</span>)</span>
         </HStack>
         <div style={{ height: 16, background: "var(--ft-border)", overflow: "hidden", display: "flex" }}>
           <div style={{ width: `${recPct}%`, background: "var(--ft-amber)", opacity: 0.85 }} />
@@ -1727,11 +1727,11 @@ function IncomeSourceBreakdown({ allTxs }: { allTxs: Tx[] }) {
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={String(p.label ?? "")} formatter={(v, n) => [formatGbp(v as number), n]} />} />
+              <Tooltip content={(p) => <MonoTooltip active={p.active} payload={p.payload as TooltipEntry[]} label={String(p.label ?? "")} formatter={(v, n) => [formatBaseMoney(v as number), n]} />} />
             </PieChart>
           </ResponsiveContainer>
           <div className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", textAlign: "center", marginTop: 4 }}>
-            Total: {formatGbp(total)}
+            Total: {formatBaseMoney(total)}
           </div>
         </VStack>
       </div>
@@ -1800,8 +1800,8 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
                     <Text as="div" weight={700} color="var(--ft-text)" mb={2}>
                       Rate: {d.rate !== null ? `${d.rate}%` : "—"}
                     </Text>
-                    <Text as="div" size={9} color="var(--ft-green)">Income: <span className="pnum">{formatGbp(d.income)}</span></Text>
-                    <Text as="div" size={9} color="var(--ft-red)">Expense: <span className="pnum">{formatGbp(d.expense)}</span></Text>
+                    <Text as="div" size={9} color="var(--ft-green)">Income: <span className="pnum">{formatBaseMoney(d.income)}</span></Text>
+                    <Text as="div" size={9} color="var(--ft-red)">Expense: <span className="pnum">{formatBaseMoney(d.expense)}</span></Text>
                   </div>
                 );
               }}
@@ -1905,7 +1905,7 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
         </HStack>
         {/* Stats row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
-          {([["MEAN/MO", formatGbp(mean), "var(--ft-text)"], ["STD DEV (σ)", formatGbp(sigma), cvColor], ["COEFF VAR", `${cv}%`, cvColor]] as [string, string, string][]).map(([lbl, val, col]) => (
+          {([["MEAN/MO", formatBaseMoney(mean), "var(--ft-text)"], ["STD DEV (σ)", formatBaseMoney(sigma), cvColor], ["COEFF VAR", `${cv}%`, cvColor]] as [string, string, string][]).map(([lbl, val, col]) => (
             <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 10px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{val}</div>
@@ -1924,7 +1924,7 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
                 <div key={r.cat} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < catVolatility.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
                   <Text as="span" mono size={10} color="var(--ft-text)">{r.cat}</Text>
                   <HStack gap={8} align="center">
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}><span className="pnum">{formatGbp(r.mean)}</span>/mo avg</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}><span className="pnum">{formatBaseMoney(r.mean)}</span>/mo avg</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>CV <span className="pnum">{r.cv}%</span></span>
                   </HStack>
                 </div>
@@ -1996,13 +1996,13 @@ function IncomeStability({ allTxs }: { allTxs: Tx[] }) {
         </HStack>
         {/* Mean line label */}
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: -6, borderTop: "1px dashed var(--ft-border2)", paddingTop: 4 }}>
-          avg <span className="pnum">{formatGbp(mean)}</span>/mo
+          avg <span className="pnum">{formatBaseMoney(mean)}</span>/mo
         </div>
         {/* Stats grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
           {([
-            ["BEST MONTH",  bestM  ? `${bestM.label} ${formatGbp(bestM.total)}`   : "—", "var(--ft-green)"],
-            ["WORST MONTH", worstM ? `${worstM.label} ${formatGbp(worstM.total)}` : "—", "var(--ft-amber)"],
+            ["BEST MONTH",  bestM  ? `${bestM.label} ${formatBaseMoney(bestM.total)}`   : "—", "var(--ft-green)"],
+            ["WORST MONTH", worstM ? `${worstM.label} ${formatBaseMoney(worstM.total)}` : "—", "var(--ft-amber)"],
             ["STAB (CV)",   `${cv}%`,                                                     stabilityColor  ],
             ["MoM CHANGE",  latestMom != null ? `${latestMom > 0 ? "+" : ""}${latestMom}%` : "—", latestMom != null && latestMom > 0 ? "var(--ft-green)" : latestMom != null ? "var(--ft-red)" : "var(--ft-dim)"],
           ] as [string, string, string][]).map(([lbl, val, col]) => (
@@ -2042,7 +2042,7 @@ function SeasonalityIndex({ expenses }: { expenses: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader title="Spending Seasonality (12M Index)"
-        right={<span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>100 = monthly average · <span className="pnum">{formatGbp(mean)}</span>/mo</span>}
+        right={<span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>100 = monthly average · <span className="pnum">{formatBaseMoney(mean)}</span>/mo</span>}
       />
       <VStack gap={10} padding="10px 14px">
         {/* Index bar chart */}
@@ -2160,8 +2160,8 @@ function CategoryMomentum({ expenses }: { expenses: Tx[] }) {
               return (
                 <tr key={r.cat} style={{ background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
                   <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, fontWeight: 500, color: "var(--ft-text)" }}>{r.cat}</td>
-                  <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.last > 0 ? formatGbp(r.last) : "—"}</td>
-                  <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-text)" }}>{r.this > 0 ? formatGbp(r.this) : "—"}</td>
+                  <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.last > 0 ? formatBaseMoney(r.last) : "—"}</td>
+                  <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-text)" }}>{r.this > 0 ? formatBaseMoney(r.this) : "—"}</td>
                   <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: col, fontWeight: 700 }}>{arrow}</td>
                   <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right" }}>
                     {accelLabel && (
@@ -2262,7 +2262,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
                 <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${Math.min(100, row.pct)}%`, background: row.color, opacity: 0.85 }} />
               </div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: isFirst || isLast ? 700 : 400, color: row.sign === 1 ? "var(--ft-text)" : "var(--ft-dim)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                {row.sign === -1 ? "−" : ""}{formatGbp(row.amount)}
+                {row.sign === -1 ? "−" : ""}{formatBaseMoney(row.amount)}
               </div>
               <div style={{ textAlign: "right" }}>
                 {mom != null && !isFirst && !isLast ? (
@@ -2361,8 +2361,8 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
             return (
               <tr key={r.cat} style={{ background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, fontWeight: 500 }}>{r.cat}</td>
-                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700 }}>{r.actual > 0 ? formatGbp(r.actual) : "—"}</td>
-                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{formatGbp(r.benchmark)}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700 }}>{r.actual > 0 ? formatBaseMoney(r.actual) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{formatBaseMoney(r.benchmark)}</td>
                 <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: diffColor }}>{diffLabel}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", paddingLeft: 16, minWidth: 120 }}>
                   <div style={{ position: "relative", height: 12 }}>
@@ -2484,8 +2484,8 @@ function SpendingAnomalies({ expenses }: { expenses: Tx[] }) {
               <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, maxWidth: 200, whiteSpace: "nowrap" }}>{r.description}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", color: "var(--ft-dim)" }}>{r.category}</td>
-                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: "var(--ft-red)" }}>{formatGbp(r.amount)}</td>
-                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.catAvg > 0 ? formatGbp(r.catAvg) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: "var(--ft-red)" }}>{formatBaseMoney(r.amount)}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.catAvg > 0 ? formatBaseMoney(r.catAvg) : "—"}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: sigmaColor }}>{sigmaLabel}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", paddingLeft: 12, minWidth: 100 }}>
                   <div style={{ height: 8, background: "var(--ft-raised)", position: "relative" }}>
@@ -2551,11 +2551,11 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
               </HStack>
               <div style={{ height: 1, background: "var(--ft-border)" }} />
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: pos ? "var(--ft-green)" : "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>
-                {pos ? "+" : ""}{formatGbp(d.saved)}
+                {pos ? "+" : ""}{formatBaseMoney(d.saved)}
               </div>
               <HStack gap={4}>
-                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(d.income)}</div>
-                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(d.expenses)}</div>
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>{formatBaseMoney(d.income)}</div>
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}>{formatBaseMoney(d.expenses)}</div>
               </HStack>
             </div>
           );
@@ -2634,11 +2634,11 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
             return (
               <tr key={r.cat} style={{ background: i % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", fontSize: 10, fontWeight: 500 }}>{r.cat}</td>
-                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.m3 > 0 ? formatGbp(r.m3) : "—"}</td>
-                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.m2 > 0 ? formatGbp(r.m2) : "—"}</td>
-                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right" }}>{r.m1 > 0 ? formatGbp(r.m1) : "—"}</td>
-                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-dim)" }}>{formatGbp(r.avg)}</td>
-                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: fColor }}>{formatGbp(r.forecast)}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.m3 > 0 ? formatBaseMoney(r.m3) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-muted)" }}>{r.m2 > 0 ? formatBaseMoney(r.m2) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right" }}>{r.m1 > 0 ? formatBaseMoney(r.m1) : "—"}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", color: "var(--ft-dim)" }}>{formatBaseMoney(r.avg)}</td>
+                <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: fColor }}>{formatBaseMoney(r.forecast)}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", minWidth: 80 }}>
                   <HStack gap={6} align="center">
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: trendColor, fontWeight: 700 }}>{trendIcon}</span>
@@ -2717,7 +2717,7 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
                 </span>
               </div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)", textAlign: "right" }}>{pct}%</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textAlign: "right" }}>{d.total > 0 ? formatGbp(d.total) : "—"}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textAlign: "right" }}>{d.total > 0 ? formatBaseMoney(d.total) : "—"}</div>
             </div>
           );
         })}
@@ -2787,7 +2787,7 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
           <div key={cell.label} style={{ padding: isMobile ? "10px 10px" : "12px 14px", borderRight: i < 2 ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ ...ftLabel, marginBottom: 4 }}>{cell.label}</div>
             <div className="pnum" style={{ ...mono, fontSize: isMobile ? 14 : 17, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, whiteSpace: "nowrap" as const }}>
-              {formatGbp(cell.value)}
+              {formatBaseMoney(cell.value)}
             </div>
             {cell.delta != null && (
               <div style={{ ...mono, fontSize: 9, marginTop: 3, color: cell.delta <= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
@@ -2808,7 +2808,7 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
             return (
               <div key={w.weekStart} style={{ flex: 1, display: "flex", flexDirection: "column" as const, alignItems: "center", gap: 3 }}>
                 <HStack align="end" grow wide>
-                  <div title={`${w.label}: ${formatGbp(w.total)}`} style={{ width: "100%", height: Math.max(h, w.total > 0 ? 2 : 0), background: col, opacity: isThisWeek ? 1 : 0.6 }} />
+                  <div title={`${w.label}: ${formatBaseMoney(w.total)}`} style={{ width: "100%", height: Math.max(h, w.total > 0 ? 2 : 0), background: col, opacity: isThisWeek ? 1 : 0.6 }} />
                 </HStack>
                 <div style={{ ...mono, fontSize: 7, color: isThisWeek ? "var(--ft-accent)" : "var(--ft-dim)", whiteSpace: "nowrap" as const, overflow: "hidden", textAlign: "center" as const, width: "100%" }}>
                   {isThisWeek ? "NOW" : w.label.split(" ")[1]}
@@ -2819,7 +2819,7 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
         </HStack>
         {/* Average reference line label */}
         <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 4, textAlign: "right" as const }}>
-          avg line: <span className="pnum">{formatGbp(avgWeek)}</span>/wk
+          avg line: <span className="pnum">{formatBaseMoney(avgWeek)}</span>/wk
         </div>
       </div>
     </div>
@@ -2893,9 +2893,9 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
         right={
           <HStack gap={10} align="baseline">
             <span className="pnum" style={{ ...mono, fontSize: 12, fontWeight: 700, color: "var(--ft-red)" }}>
-              {formatGbp(totalMonthly)}<span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", fontWeight: 400 }}>/mo</span>
+              {formatBaseMoney(totalMonthly)}<span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", fontWeight: 400 }}>/mo</span>
             </span>
-            <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}><span className="pnum">{formatGbp(totalAnnual)}</span>/yr</span>
+            <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}><span className="pnum">{formatBaseMoney(totalAnnual)}</span>/yr</span>
           </HStack>
         }
       />
@@ -2923,8 +2923,8 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
                   <td style={{ ...td, maxWidth: isMobile ? 130 : 220, whiteSpace: "nowrap" }}>{sub.desc}</td>
                   {!isMobile && <td style={{ ...td, textAlign: "right", color: "var(--ft-dim)" }}>{sub.lastDate}</td>}
                   {!isMobile && <td style={{ ...td, textAlign: "right", color: "var(--ft-muted)" }}>{sub.count}×</td>}
-                  <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-red)", fontWeight: 600 }}>{formatGbp(sub.monthlyEst)}</td>
-                  <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-dim)" }}>{formatGbp(annualCost)}</td>
+                  <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-red)", fontWeight: 600 }}>{formatBaseMoney(sub.monthlyEst)}</td>
+                  <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-dim)" }}>{formatBaseMoney(annualCost)}</td>
                   {!isMobile && (
                     <td style={{ ...td }}>
                       <HStack gap={6} align="center">
@@ -2945,10 +2945,10 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
         <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{subscriptions.length} subscriptions detected</span>
         <span style={{ ...mono, fontSize: 9, color: "var(--ft-border2)" }}>·</span>
         <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)" }}>
-          <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700 }}>{formatGbp(totalMonthly)}</span>/mo
+          <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700 }}>{formatBaseMoney(totalMonthly)}</span>/mo
         </span>
         <span style={{ ...mono, fontSize: 9, color: "var(--ft-border2)" }}>·</span>
-        <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}><span className="pnum">{formatGbp(totalAnnual)}</span>/yr</span>
+        <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}><span className="pnum">{formatBaseMoney(totalAnnual)}</span>/yr</span>
       </div>
     </div>
   );
@@ -3013,7 +3013,7 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Net Saved</div>
-              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>{formatGbp(netSavings)}</div>
+              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>{formatBaseMoney(netSavings)}</div>
             </div>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Save Rate</div>
@@ -3021,11 +3021,11 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
             </div>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Mo. Income</div>
-              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{formatGbp(monthlyIncome)}</div>
+              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{formatBaseMoney(monthlyIncome)}</div>
             </div>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Mo. Burn</div>
-              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-red)" }}>{formatGbp(monthlyBurn)}</div>
+              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-red)" }}>{formatBaseMoney(monthlyBurn)}</div>
             </div>
           </div>
         </div>
@@ -3124,11 +3124,11 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
         <HStack gap={20} align="baseline">
           <div>
             <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>Monthly savings · </span>
-            <span className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatGbp(monthlySavings)}</span>
+            <span className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(monthlySavings)}</span>
           </div>
           <div>
             <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>10yr projection · </span>
-            <span className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{formatGbp(points[10]?.current ?? 0)}</span>
+            <span className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{formatBaseMoney(points[10]?.current ?? 0)}</span>
           </div>
           <div>
             <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>at {rate}% p.a.</span>
@@ -3147,7 +3147,7 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
                     {payload.map((e, i) => (
                       <div key={i} style={{ display: "flex", gap: 8, justifyContent: "space-between", fontSize: 9, color: (e as { color?: string }).color ?? "var(--ft-text)" }}>
                         <span>{e.name}</span>
-                        <span className="pnum">{formatGbp(e.value as number)}</span>
+                        <span className="pnum">{formatBaseMoney(e.value as number)}</span>
                       </div>
                     ))}
                   </div>
@@ -3164,7 +3164,7 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
             <div key={s.label} style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <span style={{ display: "inline-block", width: 20, height: 2, background: s.color }} />
               <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{s.label}</span>
-              <span className="pnum" style={{ ...mono, fontSize: 9, fontWeight: 700, color: s.color }}>{formatGbp(s.v)}</span>
+              <span className="pnum" style={{ ...mono, fontSize: 9, fontWeight: 700, color: s.color }}>{formatBaseMoney(s.v)}</span>
             </div>
           ))}
         </HStack>
@@ -3224,7 +3224,7 @@ function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
                 <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: `${c.pct}%`, background: c.color, opacity: 0.7 }} />
               </div>
               <span className="pnum" style={{ ...mono, fontSize: 10, fontWeight: 700, color: c.color, minWidth: 38, textAlign: "right" }}>{c.pct.toFixed(1)}%</span>
-              <span className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", minWidth: 60, textAlign: "right" }}>{formatGbp(c.spend)}</span>
+              <span className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", minWidth: 60, textAlign: "right" }}>{formatBaseMoney(c.spend)}</span>
             </div>
           ))}
         </VStack>
@@ -3329,10 +3329,10 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
           {/* Key metrics grid */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
             {[
-              { label: "FI Number (25× annual)", value: formatGbp(displayFI), color: "var(--ft-accent)" },
-              { label: "Current Net Worth", value: formatGbp(displayNW), color: "var(--ft-text)" },
-              { label: "Monthly Spend", value: `${formatGbp(displayMonthlyBurn)}/mo`, color: "var(--ft-red)" },
-              { label: "Monthly Savings", value: `${formatGbp(displayContrib)}/mo`, color: "var(--ft-green)" },
+              { label: "FI Number (25× annual)", value: formatBaseMoney(displayFI), color: "var(--ft-accent)" },
+              { label: "Current Net Worth", value: formatBaseMoney(displayNW), color: "var(--ft-text)" },
+              { label: "Monthly Spend", value: `${formatBaseMoney(displayMonthlyBurn)}/mo`, color: "var(--ft-red)" },
+              { label: "Monthly Savings", value: `${formatBaseMoney(displayContrib)}/mo`, color: "var(--ft-green)" },
             ].map(cell => (
               <div key={cell.label} style={{ background: "var(--ft-surface)", padding: "10px 12px" }}>
                 <div style={{ ...ftLabel, marginBottom: 3, fontSize: 8 }}>{cell.label}</div>

@@ -1,5 +1,5 @@
 import { type Investment } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 
 // ── Shared types & styles ─────────────────────────────────────────────────────
 
@@ -154,7 +154,7 @@ export function DividendTracker({ investments, quoteMap }: DividendTrackerProps)
                     <td style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-green)", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>{q.dividendYield.toFixed(2)}%</td>
                     <td style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-text)", fontSize: 11, fontVariantNumeric: "tabular-nums" }}>{sym}{annualPerShare.toFixed(4)}</td>
                     <td style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-text)", fontSize: 11, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{sym}{totalRow.toFixed(2)}</td>
-                    <td style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-green)", fontSize: 11, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatGbp(totalRow * gbpRatio)}</td>
+                    <td style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-green)", fontSize: 11, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{formatBaseMoney(totalRow * gbpRatio)}</td>
                   </tr>
                 );
               })}
@@ -163,7 +163,7 @@ export function DividendTracker({ investments, quoteMap }: DividendTrackerProps)
               <tr style={{ borderTop: "2px solid var(--ft-border2)", background: "rgba(63,185,80,0.04)" }}>
                 <td colSpan={5} style={{ padding: "6px 12px", color: "var(--ft-dim)", fontSize: 11, fontWeight: 700 }}>ESTIMATED TOTAL ANNUAL DIVIDEND INCOME</td>
                 <td colSpan={2} style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-green)", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", fontFamily: "monospace" }}>
-                  {formatGbp(totalAnnual)}
+                  {formatBaseMoney(totalAnnual)}
                 </td>
               </tr>
             </tfoot>

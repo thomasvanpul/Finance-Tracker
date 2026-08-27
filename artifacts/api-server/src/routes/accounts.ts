@@ -17,7 +17,7 @@ const router: IRouter = Router();
 async function enrichAccount(account: typeof accountsTable.$inferSelect, userId: string) {
   const balance = parseFloat(account.balance);
   const baseCurrency = await getBaseCurrency(userId);
-  const gbpEquivalent = await toBase(balance, account.currency, baseCurrency);
+  const baseEquivalent = await toBase(balance, account.currency, baseCurrency);
   return {
     id: account.id,
     name: account.name,
@@ -26,7 +26,7 @@ async function enrichAccount(account: typeof accountsTable.$inferSelect, userId:
     // toBase returns null when the FX rate is unavailable; that null
     // now passes all the way to consumers (OpenAPI declares this field
     // nullable). Displays render the native amount alone.
-    gbpEquivalent: gbpEquivalent == null ? null : Math.round(gbpEquivalent * 100) / 100,
+    baseEquivalent: baseEquivalent == null ? null : Math.round(baseEquivalent * 100) / 100,
     type: account.type,
     isWiseLinked: account.isWiseLinked,
     wiseProfileId: account.wiseProfileId ?? null,

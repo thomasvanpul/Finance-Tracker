@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback } from "react";
 import { useListTransactions, useListUpcoming, useListSubscriptions, useListDebts, useListGoals } from "@workspace/api-client-react";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
-import { formatGbp, formatNative } from "@/lib/utils";
+import { formatBaseMoney, formatNative } from "@/lib/utils";
 import type { Transaction, UpcomingItem, Subscription } from "@workspace/api-client-react";
 import { Download, Upload, Plus, Bell, BellOff, Calendar, X, Check, AlignJustify, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -722,7 +722,7 @@ function DayTxRow({ tx }: DayTxRowProps) {
       <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: tx.gbpValue == null ? "var(--ft-dim)" : tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
         {tx.gbpValue == null
           ? "—"
-          : `${tx.type === "income" ? "+" : "−"}${formatGbp(tx.gbpValue)}`}
+          : `${tx.type === "income" ? "+" : "−"}${formatBaseMoney(tx.gbpValue)}`}
       </span>
     </div>
   );
@@ -752,8 +752,8 @@ function DayBillRow({ item }: DayBillRowProps) {
         <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.description}</div>
         <div style={{ fontSize: 8, color: item.status === "paid" ? "var(--ft-green)" : "var(--ft-amber)", marginTop: 1 }}>{item.status?.toUpperCase()}</div>
       </div>
-      <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: item.gbpEquivalent == null ? "var(--ft-dim)" : item.status === "paid" ? "var(--ft-green)" : "var(--ft-amber)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
-        {item.gbpEquivalent == null ? "—" : formatGbp(item.gbpEquivalent)}
+      <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: item.baseEquivalent == null ? "var(--ft-dim)" : item.status === "paid" ? "var(--ft-green)" : "var(--ft-amber)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+        {item.baseEquivalent == null ? "—" : formatBaseMoney(item.baseEquivalent)}
       </span>
     </div>
   );
@@ -783,7 +783,7 @@ function DaySubRow({ sub }: DaySubRowProps) {
         <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
       </div>
       <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
-        {formatGbp(sub.amount)}
+        {formatBaseMoney(sub.amount)}
       </span>
     </div>
   );
@@ -862,7 +862,7 @@ function AgendaEventRow({ ev, typeBadgeColors, typeLabels }: AgendaEventRowProps
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.label}</span>
       {ev.amount !== undefined && (
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: ev.amount == null ? "var(--ft-dim)" : ev.amountColor ?? "var(--ft-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
-          {ev.amount == null ? "—" : formatGbp(ev.amount)}
+          {ev.amount == null ? "—" : formatBaseMoney(ev.amount)}
         </span>
       )}
     </div>
@@ -897,8 +897,8 @@ function WeekDayCell({ date, dayData, feedEvs, custEvs, onAddEvent }: WeekDayCel
       {custEvs.slice(0, 3).map((ev, i) => (
         <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${ev.color} 13%, transparent)`, color: ev.color, borderLeft: `2px solid ${ev.color}`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
       ))}
-      {income > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>+{formatGbp(income)}</div>}
-      {expenses > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>-{formatGbp(expenses)}</div>}
+      {income > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>+{formatBaseMoney(income)}</div>}
+      {expenses > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>-{formatBaseMoney(expenses)}</div>}
       {billCount > 0 && <Text as="div" mono size={8} color="var(--ft-amber)">↑ {billCount} bill{billCount !== 1 ? "s" : ""}</Text>}
       {subCount > 0 && <Text as="div" mono size={8} color="var(--ft-cyan)">↻ {subCount} sub</Text>}
       {!hasAny && <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-border2)", marginTop: "auto" }}>—</div>}
@@ -1245,7 +1245,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
             <div key={label} style={{ padding: "7px 10px", background: "var(--ft-surface)" }}>
               <div style={{ fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>{label}</div>
               <div className="pnum" style={{ fontSize: 12, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>
-                {value !== 0 ? formatGbp(Math.abs(value)) : "—"}
+                {value !== 0 ? formatBaseMoney(Math.abs(value)) : "—"}
               </div>
             </div>
           ))}
@@ -1441,7 +1441,7 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
                   color: dayNet > 0 ? "var(--ft-green)" : dayNet < 0 ? "var(--ft-red)" : "var(--ft-dim)",
                   marginBottom: 2, lineHeight: 1, fontVariantNumeric: "tabular-nums",
                 }}>
-                  {dayNet > 0 ? "+" : dayNet < 0 ? "−" : ""}{dayNet !== 0 ? formatGbp(Math.abs(dayNet)) : ""}
+                  {dayNet > 0 ? "+" : dayNet < 0 ? "−" : ""}{dayNet !== 0 ? formatBaseMoney(Math.abs(dayNet)) : ""}
                 </div>
               )}
 
@@ -1460,7 +1460,7 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
 
               {/* Subscription due bars */}
               {subCount > 0 && (data?.subscriptions ?? []).slice(0, 2).map((sub) => (
-                <div key={sub.id} style={{ height: 3, background: "var(--ft-amber)", borderRadius: 1, marginBottom: 2, opacity: 0.9 }} title={`${sub.name} — ${formatGbp(sub.amount)}`} />
+                <div key={sub.id} style={{ height: 3, background: "var(--ft-amber)", borderRadius: 1, marginBottom: 2, opacity: 0.9 }} title={`${sub.name} — ${formatBaseMoney(sub.amount)}`} />
               ))}
 
               {/* Transaction dots */}
@@ -1533,7 +1533,7 @@ function AgendaView({ dayMap, feedEventMap, customEventMap, todayStr, debtEvents
         events.push({ date: ds, type: "tx", label: tx.description || tx.category, amount: tx.gbpValue, amountColor: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)" });
       }
       for (const bill of dayData.upcoming) {
-        events.push({ date: ds, type: "bill", label: bill.description, amount: bill.gbpEquivalent, amountColor: "var(--ft-amber)", color: "var(--ft-amber)" });
+        events.push({ date: ds, type: "bill", label: bill.description, amount: bill.baseEquivalent, amountColor: "var(--ft-amber)", color: "var(--ft-amber)" });
       }
       for (const sub of dayData.subscriptions) {
         events.push({ date: ds, type: "sub", label: `${sub.name} (sub)`, amount: sub.amount, amountColor: "var(--ft-cyan)", color: "var(--ft-cyan)" });
@@ -1755,9 +1755,9 @@ function SummaryStrip({ transactions, upcoming, year, month }: { transactions: T
       }}
     >
       {[
-        { label: "Income",       value: formatGbp(income),                              color: "var(--ft-green)",                                      sub: `${monthTx.filter(t => t.type === "income").length} tx`,   accent: "var(--ft-green)" },
-        { label: "Expenses",     value: formatGbp(expenses),                            color: "var(--ft-red)",                                        sub: `${monthTx.filter(t => t.type === "expense").length} tx`,  accent: "var(--ft-red)" },
-        { label: "Net",          value: (net >= 0 ? "+" : "") + formatGbp(Math.abs(net)), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)",        sub: net >= 0 ? "surplus" : "deficit",                          accent: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
+        { label: "Income",       value: formatBaseMoney(income),                              color: "var(--ft-green)",                                      sub: `${monthTx.filter(t => t.type === "income").length} tx`,   accent: "var(--ft-green)" },
+        { label: "Expenses",     value: formatBaseMoney(expenses),                            color: "var(--ft-red)",                                        sub: `${monthTx.filter(t => t.type === "expense").length} tx`,  accent: "var(--ft-red)" },
+        { label: "Net",          value: (net >= 0 ? "+" : "") + formatBaseMoney(Math.abs(net)), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)",        sub: net >= 0 ? "surplus" : "deficit",                          accent: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
         { label: "Transactions", value: String(monthTx.length),                          color: "var(--ft-text)",                                       sub: "this month",                                              accent: "var(--ft-muted)" },
         { label: "Bills",        value: `${billsPaid}/${billsPaid + billsPending}`,       color: billsPending > 0 ? "var(--ft-amber)" : "var(--ft-green)", sub: billsPending > 0 ? `${billsPending} pending` : "all paid", accent: billsPending > 0 ? "var(--ft-amber)" : "var(--ft-green)" },
       ].map(({ label, value, color, sub, accent }) => (
@@ -1927,10 +1927,10 @@ export default function CalendarPage() {
       // rather than a bare title with no figure.
       ...transactions.map((t) => ({ date: t.date, title: t.gbpValue == null
         ? `${formatNative(Math.abs(t.nativeAmount), t.currency)} ${t.description}`
-        : `${t.type === "income" ? "+" : "-"}${formatGbp(t.gbpValue)} ${t.description}` })),
-      ...upcoming.map((u) => ({ date: u.dueDate, title: u.gbpEquivalent == null
+        : `${t.type === "income" ? "+" : "-"}${formatBaseMoney(t.gbpValue)} ${t.description}` })),
+      ...upcoming.map((u) => ({ date: u.dueDate, title: u.baseEquivalent == null
         ? `Bill: ${u.description} ${formatNative(Math.abs(u.nativeAmount), u.currency)}`
-        : `Bill: ${u.description} ${formatGbp(u.gbpEquivalent)}` })),
+        : `Bill: ${u.description} ${formatBaseMoney(u.baseEquivalent)}` })),
     ];
     for (const feed of PREDEFINED_FEEDS) {
       if (enabledFeeds.includes(feed.id)) allEvs.push(...feed.events);

@@ -20,7 +20,7 @@
 //
 // ── Why a baseline snapshot, not a hard block ──────────────────────────────
 // A hard block would fail today with 120+ existing hits — surveyed via
-// `grep -rEn '\b(gbpEquivalent|gbpValue|totalValueGbp|totalPlGbp|plGbp|
+// `grep -rEn '\b(baseEquivalent|gbpValue|totalValueGbp|totalPlGbp|plGbp|
 // netGbp|amountGbp|totalCashGbp|convertedGbp|equivalentGbp)\s*\?\?\s*0\b'`
 // across src/. Refactoring all of them at once is a separate project.
 //
@@ -63,7 +63,7 @@ const SCAN_ROOTS = [
 // specifically the FX-conversion-unavailable signal.
 //
 // Included:
-//   • gbpEquivalent  — accounts, debts, upcoming, subscriptions
+//   • baseEquivalent  — accounts, debts, upcoming, subscriptions
 //   • gbpValue       — transactions, investments
 //   • *Gbp           — totalValueGbp, totalCashGbp, totalPlGbp, netGbp, plGbp
 //                      (matched by suffix; matches ANY identifier ending in Gbp)
@@ -77,7 +77,7 @@ const SCAN_ROOTS = [
 //     Locked separately via the monthly-fold contract test.
 //   • balance — native account balance, non-nullable on the wire.
 //   • annualCost — application-computed, not FX-derived.
-const MONEY_FIELD_PATTERN = /\b(?:gbpEquivalent|gbpValue|convertedGbp|equivalentGbp|[A-Za-z]+Gbp)\s*\?\?\s*0\b/;
+const MONEY_FIELD_PATTERN = /\b(?:baseEquivalent|gbpValue|convertedGbp|equivalentGbp|[A-Za-z]+Gbp)\s*\?\?\s*0\b/;
 
 // Files whose paths (relative to REPO_ROOT) currently contain the pattern.
 // Regenerate via: pnpm --filter @workspace/finance-tracker test -- --run fabricated-zero-lock
@@ -183,7 +183,7 @@ describe("fabricated-zero recurrence lock", () => {
       const lines = additions.map((f) => `  + ${f}`).join("\n");
       throw new Error(
         `Found ${additions.length} new file(s) with the fabricated-zero pattern:\n${lines}\n\n` +
-          `The pattern is: <identifier ending in Gbp> ?? 0, or the aliases gbpEquivalent / gbpValue.\n` +
+          `The pattern is: <identifier ending in Gbp> ?? 0, or the aliases baseEquivalent / gbpValue.\n` +
           `Each one is a silent-underreport site: a null-value (usually because FX conversion\n` +
           `was unavailable) gets treated as £0, and the total is smaller than reality with no\n` +
           `signal to the user.\n\n` +

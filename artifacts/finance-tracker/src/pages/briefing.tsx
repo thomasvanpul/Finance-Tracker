@@ -5,7 +5,7 @@ import {
   useListBudgets, useListGoals, useGetInvestmentSummary,
   useListInvestments, useListSubscriptions,
 } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { FileText, RefreshCw, Loader2, AlertTriangle, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
@@ -210,7 +210,7 @@ function SpendingCatRow({
         </div>
       )}
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", textAlign: "right" }}>
-        <span className="pnum">{formatGbp(amt)}</span>
+        <span className="pnum">{formatBaseMoney(amt)}</span>
       </span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "right" }}>
         <span className="pnum">{share.toFixed(0)}%</span>
@@ -257,11 +257,11 @@ function BudgetPerfRow({
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{budget.category}</span>
       </div>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: over ? "var(--ft-red)" : "var(--ft-text)", textAlign: "right" }}>
-        <span className="pnum">{formatGbp(spent)}</span>
+        <span className="pnum">{formatBaseMoney(spent)}</span>
       </span>
       {!isMobile && (
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "right" }}>
-          <span className="pnum">{formatGbp(budget.monthlyLimit)}</span>
+          <span className="pnum">{formatBaseMoney(budget.monthlyLimit)}</span>
         </span>
       )}
       <HStack gap={6} align="center">
@@ -423,7 +423,7 @@ export default function Briefing() {
     : null;
 
   const totalLiquid = useMemo(() =>
-    ((accountsRaw ?? []) as Array<{ gbpEquivalent: number }>).reduce((s, a) => s + a.gbpEquivalent, 0),
+    ((accountsRaw ?? []) as Array<{ baseEquivalent: number }>).reduce((s, a) => s + a.baseEquivalent, 0),
     [accountsRaw]);
 
   const overBudgetCount = useMemo(() => {
@@ -452,7 +452,7 @@ export default function Briefing() {
 
   // Situation header metrics
   const plValue = dashboard?.thisMonth?.income != null && dashboard?.thisMonth?.expenses != null
-    ? formatGbp(dashboard.thisMonth.income - dashboard.thisMonth.expenses)
+    ? formatBaseMoney(dashboard.thisMonth.income - dashboard.thisMonth.expenses)
     : "—";
   const plColor = (dashboard?.thisMonth?.income ?? 0) >= (dashboard?.thisMonth?.expenses ?? 0) ? "var(--ft-green)" : "var(--ft-red)";
   const srValue = dashboard?.thisMonth?.savingsRate != null
@@ -550,9 +550,9 @@ export default function Briefing() {
             <SectionHeader code="01" title="Current Snapshot" accentColor="var(--ft-accent)" />
             <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 1 }}>
               {[
-                { label: "Net Worth", value: dashboard?.netWorth != null ? formatGbp(dashboard.netWorth) : "—", color: "var(--ft-text)", accentColor: "var(--ft-accent)" },
-                { label: "Liquid Assets", value: formatGbp(totalLiquid), color: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-muted)", accentColor: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-border2)" },
-                { label: "Monthly Income", value: dashboard?.thisMonth?.income != null ? formatGbp(dashboard.thisMonth.income) : "—", color: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-muted)", accentColor: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-border2)" },
+                { label: "Net Worth", value: dashboard?.netWorth != null ? formatBaseMoney(dashboard.netWorth) : "—", color: "var(--ft-text)", accentColor: "var(--ft-accent)" },
+                { label: "Liquid Assets", value: formatBaseMoney(totalLiquid), color: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-muted)", accentColor: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-border2)" },
+                { label: "Monthly Income", value: dashboard?.thisMonth?.income != null ? formatBaseMoney(dashboard.thisMonth.income) : "—", color: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-muted)", accentColor: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-border2)" },
               ].map(({ label, value, color, accentColor }) => (
                 <div key={label} style={{ background: "var(--ft-surface)", padding: "13px 14px", borderTop: `2px solid ${accentColor}` }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>{label}</div>
@@ -564,7 +564,7 @@ export default function Briefing() {
             </div>
             <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
               {[
-                { label: "Monthly Spend", value: dashboard?.thisMonth?.expenses != null ? formatGbp(dashboard.thisMonth.expenses) : "—", color: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-muted)", accentColor: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-border2)" },
+                { label: "Monthly Spend", value: dashboard?.thisMonth?.expenses != null ? formatBaseMoney(dashboard.thisMonth.expenses) : "—", color: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-muted)", accentColor: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-border2)" },
                 { label: "Savings Rate", value: dashboard?.thisMonth?.savingsRate != null ? `${(dashboard.thisMonth.savingsRate * 100).toFixed(1)}%` : "—", color: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-muted)", accentColor: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-border2)" },
                 { label: "Budgets Over Limit", value: overBudgetCount > 0 ? `${overBudgetCount} over` : "All clear", color: overBudgetCount > 0 ? "var(--ft-red)" : "var(--ft-green)", accentColor: overBudgetCount > 0 ? "var(--ft-red)" : "var(--ft-green)" },
               ].map(({ label, value, color, accentColor }) => (
@@ -666,7 +666,7 @@ export default function Briefing() {
               <div style={{ display: "flex", flexWrap: "wrap", gap: 1, background: "var(--ft-border)" }}>
                 <SituationMetricCell
                   label="Net Worth"
-                  value={dashboard?.netWorth != null ? formatGbp(dashboard.netWorth) : "—"}
+                  value={dashboard?.netWorth != null ? formatBaseMoney(dashboard.netWorth) : "—"}
                   color="var(--ft-text)"
                 />
                 <SituationMetricCell
@@ -734,7 +734,7 @@ export default function Briefing() {
                   <div style={{ padding: "6px 12px", borderTop: "1px solid var(--ft-border)", background: "var(--ft-raised)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.08em">TOTAL SPEND</Text>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)" }}>
-                      <span className="pnum">{formatGbp(spendingCatData.total)}</span>
+                      <span className="pnum">{formatBaseMoney(spendingCatData.total)}</span>
                     </span>
                   </div>
                 </div>
@@ -780,7 +780,7 @@ export default function Briefing() {
                   <div style={{ background: "var(--ft-surface)", padding: "14px 16px", borderTop: "2px solid var(--ft-cyan)", minWidth: isMobile ? 0 : 160, flex: isMobile ? "1 1 100%" : undefined }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Portfolio Value</div>
                     <Text as="div" mono size={18} weight={700} color="var(--ft-text)">
-                      <span className="pnum">{formatGbp((invSummary as { totalValueGbp: number }).totalValueGbp)}</span>
+                      <span className="pnum">{formatBaseMoney((invSummary as { totalValueGbp: number }).totalValueGbp)}</span>
                     </Text>
                   </div>
                   {investmentsRaw && (investmentsRaw as Investment[]).length > 0 && (
@@ -793,7 +793,7 @@ export default function Briefing() {
                           return (
                             <div key={inv.ticker} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "4px 8px", display: "flex", gap: 6, alignItems: "baseline" }}>
                               <span style={{ color: "var(--ft-cyan)", fontWeight: 700 }}>{inv.ticker}</span>
-                              <span className="pnum">{formatGbp(inv.gbpValue)}</span>
+                              <span className="pnum">{formatBaseMoney(inv.gbpValue)}</span>
                               <span className="pnum" style={{ color: "var(--ft-dim)", fontSize: 9 }}>{pct}%</span>
                             </div>
                           );

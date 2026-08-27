@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useGetDashboard, useListTransactions, useListAccounts, useListGoals, useListUpcoming, useListBudgets } from "@workspace/api-client-react";
-import { formatGbp, formatGbpOrDash } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { Skeleton } from "@/components/skeleton";
@@ -57,13 +57,13 @@ export function NetWorthWidget() {
         <Skeleton width={180} height={34} />
       ) : (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 34, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-          {privacy ? "••••••" : formatGbpOrDash(netWorth)}
+          {privacy ? "••••••" : formatBaseMoney(netWorth)}
         </div>
       )}
       {!isLoading && netSavings != null && netSavings !== 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 12, color: positive ? "var(--ft-green)" : "var(--ft-red)" }}>
           {positive ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-          <span>{positive ? "+" : ""}{privacy ? "••••" : formatGbp(netSavings)} this month</span>
+          <span>{positive ? "+" : ""}{privacy ? "••••" : formatBaseMoney(netSavings)} this month</span>
         </div>
       )}
     </div>
@@ -91,7 +91,7 @@ export function ThisMonthWidget() {
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: "var(--ft-dim)" }}>Income</span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-green)" }}>
-            {income != null && `+${privacy ? "••••" : formatGbp(income)}`}
+            {income != null && `+${privacy ? "••••" : formatBaseMoney(income)}`}
             {income == null && "—"}
           </span>
         </div>
@@ -99,7 +99,7 @@ export function ThisMonthWidget() {
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ fontSize: 13, color: "var(--ft-dim)" }}>Spent</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: spendRatio > 0.9 ? "var(--ft-red)" : spendRatio > 0.7 ? "var(--ft-amber)" : "var(--ft-text)" }}>
-              {expenses != null && `−${privacy ? "••••" : formatGbp(expenses)}`}
+              {expenses != null && `−${privacy ? "••••" : formatBaseMoney(expenses)}`}
               {expenses == null && "—"}
             </span>
           </div>
@@ -114,7 +114,7 @@ export function ThisMonthWidget() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>{savingsRate != null ? `${Math.round(savingsRate)}%` : "—"}</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: positive ? "var(--ft-green)" : "var(--ft-red)" }}>
-              {netSavings != null && `${positive ? "+" : "−"}${privacy ? "••••" : formatGbp(Math.abs(netSavings))}`}
+              {netSavings != null && `${positive ? "+" : "−"}${privacy ? "••••" : formatBaseMoney(Math.abs(netSavings))}`}
               {netSavings == null && "—"}
             </span>
           </div>
@@ -143,8 +143,8 @@ export function AccountsWidget() {
             flexShrink: 0,
           }}>
             <div style={{ fontSize: 11, color: "var(--ft-dim)", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{acc.name}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: acc.gbpEquivalent == null ? "var(--ft-dim)" : "var(--ft-text)" }}>
-              {privacy ? "••••" : acc.gbpEquivalent == null ? "—" : formatGbp(acc.gbpEquivalent)}
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: acc.baseEquivalent == null ? "var(--ft-dim)" : "var(--ft-text)" }}>
+              {privacy ? "••••" : acc.baseEquivalent == null ? "—" : formatBaseMoney(acc.baseEquivalent)}
             </div>
             {acc.currency !== "GBP" && (
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", marginTop: 2 }}>
@@ -216,10 +216,10 @@ export function UpcomingWidget() {
               <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.description}</div>
               <div style={{ fontSize: 11, color: "var(--ft-dim)", textTransform: "capitalize" }}>{it.category}</div>
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: it.gbpEquivalent == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
-              {it.gbpEquivalent == null
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: it.baseEquivalent == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
+              {it.baseEquivalent == null
                 ? "—"
-                : `${isIncome ? "+" : "−"}${formatGbp(it.gbpEquivalent)}`}
+                : `${isIncome ? "+" : "−"}${formatBaseMoney(it.baseEquivalent)}`}
             </div>
           </div>
         );
@@ -253,7 +253,7 @@ export function RecentTxnsWidget({ onViewAll }: { onViewAll: () => void }) {
               <div style={{ fontSize: 11, color: "var(--ft-dim)", textTransform: "capitalize" }}>{tx.category || "Uncategorised"}</div>
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: tx.gbpValue == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
-              {tx.gbpValue == null ? "—" : `${isIncome ? "+" : "−"}${formatGbp(tx.gbpValue)}`}
+              {tx.gbpValue == null ? "—" : `${isIncome ? "+" : "−"}${formatBaseMoney(tx.gbpValue)}`}
             </div>
           </div>
         );

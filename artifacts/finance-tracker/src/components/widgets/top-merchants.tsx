@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -88,7 +88,7 @@ function MerchantRow({ merchant, rank, isLast, isExpanded: expanded, color, barW
           <span style={{ width: 28, flexShrink: 0 }} />
         )}
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color, flexShrink: 0, textAlign: "right", minWidth: 56 }}>
-          {formatGbp(merchant.total)}
+          {formatBaseMoney(merchant.total)}
         </span>
       </div>
       <div style={{ marginLeft: 27, height: 4, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
@@ -138,7 +138,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, justifyContent: "space-between" }}>
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-          {formatGbp(monthlyTotal)}
+          {formatBaseMoney(monthlyTotal)}
         </span>
         {prevMonthTotal > 0 && (
           <span style={{
@@ -151,7 +151,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
             padding: "2px 6px",
             letterSpacing: "0.04em",
           }}>
-            {totalDelta > 0 ? "▲" : "▼"} {formatGbp(Math.abs(totalDelta))} vs last
+            {totalDelta > 0 ? "▲" : "▼"} {formatBaseMoney(Math.abs(totalDelta))} vs last
           </span>
         )}
       </div>
@@ -216,7 +216,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number, name: string) => [formatGbp(value), name]}
+                formatter={(value: number, name: string) => [formatBaseMoney(value), name]}
                 contentStyle={{
                   background: "var(--ft-raised)",
                   border: "1px solid var(--ft-border)",

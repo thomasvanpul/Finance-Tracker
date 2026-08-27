@@ -7,7 +7,7 @@ import {
   getListGoalsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import type { Goal } from "@workspace/api-client-react";
 
@@ -332,10 +332,10 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
               whiteSpace: "nowrap",
             }}
           >
-            {formatGbp(current)}
+            {formatBaseMoney(current)}
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>
-            of <span className="pnum">{formatGbp(target)}</span>
+            of <span className="pnum">{formatBaseMoney(target)}</span>
           </div>
         </div>
         {!done && (
@@ -344,7 +344,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
               className="pnum"
               style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", whiteSpace: "nowrap" }}
             >
-              {formatGbp(remaining)} left
+              {formatBaseMoney(remaining)} left
             </div>
             {/* projected completion */}
             {projected && (
@@ -364,7 +364,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
               Monthly
             </span>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
-              {formatGbp(goal.monthlyContribution)}
+              {formatBaseMoney(goal.monthlyContribution)}
             </span>
           </div>
           <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
@@ -444,7 +444,7 @@ function GoalsSummary({ totalSaved, totalTarget, totalPct, onAdd, adding }: Goal
             Saved
           </span>
           <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>
-            {formatGbp(totalSaved)}
+            {formatBaseMoney(totalSaved)}
           </span>
         </span>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -452,7 +452,7 @@ function GoalsSummary({ totalSaved, totalTarget, totalPct, onAdd, adding }: Goal
             Target
           </span>
           <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>
-            {formatGbp(totalTarget)}
+            {formatBaseMoney(totalTarget)}
           </span>
         </span>
         {totalTarget > 0 && (

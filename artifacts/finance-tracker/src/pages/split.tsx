@@ -11,7 +11,7 @@ import {
   getListDebtsQueryKey,
 } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/api-fetch";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { computeBalances, minimumTransfers, type Transfer } from "@/lib/split-math";
 import { PageHeader } from "@/components/page-header";
 import { useToast } from "@/hooks/use-toast";
@@ -1326,7 +1326,7 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
           </div>
           <HStack gap={8} align="center">
             <span className="pnum" style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>
-              {formatGbp(total)}
+              {formatBaseMoney(total)}
             </span>
             <Text as="span" mono size={9} color="var(--ft-dim)">
               {groupExpenses.length} expense{groupExpenses.length !== 1 ? "s" : ""}
@@ -1344,9 +1344,9 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
                 }}
               >
                 {myBalance > 0.005
-                  ? `+${formatGbp(myBalance)} net`
+                  ? `+${formatBaseMoney(myBalance)} net`
                   : myBalance < -0.005
-                  ? `${formatGbp(myBalance)} net`
+                  ? `${formatBaseMoney(myBalance)} net`
                   : "settled up"}
               </span>
             </div>
@@ -1513,11 +1513,11 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
               color: "var(--ft-text)",
             }}
           >
-            {formatGbp(expense.amount)}
+            {formatBaseMoney(expense.amount)}
           </div>
           {myShare !== undefined && (
             <div className="pnum" style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
-              your share {formatGbp(myShare)}
+              your share {formatBaseMoney(myShare)}
             </div>
           )}
         </div>
@@ -1635,7 +1635,7 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
                       fontWeight: 600,
                     }}
                   >
-                    {formatGbp(share)}
+                    {formatBaseMoney(share)}
                   </span>
                 </div>
               );
@@ -1705,7 +1705,7 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
       });
       await queryClient.invalidateQueries({ queryKey: getListDebtsQueryKey() });
       setPushedToDebts((prev) => { const n = new Set(prev); n.add(i); return n; });
-      toast({ title: "Added to Debts", description: `${direction === "i_owe_them" ? `You owe ${personName}` : `${personName} owes you`} ${formatGbp(t.amount)} now appears on the Owing page.` });
+      toast({ title: "Added to Debts", description: `${direction === "i_owe_them" ? `You owe ${personName}` : `${personName} owes you`} ${formatBaseMoney(t.amount)} now appears on the Owing page.` });
     } catch {
       toast({ title: "Failed", description: "Could not add to debts.", variant: "destructive" });
     } finally {
@@ -1801,7 +1801,7 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
                 }}
               >
                 {bal > 0.005 ? "+" : ""}
-                {formatGbp(bal)}
+                {formatBaseMoney(bal)}
               </span>
               <Text as="span" mono size={9} color="var(--ft-dim)">
                 {bal > 0.005 ? "is owed" : bal < -0.005 ? "owes" : "even"}
@@ -1884,7 +1884,7 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
                       textDecoration: done ? "line-through" : "none",
                     }}
                   >
-                    {formatGbp(t.amount)}
+                    {formatBaseMoney(t.amount)}
                   </span>
                   <ArrowRight style={{ width: 10, height: 10, color: "var(--ft-dim)", flexShrink: 0 }} />
                   <div
@@ -2131,16 +2131,16 @@ function GroupSummaryStats({ group, expenses, myName }: GroupSummaryStatsProps) 
           border: "1px solid var(--ft-border)",
         }}
       >
-        <StatCell label="Total Expenses" value={formatGbp(total)} color="var(--ft-text)" sub={`${expenses.length} items`} />
+        <StatCell label="Total Expenses" value={formatBaseMoney(total)} color="var(--ft-text)" sub={`${expenses.length} items`} />
         {myName
-          ? <StatCell label="Your Share" value={formatGbp(myShare)} color="var(--ft-blue)" sub="of total" />
+          ? <StatCell label="Your Share" value={formatBaseMoney(myShare)} color="var(--ft-blue)" sub="of total" />
           : <StatCell label="Members" value={`${group.members.length}`} color="var(--ft-blue)" sub="in group" />
         }
-        {myName && <StatCell label="You Paid" value={formatGbp(myPaid)} color="var(--ft-accent)" sub="as payer" />}
+        {myName && <StatCell label="You Paid" value={formatBaseMoney(myPaid)} color="var(--ft-accent)" sub="as payer" />}
         {myName && (
           <StatCell
             label="Your Net"
-            value={`${myNet > 0.005 ? "+" : ""}${formatGbp(myNet)}`}
+            value={`${myNet > 0.005 ? "+" : ""}${formatBaseMoney(myNet)}`}
             color={myNet > 0.005 ? "var(--ft-green)" : myNet < -0.005 ? "var(--ft-red)" : "var(--ft-dim)"}
             sub={myNet > 0.005 ? "others owe you" : myNet < -0.005 ? "you owe others" : "even"}
           />
@@ -2158,7 +2158,7 @@ function GroupSummaryStats({ group, expenses, myName }: GroupSummaryStatsProps) 
             {categoryTotals.map(([cat, amt]) => (
               <div
                 key={cat}
-                title={`${cat}: ${formatGbp(amt)}`}
+                title={`${cat}: ${formatBaseMoney(amt)}`}
                 style={{
                   width: `${(amt / total) * 100}%`,
                   background: SUMMARY_CATEGORY_COLORS[cat] ?? "var(--ft-dim)",
@@ -2471,7 +2471,7 @@ export default function SplitPage() {
         }));
         toast({
           title: "Added to transactions",
-          description: `${expense.description} — ${formatGbp(myShare)}`,
+          description: `${expense.description} — ${formatBaseMoney(myShare)}`,
         });
       } catch {
         toast({
@@ -2991,11 +2991,11 @@ export default function SplitPage() {
             {[
               { label: "Active Groups", value: String(unsettledGroups), color: "var(--ft-blue)" },
               { label: "Total Expenses", value: String(totalExpenseCount), color: "var(--ft-text)" },
-              { label: "Total Spend", value: formatGbp(totalSpend), color: "var(--ft-text)" },
+              { label: "Total Spend", value: formatBaseMoney(totalSpend), color: "var(--ft-text)" },
               {
                 label: "Your Net Position",
                 value: myName && myNetAll !== null
-                  ? `${myNetAll > 0.005 ? "+" : ""}${formatGbp(myNetAll)}`
+                  ? `${myNetAll > 0.005 ? "+" : ""}${formatBaseMoney(myNetAll)}`
                   : "—",
                 color: myNetAll !== null && myNetAll > 0.005
                   ? "var(--ft-green)"

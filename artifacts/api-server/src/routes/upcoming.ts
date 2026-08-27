@@ -22,7 +22,7 @@ const router: IRouter = Router();
 async function enrichUpcoming(item: typeof upcomingTable.$inferSelect, accountMap: Map<number, string>, userId: string) {
   const nativeAmount = parseFloat(item.nativeAmount);
   const baseCurrency = await getBaseCurrency(userId);
-  const gbpEquivalent = await toBase(nativeAmount, item.currency, baseCurrency);
+  const baseEquivalent = await toBase(nativeAmount, item.currency, baseCurrency);
   return {
     id: item.id,
     dueDate: item.dueDate,
@@ -35,7 +35,7 @@ async function enrichUpcoming(item: typeof upcomingTable.$inferSelect, accountMa
     currency: item.currency,
     // Null passes through per the widened API contract; consumers
     // render the native amount alone.
-    gbpEquivalent: gbpEquivalent == null ? null : Math.round(gbpEquivalent * 100) / 100,
+    baseEquivalent: baseEquivalent == null ? null : Math.round(baseEquivalent * 100) / 100,
     accountId: item.accountId ?? null,
     accountName: item.accountId ? (accountMap.get(item.accountId) ?? null) : null,
     createdAt: item.createdAt.toISOString(),

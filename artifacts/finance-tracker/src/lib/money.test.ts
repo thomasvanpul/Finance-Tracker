@@ -1,57 +1,57 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { formatGbp, formatNative } from "@/lib/utils";
+import { formatBaseMoney, formatNative } from "@/lib/utils";
 import { setBaseCurrency } from "@/lib/currency-store";
 import { computeBalances, minimumTransfers } from "@/lib/split-math";
 import { runPayoffStrategy } from "@/lib/payoff";
 
-describe("formatGbp", () => {
+describe("formatBaseMoney", () => {
   beforeEach(() => {
     setBaseCurrency("GBP");
   });
 
   it("formats zero", () => {
-    expect(formatGbp(0)).toBe("£0.00");
+    expect(formatBaseMoney(0)).toBe("£0.00");
   });
 
   it("formats positive integer", () => {
-    expect(formatGbp(42)).toBe("£42.00");
+    expect(formatBaseMoney(42)).toBe("£42.00");
   });
 
   it("formats negative value", () => {
-    expect(formatGbp(-42.5)).toBe("-£42.50");
+    expect(formatBaseMoney(-42.5)).toBe("-£42.50");
   });
 
   it("formats thousands", () => {
-    expect(formatGbp(1234.56)).toBe("£1,234.56");
+    expect(formatBaseMoney(1234.56)).toBe("£1,234.56");
   });
 
   it("formats very large value", () => {
-    expect(formatGbp(1_000_000)).toBe("£1,000,000.00");
+    expect(formatBaseMoney(1_000_000)).toBe("£1,000,000.00");
   });
 
   it("rounds floating-point display (0.1 + 0.2)", () => {
-    expect(formatGbp(0.1 + 0.2)).toBe("£0.30");
+    expect(formatBaseMoney(0.1 + 0.2)).toBe("£0.30");
   });
 
   it("rounds sub-cent value to zero", () => {
-    expect(formatGbp(0.001)).toBe("£0.00");
+    expect(formatBaseMoney(0.001)).toBe("£0.00");
   });
 
   it("handles Infinity (division-by-zero result)", () => {
-    expect(formatGbp(1 / 0)).toContain("∞");
+    expect(formatBaseMoney(1 / 0)).toContain("∞");
   });
 
   it("formats negative zero as £0.00 (normalised before Intl; raw V8 would return -£0.00)", () => {
     // Raw V8 Intl.NumberFormat distinguishes IEEE 754 -0 and renders it as "-£0.00".
-    // formatGbp normalises -0 → 0 via Object.is before calling Intl, so callers always get "£0.00".
-    expect(formatGbp(-0)).toBe("£0.00");
+    // formatBaseMoney normalises -0 → 0 via Object.is before calling Intl, so callers always get "£0.00".
+    expect(formatBaseMoney(-0)).toBe("£0.00");
   });
 
   it("formats 0.005 as £0.01 (V8 Intl rounds up at the half-penny boundary)", () => {
     // IEEE 754 stores 0.005 as 0.004999999999999999583..., which is below 0.005.
     // However V8's Intl.NumberFormat implementation applies round-half-away-from-zero at
     // the decimal level and produces £0.01, not £0.00.
-    expect(formatGbp(0.005)).toBe("£0.01");
+    expect(formatBaseMoney(0.005)).toBe("£0.01");
   });
 });
 

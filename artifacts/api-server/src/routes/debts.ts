@@ -19,7 +19,7 @@ const router: IRouter = Router();
 async function enrichDebt(item: typeof debtsTable.$inferSelect, userId: string) {
   const nativeAmount = parseFloat(item.nativeAmount);
   const baseCurrency = await getBaseCurrency(userId);
-  const gbpEquivalent = await toBase(nativeAmount, item.currency, baseCurrency);
+  const baseEquivalent = await toBase(nativeAmount, item.currency, baseCurrency);
   return {
     id: item.id,
     personName: item.personName,
@@ -33,7 +33,7 @@ async function enrichDebt(item: typeof debtsTable.$inferSelect, userId: string) 
     accountId: item.accountId ?? null,
     // Null passes through per the widened API contract; consumers
     // render the native amount alone.
-    gbpEquivalent: gbpEquivalent == null ? null : Math.round(gbpEquivalent * 100) / 100,
+    baseEquivalent: baseEquivalent == null ? null : Math.round(baseEquivalent * 100) / 100,
     createdAt: item.createdAt.toISOString(),
     linkedEmail: item.linkedEmail ?? null,
     linkedUserId: item.linkedUserId ?? null,

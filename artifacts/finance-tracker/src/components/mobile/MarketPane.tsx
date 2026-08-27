@@ -9,6 +9,8 @@ import {
 } from "@workspace/api-client-react";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
+import { formatMoney } from "@/lib/utils";
+import { getBaseCurrency } from "@/lib/currency-store";
 
 // Mobile home MARKETS pane. Scope, per the F3 brief:
 //   - Only instruments that touch the user's actual position — the
@@ -276,7 +278,7 @@ interface FxRowProps {
 function FxRow({ ccy, nativeSum, quote, isFirst, isLast }: FxRowProps) {
   const chg = quote?.changePercent ?? null;
   const rate = typeof quote?.price === "number" && Number.isFinite(quote.price) && quote.price > 0 ? quote.price : null;
-  const gbpEquivalent = rate != null && rate > 0 ? nativeSum / rate : null;
+  const baseEquivalent = rate != null && rate > 0 ? nativeSum / rate : null;
   const sym = CURRENCY_SYMBOLS[ccy] ?? `${ccy} `;
   return (
     <div
@@ -310,7 +312,7 @@ function FxRow({ ccy, nativeSum, quote, isFirst, isLast }: FxRowProps) {
       <div style={{ gridColumn: "1 / -1" }}>
         <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
           your {sym}{nfmt(nativeSum)}
-          {gbpEquivalent != null ? ` ≈ £${nfmt(gbpEquivalent)}` : ""}
+          {baseEquivalent != null ? ` ≈ ${formatMoney(baseEquivalent, getBaseCurrency())}` : ""}
         </Text>
       </div>
     </div>

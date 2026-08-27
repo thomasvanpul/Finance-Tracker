@@ -2,6 +2,8 @@ import { useListUpcoming, useGetUpcomingSummary } from "@workspace/api-client-re
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
+import { formatMoney } from "@/lib/utils";
+import { getBaseCurrency } from "@/lib/currency-store";
 
 // Upcoming — bills and expected income on their known dates.
 //
@@ -25,7 +27,7 @@ interface UpcomingItem {
   type: "income" | "expense";
   nativeAmount: number;
   currency: string;
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   status: string;
 }
 
@@ -108,13 +110,13 @@ export function MobileUpcomingFull({ onBack }: { onBack?: () => void }) {
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">IN</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
-              {expectedIn == null ? "—" : `+£${nfmt(expectedIn, { decimals: 2 })}`}
+              {expectedIn == null ? "—" : `+${formatMoney(expectedIn, getBaseCurrency())}`}
             </Text>
           </HStack>
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">OUT</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
-              {committedOut == null ? "—" : `−£${nfmt(committedOut, { decimals: 2 })}`}
+              {committedOut == null ? "—" : `−${formatMoney(committedOut, getBaseCurrency())}`}
             </Text>
           </HStack>
         </HStack>
@@ -183,12 +185,12 @@ export function MobileUpcomingFull({ onBack }: { onBack?: () => void }) {
                 mono
                 size={14}
                 weight={600}
-                color={it.gbpEquivalent == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-red)"}
+                color={it.baseEquivalent == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-red)"}
                 numeric
               >
-                {it.gbpEquivalent == null
+                {it.baseEquivalent == null
                   ? "—"
-                  : `${isIncome ? "+" : "−"}£${nfmt(Math.abs(it.gbpEquivalent), { decimals: 2 })}`}
+                  : `${isIncome ? "+" : "−"}${formatMoney(Math.abs(it.baseEquivalent), getBaseCurrency())}`}
               </Text>
             </div>
           </div>

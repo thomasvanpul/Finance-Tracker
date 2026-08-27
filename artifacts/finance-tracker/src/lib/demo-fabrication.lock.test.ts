@@ -483,7 +483,7 @@ describe("demo-fabrication lock (#16)", () => {
       hits.map(formatDefect).join("\n") +
       `\n\nPattern: an expression of the form \`<cond> ? <expr> : <NUMBER>\` where NUMBER != 0, or \`<expr> ?? <NUMBER>\` where NUMBER != 0. This is the shape of the ungated silent fallbacks found on 26-Aug (analytics.tsx :2241 \`? incomeThisMonth : 3700\`, :3350 \`? avg : 1500\`, :3354 \`? avg : 2500\`, whatif.tsx :636 \`? baseExpenses : 2500\`), each firing on real user data with no marker.\n\n` +
       `Two options:\n` +
-      `  1. Fix it. Replace the fabricated fallback with an honest path — return \`null\` (see formatGbpOrDash in lib/utils.ts), gate the render on data presence, or short-circuit the panel to a not-enough-data empty state.\n` +
+      `  1. Fix it. Replace the fabricated fallback with an honest path — return \`null\` (see formatBaseMoney in lib/utils.ts), gate the render on data presence, or short-circuit the panel to a not-enough-data empty state.\n` +
       `  2. If the literal is a legitimate non-financial constant (CSS dimension, timeout ms, chart size, form-input seed that is user-editable and clearly labelled), add it to ALLOWLIST_B above with reviewer-facing reason including the specific line context.`
     );
   });

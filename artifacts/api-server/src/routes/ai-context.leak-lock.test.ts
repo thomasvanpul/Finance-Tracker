@@ -211,7 +211,7 @@ describe("AI leak lock · Rule 3 — no financial values in prompts to AI", () =
     },
     {
       path: "pages/budget.tsx",
-      reason: "Budget insight page. Consumes /api/ai/chat via oneShotInsight with a static prompt. Financial template literals are chart tick formatters (`£${v}`), chip labels (`+${formatGbp(...)} over`), and tooltip titles (`${category}: ${formatGbp(spent)} of ${formatGbp(limit)}`) — all local rendering. Migrated 2026-08-23.",
+      reason: "Budget insight page. Consumes /api/ai/chat via oneShotInsight with a static prompt. Financial template literals are chart tick formatters (`£${v}`), chip labels (`+${formatBaseMoney(...)} over`), and tooltip titles (`${category}: ${formatBaseMoney(spent)} of ${formatBaseMoney(limit)}`) — all local rendering. Migrated 2026-08-23.",
     },
     {
       path: "pages/dashboard.tsx",
@@ -238,10 +238,10 @@ describe("AI leak lock · Rule 3 — no financial values in prompts to AI", () =
   // uses.
   const FINANCIAL_MARKERS: Array<{ pattern: RegExp; label: string }> = [
     { pattern: /`[^`]*£\s*\$\{/,                                   label: "template with £${...} interpolation" },
-    { pattern: /`[^`]*\$\{[^}]*\bformatGbp\s*\(/,                  label: "template with ${formatGbp(...)}" },
+    { pattern: /`[^`]*\$\{[^}]*\bformatGbp\s*\(/,                  label: "template with ${formatBaseMoney(...)}" },
     { pattern: /`[^`]*\$\{[^}]*\bformatCurrency\s*\(/,             label: "template with ${formatCurrency(...)}" },
     { pattern: /`[^`]*\$\{[^}]*\.gbpValue\b/,                      label: "template with ${...gbpValue}" },
-    { pattern: /`[^`]*\$\{[^}]*\.gbpEquivalent\b/,                 label: "template with ${...gbpEquivalent}" },
+    { pattern: /`[^`]*\$\{[^}]*\.baseEquivalent\b/,                 label: "template with ${...baseEquivalent}" },
     { pattern: /`[^`]*\$\{[^}]*\bnetWorth\b/,                      label: "template with ${...netWorth}" },
     { pattern: /`[^`]*\$\{[^}]*\bsavingsRate\b/,                   label: "template with ${...savingsRate}" },
     { pattern: /`[^`]*\$\{[^}]*\bmonthlyLimit\b/,                  label: "template with ${...monthlyLimit}" },

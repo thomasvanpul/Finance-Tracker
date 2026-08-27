@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 
 type TxRow = {
@@ -119,7 +119,7 @@ export function CashFlowSankeyWidget() {
                   {item.label}
                 </div>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: item.color, whiteSpace: "nowrap" }}>
-                  {formatGbp(item.value)}
+                  {formatBaseMoney(item.value)}
                 </div>
                 {totalIncome > 0 && item.label !== "Income" && (
                   <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>
@@ -172,7 +172,7 @@ export function CashFlowSankeyWidget() {
                       {node.label.length > 12 ? node.label.slice(0, 11) + "…" : node.label}
                     </text>
                     <text x={incomeX - 6} y={node.y + node.h / 2 + 13} textAnchor="end" fontFamily="var(--font-mono)" fontSize={8} fill="var(--ft-dim)">
-                      {formatGbp(node.value)}
+                      {formatBaseMoney(node.value)}
                     </text>
                   </g>
                 ))}
@@ -188,7 +188,7 @@ export function CashFlowSankeyWidget() {
                       {node.label.length > 12 ? node.label.slice(0, 11) + "…" : node.label}
                     </text>
                     <text x={expenseX + NODE_W + 6} y={node.y + node.h / 2 + 13} textAnchor="start" fontFamily="var(--font-mono)" fontSize={8} fill="var(--ft-dim)">
-                      {formatGbp(node.value)}
+                      {formatBaseMoney(node.value)}
                     </text>
                   </g>
                 ))}
@@ -210,7 +210,7 @@ export function CashFlowSankeyWidget() {
                         Saved
                       </text>
                       <text x={W - 44} y={savingsY + savingsH / 2 + 13} textAnchor="start" fontFamily="var(--font-mono)" fontSize={8} fill="var(--ft-dim)">
-                        {formatGbp(savings)}
+                        {formatBaseMoney(savings)}
                       </text>
                     </g>
                   );

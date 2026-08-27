@@ -18,7 +18,7 @@ import {
   type StockHistoryPoint,
   type OptionsChain,
 } from "@workspace/api-client-react";
-import { formatGbp, formatPercent } from "@/lib/utils";
+import { formatBaseMoney, formatPercent } from "@/lib/utils";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { getBaseCurrency } from "@/lib/currency-store";
 import { oneShotInsight } from "@/lib/ai-chat-client";
@@ -230,9 +230,9 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
                 { label: "Shares", value: String(inv.shares) },
                 { label: "Cost / Share", value: `${sym}${inv.costPricePerShare.toFixed(2)}` },
                 { label: "Live Price", value: priced && inv.livePrice != null ? `${sym}${inv.livePrice.toFixed(2)}` : "—" },
-                { label: "Total Cost", value: formatGbp(inv.costPricePerShare * inv.shares) },
-                { label: "Current Value", value: priced && inv.gbpValue != null ? formatGbp(inv.gbpValue) : "—" },
-                { label: "Unrealised P&L", value: priced && inv.plGbp != null && inv.plPercent != null ? `${inv.plGbp >= 0 ? "+" : ""}${formatGbp(inv.plGbp)} (${inv.plPercent >= 0 ? "+" : ""}${inv.plPercent.toFixed(2)}%)` : "—", color: priced ? plColor : "var(--ft-dim)" },
+                { label: "Total Cost", value: formatBaseMoney(inv.costPricePerShare * inv.shares) },
+                { label: "Current Value", value: priced && inv.gbpValue != null ? formatBaseMoney(inv.gbpValue) : "—" },
+                { label: "Unrealised P&L", value: priced && inv.plGbp != null && inv.plPercent != null ? `${inv.plGbp >= 0 ? "+" : ""}${formatBaseMoney(inv.plGbp)} (${inv.plPercent >= 0 ? "+" : ""}${inv.plPercent.toFixed(2)}%)` : "—", color: priced ? plColor : "var(--ft-dim)" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="px-3 py-2 border-b border-r" style={{ borderColor: "var(--ft-border)" }}>
                   <div className="text-xs mb-0.5" style={{ color: "var(--ft-dim)" }}>{label}</div>
@@ -709,7 +709,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
                 </div>
                 {/* Current value */}
                 <div className="pnum" style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)" }}>
-                  {formatGbp(row.currentValue)}
+                  {formatBaseMoney(row.currentValue)}
                 </div>
                 {/* Current % */}
                 <div style={{ ...RTBD, width: 100, minWidth: 100, textAlign: "right", color: "var(--ft-muted)" }}>
@@ -750,7 +750,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
                       padding: "1px 6px", borderRadius: 2,
                       background: row.action === "Buy" ? "rgba(63,185,80,0.12)" : "rgba(248,81,73,0.12)",
                     }}>
-                      {row.action} <span className="pnum">{formatGbp(row.actionAmount)}</span>
+                      {row.action} <span className="pnum">{formatBaseMoney(row.actionAmount)}</span>
                     </span>
                   )}
                 </div>
@@ -764,7 +764,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
               TOTAL
             </div>
             <div className="pnum" style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)", fontWeight: 700 }}>
-              {formatGbp(totalCurrentValue)}
+              {formatBaseMoney(totalCurrentValue)}
             </div>
             <div style={{ ...RTBD, width: 100, minWidth: 100, textAlign: "right", color: "var(--ft-muted)", fontWeight: 700 }}>
               {totalPortfolioValue > 0 ? "100.0%" : "—"}
@@ -795,7 +795,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
       {/* Info note */}
       <div style={{ padding: "8px 12px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-dim)" }}>
         Targets persist in localStorage. Asset classes are derived from your portfolio positions using the class tags you assign to each holding.
-        Portfolio total used: <span className="pnum" style={{ fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>{formatGbp(totalPortfolioValue)}</span>.
+        Portfolio total used: <span className="pnum" style={{ fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>{formatBaseMoney(totalPortfolioValue)}</span>.
       </div>
     </div>
   );
@@ -1204,7 +1204,7 @@ interface PortfolioPositionsTableProps {
   deleteConfirmId: number | null;
   priceAlerts: PriceAlert[];
   onAlertsChange: (alerts: PriceAlert[]) => void;
-  baseCurrency: string;
+  baseCurrency: string | null;
 }
 
 function PortfolioPositionsTable({
@@ -1263,7 +1263,7 @@ function PortfolioPositionsTable({
       <div className="ft-panel-header">
         <div className="ft-panel-label">
           <span className="accent-dot">·</span>
-          POSITIONS — LIVE MARKET DATA ({baseCurrency})
+          POSITIONS — LIVE MARKET DATA ({baseCurrency ?? "—"})
         </div>
         <input
           className="ft-filter-input"
@@ -1375,7 +1375,7 @@ function PortfolioPositionsTable({
 
                   {/* VALUE */}
                   <td style={{ ...TD, textAlign: "right", color: priced ? "var(--ft-text)" : "var(--ft-dim)", fontWeight: 600 }} className="pnum">
-                    {priced && inv.gbpValue != null ? formatGbp(inv.gbpValue) : "—"}
+                    {priced && inv.gbpValue != null ? formatBaseMoney(inv.gbpValue) : "—"}
                   </td>
 
                   {/* P&L — flash cell, colored */}
@@ -1390,7 +1390,7 @@ function PortfolioPositionsTable({
                     }}
                     className="pnum"
                   >
-                    {priced && inv.plGbp != null ? `${inv.plGbp >= 0 ? "+" : ""}${formatGbp(inv.plGbp)}` : "—"}
+                    {priced && inv.plGbp != null ? `${inv.plGbp >= 0 ? "+" : ""}${formatBaseMoney(inv.plGbp)}` : "—"}
                   </FlashCell>
 
                   {/* P&L % — directional symbol */}
@@ -1461,10 +1461,10 @@ function PortfolioPositionsTable({
                 <td style={{ ...TD, borderBottom: "none" }} />
                 <td style={{ ...TD, borderBottom: "none" }} />
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, color: "var(--ft-text)", fontSize: 12, borderBottom: "none" }} className="pnum">
-                  {formatGbp(summary.totalValueGbp)}
+                  {formatBaseMoney(summary.totalValueGbp)}
                 </td>
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "none", color: summary.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
-                  {summary.totalPlGbp >= 0 ? "+" : ""}{formatGbp(summary.totalPlGbp)}
+                  {summary.totalPlGbp >= 0 ? "+" : ""}{formatBaseMoney(summary.totalPlGbp)}
                 </td>
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 11, borderBottom: "none", color: summary.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
                   {summary.totalPlPercent >= 0 ? "▲" : "▼"} {Math.abs(summary.totalPlPercent).toFixed(2)}%
@@ -1916,7 +1916,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   const kpiCells: KpiCell[] = summary ? [
     {
       label: "PORTFOLIO VALUE",
-      value: formatGbp(summary.totalValueGbp),
+      value: formatBaseMoney(summary.totalValueGbp),
       // Surface unavailablePositions the same way /accounts KPI
       // surfaces unconvertibleAccounts. Server sums totalValueGbp
       // over `priced` positions only (see routes/investments.ts) —
@@ -1934,7 +1934,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     },
     {
       label: "TOTAL P&L",
-      value: `${summary.totalPlGbp >= 0 ? "+" : ""}${formatGbp(summary.totalPlGbp)}`,
+      value: `${summary.totalPlGbp >= 0 ? "+" : ""}${formatBaseMoney(summary.totalPlGbp)}`,
       delta: `${summary.totalPlPercent >= 0 ? "▲" : "▼"} ${Math.abs(summary.totalPlPercent).toFixed(2)}%`,
       deltaPositive: summary.totalPlGbp >= 0,
     },
@@ -1952,7 +1952,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     },
     {
       label: "EST. ANNUAL DIV",
-      value: formatGbp(totalAnnualDividend),
+      value: formatBaseMoney(totalAnnualDividend),
       delta: dividendPositions.length > 0 ? `${dividendPositions.length} paying` : "no yield",
       deltaPositive: totalAnnualDividend > 0 ? true : null,
     },
@@ -2355,7 +2355,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                     <Pie data={pieData} cx="50%" cy="50%" innerRadius={44} outerRadius={70} paddingAngle={2} dataKey="value" isAnimationActive={false}>
                       {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => [formatGbp(v), "Value"]} contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11 }} wrapperStyle={{ zIndex: 10 }} />
+                    <Tooltip formatter={(v: number) => [formatBaseMoney(v), "Value"]} contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11 }} wrapperStyle={{ zIndex: 10 }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
@@ -2379,7 +2379,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                   <BarChart data={plData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
                     <XAxis dataKey="name" tick={{ fill: "var(--ft-dim)", fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: "var(--ft-dim)", fontSize: 10, className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v) => `£${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}`} />
-                    <Tooltip formatter={(v: number) => [formatGbp(v), "P&L"]} contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11 }} />
+                    <Tooltip formatter={(v: number) => [formatBaseMoney(v), "P&L"]} contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11 }} />
                     <Bar dataKey="pl" radius={[2, 2, 0, 0]} maxBarSize={40}>{plData.map((e, i) => <Cell key={i} fill={e.fill} />)}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -2450,7 +2450,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                     <Pie data={classAllocData} cx="50%" cy="50%" innerRadius={40} outerRadius={66} paddingAngle={2} dataKey="value" isAnimationActive={false}>
                       {classAllocData.map((e, i) => <Cell key={i} fill={CLASS_COLORS[e.name] ?? CHART_COLORS[i % CHART_COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => [formatGbp(v), "Value"]} contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11 }} wrapperStyle={{ zIndex: 10 }} />
+                    <Tooltip formatter={(v: number) => [formatBaseMoney(v), "Value"]} contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11 }} wrapperStyle={{ zIndex: 10 }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="space-y-1.5">
@@ -2461,7 +2461,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                       <div key={d.name} className="flex items-center gap-2 text-xs">
                         <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
                         <span style={{ color: "var(--ft-text)", flex: 1 }}>{d.name}</span>
-                        <span className="pnum font-mono" style={{ color: "var(--ft-muted)" }}>{formatGbp(d.value)}</span>
+                        <span className="pnum font-mono" style={{ color: "var(--ft-muted)" }}>{formatBaseMoney(d.value)}</span>
                         <span className="font-mono w-10 text-right" style={{ color: "var(--ft-dim)" }}>{pct.toFixed(1)}%</span>
                       </div>
                     );
@@ -2534,7 +2534,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                 </div>
                 <div className="px-4 py-3">
                   <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Est. Annual Dividends</div>
-                  <div className="pnum text-base font-bold font-mono" style={{ color: "var(--ft-green)" }}>{formatGbp(totalAnnualDividend)}</div>
+                  <div className="pnum text-base font-bold font-mono" style={{ color: "var(--ft-green)" }}>{formatBaseMoney(totalAnnualDividend)}</div>
                   <div className="text-xs mt-1" style={{ color: "var(--ft-dim)" }}>From {dividendPositions.length} position{dividendPositions.length !== 1 ? "s" : ""}</div>
                 </div>
               </div>

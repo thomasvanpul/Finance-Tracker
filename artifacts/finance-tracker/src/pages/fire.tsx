@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Flame } from "lucide-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import {
   useGetDashboard,
   useListTransactions,
@@ -291,7 +291,7 @@ function MilestonePill({ label, value, pct, color, years, effPortfolio }: Milest
         {label}
       </span>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-        {formatGbp(value)}
+        {formatBaseMoney(value)}
       </span>
       {years !== null && isFinite(years) && !reached && (
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
@@ -444,7 +444,7 @@ function CoastCard({ coastFireNeeded, effPortfolio, coastFireGap, hasCoasted, ta
       </HStack>
 
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: hasCoasted ? "var(--ft-green)" : "var(--ft-accent)", lineHeight: 1, letterSpacing: "-0.025em", marginBottom: 6 }}>
-        {formatGbp(coastFireNeeded)}
+        {formatBaseMoney(coastFireNeeded)}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 10 }}>
         stop contributing today, coast to FI by {targetYears}yr horizon
@@ -461,7 +461,7 @@ function CoastCard({ coastFireNeeded, effPortfolio, coastFireGap, hasCoasted, ta
       <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
         <span className="pnum">{progressToCoast}% of coast target</span>
         <span className="pnum" style={{ color: hasCoasted ? "var(--ft-green)" : "var(--ft-red)" }}>
-          {hasCoasted ? `+${formatGbp(coastFireGap)} surplus` : `${formatGbp(Math.abs(coastFireGap))} gap`}
+          {hasCoasted ? `+${formatBaseMoney(coastFireGap)} surplus` : `${formatBaseMoney(Math.abs(coastFireGap))} gap`}
         </span>
       </div>
     </div>
@@ -508,13 +508,13 @@ function SensitivityRow({ r, yrs, arrYear, fireN, portfolioAtFI, monthlyNeed, is
         {arrYear ?? "—"}
       </td>
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "6px 14px" }}>
-        {formatGbp(fireN)}
+        {formatBaseMoney(fireN)}
       </td>
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)", padding: "6px 14px" }}>
-        {portfolioAtFI !== null ? formatGbp(portfolioAtFI) : "—"}
+        {portfolioAtFI !== null ? formatBaseMoney(portfolioAtFI) : "—"}
       </td>
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", padding: "6px 14px" }}>
-        {formatGbp(Math.round(monthlyNeed))}
+        {formatBaseMoney(Math.round(monthlyNeed))}
       </td>
     </tr>
   );
@@ -567,7 +567,7 @@ function FireVariantCard({ v, effPortfolio }: FireVariantCardProps) {
         )}
       </HStack>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: reached ? v.color : "var(--ft-text)", lineHeight: 1, marginBottom: 4, letterSpacing: "-0.02em", whiteSpace: "nowrap", minWidth: 0 }}>
-        {formatGbp(v.number)}
+        {formatBaseMoney(v.number)}
       </div>
       <div style={{ height: 2, background: "var(--ft-border)", overflow: "hidden", marginBottom: 6 }}>
         <div style={{ height: "100%", width: `${Math.min(100, v.number > 0 ? Math.round((effPortfolio / v.number) * 100) : 100)}%`, background: v.color }} />
@@ -748,14 +748,14 @@ export default function Fire() {
            className="ft-four-col">
         <KpiCell
           label="FI Number"
-          value={formatGbp(fireNumber)}
+          value={formatBaseMoney(fireNumber)}
           sub={`${withdrawalRate}% SWR`}
           color="var(--ft-amber)"
         />
         <KpiCell
           label="Progress"
           value={`${progressPct}%`}
-          sub={`${formatGbp(effPortfolio)} of ${formatGbp(fireNumber)}`}
+          sub={`${formatBaseMoney(effPortfolio)} of ${formatBaseMoney(fireNumber)}`}
           color={progressPct >= 100 ? "var(--ft-green)" : progressPct >= 50 ? "var(--ft-amber)" : "var(--ft-accent)"}
         />
         <KpiCell
@@ -766,8 +766,8 @@ export default function Fire() {
         />
         <KpiCell
           label={`Needed in ${targetYears}yr`}
-          value={formatGbp(Math.round(monthlyNeededForTarget))}
-          sub={effMonthlyContrib > 0 ? (effMonthlyContrib >= monthlyNeededForTarget ? "on track ✓" : `${formatGbp(Math.round(monthlyNeededForTarget - effMonthlyContrib))} shortfall`) : "per month"}
+          value={formatBaseMoney(Math.round(monthlyNeededForTarget))}
+          sub={effMonthlyContrib > 0 ? (effMonthlyContrib >= monthlyNeededForTarget ? "on track ✓" : `${formatBaseMoney(Math.round(monthlyNeededForTarget - effMonthlyContrib))} shortfall`) : "per month"}
           color="var(--ft-cyan)"
         />
       </div>
@@ -796,7 +796,7 @@ export default function Fire() {
       <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" as const, flexDirection: isMobile ? "column" : "row" }}>
         <HeroResult
           label="FI Number"
-          value={formatGbp(fireNumber)}
+          value={formatBaseMoney(fireNumber)}
           color="var(--ft-amber)"
           sub={`${withdrawalRate}% safe withdrawal rate · ${Math.round(1 / (withdrawalRate / 100))}× annual expenses`}
           note="The portfolio value at which you are financially independent"
@@ -812,10 +812,10 @@ export default function Fire() {
         />
         <HeroResult
           label="Monthly Needed"
-          value={formatGbp(Math.round(monthlyNeededForTarget))}
+          value={formatBaseMoney(Math.round(monthlyNeededForTarget))}
           color="var(--ft-cyan)"
           sub={`to reach FI in ${targetYears} years`}
-          note={effMonthlyContrib > 0 ? (effMonthlyContrib >= monthlyNeededForTarget ? "On track for target" : `${formatGbp(Math.round(monthlyNeededForTarget - effMonthlyContrib))}/mo shortfall`) : undefined}
+          note={effMonthlyContrib > 0 ? (effMonthlyContrib >= monthlyNeededForTarget ? "On track for target" : `${formatBaseMoney(Math.round(monthlyNeededForTarget - effMonthlyContrib))}/mo shortfall`) : undefined}
           isMobile={isMobile}
         />
       </div>
@@ -872,7 +872,7 @@ export default function Fire() {
           }}>
             {progressPct > 12 && (
               <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "rgba(0,0,0,0.6)", whiteSpace: "nowrap" }}>
-                {formatGbp(effPortfolio)}
+                {formatBaseMoney(effPortfolio)}
               </span>
             )}
           </div>
@@ -893,22 +893,22 @@ export default function Fire() {
 
         {/* Labels */}
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 6 }}>
-          <span>{formatGbp(0)}</span>
+          <span>{formatBaseMoney(0)}</span>
           {coastFireNeeded > 0 && coastFireNeeded < fireNumber && (
             <span className="pnum" style={{ color: "var(--ft-cyan)" }}>
-              Coast {formatGbp(coastFireNeeded)} ({Math.round((coastFireNeeded / fireNumber) * 100)}%)
+              Coast {formatBaseMoney(coastFireNeeded)} ({Math.round((coastFireNeeded / fireNumber) * 100)}%)
             </span>
           )}
-          <span className="pnum" style={{ color: "var(--ft-amber)" }}>{formatGbp(fireNumber)} FI target</span>
+          <span className="pnum" style={{ color: "var(--ft-amber)" }}>{formatBaseMoney(fireNumber)} FI target</span>
         </div>
 
         {/* Gap to FIRE */}
         {effPortfolio < fireNumber && fireNumber > 0 && (
           <div style={{ display: "grid", gap: 1, background: "var(--ft-border)", marginTop: 12, marginBottom: 2 }}
                className="ft-three-col">
-            <GapMetricCell label="Portfolio" value={formatGbp(effPortfolio)} color="var(--ft-text)" />
-            <GapMetricCell label="Gap to FI" value={formatGbp(fireNumber - effPortfolio)} color="var(--ft-red)" />
-            <GapMetricCell label="Monthly Contrib" value={effMonthlyContrib > 0 ? formatGbp(effMonthlyContrib) : "—"} color="var(--ft-cyan)" />
+            <GapMetricCell label="Portfolio" value={formatBaseMoney(effPortfolio)} color="var(--ft-text)" />
+            <GapMetricCell label="Gap to FI" value={formatBaseMoney(fireNumber - effPortfolio)} color="var(--ft-red)" />
+            <GapMetricCell label="Monthly Contrib" value={effMonthlyContrib > 0 ? formatBaseMoney(effMonthlyContrib) : "—"} color="var(--ft-cyan)" />
           </div>
         )}
 
@@ -997,7 +997,7 @@ export default function Fire() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 3 }}>Surplus</div>
                   <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: monthlySurplus >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-                    {monthlySurplus >= 0 ? "+" : ""}{formatGbp(monthlySurplus)}
+                    {monthlySurplus >= 0 ? "+" : ""}{formatBaseMoney(monthlySurplus)}
                   </div>
                 </div>
               )}
@@ -1046,7 +1046,7 @@ export default function Fire() {
               Monthly contribution needed
             </div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--ft-cyan)", lineHeight: 1, letterSpacing: "-0.02em" }}>
-              {formatGbp(Math.round(monthlyNeededForTarget))}
+              {formatBaseMoney(Math.round(monthlyNeededForTarget))}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
               to reach FI in {targetYears} years
@@ -1118,7 +1118,7 @@ export default function Fire() {
                       width={56}
                     />
                     <Tooltip
-                      formatter={(v: number, name: string) => [formatGbp(v), name === "value" ? "Portfolio" : "Contributions"]}
+                      formatter={(v: number, name: string) => [formatBaseMoney(v), name === "value" ? "Portfolio" : "Contributions"]}
                       contentStyle={{
                         background: "var(--ft-raised)",
                         border: "1px solid var(--ft-border2)",
@@ -1233,7 +1233,7 @@ export default function Fire() {
             number: leanFireNumber,
             years: leanYears,
             color: "var(--ft-cyan)",
-            desc: `${formatGbp(Math.round(effMonthlyExpenses * 0.7))}/mo in retirement`,
+            desc: `${formatBaseMoney(Math.round(effMonthlyExpenses * 0.7))}/mo in retirement`,
           },
           {
             label: "BASE FIRE",
@@ -1241,7 +1241,7 @@ export default function Fire() {
             number: fireNumber,
             years: yearsToFire,
             color: "var(--ft-green)",
-            desc: `${formatGbp(effMonthlyExpenses)}/mo in retirement`,
+            desc: `${formatBaseMoney(effMonthlyExpenses)}/mo in retirement`,
           },
           {
             label: "FAT FIRE",
@@ -1249,7 +1249,7 @@ export default function Fire() {
             number: fatFireNumber,
             years: fatYears,
             color: "var(--ft-amber)",
-            desc: `${formatGbp(Math.round(effMonthlyExpenses * 1.5))}/mo in retirement`,
+            desc: `${formatBaseMoney(Math.round(effMonthlyExpenses * 1.5))}/mo in retirement`,
           },
           {
             label: "COAST FIRE",
@@ -1258,8 +1258,8 @@ export default function Fire() {
             years: null as number | null,
             color: "var(--ft-accent)",
             desc: hasCoasted
-              ? `Already coasted — ${formatGbp(coastFireGap)} above coast number`
-              : `Need ${formatGbp(Math.abs(coastFireGap))} more to coast`,
+              ? `Already coasted — ${formatBaseMoney(coastFireGap)} above coast number`
+              : `Need ${formatBaseMoney(Math.abs(coastFireGap))} more to coast`,
             coasted: hasCoasted,
           },
         ].map((v) => (

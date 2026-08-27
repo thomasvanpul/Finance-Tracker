@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { MonoTooltip, type TooltipEntry } from "@/components/mono-tooltip";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import {
@@ -109,21 +109,21 @@ function KpiStrip({ income, expenses, txCount, year, prevIncome, prevExpenses }:
   const tiles = [
     {
       label: `Total Income · ${year}`,
-      value: formatGbp(income),
+      value: formatBaseMoney(income),
       color: "var(--ft-green)",
       sub: yoyDelta(income, prevIncome),
       subColor: prevIncome !== undefined && income >= prevIncome ? "var(--ft-green)" : "var(--ft-red)",
     },
     {
       label: `Total Expenses · ${year}`,
-      value: formatGbp(expenses),
+      value: formatBaseMoney(expenses),
       color: "var(--ft-red)",
       sub: yoyDelta(expenses, prevExpenses),
       subColor: prevExpenses !== undefined && expenses <= prevExpenses ? "var(--ft-green)" : "var(--ft-red)",
     },
     {
       label: `Net Savings · ${year}`,
-      value: (net >= 0 ? "+" : "") + formatGbp(net),
+      value: (net >= 0 ? "+" : "") + formatBaseMoney(net),
       color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)",
       sub: yoyDelta(net, prevNet),
       subColor: prevNet !== undefined && net >= prevNet ? "var(--ft-green)" : "var(--ft-red)",
@@ -299,17 +299,17 @@ function QuarterBreakdown({ txs, year, prevTxs }: { txs: Tx[]; year: number; pre
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 0", marginBottom: 8 }}>
                     <div>
                       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>INCOME</div>
-                      <div className="pnum" style={{ ...mono, fontSize: 11, fontWeight: 600, color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(q.income)}</div>
+                      <div className="pnum" style={{ ...mono, fontSize: 11, fontWeight: 600, color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>{formatBaseMoney(q.income)}</div>
                     </div>
                     <div>
                       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>EXPENSES</div>
-                      <div className="pnum" style={{ ...mono, fontSize: 11, fontWeight: 600, color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(q.expenses)}</div>
+                      <div className="pnum" style={{ ...mono, fontSize: 11, fontWeight: 600, color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>{formatBaseMoney(q.expenses)}</div>
                     </div>
                   </div>
                   <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 8 }}>
                     <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>NET</div>
                     <div className="pnum" style={{ ...mono, fontSize: 15, fontWeight: 700, color: q.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>
-                      {q.net >= 0 ? "+" : ""}{formatGbp(q.net)}
+                      {q.net >= 0 ? "+" : ""}{formatBaseMoney(q.net)}
                     </div>
                     {q.savingsRate !== null && (
                       <div style={{ ...mono, fontSize: 9, color: q.savingsRate >= 20 ? "var(--ft-green)" : q.savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)", marginTop: 2 }}>
@@ -319,9 +319,9 @@ function QuarterBreakdown({ txs, year, prevTxs }: { txs: Tx[]; year: number; pre
                     {q.prevNet !== undefined && (
                       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
                         {q.net > q.prevNet
-                          ? <span style={{ color: "var(--ft-green)" }}>▲ <span className="pnum">{formatGbp(q.net - q.prevNet)}</span> vs {year - 1}</span>
+                          ? <span style={{ color: "var(--ft-green)" }}>▲ <span className="pnum">{formatBaseMoney(q.net - q.prevNet)}</span> vs {year - 1}</span>
                           : q.net < q.prevNet
-                          ? <span style={{ color: "var(--ft-red)" }}>▼ <span className="pnum">{formatGbp(q.prevNet - q.net)}</span> vs {year - 1}</span>
+                          ? <span style={{ color: "var(--ft-red)" }}>▼ <span className="pnum">{formatBaseMoney(q.prevNet - q.net)}</span> vs {year - 1}</span>
                           : <span>— flat vs {year - 1}</span>
                         }
                       </div>
@@ -413,14 +413,14 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
     {
       icon: "▲",
       label: "Largest Single Income",
-      value: biggestIncome ? formatGbp(biggestIncome.gbpValue) : "—",
+      value: biggestIncome ? formatBaseMoney(biggestIncome.gbpValue) : "—",
       sub: biggestIncome ? `${biggestIncome.date} · ${biggestIncome.description}` : "—",
       color: "var(--ft-green)",
     },
     {
       icon: "▼",
       label: "Largest Single Expense",
-      value: biggestExpense ? formatGbp(biggestExpense.gbpValue) : "—",
+      value: biggestExpense ? formatBaseMoney(biggestExpense.gbpValue) : "—",
       sub: biggestExpense ? `${biggestExpense.date} · ${biggestExpense.description}` : "—",
       color: "var(--ft-red)",
     },
@@ -428,7 +428,7 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
       icon: "★",
       label: "Best Month (net savings)",
       value: bestMonthEntry ? fmtYM(bestMonthEntry[0]) : "—",
-      sub: bestMonthEntry ? `Saved ${formatGbp(bestMonthEntry[1])}` : "—",
+      sub: bestMonthEntry ? `Saved ${formatBaseMoney(bestMonthEntry[1])}` : "—",
       color: "var(--ft-amber)",
     },
     {
@@ -436,7 +436,7 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
       label: "Worst Month (net savings)",
       value: worstMonthEntry ? fmtYM(worstMonthEntry[0]) : "—",
       sub: worstMonthEntry
-        ? worstMonthEntry[1] < 0 ? `Deficit ${formatGbp(Math.abs(worstMonthEntry[1]))}` : `Low savings ${formatGbp(worstMonthEntry[1])}`
+        ? worstMonthEntry[1] < 0 ? `Deficit ${formatBaseMoney(Math.abs(worstMonthEntry[1]))}` : `Low savings ${formatBaseMoney(worstMonthEntry[1])}`
         : "—",
       color: "var(--ft-red)",
     },
@@ -444,14 +444,14 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
       icon: "↑",
       label: "Highest Income Month",
       value: highestIncomeMonthEntry ? fmtYM(highestIncomeMonthEntry[0]) : "—",
-      sub: highestIncomeMonthEntry ? formatGbp(highestIncomeMonthEntry[1]) + " earned" : "—",
+      sub: highestIncomeMonthEntry ? formatBaseMoney(highestIncomeMonthEntry[1]) + " earned" : "—",
       color: "var(--ft-cyan)",
     },
     {
       icon: "↓",
       label: "Lowest Spend Month",
       value: lowestSpendMonthEntry ? fmtYM(lowestSpendMonthEntry[0]) : "—",
-      sub: lowestSpendMonthEntry ? formatGbp(lowestSpendMonthEntry[1]) + " spent" : "—",
+      sub: lowestSpendMonthEntry ? formatBaseMoney(lowestSpendMonthEntry[1]) + " spent" : "—",
       color: "var(--ft-blue)",
     },
   ];
@@ -523,7 +523,7 @@ function CategoryRow({ row, rank }: CategoryRowProps) {
         {row.pct.toFixed(1)}%
       </div>
       <div className="pnum" style={{ ...mono, fontSize: 11, color: "var(--ft-muted)", width: 76, textAlign: "right", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-        {formatGbp(row.val)}
+        {formatBaseMoney(row.val)}
       </div>
     </div>
   );
@@ -617,7 +617,7 @@ function MonthByMonth({ txs, year }: { txs: Tx[]; year: number }) {
                   active={p.active}
                   payload={p.payload as TooltipEntry[]}
                   label={String(p.label ?? "")}
-                  formatter={(v, name) => [formatGbp(v), name]}
+                  formatter={(v, name) => [formatBaseMoney(v), name]}
                 />
               )}
             />
@@ -682,16 +682,16 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
               <HStack gap={12} align="baseline">
                 <div>
                   <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>{year}</div>
-                  <div className="pnum" style={{ ...mono, fontSize: 14, fontWeight: 700, color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(item.curr)}</div>
+                  <div className="pnum" style={{ ...mono, fontSize: 14, fontWeight: 700, color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{formatBaseMoney(item.curr)}</div>
                 </div>
                 <div style={{ ...mono, fontSize: 8, color: "var(--ft-border2)" }}>vs</div>
                 <div>
                   <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>{year - 1}</div>
-                  <div className="pnum" style={{ ...mono, fontSize: 11, color: "var(--ft-muted)", fontVariantNumeric: "tabular-nums" }}>{formatGbp(item.prev)}</div>
+                  <div className="pnum" style={{ ...mono, fontSize: 11, color: "var(--ft-muted)", fontVariantNumeric: "tabular-nums" }}>{formatBaseMoney(item.prev)}</div>
                 </div>
               </HStack>
               <div className="pnum" style={{ ...mono, fontSize: 10, color: diffColor, marginTop: 6, fontWeight: 600 }}>
-                {item.diff >= 0 ? "+" : ""}{formatGbp(item.diff)}
+                {item.diff >= 0 ? "+" : ""}{formatBaseMoney(item.diff)}
                 {diffPct !== null && <span style={{ fontWeight: 400, marginLeft: 5, fontSize: 9 }}>({diffPct >= 0 ? "+" : ""}{diffPct.toFixed(1)}%)</span>}
               </div>
             </div>
@@ -720,7 +720,7 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
                   active={p.active}
                   payload={p.payload as TooltipEntry[]}
                   label={String(p.label ?? "")}
-                  formatter={(v, name) => [formatGbp(v), name]}
+                  formatter={(v, name) => [formatBaseMoney(v), name]}
                 />
               )}
             />
@@ -860,7 +860,7 @@ function StreaksAndFacts({ txs, year }: { txs: Tx[]; year: number }) {
     { marker: "01", text: `${totalTxs} transactions logged in ${year}` },
     { marker: "02", text: `Most active spending day: ${mostActiveDay}` },
     { marker: "03", text: `Favourite spending category: ${favCat}` },
-    { marker: "04", text: `Average expense per transaction: ${formatGbp(avgExpense)}` },
+    { marker: "04", text: `Average expense per transaction: ${formatBaseMoney(avgExpense)}` },
     { marker: "05", text: `Most expensive month: ${priceyMonthStr}` },
   ];
 
@@ -906,7 +906,7 @@ function NetWorthDelta({ txs }: { txs: Tx[] }) {
         <div style={{ padding: "18px 20px", background: "var(--ft-surface)" }}>
           <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Net Worth Delta This Year</div>
           <div className="pnum" style={{ ...mono, fontSize: 32, fontWeight: 700, color: accentCol, letterSpacing: "-0.03em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-            {delta >= 0 ? "+" : ""}{formatGbp(delta)}
+            {delta >= 0 ? "+" : ""}{formatBaseMoney(delta)}
           </div>
           <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>
             Based on income vs expenses tracked
@@ -973,9 +973,9 @@ function ShareableCard({ income, expenses, txCount, year }: {
   const savingsRate = income > 0 ? (net / income) * 100 : 0;
 
   const tiles = [
-    { text: "Earned", value: formatGbp(income), color: "var(--ft-green)" },
-    { text: "Spent", value: formatGbp(expenses), color: "var(--ft-red)" },
-    { text: "Saved", value: formatGbp(net), color: net >= 0 ? "var(--ft-amber)" : "var(--ft-red)" },
+    { text: "Earned", value: formatBaseMoney(income), color: "var(--ft-green)" },
+    { text: "Spent", value: formatBaseMoney(expenses), color: "var(--ft-red)" },
+    { text: "Saved", value: formatBaseMoney(net), color: net >= 0 ? "var(--ft-amber)" : "var(--ft-red)" },
   ];
 
   return (
@@ -1210,12 +1210,12 @@ export default function YearReviewPage() {
             {chapter === 1 && (
               <>
                 <div style={{ fontSize: 16, color: "var(--ft-dim)", letterSpacing: "0.06em", marginBottom: 16 }}>This year, you earned</div>
-                <div className="pnum" style={{ fontSize: 72, fontWeight: 900, color: "var(--ft-green)", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 12 }}>{formatGbp(totalIncome)}</div>
+                <div className="pnum" style={{ fontSize: 72, fontWeight: 900, color: "var(--ft-green)", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 12 }}>{formatBaseMoney(totalIncome)}</div>
                 <Text as="div" size={12} color="var(--ft-muted)">across {yearTxs.filter(t => t.type === "income").length} income transactions</Text>
                 {wrappedData.biggestIncome && (
                   <div style={{ marginTop: 24, padding: "12px 20px", border: "1px solid var(--ft-border)", maxWidth: 360 }}>
                     <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 4 }}>LARGEST SINGLE INCOME</div>
-                    <div className="pnum" style={{ fontSize: 18, fontWeight: 700, color: "var(--ft-green)" }}>{formatGbp(wrappedData.biggestIncome.gbpValue)}</div>
+                    <div className="pnum" style={{ fontSize: 18, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(wrappedData.biggestIncome.gbpValue)}</div>
                     <div style={{ fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>{wrappedData.biggestIncome.description} · {wrappedData.biggestIncome.date}</div>
                   </div>
                 )}
@@ -1225,13 +1225,13 @@ export default function YearReviewPage() {
             {chapter === 2 && (
               <>
                 <div style={{ fontSize: 16, color: "var(--ft-dim)", letterSpacing: "0.06em", marginBottom: 16 }}>You spent</div>
-                <div className="pnum" style={{ fontSize: 72, fontWeight: 900, color: "var(--ft-red)", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 12 }}>{formatGbp(totalExpenses)}</div>
+                <div className="pnum" style={{ fontSize: 72, fontWeight: 900, color: "var(--ft-red)", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 12 }}>{formatBaseMoney(totalExpenses)}</div>
                 <Text as="div" size={12} color="var(--ft-muted)">across {yearTxs.filter(t => t.type === "expense").length} expense transactions</Text>
                 {wrappedData.topCatEntry && (
                   <div style={{ marginTop: 24, padding: "12px 20px", border: "1px solid var(--ft-border)", maxWidth: 360 }}>
                     <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 4 }}>TOP SPENDING CATEGORY</div>
                     <Text as="div" size={18} weight={700} color="var(--ft-red)">{wrappedData.topCatEntry[0]}</Text>
-                    <div className="pnum" style={{ fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>{formatGbp(wrappedData.topCatEntry[1])} total</div>
+                    <div className="pnum" style={{ fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>{formatBaseMoney(wrappedData.topCatEntry[1])} total</div>
                   </div>
                 )}
               </>
@@ -1243,7 +1243,7 @@ export default function YearReviewPage() {
                   {net >= 0 ? "You saved" : "You overspent by"}
                 </div>
                 <div className="pnum" style={{ fontSize: 72, fontWeight: 900, color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 12 }}>
-                  {formatGbp(Math.abs(net))}
+                  {formatBaseMoney(Math.abs(net))}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--ft-muted)", marginBottom: 20 }}>
                   Savings rate: {wrappedData.savingsRate.toFixed(1)}%
@@ -1276,7 +1276,7 @@ export default function YearReviewPage() {
                       <div key={cat}>
                         <HStack justify="between" marginBottom={4}>
                           <Text as="span" size={13} weight={i === 0 ? 700 : 400} color={i === 0 ? "var(--ft-accent)" : "var(--ft-text)"}>{i === 0 ? "★ " : ""}{cat}</Text>
-                          <span className="pnum" style={{ fontSize: 13, color: "var(--ft-muted)" }}>{formatGbp(amt)}</span>
+                          <span className="pnum" style={{ fontSize: 13, color: "var(--ft-muted)" }}>{formatBaseMoney(amt)}</span>
                         </HStack>
                         <div style={{ height: 4, background: "var(--ft-border2)", overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${(amt / maxVal) * 100}%`, background: i === 0 ? "var(--ft-accent)" : "var(--ft-border2)", transition: "width 0.25s ease" }} />
@@ -1295,7 +1295,7 @@ export default function YearReviewPage() {
                   {wrappedData.biggestExpense && (
                     <div style={{ padding: "16px", border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.05)", textAlign: "left" }}>
                       <div style={{ fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-red)", marginBottom: 8 }}>BIGGEST EXPENSE</div>
-                      <div className="pnum" style={{ fontSize: 22, fontWeight: 700, color: "var(--ft-red)", marginBottom: 4 }}>{formatGbp(wrappedData.biggestExpense.gbpValue)}</div>
+                      <div className="pnum" style={{ fontSize: 22, fontWeight: 700, color: "var(--ft-red)", marginBottom: 4 }}>{formatBaseMoney(wrappedData.biggestExpense.gbpValue)}</div>
                       <div style={{ fontSize: 10, color: "var(--ft-muted)", marginBottom: 2 }}>{wrappedData.biggestExpense.description}</div>
                       <Text as="div" size={9} color="var(--ft-dim)">{wrappedData.biggestExpense.date}</Text>
                     </div>
@@ -1304,7 +1304,7 @@ export default function YearReviewPage() {
                     <div style={{ padding: "16px", border: "1px solid rgba(63,185,80,0.3)", background: "rgba(63,185,80,0.05)", textAlign: "left" }}>
                       <div style={{ fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-green)", marginBottom: 8 }}>BEST MONTH</div>
                       <div style={{ fontSize: 22, fontWeight: 700, color: "var(--ft-green)", marginBottom: 4 }}>{fmtYM(wrappedData.bestMonthEntry[0])}</div>
-                      <div className="pnum" style={{ fontSize: 10, color: "var(--ft-muted)" }}>Saved {formatGbp(wrappedData.bestMonthEntry[1])}</div>
+                      <div className="pnum" style={{ fontSize: 10, color: "var(--ft-muted)" }}>Saved {formatBaseMoney(wrappedData.bestMonthEntry[1])}</div>
                     </div>
                   )}
                 </div>
@@ -1329,9 +1329,9 @@ export default function YearReviewPage() {
                 <div style={{ fontSize: 12, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 24 }}>YOUR {year} IN NUMBERS</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, width: "100%", maxWidth: 480, marginBottom: 20 }}>
                   {[
-                    { label: "Earned", value: formatGbp(totalIncome), color: "var(--ft-green)" },
-                    { label: "Spent", value: formatGbp(totalExpenses), color: "var(--ft-red)" },
-                    { label: "Saved", value: (net >= 0 ? "+" : "") + formatGbp(net), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
+                    { label: "Earned", value: formatBaseMoney(totalIncome), color: "var(--ft-green)" },
+                    { label: "Spent", value: formatBaseMoney(totalExpenses), color: "var(--ft-red)" },
+                    { label: "Saved", value: (net >= 0 ? "+" : "") + formatBaseMoney(net), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
                     { label: "Savings Rate", value: `${wrappedData.savingsRate.toFixed(1)}%`, color: "var(--ft-amber)" },
                     { label: "Transactions", value: String(yearTxs.length), color: "var(--ft-text)" },
                     { label: "Top Category", value: wrappedData.topCatEntry?.[0] ?? "—", color: "var(--ft-accent)" },
@@ -1472,7 +1472,7 @@ export default function YearReviewPage() {
         const msgs: Record<string, string | null> = {
           wealth:  savingsRate !== null ? `${year} savings rate: ${savingsRate.toFixed(1)}%. This annual view is your benchmark — track year-on-year improvements to your accumulation velocity.` : `Run your year-in-review to track savings rate trends and validate your wealth accumulation pace.`,
           budget:  `Use this annual view to spot category drift year-on-year — categories that crept up expose where budget discipline has slipped.`,
-          market:  net > 0 ? `${year} net surplus: ${formatGbp(net)}. Each surplus year adds to your deployable capital — cross-reference with Investments to see how it was allocated.` : null,
+          market:  net > 0 ? `${year} net surplus: ${formatBaseMoney(net)}. Each surplus year adds to your deployable capital — cross-reference with Investments to see how it was allocated.` : null,
           social:  null,
         };
         const msg = msgs[pid];

@@ -14,7 +14,7 @@ import {
   getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/api-fetch";
-import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { formatBaseMoney, formatNative, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PrivDesc } from "@/contexts/privacy-context";
 import { convertWithOverride } from "@/lib/currency-store";
@@ -1642,7 +1642,7 @@ export default function Transactions() {
               <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", color: displayGbp == null ? "var(--ft-dim)" : TX_TYPE_COLOR[tx.type as TxType], whiteSpace: "nowrap" }}>
                 {displayGbp == null
                   ? formatNative(Math.abs(tx.nativeAmount), tx.currency)
-                  : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatGbp(displayGbp)}`}
+                  : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(displayGbp)}`}
               </div>
               <HStack gap={6} align="center" justify="end" marginTop={3}>
                 <Text as="span" mono size={10} color="var(--ft-dim)" nowrap>{formatDate(tx.date)}</Text>
@@ -1720,7 +1720,7 @@ export default function Transactions() {
             ? "—"
             : (<>
                 {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
-                {formatGbp(displayGbp)}
+                {formatBaseMoney(displayGbp)}
                 {hasOverride && <span title="Custom FX rate applied" style={{ fontSize: 8, color: "var(--ft-amber)", marginLeft: 2, verticalAlign: "super" }}>★</span>}
               </>)}
         </div>
@@ -2179,7 +2179,7 @@ export default function Transactions() {
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
             <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>TOTAL IN</div>
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiIncome > 0 ? "var(--ft-green)" : "var(--ft-muted)", lineHeight: 1 }}>
-              {formatGbp(kpiIncome)}
+              {formatBaseMoney(kpiIncome)}
             </div>
             {kpiUnconvertible > 0
               ? <Text as="div" mono size={9} color="var(--ft-amber)" letterSpacing="0.04em">income · {kpiUnconvertible} tx no FX</Text>
@@ -2189,7 +2189,7 @@ export default function Transactions() {
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
             <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>TOTAL OUT</div>
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", lineHeight: 1 }}>
-              {formatGbp(kpiExpenses)}
+              {formatBaseMoney(kpiExpenses)}
             </div>
             <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">expenses</Text>
           </div>
@@ -2197,7 +2197,7 @@ export default function Transactions() {
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
             <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>NET</div>
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", lineHeight: 1 }}>
-              {kpiNet >= 0 ? "+" : "−"}{formatGbp(Math.abs(kpiNet))}
+              {kpiNet >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(kpiNet))}
             </div>
             <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", letterSpacing: "0.04em" }}>
               {kpiNet > 0 ? "▲ surplus" : kpiNet < 0 ? "▼ deficit" : "net"}
@@ -2207,7 +2207,7 @@ export default function Transactions() {
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
             <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>AVG / TX</div>
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--ft-text)", lineHeight: 1 }}>
-              {filtered.length > 0 ? formatGbp(kpiAvg) : "—"}
+              {filtered.length > 0 ? formatBaseMoney(kpiAvg) : "—"}
             </div>
             <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">per transaction</Text>
           </div>
@@ -2302,19 +2302,19 @@ export default function Transactions() {
             <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>In</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiIncome > 0 ? "var(--ft-green)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap" as const }}>
-                {formatGbp(kpiIncome)}
+                {formatBaseMoney(kpiIncome)}
               </div>
             </div>
             <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>Out</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap" as const }}>
-                {formatGbp(kpiExpenses)}
+                {formatBaseMoney(kpiExpenses)}
               </div>
             </div>
             <div style={{ padding: "10px 10px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>Net</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap" as const }}>
-                {kpiNet >= 0 ? "+" : "−"}{formatGbp(Math.abs(kpiNet))}
+                {kpiNet >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(kpiNet))}
               </div>
             </div>
           </div>
@@ -2935,7 +2935,7 @@ export default function Transactions() {
                           </Text>
                           <Text as="span" mono size={isMobile ? 11 : 9} color="var(--ft-dim)" letterSpacing="0.06em">{group.txs.length} tx</Text>
                           <span className="pnum" style={{ fontSize: isMobile ? 12 : 9, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: group.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto", letterSpacing: "0.04em" }}>
-                            {group.net >= 0 ? "+" : "−"}{formatGbp(Math.abs(group.net))}
+                            {group.net >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(group.net))}
                           </span>
                         </div>
                       );
@@ -3001,7 +3001,7 @@ export default function Transactions() {
                       <div className="ft-hide-mobile" style={{ width: 90, minWidth: 90, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
                       <div style={{ width: 130, minWidth: 130, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
                       <div className="pnum" style={{ width: 110, minWidth: 110, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: group.total >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
-                        {group.total >= 0 ? "+" : "−"}{formatGbp(Math.abs(group.total))}
+                        {group.total >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(group.total))}
                       </div>
                       <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)" }} />
                       <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)" }} />

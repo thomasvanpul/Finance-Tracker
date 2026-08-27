@@ -2,6 +2,8 @@ import { useListAccounts } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { MobileEmptyState } from "./mobile-ui";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
+import { formatMoney } from "@/lib/utils";
+import { getBaseCurrency } from "@/lib/currency-store";
 import { figureFits, labelFits } from "@/components/primitives/block-field";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
@@ -39,8 +41,8 @@ export function MobileAccounts() {
   // it always tallies real balances. gbpSum drops the FX-missing rows;
   // the per-currency section header still cites `rows.length` so the
   // account count is honest even when the GBP total is under-stated.
-  const total = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
-  const unconvertibleAccounts = accounts.filter((a) => a.gbpEquivalent == null).length;
+  const total = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+  const unconvertibleAccounts = accounts.filter((a) => a.baseEquivalent == null).length;
   const currencies = [...new Set(accounts.map((a) => a.currency))].sort((a, b) => {
     // GBP first, then others alphabetical
     if (a === "GBP") return -1;
@@ -50,7 +52,7 @@ export function MobileAccounts() {
   const perCurrency = currencies.map((cur) => {
     const rows = accounts.filter((a) => a.currency === cur);
     const nativeSum = rows.reduce((s, a) => s + a.balance, 0);
-    const gbpSum = rows.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+    const gbpSum = rows.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
     return { currency: cur, rows, nativeSum, gbpSum };
   });
 
@@ -231,7 +233,7 @@ function CurrencyBlocks({
 // same treatment as the WISE pill on the desktop accounts page — because the
 // currency grouping alone can't tell you an ISA from a savings account.
 // Cash rows carry nothing: the default is the norm, we mark the exception.
-type AccountRow = { id: number; name: string; balance: number; gbpEquivalent: number | null; type: "cash" | "investment" | "pension" | "property" | "other" };
+type AccountRow = { id: number; name: string; balance: number; baseEquivalent: number | null; type: "cash" | "investment" | "pension" | "property" | "other" };
 
 const TYPE_MARK: Record<AccountRow["type"], string | null> = {
   cash: null,
@@ -248,7 +250,7 @@ function CurrencySection({
 }) {
   const sym = CURRENCY_SYMBOLS[group.currency] ?? group.currency + " ";
   const isGbp = group.currency === "GBP";
-  const nullCount = group.rows.filter((a) => a.gbpEquivalent == null).length;
+  const nullCount = group.rows.filter((a) => a.baseEquivalent == null).length;
   const allNull = nullCount === group.rows.length && group.rows.length > 0;
   return (
     <div
@@ -274,7 +276,7 @@ function CurrencySection({
               {sym}{nfmt(group.nativeSum)} ≈
             </Text>
             <Text as="span" mono size={13} weight={600} color={allNull ? "var(--ft-dim)" : undefined} numeric>
-              {allNull ? "—" : `£${nfmt(group.gbpSum)}`}
+              {allNull ? "—" : formatMoney(group.gbpSum, getBaseCurrency())}
             </Text>
           </HStack>
         )}
@@ -326,7 +328,7 @@ function CurrencySection({
             </HStack>
             {isGbp ? (
               <Text as="span" mono size={13} numeric>
-                {a.gbpEquivalent == null ? "—" : nfmt(a.gbpEquivalent)}
+                {a.baseEquivalent == null ? "—" : nfmt(a.baseEquivalent)}
               </Text>
             ) : (
               // Foreign row: native amount stays honest on the left;
@@ -335,8 +337,8 @@ function CurrencySection({
                 <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
                   {sym}{nfmt(a.balance)} ≈
                 </Text>
-                <Text as="span" mono size={13} color={a.gbpEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
-                  {a.gbpEquivalent == null ? "—" : `£${nfmt(a.gbpEquivalent)}`}
+                <Text as="span" mono size={13} color={a.baseEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
+                  {formatMoney(a.baseEquivalent, getBaseCurrency())}
                 </Text>
               </HStack>
             )}

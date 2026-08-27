@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useGetDashboard } from "@workspace/api-client-react";
 import { UnconvertibleAccountsBadge } from "@/components/UnconvertibleAccountsBadge";
 import { StaleAsOf } from "@/components/StaleAsOf";
-import { formatGbp, formatPercent } from "@/lib/utils";
+import { formatBaseMoney, formatPercent } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import { useCountUp } from "@/hooks/use-count-up";
 import { CurrencyMark } from "@/components/currency-mark";
@@ -17,13 +17,13 @@ type Period = "7D" | "1M" | "3M" | "ALL";
 type CurrencyGroup = { currency: string; nativeTotal: number; gbpTotal: number; share: number };
 
 function buildCurrencyGroups(
-  accountBreakdown: { currency: string; balance: number; gbpEquivalent: number | null }[],
+  accountBreakdown: { currency: string; balance: number; baseEquivalent: number | null }[],
   totalCash: number
 ): CurrencyGroup[] {
   const map = new Map<string, { native: number; gbp: number }>();
   for (const acct of accountBreakdown) {
     const prev = map.get(acct.currency) ?? { native: 0, gbp: 0 };
-    map.set(acct.currency, { native: prev.native + acct.balance, gbp: prev.gbp + (acct.gbpEquivalent ?? 0) });
+    map.set(acct.currency, { native: prev.native + acct.balance, gbp: prev.gbp + (acct.baseEquivalent ?? 0) });
   }
   return Array.from(map.entries())
     .map(([currency, { native, gbp }]) => ({
@@ -94,7 +94,7 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
             </div>
             {g.currency !== "GBP" && (
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>
-                {formatGbp(g.gbpTotal)}
+                {formatBaseMoney(g.gbpTotal)}
               </div>
             )}
             {/* share bar */}
@@ -124,7 +124,7 @@ function NetWorthTooltip({ active, payload, label }: TooltipProps) {
         {new Date(label).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
       </div>
       <div className="pnum" style={{ fontSize: 12, fontWeight: 700, color: "var(--ft-accent)" }}>
-        {formatGbp(payload[0].value)}
+        {formatBaseMoney(payload[0].value)}
       </div>
     </div>
   );
@@ -151,7 +151,7 @@ function TodayBadge({ history }: { history: HistoryEntry[] }) {
       alignItems: "center",
       gap: 2,
     }}>
-      {isUp ? "▲" : "▼"} <span className="pnum">{formatGbp(Math.abs(delta))}</span> today
+      {isUp ? "▲" : "▼"} <span className="pnum">{formatBaseMoney(Math.abs(delta))}</span> today
     </span>
   );
 }
@@ -184,7 +184,7 @@ function PeriodSelector({ period, setPeriod }: { period: Period; setPeriod: (p: 
 
 function AnimatedGbp({ value }: { value: number }) {
   const animated = useCountUp(value);
-  return <>{formatGbp(animated)}</>;
+  return <>{formatBaseMoney(animated)}</>;
 }
 
 type KpiCellProps = {
@@ -280,7 +280,7 @@ function BreakdownCell({ label, value, color, isLast }: BreakdownCellProps) {
 }
 
 type AccountTableRowProps = {
-  acct: { id: number | string; name: string; currency: string; balance: number; gbpEquivalent: number | null };
+  acct: { id: number | string; name: string; currency: string; balance: number; baseEquivalent: number | null };
   isFirst: boolean;
 };
 
@@ -305,8 +305,8 @@ function AccountTableRow({ acct, isFirst }: AccountTableRowProps) {
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "7px 8px 7px 0", textAlign: "right" }}>
         <span className="pnum">{acct.currency !== "GBP" ? acct.balance.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}</span>
       </td>
-      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: acct.gbpEquivalent == null ? "var(--ft-dim)" : "var(--ft-accent)", textAlign: "right", padding: "7px 0" }}>
-        {acct.gbpEquivalent == null ? "—" : <span className="pnum">{formatGbp(acct.gbpEquivalent)}</span>}
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: acct.baseEquivalent == null ? "var(--ft-dim)" : "var(--ft-accent)", textAlign: "right", padding: "7px 0" }}>
+        {acct.baseEquivalent == null ? "—" : <span className="pnum">{formatBaseMoney(acct.baseEquivalent)}</span>}
       </td>
     </tr>
   );
@@ -343,22 +343,22 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   const currencyGroups = d ? buildCurrencyGroups(d.accountBreakdown, d.totalCash) : [];
 
   const kpis = d ? [
-    { label: "Net Worth",    raw: d.netWorth,                             value: formatGbp(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true },
-    { label: "Total Cash",   raw: null,                                   value: formatGbp(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false },
-    { label: "Portfolio",    raw: null,                                   value: formatGbp(d.portfolio.totalValueGbp), color: d.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlGbp >= 0 ? "+" : ""}${formatGbp(d.portfolio.totalPlGbp)}`, animate: false },
-    { label: "Net Liquidity",raw: null,                                   value: formatGbp(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false },
+    { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true },
+    { label: "Total Cash",   raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false },
+    { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueGbp), color: d.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlGbp >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlGbp)}`, animate: false },
+    { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false },
   ] : [];
 
   const monthStats = d ? [
-    { label: "Income",       value: `+${formatGbp(d.thisMonth.income)}`,   color: "var(--ft-green)" },
-    { label: "Expenses",     value: `-${formatGbp(d.thisMonth.expenses)}`, color: "var(--ft-red)" },
+    { label: "Income",       value: `+${formatBaseMoney(d.thisMonth.income)}`,   color: "var(--ft-green)" },
+    { label: "Expenses",     value: `-${formatBaseMoney(d.thisMonth.expenses)}`, color: "var(--ft-red)" },
     { label: "Savings Rate", value: formatPercent(d.thisMonth.savingsRate), color: d.thisMonth.savingsRate >= 20 ? "var(--ft-green)" : "var(--ft-amber)" },
   ] : [];
 
   const breakdownItems = d ? [
-    { label: "Cash",      value: formatGbp(d.totalCash),                color: "var(--ft-accent)" },
-    { label: "Portfolio", value: formatGbp(d.portfolio.totalValueGbp),  color: "var(--ft-green)" },
-    { label: "Net Debt",  value: formatGbp(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)" },
+    { label: "Cash",      value: formatBaseMoney(d.totalCash),                color: "var(--ft-accent)" },
+    { label: "Portfolio", value: formatBaseMoney(d.portfolio.totalValueGbp),  color: "var(--ft-green)" },
+    { label: "Net Debt",  value: formatBaseMoney(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)" },
   ] : [];
 
   const chartSection = (
@@ -486,7 +486,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
               Total Cash
             </td>
             <td style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-accent)", textAlign: "right", paddingTop: 8 }}>
-              <span className="pnum">{formatGbp(d.totalCash)}</span>
+              <span className="pnum">{formatBaseMoney(d.totalCash)}</span>
             </td>
           </tr>
         </tfoot>

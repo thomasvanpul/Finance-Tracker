@@ -3,7 +3,7 @@ import {
   useListTransactions,
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import {
   BarChart,
   Bar,
@@ -383,7 +383,7 @@ function InvoiceRow({
       >
         {inv.currency !== "GBP"
           ? `${inv.currency} ${inv.amount.toFixed(2)}`
-          : formatGbp(inv.amount)}
+          : formatBaseMoney(inv.amount)}
       </td>
       <td style={{ ...TD, color: "var(--ft-dim)" }}>
         {formatDateShort(inv.issuedDate)}
@@ -510,7 +510,7 @@ function ExpenseRow({
           fontVariantNumeric: "tabular-nums",
         }}
       >
-        {formatGbp(value)}
+        {formatBaseMoney(value)}
       </td>
       <td
         className="pnum"
@@ -640,7 +640,7 @@ function ChartTooltip({
           }}
         >
           <span style={{ color: "var(--ft-dim)" }}>{p.name}</span>
-          <span className="pnum">{formatGbp(p.value)}</span>
+          <span className="pnum">{formatBaseMoney(p.value)}</span>
         </div>
       ))}
     </div>
@@ -1189,7 +1189,7 @@ export default function Business() {
         >
           <KpiCell
             label="Revenue YTD"
-            value={formatGbp(ytdIncome)}
+            value={formatBaseMoney(ytdIncome)}
             sub={`${ytdIncomeTxs.length} income tx`}
             valueColor="var(--ft-green)"
             accentColor="var(--ft-green)"
@@ -1197,14 +1197,14 @@ export default function Business() {
           />
           <KpiCell
             label="Expenses YTD"
-            value={formatGbp(ytdExpenses)}
+            value={formatBaseMoney(ytdExpenses)}
             sub={`${ytdExpenseTxs.length} expense tx`}
             valueColor="var(--ft-red)"
             accentColor="var(--ft-red)"
           />
           <KpiCell
             label="Net Profit"
-            value={formatGbp(ytdProfit)}
+            value={formatBaseMoney(ytdProfit)}
             sub={ytdMargin > 0 ? `${ytdMargin.toFixed(1)}% margin` : undefined}
             valueColor={ytdProfit >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             accentColor={ytdProfit >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
@@ -1231,7 +1231,7 @@ export default function Business() {
           />
           <KpiCell
             label="Tax Estimate (20%)"
-            value={formatGbp(taxEstimate)}
+            value={formatBaseMoney(taxEstimate)}
             sub="Corp. tax on profit"
             valueColor="var(--ft-amber)"
             accentColor="var(--ft-amber)"
@@ -1260,19 +1260,19 @@ export default function Business() {
         >
           <KpiCell
             label="Total Revenue"
-            value={formatGbp(businessIncome)}
+            value={formatBaseMoney(businessIncome)}
             valueColor="var(--ft-green)"
             accentColor="var(--ft-green)"
           />
           <KpiCell
             label="Total Expenses"
-            value={formatGbp(businessExpenses)}
+            value={formatBaseMoney(businessExpenses)}
             valueColor="var(--ft-red)"
             accentColor="var(--ft-red)"
           />
           <KpiCell
             label="Gross Profit"
-            value={formatGbp(grossProfit)}
+            value={formatBaseMoney(grossProfit)}
             valueColor={grossProfit >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             accentColor={grossProfit >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             trend={grossProfit >= 0 ? "up" : "down"}
@@ -1499,14 +1499,14 @@ export default function Business() {
         >
           <KpiCell
             label="Outstanding"
-            value={formatGbp(invoiceStats.outstanding)}
+            value={formatBaseMoney(invoiceStats.outstanding)}
             sub="Sent · awaiting payment"
             valueColor="var(--ft-blue)"
             accentColor="var(--ft-blue)"
           />
           <KpiCell
             label="Overdue"
-            value={formatGbp(invoiceStats.overdue)}
+            value={formatBaseMoney(invoiceStats.overdue)}
             sub={invoiceStats.overdue > 0 ? "Action required" : "All clear"}
             valueColor={
               invoiceStats.overdue > 0 ? "var(--ft-red)" : "var(--ft-dim)"
@@ -1515,7 +1515,7 @@ export default function Business() {
           />
           <KpiCell
             label="Collected"
-            value={formatGbp(invoiceStats.paid)}
+            value={formatBaseMoney(invoiceStats.paid)}
             valueColor="var(--ft-green)"
             accentColor="var(--ft-green)"
           />
@@ -1864,7 +1864,7 @@ export default function Business() {
             <div style={{ background: "var(--ft-surface)", padding: "16px 20px", borderTop: "2px solid var(--ft-blue)" }}>
               <div style={vatLabel}>VAT Collected on Income</div>
               <div className="pnum" style={vatValue}>
-                {formatGbp(vatData.vatCollected)}
+                {formatBaseMoney(vatData.vatCollected)}
               </div>
               <div style={vatSub}>@ 20% standard rate</div>
             </div>
@@ -1873,7 +1873,7 @@ export default function Business() {
             <div style={{ background: "var(--ft-surface)", padding: "16px 20px", borderTop: "2px solid var(--ft-green)" }}>
               <div style={vatLabel}>VAT Reclaimable on Expenses</div>
               <div className="pnum" style={{ ...vatValue, color: "var(--ft-green)" }}>
-                {formatGbp(vatData.vatReclaimable)}
+                {formatBaseMoney(vatData.vatReclaimable)}
               </div>
               <div style={vatSub}>Input tax credit</div>
             </div>
@@ -1897,7 +1897,7 @@ export default function Business() {
                       : "var(--ft-dim)",
                 }}
               >
-                {formatGbp(Math.abs(vatData.netVat))}
+                {formatBaseMoney(Math.abs(vatData.netVat))}
               </div>
               <div
                 style={{

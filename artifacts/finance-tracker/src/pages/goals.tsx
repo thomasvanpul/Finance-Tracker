@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine, Line, Responsive
 import { Skeleton as FtSkeleton } from "@/components/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { Target, Trophy, Check, AlertTriangle, X as XIcon, ChevronDown, ChevronRight } from "lucide-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -458,10 +458,10 @@ function GoalCard({
           </div>
           <div style={{ textAlign: "right" }}>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: done ? "var(--ft-green)" : "var(--ft-text)" }}>
-              {formatGbp(goal.current)}
+              {formatBaseMoney(goal.current)}
             </span>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 2 }}>
-              / {formatGbp(goal.target)}
+              / {formatBaseMoney(goal.target)}
             </span>
           </div>
         </HStack>
@@ -471,11 +471,11 @@ function GoalCard({
         {!done && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-              {formatGbp(remaining)} remaining
+              {formatBaseMoney(remaining)} remaining
             </span>
             {goal.monthlyContribution && (
               <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)" }}>
-                {formatGbp(goal.monthlyContribution)}/mo
+                {formatBaseMoney(goal.monthlyContribution)}/mo
               </span>
             )}
           </div>
@@ -552,7 +552,7 @@ function GoalCard({
                     {projectedMonths < Infinity ? projectedMonths : "—"}
                   </div>
                   <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
-                    at {formatGbp(goalMonthlyRate)}/mo
+                    at {formatBaseMoney(goalMonthlyRate)}/mo
                   </div>
                 </div>
 
@@ -560,7 +560,7 @@ function GoalCard({
                   <div style={{ background: "var(--ft-surface)", padding: "8px 10px" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Required Monthly</div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
-                      {formatGbp(requiredMonthly)}
+                      {formatBaseMoney(requiredMonthly)}
                     </div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
                       to hit deadline
@@ -590,7 +590,7 @@ function GoalCard({
                       <div>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle size={10} /> Stretch</div>
                         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-amber)", marginTop: 2 }}>
-                          need {formatGbp(requiredMonthly - surplusForGoal)}/mo more
+                          need {formatBaseMoney(requiredMonthly - surplusForGoal)}/mo more
                         </div>
                       </div>
                     )}
@@ -598,7 +598,7 @@ function GoalCard({
                       <div>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-red)", display: "flex", alignItems: "center", gap: 4 }}><XIcon size={10} /> Not feasible</div>
                         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", marginTop: 2 }}>
-                          need {formatGbp(requiredMonthly - surplusForGoal)}/mo more
+                          need {formatBaseMoney(requiredMonthly - surplusForGoal)}/mo more
                         </div>
                       </div>
                     )}
@@ -695,7 +695,7 @@ function GoalCard({
                     </HStack>
                     {interestEarned > 0 && (
                       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>
-                        +{formatGbp(interestEarned)} total interest earned
+                        +{formatBaseMoney(interestEarned)} total interest earned
                       </div>
                     )}
                   </div>
@@ -788,7 +788,7 @@ function GoalCard({
                           <CartesianGrid strokeDasharray="2 4" stroke="var(--ft-border)" vertical={false} />
                           <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} tickLine={false} axisLine={{ stroke: "var(--ft-border)" }} />
                           <YAxis width={44} tickFormatter={yTickFormatter} tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} tickLine={false} axisLine={false} />
-                          <Tooltip contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-text)", padding: "4px 8px" }} labelStyle={{ color: "var(--ft-muted)", marginBottom: 2, fontSize: 8 }} formatter={(value: number, name: string) => [formatGbp(value), name === "amount" ? "Saved" : "Projected"]} />
+                          <Tooltip contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 0, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-text)", padding: "4px 8px" }} labelStyle={{ color: "var(--ft-muted)", marginBottom: 2, fontSize: 8 }} formatter={(value: number, name: string) => [formatBaseMoney(value), name === "amount" ? "Saved" : "Projected"]} />
                           <ReferenceLine y={goal.target} stroke="var(--ft-dim)" strokeDasharray="4 3" strokeWidth={1} label={{ value: "TARGET", position: "insideTopRight", fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} />
                           <Area type="monotone" dataKey="amount" stroke={color} strokeWidth={1.5} fill={`${color}22`} dot={false} activeDot={{ r: 3, fill: color, strokeWidth: 0 }} connectNulls={false} />
                           <Line type="monotone" dataKey="projected" stroke="var(--ft-amber)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} activeDot={{ r: 3, fill: "var(--ft-amber)", strokeWidth: 0 }} connectNulls={false} />
@@ -1286,7 +1286,7 @@ export default function Goals() {
             </KpiCell>
 
             <KpiCell label="Total Target" accentTop="var(--ft-text)" sub="across all goals">
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{formatGbp(totalTarget)}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{formatBaseMoney(totalTarget)}</div>
             </KpiCell>
 
             <KpiCell
@@ -1294,7 +1294,7 @@ export default function Goals() {
               accentTop="var(--ft-green)"
               sub={<><span className="pnum">{totalPct.toFixed(1)}%</span> overall</>}
             >
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-green)", lineHeight: 1 }}>{formatGbp(totalSaved)}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-green)", lineHeight: 1 }}>{formatBaseMoney(totalSaved)}</div>
               <div style={{ marginTop: 5, height: 3, background: "var(--ft-border)", overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${totalPct}%`, background: "var(--ft-green)" }} />
               </div>
@@ -1303,13 +1303,13 @@ export default function Goals() {
             <KpiCell
               label="Monthly Surplus"
               accentTop={monthlySurplus >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-              sub={<><span className="pnum">{formatGbp(monthlyIncome)}</span> in · <span className="pnum">{formatGbp(monthlyExpenses)}</span> out</>}
+              sub={<><span className="pnum">{formatBaseMoney(monthlyIncome)}</span> in · <span className="pnum">{formatBaseMoney(monthlyExpenses)}</span> out</>}
             >
               {dashLoading ? (
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--ft-border2)", lineHeight: 1 }}>—</div>
               ) : (
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: monthlySurplus >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
-                  {formatGbp(Math.abs(monthlySurplus))}
+                  {formatBaseMoney(Math.abs(monthlySurplus))}
                   {monthlySurplus < 0 && <span style={{ fontSize: 9, marginLeft: 4, color: "var(--ft-red)" }}>deficit</span>}
                 </div>
               )}
@@ -1328,14 +1328,14 @@ export default function Goals() {
               ) : (
                 <div>
                   <Text as="div" mono size={11} weight={700} color="var(--ft-red)" letterSpacing="0.04em">SHORTFALL</Text>
-                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", marginTop: 2 }}>{formatGbp(shortfall)}/mo short</div>
+                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", marginTop: 2 }}>{formatBaseMoney(shortfall)}/mo short</div>
                 </div>
               )}
             </KpiCell>
 
             <KpiCell label="Monthly Needed" accentTop="var(--ft-accent)" sub="to hit all deadlines">
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-accent)", lineHeight: 1 }}>
-                {combinedMonthlyNeeded > 0 ? formatGbp(combinedMonthlyNeeded) : "—"}
+                {combinedMonthlyNeeded > 0 ? formatBaseMoney(combinedMonthlyNeeded) : "—"}
               </div>
             </KpiCell>
           </div>
@@ -1361,7 +1361,7 @@ export default function Goals() {
               <InsightCard
                 label="Biggest Gap"
                 name={<><GoalIcon emoji={biggestGap.emoji} color={biggestGap.color ?? PRESET_COLORS[0]} size={13} /> {biggestGap.name}</>}
-                value={<span className="pnum" style={{ color: "var(--ft-red)" }}>{formatGbp(biggestGap.target - biggestGap.current)} gap</span>}
+                value={<span className="pnum" style={{ color: "var(--ft-red)" }}>{formatBaseMoney(biggestGap.target - biggestGap.current)} gap</span>}
                 accentColor={biggestGap.color ?? PRESET_COLORS[0]}
               />
             )}
@@ -1561,9 +1561,9 @@ export default function Goals() {
               Portfolio Summary
             </div>
             <Text as="div" mono size={11} color="var(--ft-muted)">
-              <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700, fontSize: 18 }}>{formatGbp(totalSaved)}</span>
+              <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700, fontSize: 18 }}>{formatBaseMoney(totalSaved)}</span>
               <Text as="span" color="var(--ft-dim)"> saved towards </Text>
-              <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700, fontSize: 18 }}>{formatGbp(totalTarget)}</span>
+              <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700, fontSize: 18 }}>{formatBaseMoney(totalTarget)}</span>
               <Text as="span" color="var(--ft-dim)"> total</Text>
             </Text>
             <div style={{ height: 3, background: "var(--ft-border)", marginTop: 8, width: "min(240px, 100%)", overflow: "hidden" }}>
@@ -1578,14 +1578,14 @@ export default function Goals() {
             <div style={{ textAlign: "right" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Monthly Needed</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-accent)" }}>
-                {summaryMonthlyNeeded > 0 ? formatGbp(summaryMonthlyNeeded) : "—"}
+                {summaryMonthlyNeeded > 0 ? formatBaseMoney(summaryMonthlyNeeded) : "—"}
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>across all active goals</div>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Still Needed</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)" }}>
-                {formatGbp(totalGoalsNeeded)}
+                {formatBaseMoney(totalGoalsNeeded)}
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>{unachievedGoals.length} goal{unachievedGoals.length !== 1 ? "s" : ""} in progress</div>
             </div>

@@ -9,7 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { loadPersonaIds } from "@/lib/persona";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -314,7 +314,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, paddingLeft: 8, flexShrink: 0 }}>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)" }}>
-              {formatGbp(toMonthly(sub.amount, sub.frequency))}<Text as="span" mono size={9} weight={400} color="var(--ft-dim)">/mo</Text>
+              {formatBaseMoney(toMonthly(sub.amount, sub.frequency))}<Text as="span" mono size={9} weight={400} color="var(--ft-dim)">/mo</Text>
             </span>
             <HStack gap={4} align="center">
               <button onClick={() => onToggleActive(sub.id)}
@@ -336,7 +336,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
         {priceIncreased && (
           <div className="flex items-center gap-2 px-3 py-1" style={{ borderBottom: "1px solid rgba(230,162,60,0.2)", background: "rgba(230,162,60,0.06)", color: "var(--ft-amber)", fontFamily: "var(--font-mono)", fontSize: 10 }}>
             <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-            <span>↑ {formatGbp(last!.prevAmount!)} → {formatGbp(last!.amount)} (+{pricePct.toFixed(1)}%)</span>
+            <span>↑ {formatBaseMoney(last!.prevAmount!)} → {formatBaseMoney(last!.amount)} (+{pricePct.toFixed(1)}%)</span>
           </div>
         )}
       </div>
@@ -362,7 +362,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
           <span className="pnum">{sub.currency !== "GBP" ? `${sub.currency} ` : ""}{sub.amount.toFixed(2)}</span>
         </div>
         <div style={{ width: 95, minWidth: 95, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
-          <span className="pnum">{formatGbp(toMonthly(sub.amount, sub.frequency))}</span>
+          <span className="pnum">{formatBaseMoney(toMonthly(sub.amount, sub.frequency))}</span>
         </div>
         <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)" }}>
           <span style={{ padding: "1px 4px", borderRadius: 2, fontSize: 8, fontWeight: 700, fontFamily: "var(--font-mono)", background: `${freqColor[sub.frequency]}18`, color: freqColor[sub.frequency], letterSpacing: "0.04em" }}>
@@ -411,7 +411,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
       {priceIncreased && (
         <div className="flex items-center gap-2 px-3 py-1.5 border-b text-xs" style={{ borderColor: "rgba(230,162,60,0.2)", background: "rgba(230,162,60,0.06)", color: "var(--ft-amber)", fontFamily: "var(--font-mono)" }}>
           <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-          <span>Price increased: <span className="pnum">{formatGbp(last!.prevAmount!)}</span> → <span className="pnum">{formatGbp(last!.amount)}</span> (<span className="pnum">+{pricePct.toFixed(1)}% / +{formatGbp(priceDiff)}</span>)</span>
+          <span>Price increased: <span className="pnum">{formatBaseMoney(last!.prevAmount!)}</span> → <span className="pnum">{formatBaseMoney(last!.amount)}</span> (<span className="pnum">+{pricePct.toFixed(1)}% / +{formatBaseMoney(priceDiff)}</span>)</span>
         </div>
       )}
     </div>
@@ -441,7 +441,7 @@ function RenewalRow({ sub }: { sub: Subscription & { daysAway: number | null } }
           </HStack>
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", textAlign: "right", flexShrink: 0 }}>
-          <span className="pnum">{formatGbp(sub.amount)}</span>
+          <span className="pnum">{formatBaseMoney(sub.amount)}</span>
           <div style={{ fontSize: 9, color: "var(--ft-dim)", fontWeight: 400 }}>{FREQ_LABELS[sub.frequency]}</div>
         </div>
       </div>
@@ -467,7 +467,7 @@ function RenewalRow({ sub }: { sub: Subscription & { daysAway: number | null } }
         {hasDate && <DaysUntilBadge dateStr={sub.nextDue!} />}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", textAlign: "right" }}>
-        <span className="pnum">{formatGbp(sub.amount)}</span>{" "}
+        <span className="pnum">{formatBaseMoney(sub.amount)}</span>{" "}
         <Text as="span" size={9} weight={400} color="var(--ft-dim)">{FREQ_LABELS[sub.frequency]}</Text>
       </div>
     </div>
@@ -504,7 +504,7 @@ function ThisWeekRenewalCard({ sub, isLast }: ThisWeekRenewalCardProps) {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>{formatDateShort(sub.nextDue!)}</div>
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)" }}>{formatGbp(sub.amount)}</div>
+        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)" }}>{formatBaseMoney(sub.amount)}</div>
         <DaysUntilBadge dateStr={sub.nextDue!} />
       </div>
     </div>
@@ -534,7 +534,7 @@ function CandidateRow({ c, onConfirm, onDismiss }: CandidateRowProps) {
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium truncate" style={{ color: "var(--ft-text)" }}>{c.description}</div>
         <div className="text-xs mt-0.5" style={{ color: "var(--ft-dim)" }}>
-          avg <span className="pnum">{formatGbp(c.avgAmount)}</span> · {c.transactions.length} charges · {c.monthCount} months
+          avg <span className="pnum">{formatBaseMoney(c.avgAmount)}</span> · {c.transactions.length} charges · {c.monthCount} months
           {c.transactions[0] && ` · last ${formatDateShort(c.transactions[0].date)}`}
         </div>
       </div>
@@ -586,7 +586,7 @@ function CancelCandidateRow({ sub, days, onToggleActive, onDelete }: CancelCandi
           </span>
         </HStack>
       </div>
-      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", flexShrink: 0, whiteSpace: "nowrap" }}>{formatGbp(toMonthly(sub.amount, sub.frequency))}/mo</span>
+      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", flexShrink: 0, whiteSpace: "nowrap" }}>{formatBaseMoney(toMonthly(sub.amount, sub.frequency))}/mo</span>
       <button
         onClick={() => onToggleActive(sub.id)}
         style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", background: "transparent", color: "var(--ft-red)", border: "1px solid var(--ft-red)", cursor: "pointer", flexShrink: 0 }}
@@ -626,13 +626,13 @@ function OpportunityCostCell({ label, val, deposited, gain }: OpportunityCostCel
     >
       <div className="text-xs mb-2" style={{ color: "var(--ft-dim)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em" }}>{label}</div>
       <div className="pnum font-mono font-bold" style={{ fontSize: 20, color: "var(--ft-green)", lineHeight: 1 }}>
-        {formatGbp(Math.round(val))}
+        {formatBaseMoney(Math.round(val))}
       </div>
       <div className="pnum text-xs mt-1.5" style={{ color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>
-        +{formatGbp(Math.round(gain))} growth
+        +{formatBaseMoney(Math.round(gain))} growth
       </div>
       <div className="pnum text-xs mt-0.5" style={{ color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 9 }}>
-        {formatGbp(Math.round(deposited))} deposited
+        {formatBaseMoney(Math.round(deposited))} deposited
       </div>
     </div>
   );
@@ -1166,17 +1166,17 @@ export default function Subscriptions() {
       }}>
         <div style={{ background: "var(--ft-surface)", padding: "12px 20px", borderTop: "2px solid var(--ft-blue)" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Monthly Cost</div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--ft-blue)", lineHeight: 1 }}>{formatGbp(totalMonthly)}</div>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--ft-blue)", lineHeight: 1 }}>{formatBaseMoney(totalMonthly)}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>{activeSubs.length} active subscription{activeSubs.length !== 1 ? "s" : ""}</div>
         </div>
         <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderTop: "2px solid var(--ft-accent)" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Annual Cost</div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-accent)", lineHeight: 1 }}>{formatGbp(totalAnnual)}</div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>{formatGbp(totalMonthly * 12)} projected</div>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-accent)", lineHeight: 1 }}>{formatBaseMoney(totalAnnual)}</div>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>{formatBaseMoney(totalMonthly * 12)} projected</div>
         </div>
         <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderTop: `2px solid ${couldSave > 0 ? "var(--ft-amber)" : "var(--ft-green)"}` }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Could Save / mo</div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: couldSave > 0 ? "var(--ft-amber)" : "var(--ft-green)", lineHeight: 1 }}>{formatGbp(couldSave)}</div>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: couldSave > 0 ? "var(--ft-amber)" : "var(--ft-green)", lineHeight: 1 }}>{formatBaseMoney(couldSave)}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
             {couldSave > 0 ? `${cancelCandidates.length} inactive >60d` : "all subs active"}
           </div>
@@ -1188,7 +1188,7 @@ export default function Subscriptions() {
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
             {renewingThisWeek.length > 0
-              ? formatGbp(renewingThisWeek.reduce((s, sub) => s + sub.amount, 0)) + " due"
+              ? formatBaseMoney(renewingThisWeek.reduce((s, sub) => s + sub.amount, 0)) + " due"
               : "nothing due"}
           </div>
         </div>
@@ -1198,7 +1198,7 @@ export default function Subscriptions() {
             {upcomingRenewals.length}
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
-            {formatGbp(upcomingRenewals.reduce((s, sub) => s + sub.amount, 0))} total
+            {formatBaseMoney(upcomingRenewals.reduce((s, sub) => s + sub.amount, 0))} total
           </div>
         </div>
       </div>
@@ -1212,7 +1212,7 @@ export default function Subscriptions() {
               COMING UP THIS WEEK — {renewingThisWeek.length} renewal{renewingThisWeek.length !== 1 ? "s" : ""}
             </Text>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: "auto" }}>
-              {formatGbp(renewingThisWeek.reduce((s, sub) => s + sub.amount, 0))} due
+              {formatBaseMoney(renewingThisWeek.reduce((s, sub) => s + sub.amount, 0))} due
             </span>
           </div>
           <HStack gap={0} wrap>
@@ -1290,7 +1290,7 @@ export default function Subscriptions() {
             <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-raised)" }}>
               <TrendingUp className="w-3.5 h-3.5" style={{ color: "var(--ft-green)" }} />
               <span className="text-xs font-bold uppercase tracking-wide font-mono" style={{ color: "var(--ft-green)" }}>
-                Opportunity Cost — invest <span className="pnum">{formatGbp(Math.round(couldSave * 100) / 100)}</span>/mo instead
+                Opportunity Cost — invest <span className="pnum">{formatBaseMoney(Math.round(couldSave * 100) / 100)}</span>/mo instead
               </span>
               <span className="text-xs" style={{ color: "var(--ft-dim)" }}>at 7% annual growth</span>
             </div>
@@ -1440,7 +1440,7 @@ export default function Subscriptions() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 14px 5px 11px", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)", borderTop: "1px solid var(--ft-border)", borderLeft: `3px solid ${group.color}` }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: group.color }}>{group.label}</span>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-                  {group.subs.length} sub{group.subs.length !== 1 ? "s" : ""} · {formatGbp(group.subs.reduce((s, sub) => s + sub.amount, 0))} total
+                  {group.subs.length} sub{group.subs.length !== 1 ? "s" : ""} · {formatBaseMoney(group.subs.reduce((s, sub) => s + sub.amount, 0))} total
                 </span>
               </div>
               {/* Column headers — desktop only */}
@@ -1476,7 +1476,7 @@ export default function Subscriptions() {
                       {pieData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                     </Pie>
                     <Tooltip
-                      formatter={(v: number) => [formatGbp(v), "Monthly"]}
+                      formatter={(v: number) => [formatBaseMoney(v), "Monthly"]}
                       contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11 }}
                     />
                   </PieChart>
@@ -1507,7 +1507,7 @@ export default function Subscriptions() {
                 <YAxis tick={{ fill: "var(--ft-dim)", fontSize: 10 }} axisLine={false} tickLine={false}
                   tickFormatter={v => `£${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}`} width={44} />
                 <Tooltip
-                  formatter={(v: number) => [formatGbp(v), "Cost"]}
+                  formatter={(v: number) => [formatBaseMoney(v), "Cost"]}
                   contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 11 }}
                 />
                 <Area type="monotone" dataKey="cost" stroke="var(--ft-green)" strokeWidth={2} fill="url(#subAreaGrad)" dot={false} />

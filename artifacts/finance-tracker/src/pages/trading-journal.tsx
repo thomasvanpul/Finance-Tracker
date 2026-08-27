@@ -22,7 +22,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
@@ -308,7 +308,7 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
     <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "6px 10px" }}>
       <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>{label}</div>
       <div style={{ ...mono, fontSize: 12, color: val >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-        <span className="pnum">{val >= 0 ? "+" : ""}{formatGbp(val)}</span>
+        <span className="pnum">{val >= 0 ? "+" : ""}{formatBaseMoney(val)}</span>
       </div>
     </div>
   );
@@ -321,7 +321,7 @@ function PnlBarTooltip({ active, payload, label }: { active?: boolean; payload?:
     <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "6px 10px" }}>
       <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>{label}</div>
       <div style={{ ...mono, fontSize: 12, color: val >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-        <span className="pnum">{val >= 0 ? "+" : ""}{formatGbp(val)}</span>
+        <span className="pnum">{val >= 0 ? "+" : ""}{formatBaseMoney(val)}</span>
       </div>
     </div>
   );
@@ -334,7 +334,7 @@ function BarTooltip({ active, payload, label }: { active?: boolean; payload?: { 
       <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>{label}</div>
       {payload.map((p) => (
         <div key={p.name} style={{ ...mono, fontSize: 11, color: "var(--ft-text)" }}>
-          {p.name}: <span className="pnum">{p.name === "Win %" ? p.value.toFixed(1) + "%" : formatGbp(p.value)}</span>
+          {p.name}: <span className="pnum">{p.name === "Win %" ? p.value.toFixed(1) + "%" : formatBaseMoney(p.value)}</span>
         </div>
       ))}
     </div>
@@ -517,7 +517,7 @@ function TradeCallouts({ closed }: { closed: Trade[] }) {
               <span style={{ ...mono, fontSize: 14, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.02em" }}>{trade.ticker}</span>
               <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{fmtDate(trade.closeDate ?? trade.date)} · {trade.setup}</span>
               <span style={{ ...mono, fontSize: 14, fontWeight: 700, color }}>
-                <span className="pnum">{calcPnl(trade) >= 0 ? "+" : ""}{formatGbp(calcPnl(trade))}</span>
+                <span className="pnum">{calcPnl(trade) >= 0 ? "+" : ""}{formatBaseMoney(calcPnl(trade))}</span>
               </span>
               <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", gridColumn: "1 / -1" }}>
                 <span className="pnum">{fmtPrice(trade.entryPrice)}</span> → <span className="pnum">{trade.exitPrice != null ? fmtPrice(trade.exitPrice) : "—"}</span> · <span className="pnum">{trade.quantity.toLocaleString()}</span> {trade.direction.toUpperCase()}
@@ -573,7 +573,7 @@ function PnlBarsChart({ closed }: { closed: Trade[] }) {
               tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v: number) => (v >= 0 ? "+" : "") + formatGbp(v)}
+              tickFormatter={(v: number) => (v >= 0 ? "+" : "") + formatBaseMoney(v)}
               width={72}
             />
             <Tooltip content={<PnlBarTooltip />} />
@@ -867,7 +867,7 @@ function SetupRow({ s }: SetupRowProps) {
         <span className="pnum">{s.winPct.toFixed(1)}%</span>
       </td>
       <td style={{ ...td, textAlign: "right", color: s.avgPnl > 0 ? "var(--ft-green)" : s.avgPnl < 0 ? "var(--ft-red)" : "var(--ft-dim)", fontWeight: 600 }}>
-        <span className="pnum">{s.avgPnl >= 0 ? "+" : ""}{formatGbp(s.avgPnl)}</span>
+        <span className="pnum">{s.avgPnl >= 0 ? "+" : ""}{formatBaseMoney(s.avgPnl)}</span>
       </td>
     </tr>
   );
@@ -912,7 +912,7 @@ function MonthCell({ m }: MonthCellProps) {
       {hasData ? (
         <>
           <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: m.pnl > 0 ? "var(--ft-green)" : m.pnl < 0 ? "var(--ft-red)" : "var(--ft-dim)", marginBottom: 4, fontVariantNumeric: "tabular-nums" }}>
-            <span className="pnum">{m.pnl >= 0 ? "+" : ""}{formatGbp(m.pnl)}</span>
+            <span className="pnum">{m.pnl >= 0 ? "+" : ""}{formatBaseMoney(m.pnl)}</span>
           </div>
           <HStack gap={8}>
             <div>
@@ -1242,7 +1242,7 @@ export default function TradingJournal() {
       >
         <KpiCell
           label="Total P&L"
-          value={stats.totalTrades > 0 ? (stats.totalPnl >= 0 ? "+" : "") + formatGbp(stats.totalPnl) : "—"}
+          value={stats.totalTrades > 0 ? (stats.totalPnl >= 0 ? "+" : "") + formatBaseMoney(stats.totalPnl) : "—"}
           color={stats.totalPnl > 0 ? "var(--ft-green)" : stats.totalPnl < 0 ? "var(--ft-red)" : undefined}
           hero
         />
@@ -1261,12 +1261,12 @@ export default function TradingJournal() {
         />
         <KpiCell
           label="Avg Win"
-          value={stats.avgWin > 0 ? formatGbp(stats.avgWin) : "—"}
+          value={stats.avgWin > 0 ? formatBaseMoney(stats.avgWin) : "—"}
           color="var(--ft-green)"
         />
         <KpiCell
           label="Avg Loss"
-          value={stats.avgLoss > 0 ? formatGbp(-stats.avgLoss) : "—"}
+          value={stats.avgLoss > 0 ? formatBaseMoney(-stats.avgLoss) : "—"}
           color="var(--ft-red)"
         />
         <KpiCell
@@ -1277,7 +1277,7 @@ export default function TradingJournal() {
         />
         <KpiCell
           label="Max Drawdown"
-          value={riskMetrics.maxDrawdown > 0 ? formatGbp(-riskMetrics.maxDrawdown) : "—"}
+          value={riskMetrics.maxDrawdown > 0 ? formatBaseMoney(-riskMetrics.maxDrawdown) : "—"}
           color={riskMetrics.maxDrawdown > 0 ? "var(--ft-red)" : "var(--ft-dim)"}
           sub="peak-to-trough"
         />
@@ -1294,7 +1294,7 @@ export default function TradingJournal() {
         <StreakCell streak={riskMetrics.streak} />
         <KpiCell
           label="Expectancy"
-          value={stats.totalTrades > 0 ? formatGbp(stats.expectancy) : "—"}
+          value={stats.totalTrades > 0 ? formatBaseMoney(stats.expectancy) : "—"}
           color={stats.expectancy >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
           sub="per trade"
         />
@@ -1758,7 +1758,7 @@ export default function TradingJournal() {
                       tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(v: number) => (v >= 0 ? "+" : "") + formatGbp(v)}
+                      tickFormatter={(v: number) => (v >= 0 ? "+" : "") + formatBaseMoney(v)}
                       width={70}
                     />
                     <Tooltip content={<ChartTooltip />} />

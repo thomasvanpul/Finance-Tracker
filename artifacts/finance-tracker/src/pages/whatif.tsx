@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { useGetDashboard, useListBudgets, useListInvestments, useGetInvestmentSummary } from "@workspace/api-client-react";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
@@ -342,12 +342,12 @@ function PositionImpactRow({ pos }: PositionImpactRowProps) {
       onTouchCancel={() => setHov(false)}
     >
       <td style={{ padding: "6px 12px", fontWeight: 700, color: "var(--ft-text)", ...mono }}>{pos.ticker}</td>
-      <td style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-muted)", ...mono }}><span className="pnum">{formatGbp(pos.value)}</span></td>
+      <td style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-muted)", ...mono }}><span className="pnum">{formatBaseMoney(pos.value)}</span></td>
       <td style={{ padding: "6px 12px", textAlign: "right", color: pos.delta >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600, ...mono }}>
-        <span className="pnum">{pos.delta >= 0 ? "+" : ""}{formatGbp(pos.delta)}</span>
+        <span className="pnum">{pos.delta >= 0 ? "+" : ""}{formatBaseMoney(pos.delta)}</span>
       </td>
       <td style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-text)", ...mono }}>
-        <span className="pnum">{formatGbp(pos.after)}</span>
+        <span className="pnum">{formatBaseMoney(pos.after)}</span>
       </td>
     </tr>
   );
@@ -381,16 +381,16 @@ function AmortTableRow({ row, isLastRow }: AmortRowProps) {
         <span className="pnum">{row.month}</span>
       </td>
       <td style={{ ...mono, fontSize: 10, color: "var(--ft-muted)", padding: "6px 10px", textAlign: "right" }}>
-        <span className="pnum">{formatGbp(row.payment)}</span>
+        <span className="pnum">{formatBaseMoney(row.payment)}</span>
       </td>
       <td style={{ ...mono, fontSize: 10, color: "var(--ft-red)", padding: "6px 10px", textAlign: "right" }}>
-        <span className="pnum">{formatGbp(row.interest)}</span>
+        <span className="pnum">{formatBaseMoney(row.interest)}</span>
       </td>
       <td style={{ ...mono, fontSize: 10, color: "var(--ft-green)", padding: "6px 10px", textAlign: "right" }}>
-        <span className="pnum">{formatGbp(row.principal)}</span>
+        <span className="pnum">{formatBaseMoney(row.principal)}</span>
       </td>
       <td style={{ ...mono, fontSize: 10, fontWeight: isLastRow ? 700 : 400, color: isLastRow ? "var(--ft-accent)" : "var(--ft-text)", padding: "6px 10px", textAlign: "right" }}>
-        <span className="pnum">{formatGbp(row.balance)}</span>
+        <span className="pnum">{formatBaseMoney(row.balance)}</span>
       </td>
     </tr>
   );
@@ -426,7 +426,7 @@ function TimeTargetRow({ target, before, after, yearsToTarget, currentSurplus, n
       onTouchCancel={() => setHov(false)}
     >
       <td style={{ ...mono, fontSize: 10, color: "var(--ft-accent)", fontWeight: 700, padding: "7px 8px" }}>
-        <span className="pnum">{formatGbp(target)}</span>
+        <span className="pnum">{formatBaseMoney(target)}</span>
       </td>
       <td style={{ ...mono, fontSize: 10, color: "var(--ft-muted)", padding: "7px 8px" }}>
         <span className="pnum">{yearsToTarget(Math.max(currentSurplus, 0), target)}</span>
@@ -477,7 +477,7 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
             max={20000}
             step={50}
             onChange={setCurrentIncome}
-            display={formatGbp(currentIncome)}
+            display={formatBaseMoney(currentIncome)}
           />
           <SliderRow
             label="New Monthly Income"
@@ -486,7 +486,7 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
             max={25000}
             step={50}
             onChange={setNewIncome}
-            display={formatGbp(newIncome)}
+            display={formatBaseMoney(newIncome)}
           />
         </div>
 
@@ -496,13 +496,13 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 10, letterSpacing: "0.1em", textTransform: "uppercase" as const }}>Surplus Impact</div>
               <HStack gap={20} wrap>
                 <BigNumber
-                  value={`${monthlySurplusDelta >= 0 ? "+" : ""}${formatGbp(monthlySurplusDelta)}`}
+                  value={`${monthlySurplusDelta >= 0 ? "+" : ""}${formatBaseMoney(monthlySurplusDelta)}`}
                   label="Monthly Surplus Change"
                   color={monthlySurplusDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
                   size={20}
                 />
                 <BigNumber
-                  value={`${annualSavingDelta >= 0 ? "+" : ""}${formatGbp(annualSavingDelta)}`}
+                  value={`${annualSavingDelta >= 0 ? "+" : ""}${formatBaseMoney(annualSavingDelta)}`}
                   label="Annual Saving Change"
                   color={annualSavingDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
                   size={20}
@@ -516,23 +516,23 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
       <CompareTable rows={[
         {
           label: "Monthly Income",
-          before: formatGbp(currentIncome),
-          after: formatGbp(newIncome),
-          diff: `${newIncome >= currentIncome ? "+" : ""}${formatGbp(newIncome - currentIncome)}`,
+          before: formatBaseMoney(currentIncome),
+          after: formatBaseMoney(newIncome),
+          diff: `${newIncome >= currentIncome ? "+" : ""}${formatBaseMoney(newIncome - currentIncome)}`,
           diffColor: newIncome >= currentIncome ? "var(--ft-green)" : "var(--ft-red)",
         },
         {
           label: "Monthly Surplus",
-          before: formatGbp(currentSurplus),
-          after: formatGbp(newSurplus),
-          diff: `${newSurplus >= currentSurplus ? "+" : ""}${formatGbp(newSurplus - currentSurplus)}`,
+          before: formatBaseMoney(currentSurplus),
+          after: formatBaseMoney(newSurplus),
+          diff: `${newSurplus >= currentSurplus ? "+" : ""}${formatBaseMoney(newSurplus - currentSurplus)}`,
           diffColor: newSurplus >= currentSurplus ? "var(--ft-green)" : "var(--ft-red)",
         },
         {
           label: "Annual Saving",
-          before: formatGbp(Math.max(currentSurplus, 0) * 12),
-          after: formatGbp(Math.max(newSurplus, 0) * 12),
-          diff: `${annualSavingDelta >= 0 ? "+" : ""}${formatGbp(annualSavingDelta * 12)}`,
+          before: formatBaseMoney(Math.max(currentSurplus, 0) * 12),
+          after: formatBaseMoney(Math.max(newSurplus, 0) * 12),
+          diff: `${annualSavingDelta >= 0 ? "+" : ""}${formatBaseMoney(annualSavingDelta * 12)}`,
           diffColor: annualSavingDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)",
         },
       ]} />
@@ -599,12 +599,12 @@ function ExpenseCategoryRow({ c, i, onCutChange }: ExpenseCategoryRowProps) {
           {c.label}
         </label>
         <div style={{ ...mono, fontSize: 10 }}>
-          <span style={{ color: "var(--ft-muted)" }}><span className="pnum">{formatGbp(c.base)}</span></span>
+          <span style={{ color: "var(--ft-muted)" }}><span className="pnum">{formatBaseMoney(c.base)}</span></span>
           {c.cut > 0 && (
             <>
               <span style={{ color: "var(--ft-dim)", margin: "0 4px" }}>→</span>
               <span style={{ color: "var(--ft-green)", fontWeight: 700 }}>
-                <span className="pnum">{formatGbp(c.base * (1 - c.cut / 100))}</span>
+                <span className="pnum">{formatBaseMoney(c.base * (1 - c.cut / 100))}</span>
               </span>
               <span style={{ color: "var(--ft-green)", fontSize: 8, marginLeft: 4 }}>
                 (-<span className="pnum">{c.cut}</span>%)
@@ -746,9 +746,9 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
             <>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 10 }}>IMPACT SUMMARY</div>
               <VStack gap={12}>
-                <BigNumber value={formatGbp(totalMonthlySaving)} label="Monthly Saving" color="var(--ft-green)" size={28} />
-                <BigNumber value={formatGbp(annualSaving)} label="Annual Saving" color="var(--ft-green)" size={20} />
-                <BigNumber value={formatGbp(tenYearWealth)} label="10-Year Wealth at 6%" color="var(--ft-accent)" size={18} />
+                <BigNumber value={formatBaseMoney(totalMonthlySaving)} label="Monthly Saving" color="var(--ft-green)" size={28} />
+                <BigNumber value={formatBaseMoney(annualSaving)} label="Annual Saving" color="var(--ft-green)" size={20} />
+                <BigNumber value={formatBaseMoney(tenYearWealth)} label="10-Year Wealth at 6%" color="var(--ft-accent)" size={18} />
               </VStack>
             </>
           )}
@@ -769,7 +769,7 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
                 >
                   <XAxis dataKey="name" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `£${v}`} width={40} />
-                  <Tooltip formatter={(v: number) => [formatGbp(v), "Monthly saving"]} contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }} />
+                  <Tooltip formatter={(v: number) => [formatBaseMoney(v), "Monthly saving"]} contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }} />
                   <Bar dataKey="saving" fill="var(--ft-green)" radius={[1, 1, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -810,7 +810,7 @@ function LumpSumTab() {
 
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         <div>
-          <SliderRow label="Lump Sum Amount" value={principal} min={100} max={100000} step={100} onChange={setPrincipal} display={formatGbp(principal)} />
+          <SliderRow label="Lump Sum Amount" value={principal} min={100} max={100000} step={100} onChange={setPrincipal} display={formatBaseMoney(principal)} />
           <SliderRow label="Annual Return Rate" value={annualRate} min={1} max={20} step={0.5} onChange={setAnnualRate} display={`${annualRate}%`} />
           <SliderRow label="Investment Horizon (years)" value={years} min={1} max={40} step={1} onChange={setYears} display={`${years} yrs`} />
         </div>
@@ -822,12 +822,12 @@ function LumpSumTab() {
                 FV = P × (1 + r)^n
               </div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-border2)", marginBottom: 14 }}>
-                P=<span className="pnum">{formatGbp(principal)}</span>, r=<span className="pnum">{annualRate}%</span>, n=<span className="pnum">{years}</span>yr
+                P=<span className="pnum">{formatBaseMoney(principal)}</span>, r=<span className="pnum">{annualRate}%</span>, n=<span className="pnum">{years}</span>yr
               </div>
               <VStack gap={12}>
-                <BigNumber value={formatGbp(Math.round(fv))} label="Future Value" color="var(--ft-accent)" size={28} />
-                <BigNumber value={`+${formatGbp(Math.round(interestEarned))}`} label="Total Interest Earned" color="var(--ft-green)" size={20} />
-                <BigNumber value={formatGbp(Math.round(monthlyEq))} label="Monthly Equivalent" color="var(--ft-cyan)" size={16} />
+                <BigNumber value={formatBaseMoney(Math.round(fv))} label="Future Value" color="var(--ft-accent)" size={28} />
+                <BigNumber value={`+${formatBaseMoney(Math.round(interestEarned))}`} label="Total Interest Earned" color="var(--ft-green)" size={20} />
+                <BigNumber value={formatBaseMoney(Math.round(monthlyEq))} label="Monthly Equivalent" color="var(--ft-cyan)" size={16} />
               </VStack>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 6 }}>
                 Monthly equivalent = what you'd need to invest monthly at the same rate to get the same result
@@ -846,7 +846,7 @@ function LumpSumTab() {
             <XAxis dataKey="year" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }} tickLine={false} axisLine={false} width={44} />
             <Tooltip
-              formatter={(v: number, name: string) => [formatGbp(v), name === "principal" ? "Principal" : "Interest"]}
+              formatter={(v: number, name: string) => [formatBaseMoney(v), name === "principal" ? "Principal" : "Interest"]}
               contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
             />
             <Legend iconType="square" iconSize={8} wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }} />
@@ -897,10 +897,10 @@ function DebtPayoffTab() {
 
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         <div>
-          <SliderRow label="Loan Amount" value={loanAmount} min={500} max={100000} step={500} onChange={setLoanAmount} display={formatGbp(loanAmount)} />
+          <SliderRow label="Loan Amount" value={loanAmount} min={500} max={100000} step={500} onChange={setLoanAmount} display={formatBaseMoney(loanAmount)} />
           <SliderRow label="Interest Rate (APR %)" value={apr} min={0.5} max={40} step={0.5} onChange={setApr} display={`${apr}%`} />
-          <SliderRow label="Monthly Payment" value={monthlyPayment} min={minPay} max={Math.max(loanAmount / 6, minPay + 500)} step={10} onChange={setMonthlyPayment} display={formatGbp(effectivePayment)} />
-          <SliderRow label="Extra Payment /month" value={extraPayment} min={0} max={2000} step={10} onChange={setExtraPayment} display={extraPayment > 0 ? `+${formatGbp(extraPayment)}` : "£0"} />
+          <SliderRow label="Monthly Payment" value={monthlyPayment} min={minPay} max={Math.max(loanAmount / 6, minPay + 500)} step={10} onChange={setMonthlyPayment} display={formatBaseMoney(effectivePayment)} />
+          <SliderRow label="Extra Payment /month" value={extraPayment} min={0} max={2000} step={10} onChange={setExtraPayment} display={extraPayment > 0 ? `+${formatBaseMoney(extraPayment)}` : "£0"} />
         </div>
 
         <div>
@@ -908,20 +908,20 @@ function DebtPayoffTab() {
             <>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 12 }}>MINIMUM PAYMENT</div>
               <div style={{ ...mono, fontSize: 11, color: "var(--ft-amber)", marginBottom: 12 }}>
-                <span className="pnum">{formatGbp(minPay)}</span>/mo min to cover interest
+                <span className="pnum">{formatBaseMoney(minPay)}</span>/mo min to cover interest
               </div>
               <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <BigNumber value={`${baseMonths} mo`} label="Months to Payoff" color="var(--ft-text)" size={22} />
-                <BigNumber value={formatGbp(Math.round(baseTotalInterest))} label="Total Interest" color="var(--ft-red)" size={22} />
+                <BigNumber value={formatBaseMoney(Math.round(baseTotalInterest))} label="Total Interest" color="var(--ft-red)" size={22} />
               </div>
               {extraPayment > 0 && (
                 <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 12 }}>
                   <div style={{ ...mono, fontSize: 9, color: "var(--ft-green)", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 8 }}>
-                    With +<span className="pnum">{formatGbp(extraPayment)}</span>/mo
+                    With +<span className="pnum">{formatBaseMoney(extraPayment)}</span>/mo
                   </div>
                   <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <BigNumber value={`-${monthsSaved} mo`} label="Months Saved" color="var(--ft-green)" />
-                    <BigNumber value={`-${formatGbp(Math.round(interestSaved))}`} label="Interest Saved" color="var(--ft-green)" />
+                    <BigNumber value={`-${formatBaseMoney(Math.round(interestSaved))}`} label="Interest Saved" color="var(--ft-green)" />
                   </div>
                 </div>
               )}
@@ -940,7 +940,7 @@ function DebtPayoffTab() {
               <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} label={{ value: "Month", position: "insideBottomRight", fill: "var(--ft-dim)", fontSize: 8, fontFamily: "var(--font-mono)" }} />
               <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }} tickLine={false} axisLine={false} width={44} />
               <Tooltip
-                formatter={(v: number, name: string) => [formatGbp(v), name === "baseBalance" ? "Min payment" : `+${formatGbp(extraPayment)}/mo`]}
+                formatter={(v: number, name: string) => [formatBaseMoney(v), name === "baseBalance" ? "Min payment" : `+${formatBaseMoney(extraPayment)}/mo`]}
                 contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
               />
               <Line type="monotone" dataKey="baseBalance" stroke="var(--ft-red)" strokeWidth={1.5} dot={false} name="baseBalance" />
@@ -1030,10 +1030,10 @@ function InflationYearRow({ y, row, amount }: InflationYearRowProps) {
       onTouchCancel={() => setHov(false)}
     >
       <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}><span className="pnum">{y}</span></div>
-      <div style={{ ...mono, fontSize: 10, color: "var(--ft-red)", textAlign: "right" }}><span className="pnum">{formatGbp(row.realValue)}</span></div>
-      <div style={{ ...mono, fontSize: 10, color: "var(--ft-amber)", textAlign: "right" }}><span className="pnum">{formatGbp(row.futureNeeded)}</span></div>
-      <div style={{ ...mono, fontSize: 10, color: "var(--ft-green)", textAlign: "right" }}><span className="pnum">{formatGbp(row.investedValue)}</span></div>
-      <div style={{ ...mono, fontSize: 10, color: row.investedReal > amount ? "var(--ft-cyan)" : "var(--ft-red)", textAlign: "right" }}><span className="pnum">{formatGbp(row.investedReal)}</span></div>
+      <div style={{ ...mono, fontSize: 10, color: "var(--ft-red)", textAlign: "right" }}><span className="pnum">{formatBaseMoney(row.realValue)}</span></div>
+      <div style={{ ...mono, fontSize: 10, color: "var(--ft-amber)", textAlign: "right" }}><span className="pnum">{formatBaseMoney(row.futureNeeded)}</span></div>
+      <div style={{ ...mono, fontSize: 10, color: "var(--ft-green)", textAlign: "right" }}><span className="pnum">{formatBaseMoney(row.investedValue)}</span></div>
+      <div style={{ ...mono, fontSize: 10, color: row.investedReal > amount ? "var(--ft-cyan)" : "var(--ft-red)", textAlign: "right" }}><span className="pnum">{formatBaseMoney(row.investedReal)}</span></div>
     </div>
   );
 }
@@ -1071,7 +1071,7 @@ function InflationTab() {
       <SectionTitle label="Inflation Impact Calculator" accentColor="var(--ft-amber)" />
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
         <div>
-          <SliderRow label="Lump Sum Today" value={amount} min={1000} max={500000} step={1000} onChange={setAmount} display={formatGbp(amount)} />
+          <SliderRow label="Lump Sum Today" value={amount} min={1000} max={500000} step={1000} onChange={setAmount} display={formatBaseMoney(amount)} />
           <SliderRow label="Inflation Rate (%/yr)" value={inflationRate} min={0} max={15} step={0.1} onChange={setInflationRate} display={`${inflationRate.toFixed(1)}%`} />
           <SliderRow label="Investment Return (%/yr)" value={investReturn} min={0} max={20} step={0.1} onChange={setInvestReturn} display={`${investReturn.toFixed(1)}%`} />
           <SliderRow label="Time Horizon (yrs)" value={years} min={1} max={50} step={1} onChange={setYears} display={`${years} yrs`} />
@@ -1080,25 +1080,25 @@ function InflationTab() {
           <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
             <InflationKpiTile
               label="Real value of cash in hand"
-              value={formatGbp(finalReal)}
+              value={formatBaseMoney(finalReal)}
               color="var(--ft-red)"
-              note={`Lost ${formatGbp(amount - finalReal)} to inflation`}
+              note={`Lost ${formatBaseMoney(amount - finalReal)} to inflation`}
             />
             <InflationKpiTile
               label="$ needed for same purchasing power"
-              value={formatGbp(finalNeeded)}
+              value={formatBaseMoney(finalNeeded)}
               color="var(--ft-amber)"
               note={`${inflationRate.toFixed(1)}%/yr price rise`}
             />
             <InflationKpiTile
               label="Invested (nominal)"
-              value={formatGbp(finalInvested)}
+              value={formatBaseMoney(finalInvested)}
               color="var(--ft-green)"
               note={`${investReturn.toFixed(1)}%/yr gross return`}
             />
             <InflationKpiTile
               label="Invested (real, inflation-adj)"
-              value={formatGbp(finalInvestedReal)}
+              value={formatBaseMoney(finalInvestedReal)}
               color={finalInvestedReal > amount ? "var(--ft-cyan)" : "var(--ft-red)"}
               note={`Real return: ${realReturn.toFixed(1)}%/yr`}
             />
@@ -1126,7 +1126,7 @@ function InflationTab() {
               />
               <Tooltip
                 contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10 }}
-                formatter={(v: number, name: string) => [formatGbp(v), name]}
+                formatter={(v: number, name: string) => [formatBaseMoney(v), name]}
               />
               <Line type="monotone" dataKey="realValue" name="Real value (cash)" stroke="var(--ft-red)" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="investedValue" name="Invested (nominal)" stroke="var(--ft-green)" strokeWidth={2} dot={false} />
@@ -1276,7 +1276,7 @@ function PortfolioShockTab() {
     <div className="space-y-6">
       <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 16 }}>
         <div style={{ ...mono, fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12, borderLeft: "3px solid var(--ft-blue)", paddingLeft: 8 }}>
-          Current Portfolio: <span className="pnum">{formatGbp(totalValue)}</span> · Select a scenario
+          Current Portfolio: <span className="pnum">{formatBaseMoney(totalValue)}</span> · Select a scenario
         </div>
         <HStack gap={8} wrap marginBottom={12}>
           {MARKET_SCENARIOS.map((s, i) => (
@@ -1305,12 +1305,12 @@ function PortfolioShockTab() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
           <PortfolioKpiTile
             label="Portfolio Before"
-            value={formatGbp(totalValue)}
+            value={formatBaseMoney(totalValue)}
             color="var(--ft-text)"
           />
           <PortfolioKpiTile
             label={`Delta — ${activeScenario.label}`}
-            value={`${activeScenario.delta >= 0 ? "+" : ""}${formatGbp(activeScenario.delta)}`}
+            value={`${activeScenario.delta >= 0 ? "+" : ""}${formatBaseMoney(activeScenario.delta)}`}
             color={activeScenario.delta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             borderColor={activeScenario.delta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             topBorderColor={activeScenario.delta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
@@ -1318,7 +1318,7 @@ function PortfolioShockTab() {
           />
           <PortfolioKpiTile
             label="Portfolio After"
-            value={formatGbp(activeScenario.after)}
+            value={formatBaseMoney(activeScenario.after)}
             color={activeScenario.after >= totalValue ? "var(--ft-green)" : "var(--ft-red)"}
           />
         </div>
@@ -1352,7 +1352,7 @@ function PortfolioShockTab() {
               <XAxis dataKey="ticker" tick={{ fontSize: 10, fill: "var(--ft-dim)" }} />
               <YAxis tick={{ fontSize: 9, fill: "var(--ft-dim)" }} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)} width={48} />
               <ReferenceLine y={0} stroke="rgba(99,110,123,0.4)" />
-              <Tooltip contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 10, fontFamily: "var(--font-mono)" }} formatter={(v: number) => [`${v >= 0 ? "+" : ""}${formatGbp(v)}`, "Impact"]} />
+              <Tooltip contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 10, fontFamily: "var(--font-mono)" }} formatter={(v: number) => [`${v >= 0 ? "+" : ""}${formatBaseMoney(v)}`, "Impact"]} />
               <Bar dataKey="delta" fill="var(--ft-blue)" radius={[1, 1, 0, 0]}
                 label={false}
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

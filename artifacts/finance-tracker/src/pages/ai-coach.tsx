@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Send, Loader2, BotMessageSquare, Sparkles, RotateCcw, TrendingDown, Target, PiggyBank, AlertTriangle, Zap, TrendingUp, BarChart2, Flame, Shield, Users } from "lucide-react";
 import { useListTransactions, useListAccounts, useGetDashboard, useListBudgets, useGetInvestmentSummary, useListGoals, useListInvestments } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/api-fetch";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { PageHeader } from "@/components/page-header";
@@ -495,7 +495,7 @@ export default function AiCoach() {
           items.push({
             icon: AlertTriangle, color: pct >= 100 ? "var(--ft-red)" : "var(--ft-amber)",
             title: `${b.category} budget ${pct >= 100 ? "exceeded" : "nearly full"}`,
-            body: `${formatGbp(spent)} of ${formatGbp(b.monthlyLimit)} used (${pct.toFixed(0)}%)`,
+            body: `${formatBaseMoney(spent)} of ${formatBaseMoney(b.monthlyLimit)} used (${pct.toFixed(0)}%)`,
             prompt: `My ${b.category} budget is at ${pct.toFixed(0)}% this month. Help me understand where I'm overspending and how to get back on track.`,
           });
         }
@@ -655,7 +655,7 @@ export default function AiCoach() {
                     <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderTop: `2px solid ${dashboard.thisMonth.income! > 0 ? "var(--ft-green)" : "var(--ft-border2)"}` }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Income</div>
                       <Text as="div" mono size={15} weight={700} color={dashboard.thisMonth.income! > 0 ? "var(--ft-green)" : "var(--ft-muted)"}>
-                        <span className="pnum">{formatGbp(dashboard.thisMonth.income!)}</span>
+                        <span className="pnum">{formatBaseMoney(dashboard.thisMonth.income!)}</span>
                       </Text>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>this month</div>
                     </div>
@@ -664,7 +664,7 @@ export default function AiCoach() {
                     <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderTop: `2px solid ${dashboard.thisMonth.expenses! > 0 ? "var(--ft-red)" : "var(--ft-border2)"}` }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Spent</div>
                       <Text as="div" mono size={15} weight={700} color={dashboard.thisMonth.expenses! > 0 ? "var(--ft-red)" : "var(--ft-muted)"}>
-                        <span className="pnum">{formatGbp(dashboard.thisMonth.expenses!)}</span>
+                        <span className="pnum">{formatBaseMoney(dashboard.thisMonth.expenses!)}</span>
                       </Text>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>this month</div>
                     </div>

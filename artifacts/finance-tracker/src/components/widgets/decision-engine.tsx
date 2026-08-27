@@ -11,7 +11,7 @@ import {
   useListDebts,
 } from "@workspace/api-client-react";
 import type { Account, Transaction, Investment, InvestmentSummary, Goal, Budget, Subscription, Debt } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { useActivePersona } from "@/lib/persona-hook";
 import { Zap, ChevronRight } from "lucide-react";
 
@@ -85,7 +85,7 @@ function buildMiniDecisions(
   debts: Debt[],
 ): MiniDecision[] {
   const out: MiniDecision[] = [];
-  const totalCashGbp = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+  const totalCashGbp = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
   // Same argument as pages/decisions.tsx: if summary hasn't loaded,
   // treating portfolio as £0 spuriously fires the idle-cash decision on
   // partial data. Gate cash-vs-portfolio decisions on knowing both sides.
@@ -96,7 +96,7 @@ function buildMiniDecisions(
   if (portfolioGbp != null && cashRatio != null && totalCashGbp > 5000 && cashRatio > 0.6) {
     const idleGbp = totalCashGbp - portfolioGbp * 0.4;
     const annualCost = Math.max(0, idleGbp) * 0.045;
-    out.push({ id: "idle-cash", priority: idleGbp > 20000 ? "critical" : idleGbp > 10000 ? "high" : "medium", kind: "cash", title: `${formatGbp(totalCashGbp)} idle cash — ${formatGbp(annualCost)}/yr lost`, annualCost, href: "/accounts" });
+    out.push({ id: "idle-cash", priority: idleGbp > 20000 ? "critical" : idleGbp > 10000 ? "high" : "medium", kind: "cash", title: `${formatBaseMoney(totalCashGbp)} idle cash — ${formatBaseMoney(annualCost)}/yr lost`, annualCost, href: "/accounts" });
   }
   if (investments.length === 0 && totalCashGbp > 1000) {
     out.push({ id: "no-investments", priority: "high", kind: "portfolio", title: "Not invested yet", annualCost: totalCashGbp * 0.05, href: "/portfolio" });
@@ -129,7 +129,7 @@ function buildMiniDecisions(
   });
   subscriptions.filter((s) => !s.active).forEach((s) => {
     const annual = subsAnnual(s);
-    out.push({ id: `sub-${s.id}`, priority: annual > 100 ? "high" : "medium", kind: "subscription", title: `Cancel ${s.name} — save ${formatGbp(annual)}/yr`, annualCost: annual, href: "/subscriptions" });
+    out.push({ id: `sub-${s.id}`, priority: annual > 100 ? "high" : "medium", kind: "subscription", title: `Cancel ${s.name} — save ${formatBaseMoney(annual)}/yr`, annualCost: annual, href: "/subscriptions" });
   });
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const spendByCategory: Record<string, number> = {};
@@ -138,11 +138,11 @@ function buildMiniDecisions(
   });
   budgets.forEach((b) => {
     const over = (spendByCategory[b.category] ?? 0) - b.monthlyLimit;
-    if (over > 0) out.push({ id: `budget-${b.id}`, priority: over > b.monthlyLimit * 0.5 ? "high" : "medium", kind: "budget", title: `${b.category} budget exceeded by ${formatGbp(over)}`, annualCost: over * 12, href: "/budget" });
+    if (over > 0) out.push({ id: `budget-${b.id}`, priority: over > b.monthlyLimit * 0.5 ? "high" : "medium", kind: "budget", title: `${b.category} budget exceeded by ${formatBaseMoney(over)}`, annualCost: over * 12, href: "/budget" });
   });
   const debtsPending = debts.filter((d) => d.direction === "they_owe_me" && d.status === "pending");
-  const totalOwed = debtsPending.reduce((s, d) => s + (d.gbpEquivalent ?? 0), 0);
-  if (totalOwed > 50) out.push({ id: "debts-owed", priority: totalOwed > 500 ? "high" : "medium", kind: "debt", title: `${formatGbp(totalOwed)} owed to you`, href: "/owing" });
+  const totalOwed = debtsPending.reduce((s, d) => s + (d.baseEquivalent ?? 0), 0);
+  if (totalOwed > 50) out.push({ id: "debts-owed", priority: totalOwed > 500 ? "high" : "medium", kind: "debt", title: `${formatBaseMoney(totalOwed)} owed to you`, href: "/owing" });
 
   return out.sort((a, b) => {
     const po = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
@@ -247,7 +247,7 @@ function DecisionRow({ d, rank }: { d: MiniDecision; rank: number }) {
         </span>
         {d.annualCost && d.annualCost > 0 ? (
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>
-            {formatGbp(d.annualCost)}/yr
+            {formatBaseMoney(d.annualCost)}/yr
           </span>
         ) : <span />}
         <ChevronRight size={9} style={{ color: "var(--ft-dim)", flexShrink: 0 }} />
@@ -319,7 +319,7 @@ export function DecisionEngineWidget() {
             <StatsKpiCell
               label="Opp. cost / yr"
               accentColor="var(--ft-amber)"
-              value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>{formatGbp(totalAnnualCost)}</div>}
+              value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>{formatBaseMoney(totalAnnualCost)}</div>}
             />
           )}
         </div>

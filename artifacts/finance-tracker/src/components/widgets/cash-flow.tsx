@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGetDashboard } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import { Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, ComposedChart, ReferenceLine, Cell } from "recharts";
 
@@ -69,21 +69,21 @@ function CashFlowTooltip({ active, payload, label, avgIncome, avgExpense }: Cust
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "2px 8px", alignItems: "center" }}>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Income</span>
         <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: income == null ? "var(--ft-dim)" : "var(--ft-green)", textAlign: "right" }}>
-          {income == null ? "—" : formatGbp(income)}
+          {income == null ? "—" : formatBaseMoney(income)}
         </span>
         <span className="pnum" style={{ fontSize: 9, color: vsIncome != null && vsIncome >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-          {vsIncome == null ? "" : `${vsIncome >= 0 ? "+" : ""}${formatGbp(Math.abs(vsIncome))} avg`}
+          {vsIncome == null ? "" : `${vsIncome >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(vsIncome))} avg`}
         </span>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Expenses</span>
         <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: expenses == null ? "var(--ft-dim)" : "var(--ft-red)", textAlign: "right" }}>
-          {expenses == null ? "—" : formatGbp(expenses)}
+          {expenses == null ? "—" : formatBaseMoney(expenses)}
         </span>
         <span className="pnum" style={{ fontSize: 9, color: vsExpense != null && vsExpense <= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-          {vsExpense == null ? "" : `${vsExpense >= 0 ? "+" : ""}${formatGbp(Math.abs(vsExpense))} avg`}
+          {vsExpense == null ? "" : `${vsExpense >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(vsExpense))} avg`}
         </span>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Net</span>
         <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: net == null ? "var(--ft-dim)" : (net >= 0 ? "var(--ft-green)" : "var(--ft-red)"), textAlign: "right" }}>
-          {net == null ? "—" : `${net >= 0 ? "+" : ""}${formatGbp(net)}`}
+          {net == null ? "—" : `${net >= 0 ? "+" : ""}${formatBaseMoney(net)}`}
         </span>
         <span />
       </div>
@@ -154,9 +154,9 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
   // it onto a fabricated zero baseline and turns "no previous month" into
   // "+∞% MoM" instead of the honest "—".
   const summaryItems = d ? [
-    { label: "Income",      value: `+${formatGbp(d.thisMonth.income)}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income) },
-    { label: "Expenses",    value: `−${formatGbp(d.thisMonth.expenses)}`, color: d.thisMonth.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses) },
-    { label: "Net Savings", value: `${d.thisMonth.netSavings >= 0 ? "+" : ""}${formatGbp(d.thisMonth.netSavings)}`, color: d.thisMonth.netSavings !== 0 ? (d.thisMonth.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", delta: null },
+    { label: "Income",      value: `+${formatBaseMoney(d.thisMonth.income)}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income) },
+    { label: "Expenses",    value: `−${formatBaseMoney(d.thisMonth.expenses)}`, color: d.thisMonth.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses) },
+    { label: "Net Savings", value: `${d.thisMonth.netSavings >= 0 ? "+" : ""}${formatBaseMoney(d.thisMonth.netSavings)}`, color: d.thisMonth.netSavings !== 0 ? (d.thisMonth.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", delta: null },
   ] : [];
 
   // Border-as-gap KPI strip: 1px gap background = border, each cell bg = surface

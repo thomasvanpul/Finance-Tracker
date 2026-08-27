@@ -2,6 +2,8 @@ import { useGetDashboard } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
 import { nfmt } from "./mobile-format";
+import { formatMoney } from "@/lib/utils";
+import { getBaseCurrency } from "@/lib/currency-store";
 import { computeHoldings } from "./MobileHome";
 import { BlockField } from "@/components/primitives/block-field";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
@@ -213,7 +215,7 @@ function TypeSection({
   label: string;
   total: number;
   netWorth: number | null;
-  rows: Array<{ id: number; name: string; balance: number; gbpEquivalent: number | null; currency: string }>;
+  rows: Array<{ id: number; name: string; balance: number; baseEquivalent: number | null; currency: string }>;
   note?: string;
 }) {
   const pct = netWorth != null && netWorth > 0 ? Math.round((total / netWorth) * 100) : null;
@@ -271,10 +273,10 @@ function TypeSection({
               }}
             >
               <Text as="span" size={14}>{a.name}</Text>
-              <Text as="span" mono size={13} color={a.gbpEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
-                {a.gbpEquivalent == null
-                  ? (a.currency === "GBP" ? "—" : `${a.currency} ${nfmt(a.balance)}`)
-                  : `£${nfmt(a.gbpEquivalent)}`}
+              <Text as="span" mono size={13} color={a.baseEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
+                {a.baseEquivalent == null
+                  ? (a.currency === getBaseCurrency() ? "—" : `${a.currency} ${nfmt(a.balance)}`)
+                  : formatMoney(a.baseEquivalent, getBaseCurrency())}
               </Text>
             </div>
           ))}

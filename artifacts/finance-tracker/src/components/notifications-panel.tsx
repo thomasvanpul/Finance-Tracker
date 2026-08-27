@@ -8,7 +8,7 @@ import {
   useListBudgets,
   useListAccounts,
 } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_FOCUS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useListSharedExpenses, type SharedExpense } from "@/lib/shared-expenses-hook";
@@ -155,7 +155,7 @@ export function useAlerts() {
             level: "critical",
             kind: "budget",
             title: `${budget.category} budget exceeded`,
-            detail: `${formatGbp(total)} spent of ${formatGbp(budget.monthlyLimit)} limit (${Math.round(pct * 100)}%)`,
+            detail: `${formatBaseMoney(total)} spent of ${formatBaseMoney(budget.monthlyLimit)} limit (${Math.round(pct * 100)}%)`,
           });
         } else if (pct >= alertRules.budgetWarningPct / 100) {
           result.push({
@@ -163,7 +163,7 @@ export function useAlerts() {
             level: "warn",
             kind: "budget",
             title: `${budget.category} budget at ${Math.round(pct * 100)}%`,
-            detail: `${formatGbp(total)} of ${formatGbp(budget.monthlyLimit)} used`,
+            detail: `${formatBaseMoney(total)} of ${formatBaseMoney(budget.monthlyLimit)} used`,
           });
         }
       }
@@ -180,7 +180,7 @@ export function useAlerts() {
             level: "info",
             kind: "transaction",
             title: `Large transaction: ${tx.description}`,
-            detail: `${formatGbp(tx.gbpValue)} on ${tx.date} — ${tx.accountName}`,
+            detail: `${formatBaseMoney(tx.gbpValue)} on ${tx.date} — ${tx.accountName}`,
           });
         }
       }
@@ -198,9 +198,9 @@ export function useAlerts() {
             level: "warn",
             kind: "bill",
             title: `Due soon: ${item.description}`,
-            detail: item.gbpEquivalent == null
+            detail: item.baseEquivalent == null
               ? `Due ${item.dueDate} — GBP not available`
-              : `${formatGbp(item.gbpEquivalent)} due ${item.dueDate}`,
+              : `${formatBaseMoney(item.baseEquivalent)} due ${item.dueDate}`,
           });
         }
       }
@@ -214,13 +214,13 @@ export function useAlerts() {
         return daysSince > 90;
       });
       if (overdueDebts.length > 0) {
-        const total = overdueDebts.reduce((s, d) => s + (d.gbpEquivalent ?? 0), 0);
+        const total = overdueDebts.reduce((s, d) => s + (d.baseEquivalent ?? 0), 0);
         result.push({
           id: `overdue-debts-${overdueDebts.length}`,
           level: "warn",
           kind: "debt",
           title: `${overdueDebts.length} IOU${overdueDebts.length > 1 ? "s" : ""} older than 90 days`,
-          detail: `${formatGbp(total)} in long-outstanding debts — consider settling`,
+          detail: `${formatBaseMoney(total)} in long-outstanding debts — consider settling`,
         });
       }
     }
@@ -234,7 +234,7 @@ export function useAlerts() {
           level: "success",
           kind: "goal",
           title: `Goal achieved: ${g.name}`,
-          detail: `${formatGbp(current)} saved — target of ${formatGbp(target)} reached`,
+          detail: `${formatBaseMoney(current)} saved — target of ${formatBaseMoney(target)} reached`,
         });
       }
     }
@@ -291,7 +291,7 @@ export function useAlerts() {
             level: "warn" as const,
             kind: "transaction",
             title: `Unusual charge: ${displayName}`,
-            detail: `${formatGbp(thisMonthAmt)} this month vs avg ${formatGbp(avg)} (${Math.round((diff / avg) * 100)}% higher)`,
+            detail: `${formatBaseMoney(thisMonthAmt)} this month vs avg ${formatBaseMoney(avg)} (${Math.round((diff / avg) * 100)}% higher)`,
           });
           anomalyCount++;
         }
@@ -376,19 +376,19 @@ export function useAlerts() {
       for (const rule of balanceRules) {
         const acct = accounts.find((a) => a.id === rule.accountId);
         if (!acct) continue;
-        // Skip low-balance alert when FX is unknown — a null gbpEquivalent
+        // Skip low-balance alert when FX is unknown — a null baseEquivalent
         // would coerce to £0 and fire "below threshold" on an account that
         // may hold real money in native currency. The rule threshold is
         // expressed in GBP; we can't compare without a GBP figure.
-        if (acct.gbpEquivalent == null) continue;
-        const balance = acct.gbpEquivalent;
+        if (acct.baseEquivalent == null) continue;
+        const balance = acct.baseEquivalent;
         if (balance < rule.threshold) {
           result.push({
             id: `balance-alert-${rule.accountId}`,
             level: rule.level,
             kind: "balance",
             title: `Low balance: ${rule.accountName}`,
-            detail: `${formatGbp(balance)} — below your ${formatGbp(rule.threshold)} threshold`,
+            detail: `${formatBaseMoney(balance)} — below your ${formatBaseMoney(rule.threshold)} threshold`,
           });
         }
       }
@@ -861,7 +861,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                           textOverflow: "ellipsis",
                         }}
                       >
-                        {rule.accountName} &lt; {formatGbp(rule.threshold)}
+                        {rule.accountName} &lt; {formatBaseMoney(rule.threshold)}
                       </span>
                     </div>
                     <button
@@ -932,7 +932,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                   <option value="">— select account —</option>
                   {(accounts ?? []).map((a) => (
                     <option key={a.id} value={String(a.id)}>
-                      {a.name} ({a.gbpEquivalent == null ? "—" : formatGbp(a.gbpEquivalent)})
+                      {a.name} ({a.baseEquivalent == null ? "—" : formatBaseMoney(a.baseEquivalent)})
                     </option>
                   ))}
                 </select>

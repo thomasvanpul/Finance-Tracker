@@ -26,19 +26,31 @@ export function formatCurrency(value: number, currency: string): string {
   }).format(value);
 }
 
-export function formatGbp(value: number): string {
-  return formatCurrency(Object.is(value, -0) ? 0 : value, getBaseCurrency());
+// Format an amount in an explicit currency. Returns "—" when either the
+// value or the currency is null/undefined — the app-wide "no fabricated
+// number" rule. Prefer this at any site where the row already knows the
+// currency (a mobile transaction row, a per-account balance in native).
+// The currency argument makes the money-in-what-currency contract
+// visible at the call site.
+export function formatMoney(
+  value: number | null | undefined,
+  currency: string | null | undefined,
+): string {
+  if (value == null || !currency) return "—";
+  return formatCurrency(Object.is(value, -0) ? 0 : value, currency);
 }
 
-// Render a nullable base-currency figure. Null (FX unavailable) becomes
-// "—" per the app-wide "no fabricated number" rule. Never fall through
-// to formatGbp(x ?? 0), which reintroduces the fabricated-zero defect
-// that this whole thread of commits is removing. Consumers with access
-// to the native amount should prefer showing that alone rather than
-// this dash — a row that reads "RM 4,120.00 · —" is honest, "£0" is not.
-export function formatGbpOrDash(value: number | null | undefined): string {
-  if (value == null) return "—";
-  return formatGbp(value);
+// Format an amount that is already in the user's base currency (the
+// `baseEquivalent` field on API responses). Reads baseCurrency from the
+// client store — returns "—" when the base is unknown (cold start,
+// before the settings query resolves) or the value is null (FX
+// unavailable). Never fall through to `formatBaseMoney(x ?? 0)` — that
+// reintroduces the fabricated-zero defect the fabricated-zero-lock
+// (Lock #16) is preventing. Consumers with access to the native amount
+// should prefer showing that alone rather than this dash — a row that
+// reads "RM 4,120.00 · —" is honest, "£0" is not.
+export function formatBaseMoney(value: number | null | undefined): string {
+  return formatMoney(value, getBaseCurrency());
 }
 
 // Sum a nullable series of base-currency figures, returning the total

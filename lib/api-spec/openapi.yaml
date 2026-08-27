@@ -1308,7 +1308,7 @@ components:
     # ── ACCOUNT ──────────────────────────────────────────────────────────────
     Account:
       type: object
-      required: [id, name, currency, balance, gbpEquivalent, type, isWiseLinked, createdAt]
+      required: [id, name, currency, balance, baseEquivalent, type, isWiseLinked, createdAt]
       properties:
         id:
           type: integer
@@ -1321,9 +1321,9 @@ components:
           type: number
         # Nullable: toBase returns null when the FX rate for this
         # account's currency is unavailable. Consumers render the native
-        # amount alone (never "£0" or a bare dash where a native figure
+        # amount alone (never a fabricated base-currency zero or a bare dash where a native figure
         # exists).
-        gbpEquivalent:
+        baseEquivalent:
           type: ["number", "null"]
         type:
           type: string
@@ -1394,7 +1394,7 @@ components:
           type: string
         # Nullable: null when the transaction's FX rate is unavailable.
         # Sign follows the transaction type (expense = negative). Rows
-        # render the native amount alone (never £0 or a bare dash).
+        # render the native amount alone (never a fabricated base-currency zero or a bare dash).
         gbpValue:
           type: ["number", "null"]
         source:
@@ -1462,7 +1462,7 @@ components:
     # ── UPCOMING ─────────────────────────────────────────────────────────────
     UpcomingItem:
       type: object
-      required: [id, dueDate, description, category, type, frequency, status, nativeAmount, currency, gbpEquivalent, createdAt]
+      required: [id, dueDate, description, category, type, frequency, status, nativeAmount, currency, baseEquivalent, createdAt]
       properties:
         id:
           type: integer
@@ -1488,7 +1488,7 @@ components:
           enum: [GBP, USD, EUR, MYR, CNY, JPY, AUD, CAD, SGD, HKD, THB, INR]
         # Nullable: null when FX for this upcoming item's currency is
         # unavailable. Rows render the native amount alone.
-        gbpEquivalent:
+        baseEquivalent:
           type: ["number", "null"]
         accountId:
           type: ["integer", "null"]
@@ -1667,7 +1667,7 @@ components:
     # ── DEBTS ─────────────────────────────────────────────────────────────────
     Debt:
       type: object
-      required: [id, personName, description, date, nativeAmount, currency, direction, status, gbpEquivalent, createdAt]
+      required: [id, personName, description, date, nativeAmount, currency, direction, status, baseEquivalent, createdAt]
       properties:
         id:
           type: integer
@@ -1694,7 +1694,7 @@ components:
           type: ["integer", "null"]
         # Nullable: null when the debt's FX rate is unavailable. Rows
         # render the native amount alone.
-        gbpEquivalent:
+        baseEquivalent:
           type: ["number", "null"]
         createdAt:
           type: string
@@ -2121,7 +2121,7 @@ components:
           type: array
           items:
             type: object
-            required: [id, name, currency, balance, gbpEquivalent, type]
+            required: [id, name, currency, balance, baseEquivalent, type]
             properties:
               id:
                 type: integer
@@ -2131,7 +2131,7 @@ components:
                 type: string
               balance:
                 type: number
-              gbpEquivalent:
+              baseEquivalent:
                 type: ["number", "null"]
               type:
                 type: string
@@ -2210,7 +2210,7 @@ components:
               # A month with one or more unconvertible transactions (an FX
               # rate the market API couldn't supply) emits nulls rather
               # than partial or fabricated totals. Clients MUST render
-              # null as "unknown / dotted / —", never as £0 — a £0 income
+              # null as "unknown / dotted / —", never as a base-currency zero — such a zero income
               # month reads as "nothing happened" when the reality is
               # "we don't know the true income because we can't convert
               # some of it". Same class of defect as the RM 4,120 → £4,120

@@ -24,7 +24,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import type { Transaction } from "@workspace/api-client-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
@@ -333,9 +333,9 @@ function ForecastAtRiskRow({ category, effectiveLimit, projectedSpend, projected
       <div style={{ flex: 1, height: 3, background: "var(--ft-border)", borderRadius: 0, overflow: "hidden", position: "relative" as const }}>
         <div style={{ position: "absolute" as const, height: "100%", width: `${barPct}%`, background: "var(--ft-amber)", borderRadius: 0 }} />
       </div>
-      <span className="pnum" style={{ color: "var(--ft-dim)", minWidth: 65, fontSize: 9, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{formatGbp(effectiveLimit)} limit</span>
-      <span className="pnum" style={{ color: "var(--ft-amber)", fontSize: 9, fontWeight: 700, minWidth: 70, textTransform: "uppercase" as const, letterSpacing: "0.04em", flexShrink: 0 }}>→ {formatGbp(projectedSpend)}</span>
-      <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, minWidth: 72, textAlign: "right" as const, fontSize: 10, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>+{formatGbp(projectedOverspend)}</span>
+      <span className="pnum" style={{ color: "var(--ft-dim)", minWidth: 65, fontSize: 9, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{formatBaseMoney(effectiveLimit)} limit</span>
+      <span className="pnum" style={{ color: "var(--ft-amber)", fontSize: 9, fontWeight: 700, minWidth: 70, textTransform: "uppercase" as const, letterSpacing: "0.04em", flexShrink: 0 }}>→ {formatBaseMoney(projectedSpend)}</span>
+      <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, minWidth: 72, textAlign: "right" as const, fontSize: 10, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>+{formatBaseMoney(projectedOverspend)}</span>
     </div>
   );
 }
@@ -372,7 +372,7 @@ function UnbudgetedCategoryBtn({ displayCat, amount, onClick }: UnbudgetedCatego
     >
       <span>{displayCat}</span>
       <span className="pnum" style={{ color: "var(--ft-amber)", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-        {formatGbp(amount)}
+        {formatBaseMoney(amount)}
       </span>
     </button>
   );
@@ -413,7 +413,7 @@ function CopyCandidateRow({ candidate: c, index, onChange }: CopyCandidateRowPro
       />
       <span style={{ flex: 1 }}>{c.category}</span>
       <span className="pnum" style={{ fontWeight: 700, color: "var(--ft-accent)", minWidth: 80, textAlign: "right" as const, fontVariantNumeric: "tabular-nums" }}>
-        {formatGbp(Math.ceil(c.total))}
+        {formatBaseMoney(Math.ceil(c.total))}
       </span>
     </label>
   );
@@ -621,7 +621,7 @@ function BudgetTooltip({
       </div>
       {payload.map((p) => (
         <div key={p.name} style={{ color: p.fill, marginBottom: 2 }}>
-          {p.name}: <span className="pnum">{formatGbp(p.value)}</span>
+          {p.name}: <span className="pnum">{formatBaseMoney(p.value)}</span>
         </div>
       ))}
     </div>
@@ -707,10 +707,10 @@ function BudgetTableRow({
             <div style={{ height: "100%", width: `${Math.min(pct * 100, 100)}%`, background: isOver ? "var(--ft-red)" : fillColor, transition: "width 0.1s ease" }} />
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", display: "flex", gap: 6, alignItems: "baseline" }}>
-            <Text as="span" size={12} weight={700} color={isOver ? "var(--ft-red)" : "var(--ft-text)"}>{formatGbp(spent)}</Text>
-            <span>/ {formatGbp(effectiveLimit)}</span>
+            <Text as="span" size={12} weight={700} color={isOver ? "var(--ft-red)" : "var(--ft-text)"}>{formatBaseMoney(spent)}</Text>
+            <span>/ {formatBaseMoney(effectiveLimit)}</span>
             {rolloverEnabled && rolloverAccumulated > 0 && (
-              <Text as="span" size={9} color="var(--ft-cyan)">↻+{formatGbp(rolloverAccumulated)}</Text>
+              <Text as="span" size={9} color="var(--ft-cyan)">↻+{formatBaseMoney(rolloverAccumulated)}</Text>
             )}
           </div>
         </div>
@@ -720,7 +720,7 @@ function BudgetTableRow({
             {Math.round(pct * 100)}%
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isOver ? "var(--ft-red)" : "var(--ft-green)", fontWeight: 600 }}>
-            {isOver ? `+${formatGbp(Math.abs(rem))}` : formatGbp(rem)} {isOver ? "over" : "left"}
+            {isOver ? `+${formatBaseMoney(Math.abs(rem))}` : formatBaseMoney(rem)} {isOver ? "over" : "left"}
           </div>
           <button
             onClick={() => onStartEdit(budget.category, budget.limit)}
@@ -816,7 +816,7 @@ function BudgetTableRow({
         <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
           {rolloverEnabled && rolloverAccumulated > 0 && (
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-cyan)", letterSpacing: "0.04em" }}>
-              ↻ +{formatGbp(rolloverAccumulated)}
+              ↻ +{formatBaseMoney(rolloverAccumulated)}
             </span>
           )}
           {paceLabel && (
@@ -826,7 +826,7 @@ function BudgetTableRow({
           )}
           {isOver && (
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", fontWeight: 700, letterSpacing: "0.04em" }}>
-              +{formatGbp(Math.abs(rem))} over
+              +{formatBaseMoney(Math.abs(rem))} over
             </span>
           )}
         </div>
@@ -871,7 +871,7 @@ function BudgetTableRow({
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-accent)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ft-muted)"; }}
           >
-            {rolloverEnabled ? formatGbp(effectiveLimit) : formatGbp(budget.limit)}
+            {rolloverEnabled ? formatBaseMoney(effectiveLimit) : formatBaseMoney(budget.limit)}
           </button>
         )}
       </div>
@@ -887,10 +887,10 @@ function BudgetTableRow({
         }}
       >
         <Text as="div" mono size={13} weight={700} color={isOver ? "var(--ft-red)" : "var(--ft-text)"}>
-          {formatGbp(spent)}
+          {formatBaseMoney(spent)}
         </Text>
         <Text as="div" mono size={11} color="var(--ft-dim)">
-          / {rolloverEnabled ? formatGbp(effectiveLimit) : formatGbp(budget.limit)}
+          / {rolloverEnabled ? formatBaseMoney(effectiveLimit) : formatBaseMoney(budget.limit)}
         </Text>
       </div>
 
@@ -912,9 +912,9 @@ function BudgetTableRow({
             ? "var(--ft-green)"
             : "var(--ft-dim)",
         }}
-        title={lastSpent > 0 ? `Last month: ${formatGbp(lastSpent)}` : "No data for last month"}
+        title={lastSpent > 0 ? `Last month: ${formatBaseMoney(lastSpent)}` : "No data for last month"}
       >
-        {lastSpent === 0 ? "—" : delta === 0 ? "=" : `${delta > 0 ? "+" : ""}${formatGbp(delta)}`}
+        {lastSpent === 0 ? "—" : delta === 0 ? "=" : `${delta > 0 ? "+" : ""}${formatBaseMoney(delta)}`}
       </div>
 
       {/* Inline progress bar */}
@@ -1004,9 +1004,9 @@ function BudgetTableRow({
       >
         {isOver ? (
           <Text as="span" mono size={9} weight={700} color="var(--ft-red)" letterSpacing="0.04em">
-            OVER {formatGbp(Math.abs(rem))}
+            OVER {formatBaseMoney(Math.abs(rem))}
           </Text>
-        ) : formatGbp(rem)}
+        ) : formatBaseMoney(rem)}
       </div>
 
       {/* Rollover controls */}
@@ -1703,16 +1703,16 @@ export default function Budget() {
         {[
           {
             label: "Total Budgeted",
-            value: <span style={{ color: "var(--ft-accent)" }}>{formatGbp(totalBudgeted)}</span>,
-            rawValue: formatGbp(totalBudgeted),
+            value: <span style={{ color: "var(--ft-accent)" }}>{formatBaseMoney(totalBudgeted)}</span>,
+            rawValue: formatBaseMoney(totalBudgeted),
             sub: `${budgets.length} categories`,
             isPriv: true,
             extra: null,
           },
           {
             label: "Total Spent",
-            value: <Text as="span" color={totalSpent > totalBudgeted ? "var(--ft-red)" : "var(--ft-text)"}>{formatGbp(totalSpent)}</Text>,
-            rawValue: formatGbp(totalSpent),
+            value: <Text as="span" color={totalSpent > totalBudgeted ? "var(--ft-red)" : "var(--ft-text)"}>{formatBaseMoney(totalSpent)}</Text>,
+            rawValue: formatBaseMoney(totalSpent),
             color: totalSpent > totalBudgeted ? "var(--ft-red)" : "var(--ft-text)",
             sub: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`,
             isPriv: true,
@@ -1723,7 +1723,7 @@ export default function Budget() {
         ))}
         <BudgetKpiCell
           label="Remaining"
-          value={<span className="pnum" style={{ color: remaining < 0 ? "var(--ft-red)" : "var(--ft-green)" }}>{formatGbp(Math.abs(remaining))}</span>}
+          value={<span className="pnum" style={{ color: remaining < 0 ? "var(--ft-red)" : "var(--ft-green)" }}>{formatBaseMoney(Math.abs(remaining))}</span>}
           sub={remaining < 0 ? "over budget" : "available"}
           isPriv
         />
@@ -1859,7 +1859,7 @@ export default function Budget() {
                   pct={p}
                   health={h}
                   isOver={isOv}
-                  title={`${b.category}: ${formatGbp(sp)} of ${formatGbp(eff)} (${Math.round(p * 100)}%)`}
+                  title={`${b.category}: ${formatBaseMoney(sp)} of ${formatBaseMoney(eff)} (${Math.round(p * 100)}%)`}
                 />
               );
             })}
@@ -1901,13 +1901,13 @@ export default function Budget() {
             <Text as="span" size={11} color="var(--ft-text)">
               Income:{" "}
               <strong className="pnum" style={{ color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>
-                {formatGbp(monthlyIncome)}
+                {formatBaseMoney(monthlyIncome)}
               </strong>
             </Text>
             <Text as="span" size={11} color="var(--ft-text)">
               Budgeted:{" "}
               <strong className="pnum" style={{ color: "var(--ft-accent)", fontVariantNumeric: "tabular-nums" }}>
-                {formatGbp(totalBudgeted)}
+                {formatBaseMoney(totalBudgeted)}
               </strong>
             </Text>
             <span
@@ -1920,10 +1920,10 @@ export default function Budget() {
             >
               <span className="pnum">
                 {zbRemaining < 0
-                  ? `Over-allocated by ${formatGbp(Math.abs(zbRemaining))}`
+                  ? `Over-allocated by ${formatBaseMoney(Math.abs(zbRemaining))}`
                   : zbRemaining === 0
                   ? "Every £ allocated"
-                  : `${formatGbp(zbRemaining)} unallocated`}
+                  : `${formatBaseMoney(zbRemaining)} unallocated`}
               </span>
             </span>
             {monthlyIncome > 0 && (
@@ -1980,7 +1980,7 @@ export default function Budget() {
                   {atRisk.length > 0 && (
                     <span>
                       <Text as="span" upper size={8} color="var(--ft-dim)" letterSpacing="0.06em">projected overspend </Text>
-                      <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{formatGbp(totalProjectedOverspend)}</span>
+                      <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{formatBaseMoney(totalProjectedOverspend)}</span>
                     </span>
                   )}
                 </div>

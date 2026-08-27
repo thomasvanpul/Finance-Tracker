@@ -16,7 +16,7 @@ function getWeekBounds(): { from: Date; to: Date } {
   return { from, to: now };
 }
 
-function formatGbp(amount: number): string {
+function formatBaseMoney(amount: number): string {
   return new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: "GBP",
@@ -41,7 +41,7 @@ function buildHtml(data: {
       (c) =>
         `<tr>
       <td style="font-family:monospace;font-size:13px;color:#aaa;padding:4px 0">${c.category}</td>
-      <td style="font-family:monospace;font-size:13px;color:#fff;text-align:right;padding:4px 0">${formatGbp(c.total)}</td>
+      <td style="font-family:monospace;font-size:13px;color:#fff;text-align:right;padding:4px 0">${formatBaseMoney(c.total)}</td>
     </tr>`
     )
     .join("");
@@ -58,15 +58,15 @@ function buildHtml(data: {
     <div style="display:flex;gap:16px;margin-bottom:32px">
       <div style="flex:1;border:1px solid #222;padding:16px">
         <div style="color:#666;font-size:9px;letter-spacing:0.12em;margin-bottom:6px">INCOME</div>
-        <div style="color:#00ff88;font-size:20px">${formatGbp(weekIncome)}</div>
+        <div style="color:#00ff88;font-size:20px">${formatBaseMoney(weekIncome)}</div>
       </div>
       <div style="flex:1;border:1px solid #222;padding:16px">
         <div style="color:#666;font-size:9px;letter-spacing:0.12em;margin-bottom:6px">EXPENSES</div>
-        <div style="color:#ff4444;font-size:20px">${formatGbp(weekExpenses)}</div>
+        <div style="color:#ff4444;font-size:20px">${formatBaseMoney(weekExpenses)}</div>
       </div>
       <div style="flex:1;border:1px solid #222;padding:16px">
         <div style="color:#666;font-size:9px;letter-spacing:0.12em;margin-bottom:6px">NET</div>
-        <div style="color:${netColor};font-size:20px">${formatGbp(net)}</div>
+        <div style="color:${netColor};font-size:20px">${formatBaseMoney(net)}</div>
       </div>
     </div>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import {
   BarChart,
@@ -63,7 +63,7 @@ function TodayTxRow({ description, category, gbpValue }: TodayTxRowProps) {
         )}
       </div>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: gbpValue == null ? "var(--ft-dim)" : "var(--ft-red)", flexShrink: 0 }}>
-        {gbpValue == null ? "—" : `−${formatGbp(gbpValue)}`}
+        {gbpValue == null ? "—" : `−${formatBaseMoney(gbpValue)}`}
       </span>
     </div>
   );
@@ -158,7 +158,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
         </div>
       ) : (
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: totalColor, marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
-          {formatGbp(todayTotal)}
+          {formatBaseMoney(todayTotal)}
         </div>
       )}
 
@@ -166,14 +166,14 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-              avg <span className="pnum">{formatGbp(dailyAvg)}</span>
+              avg <span className="pnum">{formatBaseMoney(dailyAvg)}</span>
             </span>
             <span style={{ color: "var(--ft-border2)" }}>·</span>
             <span className="pnum" style={{
               fontFamily: "var(--font-mono)", fontSize: 9,
               color: vsAvg > 0 ? "var(--ft-red)" : "var(--ft-green)",
             }}>
-              {vsAvg > 0 ? "+" : ""}{formatGbp(vsAvg)} today
+              {vsAvg > 0 ? "+" : ""}{formatBaseMoney(vsAvg)} today
             </span>
           </div>
 
@@ -206,11 +206,11 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
           <div style={{ display: "flex", gap: 14, minWidth: 0 }}>
             <div style={{ minWidth: 0, overflow: "hidden" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>MTD SPEND</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", whiteSpace: "nowrap" }}>{formatGbp(thisMonthExpenses)}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", whiteSpace: "nowrap" }}>{formatBaseMoney(thisMonthExpenses)}</div>
             </div>
             <div style={{ minWidth: 0, overflow: "hidden" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>PROJECTED</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: projectedMonthEnd > runRate * 1.1 ? "var(--ft-red)" : "var(--ft-muted)", whiteSpace: "nowrap" }}>{formatGbp(projectedMonthEnd)}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: projectedMonthEnd > runRate * 1.1 ? "var(--ft-red)" : "var(--ft-muted)", whiteSpace: "nowrap" }}>{formatBaseMoney(projectedMonthEnd)}</div>
             </div>
           </div>
         </>
@@ -265,7 +265,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
             width={40}
           />
           <Tooltip
-            formatter={(value: number) => [formatGbp(value), "Spent"]}
+            formatter={(value: number) => [formatBaseMoney(value), "Spent"]}
             labelFormatter={(label: number) => `Day ${label}`}
             contentStyle={{
               background: "var(--ft-raised)",

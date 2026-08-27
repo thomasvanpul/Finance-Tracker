@@ -22,7 +22,7 @@ import type {
   Debt,
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { Zap, X, ChevronRight, RefreshCw } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
@@ -111,7 +111,7 @@ function buildDecisions(
   // yet, treating portfolio as £0 makes cashRatio look 100% cash and
   // fires the idle-cash decision on partial data. Skip the whole
   // cash-vs-portfolio decision when the portfolio side is not known.
-  const totalCashGbp = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+  const totalCashGbp = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
   const portfolioGbp = summary?.totalValueGbp ?? null;
   const totalWealth = portfolioGbp != null ? totalCashGbp + portfolioGbp : null;
   const cashRatio = totalWealth != null && totalWealth > 0 ? totalCashGbp / totalWealth : null;
@@ -124,7 +124,7 @@ function buildDecisions(
       category: "cash",
       priority: idleGbp > 20000 ? "critical" : idleGbp > 10000 ? "high" : "medium",
       title: "Large cash balance — money losing value",
-      detail: `${formatGbp(totalCashGbp)} sitting in accounts (${Math.round(cashRatio * 100)}% of net worth). At 4.5% HYSA rate you're leaving ~${formatGbp(annualCost)}/yr on the table.`,
+      detail: `${formatBaseMoney(totalCashGbp)} sitting in accounts (${Math.round(cashRatio * 100)}% of net worth). At 4.5% HYSA rate you're leaving ~${formatBaseMoney(annualCost)}/yr on the table.`,
       action: "Move to high-yield savings or invest",
       href: "/accounts",
       annualCost,
@@ -134,14 +134,14 @@ function buildDecisions(
   accounts.forEach((a) => {
     // Idle-cash alert needs a GBP figure; skip accounts whose FX
     // conversion is unavailable rather than risk a fabricated £0 trip.
-    if (a.gbpEquivalent != null && a.gbpEquivalent > 10000) {
-      const annualCost = a.gbpEquivalent * 0.045;
+    if (a.baseEquivalent != null && a.baseEquivalent > 10000) {
+      const annualCost = a.baseEquivalent * 0.045;
       out.push({
         id: `idle-account-${a.id}`,
         category: "cash",
         priority: "medium",
         title: `${a.name}: large balance with no yield`,
-        detail: `${formatGbp(a.gbpEquivalent)} held in ${a.currency}. Could earn ~${formatGbp(annualCost)}/yr at 4.5% HYSA.`,
+        detail: `${formatBaseMoney(a.baseEquivalent)} held in ${a.currency}. Could earn ~${formatBaseMoney(annualCost)}/yr at 4.5% HYSA.`,
         action: "Open a high-yield savings account",
         href: "/accounts",
         annualCost,
@@ -155,7 +155,7 @@ function buildDecisions(
       category: "portfolio",
       priority: "high",
       title: "Not invested yet",
-      detail: `You have ${formatGbp(totalCashGbp)} in accounts but no investments. Long-term equity returns average 7-10%/yr vs 4-5% cash.`,
+      detail: `You have ${formatBaseMoney(totalCashGbp)} in accounts but no investments. Long-term equity returns average 7-10%/yr vs 4-5% cash.`,
       action: "Start building your portfolio",
       href: "/portfolio",
       annualCost: totalCashGbp * 0.05,
@@ -174,7 +174,7 @@ function buildDecisions(
           category: "portfolio",
           priority: pct > 0.6 ? "high" : "medium",
           title: `${inv.ticker} is ${Math.round(pct * 100)}% of your portfolio`,
-          detail: `${inv.name} (${formatGbp(inv.gbpValue)}) dominates your portfolio. Concentration risk increases volatility significantly.`,
+          detail: `${inv.name} (${formatBaseMoney(inv.gbpValue)}) dominates your portfolio. Concentration risk increases volatility significantly.`,
           action: "Rebalance by diversifying",
           href: "/portfolio",
         });
@@ -190,7 +190,7 @@ function buildDecisions(
         category: "portfolio",
         priority: inv.plPercent < -40 ? "high" : "medium",
         title: `${inv.ticker} down ${Math.abs(Math.round(inv.plPercent))}% — review position`,
-        detail: `${inv.name}: cost ${formatGbp(inv.shares * inv.costPricePerShare)}, now ${formatGbp(inv.gbpValue)} (${formatGbp(inv.plGbp)} P&L). Consider averaging down, cutting losses, or holding.`,
+        detail: `${inv.name}: cost ${formatBaseMoney(inv.shares * inv.costPricePerShare)}, now ${formatBaseMoney(inv.gbpValue)} (${formatBaseMoney(inv.plGbp)} P&L). Consider averaging down, cutting losses, or holding.`,
         action: "Review or set a stop-loss",
         href: "/portfolio",
       });
@@ -225,7 +225,7 @@ function buildDecisions(
           category: "goals",
           priority: "high",
           title: `"${g.name}" is past deadline`,
-          detail: `Target: ${formatGbp(g.target)}. Current: ${formatGbp(g.current)}. Shortfall: ${formatGbp(g.target - g.current)}.`,
+          detail: `Target: ${formatBaseMoney(g.target)}. Current: ${formatBaseMoney(g.current)}. Shortfall: ${formatBaseMoney(g.target - g.current)}.`,
           action: "Update goal or add funds",
           href: "/goals",
           daysUntilDeadline: Math.ceil(totalDays),
@@ -240,7 +240,7 @@ function buildDecisions(
         category: "goals",
         priority: totalDays < 60 ? "high" : "medium",
         title: `"${g.name}" is ${Math.round(pctComplete * 100)}% funded with ${Math.ceil(totalDays)} days left`,
-        detail: `Need ${formatGbp(g.target - g.current)} more in ${Math.ceil(totalDays)} days. Monthly contrib needed: ${formatGbp((g.target - g.current) / Math.max(1, totalDays / 30))}.`,
+        detail: `Need ${formatBaseMoney(g.target - g.current)} more in ${Math.ceil(totalDays)} days. Monthly contrib needed: ${formatBaseMoney((g.target - g.current) / Math.max(1, totalDays / 30))}.`,
         action: "Increase contributions",
         href: "/goals",
         daysUntilDeadline: Math.ceil(totalDays),
@@ -257,7 +257,7 @@ function buildDecisions(
         category: "goals",
         priority: "low",
         title: `"${g.name}" has no monthly contribution set`,
-        detail: `Target: ${formatGbp(g.target)}. Without a regular contribution you'll likely miss the goal.`,
+        detail: `Target: ${formatBaseMoney(g.target)}. Without a regular contribution you'll likely miss the goal.`,
         action: "Set a monthly contribution",
         href: "/goals",
       });
@@ -271,8 +271,8 @@ function buildDecisions(
         id: `sub-inactive-${s.id}`,
         category: "subscriptions",
         priority: annual > 100 ? "high" : "medium",
-        title: `${s.name} is inactive — cancel to save ${formatGbp(annual)}/yr`,
-        detail: `${formatGbp(s.amount)}/${s.frequency} subscription marked inactive. If you're not using it, cancel and save ${formatGbp(annual)} per year.`,
+        title: `${s.name} is inactive — cancel to save ${formatBaseMoney(annual)}/yr`,
+        detail: `${formatBaseMoney(s.amount)}/${s.frequency} subscription marked inactive. If you're not using it, cancel and save ${formatBaseMoney(annual)} per year.`,
         action: "Cancel this subscription",
         href: "/subscriptions",
         annualCost: annual,
@@ -297,8 +297,8 @@ function buildDecisions(
         id: `budget-over-${b.id}`,
         category: "budget",
         priority: overspend > b.monthlyLimit * 0.5 ? "high" : "medium",
-        title: `${b.category} budget exceeded by ${formatGbp(overspend)}`,
-        detail: `Budget: ${formatGbp(b.monthlyLimit)}/mo · Spent this month: ${formatGbp(spent)} · Overspend: ${formatGbp(overspend)} (${Math.round((overspend / b.monthlyLimit) * 100)}% over).`,
+        title: `${b.category} budget exceeded by ${formatBaseMoney(overspend)}`,
+        detail: `Budget: ${formatBaseMoney(b.monthlyLimit)}/mo · Spent this month: ${formatBaseMoney(spent)} · Overspend: ${formatBaseMoney(overspend)} (${Math.round((overspend / b.monthlyLimit) * 100)}% over).`,
         action: "Review spending",
         href: "/budget",
         annualCost: overspend * 12,
@@ -309,8 +309,8 @@ function buildDecisions(
   // Debt roll-ups skip unconvertible entries and reduce their `count`
   // sentences accordingly; a per-debt line item that reads "£0" would
   // look like a settled or nil debt when it's neither.
-  const debtsPending = debts.filter((d) => d.direction === "they_owe_me" && d.status === "pending" && d.gbpEquivalent != null) as Array<Debt & { gbpEquivalent: number }>;
-  const totalOwedToMe = debtsPending.reduce((s, d) => s + d.gbpEquivalent, 0);
+  const debtsPending = debts.filter((d) => d.direction === "they_owe_me" && d.status === "pending" && d.baseEquivalent != null) as Array<Debt & { baseEquivalent: number }>;
+  const totalOwedToMe = debtsPending.reduce((s, d) => s + d.baseEquivalent, 0);
   if (debtsPending.length > 0 && totalOwedToMe > 50) {
     const oldest = debtsPending.sort((a, b) => a.date.localeCompare(b.date))[0];
     const daysOld = daysUntilDate(oldest.date);
@@ -318,22 +318,22 @@ function buildDecisions(
       id: "debts-owed",
       category: "debt",
       priority: totalOwedToMe > 500 ? "high" : "medium",
-      title: `${debtsPending.length} debt${debtsPending.length > 1 ? "s" : ""} owed to you — ${formatGbp(totalOwedToMe)} outstanding`,
-      detail: `${debtsPending.length} people owe you ${formatGbp(totalOwedToMe)}. Oldest: "${oldest.personName}" (${Math.abs(daysOld)}d ago).`,
+      title: `${debtsPending.length} debt${debtsPending.length > 1 ? "s" : ""} owed to you — ${formatBaseMoney(totalOwedToMe)} outstanding`,
+      detail: `${debtsPending.length} people owe you ${formatBaseMoney(totalOwedToMe)}. Oldest: "${oldest.personName}" (${Math.abs(daysOld)}d ago).`,
       action: "Send a reminder",
       href: "/owing",
     });
   }
 
-  const myDebts = debts.filter((d) => d.direction === "i_owe_them" && d.status === "pending" && d.gbpEquivalent != null) as Array<Debt & { gbpEquivalent: number }>;
-  const totalIOwe = myDebts.reduce((s, d) => s + d.gbpEquivalent, 0);
+  const myDebts = debts.filter((d) => d.direction === "i_owe_them" && d.status === "pending" && d.baseEquivalent != null) as Array<Debt & { baseEquivalent: number }>;
+  const totalIOwe = myDebts.reduce((s, d) => s + d.baseEquivalent, 0);
   if (myDebts.length > 0 && totalIOwe > 100) {
     out.push({
       id: "my-debts",
       category: "debt",
       priority: totalIOwe > 1000 ? "high" : "medium",
-      title: `You owe ${formatGbp(totalIOwe)} across ${myDebts.length} debt${myDebts.length > 1 ? "s" : ""}`,
-      detail: `Outstanding: ${myDebts.map((d) => `${d.personName} (${formatGbp(d.gbpEquivalent)})`).slice(0, 3).join(", ")}${myDebts.length > 3 ? " +more" : ""}`,
+      title: `You owe ${formatBaseMoney(totalIOwe)} across ${myDebts.length} debt${myDebts.length > 1 ? "s" : ""}`,
+      detail: `Outstanding: ${myDebts.map((d) => `${d.personName} (${formatBaseMoney(d.baseEquivalent)})`).slice(0, 3).join(", ")}${myDebts.length > 3 ? " +more" : ""}`,
       action: "Mark as settled or pay",
       href: "/owing",
     });
@@ -350,8 +350,8 @@ function buildDecisions(
       id: "subscription-creep",
       category: "subscriptions",
       priority: monthlySubCost > 200 ? "high" : "medium",
-      title: `${subCount} active subscriptions — ${formatGbp(monthlySubCost)}/mo`,
-      detail: `${formatGbp(monthlySubCost * 12)}/yr across ${subCount} subscriptions. Review for duplicates or underused services — the average household can cut 2-3.`,
+      title: `${subCount} active subscriptions — ${formatBaseMoney(monthlySubCost)}/mo`,
+      detail: `${formatBaseMoney(monthlySubCost * 12)}/yr across ${subCount} subscriptions. Review for duplicates or underused services — the average household can cut 2-3.`,
       action: "Audit your subscriptions",
       href: "/subscriptions",
       annualCost: monthlySubCost * 12 * 0.15,
@@ -366,7 +366,7 @@ function buildDecisions(
       category: "portfolio",
       priority: "medium",
       title: `${fundedGoals.length} goals set but no investment account`,
-      detail: `You have ${formatGbp(totalTarget)} in outstanding goal targets. Holding this in cash instead of a diversified portfolio costs ~${formatGbp(totalTarget * 0.04)}/yr in foregone growth at a conservative 4% real return.`,
+      detail: `You have ${formatBaseMoney(totalTarget)} in outstanding goal targets. Holding this in cash instead of a diversified portfolio costs ~${formatBaseMoney(totalTarget * 0.04)}/yr in foregone growth at a conservative 4% real return.`,
       action: "Open an investment account",
       href: "/portfolio",
       annualCost: totalTarget * 0.04,
@@ -512,7 +512,7 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore }: D
           </Link>
           {d.annualCost !== undefined && d.annualCost > 0 && (
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 25%, transparent)", padding: "1px 5px" }}>
-              {formatGbp(d.annualCost)}/yr impact
+              {formatBaseMoney(d.annualCost)}/yr impact
             </span>
           )}
         </HStack>
@@ -720,7 +720,7 @@ export default function Decisions() {
         >
           <SummaryKpiCell
             label="ANNUAL OPPORTUNITY COST"
-            value={totalAnnualCost > 0 ? formatGbp(totalAnnualCost) + "/yr" : "—"}
+            value={totalAnnualCost > 0 ? formatBaseMoney(totalAnnualCost) + "/yr" : "—"}
             valueColor={totalAnnualCost > 5000 ? "var(--ft-red)" : totalAnnualCost > 1000 ? "var(--ft-amber)" : "var(--ft-text)"}
           />
           <SummaryKpiCell

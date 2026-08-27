@@ -13,6 +13,6 @@ export type DashboardSummaryAccountBreakdownItem = {
   currency: string;
   balance: number;
   /** @nullable */
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   type: DashboardSummaryAccountBreakdownItemType;
 };

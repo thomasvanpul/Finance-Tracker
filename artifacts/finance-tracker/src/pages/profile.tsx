@@ -13,7 +13,7 @@ import {
   useGetDashboard,
   useListGoals,
 } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { getLevel, getLearnXP } from "@/lib/learn-xp";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
@@ -791,7 +791,7 @@ export default function Profile() {
   if (largestTxEntry && largestTxEntry.gbpValue != null) {
     timelineItems.push({
       date: new Date(largestTxEntry.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-      label: `Largest transaction — ${formatGbp(Math.abs(largestTxEntry.gbpValue))}`,
+      label: `Largest transaction — ${formatBaseMoney(Math.abs(largestTxEntry.gbpValue))}`,
       sub: largestTxEntry.description,
     });
   }
@@ -1109,15 +1109,15 @@ export default function Profile() {
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
         <div style={{ padding: "8px 14px 4px", ...MONO_LABEL }}>Portfolio Snapshot</div>
         <KpiStrip items={[
-          { label: "Net Worth", value: netWorth == null ? "—" : formatGbp(netWorth), accent: netWorth == null ? "var(--ft-border2)" : netWorth >= 0 ? "var(--ft-blue)" : "var(--ft-red)" },
+          { label: "Net Worth", value: netWorth == null ? "—" : formatBaseMoney(netWorth), accent: netWorth == null ? "var(--ft-border2)" : netWorth >= 0 ? "var(--ft-blue)" : "var(--ft-red)" },
           { label: "Accounts", value: String(accountCount) },
           { label: "Transactions", value: String(txCount) },
           { label: "Active Debts", value: String(activeDebts), accent: activeDebts > 0 ? "var(--ft-amber)" : "var(--ft-dim)" },
         ]} />
         <div style={{ height: 1, background: "var(--ft-border)", margin: "1px 0" }} />
         <KpiStrip items={[
-          { label: "Total Volume", value: totalVolume > 0 ? formatGbp(totalVolume) : "—" },
-          { label: "Largest TX", value: largestTx > 0 ? formatGbp(largestTx) : "—" },
+          { label: "Total Volume", value: totalVolume > 0 ? formatBaseMoney(totalVolume) : "—" },
+          { label: "Largest TX", value: largestTx > 0 ? formatBaseMoney(largestTx) : "—" },
           { label: "Top Category", value: topCategory },
           { label: "Member", value: memberDays !== null ? `${memberDays}d` : "—" },
         ]} />

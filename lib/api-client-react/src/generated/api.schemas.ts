@@ -112,7 +112,7 @@ export interface Account {
   currency: AccountCurrency;
   balance: number;
   /** @nullable */
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   type: AccountType;
   isWiseLinked: boolean;
   /** @nullable */
@@ -335,7 +335,7 @@ export interface UpcomingItem {
   nativeAmount: number;
   currency: UpcomingItemCurrency;
   /** @nullable */
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   /** @nullable */
   accountId?: number | null;
   /** @nullable */
@@ -579,7 +579,7 @@ export interface Debt {
   /** @nullable */
   accountId?: number | null;
   /** @nullable */
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   createdAt: string;
   /** @nullable */
   linkedEmail?: string | null;
@@ -974,7 +974,7 @@ export type DashboardSummaryAccountBreakdownItem = {
   currency: string;
   balance: number;
   /** @nullable */
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   type: DashboardSummaryAccountBreakdownItemType;
 };
 

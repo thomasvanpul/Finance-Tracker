@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 
 function getMonthBounds(monthOffset: number): { start: string; end: string } {
@@ -53,11 +53,11 @@ function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incom
         {badge}
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
-        {formatGbp(amount)}
+        {formatBaseMoney(amount)}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
         <span className="pnum">{savingsRate.toFixed(0)}%</span> saved
-        {income !== null && income > 0 && <span className="pnum"> · {formatGbp(income)} income</span>}
+        {income !== null && income > 0 && <span className="pnum"> · {formatBaseMoney(income)} income</span>}
         {incomeDeltaLabel}
       </div>
     </div>
@@ -90,10 +90,10 @@ function CategoryTableRow({ row }: CategoryTableRowProps) {
       }}
     >
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.category}</div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>{formatGbp(row.lastMonth)}</div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>{formatGbp(row.thisMonth)}</div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>{formatBaseMoney(row.lastMonth)}</div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>{formatBaseMoney(row.thisMonth)}</div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, textAlign: "right", color: deltaColor }}>
-        {row.delta === 0 ? "—" : `${decreased ? "-" : "+"}${formatGbp(Math.abs(row.delta))}`}
+        {row.delta === 0 ? "—" : `${decreased ? "-" : "+"}${formatBaseMoney(Math.abs(row.delta))}`}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 3 }}>
         <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: trendBg, color: deltaColor, fontFamily: "var(--font-mono)" }}>
@@ -139,9 +139,9 @@ function CategoryBarRow({ row, maxVal }: CategoryBarRowProps) {
           {row.category}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>{formatGbp(row.thisMonth)}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>{formatBaseMoney(row.thisMonth)}</span>
           <span className="pnum" style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: chipBg, color: chipColor, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-            {row.delta === 0 ? "=" : decreased ? `↓${formatGbp(Math.abs(row.delta))}` : `↑${formatGbp(Math.abs(row.delta))}`}
+            {row.delta === 0 ? "=" : decreased ? `↓${formatBaseMoney(Math.abs(row.delta))}` : `↑${formatBaseMoney(Math.abs(row.delta))}`}
           </span>
           {pctChange !== null && (
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
@@ -259,13 +259,13 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
               padding: "1px 4px",
               letterSpacing: "0.04em",
             }}>
-              {expenseDelta <= 0 ? "▼" : "▲"} <span className="pnum">{formatGbp(Math.abs(expenseDelta))}</span>
+              {expenseDelta <= 0 ? "▼" : "▲"} <span className="pnum">{formatBaseMoney(Math.abs(expenseDelta))}</span>
             </span>
           ) : undefined
         }
         incomeDeltaLabel={
           incomeDelta !== 0 ? (
-            <span> · income {incomeDelta > 0 ? "▲" : "▼"} <span className="pnum">{formatGbp(Math.abs(incomeDelta))}</span></span>
+            <span> · income {incomeDelta > 0 ? "▲" : "▼"} <span className="pnum">{formatBaseMoney(Math.abs(incomeDelta))}</span></span>
           ) : undefined
         }
       />
@@ -314,10 +314,10 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
               }}
             >
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)" }}>Total Income</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>{formatGbp(lastIncome)}</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>{formatGbp(thisIncome)}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>{formatBaseMoney(lastIncome)}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>{formatBaseMoney(thisIncome)}</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, textAlign: "right", color: thisIncome >= lastIncome ? "var(--ft-green)" : "var(--ft-red)" }}>
-                {thisIncome >= lastIncome ? "+" : ""}{formatGbp(thisIncome - lastIncome)}
+                {thisIncome >= lastIncome ? "+" : ""}{formatBaseMoney(thisIncome - lastIncome)}
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
                 <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: thisIncome >= lastIncome ? "rgba(63,185,80,0.15)" : "rgba(248,81,73,0.15)", color: thisIncome >= lastIncome ? "var(--ft-green)" : "var(--ft-red)", fontFamily: "var(--font-mono)" }}>

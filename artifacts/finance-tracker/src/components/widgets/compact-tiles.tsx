@@ -9,7 +9,7 @@ import {
   useListGoals,
   useGetMarketQuotes,
 } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import type { WidgetId } from "@/contexts/widgets-context";
 
 // ── Shared style constants ────────────────────────────────────────────────────
@@ -241,7 +241,7 @@ function RecentTxRow({ description, date, category, gbpValue, type, isLast }: Re
       <span className="pnum" style={{
         ...MONO, fontSize: 14, fontWeight: 700, color: gbpValue == null ? "var(--ft-dim)" : col, flexShrink: 0, letterSpacing: "-0.02em",
       }}>
-        {gbpValue == null ? "—" : `${sign}${formatGbp(Math.abs(gbpValue))}`}
+        {gbpValue == null ? "—" : `${sign}${formatBaseMoney(Math.abs(gbpValue))}`}
       </span>
     </div>
   );
@@ -378,13 +378,13 @@ export function CompactNetWorth() {
         {/* Big number */}
         <div style={{ padding: "14px 14px 12px" }}>
           <div className="pnum" style={{ ...MONO, fontSize: 34, fontWeight: 700, color: nwColor, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8, whiteSpace: "nowrap" }}>
-            {formatGbp(nw)}
+            {formatBaseMoney(nw)}
           </div>
           {/* MTD delta pill */}
           {net != null && net !== 0 && (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: `color-mix(in srgb, ${netColor} 12%, transparent)`, border: `1px solid ${netColor}44`, padding: "3px 8px", marginBottom: 10 }}>
               <span style={{ ...MONO, fontSize: 10, fontWeight: 700, color: netColor, letterSpacing: "-0.01em" }}>
-                {sign}{formatGbp(Math.abs(net))} this month
+                {sign}{formatBaseMoney(Math.abs(net))} this month
               </span>
             </div>
           )}
@@ -394,8 +394,8 @@ export function CompactNetWorth() {
           {income != null && expenses != null && savingsRate != null && income > 0 && (
             <div style={{ display: "flex", borderTop: "1px solid var(--ft-border)", paddingTop: 10, gap: 0 }}>
               {[
-                { label: "IN", value: formatGbp(income), color: "var(--ft-green)" },
-                { label: "OUT", value: formatGbp(expenses), color: "var(--ft-red)" },
+                { label: "IN", value: formatBaseMoney(income), color: "var(--ft-green)" },
+                { label: "OUT", value: formatBaseMoney(expenses), color: "var(--ft-red)" },
                 { label: "SAVED", value: `${savingsRate.toFixed(0)}%`, color: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)" },
               ].map((stat, i) => (
                 <div key={stat.label} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid var(--ft-border)" : "none", padding: "0 4px" }}>
@@ -414,8 +414,8 @@ export function CompactNetWorth() {
 // accounts-summary: FULL WIDTH — account list card
 export function CompactAccountsSummary() {
   const { data: accounts = [] } = useListAccounts({});
-  const total = useMemo(() => accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0), [accounts]);
-  const sorted = useMemo(() => [...accounts].sort((a, b) => (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity)).slice(0, 5), [accounts]);
+  const total = useMemo(() => accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0), [accounts]);
+  const sorted = useMemo(() => [...accounts].sort((a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity)).slice(0, 5), [accounts]);
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-cyan)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34 }}>
@@ -428,7 +428,7 @@ export function CompactAccountsSummary() {
       </div>
       {/* Total */}
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "10px 12px 8px", borderBottom: "1px solid var(--ft-border)" }}>
-        <span className="pnum" style={{ ...MONO, fontSize: 22, fontWeight: 700, color: total !== 0 ? (total >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", letterSpacing: "-0.03em", lineHeight: 1 }}>{formatGbp(total)}</span>
+        <span className="pnum" style={{ ...MONO, fontSize: 22, fontWeight: 700, color: total !== 0 ? (total >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", letterSpacing: "-0.03em", lineHeight: 1 }}>{formatBaseMoney(total)}</span>
         <span style={{ ...MONO, fontSize: 10, color: "var(--ft-dim)" }}>total cash</span>
       </div>
       {/* Account rows */}
@@ -440,8 +440,8 @@ export function CompactAccountsSummary() {
             <div style={{ ...MONO, ...CLIP, fontSize: 13, color: "var(--ft-text)", fontWeight: 500 }}>{acc.name}</div>
             <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: 2 }}>{acc.currency}</div>
           </div>
-          <span className="pnum" style={{ ...MONO, fontSize: 15, fontWeight: 700, color: acc.gbpEquivalent == null ? "var(--ft-dim)" : acc.gbpEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)", letterSpacing: "-0.02em", flexShrink: 0 }}>
-            {acc.gbpEquivalent == null ? "—" : formatGbp(acc.gbpEquivalent)}
+          <span className="pnum" style={{ ...MONO, fontSize: 15, fontWeight: 700, color: acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)", letterSpacing: "-0.02em", flexShrink: 0 }}>
+            {acc.baseEquivalent == null ? "—" : formatBaseMoney(acc.baseEquivalent)}
           </span>
         </div>
       ))}
@@ -507,7 +507,7 @@ export function CompactSpendingBreakdown() {
       accent="#e3b341"
       href="/analytics"
       primary={top ? top[0] : "No spend yet"}
-      secondary={top ? `${formatGbp(top[1])}${second ? ` · ${second[0]}` : ""}` : "Add transactions"}
+      secondary={top ? `${formatBaseMoney(top[1])}${second ? ` · ${second[0]}` : ""}` : "Add transactions"}
     />
   );
 }
@@ -533,9 +533,9 @@ export function CompactCashFlow() {
         <span style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>THIS MONTH</span>
       </div>
       <div style={{ display: "flex", alignItems: "stretch" }}>
-        <CashFlowCol label="IN"  value={formatGbp(income)}                            color={incomeColor}   borderRight={true} />
-        <CashFlowCol label="OUT" value={expenses == null ? "—" : formatGbp(expenses)} color={expensesColor} borderRight={true} />
-        <CashFlowCol label="NET" value={net == null ? "—" : `${sign}${formatGbp(net)}`} color={netColor}    borderRight={false} />
+        <CashFlowCol label="IN"  value={formatBaseMoney(income)}                            color={incomeColor}   borderRight={true} />
+        <CashFlowCol label="OUT" value={expenses == null ? "—" : formatBaseMoney(expenses)} color={expensesColor} borderRight={true} />
+        <CashFlowCol label="NET" value={net == null ? "—" : `${sign}${formatBaseMoney(net)}`} color={netColor}    borderRight={false} />
       </div>
     </div>
   );
@@ -590,7 +590,7 @@ export function CompactSavingsGoals() {
       accent={accent}
       href="/goals"
       primary={top ? top.name : "No goals yet"}
-      secondary={top ? `${pct}% · ${formatGbp(top.target - top.current)} left` : "Tap to add"}
+      secondary={top ? `${pct}% · ${formatBaseMoney(top.target - top.current)} left` : "Tap to add"}
       bar={pct ?? undefined}
       barColor={accent}
     />
@@ -602,14 +602,14 @@ export function CompactSubscriptionTracker() {
   const { data: upcoming = [] } = useListUpcoming();
   const { total, count } = useMemo(() => {
     const subs = upcoming.filter(u => u.type === "expense" && (u.frequency === "monthly" || u.frequency === "yearly" || u.frequency === "weekly" || u.frequency === "quarterly"));
-    return { total: subs.reduce((s, u) => s + (u.gbpEquivalent ?? 0), 0), count: subs.length };
+    return { total: subs.reduce((s, u) => s + (u.baseEquivalent ?? 0), 0), count: subs.length };
   }, [upcoming]);
   return (
     <Tile
       label="SUBSCRIPTIONS"
       accent="var(--ft-blue)"
       href="/subscriptions"
-      primary={total > 0 ? `${formatGbp(total)}/mo` : "None found"}
+      primary={total > 0 ? `${formatBaseMoney(total)}/mo` : "None found"}
       secondary={count > 0 ? `${count} recurring` : "Sync to detect"}
       badge={count > 0 ? `${count}` : undefined}
       badgeColor="var(--ft-blue)"
@@ -638,7 +638,7 @@ export function CompactMarketSnapshot() {
     const dir = isUp === true ? "▲" : isUp === false ? "▼" : "";
     const meta = TICKER_LABELS[q.ticker ?? ""] ?? { sym: (q.ticker ?? "").replace(/^\^/, "").slice(0, 5), name: q.displayName ?? q.ticker ?? "" };
     const price = q.price != null
-      ? q.price > 10000 ? formatGbp(q.price)
+      ? q.price > 10000 ? formatBaseMoney(q.price)
       : q.price > 100   ? q.price.toFixed(0)
       : q.price > 1     ? q.price.toFixed(2)
       : q.price.toFixed(4)
@@ -675,14 +675,14 @@ export function CompactMarketSnapshot() {
 export function CompactRecurringDetector() {
   const { data: upcoming = [] } = useListUpcoming();
   const recurring = useMemo(() => upcoming.filter(u => u.frequency && u.frequency !== "one-time"), [upcoming]);
-  const totalOut = useMemo(() => recurring.filter(u => u.type === "expense").reduce((s, u) => s + (u.gbpEquivalent ?? 0), 0), [recurring]);
+  const totalOut = useMemo(() => recurring.filter(u => u.type === "expense").reduce((s, u) => s + (u.baseEquivalent ?? 0), 0), [recurring]);
   return (
     <Tile
       label="RECURRING"
       accent="var(--ft-blue)"
       href="/subscriptions"
       primary={recurring.length > 0 ? `${recurring.length} items` : "None found"}
-      secondary={totalOut > 0 ? `${formatGbp(totalOut)}/mo` : "No charges"}
+      secondary={totalOut > 0 ? `${formatBaseMoney(totalOut)}/mo` : "No charges"}
     />
   );
 }
@@ -720,7 +720,7 @@ export function CompactTransactionCalendar() {
       label="TODAY"
       accent="var(--ft-blue)"
       href="/transactions"
-      primary={todaySpend > 0 ? formatGbp(todaySpend) : "£0"}
+      primary={todaySpend > 0 ? formatBaseMoney(todaySpend) : "£0"}
       secondary={`${txs.length} txns this month`}
     />
   );
@@ -736,11 +736,11 @@ export function CompactCashFlowSankey() {
   const saved = income != null && expenses != null ? Math.max(0, income - expenses) : null;
   const savePct = income != null && income > 0 && saved != null ? Math.round((saved / income) * 100) : null;
   const hasIncome = income != null && income > 0;
-  const primary = isLoading ? "…" : hasIncome ? formatGbp(income) : income == null ? "—" : "No income";
+  const primary = isLoading ? "…" : hasIncome ? formatBaseMoney(income) : income == null ? "—" : "No income";
   const secondary = isLoading
     ? "Loading…"
     : hasIncome && expenses != null && savePct != null
-      ? `${formatGbp(expenses)} out · ${savePct}% saved`
+      ? `${formatBaseMoney(expenses)} out · ${savePct}% saved`
       : income == null
         ? "Waiting for data"
         : "Add transactions";
@@ -773,8 +773,8 @@ export function CompactMonthComparison() {
       label="MOM SPEND"
       accent={color}
       href="/analytics"
-      primary={formatGbp(thisTotal)}
-      secondary={prevTotal > 0 ? `${sign}${formatGbp(delta)} vs last mo` : "Not enough data"}
+      primary={formatBaseMoney(thisTotal)}
+      secondary={prevTotal > 0 ? `${sign}${formatBaseMoney(delta)} vs last mo` : "Not enough data"}
       secondaryColor={prevTotal > 0 ? color : undefined}
       trend={delta <= 0 && prevTotal > 0 ? "up" : delta > 0 ? "down" : undefined}
     />
@@ -797,7 +797,7 @@ export function CompactSpendingForecast() {
       label="FORECAST"
       accent="#e3b341"
       href="/analytics"
-      primary={forecast > 0 ? formatGbp(Math.round(forecast)) : "—"}
+      primary={forecast > 0 ? formatBaseMoney(Math.round(forecast)) : "—"}
       secondary="Projected month-end"
     />
   );
@@ -813,7 +813,7 @@ export function CompactDailySpend() {
       label="TODAY SPEND"
       accent="var(--ft-amber)"
       href="/transactions"
-      primary={formatGbp(todaySpend)}
+      primary={formatBaseMoney(todaySpend)}
       secondary={`${todayTxs.length} txn${todayTxs.length !== 1 ? "s" : ""} today`}
     />
   );
@@ -835,7 +835,7 @@ export function CompactTopMerchants() {
       accent="var(--ft-amber)"
       href="/transactions"
       primary={top ? top[0] : "No txns yet"}
-      secondary={top ? `${formatGbp(top[1])} this mo` : "Add transactions"}
+      secondary={top ? `${formatBaseMoney(top[1])} this mo` : "Add transactions"}
     />
   );
 }
@@ -844,14 +844,14 @@ export function CompactTopMerchants() {
 export function CompactCashFlowPreview() {
   const { data: accounts = [] } = useListAccounts({});
   const { data: upcoming = [] } = useListUpcoming();
-  const balance = useMemo(() => accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0), [accounts]);
+  const balance = useMemo(() => accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0), [accounts]);
   const now = useMemo(() => new Date(), []);
   const in30 = useMemo(() => new Date(now.getTime() + 30 * 86400000), [now]);
   const { inflows, outflows } = useMemo(() => {
     const pending = upcoming.filter(u => { const d = new Date(u.dueDate); return d >= now && d <= in30 && u.status === "pending"; });
     return {
-      inflows: pending.filter(u => u.type === "income").reduce((s, u) => s + (u.gbpEquivalent ?? 0), 0),
-      outflows: pending.filter(u => u.type === "expense").reduce((s, u) => s + (u.gbpEquivalent ?? 0), 0),
+      inflows: pending.filter(u => u.type === "income").reduce((s, u) => s + (u.baseEquivalent ?? 0), 0),
+      outflows: pending.filter(u => u.type === "expense").reduce((s, u) => s + (u.baseEquivalent ?? 0), 0),
     };
   }, [upcoming, now, in30]);
   const net = inflows - outflows;
@@ -861,9 +861,9 @@ export function CompactCashFlowPreview() {
       label="30-DAY FLOW"
       accent="var(--ft-cyan)"
       href="/"
-      primary={net !== 0 ? `${net >= 0 ? "+" : ""}${formatGbp(net)}` : formatGbp(balance)}
+      primary={net !== 0 ? `${net >= 0 ? "+" : ""}${formatBaseMoney(net)}` : formatBaseMoney(balance)}
       primaryColor={net !== 0 ? color : "var(--ft-text)"}
-      secondary={net !== 0 ? `from ${formatGbp(balance)}` : "No upcoming"}
+      secondary={net !== 0 ? `from ${formatBaseMoney(balance)}` : "No upcoming"}
       trend={net > 0 ? "up" : net < 0 ? "down" : undefined}
     />
   );
@@ -883,7 +883,7 @@ export function CompactSpendingVelocity() {
       label="SPEND RATE"
       accent="var(--ft-amber)"
       href="/analytics"
-      primary={dailyRate > 0 ? `${formatGbp(dailyRate)}/day` : "£0/day"}
+      primary={dailyRate > 0 ? `${formatBaseMoney(dailyRate)}/day` : "£0/day"}
       secondary={`Day ${now.getDate()} of month`}
     />
   );
@@ -914,7 +914,7 @@ export function CompactEmergencyFund() {
   const { data: accounts = [] } = useListAccounts({});
   const { data: allTxs = [] } = useListTransactions({});
   const { months, color } = useMemo(() => {
-    const liquid = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+    const liquid = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
     const now = new Date();
     const expenses: number[] = [];
     for (let i = 1; i <= 3; i++) {
@@ -968,7 +968,7 @@ export function CompactNwMilestones() {
       accent="var(--ft-accent)"
       href="/"
       primary={next ? label(next) : "Max!"}
-      secondary={next ? `${Math.round(pct)}% · ${formatGbp(next - nw)} left` : "All reached"}
+      secondary={next ? `${Math.round(pct)}% · ${formatBaseMoney(next - nw)} left` : "All reached"}
       bar={pct}
       barColor="var(--ft-accent)"
     />
@@ -983,7 +983,7 @@ export function CompactDecisionEngine() {
   const { data: goals = [] } = useListGoals();
   const { count } = useMemo(() => {
     let count = 0;
-    const totalCash = accounts.reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+    const totalCash = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
     if (totalCash > 5000) count++;
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;

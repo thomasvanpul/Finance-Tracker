@@ -48,7 +48,7 @@ import { COMPACT_WIDGET_COMPONENTS, COMPACT_WIDGET_FULL_WIDTH } from "@/componen
 import { OnboardingWizard } from "@/components/onboarding-wizard";
 import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { formatGbp, formatNative } from "@/lib/utils";
+import { formatBaseMoney, formatNative } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useLocation } from "wouter";
@@ -93,12 +93,12 @@ function layoutFingerprint(enabled: string[], order: string[], spans: Record<str
 
 function AnimatedNet({ value }: { value: number }) {
   const animated = useCountUp(value);
-  return <>{animated >= 0 ? "+" : ""}{formatGbp(animated)}</>;
+  return <>{animated >= 0 ? "+" : ""}{formatBaseMoney(animated)}</>;
 }
 
 function AnimatedSpendRate({ value }: { value: number }) {
   const animated = useCountUp(value);
-  return <>{formatGbp(animated)}</>;
+  return <>{formatBaseMoney(animated)}</>;
 }
 
 // Widget wrappers — delegate to panel components defined later in this file.
@@ -191,7 +191,7 @@ function EmergencyFundWidget() {
   // netWorth already reports the honest total; this local sum drives
   // secondary widgets that consume liquidSavings as an input.
   const liquidSavings = useMemo(() => {
-    return (accounts ?? []).reduce((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+    return (accounts ?? []).reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
   }, [accounts]);
 
   const avgMonthlyExpenses = useMemo(() => {
@@ -252,8 +252,8 @@ function EmergencyFundWidget() {
 
       {/* Meta */}
       <Text as="div" mono size={9} color="var(--ft-dim)">
-        <span className="pnum">{formatGbp(liquidSavings)}</span> liquid
-        {avgMonthlyExpenses > 0 && ` · ${formatGbp(avgMonthlyExpenses)}/mo avg`}
+        <span className="pnum">{formatBaseMoney(liquidSavings)}</span> liquid
+        {avgMonthlyExpenses > 0 && ` · ${formatBaseMoney(avgMonthlyExpenses)}/mo avg`}
       </Text>
 
       {/* Progress bar */}
@@ -456,7 +456,7 @@ function CashFlowPreviewPanel() {
   const { data: upcoming } = useListUpcoming();
 
   const startingBalance = useMemo(
-    () => (accounts ?? []).reduce((sum, a) => sum + (a.gbpEquivalent ?? 0), 0),
+    () => (accounts ?? []).reduce((sum, a) => sum + (a.baseEquivalent ?? 0), 0),
     [accounts]
   );
 
@@ -472,10 +472,10 @@ function CashFlowPreviewPanel() {
     // native-column detail views elsewhere still show the row.
     const inflows = items
       .filter(i => i.type === "income")
-      .reduce((s, i) => s + (i.gbpEquivalent ?? 0), 0);
+      .reduce((s, i) => s + (i.baseEquivalent ?? 0), 0);
     const outflows = items
       .filter(i => i.type === "expense")
-      .reduce((s, i) => s + (i.gbpEquivalent ?? 0), 0);
+      .reduce((s, i) => s + (i.baseEquivalent ?? 0), 0);
     return { inflows, outflows };
   }, [upcoming]);
 
@@ -501,19 +501,19 @@ function CashFlowPreviewPanel() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>projected net</div>
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
-          from <span className="pnum">{formatGbp(startingBalance)}</span>
+          from <span className="pnum">{formatBaseMoney(startingBalance)}</span>
         </div>
       </HStack>
 
       <HStack gap={16} minWidth0>
         <HStack gap={6} align="center" minWidth0>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>Inflows</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>+{formatGbp(inflows)}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>+{formatBaseMoney(inflows)}</span>
         </HStack>
         <div style={{ width: 1, background: "var(--ft-border2)", flexShrink: 0 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>Outflows</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>-{formatGbp(outflows)}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>-{formatBaseMoney(outflows)}</span>
         </div>
       </HStack>
     </div>
@@ -579,7 +579,7 @@ function SpendingVelocityPanel() {
             <AnimatedSpendRate value={avgDailyThis} /><Text as="span" size={11} weight={400} color="var(--ft-dim)">/day</Text>
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            vs <span className="pnum">{formatGbp(avgDailyPrev)}</span>/day last month
+            vs <span className="pnum">{formatBaseMoney(avgDailyPrev)}</span>/day last month
           </div>
         </div>
         <div style={{
@@ -609,7 +609,7 @@ function SpendingVelocityPanel() {
           return (
             <div
               key={d.label}
-              title={`Day ${d.label}: ${formatGbp(d.amount)}`}
+              title={`Day ${d.label}: ${formatBaseMoney(d.amount)}`}
               style={{
                 flex: 1,
                 height: Math.max(h, d.amount > 0 ? 2 : 1),
@@ -685,10 +685,10 @@ function AiInsightsStrip() {
     }
 
     const prevAmt = prevCatMap[topCat[0]] ?? 0;
-    if (prevAmt === 0) return `Top spend category this month: ${topCat[0]} at ${formatGbp(topCat[1])}.`;
+    if (prevAmt === 0) return `Top spend category this month: ${topCat[0]} at ${formatBaseMoney(topCat[1])}.`;
 
     const pct = Math.round(((topCat[1] - prevAmt) / prevAmt) * 100);
-    return `Spent ${pct >= 0 ? pct + "% more" : Math.abs(pct) + "% less"} on ${topCat[0]} this month vs last (${formatGbp(topCat[1])} vs ${formatGbp(prevAmt)}).`;
+    return `Spent ${pct >= 0 ? pct + "% more" : Math.abs(pct) + "% less"} on ${topCat[0]} this month vs last (${formatBaseMoney(topCat[1])} vs ${formatBaseMoney(prevAmt)}).`;
   }, [thisTxs, prevTxs]);
 
   const insight2 = useMemo(() => {
@@ -704,7 +704,7 @@ function AiInsightsStrip() {
 
     const d = new Date(best[0]);
     const label = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-    return `Biggest spend day this month: ${label} — ${formatGbp(best[1])}.`;
+    return `Biggest spend day this month: ${label} — ${formatBaseMoney(best[1])}.`;
   }, [thisTxs]);
 
   const insight3 = useMemo(() => {
@@ -715,8 +715,8 @@ function AiInsightsStrip() {
     if (bills.length === 0) return "No upcoming bills due in the next 7 days.";
     // Sum only bills whose FX we have; the sentence still cites all N
     // bills so nothing vanishes from the count.
-    const total = bills.reduce((s, b) => s + (b.gbpEquivalent ?? 0), 0);
-    return `${bills.length} recurring bill${bills.length !== 1 ? "s" : ""} totalling ${formatGbp(total)} due in the next 7 days.`;
+    const total = bills.reduce((s, b) => s + (b.baseEquivalent ?? 0), 0);
+    return `${bills.length} recurring bill${bills.length !== 1 ? "s" : ""} totalling ${formatBaseMoney(total)} due in the next 7 days.`;
   }, [upcoming]);
 
   const insightRows = [
@@ -2177,7 +2177,7 @@ function RecentTransactionsWidgetInline() {
                 shows its type + description on the left. */}
             {tx.gbpValue == null
               ? formatNative(Math.abs(tx.nativeAmount), tx.currency)
-              : `${TYPE_PREFIX[tx.type]}${formatGbp(tx.gbpValue)}`}
+              : `${TYPE_PREFIX[tx.type]}${formatBaseMoney(tx.gbpValue)}`}
           </span>
         </div>
       ))}
@@ -2216,7 +2216,7 @@ function DashboardOverview() {
   // sort — the top-6 slice still surfaces the largest real holdings,
   // without shuffling.
   const sortedAccounts = useMemo(
-    () => [...accounts].sort((a, b) => (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity)).slice(0, 6),
+    () => [...accounts].sort((a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity)).slice(0, 6),
     [accounts]
   );
   const txRows = useMemo(
@@ -2224,7 +2224,7 @@ function DashboardOverview() {
     [recentTxs]
   );
   const upcomingBills = useMemo(
-    () => (upcoming as Array<{ id: string | number; description: string; gbpEquivalent: number; dueDate: string; type: string }>)
+    () => (upcoming as Array<{ id: string | number; description: string; baseEquivalent: number; dueDate: string; type: string }>)
       .filter(u => u.type === "expense")
       .slice(0, 4),
     [upcoming]
@@ -2248,7 +2248,7 @@ function DashboardOverview() {
             <div>
               <div style={{ ...OV_LABEL, marginBottom: 3 }}>NET WORTH</div>
               <div className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 34 : 36, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.03em", lineHeight: 1 }}>
-                {netWorth === null ? "—" : formatGbp(netWorth)}
+                {netWorth === null ? "—" : formatBaseMoney(netWorth)}
               </div>
             </div>
             {income > 0 && (
@@ -2256,7 +2256,7 @@ function DashboardOverview() {
                 <div>
                   <div style={{ ...OV_LABEL, marginBottom: 3 }}>THIS MONTH</div>
                   <div className="pnum" style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, ...C(netColor) }}>
-                    {net >= 0 ? "+" : ""}{formatGbp(net)}
+                    {net >= 0 ? "+" : ""}{formatBaseMoney(net)}
                   </div>
                 </div>
                 {savingsRate > 0 && (
@@ -2272,8 +2272,8 @@ function DashboardOverview() {
           </div>
           {income > 0 && (
             <div style={{ display: "flex", gap: 16, marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
-              <span className="pnum" style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-green)") }}>▲ {formatGbp(income)} in</span>
-              <span className="pnum" style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-red)") }}>▼ {formatGbp(expenses)} out</span>
+              <span className="pnum" style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-green)") }}>▲ {formatBaseMoney(income)} in</span>
+              <span className="pnum" style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-red)") }}>▼ {formatBaseMoney(expenses)} out</span>
             </div>
           )}
         </div>
@@ -2300,10 +2300,10 @@ function DashboardOverview() {
                 <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: isMobile ? 13 : 11, fontWeight: isMobile ? 500 : 400, ...C("var(--ft-text)") }}>{acc.name}</div>
                 <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)"), letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: isMobile ? 2 : 0 }}>{(acc as any).currency ?? ""}</div>
               </div>
-              <span className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.gbpEquivalent == null ? "var(--ft-dim)" : acc.gbpEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
+              <span className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
                 {/* "—" for unconvertible accounts; the currency label
                     above still names the account's own currency. */}
-                {acc.gbpEquivalent == null ? "—" : formatGbp(acc.gbpEquivalent)}
+                {acc.baseEquivalent == null ? "—" : formatBaseMoney(acc.baseEquivalent)}
               </span>
             </div>
           ))}
@@ -2345,7 +2345,7 @@ function DashboardOverview() {
                 <span className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(tx.gbpValue == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0 }}>
                   {tx.gbpValue == null
                     ? "—"
-                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatGbp(Math.abs(tx.gbpValue))}`}
+                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.gbpValue))}`}
                 </span>
               </div>
             );
@@ -2358,7 +2358,7 @@ function DashboardOverview() {
                 <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(tx.gbpValue == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
                   {tx.gbpValue == null
                     ? "—"
-                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatGbp(Math.abs(tx.gbpValue))}`}
+                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.gbpValue))}`}
                 </span>
               </div>
             );
@@ -2385,7 +2385,7 @@ function DashboardOverview() {
                 <div key={bill.id ?? i} style={{ padding: "9px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-amber)" }}>
                   <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 8, ...C("var(--ft-dim)"), marginBottom: 4 }}>{bill.description}</div>
                   <div className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, ...C("var(--ft-text)"), marginBottom: 3 }}>
-                    {formatGbp(bill.gbpEquivalent)}
+                    {formatBaseMoney(bill.baseEquivalent)}
                   </div>
                   {bill.dueDate && (
                     <div style={{ ...OV_MONO, fontSize: 8, ...C("var(--ft-amber)") }}>
@@ -2702,24 +2702,24 @@ export default function Dashboard() {
 
     const NET_WORTH: KpiCellData = {
       label: "NET WORTH",
-      value: formatGbp(netWorth),
+      value: formatBaseMoney(netWorth),
       delta: netWorth > 0 ? undefined : "–",
       valueColor: "var(--ft-blue)",
     };
     const MONTHLY_INCOME: KpiCellData = {
       label: "MONTHLY INCOME",
-      value: income > 0 ? formatGbp(income) : "–",
+      value: income > 0 ? formatBaseMoney(income) : "–",
       valueColor: income > 0 ? "var(--ft-green)" : "var(--ft-dim)",
     };
     const MONTHLY_SPEND: KpiCellData = {
       label: "MONTHLY SPEND",
-      value: expenses > 0 ? formatGbp(expenses) : "–",
+      value: expenses > 0 ? formatBaseMoney(expenses) : "–",
       valueColor: expenses > 0 ? "var(--ft-red)" : "var(--ft-dim)",
     };
     const SAVINGS_RATE: KpiCellData = {
       label: "SAVINGS RATE",
       value: income > 0 ? `${Math.round(savingsRate)}%` : "–",
-      delta: netSavings !== 0 ? `${netSavings >= 0 ? "+" : ""}${formatGbp(netSavings)}` : undefined,
+      delta: netSavings !== 0 ? `${netSavings >= 0 ? "+" : ""}${formatBaseMoney(netSavings)}` : undefined,
       deltaColor: netSavings > 0 ? "var(--ft-green)" : "var(--ft-red)",
       valueColor: savingsRate >= 20
         ? "var(--ft-green)"
@@ -2736,12 +2736,12 @@ export default function Dashboard() {
     };
     const PORTFOLIO: KpiCellData = {
       label: "PORTFOLIO",
-      value: portfolioVal > 0 ? formatGbp(portfolioVal) : "–",
+      value: portfolioVal > 0 ? formatBaseMoney(portfolioVal) : "–",
       // Delta is total P&L (return-since-inception). Kept as the
       // secondary line on this cell for continuity; the intraday
       // headline lives on PORTFOLIO_DAY (below) for the market persona.
       delta: portfolioPl !== 0
-        ? `${portfolioPl >= 0 ? "+" : ""}${formatGbp(portfolioPl)}`
+        ? `${portfolioPl >= 0 ? "+" : ""}${formatBaseMoney(portfolioPl)}`
         : undefined,
       deltaColor: portfolioPl >= 0 ? "var(--ft-green)" : "var(--ft-red)",
       valueColor: "var(--ft-text)",
@@ -2764,7 +2764,7 @@ export default function Dashboard() {
       label: "24H",
       value: dayChangeGbp == null
         ? "—"
-        : `${dayChangeGbp >= 0 ? "+" : ""}${formatGbp(dayChangeGbp)}`,
+        : `${dayChangeGbp >= 0 ? "+" : ""}${formatBaseMoney(dayChangeGbp)}`,
       delta: dayChangePercent == null
         ? undefined
         : `${dayChangePercent >= 0 ? "+" : ""}${dayChangePercent.toFixed(2)}%`,
@@ -2777,17 +2777,17 @@ export default function Dashboard() {
     };
     const CASH: KpiCellData = {
       label: "CASH",
-      value: cash !== 0 ? formatGbp(cash) : "–",
+      value: cash !== 0 ? formatBaseMoney(cash) : "–",
       valueColor: cash > 0 ? "var(--ft-text)" : "var(--ft-dim)",
     };
     const OWED_TO_ME: KpiCellData = {
       label: "OWED TO ME",
-      value: owedToMe > 0 ? formatGbp(owedToMe) : "–",
+      value: owedToMe > 0 ? formatBaseMoney(owedToMe) : "–",
       valueColor: owedToMe > 0 ? "var(--ft-green)" : "var(--ft-dim)",
     };
     const I_OWE: KpiCellData = {
       label: "I OWE",
-      value: iOwe > 0 ? formatGbp(iOwe) : "–",
+      value: iOwe > 0 ? formatBaseMoney(iOwe) : "–",
       valueColor: iOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)",
     };
 

@@ -13,7 +13,7 @@ import {
   Cell,
 } from "recharts";
 import { TrendingUp, ArrowRight, Target, ShieldCheck, AlertTriangle } from "lucide-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { loadPersonaIds } from "@/lib/persona";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
@@ -413,10 +413,10 @@ function KpiBar({
           </span>
         </HStack>
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: trackColor, lineHeight: 1 }}>
-          {formatGbp(Math.round(totalMonthlyIncome))}
+          {formatBaseMoney(Math.round(totalMonthlyIncome))}
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
-          {includeStatePension ? `incl. £${Math.round(monthlyStatePension)}/mo state` : "excl. state pension"} · target: <span className="pnum">{hasTarget ? formatGbp(targetMonthlyIncome) : "—"}</span>
+          {includeStatePension ? `incl. £${Math.round(monthlyStatePension)}/mo state` : "excl. state pension"} · target: <span className="pnum">{hasTarget ? formatBaseMoney(targetMonthlyIncome) : "—"}</span>
         </div>
       </div>
     </div>
@@ -497,7 +497,7 @@ function PensionHealthBlock({
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
             <span>£0/mo</span>
-            <span>Target: <span className="pnum">{formatGbp(targetMonthlyIncome)}/mo</span></span>
+            <span>Target: <span className="pnum">{formatBaseMoney(targetMonthlyIncome)}/mo</span></span>
           </div>
         </div>
 
@@ -505,13 +505,13 @@ function PensionHealthBlock({
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
           <div style={{ background: "var(--ft-raised)", padding: "10px 12px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Projected Annual Income</div>
-            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: barColor, lineHeight: 1 }}>{formatGbp(Math.round(annualCurrentIncome))}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}><span className="pnum">{formatGbp(Math.round(totalMonthlyIncome))}</span>/mo</div>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: barColor, lineHeight: 1 }}>{formatBaseMoney(Math.round(annualCurrentIncome))}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}><span className="pnum">{formatBaseMoney(Math.round(totalMonthlyIncome))}</span>/mo</div>
           </div>
           <div style={{ background: "var(--ft-raised)", padding: "10px 12px" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Target Annual Income</div>
-            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{formatGbp(annualTargetIncome)}</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}><span className="pnum">{formatGbp(targetMonthlyIncome)}</span>/mo</div>
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{formatBaseMoney(annualTargetIncome)}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}><span className="pnum">{formatBaseMoney(targetMonthlyIncome)}</span>/mo</div>
           </div>
         </div>
 
@@ -531,11 +531,11 @@ function PensionHealthBlock({
             <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "rgba(248,81,73,0.15)" }}>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Monthly shortfall</div>
-                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatGbp(Math.round(shortfallMonthly))}</div>
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.round(shortfallMonthly))}</div>
               </div>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Annual shortfall</div>
-                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatGbp(Math.round(shortfallAnnual))}</div>
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.round(shortfallAnnual))}</div>
               </div>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Required pot</div>
@@ -564,16 +564,16 @@ function PensionHealthBlock({
               <HStack gap={8} align="center" wrap>
                 <Text as="span" color="var(--ft-dim)">Contribute</Text>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-blue)" }}>
-                  {formatGbp(Math.round(extraMonthlyNeeded))}/mo more
+                  {formatBaseMoney(Math.round(extraMonthlyNeeded))}/mo more
                 </span>
                 <ArrowRight style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
                 <Text as="span" color="var(--ft-dim)">to hit</Text>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-green)" }}>
-                  {formatGbp(targetMonthlyIncome)}/mo target
+                  {formatBaseMoney(targetMonthlyIncome)}/mo target
                 </span>
               </HStack>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-                Total monthly: <span className="pnum">{formatGbp(Math.round(monthlyTotal + extraMonthlyNeeded))}</span> · Annual: <span className="pnum">{formatGbp(Math.round((monthlyTotal + extraMonthlyNeeded) * 12))}</span> · {yearsToRetirement}yr horizon
+                Total monthly: <span className="pnum">{formatBaseMoney(Math.round(monthlyTotal + extraMonthlyNeeded))}</span> · Annual: <span className="pnum">{formatBaseMoney(Math.round((monthlyTotal + extraMonthlyNeeded) * 12))}</span> · {yearsToRetirement}yr horizon
               </div>
             </div>
           </div>
@@ -590,7 +590,7 @@ function PensionHealthBlock({
           }}>
             <ShieldCheck style={{ width: 14, height: 14, color: "var(--ft-green)", flexShrink: 0 }} />
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)" }}>
-              Projected income exceeds your target by <span className="pnum">{formatGbp(Math.round(totalMonthlyIncome - targetMonthlyIncome))}/mo</span>. You are on track for a comfortable retirement.
+              Projected income exceeds your target by <span className="pnum">{formatBaseMoney(Math.round(totalMonthlyIncome - targetMonthlyIncome))}/mo</span>. You are on track for a comfortable retirement.
             </span>
           </div>
         )}
@@ -635,8 +635,8 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
 }) {
   const statePensionCells = [
     { label: "Weekly", value: "£221.20" },
-    { label: "Monthly", value: formatGbp(Math.round(STATE_PENSION_ANNUAL / 12)) },
-    { label: "Annual", value: formatGbp(STATE_PENSION_ANNUAL) },
+    { label: "Monthly", value: formatBaseMoney(Math.round(STATE_PENSION_ANNUAL / 12)) },
+    { label: "Annual", value: formatBaseMoney(STATE_PENSION_ANNUAL) },
   ];
 
   return (
@@ -737,7 +737,7 @@ function SensitivityRow({
         {fmtPot(Math.round(pot))}
       </td>
       <td className="pnum" style={{ ...tdStyle, color: isSelected ? "var(--ft-amber)" : "var(--ft-muted)", fontWeight: isSelected ? 700 : 400 }}>
-        {formatGbp(Math.round(totalMonthly))}
+        {formatBaseMoney(Math.round(totalMonthly))}
       </td>
       <td className="pnum" style={{ ...tdStyle, color: growthGain > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
         +{fmtPot(Math.round(growthGain))}
@@ -875,7 +875,7 @@ function TaxReliefCellItem({ band, relief, note }: { band: string; relief: numbe
       }}
     >
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>{band}</div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-green)" }}>{formatGbp(Math.round(relief))}</div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(Math.round(relief))}</div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>{note}</div>
     </div>
   );
@@ -891,9 +891,9 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
   const barColor = pct >= 100 ? "var(--ft-red)" : pct >= 80 ? "var(--ft-amber)" : "var(--ft-green)";
 
   const allowanceCells = [
-    { label: "Annual Contributions", value: formatGbp(Math.round(annualContrib)), color: barColor },
-    { label: "Remaining Allowance", value: remaining === 0 ? "Maxed" : formatGbp(remaining), color: remaining === 0 ? "var(--ft-green)" : "var(--ft-text)" },
-    { label: "UK Annual Limit", value: formatGbp(ANNUAL_ALLOWANCE), color: "var(--ft-dim)" },
+    { label: "Annual Contributions", value: formatBaseMoney(Math.round(annualContrib)), color: barColor },
+    { label: "Remaining Allowance", value: remaining === 0 ? "Maxed" : formatBaseMoney(remaining), color: remaining === 0 ? "var(--ft-green)" : "var(--ft-text)" },
+    { label: "UK Annual Limit", value: formatBaseMoney(ANNUAL_ALLOWANCE), color: "var(--ft-dim)" },
   ];
 
   const taxReliefCells = [
@@ -922,7 +922,7 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
         </div>
         <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 12 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 8 }}>
-            Estimated Tax Relief (on your <span className="pnum">{formatGbp(Math.round(annualContrib))}</span> contributions)
+            Estimated Tax Relief (on your <span className="pnum">{formatBaseMoney(Math.round(annualContrib))}</span> contributions)
           </div>
           <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
             {taxReliefCells.map(({ band, relief, note }) => (
@@ -977,9 +977,9 @@ function IsaSection() {
   const barColor = pct >= 100 ? "var(--ft-green)" : pct >= 80 ? "var(--ft-amber)" : "var(--ft-green)";
 
   const isaCells = [
-    { label: "Used", value: formatGbp(used), color: pct >= 100 ? "var(--ft-green)" : "var(--ft-amber)" },
-    { label: "Remaining", value: formatGbp(remaining), color: remaining === 0 ? "var(--ft-green)" : "var(--ft-text)" },
-    { label: "Allowance", value: formatGbp(ISA_ANNUAL_ALLOWANCE), color: "var(--ft-dim)" },
+    { label: "Used", value: formatBaseMoney(used), color: pct >= 100 ? "var(--ft-green)" : "var(--ft-amber)" },
+    { label: "Remaining", value: formatBaseMoney(remaining), color: remaining === 0 ? "var(--ft-green)" : "var(--ft-text)" },
+    { label: "Allowance", value: formatBaseMoney(ISA_ANNUAL_ALLOWANCE), color: "var(--ft-dim)" },
   ];
 
   function handleChange(v: number | "") {
@@ -1227,7 +1227,7 @@ function PensionSection() {
                   />
                   <Tooltip
                     formatter={(value: number, name: string) => [
-                      formatGbp(value),
+                      formatBaseMoney(value),
                       name === "total" ? "Total Pot" : "Contributions",
                     ]}
                     contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
@@ -1366,15 +1366,15 @@ function PensionSection() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
                 <HStack justify="between">
                   <span style={{ color: "var(--ft-muted)" }}>Your contribution</span>
-                  <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{formatGbp(inputs.employeeContrib)}</span>
+                  <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{formatBaseMoney(inputs.employeeContrib)}</span>
                 </HStack>
                 <HStack justify="between">
                   <Text as="span" color="var(--ft-muted)">Employer match</Text>
-                  <span className="pnum" style={{ color: "var(--ft-cyan)", fontWeight: 600 }}>{formatGbp(inputs.employerContrib)}</span>
+                  <span className="pnum" style={{ color: "var(--ft-cyan)", fontWeight: 600 }}>{formatBaseMoney(inputs.employerContrib)}</span>
                 </HStack>
                 <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2, marginBottom: 4 }}>
                   <Text as="span" weight={600} color="var(--ft-text)">Total / mo</Text>
-                  <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{formatGbp(monthlyTotal)}</span>
+                  <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{formatBaseMoney(monthlyTotal)}</span>
                 </div>
               </div>
             </div>
@@ -1385,17 +1385,17 @@ function PensionSection() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
                 <HStack justify="between">
                   <Text as="span" color="var(--ft-muted)">From pension pot</Text>
-                  <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{monthlyIncomeFromPot != null ? formatGbp(Math.round(monthlyIncomeFromPot)) : "—"}</span>
+                  <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{monthlyIncomeFromPot != null ? formatBaseMoney(Math.round(monthlyIncomeFromPot)) : "—"}</span>
                 </HStack>
                 {inputs.includeStatePension && (
                   <HStack justify="between">
                     <Text as="span" color="var(--ft-muted)">State pension</Text>
-                    <span className="pnum" style={{ color: "var(--ft-cyan)", fontWeight: 700 }}>{formatGbp(Math.round(monthlyStatePension))}</span>
+                    <span className="pnum" style={{ color: "var(--ft-cyan)", fontWeight: 700 }}>{formatBaseMoney(Math.round(monthlyStatePension))}</span>
                   </HStack>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2 }}>
                   <Text as="span" weight={600} color="var(--ft-text)">Total</Text>
-                  <span className="pnum" style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{totalMonthlyIncome != null ? formatGbp(Math.round(totalMonthlyIncome)) : "—"}</span>
+                  <span className="pnum" style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{totalMonthlyIncome != null ? formatBaseMoney(Math.round(totalMonthlyIncome)) : "—"}</span>
                 </div>
               </div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 8 }}>Assumes 20-yr drawdown · pot / 240 months</div>
@@ -1420,7 +1420,7 @@ function PensionSection() {
                 />
                 <Tooltip
                   formatter={(value: number, name: string) => [
-                    formatGbp(Math.round(value)),
+                    formatBaseMoney(Math.round(value)),
                     name === "employee" ? "Your Contributions" : name === "employer" ? "Employer Contributions" : "Investment Growth",
                   ]}
                   contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}

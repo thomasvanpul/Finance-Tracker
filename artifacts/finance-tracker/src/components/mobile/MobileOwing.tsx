@@ -3,6 +3,8 @@ import { useLocation } from "wouter";
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
+import { formatMoney } from "@/lib/utils";
+import { getBaseCurrency } from "@/lib/currency-store";
 
 // Owing — bills split with other people.
 //
@@ -29,7 +31,7 @@ interface DebtRow {
   currency: string;
   direction: "they_owe_me" | "i_owe_them";
   status: string;
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
 }
 
 function initials(name: string): string {
@@ -117,13 +119,13 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">OWED TO ME</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
-              {toMe == null ? "—" : `+£${nfmt(toMe, { decimals: 2 })}`}
+              {toMe == null ? "—" : `+${formatMoney(toMe, getBaseCurrency())}`}
             </Text>
           </HStack>
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">I OWE</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
-              {byMe == null ? "—" : `−£${nfmt(byMe, { decimals: 2 })}`}
+              {byMe == null ? "—" : `−${formatMoney(byMe, getBaseCurrency())}`}
             </Text>
           </HStack>
         </HStack>
@@ -204,12 +206,12 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
                 mono
                 size={14}
                 weight={600}
-                color={d.gbpEquivalent == null ? "var(--ft-dim)" : owedToMe ? "var(--ft-green)" : "var(--ft-red)"}
+                color={d.baseEquivalent == null ? "var(--ft-dim)" : owedToMe ? "var(--ft-green)" : "var(--ft-red)"}
                 numeric
               >
-                {d.gbpEquivalent == null
+                {d.baseEquivalent == null
                   ? "—"
-                  : `${owedToMe ? "+" : "−"}£${nfmt(Math.abs(d.gbpEquivalent), { decimals: 2 })}`}
+                  : `${owedToMe ? "+" : "−"}${formatMoney(Math.abs(d.baseEquivalent), getBaseCurrency())}`}
               </Text>
             </div>
           </div>

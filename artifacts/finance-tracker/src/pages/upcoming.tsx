@@ -16,7 +16,7 @@ import {
   getGetDashboardQueryKey,
   getListTransactionsQueryKey,
 } from "@workspace/api-client-react";
-import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { formatBaseMoney, formatNative, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,7 +77,7 @@ interface MarkPaidItem {
   nativeAmount: number;
   currency: string;
   accountId: number | null | undefined;
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
 }
 
 function makeEmptyUpForm(): UpForm {
@@ -104,7 +104,7 @@ const STATUS_COLORS: Record<Status, { bg: string; text: string }> = {
 };
 
 function computeForecast(
-  items: Array<{ status: string; type: string; dueDate: string; gbpEquivalent: number | null }>,
+  items: Array<{ status: string; type: string; dueDate: string; baseEquivalent: number | null }>,
   days: number
 ): number {
   const cutoff = new Date();
@@ -116,8 +116,8 @@ function computeForecast(
     if (item.dueDate > cutoffStr) return sum;
     // Skip items whose FX is unavailable — forecast is under-stated
     // rather than fabricated. Caveat surfaced on the summary cell.
-    if (item.gbpEquivalent == null) return sum;
-    return sum + (item.type === "income" ? item.gbpEquivalent : -item.gbpEquivalent);
+    if (item.baseEquivalent == null) return sum;
+    return sum + (item.type === "income" ? item.baseEquivalent : -item.baseEquivalent);
   }, 0);
 }
 
@@ -190,7 +190,7 @@ function ForecastKpiCell({
         color: isPositive ? "var(--ft-green)" : "var(--ft-red)",
         marginBottom: 6,
       }}>
-        <span className="pnum">{isPositive ? "+" : ""}{formatGbp(net)}</span>
+        <span className="pnum">{isPositive ? "+" : ""}{formatBaseMoney(net)}</span>
       </div>
       <div style={{ marginBottom: 2 }}>
         <MonoLabel as="span" size={10} letterSpacing="0.4px">
@@ -198,7 +198,7 @@ function ForecastKpiCell({
         </MonoLabel>
       </div>
       <Text as="div" mono size={12} weight={600} color={projected >= 0 ? "var(--ft-text)" : "var(--ft-red)"}>
-        <span className="pnum">{formatGbp(projected)}</span>
+        <span className="pnum">{formatBaseMoney(projected)}</span>
       </Text>
     </div>
   );
@@ -214,7 +214,7 @@ interface UpcomingRowProps {
     category: string;
     frequency: string;
     type: string;
-    gbpEquivalent: number | null;
+    baseEquivalent: number | null;
     status: string;
     nativeAmount: number;
     currency: string;
@@ -272,10 +272,10 @@ function UpcomingRow({
           </HStack>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, paddingLeft: 8, flexShrink: 0 }}>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: item.gbpEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)" }}>
-            {item.gbpEquivalent == null
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: item.baseEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)" }}>
+            {item.baseEquivalent == null
               ? formatNative(Math.abs(item.nativeAmount), item.currency)
-              : `${item.type === "income" ? "+" : "-"}${formatGbp(item.gbpEquivalent)}`}
+              : `${item.type === "income" ? "+" : "-"}${formatBaseMoney(item.baseEquivalent)}`}
           </span>
           <HStack gap={2}>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(item.id)}>
@@ -342,10 +342,10 @@ function UpcomingRow({
           {item.type.toUpperCase()}
         </span>
       </div>
-      <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: item.gbpEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-        {item.gbpEquivalent == null
+      <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: item.baseEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+        {item.baseEquivalent == null
           ? <span>{formatNative(Math.abs(item.nativeAmount), item.currency)}</span>
-          : <span className="pnum">{item.type === "income" ? "+" : "-"}{formatGbp(item.gbpEquivalent)}</span>}
+          : <span className="pnum">{item.type === "income" ? "+" : "-"}{formatBaseMoney(item.baseEquivalent)}</span>}
       </div>
       <div style={{ width: 120, minWidth: 120, padding: "5px 12px", borderRight: "1px solid var(--ft-raised)" }}>
         <Select value={item.status} onValueChange={(v) => onStatusChange(item.id, v as Status)}>
@@ -425,7 +425,7 @@ function SubRenewalRow({ sub }: SubRenewalRowProps) {
         {sub.frequency}
       </div>
       <div style={{ width: 120, minWidth: 120, padding: "7px 12px", textAlign: "right", color: "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-        <span className="pnum">-{formatGbp(sub.amount)}</span>
+        <span className="pnum">-{formatBaseMoney(sub.amount)}</span>
       </div>
     </div>
   );
@@ -469,7 +469,7 @@ export default function Upcoming() {
   }, [rawSubs]);
 
   const totalBalance = useMemo(
-    () => accounts?.reduce((sum, a) => sum + (a.gbpEquivalent ?? 0), 0) ?? 0,
+    () => accounts?.reduce((sum, a) => sum + (a.baseEquivalent ?? 0), 0) ?? 0,
     [accounts]
   );
 
@@ -492,8 +492,8 @@ export default function Upcoming() {
           // Cashflow projection skips unconvertible items — a
           // fabricated 0 would still fire the chart bend where none
           // exists. The bend disappears; the line continues.
-          if (item.gbpEquivalent == null) return;
-          running += item.type === "income" ? item.gbpEquivalent : -item.gbpEquivalent;
+          if (item.baseEquivalent == null) return;
+          running += item.type === "income" ? item.baseEquivalent : -item.baseEquivalent;
         });
         const label = d <= 7 ? `+${d}d` : d <= 30 ? `W${Math.ceil(d / 7)}` : `M${d <= 60 ? 2 : 3}`;
         points.push({ label, balance: Math.round(running), dayOffset: d });
@@ -551,7 +551,7 @@ export default function Upcoming() {
       item.type,
       // Empty cell (not "0.00") when FX unavailable — downstream
       // spreadsheet won't sum unconvertible items into totals.
-      item.gbpEquivalent == null ? "" : item.gbpEquivalent.toFixed(2),
+      item.baseEquivalent == null ? "" : item.baseEquivalent.toFixed(2),
       item.status,
     ].join(","));
     const csv = [header, ...rows].join("\n");
@@ -619,7 +619,7 @@ export default function Upcoming() {
           nativeAmount: item.nativeAmount,
           currency: item.currency,
           accountId: item.accountId,
-          gbpEquivalent: item.gbpEquivalent,
+          baseEquivalent: item.baseEquivalent,
         });
         setMarkPaidDate(new Date().toISOString().slice(0, 10));
         return;
@@ -778,9 +778,9 @@ export default function Upcoming() {
         if (!pid || pid === "full") return null;
         const outflow30d = summary?.committedOutgoings30d ?? 0;
         const msgs: Record<string, string | null> = {
-          budget:  outflow30d > 0 ? `${formatGbp(outflow30d)} in committed outgoings next 30 days — reconcile against your budget limits.` : `Log expected bills here so your budget forecast stays accurate.`,
-          wealth:  outflow30d > 0 ? `${formatGbp(outflow30d)} outgoing next 30 days — plan cash reserves before deploying to long-term investments.` : null,
-          market:  outflow30d > 0 ? `${formatGbp(outflow30d)} in scheduled outflows — ensure sufficient cash so you don't need to liquidate positions.` : null,
+          budget:  outflow30d > 0 ? `${formatBaseMoney(outflow30d)} in committed outgoings next 30 days — reconcile against your budget limits.` : `Log expected bills here so your budget forecast stays accurate.`,
+          wealth:  outflow30d > 0 ? `${formatBaseMoney(outflow30d)} outgoing next 30 days — plan cash reserves before deploying to long-term investments.` : null,
+          market:  outflow30d > 0 ? `${formatBaseMoney(outflow30d)} in scheduled outflows — ensure sufficient cash so you don't need to liquidate positions.` : null,
           social:  `Track group trip deposits, shared bills, and advance payments here to stay ahead of shared expenses.`,
         };
         const msg = msgs[pid];
@@ -852,10 +852,10 @@ export default function Upcoming() {
                   <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>
                     {markPaidItem.category}
                   </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: markPaidItem.gbpEquivalent == null ? "var(--ft-dim)" : markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto" }}>
-                    {markPaidItem.gbpEquivalent == null
+                  <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: markPaidItem.baseEquivalent == null ? "var(--ft-dim)" : markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto" }}>
+                    {markPaidItem.baseEquivalent == null
                       ? <span>{formatNative(Math.abs(markPaidItem.nativeAmount), markPaidItem.currency)}</span>
-                      : <span className="pnum">{markPaidItem.type === "income" ? "+" : "-"}{formatGbp(markPaidItem.gbpEquivalent)}</span>}
+                      : <span className="pnum">{markPaidItem.type === "income" ? "+" : "-"}{formatBaseMoney(markPaidItem.baseEquivalent)}</span>}
                   </span>
                 </HStack>
                 {!markPaidItem.accountId && (
@@ -902,17 +902,17 @@ export default function Upcoming() {
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
           <SummaryKpiCell label="30d Outgoings" accentColor="var(--ft-red)">
             <Text as="div" mono size={14} weight={700} color="var(--ft-red)" lineHeight={1}>
-              <span className="pnum">-{formatGbp(summary.committedOutgoings30d)}</span>
+              <span className="pnum">-{formatBaseMoney(summary.committedOutgoings30d)}</span>
             </Text>
           </SummaryKpiCell>
           <SummaryKpiCell label="30d Income" accentColor="var(--ft-green)">
             <Text as="div" mono size={14} weight={700} color="var(--ft-green)" lineHeight={1}>
-              <span className="pnum">+{formatGbp(summary.expectedIncome30d)}</span>
+              <span className="pnum">+{formatBaseMoney(summary.expectedIncome30d)}</span>
             </Text>
           </SummaryKpiCell>
           <SummaryKpiCell label="30d Net" accentColor={isNet30Pos ? "var(--ft-green)" : "var(--ft-red)"}>
             <Text as="div" mono size={14} weight={700} color={isNet30Pos ? "var(--ft-green)" : "var(--ft-red)"} lineHeight={1}>
-              <span className="pnum">{isNet30Pos ? "+" : ""}{formatGbp(net30)}</span>
+              <span className="pnum">{isNet30Pos ? "+" : ""}{formatBaseMoney(net30)}</span>
             </Text>
           </SummaryKpiCell>
           <SummaryKpiCell label="Overdue" accentColor={overdueCount > 0 ? "var(--ft-red)" : "var(--ft-green)"} borderRight={false}>
@@ -1011,7 +1011,7 @@ export default function Upcoming() {
                 />
                 <Tooltip
                   contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10 }}
-                  formatter={(v: number) => [formatGbp(v), "Projected balance"]}
+                  formatter={(v: number) => [formatBaseMoney(v), "Projected balance"]}
                 />
                 <ReferenceLine y={0} stroke="var(--ft-red)" strokeDasharray="4 2" strokeOpacity={0.5} />
                 <Area

@@ -1,7 +1,15 @@
-let baseCurrency = "GBP";
+// Base-currency default is null, NOT "GBP". A hardcoded default is a
+// visible lie on every cold start for any user whose base is not GBP:
+// the first paint renders "£10,101.12" and only flips to "RM 10,101.12"
+// after the settings query resolves. On cellular in a WKWebView that
+// window is however long the request takes — this is the same class of
+// defect the whole rename commit is closing. Null means "unknown yet";
+// money formatters return "—" when the base is unknown, per the app-
+// wide "no fabricated number" rule.
+let baseCurrency: string | null = null;
 let fxOverrides: Record<string, Record<string, number>> = {};
 
-export function getBaseCurrency(): string {
+export function getBaseCurrency(): string | null {
   return baseCurrency;
 }
 

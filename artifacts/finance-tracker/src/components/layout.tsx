@@ -18,7 +18,7 @@ import { GlobalSearch, useGlobalSearch } from "@/components/global-search";
 import { KeyboardShortcuts, useKeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, ChevronLeft, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Home, CreditCard, ArrowLeftRight, BarChart2, PieChart, LineChart, TrendingUp, FileText, Briefcase, Activity, Target, Calendar, RefreshCw, Users, Grid3X3, X } from "lucide-react";
 import { Logo, LogoMark } from "@/components/logo";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { setBaseCurrency } from "@/lib/currency-store";
 import { ThemeEffects } from "@/components/theme-effects";
 import { useEasterEggs, EasterEggRenderer } from "@/components/easter-eggs";
@@ -1842,13 +1842,13 @@ export function Layout({ children }: LayoutProps) {
             }}>
               {effectiveCollapsed ? (
                 <PrivNum style={{ fontSize: 9, color: "var(--ft-accent)", fontWeight: 700, letterSpacing: "0.02em" }}>
-                  {formatGbp(dashboardData.netWorth)}
+                  {formatBaseMoney(dashboardData.netWorth)}
                 </PrivNum>
               ) : (
                 <>
                   <span style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>NET WORTH</span>
                   <PrivNum style={{ fontSize: 10, color: "var(--ft-text)", fontWeight: 700 }}>
-                    {formatGbp(dashboardData.netWorth)}
+                    {formatBaseMoney(dashboardData.netWorth)}
                   </PrivNum>
                 </>
               )}

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { useListTransactions, useListAccounts } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { applyPersonas, loadPersonaIds, PERSONAS, PERSONA_GLYPHS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 
@@ -219,7 +219,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
         section: "accounts" as CommandSection,
         icon: "▣",
         title: acct.name,
-        shortcut: acct.gbpEquivalent == null ? "—" : formatGbp(acct.gbpEquivalent),
+        shortcut: acct.baseEquivalent == null ? "—" : formatBaseMoney(acct.baseEquivalent),
         action: navTo("/accounts"),
       });
     }
@@ -229,7 +229,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
         section: "transactions" as CommandSection,
         icon: tx.type === "income" ? "↑" : "↓",
         title: tx.description,
-        shortcut: (tx.gbpValue == null ? "—" : (tx.type === "income" ? "+" : "-") + formatGbp(tx.gbpValue)) + " · " + tx.date.slice(0, 10),
+        shortcut: (tx.gbpValue == null ? "—" : (tx.type === "income" ? "+" : "-") + formatBaseMoney(tx.gbpValue)) + " · " + tx.date.slice(0, 10),
         action: navTo("/transactions"),
       });
     }

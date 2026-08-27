@@ -8,7 +8,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 
 interface Transaction {
@@ -240,10 +240,10 @@ function CandidateRow({
 
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>
-            −{formatGbp(candidate.avgGbpValue)}
+            −{formatBaseMoney(candidate.avgGbpValue)}
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", lineHeight: 1.4 }}>
-            {formatGbp(annualCost)}/yr
+            {formatBaseMoney(annualCost)}/yr
           </div>
         </div>
 
@@ -347,11 +347,11 @@ export function RecurringDetectorWidget() {
                 />
                 <StatsKpiCell
                   label="Monthly"
-                  value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>{formatGbp(totalMonthly)}</div>}
+                  value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>{formatBaseMoney(totalMonthly)}</div>}
                 />
                 <StatsKpiCell
                   label="Annual"
-                  value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>{formatGbp(totalMonthly * 12)}</div>}
+                  value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>{formatBaseMoney(totalMonthly * 12)}</div>}
                 />
               </div>
 

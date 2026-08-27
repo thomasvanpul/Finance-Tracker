@@ -11,7 +11,7 @@ import {
   useListGoals,
   useListBudgets,
 } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import type { Transaction, Debt, UpcomingItem, Budget } from "@workspace/api-client-react";
 import { PiggyBank, CalendarCheck, BarChart3, Zap, Star } from "lucide-react";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS } from "@/lib/persona";
@@ -712,7 +712,7 @@ export default function HealthScore() {
   }, [monthTxs]);
 
   const totalPendingDebt = useMemo(
-    () => (debts ?? []).filter((d: Debt) => d.status === "pending").reduce((s: number, d: Debt) => s + (d.gbpEquivalent ?? 0), 0),
+    () => (debts ?? []).filter((d: Debt) => d.status === "pending").reduce((s: number, d: Debt) => s + (d.baseEquivalent ?? 0), 0),
     [debts]
   );
 
@@ -798,8 +798,8 @@ export default function HealthScore() {
       const fund = savingsGoals.find((g) => g.name.toLowerCase().includes("emergency"));
       if (!fund) return "No Emergency Fund goal found — create one in Goals.";
       const pct = fund.target > 0 ? (fund.current / fund.target) * 100 : 0;
-      if (pct >= 100) return `Fully funded at ${formatGbp(fund.current)} — excellent!`;
-      return `${pct.toFixed(0)}% funded — ${formatGbp(fund.current)} of ${formatGbp(fund.target)}.`;
+      if (pct >= 100) return `Fully funded at ${formatBaseMoney(fund.current)} — excellent!`;
+      return `${pct.toFixed(0)}% funded — ${formatBaseMoney(fund.current)} of ${formatBaseMoney(fund.target)}.`;
     }
     function actionEF(): { action: string; gain: number } | null {
       const fund = savingsGoals.find((g) => g.name.toLowerCase().includes("emergency"));

@@ -77,19 +77,19 @@ async function processAccounts(accounts: Account[], baseCurrency: string) {
   const accountBreakdown = await Promise.all(
     accounts.map(async (a) => {
       const balance = parseFloat(a.balance);
-      const gbpEquivalent = await toBase(balance, a.currency, baseCurrency);
-      if (gbpEquivalent == null) unconvertibleAccounts += 1;
+      const baseEquivalent = await toBase(balance, a.currency, baseCurrency);
+      if (baseEquivalent == null) unconvertibleAccounts += 1;
       return {
         id: a.id,
         name: a.name,
         currency: a.currency,
         balance,
-        gbpEquivalent: gbpEquivalent == null ? null : Math.round(gbpEquivalent * 100) / 100,
+        baseEquivalent: baseEquivalent == null ? null : Math.round(baseEquivalent * 100) / 100,
         type: a.type,
       };
     }),
   );
-  const totalCash = accountBreakdown.reduce<number>((s, a) => s + (a.gbpEquivalent ?? 0), 0);
+  const totalCash = accountBreakdown.reduce<number>((s, a) => s + (a.baseEquivalent ?? 0), 0);
   return { accountBreakdown, totalCash, unconvertibleAccounts };
 }
 
@@ -458,8 +458,8 @@ router.get("/dashboard", async (req, res): Promise<void> => {
 
   const liveComposition = { cash: 0, investment: 0, pension: 0, property: 0, other: 0 };
   for (const a of accountBreakdown) {
-    if (a.gbpEquivalent == null) continue;
-    liveComposition[a.type as "cash" | "investment" | "pension" | "property" | "other"] += a.gbpEquivalent;
+    if (a.baseEquivalent == null) continue;
+    liveComposition[a.type as "cash" | "investment" | "pension" | "property" | "other"] += a.baseEquivalent;
   }
   liveComposition.investment += portfolioValueGbp;
   const round4 = (n: number) => Math.round(n * 100) / 100;

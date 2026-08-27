@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryClient } from "@tanstack/react-query";
 import { useListTransactions, useUpdateTransaction, getListTransactionsQueryKey } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
@@ -278,14 +278,14 @@ function KpiBar({ patterns, rules }: KpiBarProps) {
   const kpis = [
     {
       label: "Monthly Commitment",
-      value: formatGbp(monthlyTotal),
+      value: formatBaseMoney(monthlyTotal),
       sub: `${patterns.length} active patterns`,
       color: monthlyTotal > 0 ? "var(--ft-red)" : "var(--ft-muted)",
       accent: monthlyTotal > 0 ? "var(--ft-red)" : "var(--ft-border2)",
     },
     {
       label: "Annual Total",
-      value: formatGbp(annualTotal),
+      value: formatBaseMoney(annualTotal),
       sub: "projected recurring",
       color: annualTotal > 0 ? "var(--ft-amber)" : "var(--ft-muted)",
       accent: annualTotal > 0 ? "var(--ft-amber)" : "var(--ft-border2)",
@@ -376,7 +376,7 @@ function CategoryLegendRow({ category, monthly, pct, color }: CategoryLegendRowP
         {category}
       </span>
       <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)" }}>
-        <span className="pnum">{formatGbp(monthly)}</span>
+        <span className="pnum">{formatBaseMoney(monthly)}</span>
       </span>
       <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", width: 30, textAlign: "right" }}>
         <span className="pnum">{pct.toFixed(0)}</span>%
@@ -444,7 +444,7 @@ function CategoryBreakdown({ patterns }: { patterns: RecurringPattern[] }) {
         }}>
           <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>TOTAL</div>
           <div style={{ ...mono, fontSize: 9, fontWeight: 700, color: "var(--ft-text)" }}>
-            <span className="pnum">{formatGbp(total)}</span>
+            <span className="pnum">{formatBaseMoney(total)}</span>
           </div>
         </div>
       </div>
@@ -485,7 +485,7 @@ function CalendarCell({ day, payments, isToday, isPast }: CalendarCellProps) {
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      title={hasPayments ? payments.map((p) => `${p.merchantName} — ${formatGbp(p.estimatedAmount)}`).join("\n") : undefined}
+      title={hasPayments ? payments.map((p) => `${p.merchantName} — ${formatBaseMoney(p.estimatedAmount)}`).join("\n") : undefined}
       style={{
         height: 44,
         background: hov
@@ -521,7 +521,7 @@ function CalendarCell({ day, payments, isToday, isPast }: CalendarCellProps) {
           ))}
           {dayTotal > 0 && (
             <div style={{ ...mono, fontSize: 7, color: "var(--ft-red)", fontWeight: 700 }}>
-              <span className="pnum">{formatGbp(dayTotal)}</span>
+              <span className="pnum">{formatBaseMoney(dayTotal)}</span>
             </div>
           )}
         </VStack>
@@ -576,7 +576,7 @@ function CalendarView({ patterns }: { patterns: RecurringPattern[] }) {
         </div>
         {monthTotal > 0 && (
           <div style={{ ...mono, fontSize: 10, color: "var(--ft-red)" }}>
-            <span className="pnum">{formatGbp(monthTotal)}</span> due this month
+            <span className="pnum">{formatBaseMoney(monthTotal)}</span> due this month
           </div>
         )}
       </HStack>
@@ -652,18 +652,18 @@ function TrendStrip({ txs }: { txs: Tx[] }) {
         <div>
           <div style={{ ...labelStyle }}>Last Year</div>
           <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
-            <span className="pnum">{formatGbp(lastYear)}</span>
+            <span className="pnum">{formatBaseMoney(lastYear)}</span>
           </div>
         </div>
         <div style={{ ...mono, fontSize: 14, color: "var(--ft-dim)" }}>→</div>
         <div>
           <div style={{ ...labelStyle }}>This Year</div>
           <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
-            <span className="pnum">{formatGbp(thisYear)}</span>
+            <span className="pnum">{formatBaseMoney(thisYear)}</span>
           </div>
         </div>
         <div style={{ ...mono, fontSize: 13, fontWeight: 700, color }}>
-          <span className="pnum">{sign}{formatGbp(Math.abs(delta))}</span>
+          <span className="pnum">{sign}{formatBaseMoney(Math.abs(delta))}</span>
           {pct !== null && (
             <span style={{ fontSize: 10, marginLeft: 4 }}>(<span className="pnum">{sign}{pct.toFixed(0)}</span>%)</span>
           )}
@@ -765,7 +765,7 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
         <div>
           <div style={{ ...labelStyle, marginBottom: 2 }}>Est. amount</div>
           <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-red)" }}>
-            -<span className="pnum">{formatGbp(p.estimatedAmount)}</span>
+            -<span className="pnum">{formatBaseMoney(p.estimatedAmount)}</span>
           </div>
         </div>
         <div>
@@ -1067,7 +1067,7 @@ function RuleTableRow({
                   <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)" }}>{t.category || "—"}</span>
                   <span style={{ ...mono, fontSize: 9, color: "var(--ft-amber)" }}>→ {rule.category}</span>
                   <span style={{ ...mono, fontSize: 10, color: "var(--ft-red)" }}>
-                    <span className="pnum">{formatGbp(t.gbpValue)}</span>
+                    <span className="pnum">{formatBaseMoney(t.gbpValue)}</span>
                   </span>
                 </div>
               ))}
@@ -1557,7 +1557,7 @@ export default function RecurringPage() {
       id: `rule-${Date.now()}`,
       matchText: p.merchantName,
       category: p.category || "Subscriptions",
-      notes: `Auto-detected · ${p.frequency} · ~${formatGbp(p.estimatedAmount)} · ${p.confidence}% conf`,
+      notes: `Auto-detected · ${p.frequency} · ~${formatBaseMoney(p.estimatedAmount)} · ${p.confidence}% conf`,
       isActive: true,
     };
     setRules((prev) => {

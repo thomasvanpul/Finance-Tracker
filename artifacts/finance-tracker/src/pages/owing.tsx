@@ -18,7 +18,7 @@ import {
   getListReceivedDebtsQueryKey,
   type UserLookupResult,
 } from "@workspace/api-client-react";
-import { formatGbp, formatNative, formatDate } from "@/lib/utils";
+import { formatBaseMoney, formatNative, formatDate } from "@/lib/utils";
 import { type StrategyMode, type StrategyDebt, type AmortRow, type PayoffResult, runPayoffStrategy } from "@/lib/payoff";
 import { haptic } from "@/lib/haptics";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
@@ -221,11 +221,11 @@ function StrategyTab() {
     // cost the user never entered — the same class of defect as an FX-
     // less balance treated as £0. Include only debts with BOTH real.
     return pendingDebts
-      .filter((d): d is typeof d & { gbpEquivalent: number } => d.gbpEquivalent != null)
+      .filter((d): d is typeof d & { baseEquivalent: number } => d.baseEquivalent != null)
       .filter(d => aprOverrides[d.id] !== undefined)
       .map(d => {
         const apr = aprOverrides[d.id] as number;
-        const balance = d.gbpEquivalent;
+        const balance = d.baseEquivalent;
         const minimumPayment = Math.max(balance * 0.02, 1);
         return {
           id: d.id,
@@ -241,7 +241,7 @@ function StrategyTab() {
   // hasn't told us the APR for yet. Surface them so they can be included
   // rather than silently dropped from the strategy.
   const debtsAwaitingApr = useMemo(
-    () => pendingDebts.filter(d => d.gbpEquivalent != null && aprOverrides[d.id] === undefined),
+    () => pendingDebts.filter(d => d.baseEquivalent != null && aprOverrides[d.id] === undefined),
     [pendingDebts, aprOverrides]
   );
 
@@ -362,7 +362,7 @@ function StrategyTab() {
             />
           </HStack>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
-            Min payments: <span className="pnum">{formatGbp(totalMinimums)}</span> · Extra available: <span className="pnum">{formatGbp(extraAvailable)}</span>
+            Min payments: <span className="pnum">{formatBaseMoney(totalMinimums)}</span> · Extra available: <span className="pnum">{formatBaseMoney(extraAvailable)}</span>
           </div>
         </div>
 
@@ -370,7 +370,7 @@ function StrategyTab() {
         <div>
           <MonoLabel mb={6}>Total Balance</MonoLabel>
           <Text as="div" mono size={18} weight={700} color="var(--ft-red)">
-            <span className="pnum">{formatGbp(totalBalance)}</span>
+            <span className="pnum">{formatBaseMoney(totalBalance)}</span>
           </Text>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
             {pendingDebts.length} debt{pendingDebts.length !== 1 ? "s" : ""}
@@ -388,7 +388,7 @@ function StrategyTab() {
           fontSize: 11,
           color: "var(--ft-red)",
         }}>
-          Budget (<span className="pnum">{formatGbp(monthlyBudget)}</span>) is less than total minimum payments (<span className="pnum">{formatGbp(totalMinimums)}</span>) — increase by <span className="pnum">{formatGbp(totalMinimums - monthlyBudget)}</span> to run a strategy.
+          Budget (<span className="pnum">{formatBaseMoney(monthlyBudget)}</span>) is less than total minimum payments (<span className="pnum">{formatBaseMoney(totalMinimums)}</span>) — increase by <span className="pnum">{formatBaseMoney(totalMinimums - monthlyBudget)}</span> to run a strategy.
         </div>
       )}
 
@@ -421,7 +421,7 @@ function StrategyTab() {
                     {d.personName} — {d.description}
                   </div>
                   <Text as="div" mono size={9} color="var(--ft-dim)">
-                    Balance: <span className="pnum">{formatGbp(d.gbpEquivalent!)}</span>
+                    Balance: <span className="pnum">{formatBaseMoney(d.baseEquivalent!)}</span>
                   </Text>
                 </div>
                 <HStack gap={6} align="center">
@@ -462,7 +462,7 @@ function StrategyTab() {
       )}
 
       {/* Payoff strategy cannot run when no debt has an APR — say so. */}
-      {strategyDebts.length === 0 && pendingDebts.filter(d => d.gbpEquivalent != null).length > 0 && (
+      {strategyDebts.length === 0 && pendingDebts.filter(d => d.baseEquivalent != null).length > 0 && (
         <div style={{
           background: "rgba(163,113,247,0.05)",
           border: "1px solid var(--ft-border2)",
@@ -493,7 +493,7 @@ function StrategyTab() {
           <PanelBox borderTop="2px solid var(--ft-amber)" padding="12px 14px">
             <MonoLabel mb={4}>Total Interest</MonoLabel>
             <Text as="div" mono size={20} weight={700} color="var(--ft-amber)" lineHeight={1}>
-              <span className="pnum">{formatGbp(result.totalInterest)}</span>
+              <span className="pnum">{formatBaseMoney(result.totalInterest)}</span>
             </Text>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               over {result.months} months
@@ -503,7 +503,7 @@ function StrategyTab() {
           <PanelBox borderTop={`2px solid ${savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)"}`} padding="12px 14px">
             <MonoLabel mb={4}>vs {mode === "snowball" ? "Avalanche" : "Snowball"}</MonoLabel>
             <Text as="div" mono size={20} weight={700} color={savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)"} lineHeight={1}>
-              {savingsVsAlt >= 0 ? "saves " : "costs "}<span className="pnum">{formatGbp(Math.abs(savingsVsAlt))}</span>
+              {savingsVsAlt >= 0 ? "saves " : "costs "}<span className="pnum">{formatBaseMoney(Math.abs(savingsVsAlt))}</span>
             </Text>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               {savingsVsAlt >= 0 ? "this strategy is better" : "other strategy saves more"}
@@ -558,7 +558,7 @@ function StrategyTab() {
                       {debt.name}
                     </div>
                     <Text as="div" mono size={9} color="var(--ft-dim)">
-                      Balance: <span className="pnum">{formatGbp(debt.balance)}</span> · Min: <span className="pnum">{formatGbp(debt.minimumPayment)}</span>/mo
+                      Balance: <span className="pnum">{formatBaseMoney(debt.balance)}</span> · Min: <span className="pnum">{formatBaseMoney(debt.minimumPayment)}</span>/mo
                     </Text>
                   </div>
 
@@ -592,7 +592,7 @@ function StrategyTab() {
                       Month {po.month}
                     </div>
                     <Text as="div" mono size={9} color="var(--ft-dim)">
-                      +<span className="pnum">{formatGbp(po.interestPaid)}</span> interest
+                      +<span className="pnum">{formatBaseMoney(po.interestPaid)}</span> interest
                     </Text>
                   </div>
                 </div>
@@ -623,7 +623,7 @@ function StrategyTab() {
                 />
                 <Tooltip
                   contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
-                  formatter={(v: number) => [formatGbp(v), "Remaining"]}
+                  formatter={(v: number) => [formatBaseMoney(v), "Remaining"]}
                   labelFormatter={l => `Month ${l}`}
                 />
                 <Line
@@ -667,11 +667,11 @@ function StrategyTab() {
                       <DataTD key={d.id} mono style={{ color: (row[d.id] ?? 0) === 0 ? "var(--ft-green)" : "var(--ft-text)" }}>
                         {(row[d.id] ?? 0) === 0
                           ? <Text as="span" size={9} color="var(--ft-green)">PAID</Text>
-                          : <span className="pnum">{formatGbp(row[d.id] as number)}</span>}
+                          : <span className="pnum">{formatBaseMoney(row[d.id] as number)}</span>}
                       </DataTD>
                     ))}
                     <DataTD noRightBorder mono bold>
-                      <span className="pnum">{formatGbp(row.total)}</span>
+                      <span className="pnum">{formatBaseMoney(row.total)}</span>
                     </DataTD>
                   </tr>
                 ))}
@@ -692,7 +692,7 @@ function csvField(val: string | number | undefined): string {
   return s;
 }
 
-async function exportDebtsCSV(debts: Array<{ personName: string; description: string; date: string; direction: string; nativeAmount: number; currency: string; gbpEquivalent: number | null; status: string; notes?: string | null }>) {
+async function exportDebtsCSV(debts: Array<{ personName: string; description: string; date: string; direction: string; nativeAmount: number; currency: string; baseEquivalent: number | null; status: string; notes?: string | null }>) {
   const { shareOrDownload } = await import("@/lib/native-share");
   const header = ["Person", "Description", "Date", "Direction", "Amount", "Currency", "GBP", "Status", "Notes"];
   const lines = [
@@ -706,7 +706,7 @@ async function exportDebtsCSV(debts: Array<{ personName: string; description: st
       d.currency,
       // Empty cell (not "0.00") when FX is unavailable — a downstream
       // spreadsheet reading 0.00 would sum it into totals.
-      d.gbpEquivalent == null ? "" : d.gbpEquivalent.toFixed(2),
+      d.baseEquivalent == null ? "" : d.baseEquivalent.toFixed(2),
       d.status,
       d.notes ?? "",
     ].map(csvField).join(",")),
@@ -1001,9 +1001,9 @@ export default function Owing() {
         case "date-oldest":
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case "amount-high":
-          return (b.gbpEquivalent ?? -Infinity) - (a.gbpEquivalent ?? -Infinity);
+          return (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity);
         case "amount-low":
-          return (a.gbpEquivalent ?? Infinity) - (b.gbpEquivalent ?? Infinity);
+          return (a.baseEquivalent ?? Infinity) - (b.baseEquivalent ?? Infinity);
         case "name-az":
           return a.personName.localeCompare(b.personName);
         default:
@@ -1085,12 +1085,12 @@ export default function Owing() {
         const netOwed = owedToMeTotal - iOweTotal;
         const msgs: Record<string, string | null> = {
           social:  netOwed > 0
-            ? `You're net owed ${formatGbp(netOwed)} — follow up on outstanding splits via Group Split.`
+            ? `You're net owed ${formatBaseMoney(netOwed)} — follow up on outstanding splits via Group Split.`
             : netOwed < 0
-            ? `You owe ${formatGbp(Math.abs(netOwed))} net — settle soon to keep your social finances clean.`
+            ? `You owe ${formatBaseMoney(Math.abs(netOwed))} net — settle soon to keep your social finances clean.`
             : `All square — net balance is zero. Great financial hygiene with your social circle.`,
-          budget:  iOweTotal > 0 ? `Outstanding debts of ${formatGbp(iOweTotal)} should be factored into your budget until settled.` : null,
-          wealth:  owedToMeTotal > 0 ? `${formatGbp(owedToMeTotal)} outstanding — uncollected debt reduces your effective liquid net worth.` : null,
+          budget:  iOweTotal > 0 ? `Outstanding debts of ${formatBaseMoney(iOweTotal)} should be factored into your budget until settled.` : null,
+          wealth:  owedToMeTotal > 0 ? `${formatBaseMoney(owedToMeTotal)} outstanding — uncollected debt reduces your effective liquid net worth.` : null,
           market:  null,
         };
         const msg = msgs[pid];
@@ -1122,7 +1122,7 @@ export default function Owing() {
           <MonoLabel letterSpacing="0.1em" mb={6}>Net Position</MonoLabel>
           {summary ? (
             <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", color: netPosition !== 0 ? (netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", lineHeight: 1 }}>
-              <span className="pnum">{netPosition >= 0 ? "+" : ""}{formatGbp(netPosition)}</span>
+              <span className="pnum">{netPosition >= 0 ? "+" : ""}{formatBaseMoney(netPosition)}</span>
             </div>
           ) : (
             <Skeleton className="h-8 w-28" />
@@ -1139,7 +1139,7 @@ export default function Owing() {
           <MonoLabel mb={4}>Owed to Me</MonoLabel>
           {summary ? (
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: owedToMeTotal > 0 ? "var(--ft-green)" : "var(--ft-muted)", lineHeight: 1 }}>
-              <span className="pnum">{formatGbp(owedToMeTotal)}</span>
+              <span className="pnum">{formatBaseMoney(owedToMeTotal)}</span>
             </div>
           ) : (
             <Skeleton className="h-5 w-20" />
@@ -1154,7 +1154,7 @@ export default function Owing() {
           <MonoLabel mb={4}>I Owe</MonoLabel>
           {summary ? (
             <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: iOweTotal > 0 ? "var(--ft-red)" : "var(--ft-muted)", lineHeight: 1 }}>
-              <span className="pnum">{formatGbp(iOweTotal)}</span>
+              <span className="pnum">{formatBaseMoney(iOweTotal)}</span>
             </div>
           ) : (
             <Skeleton className="h-5 w-20" />
@@ -1227,7 +1227,7 @@ export default function Owing() {
             whiteSpace: "nowrap",
           }}
         >
-          I OWE{iOweTotal > 0 ? ` · ${formatGbp(iOweTotal)}` : ""}
+          I OWE{iOweTotal > 0 ? ` · ${formatBaseMoney(iOweTotal)}` : ""}
         </button>
         <button
           onClick={() => { setMainTab("debts"); setDirectionFilter("owed-to-me"); }}
@@ -1248,7 +1248,7 @@ export default function Owing() {
             whiteSpace: "nowrap",
           }}
         >
-          OWED TO ME{owedToMeTotal > 0 ? ` · ${formatGbp(owedToMeTotal)}` : ""}
+          OWED TO ME{owedToMeTotal > 0 ? ` · ${formatBaseMoney(owedToMeTotal)}` : ""}
         </button>
         <button
           onClick={() => { setMainTab("debts"); setDirectionFilter("all"); }}
@@ -1439,10 +1439,10 @@ export default function Owing() {
                     // Skip debts whose FX conversion is unavailable —
                     // a per-person net that includes fabricated zeros
                     // would misrepresent the direction of the balance.
-                    if (d.gbpEquivalent == null) return acc;
+                    if (d.baseEquivalent == null) return acc;
                     const key = d.personName;
                     if (!acc[key]) acc[key] = 0;
-                    acc[key] += d.direction === "they_owe_me" ? d.gbpEquivalent : -d.gbpEquivalent;
+                    acc[key] += d.direction === "they_owe_me" ? d.baseEquivalent : -d.baseEquivalent;
                     return acc;
                   }, {} as Record<string, number>)
                 ).map(([name, net]) => (
@@ -1462,7 +1462,7 @@ export default function Owing() {
                     </span>
                     <Text as="span" color="var(--ft-text)">{name}</Text>
                     <span className="font-mono font-semibold pnum" style={{ color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
-                      {net >= 0 ? "+" : ""}{formatGbp(net)}
+                      {net >= 0 ? "+" : ""}{formatBaseMoney(net)}
                     </span>
                   </div>
                 ))}
@@ -1701,20 +1701,20 @@ export default function Owing() {
                           Settle button is disabled until we know a GBP
                           amount to record against the account. */}
                       <VStack gap={4} align="end" shrink={false}>
-                        <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: d.gbpEquivalent == null ? "var(--ft-dim)" : amountColor }}>
-                          {d.gbpEquivalent == null
+                        <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: d.baseEquivalent == null ? "var(--ft-dim)" : amountColor }}>
+                          {d.baseEquivalent == null
                             ? <span>—</span>
-                            : <span className="pnum">{isIowe ? "-" : "+"}{formatGbp(d.gbpEquivalent)}</span>}
+                            : <span className="pnum">{isIowe ? "-" : "+"}{formatBaseMoney(d.baseEquivalent)}</span>}
                         </div>
                         {d.currency !== "GBP" && (
                           <Text as="div" mono size={9} color="var(--ft-dim)">
                             <span className="pnum">{formatNative(d.nativeAmount, d.currency)}</span>
                           </Text>
                         )}
-                        {d.status === "pending" && !isSettling && d.gbpEquivalent != null && (
+                        {d.status === "pending" && !isSettling && d.baseEquivalent != null && (
                           <HStack gap={4} align="center">
                             <button
-                              onClick={() => openSettleForm(d.id, d.personName, d.gbpEquivalent!)}
+                              onClick={() => openSettleForm(d.id, d.personName, d.baseEquivalent!)}
                               style={{
                                 display: "flex",
                                 alignItems: "center",
@@ -1817,7 +1817,7 @@ export default function Owing() {
                           }}
                         />
                         <span style={{ fontSize: 10, color: "var(--ft-dim)" }}>
-                          of <span className="pnum">{formatGbp(settleForm.fullAmount)}</span>
+                          of <span className="pnum">{formatBaseMoney(settleForm.fullAmount)}</span>
                         </span>
                         <button
                           onClick={confirmSettle}

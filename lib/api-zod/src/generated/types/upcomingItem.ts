@@ -21,7 +21,7 @@ export interface UpcomingItem {
   nativeAmount: number;
   currency: UpcomingItemCurrency;
   /** @nullable */
-  gbpEquivalent: number | null;
+  baseEquivalent: number | null;
   /** @nullable */
   accountId?: number | null;
   /** @nullable */

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useListTransactions, useListBudgets } from "@workspace/api-client-react";
-import { formatGbp } from "@/lib/utils";
+import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 
 // ─── Types & helpers ──────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ function CategoryForecastRowExpanded({ row }: CategoryForecastRowExpandedProps) 
           textAlign: "right",
         }}
       >
-        {formatGbp(row.spent)}
+        {formatBaseMoney(row.spent)}
       </div>
       <div
         className="pnum"
@@ -165,7 +165,7 @@ function CategoryForecastRowExpanded({ row }: CategoryForecastRowExpandedProps) 
           textAlign: "right",
         }}
       >
-        {formatGbp(row.projected)}
+        {formatBaseMoney(row.projected)}
       </div>
       <div
         className="pnum"
@@ -176,7 +176,7 @@ function CategoryForecastRowExpanded({ row }: CategoryForecastRowExpandedProps) 
           textAlign: "right",
         }}
       >
-        {row.budget ? formatGbp(row.budget) : "—"}
+        {row.budget ? formatBaseMoney(row.budget) : "—"}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         {row.status ? (
@@ -263,7 +263,7 @@ function CategoryForecastRowCompact({ row, timeElapsed }: CategoryForecastRowCom
               color: "var(--ft-muted)",
             }}
           >
-            {formatGbp(row.projected)}
+            {formatBaseMoney(row.projected)}
           </span>
           {row.budget && (
             <span
@@ -274,7 +274,7 @@ function CategoryForecastRowCompact({ row, timeElapsed }: CategoryForecastRowCom
                 color: "var(--ft-dim)",
               }}
             >
-              /{formatGbp(row.budget)}
+              /{formatBaseMoney(row.budget)}
             </span>
           )}
           {row.budget && budgetPct !== null && (
@@ -452,7 +452,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                 whiteSpace: "nowrap",
               }}
             >
-              {formatGbp(projectedTotal)}
+              {formatBaseMoney(projectedTotal)}
             </div>
 
             {/* Dual progress: spend vs time */}
@@ -498,7 +498,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                   whiteSpace: "nowrap",
                 }}
               >
-                {formatGbp(totalSpentSoFar)} spent
+                {formatBaseMoney(totalSpentSoFar)} spent
               </span>
             </div>
 
@@ -531,7 +531,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                     color: "var(--ft-muted)",
                   }}
                 >
-                  {formatGbp(totalBudget)}
+                  {formatBaseMoney(totalBudget)}
                 </span>
               </div>
             )}
@@ -568,7 +568,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                   }}
                 >
                   {budgetVariance > 0 ? "+" : ""}
-                  {formatGbp(budgetVariance)}
+                  {formatBaseMoney(budgetVariance)}
                 </span>
               </div>
             )}
@@ -599,7 +599,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                   color: "var(--ft-muted)",
                 }}
               >
-                {formatGbp(dailyRate)}/day
+                {formatBaseMoney(dailyRate)}/day
               </span>
             </div>
           </div>
