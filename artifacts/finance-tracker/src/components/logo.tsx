@@ -9,8 +9,20 @@ const VERT_LEN = 18.5;
 // (verticals 2.2/2.3, diagonal 2.2/2.4) that drifted rather than
 // deliberately encoded a hover-thicken effect. If a future hover-weight
 // change is wanted, edit the constants — the paths follow.
-const STROKE_VERT = 2.2;
-const STROKE_DIAG = 2.2;
+//
+// Value picked for pixel alignment at the header size (28px). A 2-unit
+// stroke centred on an integer coordinate (x=6 or x=22) covers pixels
+// (C-1) to (C+1) exactly — 2 whole pixels of full coverage, no
+// anti-aliased edges. A 2.2 stroke (the historical value) covered
+// C-1.1 to C+1.1, spreading across 4 pixel columns with two soft edges
+// and reading as a slightly blurred vertical. The 2.0 value costs ~9%
+// of visual weight for a materially sharper header render. At 20px
+// (tab bar) and 16px (favicon) the unit is sub-pixel, so no coordinate
+// or width choice gets a crisp result — those sizes need distinct
+// heavier-stroke variants (favicon.svg already ships heavier at
+// public/favicon.svg; smaller phone sizes are a follow-up).
+const STROKE_VERT = 2.0;
+const STROKE_DIAG = 2.0;
 const STROKE_RING = 1.6;   // element-level baseline; keyframes still animate it during the burst
 
 export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; size?: number }) {
