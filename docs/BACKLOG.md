@@ -779,6 +779,73 @@ renderer for a decorative avatar is real battery and bundle cost.
   so it doesn't become "the wider redesign" and stay unfixed for
   months.
 
+- **G19 · Calculators unification, desktop side — LOGGED (27 Aug).**
+  Thomas approved splitting-by-depth. Unify `/whatif`, `/fire`,
+  `/projection` and `/calculators` (misc bucket) into a single
+  `/calculators` shell with a segment control for the mode. Keep
+  `/pension`, `/mortgage` and `/tax` as their own routes — each is
+  1300-1500 lines and deep enough (Pension has sub-calculators for
+  state / private / drawdown / annuity that would nest inside the
+  segment control at two levels, which doesn't survive).
+
+  **Sidebar impact:** 7 calculator entries collapse to 4.
+  **Phone impact:** the 7-item Calculators sub-picker (shipped in Part 1,
+  commit `d6c1cfd`) collapses to 4 items automatically because the sub-
+  picker is derived from a list. WRAPPED_ROUTES baseline drops further:
+  15 → 12 (four calc routes remain wrapped: /calculators, /pension,
+  /mortgage, /tax).
+
+  **Not built yet.** Desktop work, phone is priority. When it lands,
+  update the sub-picker's Calculators list and re-run Lock #18.
+
+- **G20 · localStorage: 26 account-level keys migrate to a
+  user_preferences table (27 Aug).** Two-migration sequence, ordered
+  per the report from the 27 Aug session:
+
+  **A — Offline write queue.** TanStack Query mutation cache + IndexedDB
+  persister; retry on `online` event. Fixes: writes disappearing offline
+  (real bug — `docs/LOCAL-FIRST.md` claims local-first, half of it is
+  true; grep `mutationCache|resumePausedMutations|pausedMutations` in
+  `artifacts/finance-tracker/src` returns zero). No server change.
+  Estimated 1-2 days.
+
+  **B — user_preferences table + client sync.** Schema + `PATCH
+  /api/settings/preferences` + client sync logic. On sign-in, hydrate;
+  on write, PATCH server AND update in-memory + localStorage cache
+  (localStorage stays as the fast-read cache; server is truth). Move
+  26 keys. Migration script runs once per device on first authenticated
+  request. Estimated 4-6 days.
+
+  **The 26 account-level keys** (each is user data that should sync
+  across devices — a tag on the laptop should appear on the phone):
+
+    ft-tx-notes, ft-tx-tags, nr-debt-aprs, ft-cal-events, ft-cal-feeds,
+    ft-cal-imported, nr-custom-categories, ft-nw-target, ft-nw-milestones,
+    nr-fx-overrides, ft-tickers, ft-widgets, ft-nw-history, ft-achievements,
+    ft-login-history, nr-alert-rules, nr-accent-override, nr-hide-from-print,
+    nr-digest-enabled, ft-digest-enabled, ft-persona, nr-default-page,
+    nr-show-nw-strip, nr-onboarding-complete, ft-onboarding-complete,
+    ft-onboarding-dismissed, ft-acct-onboarding-dismissed, nr-sidebar-more.
+
+  **The 18 device-local keys stay** — chrome sizing, privacy blur,
+  accessibility scale, tour-dismissal flags. These SHOULD differ per
+  device.
+
+  **The four onboarding-flag lookalikes** (`nr-onboarding-complete`,
+  `ft-onboarding-complete`, `ft-onboarding-dismissed`,
+  `ft-acct-onboarding-dismissed`) look like historical duplicates worth
+  a sweep during migration. Consolidate to one canonical
+  `onboarding_complete` field on the user_preferences row.
+
+- **G21 · Context filter for /business /family /trading — LOGGED,
+  sequenced AFTER G20 (27 Aug).** Adds one more account-level
+  preference (`nr-active-context`) under Migration B. `accounts.context`
+  and `transactions.context` columns; every list-based screen filters
+  by active context; three mini-apps collapse into per-context lenses.
+  Deletes ~6,400 lines. **NOT built.** Depends on G20/B shipping so the
+  context preference has a home; also unblocks the localStorage
+  persistence-fix side effect on the three mini-apps.
+
 ---
 
 ## Superseded
