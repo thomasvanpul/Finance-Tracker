@@ -846,6 +846,80 @@ renderer for a decorative avatar is real battery and bundle cost.
   context preference has a home; also unblocks the localStorage
   persistence-fix side effect on the three mini-apps.
 
+- **G22 · Logo mark craft follow-ups (27 Aug).** Four findings from the
+  logo craft pass (commits `09706de` + `5ce48db`) that were verified
+  but deliberately not fixed:
+
+  **G22.1 · Cap overlap at the two junctions.** The three strokes meet at
+  (6, 23) and (22, 5). Rounded caps on each stroke extend 1.0 units
+  past each endpoint (now that STROKE_VERT = STROKE_DIAG = 2.0), and
+  because the caps are drawn in the stroke's own colour (verticals in
+  `--nr-mark-vert`, diagonal in `--ft-accent`) the caps overlap as a
+  small colour discontinuity at each junction. At (22, 5) the peak dot
+  (r=2.4 at rest, 3 on hover, `--ft-accent`) partly hides it; at (6, 23)
+  it's exposed.
+  **Fix option:** rewrite the three strokes as a single `<path>` with
+  `strokeLinejoin="round"` and geometric joins instead of overlapping
+  caps. Disrupts the per-stroke draw classes (each currently has its
+  own class for the sequential hover animation), so the animation
+  wiring becomes a `<path>`-with-`stroke-dashoffset` pattern per
+  segment. Feasible; not urgent. **Verdict:** leave as-is until the
+  overlap becomes visible in a specific context (higher zoom, light
+  theme). Log so it isn't rediscovered.
+
+  **G22.2 · Optical centring — mark sits ~0.5 units low in the 28-box.**
+  Mark bounding box (verticals + baseline + cap extension): x centre
+  ≈ 14 (matches viewBox centre 14), y centre ≈ 14.65 (vs viewBox
+  centre 14). Combined with the diagonal-heavy composition (peak dot
+  and rings pull attention to upper-right), the visual centre reads
+  low.
+  **Fix:** `transform="translate(0, -0.5)"` on the SVG root would
+  optically centre it. **This is a design change to positioning, not a
+  craft edit.** Not applied per Thomas's "don't redesign" instruction.
+  Logged so it can be a deliberate design decision if the mark ever
+  moves to a hero placement where optical alignment reads more
+  strongly than in the header.
+
+  **G22.3 · Sub-20px sizes need distinct heavier-stroke variants.** At
+  20 px the 2.0 stroke renders as 1.43 px — sub-2px, aggressively
+  anti-aliased regardless of coordinate choice. At 16 px it's 1.14 px
+  — sub-pixel. No amount of coordinate maths on the current SVG makes
+  these sharp; the fix is a purpose-built SVG per small size, with
+  heavier strokes and simpler geometry (drop the baseline and rings at
+  16 px; drop the ring at 20 px).
+  **Existing state:** `public/favicon.svg` ships a heavier variant
+  (stroke 2.6, viewBox 0 0 32 32, hardcoded `void` theme colours,
+  inline background rect, no baseline opacity). It's visually
+  consistent with the header mark — same three-stroke shape, same peak
+  dot, same baseline treatment — but doesn't share code with
+  `logo.tsx`. Acceptable for a browser favicon (favicons are static
+  and don't need theme responsiveness). Same coordinate imprecision as
+  the header (2.6 stroke on integer endpoint at 32 px = still
+  anti-aliased), but at 32 px the effective render is more forgiving.
+  **Follow-up:** if a tab-bar-size mark ever ships (currently the tab
+  bar uses text labels, no mark), it needs a purpose-built SVG at
+  ~20 px. Not urgent.
+
+  **G22.4 · iOS AppIcon.appiconset is one PNG — App Store rejection
+  bait.** Confirmed inventory:
+    ios/App/App/Assets.xcassets/AppIcon.appiconset/
+      AppIcon-512@2x.png  (single 1024×1024 asset)
+      Contents.json       (218 bytes)
+  A different problem from the in-app mark: **static raster** (PNG per
+  size, not SVG), **no transparency** (Apple validates the alpha
+  channel is opaque), **no baked corners** (iOS applies the ~22% radius
+  mask), **legible at 40px** (Spotlight), **survives iOS masking**
+  (corner content gets cropped). Deliverables:
+    - dedicated app-icon SVG source, heavier strokes, no baseline text,
+      background fill, mark centred with corner-mask safe zone
+    - automated PNG gen from that source at every required size (20@2x,
+      20@3x, 29@2x, 29@3x, 40@2x, 40@3x, 60@2x, 60@3x + iPad 20@1x
+      through 83.5@2x + 1024@1x marketing)
+    - full Contents.json mapping every idiom + scale
+    - App Store Connect marketing icon (1024×1024, opaque, no alpha)
+  **Submission critical path.** Own project, own conversation. Not
+  scheduled here; blocking App Store review whenever it's attempted.
+
 ---
 
 ## Superseded
