@@ -102,6 +102,11 @@ const GROUPS: readonly DirectoryGroup[] = [
   },
 ];
 
+// Total number of directory items across all groups. Exported so callers
+// like MobileHome's "ALL N PLACES" footer derive from the single source
+// of truth rather than a literal that goes stale silently.
+export const DIRECTORY_ITEM_COUNT: number = GROUPS.reduce((n, g) => n + g.items.length, 0);
+
 function filterGroups(query: string): readonly DirectoryGroup[] {
   const q = query.trim().toLowerCase();
   if (q === "") return GROUPS;

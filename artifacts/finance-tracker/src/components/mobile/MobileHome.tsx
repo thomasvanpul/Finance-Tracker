@@ -15,6 +15,7 @@ import { MarketPane } from "./MarketPane";
 import { NewsPane } from "./NewsPane";
 import { loadPersonaIds, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
+import { DIRECTORY_ITEM_COUNT } from "@/components/phone/DirectoryScreen";
 
 // ── Number rule (docs/MOBILE-CONCEPT.md § Approved 13 Aug 2026, second pass) ──
 // Separators always. Two decimals for facts. No decimals for shapes.
@@ -585,7 +586,7 @@ export function MobileHome(_props: MobileHomeProps) {
           <a
             onClick={(e) => {
               e.preventDefault();
-              navigate("/more");
+              navigate("/directory");
             }}
             style={{
               display: "flex",
@@ -598,7 +599,7 @@ export function MobileHome(_props: MobileHomeProps) {
               cursor: "pointer",
             }}
           >
-            ALL 37 PLACES · SEARCH ›
+            ALL {DIRECTORY_ITEM_COUNT} PLACES · SEARCH ›
           </a>
         </div>
     </div>
