@@ -1771,13 +1771,13 @@ components:
 
     DebtSummary:
       type: object
-      required: [totalOwedToMe, totalIOwe, netGbp, pendingCount]
+      required: [totalOwedToMe, totalIOwe, netBase, pendingCount]
       properties:
         totalOwedToMe:
           type: number
         totalIOwe:
           type: number
-        netGbp:
+        netBase:
           type: number
         pendingCount:
           type: integer
@@ -2184,13 +2184,13 @@ components:
               type: number
         owing:
           type: object
-          required: [totalOwedToMe, totalIOwe, netGbp, pendingCount]
+          required: [totalOwedToMe, totalIOwe, netBase, pendingCount]
           properties:
             totalOwedToMe:
               type: number
             totalIOwe:
               type: number
-            netGbp:
+            netBase:
               type: number
             pendingCount:
               type: integer
@@ -2203,11 +2203,11 @@ components:
               type: array
               items:
                 type: object
-                required: [name, amountGbp, direction]
+                required: [name, amountBase, direction]
                 properties:
                   name:
                     type: string
-                  amountGbp:
+                  amountBase:
                     type: number
                   direction:
                     type: string

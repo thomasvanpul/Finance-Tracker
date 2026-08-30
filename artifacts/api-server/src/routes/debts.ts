@@ -97,7 +97,7 @@ router.get("/debts/summary", async (req, res): Promise<void> => {
     GetDebtSummaryResponse.parse({
       totalOwedToMe: Math.round(totalOwedToMe * 100) / 100,
       totalIOwe: Math.round(totalIOwe * 100) / 100,
-      netGbp: Math.round((totalOwedToMe - totalIOwe) * 100) / 100,
+      netBase: Math.round((totalOwedToMe - totalIOwe) * 100) / 100,
       pendingCount: items.length,
     })
   );

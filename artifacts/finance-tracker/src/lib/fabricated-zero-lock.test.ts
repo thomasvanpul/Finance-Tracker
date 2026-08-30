@@ -21,7 +21,7 @@
 // ── Why a baseline snapshot, not a hard block ──────────────────────────────
 // A hard block would fail today with 120+ existing hits — surveyed via
 // `grep -rEn '\b(baseEquivalent|baseEquivalent|totalValueBase|totalPlBase|plBase|
-// netGbp|amountGbp|totalCashGbp|convertedGbp|equivalentGbp)\s*\?\?\s*0\b'`
+// netBase|amountBase|totalCashGbp|convertedGbp|equivalentGbp)\s*\?\?\s*0\b'`
 // across src/. Refactoring all of them at once is a separate project.
 //
 // The baseline records file paths that CURRENTLY contain the pattern. The

@@ -10,7 +10,7 @@ import type { DashboardSummaryOwingTopPendingItem } from './dashboardSummaryOwin
 export type DashboardSummaryOwing = {
   totalOwedToMe: number;
   totalIOwe: number;
-  netGbp: number;
+  netBase: number;
   pendingCount: number;
   topPending?: DashboardSummaryOwingTopPendingItem[];
 };

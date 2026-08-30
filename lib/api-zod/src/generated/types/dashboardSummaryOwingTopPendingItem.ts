@@ -9,6 +9,6 @@ import type { DashboardSummaryOwingTopPendingItemDirection } from './dashboardSu
 
 export type DashboardSummaryOwingTopPendingItem = {
   name: string;
-  amountGbp: number;
+  amountBase: number;
   direction: DashboardSummaryOwingTopPendingItemDirection;
 };

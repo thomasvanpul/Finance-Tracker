@@ -2049,7 +2049,7 @@ function CryptoWalletsPanel() {
           wallets.map(wallet => {
             const isSyncing = syncingIds.has(wallet.id);
             const priceForChain = wallet.chain === "ETH" ? prices.ETH : prices.BTC;
-            const valueGbp = wallet.balance != null && priceForChain != null
+            const valueBase = wallet.balance != null && priceForChain != null
               ? wallet.balance * priceForChain
               : null;
 
@@ -2083,9 +2083,9 @@ function CryptoWalletsPanel() {
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
                         {wallet.balance.toFixed(6)} {wallet.chain}
                       </span>
-                      {valueGbp != null ? (
+                      {valueBase != null ? (
                         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
-                          ≈ £{valueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}
+                          ≈ £{valueBase.toLocaleString("en-GB", { maximumFractionDigits: 2 })}
                         </span>
                       ) : (
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>

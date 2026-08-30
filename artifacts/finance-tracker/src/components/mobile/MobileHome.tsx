@@ -459,12 +459,12 @@ export function MobileHome(_props: MobileHomeProps) {
               </Text>
             </HStack>
             {topPending.filter((p) => p.direction === "i_owe_them").slice(0, 3).map((p) => (
-              <HStack key={`${p.name}-${p.amountGbp}`} align="baseline" justify="between" padding="0 0 0 26px">
+              <HStack key={`${p.name}-${p.amountBase}`} align="baseline" justify="between" padding="0 0 0 26px">
                 <Text as="span" size={11} color="var(--ft-muted)" truncate>
                   {p.name}
                 </Text>
                 <Text as="span" mono size={11} color="var(--ft-red)" numeric>
-                  {nfmt(-p.amountGbp, { symbol: "£" })}
+                  {nfmt(-p.amountBase, { symbol: "£" })}
                 </Text>
               </HStack>
             ))}

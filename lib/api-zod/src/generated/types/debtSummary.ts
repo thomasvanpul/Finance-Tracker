@@ -9,6 +9,6 @@
 export interface DebtSummary {
   totalOwedToMe: number;
   totalIOwe: number;
-  netGbp: number;
+  netBase: number;
   pendingCount: number;
 }

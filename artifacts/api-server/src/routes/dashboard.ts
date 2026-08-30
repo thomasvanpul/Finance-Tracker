@@ -70,7 +70,7 @@ type Transaction = typeof transactionsTable.$inferSelect;
 type Upcoming = typeof upcomingTable.$inferSelect;
 type Debt = typeof debtsTable.$inferSelect;
 
-interface OwingRow { name: string; amountGbp: number; direction: "they_owe_me" | "i_owe_them" }
+interface OwingRow { name: string; amountBase: number; direction: "they_owe_me" | "i_owe_them" }
 
 async function processAccounts(accounts: Account[], baseCurrency: string) {
   let unconvertibleAccounts = 0;
@@ -102,16 +102,16 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
   const priceMap = new Map(prices.map((p) => [p.ticker, p]));
 
   // Per position: resolve value/cost/day-change contributions in parallel.
-  // Each returns { valueGbp, costBase, dayGbp, dayPrevGbp } with null for
+  // Each returns { valueBase, costBase, dayBase, dayPrevBase } with null for
   // any leg that couldn't convert. The reduce below preserves the G10
   // invariant: whole-portfolio day-change goes null if ANY contribution
   // has a null day leg. Order-independent, safe to parallelise.
-  interface Contribution { valueGbp: number | null; costBase: number | null; dayGbp: number | null; dayPrevGbp: number | null; }
+  interface Contribution { valueBase: number | null; costBase: number | null; dayBase: number | null; dayPrevBase: number | null; }
   const contributions: Contribution[] = await Promise.all(
     investments.map(async (inv): Promise<Contribution> => {
       const priceData = priceMap.get(inv.ticker);
       if (!priceData || typeof priceData.price !== "number" || !Number.isFinite(priceData.price)) {
-        return { valueGbp: null, costBase: null, dayGbp: null, dayPrevGbp: null };
+        return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null };
       }
       const shares = parseFloat(inv.shares);
       const costPrice = parseFloat(inv.costPricePerShare);
@@ -132,14 +132,14 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
           ? toBase(shares * prev, currency, baseCurrency)
           : Promise.resolve(null),
       ]);
-      const [valueGbp, costBase, dayGbp, dayPrevGbp] = legs;
+      const [valueBase, costBase, dayBase, dayPrevBase] = legs;
       // If value or cost failed, this position contributes nothing (it
       // wouldn't have been in the totals under the old sequential code
       // either — the `continue` on line 73 of the old handler).
-      if (valueGbp == null || costBase == null) {
-        return { valueGbp: null, costBase: null, dayGbp: null, dayPrevGbp: null };
+      if (valueBase == null || costBase == null) {
+        return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null };
       }
-      return { valueGbp, costBase, dayGbp, dayPrevGbp };
+      return { valueBase, costBase, dayBase, dayPrevBase };
     }),
   );
 
@@ -148,18 +148,18 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
   let dayChangeBase: number | null = 0;
   let dayChangePrevValueBase: number | null = 0;
   for (const c of contributions) {
-    if (c.valueGbp == null || c.costBase == null) continue;
-    portfolioValueBase += c.valueGbp;
+    if (c.valueBase == null || c.costBase == null) continue;
+    portfolioValueBase += c.valueBase;
     portfolioCostBase += c.costBase;
     // Day-change: null if the position that contributes to value has a
     // null day leg. Matches the old invalidateDayChange() semantics.
     if (dayChangeBase !== null) {
-      if (c.dayGbp == null || c.dayPrevGbp == null) {
+      if (c.dayBase == null || c.dayPrevBase == null) {
         dayChangeBase = null;
         dayChangePrevValueBase = null;
       } else {
-        dayChangeBase += c.dayGbp;
-        (dayChangePrevValueBase as number) += c.dayPrevGbp;
+        dayChangeBase += c.dayBase;
+        (dayChangePrevValueBase as number) += c.dayPrevBase;
       }
     }
   }
@@ -216,7 +216,7 @@ async function processPendingDebts(pendingDebts: Debt[], baseCurrency: string) {
     if (c.gbp == null) continue;
     if (c.direction === "they_owe_me") totalOwedToMe += c.gbp;
     else totalIOwe += c.gbp;
-    rows.push({ name: c.name, amountGbp: c.gbp, direction: c.direction as OwingRow["direction"] });
+    rows.push({ name: c.name, amountBase: c.gbp, direction: c.direction as OwingRow["direction"] });
   }
   return { totalOwedToMe, totalIOwe, rows };
 }
@@ -248,7 +248,7 @@ async function processMyParticipations(
     const payerName = nameById.get(c.expense.userId) ?? "Payer";
     rows.push({
       name: `${payerName} · ${c.expense.description}`,
-      amountGbp: c.gbp,
+      amountBase: c.gbp,
       direction: "i_owe_them",
     });
   }
@@ -285,7 +285,7 @@ async function processMyPayerExpenses(
     totalOwedToMe += c.gbp;
     rows.push({
       name: `${c.p.name} · ${c.expense.description}`,
-      amountGbp: c.gbp,
+      amountBase: c.gbp,
       direction: "they_owe_me",
     });
   }
@@ -559,9 +559,9 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const totalIOwe = debtsResult.totalIOwe + participationsResult.totalIOwe;
   const owingRows = [...debtsResult.rows, ...participationsResult.rows, ...payerExpensesResult.rows];
   const topPending = owingRows
-    .sort((a, b) => b.amountGbp - a.amountGbp)
+    .sort((a, b) => b.amountBase - a.amountBase)
     .slice(0, 3)
-    .map((r) => ({ name: r.name, amountGbp: Math.round(r.amountGbp * 100) / 100, direction: r.direction }));
+    .map((r) => ({ name: r.name, amountBase: Math.round(r.amountBase * 100) / 100, direction: r.direction }));
 
   const monthNet = monthIncome - monthExpenses;
   const savingsRate = monthIncome > 0 ? (monthNet / monthIncome) * 100 : 0;
@@ -601,7 +601,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       owing: {
         totalOwedToMe: Math.round(totalOwedToMe * 100) / 100,
         totalIOwe: Math.round(totalIOwe * 100) / 100,
-        netGbp: Math.round((totalOwedToMe - totalIOwe) * 100) / 100,
+        netBase: Math.round((totalOwedToMe - totalIOwe) * 100) / 100,
         pendingCount: owingRows.length,
         topPending,
       },

@@ -178,9 +178,9 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
     { label: "I Owe",        value: formatBaseMoney(d.owing.totalIOwe),     color: "var(--ft-red)",   raw: d.owing.totalIOwe },
     {
       label: "Net Position",
-      value: `${d.owing.netGbp >= 0 ? "+" : ""}${formatBaseMoney(d.owing.netGbp)}`,
-      color: d.owing.netGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-      raw: d.owing.netGbp,
+      value: `${d.owing.netBase >= 0 ? "+" : ""}${formatBaseMoney(d.owing.netBase)}`,
+      color: d.owing.netBase >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+      raw: d.owing.netBase,
     },
   ] : [];
 

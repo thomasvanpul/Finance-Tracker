@@ -73,7 +73,7 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
   // during load. Real zeros still render 0; nulls render —.
   const toMe = summary?.totalOwedToMe ?? null;
   const byMe = summary?.totalIOwe ?? null;
-  const net = summary?.netGbp ?? (toMe != null && byMe != null ? toMe - byMe : null);
+  const net = summary?.netBase ?? (toMe != null && byMe != null ? toMe - byMe : null);
 
   const sorted = [...pending].sort((a, b) => b.date.localeCompare(a.date));
 

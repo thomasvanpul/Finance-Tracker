@@ -49,11 +49,11 @@ export const GetDashboardResponse = zod.object({
   "owing": zod.object({
   "totalOwedToMe": zod.number(),
   "totalIOwe": zod.number(),
-  "netGbp": zod.number(),
+  "netBase": zod.number(),
   "pendingCount": zod.number(),
   "topPending": zod.array(zod.object({
   "name": zod.string(),
-  "amountGbp": zod.number(),
+  "amountBase": zod.number(),
   "direction": zod.enum(['they_owe_me', 'i_owe_them'])
 })).optional()
 }),
@@ -501,7 +501,7 @@ export const CreateDebtBody = zod.object({
 export const GetDebtSummaryResponse = zod.object({
   "totalOwedToMe": zod.number(),
   "totalIOwe": zod.number(),
-  "netGbp": zod.number(),
+  "netBase": zod.number(),
   "pendingCount": zod.number()
 })
 

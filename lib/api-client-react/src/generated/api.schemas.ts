@@ -678,7 +678,7 @@ export interface DebtUpdate {
 export interface DebtSummary {
   totalOwedToMe: number;
   totalIOwe: number;
-  netGbp: number;
+  netBase: number;
   pendingCount: number;
 }
 
@@ -1007,14 +1007,14 @@ export const DashboardSummaryOwingTopPendingItemDirection = {
 
 export type DashboardSummaryOwingTopPendingItem = {
   name: string;
-  amountGbp: number;
+  amountBase: number;
   direction: DashboardSummaryOwingTopPendingItemDirection;
 };
 
 export type DashboardSummaryOwing = {
   totalOwedToMe: number;
   totalIOwe: number;
-  netGbp: number;
+  netBase: number;
   pendingCount: number;
   topPending?: DashboardSummaryOwingTopPendingItem[];
 };
