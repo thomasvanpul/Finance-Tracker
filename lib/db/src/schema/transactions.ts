@@ -15,6 +15,22 @@ export const transactionsTable = pgTable("transactions", {
   currency: text("currency").notNull(),
   source: text("source").notNull().default("manual"), // manual | wise | csv | file
   externalId: text("external_id"), // wise transaction reference, or a hash for CSV/file dedup
+  // native-to-base FX rate at write time. Nullable because every
+  // pre-Aug-30 row and any row created during an FX outage carries
+  // none — read-path falls back to live toBase() when null. Scale 8
+  // is safe headroom for GBPJPY-style pairs where the integer side
+  // eats ~4 significant figures. See snapshotFxRate() in
+  // lib/market.ts for the write-time computation.
+  nativeToBaseRate: numeric("native_to_base_rate", { precision: 18, scale: 8 }),
+  // Timestamp of the FX cache observation the rate came from. Always
+  // set (even when nativeToBaseRate is null — "we tried at time T
+  // and had no rate"), so the backfill knows how stale a null-rate
+  // row is. No rate_source column: rateAsOf carries provenance
+  // implicitly. A rateAsOf near the transaction date at noon UTC
+  // means backfilled from Frankfurter historical; a rateAsOf within
+  // seconds of createdAt means snapshotted live at write. Don't add
+  // a source column later — the timestamp already tells the story.
+  rateAsOf: timestamp("rate_as_of", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [

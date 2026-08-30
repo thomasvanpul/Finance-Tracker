@@ -40,6 +40,16 @@ registerProvider({
 // __setYahooForTesting(stub) to inject an object whose .quote()
 // method throws. Production code never touches this.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Test helper — inject an FxRatesData directly into the cache and
+// mark it fresh so snapshotFxRate / txToBase / toBase read it without
+// hitting Yahoo or Frankfurter. Mirrors __setYahooForTesting for
+// tests that want to exercise the FX consumers rather than the
+// providers. Call with a mutated rates map + fresh updatedAt to
+// simulate the ringgit moving between reads.
+export function __setFxCacheForTesting(data: FxRatesData): void {
+  fxCache = { data, ts: Date.now() };
+}
+
 export function __setYahooForTesting(stub: any): void {
   yahooFinance = stub;
   // Bust every cache so the injected failure surfaces immediately.
@@ -228,6 +238,71 @@ export async function toBase(amount: number, fromCurrency: string, baseCurrency:
   const toRate = baseCurrency === "GBP" ? 1 : fx.rates[baseCurrency];
   if (!fromRate || !toRate) return null;
   return (amount / fromRate) * toRate;
+}
+
+// snapshotFxRate — write-path helper. Called at every INSERT into
+// transactions to freeze the FX rate at write time, so a monthly
+// aggregate for August doesn't drift when the ringgit moves in
+// September.
+//
+// Returns { rate, asOf }. rate is base-currency-per-native (multiply
+// nativeAmount by rate to get base). asOf is always set — even when
+// rate is null, we know WHEN we tried, which the backfill uses to
+// tell null-because-outage-just-now from null-because-legacy-row.
+//
+// On complete FX unavailability: getFxRates() returns an FxRatesData
+// with an empty rates map (never throws — confirmed 30-Aug). Both
+// fromRate and toRate come back undefined, rate returns null, write
+// proceeds with a null-rate row and the backfill catches it later.
+// This is deliberate — refusing to record a transaction because an
+// FX provider is down is the app failing at its one job. Matches
+// the G20/A offline-write premise.
+//
+// G20/A note: getFxRates() blocks up to ~12s on first call after
+// cache expiry when both providers time out (6s Yahoo + 6s
+// Frankfurter). Not a hang, but longer than an offline UI thread
+// should wait for a write. When the offline queue lands it should
+// either pass a short-timeout mode, or read a serve-stale cache
+// entry — market.ts CACHE_TTL_MS windowing lets this be added
+// without touching this signature. See CLAUDE.md's "the app cannot
+// hold or convert money" hard constraint: a null-rate write is
+// safe; a hung write blocks the ledger.
+export async function snapshotFxRate(
+  fromCurrency: string,
+  baseCurrency: string,
+): Promise<{ rate: number | null; asOf: Date }> {
+  const fx = await getFxRates();
+  const asOf = new Date(fx.updatedAt);
+  if (fromCurrency === baseCurrency) return { rate: 1, asOf };
+  const fromRate = fromCurrency === "GBP" ? 1 : fx.rates[fromCurrency];
+  const toRate = baseCurrency === "GBP" ? 1 : fx.rates[baseCurrency];
+  if (!fromRate || !toRate) return { rate: null, asOf };
+  return { rate: toRate / fromRate, asOf };
+}
+
+// txToBase — read-path helper. Called by every aggregate that folds
+// transactions into a base-currency total (enrichTransaction, monthly
+// summary, dashboard, ai-context, export, digest — 16 sites at
+// write time of this comment).
+//
+// If the row carries a stored rate (post-30-Aug write), use it: the
+// value doesn't drift, and the monthly total is what it was at the
+// moment the transaction happened. Otherwise fall through to live
+// toBase() — same behaviour as before the stored-rate migration,
+// so pre-migration rows remain accurate-as-of-read.
+//
+// The `tx` shape is minimal on purpose — only what the conversion
+// needs, so every call site can pass a projected row or the full
+// drizzle row without a type dance.
+export async function txToBase(
+  tx: { nativeAmount: string; currency: string; nativeToBaseRate: string | null },
+  baseCurrency: string,
+): Promise<number | null> {
+  const amount = Math.abs(parseFloat(tx.nativeAmount));
+  if (tx.nativeToBaseRate != null) {
+    return amount * parseFloat(tx.nativeToBaseRate);
+  }
+  return toBase(amount, tx.currency, baseCurrency);
 }
 
 /** Convert a GBP amount to the target currency using live FX rates.

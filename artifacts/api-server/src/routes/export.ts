@@ -4,7 +4,7 @@ import {
   db, accountsTable, transactionsTable, investmentsTable, upcomingTable,
   debtsTable, budgetsTable, goalsTable, subscriptionsTable,
 } from "@workspace/db";
-import { toBase } from "../lib/market";
+import { txToBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 
 const router: IRouter = Router();
@@ -87,7 +87,9 @@ router.get("/export/tax-year/:year", async (req, res): Promise<void> => {
 
   for (const tx of txs) {
     const native = parseFloat(tx.nativeAmount);
-    const gbp = await toBase(Math.abs(native), tx.currency, baseCurrency);
+    // Stored rate when present — a CSV export re-run tomorrow won't
+    // silently show different Amount values for the same transactions.
+    const gbp = await txToBase(tx, baseCurrency);
     // Empty string in the Amount column when FX is unavailable — an
     // exported spreadsheet full of fabricated conversions would poison
     // the user's own accounting downstream.

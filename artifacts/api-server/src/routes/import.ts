@@ -75,6 +75,19 @@ router.post("/import/csv", upload.single("file"), async (req, res): Promise<void
   let added = 0;
   let skipped = 0;
 
+  // CSV imports are inherently historical — a statement covers
+  // transactions that already happened. Snapshotting today's rate on
+  // last month's row would defeat the whole "last August is what last
+  // August was" principle by freezing the wrong rate. Store null and
+  // let the backfill script populate each row from Frankfurter's
+  // historical endpoint keyed on the row's own date. Until backfill
+  // catches them, the read-path fallback lives on live toBase() so
+  // rows are still honest, just drift-prone until backfilled.
+  //
+  // Whoever runs the backfill after a large CSV import gets historical
+  // accuracy; whoever doesn't run it keeps the pre-migration behaviour
+  // for those rows. Neither is a lie.
+
   for (const row of rows) {
     const externalId = `csv:${dedupeHash(accountId, row.date, row.description, row.amount)}`;
 

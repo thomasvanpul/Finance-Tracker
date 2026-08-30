@@ -66,7 +66,7 @@ import {
   sharedExpenseParticipantsTable,
 } from "@workspace/db";
 import { getBaseCurrency } from "./app-settings-db";
-import { toBase, getFxRates, getStockPrices } from "./market";
+import { toBase, txToBase, getFxRates, getStockPrices } from "./market";
 import { monthRange, localDateString } from "./date-ranges";
 
 // Roughly 2.5k tokens at ~4 chars/token. Well under Groq's 131k window
@@ -358,7 +358,7 @@ async function computeMonthTotals(
   let anyIncomeFailed = false;
   let anyExpenseFailed = false;
   for (const tx of txs) {
-    const gbp = await toBase(Math.abs(parseFloat(tx.nativeAmount)), tx.currency, baseCurrency);
+    const gbp = await txToBase(tx, baseCurrency);
     if (gbp === null) {
       fxFailures += 1;
       if (tx.type === "income") anyIncomeFailed = true;
@@ -409,7 +409,7 @@ async function computeCategoryRollup(
   const byCat = new Map<string, { totalBase: number; count: number }>();
   for (const tx of txs) {
     if (tx.type !== "expense") continue;
-    const gbp = await toBase(Math.abs(parseFloat(tx.nativeAmount)), tx.currency, baseCurrency);
+    const gbp = await txToBase(tx, baseCurrency);
     if (gbp === null) continue;
     const row = byCat.get(tx.category) ?? { totalBase: 0, count: 0 };
     row.totalBase += gbp;

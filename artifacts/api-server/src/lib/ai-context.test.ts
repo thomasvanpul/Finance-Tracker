@@ -23,25 +23,37 @@ import {
 // Stub the market module: FX rates are the load-bearing input for the
 // null-propagation tests, so we return deterministic rates + a fixed
 // updatedAt. Individual tests can re-stub inside their scope.
-vi.mock("./market", () => ({
-  getFxRates: async () => ({
-    base: "GBP",
-    rates: { USD: 1.266, EUR: 1.15, MYR: 5.7 }, // MYR left OUT of some tests to force null
-    updatedAt: "2026-08-23T09:00:00.000Z",
-  }),
-  toBase: async (amount: number, fromCurrency: string, baseCurrency: string): Promise<number | null> => {
+vi.mock("./market", () => {
+  const rates: Record<string, number> = { GBP: 1, USD: 1.266, EUR: 1.15 /* MYR omitted */ };
+  const toBase = async (amount: number, fromCurrency: string, baseCurrency: string): Promise<number | null> => {
     if (fromCurrency === baseCurrency) return amount;
-    // Fixed rates — no live FX. Currencies missing from the map return null,
-    // matching the real toBase's contract.
-    const rates: Record<string, number> = { GBP: 1, USD: 1.266, EUR: 1.15 /* MYR omitted */ };
     const from = rates[fromCurrency];
     const to = rates[baseCurrency];
     if (!from || !to) return null;
     return (amount / from) * to;
-  },
-  getStockPrices: async (tickers: string[]) =>
-    tickers.map((t) => ({ ticker: t, price: 100, currency: "USD", previousClose: 99 })),
-}));
+  };
+  return {
+    getFxRates: async () => ({
+      base: "GBP",
+      rates: { USD: 1.266, EUR: 1.15, MYR: 5.7 }, // MYR left OUT of some tests to force null
+      updatedAt: "2026-08-23T09:00:00.000Z",
+    }),
+    toBase,
+    // txToBase delegates to toBase when no stored rate; fixture rows
+    // in this file leave nativeToBaseRate null, so this matches the
+    // pre-migration read behaviour tests depend on.
+    txToBase: async (
+      tx: { nativeAmount: string; currency: string; nativeToBaseRate: string | null },
+      baseCurrency: string,
+    ): Promise<number | null> => {
+      const amount = Math.abs(parseFloat(tx.nativeAmount));
+      if (tx.nativeToBaseRate != null) return amount * parseFloat(tx.nativeToBaseRate);
+      return toBase(amount, tx.currency, baseCurrency);
+    },
+    getStockPrices: async (tickers: string[]) =>
+      tickers.map((t) => ({ ticker: t, price: 100, currency: "USD", previousClose: 99 })),
+  };
+});
 
 // Stub db + app-settings-db for the buildCategorizeContext / buildReceiptScanContext
 // tests — the assemble* tests don't touch the db.
@@ -127,9 +139,9 @@ function fixtureRaw(overrides: Partial<ChatContextRaw> = {}): ChatContextRaw {
       { id: 2, userId: "u1", category: "Transport", monthlyLimit: "300.00", createdAt: new Date(), updatedAt: new Date() },
     ],
     monthTxs: [
-      { id: 1, userId: "u1", date: today, description: SENTINELS.merchant, type: "expense", category: "Groceries", accountId: 1, nativeAmount: "610.00", currency: "GBP", source: "manual", externalId: null, createdAt: new Date(), updatedAt: new Date() },
-      { id: 2, userId: "u1", date: today, description: SENTINELS.merchant2, type: "expense", category: "Groceries", accountId: 1, nativeAmount: "45.20", currency: "GBP", source: "manual", externalId: null, createdAt: new Date(), updatedAt: new Date() },
-      { id: 3, userId: "u1", date: today, description: SENTINELS.merchant, type: "income",  category: "Salary",    accountId: 1, nativeAmount: "4850.00", currency: "GBP", source: "manual", externalId: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 1, userId: "u1", date: today, description: SENTINELS.merchant, type: "expense", category: "Groceries", accountId: 1, nativeAmount: "610.00", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, userId: "u1", date: today, description: SENTINELS.merchant2, type: "expense", category: "Groceries", accountId: 1, nativeAmount: "45.20", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 3, userId: "u1", date: today, description: SENTINELS.merchant, type: "income",  category: "Salary",    accountId: 1, nativeAmount: "4850.00", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, createdAt: new Date(), updatedAt: new Date() },
     ],
     upcoming: [
       { id: 1, userId: "u1", dueDate: today, description: SENTINELS.merchant, category: "Bills", type: "expense", frequency: "one-time", status: "pending", nativeAmount: "340.00", currency: "GBP", accountId: null, createdAt: new Date(), updatedAt: new Date() },
@@ -253,7 +265,7 @@ describe("assembleChatContext · L1 null propagation", () => {
     raw.monthTxs.push({
       id: 999, userId: "u1", date: raw.monthTxs[0].date, description: "sanitised", type: "expense",
       category: "Groceries", accountId: 3, nativeAmount: "300.00", currency: "MYR", source: "manual",
-      externalId: null, createdAt: new Date(), updatedAt: new Date(),
+      externalId: null, nativeToBaseRate: null, rateAsOf: null, createdAt: new Date(), updatedAt: new Date(),
     });
     const ctx = await assembleChatContext(raw);
     expect(ctx.text).toMatch(/Expenses:\s+unknown/);

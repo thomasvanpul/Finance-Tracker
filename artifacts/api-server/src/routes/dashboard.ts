@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, eq, gte, lte, inArray, ne, sql } from "drizzle-orm";
 import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable, nwSnapshotsTable, sharedExpensesTable, sharedExpenseParticipantsTable, userTable } from "@workspace/db";
 import { GetDashboardResponse } from "@workspace/api-zod";
-import { toBase, getStockPrices } from "../lib/market";
+import { toBase, txToBase, getStockPrices } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { trailingMonthRanges, localDateString } from "../lib/date-ranges";
 
@@ -169,8 +169,9 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
 async function processMonthTxs(txs: Transaction[], baseCurrency: string) {
   const converted = await Promise.all(
     txs.map(async (tx) => {
-      const native = Math.abs(parseFloat(tx.nativeAmount));
-      const gbp = await toBase(native, tx.currency, baseCurrency);
+      // txToBase uses the row's stored rate when present so the
+      // monthly total doesn't drift between reads.
+      const gbp = await txToBase(tx, baseCurrency);
       return { gbp, type: tx.type };
     }),
   );

@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { db, transactionsTable } from "@workspace/db";
 import { and, eq, gte } from "drizzle-orm";
 import type { Transaction } from "@workspace/db";
-import { toBase } from "../lib/market";
+import { txToBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 
 const router = Router();
@@ -126,8 +126,9 @@ router.post("/send", async (req: Request, res: Response): Promise<void> => {
     const converted = (
       await Promise.all(
         weekTxs.map(async (tx: Transaction) => {
-          const native = Math.abs(parseFloat(tx.nativeAmount));
-          const base = await toBase(native, tx.currency, baseCurrency);
+          // Stored rate when present so the weekly digest sent
+          // Sunday and Monday agrees on each transaction's value.
+          const base = await txToBase(tx, baseCurrency);
           return base == null ? null : { ...tx, baseValue: base };
         })
       )

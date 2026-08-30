@@ -13,7 +13,7 @@ import {
   GetUpcomingSummaryResponse,
   GenerateInstallmentsBody,
 } from "@workspace/api-zod";
-import { toBase } from "../lib/market";
+import { toBase, snapshotFxRate } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { adjustAccountBalance } from "../lib/balance";
 
@@ -165,6 +165,8 @@ router.post("/upcoming/:id/pay", async (req, res): Promise<void> => {
   // Use the first account if none linked; if user has no accounts yet skip balance adjustment
   const targetAccountId = item.accountId ?? accounts[0]?.id;
   if (targetAccountId) {
+    const baseCurrency = await getBaseCurrency(userId);
+    const { rate, asOf } = await snapshotFxRate(item.currency, baseCurrency);
     await db.insert(transactionsTable).values({
       date: item.dueDate,
       description: item.description,
@@ -175,6 +177,8 @@ router.post("/upcoming/:id/pay", async (req, res): Promise<void> => {
       currency: item.currency,
       source: "manual",
       userId,
+      nativeToBaseRate: rate == null ? null : String(rate),
+      rateAsOf: asOf,
     });
     await adjustAccountBalance(targetAccountId, parseFloat(item.nativeAmount), item.currency, item.type);
   }

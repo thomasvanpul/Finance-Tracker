@@ -12,7 +12,7 @@ import {
   GetTransactionSummaryQueryParams,
   GetTransactionSummaryResponse,
 } from "@workspace/api-zod";
-import { toBase } from "../lib/market";
+import { snapshotFxRate, txToBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { adjustAccountBalance } from "../lib/balance";
 
@@ -21,7 +21,11 @@ const router: IRouter = Router();
 async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, accountMap: Map<number, string>, userId: string) {
   const nativeAmount = parseFloat(tx.nativeAmount);
   const baseCurrency = await getBaseCurrency(userId);
-  const rawBase = await toBase(Math.abs(nativeAmount), tx.currency, baseCurrency);
+  // txToBase uses the row's stored native_to_base_rate if present
+  // (post-30-Aug write) and falls back to live toBase() otherwise.
+  // A stored-rate row does not drift; a null-rate legacy row still
+  // renders honestly until the backfill catches it.
+  const rawBase = await txToBase(tx, baseCurrency);
   // Null passes through per the widened API contract; consumers
   // render the native amount alone.
   const baseEquivalent =
@@ -84,10 +88,23 @@ router.post("/transactions", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // Snapshot the FX rate at write time so the transaction's base
+  // equivalent doesn't drift when the exchange rate moves later.
+  // FX-unavailable on the write path stores null and lets the
+  // backfill / read-path fallback handle it — refusing the write
+  // when an FX API is down would fail the app at its one job.
+  const baseCurrency = await getBaseCurrency(userId);
+  const { rate, asOf } = await snapshotFxRate(parsed.data.currency, baseCurrency);
   const [tx] = await db.transaction(async (dbTx) => {
     const rows = await dbTx
       .insert(transactionsTable)
-      .values({ ...parsed.data, nativeAmount: String(parsed.data.nativeAmount), userId })
+      .values({
+        ...parsed.data,
+        nativeAmount: String(parsed.data.nativeAmount),
+        userId,
+        nativeToBaseRate: rate == null ? null : String(rate),
+        rateAsOf: asOf,
+      })
       .returning();
     await adjustAccountBalance(parsed.data.accountId, parsed.data.nativeAmount, parsed.data.currency, parsed.data.type, false, dbTx);
     return rows;
@@ -123,11 +140,16 @@ router.get("/transactions/summary", async (req, res): Promise<void> => {
   let totalIncome = 0;
   let totalExpenses = 0;
   for (const tx of txs) {
-    const native = parseFloat(tx.nativeAmount);
-    const gbp = await toBase(Math.abs(native), tx.currency, baseCurrency);
-    if (gbp == null) continue;
-    if (tx.type === "income") totalIncome += gbp;
-    else if (tx.type === "expense") totalExpenses += gbp;
+    // txToBase uses the row's stored rate when present. The whole
+    // point of stored rates is that this loop, run again next week,
+    // returns the same total unless the transactions themselves
+    // changed. Legacy null-rate rows still fall through to live
+    // toBase() and their contribution can drift until the backfill
+    // catches them.
+    const base = await txToBase(tx, baseCurrency);
+    if (base == null) continue;
+    if (tx.type === "income") totalIncome += base;
+    else if (tx.type === "expense") totalExpenses += base;
   }
 
   const netSavings = totalIncome - totalExpenses;
@@ -158,6 +180,18 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
   }
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.nativeAmount !== undefined) updateData.nativeAmount = String(parsed.data.nativeAmount);
+
+  // Rate is per-native-unit and depends only on currency. Amount
+  // edits leave the stored rate alone; a currency edit invalidates
+  // it (the old rate is for the wrong pair). Re-snapshot on
+  // currency change so the row stays honest without touching the
+  // original write's asOf semantics for the common amount-fix case.
+  if (parsed.data.currency !== undefined) {
+    const baseCurrency = await getBaseCurrency(userId);
+    const { rate, asOf } = await snapshotFxRate(parsed.data.currency, baseCurrency);
+    updateData.nativeToBaseRate = rate == null ? null : String(rate);
+    updateData.rateAsOf = asOf;
+  }
 
   const [tx] = await db
     .update(transactionsTable)
