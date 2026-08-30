@@ -1,0 +1,1 @@
+ALTER TABLE "transactions" ADD CONSTRAINT "tx_rate_after_backfill" CHECK ((created_at < '2026-08-30T12:31:52Z'::timestamptz) OR (source <> 'manual') OR (rate_as_of IS NOT NULL));

@@ -1,7 +1,25 @@
-import { pgTable, serial, text, numeric, timestamp, integer, date, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, timestamp, integer, date, uniqueIndex, check } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { userTable } from "./auth";
+
+// Lock #19 cutoff — the exact timestamp of the prod FX-rate backfill
+// run (2abc9c1 → apply against ep-dark-hall-ab7g28of, 30 Aug 2026).
+// Every row with created_at < this timestamp is a legacy row that
+// the backfill either populated (Frankfurter fill or same-currency)
+// or left null (currency outside Frankfurter's set — none in prod
+// or dev). Rows created AFTER the cutoff must go through
+// snapshotFxRate (source='manual' path) which always sets rate_as_of
+// even when the rate itself is null (FX outage).
+//
+// Historical-import sources ('csv', 'wise', 'file', or any adapter
+// provider name) deliberately write both columns null on insert —
+// their rows are backfilled from Frankfurter historical keyed on
+// tx.date, which is more accurate than a today's-rate snapshot on
+// a last-month's row would be. The constraint exempts source != 'manual'
+// for that reason.
+const LOCK_19_CUTOFF = "2026-08-30T12:31:52Z";
 
 export const transactionsTable = pgTable("transactions", {
   id: serial("id").primaryKey(),
@@ -41,6 +59,31 @@ export const transactionsTable = pgTable("transactions", {
   // dropped on conflict. Manual entries never carry externalId, so
   // this constraint doesn't restrict them.
   uniqueIndex("transactions_user_account_extid_uniq").on(t.userId, t.accountId, t.externalId),
+  // Lock #19 · tx_rate_after_backfill.
+  // Every manual-source row created after the backfill cutoff must
+  // carry rate_as_of (rate itself may be null — FX outage — but the
+  // attempt must be recorded). Historical-import sources are
+  // exempted because they intentionally write null on insert; the
+  // backfill script populates them later using Frankfurter historical
+  // keyed on tx.date, which is more accurate than a today's-rate
+  // snapshot on a last-month's row would be.
+  //
+  // WHY the cutoff is a hardcoded literal: it's the actual
+  // wall-clock timestamp of the prod backfill run, captured at the
+  // moment the backfill script started. Not a hand-typed date, not
+  // a derived expression — the timestamp Thomas asked for in the
+  // Lock #19 approval. If a future backfill of a currency
+  // Frankfurter doesn't cover happens, THAT run's timestamp
+  // supersedes this one and the constraint is regenerated.
+  // Inlined as a literal (rather than an interpolated variable) so
+  // drizzle-kit emits it into the migration SQL directly. Template
+  // interpolation of a JS string produces a $1 parameter placeholder
+  // in the generated ALTER, which Postgres won't accept in a CHECK.
+  // See LOCK_19_CUTOFF definition above for the value's provenance.
+  check(
+    "tx_rate_after_backfill",
+    sql`(created_at < '2026-08-30T12:31:52Z'::timestamptz) OR (source <> 'manual') OR (rate_as_of IS NOT NULL)`,
+  ),
 ]);
 
 export const insertTransactionSchema = createInsertSchema(transactionsTable).omit({

@@ -11,6 +11,8 @@
     "backfill:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/backfill-tx-rates.ts --branch=prod",
     "verify:fx-drift:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/verify-fx-drift.ts --branch=dev",
     "verify:fx-drift:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/verify-fx-drift.ts --branch=prod",
+    "verify:tx-rate-lock:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/verify-tx-rate-lock.ts --branch=dev",
+    "verify:tx-rate-lock:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/verify-tx-rate-lock.ts --branch=prod",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
