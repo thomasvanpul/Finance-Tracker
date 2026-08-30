@@ -920,6 +920,43 @@ renderer for a decorative avatar is real battery and bundle cost.
   **Submission critical path.** Own project, own conversation. Not
   scheduled here; blocking App Store review whenever it's attempted.
 
+- **G23 · `getFxRates()` blocks up to 12s offline — write path cannot
+  wait this long.** Discovered while wiring FX-at-write (30 Aug 2026).
+  Under complete network failure, `getFxRates()` in
+  `artifacts/api-server/src/lib/market.ts:146` tries Yahoo first
+  (6s `AbortSignal.timeout`), catches, then tries Frankfurter
+  (6s), catches, then returns an empty rates map. Serial timeouts
+  compound to ~12 seconds on the first call after the 5-minute cache
+  expires. Within the cache window it's instant.
+
+  It does NOT throw or hang beyond the 12s — the caller's `rate`
+  comes back null cleanly, and the FX-at-write write path stores
+  null and lets the backfill catch it later. That's fine for a
+  *desktop* write with a network waiting to time out.
+
+  It is NOT fine for the G20/A offline write queue: a write path
+  blocking for 12 seconds is exactly what the offline queue exists
+  to avoid — the user is offline BY DEFINITION when the queue is in
+  play, so the timeout always fires. Every queued write would
+  eat 12s of wall time before it commits, in a UI that thinks it's
+  operating offline-first.
+
+  **Design requirement for G20/A** (not a fix here):
+    - `snapshotFxRate` needs a path that either short-timeouts on
+      the FX call (say, 500ms) or reads the last cached
+      `FxRatesData` even when past TTL (serve-stale). Storing a
+      stale rate on an offline write is better than blocking for
+      12s and then storing null.
+    - Alternative: don't call `snapshotFxRate` at all on the
+      offline path — write null, let the online replay + a periodic
+      backfill fill later. Simplest, and matches how CSV imports
+      already work (they leave null intentionally).
+
+  Documented at the helper site in `market.ts` alongside the
+  degradation note. Logged here because "serve-stale or short-
+  timeout on the write path" is a design requirement for the
+  offline queue, not a note the queue's author might find.
+
 ---
 
 ## Superseded
