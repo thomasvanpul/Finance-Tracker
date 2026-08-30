@@ -7,7 +7,7 @@ type TxRow = {
   date: string;
   type: "income" | "expense" | "transfer";
   category: string;
-  gbpValue: number;
+  baseEquivalent: number;
 };
 
 type FlowNode = { label: string; value: number; y: number; h: number };
@@ -24,7 +24,7 @@ function groupBy(rows: TxRow[], key: keyof TxRow): Record<string, number> {
   const out: Record<string, number> = {};
   for (const r of rows) {
     const k = String(r[key] || "Other");
-    out[k] = (out[k] ?? 0) + Math.abs(r.gbpValue);
+    out[k] = (out[k] ?? 0) + Math.abs(r.baseEquivalent);
   }
   return out;
 }
@@ -83,8 +83,8 @@ export function CashFlowSankeyWidget() {
   const incomeRows = rows.filter(r => r.type === "income");
   const expenseRows = rows.filter(r => r.type === "expense");
 
-  const totalIncome = incomeRows.reduce((s, r) => s + Math.abs(r.gbpValue), 0);
-  const totalExpense = expenseRows.reduce((s, r) => s + Math.abs(r.gbpValue), 0);
+  const totalIncome = incomeRows.reduce((s, r) => s + Math.abs(r.baseEquivalent), 0);
+  const totalExpense = expenseRows.reduce((s, r) => s + Math.abs(r.baseEquivalent), 0);
   const savings = totalIncome - totalExpense;
 
   const incomeNodes = buildNodes(groupBy(incomeRows, "category"), totalIncome || 1, MARGIN_Y);

@@ -89,7 +89,7 @@ function buildMiniDecisions(
   // Same argument as pages/decisions.tsx: if summary hasn't loaded,
   // treating portfolio as £0 spuriously fires the idle-cash decision on
   // partial data. Gate cash-vs-portfolio decisions on knowing both sides.
-  const portfolioGbp = summary?.totalValueGbp ?? null;
+  const portfolioGbp = summary?.totalValueBase ?? null;
   const totalWealth = portfolioGbp != null ? totalCashGbp + portfolioGbp : null;
   const cashRatio = totalWealth != null && totalWealth > 0 ? totalCashGbp / totalWealth : null;
 
@@ -106,8 +106,8 @@ function buildMiniDecisions(
     // unpriced positions here is correct — they weren't in portfolioGbp
     // either, so a "% of portfolio" calc would divide by an unrelated total.
     investments.forEach((inv) => {
-      if (inv.gbpValue == null) return;
-      const pct = portfolioGbp > 0 ? inv.gbpValue / portfolioGbp : 0;
+      if (inv.baseEquivalent == null) return;
+      const pct = portfolioGbp > 0 ? inv.baseEquivalent / portfolioGbp : 0;
       if (pct > 0.35) out.push({ id: `conc-${inv.id}`, priority: pct > 0.6 ? "high" : "medium", kind: "portfolio", title: `${inv.ticker} is ${Math.round(pct * 100)}% of portfolio`, href: "/portfolio" });
     });
   }
@@ -134,7 +134,7 @@ function buildMiniDecisions(
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
   const spendByCategory: Record<string, number> = {};
   transactions.filter((t) => t.date >= monthStart && t.type === "expense").forEach((t) => {
-    spendByCategory[t.category] = (spendByCategory[t.category] ?? 0) + Math.abs(t.gbpValue ?? 0);
+    spendByCategory[t.category] = (spendByCategory[t.category] ?? 0) + Math.abs(t.baseEquivalent ?? 0);
   });
   budgets.forEach((b) => {
     const over = (spendByCategory[b.category] ?? 0) - b.monthlyLimit;

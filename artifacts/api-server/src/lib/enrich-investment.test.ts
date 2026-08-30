@@ -7,12 +7,11 @@ import type { StockPriceData, FxRatesData } from "./market";
 // fabricated zero, never a −100% loss.
 //
 // The 30 Aug 2026 correctness fix extends this: the base-currency
-// fields (gbpValue, plGbp) are also null when the FX pivot cannot
-// convert to the user's base — the previous `?? 1` fallback turned a
+// fields (baseEquivalent, plBase — renamed from gbpValue/plGbp in the
+// naming pass that followed) are also null when the FX pivot cannot
+// convert to the user's base. The previous `?? 1` fallback turned a
 // missing rate into "treat the native amount as if it were base",
-// which for a base-MYR user rendered a USD figure with an "RM"
-// symbol. Field names still say gbpValue/plGbp at this commit; the
-// rename to baseEquivalent/plBase is the next commit.
+// which for a base-MYR user rendered a USD figure with an "RM" symbol.
 
 const row: InvestmentRow = {
   id: 1,
@@ -31,8 +30,8 @@ describe("enrichInvestment — G10 contract", () => {
     expect(result.priceAvailable).toBe(false);
     expect(result.livePrice).toBeNull();
     expect(result.currentValue).toBeNull();
-    expect(result.gbpValue).toBeNull();
-    expect(result.plGbp).toBeNull();
+    expect(result.baseEquivalent).toBeNull();
+    expect(result.plBase).toBeNull();
     expect(result.plPercent).toBeNull();
     // Cost-basis metadata still populated — that isn't derived from live price.
     expect(result.shares).toBe(10);
@@ -60,8 +59,8 @@ describe("enrichInvestment — G10 contract", () => {
     expect(result.livePrice).toBe(210);
     expect(result.currentValue).toBe(2100);          // 10 * 210
     expect(result.plPercent).toBeCloseTo(16.67, 1);   // (210 - 180) / 180
-    expect(result.gbpValue).toBe(1680);               // 2100 / 1.25 USD→GBP
-    expect(result.plGbp).toBe(240);                    // (2100 - 1800) / 1.25
+    expect(result.baseEquivalent).toBe(1680);               // 2100 / 1.25 USD→GBP
+    expect(result.plBase).toBe(240);                    // (2100 - 1800) / 1.25
   });
 
   it("regression: a missing price MUST NOT produce a −100% loss on cost basis", () => {
@@ -87,9 +86,9 @@ describe("enrichInvestment — base-currency correctness (30 Aug 2026 fix)", () 
     const result = enrichInvestment(row, new Map([["AAPL", good]]), fx, "MYR");
     expect(result.priceAvailable).toBe(true);
     // 2100 USD → GBP (÷1.25 = 1680) → MYR (×5.5 = 9240)
-    expect(result.gbpValue).toBe(9240);
+    expect(result.baseEquivalent).toBe(9240);
     // Cost basis 1800 USD → GBP (1440) → MYR (7920); pl = 9240 - 7920
-    expect(result.plGbp).toBe(1320);
+    expect(result.plBase).toBe(1320);
   });
 
   it("returns null base fields when the base-currency FX rate is missing", () => {
@@ -100,8 +99,8 @@ describe("enrichInvestment — base-currency correctness (30 Aug 2026 fix)", () 
     const result = enrichInvestment(row, new Map([["AAPL", good]]), fx, "THB");
     expect(result.priceAvailable).toBe(true);
     expect(result.currentValue).toBe(2100);        // native still available
-    expect(result.gbpValue).toBeNull();
-    expect(result.plGbp).toBeNull();
+    expect(result.baseEquivalent).toBeNull();
+    expect(result.plBase).toBeNull();
     // plPercent is native-only, unaffected by base-FX loss
     expect(result.plPercent).toBeCloseTo(16.67, 1);
   });
@@ -114,16 +113,16 @@ describe("enrichInvestment — base-currency correctness (30 Aug 2026 fix)", () 
     const result = enrichInvestment(thbRow, new Map([["SET_TICKER", thb]]), fx, "GBP");
     expect(result.priceAvailable).toBe(true);
     expect(result.currentValue).toBe(1000);
-    expect(result.gbpValue).toBeNull();
-    expect(result.plGbp).toBeNull();
+    expect(result.baseEquivalent).toBeNull();
+    expect(result.plBase).toBeNull();
   });
 
   it("returns identity conversion when position currency equals base currency", () => {
     const gbpRow: InvestmentRow = { ...row };
     const gbp: StockPriceData = { ticker: "AAPL", price: 210, currency: "GBP", previousClose: null, updatedAt: "2026-08-15T00:00:00Z" };
     const result = enrichInvestment(gbpRow, new Map([["AAPL", gbp]]), fx, "GBP");
-    expect(result.gbpValue).toBe(2100);
-    expect(result.plGbp).toBe(300);
+    expect(result.baseEquivalent).toBe(2100);
+    expect(result.plBase).toBe(300);
   });
 });
 
@@ -139,8 +138,8 @@ describe("enrichInvestment — plPercent divisor-guard fix", () => {
     expect(result.priceAvailable).toBe(true);
     expect(result.currentValue).toBe(2100);
     expect(result.plPercent).toBeNull();
-    // gbpValue and plGbp still valid — the base fields don't depend on cost basis.
-    expect(result.gbpValue).toBe(1680);
-    expect(result.plGbp).toBe(1680);
+    // baseEquivalent and plBase still valid — the base fields don't depend on cost basis.
+    expect(result.baseEquivalent).toBe(1680);
+    expect(result.plBase).toBe(1680);
   });
 });

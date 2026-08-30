@@ -32,10 +32,10 @@ function getMonthBounds(): { dateFrom: string; dateTo: string } {
 type TodayTxRowProps = {
   description: string | undefined;
   category: string;
-  gbpValue: number | null;
+  baseEquivalent: number | null;
 };
 
-function TodayTxRow({ description, category, gbpValue }: TodayTxRowProps) {
+function TodayTxRow({ description, category, baseEquivalent }: TodayTxRowProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -62,8 +62,8 @@ function TodayTxRow({ description, category, gbpValue }: TodayTxRowProps) {
           </span>
         )}
       </div>
-      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: gbpValue == null ? "var(--ft-dim)" : "var(--ft-red)", flexShrink: 0 }}>
-        {gbpValue == null ? "—" : `−${formatBaseMoney(gbpValue)}`}
+      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: baseEquivalent == null ? "var(--ft-dim)" : "var(--ft-red)", flexShrink: 0 }}>
+        {baseEquivalent == null ? "—" : `−${formatBaseMoney(baseEquivalent)}`}
       </span>
     </div>
   );
@@ -83,11 +83,11 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const todayTotal = allExpenses
     .filter(tx => tx.date === today)
-    .reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
+    .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
 
   const thisMonthExpenses = allExpenses
     .filter(tx => tx.date.startsWith(monthPrefix))
-    .reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
+    .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
 
   const dailyAvg = dayOfMonth > 0 ? thisMonthExpenses / dayOfMonth : 0;
   const vsAvg = todayTotal - dailyAvg;
@@ -109,14 +109,14 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
     const dayStr = `${monthPrefix}-${String(d).padStart(2, "0")}`;
     const total = allExpenses
       .filter(tx => tx.date === dayStr)
-      .reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
+      .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
     return { day: d, total };
   });
 
   // Today's transactions for the mini list
   const todayTxs = allExpenses
     .filter(tx => tx.date === today)
-    .sort((a, b) => (b.gbpValue ?? -Infinity) - (a.gbpValue ?? -Infinity))
+    .sort((a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity))
     .slice(0, 4);
 
   // Month pacing: days elapsed / total days
@@ -230,7 +230,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
               key={tx.id}
               description={tx.description ?? undefined}
               category={tx.category}
-              gbpValue={tx.gbpValue}
+              baseEquivalent={tx.baseEquivalent}
             />
           ))}
           {todayExpenseCount > 4 && (

@@ -1220,7 +1220,7 @@ function PortfolioShockTab() {
   const [customPct, setCustomPct] = useState("0");
   const [selected, setSelected] = useState<number | null>(null);
 
-  const totalValue = (summary as { totalValueGbp?: number } | undefined)?.totalValueGbp ?? 0;
+  const totalValue = (summary as { totalValueBase?: number } | undefined)?.totalValueBase ?? 0;
 
   const scenarios = useMemo(() => {
     const pct = parseFloat(customPct);
@@ -1240,10 +1240,10 @@ function PortfolioShockTab() {
     if (!investments || totalValue <= 0) return [];
     const chg = selected != null ? (scenarioImpact[selected]?.change ?? 0) : 0;
     const byTicker = new Map<string, { ticker: string; value: number; delta: number; after: number }>();
-    for (const inv of investments as Array<{ ticker: string; gbpValue: number }>) {
+    for (const inv of investments as Array<{ ticker: string; baseEquivalent: number }>) {
       const prev = byTicker.get(inv.ticker) ?? { ticker: inv.ticker, value: 0, delta: 0, after: 0 };
-      const d = inv.gbpValue * (chg / 100);
-      byTicker.set(inv.ticker, { ticker: inv.ticker, value: prev.value + inv.gbpValue, delta: prev.delta + d, after: prev.after + inv.gbpValue + d });
+      const d = inv.baseEquivalent * (chg / 100);
+      byTicker.set(inv.ticker, { ticker: inv.ticker, value: prev.value + inv.baseEquivalent, delta: prev.delta + d, after: prev.after + inv.baseEquivalent + d });
     }
     return [...byTicker.values()].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
   }, [investments, totalValue, scenarioImpact, selected]);

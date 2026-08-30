@@ -48,18 +48,18 @@ export function MobileAnalytics({ onBack }: { onBack?: () => void }) {
   const incomes = txns.filter((t) => t.type === "income");
   // Analytics summary skips unconvertible transactions — cross-currency
   // aggregation needs a GBP figure and there's no honest fallback.
-  const totalSpend = expenses.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
-  const totalIncome = incomes.reduce((s, t) => s + (t.gbpValue ?? 0), 0);
-  const unconvertibleTxs = txns.filter((t) => t.gbpValue == null).length;
+  const totalSpend = expenses.reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0);
+  const totalIncome = incomes.reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
+  const unconvertibleTxs = txns.filter((t) => t.baseEquivalent == null).length;
   const monthLabel = now.toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase();
   const net = totalIncome - totalSpend;
 
   function byCat(list: typeof txns) {
     const map = new Map<string, number>();
     for (const t of list) {
-      if (t.gbpValue == null) continue;
+      if (t.baseEquivalent == null) continue;
       const k = t.category || "Uncategorised";
-      map.set(k, (map.get(k) ?? 0) + Math.abs(t.gbpValue));
+      map.set(k, (map.get(k) ?? 0) + Math.abs(t.baseEquivalent));
     }
     return [...map.entries()]
       .sort((a, b) => b[1] - a[1])

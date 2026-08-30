@@ -46,8 +46,8 @@ export function KpiBar() {
     switch (personaId) {
       case "market":
         return [
-          { label: "Portfolio", raw: data.portfolio.totalValueGbp, color: "var(--ft-blue)", fmt },
-          { label: "P&L", raw: data.portfolio.totalPlGbp, color: data.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt },
+          { label: "Portfolio", raw: data.portfolio.totalValueBase, color: "var(--ft-blue)", fmt },
+          { label: "P&L", raw: data.portfolio.totalPlBase, color: data.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt },
           { label: "Return", raw: data.portfolio.totalPlPercent, color: (data.portfolio.totalPlPercent ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt: fmtPct },
           { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt },
         ];
@@ -62,7 +62,7 @@ export function KpiBar() {
         return [
           { label: "Net Worth", raw: data.netWorth, color: "var(--ft-blue)", fmt },
           { label: "Savings Rate", raw: data.thisMonth.savingsRate, color: data.thisMonth.savingsRate >= 0.2 ? "var(--ft-green)" : "var(--ft-amber)", fmt: fmtPct },
-          { label: "Portfolio", raw: data.portfolio.totalValueGbp, color: "var(--ft-text)", fmt },
+          { label: "Portfolio", raw: data.portfolio.totalValueBase, color: "var(--ft-text)", fmt },
           { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt },
         ];
       case "social":
@@ -77,7 +77,7 @@ export function KpiBar() {
           { label: "Net Worth", raw: data.netWorth, color: "var(--ft-blue)", fmt },
           { label: "Liquidity", raw: data.netLiquidity, color: "var(--ft-green)", fmt },
           { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt },
-          { label: "Portfolio", raw: data.portfolio.totalValueGbp, color: data.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt },
+          { label: "Portfolio", raw: data.portfolio.totalValueBase, color: data.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt },
         ];
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -34,10 +34,10 @@ export const GetDashboardResponse = zod.object({
   "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other'])
 })),
   "portfolio": zod.object({
-  "totalValueGbp": zod.number(),
-  "totalPlGbp": zod.number(),
+  "totalValueBase": zod.number(),
+  "totalPlBase": zod.number(),
   "totalPlPercent": zod.number().nullable(),
-  "dayChangeGbp": zod.number().nullable(),
+  "dayChangeBase": zod.number().nullable(),
   "dayChangePercent": zod.number().nullable()
 }),
   "thisMonth": zod.object({
@@ -161,7 +161,7 @@ export const ListTransactionsResponseItem = zod.object({
   "accountName": zod.string(),
   "nativeAmount": zod.number(),
   "currency": zod.string(),
-  "gbpValue": zod.number().nullable(),
+  "baseEquivalent": zod.number().nullable(),
   "source": zod.enum(['manual', 'wise', 'csv']),
   "externalId": zod.string().nullish(),
   "createdAt": zod.string()
@@ -226,7 +226,7 @@ export const UpdateTransactionResponse = zod.object({
   "accountName": zod.string(),
   "nativeAmount": zod.number(),
   "currency": zod.string(),
-  "gbpValue": zod.number().nullable(),
+  "baseEquivalent": zod.number().nullable(),
   "source": zod.enum(['manual', 'wise', 'csv']),
   "externalId": zod.string().nullish(),
   "createdAt": zod.string()
@@ -382,9 +382,9 @@ export const ListInvestmentsResponseItem = zod.object({
   "priceAvailable": zod.boolean(),
   "livePrice": zod.number().nullable(),
   "currentValue": zod.number().nullable(),
-  "plGbp": zod.number().nullable(),
+  "plBase": zod.number().nullable(),
   "plPercent": zod.number().nullable(),
-  "gbpValue": zod.number().nullable(),
+  "baseEquivalent": zod.number().nullable(),
   "createdAt": zod.string()
 })
 export const ListInvestmentsResponse = zod.array(ListInvestmentsResponseItem)
@@ -406,8 +406,8 @@ export const CreateInvestmentBody = zod.object({
  * @summary Portfolio totals
  */
 export const GetInvestmentSummaryResponse = zod.object({
-  "totalValueGbp": zod.number(),
-  "totalPlGbp": zod.number(),
+  "totalValueBase": zod.number(),
+  "totalPlBase": zod.number(),
   "totalPlPercent": zod.number().nullable(),
   "positions": zod.number(),
   "unavailablePositions": zod.number()
@@ -440,9 +440,9 @@ export const UpdateInvestmentResponse = zod.object({
   "priceAvailable": zod.boolean(),
   "livePrice": zod.number().nullable(),
   "currentValue": zod.number().nullable(),
-  "plGbp": zod.number().nullable(),
+  "plBase": zod.number().nullable(),
   "plPercent": zod.number().nullable(),
-  "gbpValue": zod.number().nullable(),
+  "baseEquivalent": zod.number().nullable(),
   "createdAt": zod.string()
 })
 

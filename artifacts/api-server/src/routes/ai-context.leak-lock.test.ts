@@ -240,7 +240,7 @@ describe("AI leak lock · Rule 3 — no financial values in prompts to AI", () =
     { pattern: /`[^`]*£\s*\$\{/,                                   label: "template with £${...} interpolation" },
     { pattern: /`[^`]*\$\{[^}]*\bformatGbp\s*\(/,                  label: "template with ${formatBaseMoney(...)}" },
     { pattern: /`[^`]*\$\{[^}]*\bformatCurrency\s*\(/,             label: "template with ${formatCurrency(...)}" },
-    { pattern: /`[^`]*\$\{[^}]*\.gbpValue\b/,                      label: "template with ${...gbpValue}" },
+    { pattern: /`[^`]*\$\{[^}]*\.baseEquivalent\b/,                      label: "template with ${...baseEquivalent}" },
     { pattern: /`[^`]*\$\{[^}]*\.baseEquivalent\b/,                 label: "template with ${...baseEquivalent}" },
     { pattern: /`[^`]*\$\{[^}]*\bnetWorth\b/,                      label: "template with ${...netWorth}" },
     { pattern: /`[^`]*\$\{[^}]*\bsavingsRate\b/,                   label: "template with ${...savingsRate}" },

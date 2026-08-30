@@ -52,7 +52,7 @@ const router: IRouter = Router();
 // Correctness invariants (do NOT relax):
 //   1. toBase returns null on FX cache miss. Consumers of null MUST skip
 //      rather than substitute 0 (G10, no fabricated numbers).
-//   2. Day-change: whole-portfolio dayChangeGbp is null if ANY contributing
+//   2. Day-change: whole-portfolio dayChangeBase is null if ANY contributing
 //      position has a null leg (previousClose missing OR FX unavailable).
 //      Order-independent — the reduce below preserves this.
 //   3. L (upsert) must land before the monthly-history composition
@@ -95,23 +95,23 @@ async function processAccounts(accounts: Account[], baseCurrency: string) {
 
 async function processInvestments(investments: Investment[], baseCurrency: string) {
   if (investments.length === 0) {
-    return { portfolioValueGbp: 0, portfolioCostGbp: 0, dayChangeGbp: 0 as number | null, dayChangePrevValueGbp: 0 as number | null };
+    return { portfolioValueBase: 0, portfolioCostBase: 0, dayChangeBase: 0 as number | null, dayChangePrevValueBase: 0 as number | null };
   }
   const tickers = [...new Set(investments.map((i) => i.ticker))];
   const prices = await getStockPrices(tickers);
   const priceMap = new Map(prices.map((p) => [p.ticker, p]));
 
   // Per position: resolve value/cost/day-change contributions in parallel.
-  // Each returns { valueGbp, costGbp, dayGbp, dayPrevGbp } with null for
+  // Each returns { valueGbp, costBase, dayGbp, dayPrevGbp } with null for
   // any leg that couldn't convert. The reduce below preserves the G10
   // invariant: whole-portfolio day-change goes null if ANY contribution
   // has a null day leg. Order-independent, safe to parallelise.
-  interface Contribution { valueGbp: number | null; costGbp: number | null; dayGbp: number | null; dayPrevGbp: number | null; }
+  interface Contribution { valueGbp: number | null; costBase: number | null; dayGbp: number | null; dayPrevGbp: number | null; }
   const contributions: Contribution[] = await Promise.all(
     investments.map(async (inv): Promise<Contribution> => {
       const priceData = priceMap.get(inv.ticker);
       if (!priceData || typeof priceData.price !== "number" || !Number.isFinite(priceData.price)) {
-        return { valueGbp: null, costGbp: null, dayGbp: null, dayPrevGbp: null };
+        return { valueGbp: null, costBase: null, dayGbp: null, dayPrevGbp: null };
       }
       const shares = parseFloat(inv.shares);
       const costPrice = parseFloat(inv.costPricePerShare);
@@ -132,38 +132,38 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
           ? toBase(shares * prev, currency, baseCurrency)
           : Promise.resolve(null),
       ]);
-      const [valueGbp, costGbp, dayGbp, dayPrevGbp] = legs;
+      const [valueGbp, costBase, dayGbp, dayPrevGbp] = legs;
       // If value or cost failed, this position contributes nothing (it
       // wouldn't have been in the totals under the old sequential code
       // either — the `continue` on line 73 of the old handler).
-      if (valueGbp == null || costGbp == null) {
-        return { valueGbp: null, costGbp: null, dayGbp: null, dayPrevGbp: null };
+      if (valueGbp == null || costBase == null) {
+        return { valueGbp: null, costBase: null, dayGbp: null, dayPrevGbp: null };
       }
-      return { valueGbp, costGbp, dayGbp, dayPrevGbp };
+      return { valueGbp, costBase, dayGbp, dayPrevGbp };
     }),
   );
 
-  let portfolioValueGbp = 0;
-  let portfolioCostGbp = 0;
-  let dayChangeGbp: number | null = 0;
-  let dayChangePrevValueGbp: number | null = 0;
+  let portfolioValueBase = 0;
+  let portfolioCostBase = 0;
+  let dayChangeBase: number | null = 0;
+  let dayChangePrevValueBase: number | null = 0;
   for (const c of contributions) {
-    if (c.valueGbp == null || c.costGbp == null) continue;
-    portfolioValueGbp += c.valueGbp;
-    portfolioCostGbp += c.costGbp;
+    if (c.valueGbp == null || c.costBase == null) continue;
+    portfolioValueBase += c.valueGbp;
+    portfolioCostBase += c.costBase;
     // Day-change: null if the position that contributes to value has a
     // null day leg. Matches the old invalidateDayChange() semantics.
-    if (dayChangeGbp !== null) {
+    if (dayChangeBase !== null) {
       if (c.dayGbp == null || c.dayPrevGbp == null) {
-        dayChangeGbp = null;
-        dayChangePrevValueGbp = null;
+        dayChangeBase = null;
+        dayChangePrevValueBase = null;
       } else {
-        dayChangeGbp += c.dayGbp;
-        (dayChangePrevValueGbp as number) += c.dayPrevGbp;
+        dayChangeBase += c.dayGbp;
+        (dayChangePrevValueBase as number) += c.dayPrevGbp;
       }
     }
   }
-  return { portfolioValueGbp, portfolioCostGbp, dayChangeGbp, dayChangePrevValueGbp };
+  return { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase };
 }
 
 async function processMonthTxs(txs: Transaction[], baseCurrency: string) {
@@ -432,7 +432,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // of each other, so Promise.all across domains.
   const [
     { accountBreakdown, totalCash, unconvertibleAccounts },
-    { portfolioValueGbp, portfolioCostGbp, dayChangeGbp, dayChangePrevValueGbp },
+    { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase },
     { monthIncome, monthExpenses },
     { committedOut, expectedIn },
     debtsResult,
@@ -451,7 +451,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   ]);
 
   // Level 3 — UPSERT current-month snapshot. Depends on accountBreakdown
-  // + portfolioValueGbp. This is a write, then read-through into the
+  // + portfolioValueBase. This is a write, then read-through into the
   // snapshotMap so the monthly-history loop below sees the fresh values.
   const snapshotMap = new Map<string, typeof snapshots[number]>();
   for (const s of snapshots) snapshotMap.set(s.month, s);
@@ -461,7 +461,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     if (a.baseEquivalent == null) continue;
     liveComposition[a.type as "cash" | "investment" | "pension" | "property" | "other"] += a.baseEquivalent;
   }
-  liveComposition.investment += portfolioValueGbp;
+  liveComposition.investment += portfolioValueBase;
   const round4 = (n: number) => Math.round(n * 100) / 100;
   const liveCompositionRounded = {
     cash: round4(liveComposition.cash),
@@ -566,16 +566,16 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const monthNet = monthIncome - monthExpenses;
   const savingsRate = monthIncome > 0 ? (monthNet / monthIncome) * 100 : 0;
   const netLiquidity = totalCash - committedOut + expectedIn;
-  const netWorth = totalCash + portfolioValueGbp;
-  const portfolioPlGbp = portfolioValueGbp - portfolioCostGbp;
+  const netWorth = totalCash + portfolioValueBase;
+  const portfolioPlBase = portfolioValueBase - portfolioCostBase;
   // No cost basis (empty portfolio) → no return to compute. Null, not 0
   // — a "+0.00%" render for a user who holds nothing is a fabricated
   // return the data does not support. Client renders "—" when null.
-  const portfolioPlPercent: number | null = portfolioCostGbp > 0 ? (portfolioPlGbp / portfolioCostGbp) * 100 : null;
+  const portfolioPlPercent: number | null = portfolioCostBase > 0 ? (portfolioPlBase / portfolioCostBase) * 100 : null;
   const dayChangePercent: number | null =
-    dayChangeGbp == null || dayChangePrevValueGbp == null || dayChangePrevValueGbp === 0
+    dayChangeBase == null || dayChangePrevValueBase == null || dayChangePrevValueBase === 0
       ? null
-      : (dayChangeGbp / dayChangePrevValueGbp) * 100;
+      : (dayChangeBase / dayChangePrevValueBase) * 100;
 
   res.json(
     GetDashboardResponse.parse({
@@ -586,10 +586,10 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       unconvertibleAccounts,
       accountBreakdown,
       portfolio: {
-        totalValueGbp: Math.round(portfolioValueGbp * 100) / 100,
-        totalPlGbp: Math.round(portfolioPlGbp * 100) / 100,
+        totalValueBase: Math.round(portfolioValueBase * 100) / 100,
+        totalPlBase: Math.round(portfolioPlBase * 100) / 100,
         totalPlPercent: portfolioPlPercent == null ? null : Math.round(portfolioPlPercent * 100) / 100,
-        dayChangeGbp: dayChangeGbp == null ? null : Math.round(dayChangeGbp * 100) / 100,
+        dayChangeBase: dayChangeBase == null ? null : Math.round(dayChangeBase * 100) / 100,
         dayChangePercent: dayChangePercent == null ? null : Math.round(dayChangePercent * 100) / 100,
       },
       thisMonth: {

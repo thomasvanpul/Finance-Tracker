@@ -20,7 +20,7 @@ type Transaction = {
   description: string;
   type: "income" | "expense" | "transfer";
   category: string;
-  gbpValue: number;
+  baseEquivalent: number;
   nativeAmount: number;
   currency: string;
   accountName: string;
@@ -46,8 +46,8 @@ function buildDayMap(transactions: Transaction[]): Map<string, DayTotals> {
     const key = tx.date;
     const existing = map.get(key) ?? { income: 0, expense: 0, transactions: [] };
     const updated: DayTotals = {
-      income: tx.type === "income" ? existing.income + tx.gbpValue : existing.income,
-      expense: tx.type === "expense" ? existing.expense + tx.gbpValue : existing.expense,
+      income: tx.type === "income" ? existing.income + tx.baseEquivalent : existing.income,
+      expense: tx.type === "expense" ? existing.expense + tx.baseEquivalent : existing.expense,
       transactions: [...existing.transactions, tx],
     };
     map.set(key, updated);
@@ -253,7 +253,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
         }}
       >
         {tx.type === "expense" ? "−" : "+"}
-        {formatBaseMoney(tx.gbpValue)}
+        {formatBaseMoney(tx.baseEquivalent)}
       </span>
     </div>
   );
@@ -304,8 +304,8 @@ export function TransactionCalendarWidget() {
   const selectedKey = selectedDay ? format(selectedDay, "yyyy-MM-dd") : null;
   const selectedTotals = selectedKey ? dayMap.get(selectedKey) : undefined;
 
-  const monthIncome = transactions.filter(t => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-  const monthExpenses = transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+  const monthIncome = transactions.filter(t => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
+  const monthExpenses = transactions.filter(t => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0);
   const monthNet = monthIncome - monthExpenses;
   const activeDays = [...dayMap.keys()].filter(k => {
     const d = new Date(k);

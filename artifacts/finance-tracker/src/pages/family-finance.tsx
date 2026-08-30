@@ -1257,9 +1257,9 @@ export default function FamilyFinance() {
         const cat = (t.category ?? "").toLowerCase();
         const assignedTo = memberCategoryMap[cat] ?? "shared";
         if (tally[assignedTo] !== undefined) {
-          tally[assignedTo] += t.gbpValue ?? 0;
+          tally[assignedTo] += t.baseEquivalent ?? 0;
         } else {
-          tally["shared"] += t.gbpValue ?? 0;
+          tally["shared"] += t.baseEquivalent ?? 0;
         }
       });
 
@@ -1287,7 +1287,7 @@ export default function FamilyFinance() {
       .filter((t) => t.type === "expense" && (t.date ?? "").slice(0, 7) === thisMonthStr)
       .forEach((t) => {
         const cat = (t.category ?? "Uncategorised").toLowerCase();
-        tally[cat] = (tally[cat] ?? 0) + (t.gbpValue ?? 0);
+        tally[cat] = (tally[cat] ?? 0) + (t.baseEquivalent ?? 0);
       });
     return tally;
   }, [transactions]);

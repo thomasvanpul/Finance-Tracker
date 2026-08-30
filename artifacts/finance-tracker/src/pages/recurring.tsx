@@ -17,7 +17,7 @@ interface Tx {
   description: string;
   type: string;
   category: string;
-  gbpValue: number;
+  baseEquivalent: number;
   nativeAmount: number;
   currency: string;
   accountId: number;
@@ -160,7 +160,7 @@ function detectRecurring(txs: Tx[]): RecurringPattern[] {
 
     if (!frequency) continue;
 
-    const amounts = sorted.map((t) => t.gbpValue);
+    const amounts = sorted.map((t) => t.baseEquivalent);
     const avgAmt = amounts.reduce((s, v) => s + v, 0) / amounts.length;
     const withinTolerance = amounts.every(
       (a) => Math.abs(a - avgAmt) / avgAmt <= 0.1
@@ -623,8 +623,8 @@ function TrendStrip({ txs }: { txs: Tx[] }) {
     for (const tx of txs) {
       if (tx.type !== "expense") continue;
       const yr = parseInt(tx.date.slice(0, 4), 10);
-      if (yr === cy) thisYear += tx.gbpValue;
-      else if (yr === ly) lastYear += tx.gbpValue;
+      if (yr === cy) thisYear += tx.baseEquivalent;
+      else if (yr === ly) lastYear += tx.baseEquivalent;
     }
     const delta = thisYear - lastYear;
     const pct = lastYear > 0 ? (delta / lastYear) * 100 : null;
@@ -1067,7 +1067,7 @@ function RuleTableRow({
                   <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)" }}>{t.category || "—"}</span>
                   <span style={{ ...mono, fontSize: 9, color: "var(--ft-amber)" }}>→ {rule.category}</span>
                   <span style={{ ...mono, fontSize: 10, color: "var(--ft-red)" }}>
-                    <span className="pnum">{formatBaseMoney(t.gbpValue)}</span>
+                    <span className="pnum">{formatBaseMoney(t.baseEquivalent)}</span>
                   </span>
                 </div>
               ))}

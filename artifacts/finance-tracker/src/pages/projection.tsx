@@ -261,8 +261,8 @@ export default function Projection() {
     if (nw == null || !recentTxs || recentTxs.length === 0) {
       return { startNetWorth: 0, avgMonthlySavings: 0, hasEnoughData: false };
     }
-    const income = recentTxs.filter(t => t.type === "income").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
-    const expenses = recentTxs.filter(t => t.type === "expense").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+    const income = recentTxs.filter(t => t.type === "income").reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
+    const expenses = recentTxs.filter(t => t.type === "expense").reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
     return { startNetWorth: nw, avgMonthlySavings: Math.max(0, (income - expenses) / 3), hasEnoughData: true };
   }, [dash, recentTxs]);
 

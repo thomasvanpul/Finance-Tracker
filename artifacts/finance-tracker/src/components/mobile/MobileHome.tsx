@@ -72,7 +72,7 @@ export type AccountType = "cash" | "investment" | "pension" | "property" | "othe
 
 export interface HoldingsInput {
   accountBreakdown?: Array<{ type: AccountType; baseEquivalent: number | null }>;
-  portfolio?: { totalValueGbp?: number };
+  portfolio?: { totalValueBase?: number };
 }
 // Bucket keys match the DB column values 1:1 so the loop is `buckets[a.type]`
 // with no translation table.
@@ -100,8 +100,8 @@ export function computeHoldings(d: HoldingsInput | null | undefined): Holdings {
   // portfolio total is null — same argument as the FX-null skip on
   // accountBreakdown above: adding a fabricated 0 shrinks the bucket the
   // block-field visualisation is trying to show honestly.
-  if (d?.portfolio?.totalValueGbp != null) {
-    buckets.investment += d.portfolio.totalValueGbp;
+  if (d?.portfolio?.totalValueBase != null) {
+    buckets.investment += d.portfolio.totalValueBase;
   }
   return buckets;
 }
@@ -314,15 +314,15 @@ export function MobileHome(_props: MobileHomeProps) {
               >
                 {dashboardLoading
                   ? "…"
-                  : dashboard?.portfolio.totalValueGbp != null
-                    ? nfmt(dashboard.portfolio.totalValueGbp)
+                  : dashboard?.portfolio.totalValueBase != null
+                    ? nfmt(dashboard.portfolio.totalValueBase)
                     : "—"}
               </Text>
             </HStack>
             {/* 24h delta. Uses dashData.portfolio.dayChange* from P1b.
                 Null → render "—", never a fabricated zero. */}
             {(() => {
-              const dGbp = dashboard?.portfolio.dayChangeGbp ?? null;
+              const dGbp = dashboard?.portfolio.dayChangeBase ?? null;
               const dPct = dashboard?.portfolio.dayChangePercent ?? null;
               if (dGbp == null) {
                 return (
@@ -669,7 +669,7 @@ function bucketTotal(h: Holdings): number {
 // A single doughnut of the CURRENT holdings composition. Uses the
 // same `holdings` that BLOCKS uses — no historical data needed, so
 // this view was already satisfiable from existing API fields
-// (accountBreakdown + portfolio.totalValueGbp). No schema change.
+// (accountBreakdown + portfolio.totalValueBase). No schema change.
 function RingView({ holdings }: { holdings: Holdings }) {
   const total = bucketTotal(holdings);
   if (total <= 0) {
@@ -903,7 +903,7 @@ function SectionHeader({
 type DailyBalance = { day: number; balance: number; future: boolean };
 
 function buildDailyBalances(
-  txns: Array<{ date: string; gbpValue: number | null; type: string }>,
+  txns: Array<{ date: string; baseEquivalent: number | null; type: string }>,
   now: Date,
   currentBalance: number,
 ): DailyBalance[] {
@@ -914,16 +914,16 @@ function buildDailyBalances(
   // FX is unavailable — including a fabricated 0 in monthNet would
   // shift the rolled-back start balance and skew the whole curve.
   const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthTxns = txns.filter((t) => t.date.startsWith(thisMonthPrefix) && t.gbpValue != null) as Array<{ date: string; gbpValue: number; type: string }>;
+  const monthTxns = txns.filter((t) => t.date.startsWith(thisMonthPrefix) && t.baseEquivalent != null) as Array<{ date: string; baseEquivalent: number; type: string }>;
   const monthNet = monthTxns.reduce((s, t) => {
-    const signed = t.type === "expense" ? -Math.abs(t.gbpValue) : Math.abs(t.gbpValue);
+    const signed = t.type === "expense" ? -Math.abs(t.baseEquivalent) : Math.abs(t.baseEquivalent);
     return s + signed;
   }, 0);
   let running = currentBalance - monthNet;
   const perDay: number[] = new Array(daysInMonth).fill(0);
   for (const t of monthTxns) {
     const day = parseInt(t.date.slice(8, 10), 10);
-    const signed = t.type === "expense" ? -Math.abs(t.gbpValue) : Math.abs(t.gbpValue);
+    const signed = t.type === "expense" ? -Math.abs(t.baseEquivalent) : Math.abs(t.baseEquivalent);
     perDay[day - 1] += signed;
   }
   const result: DailyBalance[] = [];

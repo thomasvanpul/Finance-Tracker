@@ -112,7 +112,7 @@ function buildDecisions(
   // fires the idle-cash decision on partial data. Skip the whole
   // cash-vs-portfolio decision when the portfolio side is not known.
   const totalCashGbp = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
-  const portfolioGbp = summary?.totalValueGbp ?? null;
+  const portfolioGbp = summary?.totalValueBase ?? null;
   const totalWealth = portfolioGbp != null ? totalCashGbp + portfolioGbp : null;
   const cashRatio = totalWealth != null && totalWealth > 0 ? totalCashGbp / totalWealth : null;
 
@@ -166,15 +166,15 @@ function buildDecisions(
   // or loss alert without a live price would be based on a stale value.
   if (portfolioGbp != null && portfolioGbp > 500) {
     investments.forEach((inv) => {
-      if (inv.gbpValue == null) return;
-      const pct = portfolioGbp > 0 ? inv.gbpValue / portfolioGbp : 0;
+      if (inv.baseEquivalent == null) return;
+      const pct = portfolioGbp > 0 ? inv.baseEquivalent / portfolioGbp : 0;
       if (pct > 0.35) {
         out.push({
           id: `concentration-${inv.id}`,
           category: "portfolio",
           priority: pct > 0.6 ? "high" : "medium",
           title: `${inv.ticker} is ${Math.round(pct * 100)}% of your portfolio`,
-          detail: `${inv.name} (${formatBaseMoney(inv.gbpValue)}) dominates your portfolio. Concentration risk increases volatility significantly.`,
+          detail: `${inv.name} (${formatBaseMoney(inv.baseEquivalent)}) dominates your portfolio. Concentration risk increases volatility significantly.`,
           action: "Rebalance by diversifying",
           href: "/portfolio",
         });
@@ -183,14 +183,14 @@ function buildDecisions(
   }
 
   investments.forEach((inv) => {
-    if (inv.plPercent == null || inv.gbpValue == null || inv.plGbp == null) return;
-    if (inv.plPercent < -20 && inv.gbpValue > 200) {
+    if (inv.plPercent == null || inv.baseEquivalent == null || inv.plBase == null) return;
+    if (inv.plPercent < -20 && inv.baseEquivalent > 200) {
       out.push({
         id: `loss-${inv.id}`,
         category: "portfolio",
         priority: inv.plPercent < -40 ? "high" : "medium",
         title: `${inv.ticker} down ${Math.abs(Math.round(inv.plPercent))}% — review position`,
-        detail: `${inv.name}: cost ${formatBaseMoney(inv.shares * inv.costPricePerShare)}, now ${formatBaseMoney(inv.gbpValue)} (${formatBaseMoney(inv.plGbp)} P&L). Consider averaging down, cutting losses, or holding.`,
+        detail: `${inv.name}: cost ${formatBaseMoney(inv.shares * inv.costPricePerShare)}, now ${formatBaseMoney(inv.baseEquivalent)} (${formatBaseMoney(inv.plBase)} P&L). Consider averaging down, cutting losses, or holding.`,
         action: "Review or set a stop-loss",
         href: "/portfolio",
       });
@@ -285,8 +285,8 @@ function buildDecisions(
   );
   const spendByCategory: Record<string, number> = {};
   thisMonthTx.forEach((t) => {
-    if (t.gbpValue == null) return;
-    spendByCategory[t.category] = (spendByCategory[t.category] ?? 0) + Math.abs(t.gbpValue);
+    if (t.baseEquivalent == null) return;
+    spendByCategory[t.category] = (spendByCategory[t.category] ?? 0) + Math.abs(t.baseEquivalent);
   });
 
   budgets.forEach((b) => {

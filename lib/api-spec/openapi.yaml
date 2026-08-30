@@ -1371,7 +1371,7 @@ components:
     # ── TRANSACTION ──────────────────────────────────────────────────────────
     Transaction:
       type: object
-      required: [id, date, description, type, category, accountId, accountName, nativeAmount, currency, gbpValue, source, createdAt]
+      required: [id, date, description, type, category, accountId, accountName, nativeAmount, currency, baseEquivalent, source, createdAt]
       properties:
         id:
           type: integer
@@ -1395,7 +1395,11 @@ components:
         # Nullable: null when the transaction's FX rate is unavailable.
         # Sign follows the transaction type (expense = negative). Rows
         # render the native amount alone (never a fabricated base-currency zero or a bare dash).
-        gbpValue:
+        # Value is in the USER'S BASE CURRENCY, not literal GBP — the
+        # name was renamed from gbpValue on 30 Aug 2026 to remove the
+        # split contract lie (accounts/upcoming/debts were already
+        # baseEquivalent; transactions and investments were gbpValue).
+        baseEquivalent:
           type: ["number", "null"]
         source:
           type: string
@@ -1581,11 +1585,15 @@ components:
       type: object
       # priceAvailable is the honesty flag: when the market API cannot supply
       # a live price for a ticker (rate limit, outage, unknown symbol), all
-      # price-derived fields (livePrice, currentValue, plGbp, plPercent,
-      # gbpValue) come back as null. Consumers MUST render "—" or a skeleton
+      # price-derived fields (livePrice, currentValue, plBase, plPercent,
+      # baseEquivalent) come back as null. Consumers MUST render "—" or a skeleton
       # rather than substituting zero — a fabricated 0 renders as −100.00%
       # against the cost basis, which is the G10 defect this contract fixes.
-      required: [id, ticker, name, buyDate, shares, costPricePerShare, currency, priceAvailable, livePrice, currentValue, plGbp, plPercent, gbpValue, createdAt]
+      # baseEquivalent and plBase are ALSO null when the FX pivot to the
+      # user's base currency fails (30 Aug 2026: previously these were
+      # named gbpValue/plGbp and computed against literal GBP regardless
+      # of the user's base — see enrich-investment.ts for the fix note).
+      required: [id, ticker, name, buyDate, shares, costPricePerShare, currency, priceAvailable, livePrice, currentValue, plBase, plPercent, baseEquivalent, createdAt]
       properties:
         id:
           type: integer
@@ -1607,11 +1615,11 @@ components:
           type: [number, "null"]
         currentValue:
           type: [number, "null"]
-        plGbp:
+        plBase:
           type: [number, "null"]
         plPercent:
           type: [number, "null"]
-        gbpValue:
+        baseEquivalent:
           type: [number, "null"]
         createdAt:
           type: string
@@ -1651,11 +1659,11 @@ components:
       # counts positions whose price the market API could not supply; those are
       # excluded from every total. Consumers should surface the count so the
       # user understands the roll-up is partial.
-      required: [totalValueGbp, totalPlGbp, totalPlPercent, positions, unavailablePositions]
+      required: [totalValueBase, totalPlBase, totalPlPercent, positions, unavailablePositions]
       properties:
-        totalValueGbp:
+        totalValueBase:
           type: number
-        totalPlGbp:
+        totalPlBase:
           type: number
         # Nullable: percentage is undefined when the portfolio's cost
         # basis is zero (no holdings). Rendering "+0.00%" for a user who
@@ -2142,11 +2150,11 @@ components:
                 enum: [cash, investment, pension, property, other]
         portfolio:
           type: object
-          required: [totalValueGbp, totalPlGbp, totalPlPercent, dayChangeGbp, dayChangePercent]
+          required: [totalValueBase, totalPlBase, totalPlPercent, dayChangeBase, dayChangePercent]
           properties:
-            totalValueGbp:
+            totalValueBase:
               type: number
-            totalPlGbp:
+            totalPlBase:
               type: number
             # Nullable: undefined when the portfolio has no cost basis
             # (empty portfolio). Same reason as InvestmentSummary above.
@@ -2156,9 +2164,9 @@ components:
             # converted to base. NULL when ANY contributing position lacks previousClose
             # or its FX leg — a half-computed delta is a lie on the headline that
             # decides whether the market persona has a reason to open the app tomorrow.
-            dayChangeGbp:
+            dayChangeBase:
               type: ["number", "null"]
-            # Percent = dayChangeGbp / sum(previousValueGbp). Null when the delta
+            # Percent = dayChangeBase / sum(previousValueBase). Null when the delta
             # itself is null or previousValue sums to 0.
             dayChangePercent:
               type: ["number", "null"]

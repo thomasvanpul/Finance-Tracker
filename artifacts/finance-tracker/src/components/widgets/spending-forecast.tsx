@@ -348,7 +348,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
   const { data: txs, isLoading } = useListTransactions({ dateFrom: thisMonthStart, dateTo: today });
 
   const expenses = (txs ?? []).filter((tx) => tx.type === "expense");
-  const totalSpentSoFar = expenses.reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
+  const totalSpentSoFar = expenses.reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
   const dailyRate = dayOfMonth > 0 ? totalSpentSoFar / dayOfMonth : 0;
   const projectedTotal = dailyRate * daysInMonth;
 
@@ -364,7 +364,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
   // Category breakdown
   const catSpent = expenses.reduce<Record<string, number>>((acc, tx) => {
     const cat = tx.category || "Other";
-    acc[cat] = (acc[cat] ?? 0) + (tx.gbpValue ?? 0);
+    acc[cat] = (acc[cat] ?? 0) + (tx.baseEquivalent ?? 0);
     return acc;
   }, {});
 

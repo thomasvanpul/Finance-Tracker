@@ -105,7 +105,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "transaction" as ResultKind,
             primary: tx.description,
             secondary: tx.category,
-            tertiary: `${formatDate(tx.date)} · ${tx.gbpValue == null ? "—" : (tx.type === "income" ? "+" : "-") + formatBaseMoney(tx.gbpValue)}`,
+            tertiary: `${formatDate(tx.date)} · ${tx.baseEquivalent == null ? "—" : (tx.type === "income" ? "+" : "-") + formatBaseMoney(tx.baseEquivalent)}`,
             amountColor:
               tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
             navigateTo: `/transactions?q=${encodeURIComponent(tx.description)}`,
@@ -135,8 +135,8 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "investment" as ResultKind,
             primary: inv.ticker,
             secondary: inv.name,
-            tertiary: inv.gbpValue != null ? formatBaseMoney(inv.gbpValue) : "—",
-            amountColor: (inv.plGbp ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+            tertiary: inv.baseEquivalent != null ? formatBaseMoney(inv.baseEquivalent) : "—",
+            amountColor: (inv.plBase ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)",
             navigateTo: "/investments",
           }))),
         ...((debts ?? [])

@@ -936,7 +936,7 @@ export default function Business() {
     () =>
       businessTxs
         .filter((tx) => tx.type === "income")
-        .reduce((sum, tx) => sum + (tx.gbpValue ?? 0), 0),
+        .reduce((sum, tx) => sum + (tx.baseEquivalent ?? 0), 0),
     [businessTxs]
   );
 
@@ -944,7 +944,7 @@ export default function Business() {
     () =>
       businessTxs
         .filter((tx) => tx.type === "expense")
-        .reduce((sum, tx) => sum + (tx.gbpValue ?? 0), 0),
+        .reduce((sum, tx) => sum + (tx.baseEquivalent ?? 0), 0),
     [businessTxs]
   );
 
@@ -965,11 +965,11 @@ export default function Business() {
   );
 
   const ytdIncome = useMemo(
-    () => ytdIncomeTxs.reduce((sum, tx) => sum + (tx.gbpValue ?? 0), 0),
+    () => ytdIncomeTxs.reduce((sum, tx) => sum + (tx.baseEquivalent ?? 0), 0),
     [ytdIncomeTxs]
   );
   const ytdExpenses = useMemo(
-    () => ytdExpenseTxs.reduce((sum, tx) => sum + (tx.gbpValue ?? 0), 0),
+    () => ytdExpenseTxs.reduce((sum, tx) => sum + (tx.baseEquivalent ?? 0), 0),
     [ytdExpenseTxs]
   );
 
@@ -984,7 +984,7 @@ export default function Business() {
     for (const tx of businessTxs) {
       if (tx.type !== "expense") continue;
       const cat = tx.category ?? "Other";
-      map.set(cat, (map.get(cat) ?? 0) + (tx.gbpValue ?? 0));
+      map.set(cat, (map.get(cat) ?? 0) + (tx.baseEquivalent ?? 0));
     }
     return Array.from(map.entries())
       .map(([name, value]) => ({ name, value }))
@@ -1003,12 +1003,12 @@ export default function Business() {
         .filter(
           (tx) => tx.type === "income" && txYear(tx.date) === yr && txMonth(tx.date) === month
         )
-        .reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
+        .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
       const expenses = businessTxs
         .filter(
           (tx) => tx.type === "expense" && txYear(tx.date) === yr && txMonth(tx.date) === month
         )
-        .reduce((s, tx) => s + (tx.gbpValue ?? 0), 0);
+        .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
       return { name, revenue, expenses, profit: revenue - expenses };
     });
   }, [businessTxs, yr]);
@@ -1023,10 +1023,10 @@ export default function Business() {
     });
     const vatCollected = qTxs
       .filter((tx) => tx.type === "income")
-      .reduce((s, tx) => s + (tx.gbpValue ?? 0) * VAT_RATE, 0);
+      .reduce((s, tx) => s + (tx.baseEquivalent ?? 0) * VAT_RATE, 0);
     const vatReclaimable = qTxs
       .filter((tx) => tx.type === "expense")
-      .reduce((s, tx) => s + (tx.gbpValue ?? 0) * VAT_RATE, 0);
+      .reduce((s, tx) => s + (tx.baseEquivalent ?? 0) * VAT_RATE, 0);
     const netVat = vatCollected - vatReclaimable;
     return { vatCollected, vatReclaimable, netVat };
   }, [businessTxs, vatQuarter, yr]);

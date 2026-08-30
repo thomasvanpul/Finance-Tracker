@@ -7,12 +7,12 @@
  */
 
 export type DashboardSummaryPortfolio = {
-  totalValueGbp: number;
-  totalPlGbp: number;
+  totalValueBase: number;
+  totalPlBase: number;
   /** @nullable */
   totalPlPercent: number | null;
   /** @nullable */
-  dayChangeGbp: number | null;
+  dayChangeBase: number | null;
   /** @nullable */
   dayChangePercent: number | null;
 };

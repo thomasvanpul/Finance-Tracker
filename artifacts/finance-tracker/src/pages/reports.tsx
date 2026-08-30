@@ -80,7 +80,7 @@ interface CsvRow {
   category: string;
   nativeAmount: number;
   currency: string;
-  gbpValue: number;
+  baseEquivalent: number;
 }
 
 function exportCsv(rows: CsvRow[], reportType: string) {
@@ -99,7 +99,7 @@ function exportCsv(rows: CsvRow[], reportType: string) {
         r.category,
         Math.abs(r.nativeAmount).toFixed(2),
         r.currency,
-        Math.abs(r.gbpValue).toFixed(2),
+        Math.abs(r.baseEquivalent).toFixed(2),
       ]
         .map(escape)
         .join(",")
@@ -857,7 +857,7 @@ interface BiggestTxRowProps {
     description: string;
     category: string;
     type: string;
-    gbpValue: number;
+    baseEquivalent: number;
   };
   rowIdx: number;
 }
@@ -898,7 +898,7 @@ function BiggestTxRow({ tx, rowIdx }: BiggestTxRowProps) {
       <div style={{ width: 140, minWidth: 140, padding: "7px 12px", textAlign: "right", color: typeColor, fontSize: 13, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
         <span className="pnum">
           {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
-          {formatBaseMoney(Math.abs(tx.gbpValue))}
+          {formatBaseMoney(Math.abs(tx.baseEquivalent))}
         </span>
       </div>
     </div>
@@ -1015,9 +1015,9 @@ export default function Reports() {
     for (const tx of list) {
       // Skip FX-unavailable rows; the reports view is a summary, not a
       // ledger — dropping the row is truer than summing 0.
-      if (tx.gbpValue == null) continue;
-      if (tx.type === "income") inc += tx.gbpValue;
-      else if (tx.type === "expense") exp += tx.gbpValue;
+      if (tx.baseEquivalent == null) continue;
+      if (tx.type === "income") inc += tx.baseEquivalent;
+      else if (tx.type === "expense") exp += tx.baseEquivalent;
     }
     return { income: inc, expenses: exp, txList: list };
   }, [transactions]);
@@ -1027,9 +1027,9 @@ export default function Reports() {
     const list = priorTxData ?? [];
     let inc = 0, exp = 0;
     for (const tx of list) {
-      if (tx.gbpValue == null) continue;
-      if (tx.type === "income") inc += tx.gbpValue;
-      else if (tx.type === "expense") exp += tx.gbpValue;
+      if (tx.baseEquivalent == null) continue;
+      if (tx.type === "income") inc += tx.baseEquivalent;
+      else if (tx.type === "expense") exp += tx.baseEquivalent;
     }
     return { priorIncome: inc, priorExpenses: exp };
   }, [priorTxData, priorApiParams]);
@@ -1044,9 +1044,9 @@ export default function Reports() {
     const expenseTxs = txList.filter((tx) => tx.type === "expense");
     const totals: Record<string, number> = {};
     for (const tx of expenseTxs) {
-      if (tx.gbpValue == null) continue;
+      if (tx.baseEquivalent == null) continue;
       const cat = tx.category || "Other";
-      totals[cat] = (totals[cat] ?? 0) + tx.gbpValue;
+      totals[cat] = (totals[cat] ?? 0) + tx.baseEquivalent;
     }
     return Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [txList]);
@@ -1067,8 +1067,8 @@ export default function Reports() {
     // "Biggest transactions" requires a GBP value to compare across
     // currencies; unconvertible rows fall out rather than sort as £0.
     return [...txList]
-      .filter((tx): tx is typeof tx & { gbpValue: number } => tx.gbpValue != null)
-      .sort((a, b) => b.gbpValue - a.gbpValue)
+      .filter((tx): tx is typeof tx & { baseEquivalent: number } => tx.baseEquivalent != null)
+      .sort((a, b) => b.baseEquivalent - a.baseEquivalent)
       .slice(0, 10);
   }, [txList]);
 
@@ -1141,11 +1141,11 @@ export default function Reports() {
     const sums = [0, 0, 0, 0, 0, 0, 0];
     for (const tx of txList) {
       if (tx.type !== "expense") continue;
-      if (tx.gbpValue == null) continue;
+      if (tx.baseEquivalent == null) continue;
       const d = new Date(tx.date);
       let dow = d.getDay();
       dow = dow === 0 ? 6 : dow - 1;
-      sums[dow] += tx.gbpValue;
+      sums[dow] += tx.baseEquivalent;
     }
     return sums;
   }, [txList]);
@@ -1167,8 +1167,8 @@ export default function Reports() {
           if (tx.type !== "expense") continue;
           if ((tx.category || "Other") !== cat) continue;
           if (tx.date.slice(0, 7) !== m.month) continue;
-          if (tx.gbpValue == null) continue;
-          sum += tx.gbpValue;
+          if (tx.baseEquivalent == null) continue;
+          sum += tx.baseEquivalent;
         }
         return sum;
       });

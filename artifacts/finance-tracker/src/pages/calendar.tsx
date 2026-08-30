@@ -719,10 +719,10 @@ function DayTxRow({ tx }: DayTxRowProps) {
         <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description}</div>
         {tx.category && <div style={{ fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>{tx.category}</div>}
       </div>
-      <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: tx.gbpValue == null ? "var(--ft-dim)" : tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
-        {tx.gbpValue == null
+      <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: tx.baseEquivalent == null ? "var(--ft-dim)" : tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+        {tx.baseEquivalent == null
           ? "—"
-          : `${tx.type === "income" ? "+" : "−"}${formatBaseMoney(tx.gbpValue)}`}
+          : `${tx.type === "income" ? "+" : "−"}${formatBaseMoney(tx.baseEquivalent)}`}
       </span>
     </div>
   );
@@ -1530,7 +1530,7 @@ function AgendaView({ dayMap, feedEventMap, customEventMap, todayStr, debtEvents
     const dayData = dayMap.get(ds);
     if (dayData) {
       for (const tx of dayData.transactions) {
-        events.push({ date: ds, type: "tx", label: tx.description || tx.category, amount: tx.gbpValue, amountColor: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)" });
+        events.push({ date: ds, type: "tx", label: tx.description || tx.category, amount: tx.baseEquivalent, amountColor: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", color: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)" });
       }
       for (const bill of dayData.upcoming) {
         events.push({ date: ds, type: "bill", label: bill.description, amount: bill.baseEquivalent, amountColor: "var(--ft-amber)", color: "var(--ft-amber)" });
@@ -1737,8 +1737,8 @@ function SummaryStrip({ transactions, upcoming, year, month }: { transactions: T
   const prefix = toYYYYMM(year, month);
   const monthTx = transactions.filter((t) => t.date.startsWith(prefix));
   const monthBills = upcoming.filter((u) => u.dueDate.startsWith(prefix));
-  const income = monthTx.filter((t) => t.type === "income").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
-  const expenses = monthTx.filter((t) => t.type === "expense").reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+  const income = monthTx.filter((t) => t.type === "income").reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
+  const expenses = monthTx.filter((t) => t.type === "expense").reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
   const net = income - expenses;
   const billsPaid = monthBills.filter((u) => u.status === "paid").length;
   const billsPending = monthBills.filter((u) => u.status === "pending").length;
@@ -1809,9 +1809,9 @@ export default function CalendarPage() {
       d.transactions.push(tx);
       // Row still appears on the calendar day; the day-total just
       // excludes unconvertible rows rather than fabricating a 0.
-      if (tx.gbpValue == null) continue;
-      if (tx.type === "income") d.totalIncome += tx.gbpValue;
-      else if (tx.type === "expense") d.totalExpenses += tx.gbpValue;
+      if (tx.baseEquivalent == null) continue;
+      if (tx.type === "income") d.totalIncome += tx.baseEquivalent;
+      else if (tx.type === "expense") d.totalExpenses += tx.baseEquivalent;
       d.net = d.totalIncome - d.totalExpenses;
     }
     for (const item of upcoming) { ensureDay(item.dueDate).upcoming.push(item); }
@@ -1925,9 +1925,9 @@ export default function CalendarPage() {
       ...customEvents.map((e) => ({ date: e.date, title: e.title, description: e.description })),
       // Calendar export: show native amount if GBP conversion missing
       // rather than a bare title with no figure.
-      ...transactions.map((t) => ({ date: t.date, title: t.gbpValue == null
+      ...transactions.map((t) => ({ date: t.date, title: t.baseEquivalent == null
         ? `${formatNative(Math.abs(t.nativeAmount), t.currency)} ${t.description}`
-        : `${t.type === "income" ? "+" : "-"}${formatBaseMoney(t.gbpValue)} ${t.description}` })),
+        : `${t.type === "income" ? "+" : "-"}${formatBaseMoney(t.baseEquivalent)} ${t.description}` })),
       ...upcoming.map((u) => ({ date: u.dueDate, title: u.baseEquivalent == null
         ? `Bill: ${u.description} ${formatNative(Math.abs(u.nativeAmount), u.currency)}`
         : `Bill: ${u.description} ${formatBaseMoney(u.baseEquivalent)}` })),

@@ -65,7 +65,7 @@ type SplitModalTx = {
   id: number;
   description: string;
   date: string;
-  gbpValue: number | null;
+  baseEquivalent: number | null;
 };
 
 function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) {
@@ -74,7 +74,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
   // conversion is unavailable, refuse to open the split flow — this
   // is a genuine "can't total, don't total" case per the FX-honesty
   // rules. Caller sees a message and can retry once quotes refresh.
-  if (tx.gbpValue == null) {
+  if (tx.baseEquivalent == null) {
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
         <DialogContent style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border)" }}>
@@ -88,7 +88,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
       </Dialog>
     );
   }
-  const total = Math.abs(tx.gbpValue);
+  const total = Math.abs(tx.baseEquivalent);
 
   const [entries, setEntries] = useState<Array<{ id: string; category: string; amount: string; note: string }>>(
     () =>
@@ -608,8 +608,8 @@ export default function Transactions() {
       // Amount range filter needs a GBP figure; transactions without
       // an FX conversion fall out of a bounded range but stay in an
       // open one.
-      if (amountMin !== "" && (tx.gbpValue == null || Math.abs(tx.gbpValue) < parseFloat(amountMin))) return false;
-      if (amountMax !== "" && (tx.gbpValue == null || Math.abs(tx.gbpValue) > parseFloat(amountMax))) return false;
+      if (amountMin !== "" && (tx.baseEquivalent == null || Math.abs(tx.baseEquivalent) < parseFloat(amountMin))) return false;
+      if (amountMax !== "" && (tx.baseEquivalent == null || Math.abs(tx.baseEquivalent) > parseFloat(amountMax))) return false;
       if (search) {
         const q = search.toLowerCase();
         const desc = (tx.description ?? "").toLowerCase();
@@ -628,8 +628,8 @@ export default function Transactions() {
     // descending sort (magnitude unknown) rather than shuffling above
     // real amounts.
     if (sortBy === "date-asc") return [...base].sort((a, b) => a.date.localeCompare(b.date));
-    if (sortBy === "amount-high") return [...base].sort((a, b) => Math.abs(b.gbpValue ?? -Infinity) - Math.abs(a.gbpValue ?? -Infinity));
-    if (sortBy === "amount-low") return [...base].sort((a, b) => Math.abs(a.gbpValue ?? Infinity) - Math.abs(b.gbpValue ?? Infinity));
+    if (sortBy === "amount-high") return [...base].sort((a, b) => Math.abs(b.baseEquivalent ?? -Infinity) - Math.abs(a.baseEquivalent ?? -Infinity));
+    if (sortBy === "amount-low") return [...base].sort((a, b) => Math.abs(a.baseEquivalent ?? Infinity) - Math.abs(b.baseEquivalent ?? Infinity));
     return base; // date-desc is server default
   }, [transactions, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, search, filterTag, tags, sortBy]);
 
@@ -637,8 +637,8 @@ export default function Transactions() {
   // to match, so this is a true average of what could be converted
   // rather than one padded with fabricated zeros.
   const filteredAvg = useMemo(() => {
-    const withGbp = filtered.filter((tx): tx is typeof tx & { gbpValue: number } => tx.gbpValue != null);
-    return withGbp.length > 0 ? withGbp.reduce((acc, tx) => acc + tx.gbpValue, 0) / withGbp.length : 0;
+    const withGbp = filtered.filter((tx): tx is typeof tx & { baseEquivalent: number } => tx.baseEquivalent != null);
+    return withGbp.length > 0 ? withGbp.reduce((acc, tx) => acc + tx.baseEquivalent, 0) / withGbp.length : 0;
   }, [filtered]);
 
   // ── keyboard shortcuts ────────────────────────────────────────────────────
@@ -702,9 +702,9 @@ export default function Transactions() {
       // Merchant totals skip unconvertible transactions; the row
       // count still includes them so the merchant doesn't vanish,
       // but the total is honest about what was rolled up.
-      if (tx.gbpValue == null) continue;
+      if (tx.baseEquivalent == null) continue;
       const key = tx.description ?? "(no description)";
-      const signed = tx.type === "income" ? tx.gbpValue : -tx.gbpValue;
+      const signed = tx.type === "income" ? tx.baseEquivalent : -tx.baseEquivalent;
       const existing = map.get(key);
       if (existing) {
         existing.count += 1;
@@ -743,7 +743,7 @@ export default function Transactions() {
         txs,
         // Day net: skip unconvertible rows; unconvertible income and
         // expense wash out of the daily net without fabrication.
-        net: txs.reduce((acc, tx) => acc + (tx.gbpValue == null ? 0 : tx.type === "income" ? tx.gbpValue : tx.type === "expense" ? -tx.gbpValue : 0), 0),
+        net: txs.reduce((acc, tx) => acc + (tx.baseEquivalent == null ? 0 : tx.type === "income" ? tx.baseEquivalent : tx.type === "expense" ? -tx.baseEquivalent : 0), 0),
       }));
   }, [filtered, groupByDay]);
 
@@ -1570,7 +1570,7 @@ export default function Transactions() {
     // displayGbp is null when neither an override nor a server-side
     // FX conversion is available; the row still shows the native
     // amount alone, never £0.
-    const displayGbp: number | null = hasOverride ? fxGbp : tx.gbpValue == null ? null : Math.abs(tx.gbpValue);
+    const displayGbp: number | null = hasOverride ? fxGbp : tx.baseEquivalent == null ? null : Math.abs(tx.baseEquivalent);
     const hasNote = Boolean(notes[tx.id]);
     const isNoteOpen = openNoteId === tx.id;
     const txTags = tags[tx.id] ?? [];
@@ -1767,7 +1767,7 @@ export default function Transactions() {
             variant="ghost"
             size="icon"
             className="h-7 w-7"
-            onClick={() => setSplitModalTx({ id: tx.id, description: tx.description, date: tx.date, gbpValue: tx.gbpValue })}
+            onClick={() => setSplitModalTx({ id: tx.id, description: tx.description, date: tx.date, baseEquivalent: tx.baseEquivalent })}
             title="Split view (local annotation)"
             style={{ color: splits[String(tx.id)] ? "var(--ft-accent)" : undefined }}
           >
@@ -1972,11 +1972,11 @@ export default function Transactions() {
   // ── Derived KPI data ─────────────────────────────────────────────────────
   // Skip unconvertible transactions from all four KPIs; kpiUnconvertible
   // surfaces the count so the strip can say "N tx without FX".
-  const kpiIncome = filtered.reduce((acc, tx) => acc + (tx.type === "income" && tx.gbpValue != null ? tx.gbpValue : 0), 0);
-  const kpiExpenses = filtered.reduce((acc, tx) => acc + (tx.type === "expense" && tx.gbpValue != null ? Math.abs(tx.gbpValue) : 0), 0);
+  const kpiIncome = filtered.reduce((acc, tx) => acc + (tx.type === "income" && tx.baseEquivalent != null ? tx.baseEquivalent : 0), 0);
+  const kpiExpenses = filtered.reduce((acc, tx) => acc + (tx.type === "expense" && tx.baseEquivalent != null ? Math.abs(tx.baseEquivalent) : 0), 0);
   const kpiNet = kpiIncome - kpiExpenses;
-  const filteredWithGbp = filtered.filter((tx): tx is typeof tx & { gbpValue: number } => tx.gbpValue != null);
-  const kpiAvg = filteredWithGbp.length > 0 ? filteredWithGbp.reduce((acc, tx) => acc + Math.abs(tx.gbpValue), 0) / filteredWithGbp.length : 0;
+  const filteredWithGbp = filtered.filter((tx): tx is typeof tx & { baseEquivalent: number } => tx.baseEquivalent != null);
+  const kpiAvg = filteredWithGbp.length > 0 ? filteredWithGbp.reduce((acc, tx) => acc + Math.abs(tx.baseEquivalent), 0) / filteredWithGbp.length : 0;
   const kpiUnconvertible = filtered.length - filteredWithGbp.length;
   const kpiDateFrom = filtered.length > 0 ? filtered.reduce((a, b) => a.date < b.date ? a : b).date : null;
   const kpiDateTo = filtered.length > 0 ? filtered.reduce((a, b) => a.date > b.date ? a : b).date : null;

@@ -252,8 +252,8 @@ export function RecentTxnsWidget({ onViewAll }: { onViewAll: () => void }) {
               <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description || tx.category || "Transaction"}</div>
               <div style={{ fontSize: 11, color: "var(--ft-dim)", textTransform: "capitalize" }}>{tx.category || "Uncategorised"}</div>
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: tx.gbpValue == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
-              {tx.gbpValue == null ? "—" : `${isIncome ? "+" : "−"}${formatBaseMoney(tx.gbpValue)}`}
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: tx.baseEquivalent == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
+              {tx.baseEquivalent == null ? "—" : `${isIncome ? "+" : "−"}${formatBaseMoney(tx.baseEquivalent)}`}
             </div>
           </div>
         );
@@ -275,7 +275,7 @@ export function BudgetWidget() {
     for (const tx of txns) {
       if (tx.type === "expense") {
         const cat = (tx.category ?? "Uncategorised").toLowerCase();
-        map[cat] = (map[cat] ?? 0) + (tx.gbpValue ?? 0);
+        map[cat] = (map[cat] ?? 0) + (tx.baseEquivalent ?? 0);
       }
     }
     return map;

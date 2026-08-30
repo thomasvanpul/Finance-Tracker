@@ -231,8 +231,8 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
                 { label: "Cost / Share", value: `${sym}${inv.costPricePerShare.toFixed(2)}` },
                 { label: "Live Price", value: priced && inv.livePrice != null ? `${sym}${inv.livePrice.toFixed(2)}` : "—" },
                 { label: "Total Cost", value: formatBaseMoney(inv.costPricePerShare * inv.shares) },
-                { label: "Current Value", value: priced && inv.gbpValue != null ? formatBaseMoney(inv.gbpValue) : "—" },
-                { label: "Unrealised P&L", value: priced && inv.plGbp != null && inv.plPercent != null ? `${inv.plGbp >= 0 ? "+" : ""}${formatBaseMoney(inv.plGbp)} (${inv.plPercent >= 0 ? "+" : ""}${inv.plPercent.toFixed(2)}%)` : "—", color: priced ? plColor : "var(--ft-dim)" },
+                { label: "Current Value", value: priced && inv.baseEquivalent != null ? formatBaseMoney(inv.baseEquivalent) : "—" },
+                { label: "Unrealised P&L", value: priced && inv.plBase != null && inv.plPercent != null ? `${inv.plBase >= 0 ? "+" : ""}${formatBaseMoney(inv.plBase)} (${inv.plPercent >= 0 ? "+" : ""}${inv.plPercent.toFixed(2)}%)` : "—", color: priced ? plColor : "var(--ft-dim)" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="px-3 py-2 border-b border-r" style={{ borderColor: "var(--ft-border)" }}>
                   <div className="text-xs mb-0.5" style={{ color: "var(--ft-dim)" }}>{label}</div>
@@ -807,7 +807,7 @@ const AI_COMMENTARY_CACHE_KEY = "ft-investments-ai-commentary";
 const AI_COMMENTARY_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 interface AiPortfolioCommentaryProps {
-  investments: Array<{ ticker: string; gbpValue: number; quantity?: number }>;
+  investments: Array<{ ticker: string; baseEquivalent: number; quantity?: number }>;
   totalValue: number;
 }
 
@@ -835,11 +835,11 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
   // in a prompt — the model reads the same figures from
   // buildChatContext on the server.
   const holdingCount = investments.length;
-  const top1 = [...investments].sort((a, b) => b.gbpValue - a.gbpValue)[0];
+  const top1 = [...investments].sort((a, b) => b.baseEquivalent - a.baseEquivalent)[0];
   const topTicker = top1?.ticker ?? "";
-  const topPct = totalValue > 0 && top1 ? (top1.gbpValue / totalValue) * 100 : 0;
+  const topPct = totalValue > 0 && top1 ? (top1.baseEquivalent / totalValue) * 100 : 0;
   const isConcentrated = investments.some(
-    (inv) => totalValue > 0 && (inv.gbpValue / totalValue) * 100 > 30,
+    (inv) => totalValue > 0 && (inv.baseEquivalent / totalValue) * 100 > 30,
   );
   const annualYield: number | null = null; // no yield data at this component level
 
@@ -1193,7 +1193,7 @@ function InvKpiBar({ cells, style }: { cells: KpiCell[]; style?: React.CSSProper
 
 interface PortfolioPositionsTableProps {
   investments: Investment[];
-  summary: { totalValueGbp: number; totalPlGbp: number; totalPlPercent: number | null } | null | undefined;
+  summary: { totalValueBase: number; totalPlBase: number; totalPlPercent: number | null } | null | undefined;
   quoteMap: Map<string, QuoteData>;
   classMap: Record<number, AssetClass>;
   tickerFilter: string;
@@ -1228,7 +1228,7 @@ function PortfolioPositionsTable({
     return inv.ticker.toLowerCase().includes(q) || inv.name.toLowerCase().includes(q);
   });
 
-  const totalValue = summary?.totalValueGbp ?? 0;
+  const totalValue = summary?.totalValueBase ?? 0;
 
   // Column header style
   const CH: React.CSSProperties = {
@@ -1319,7 +1319,7 @@ function PortfolioPositionsTable({
               const plPct = inv.plPercent ?? 0;
               const plColor = priced && plPct >= 0 ? "var(--ft-green)" : "var(--ft-red)";
               const plSign = plPct >= 0 ? "▲" : "▼";
-              const weight = priced && inv.gbpValue != null && totalValue > 0 ? (inv.gbpValue / totalValue) * 100 : 0;
+              const weight = priced && inv.baseEquivalent != null && totalValue > 0 ? (inv.baseEquivalent / totalValue) * 100 : 0;
               const rowBg = i % 2 === 0 ? "var(--ft-base)" : `color-mix(in srgb, var(--ft-raised) 30%, transparent)`;
 
               return (
@@ -1375,12 +1375,12 @@ function PortfolioPositionsTable({
 
                   {/* VALUE */}
                   <td style={{ ...TD, textAlign: "right", color: priced ? "var(--ft-text)" : "var(--ft-dim)", fontWeight: 600 }} className="pnum">
-                    {priced && inv.gbpValue != null ? formatBaseMoney(inv.gbpValue) : "—"}
+                    {priced && inv.baseEquivalent != null ? formatBaseMoney(inv.baseEquivalent) : "—"}
                   </td>
 
                   {/* P&L — flash cell, colored */}
                   <FlashCell
-                    value={inv.plGbp ?? 0}
+                    value={inv.plBase ?? 0}
                     style={{
                       ...TD,
                       textAlign: "right",
@@ -1390,7 +1390,7 @@ function PortfolioPositionsTable({
                     }}
                     className="pnum"
                   >
-                    {priced && inv.plGbp != null ? `${inv.plGbp >= 0 ? "+" : ""}${formatBaseMoney(inv.plGbp)}` : "—"}
+                    {priced && inv.plBase != null ? `${inv.plBase >= 0 ? "+" : ""}${formatBaseMoney(inv.plBase)}` : "—"}
                   </FlashCell>
 
                   {/* P&L % — directional symbol */}
@@ -1461,10 +1461,10 @@ function PortfolioPositionsTable({
                 <td style={{ ...TD, borderBottom: "none" }} />
                 <td style={{ ...TD, borderBottom: "none" }} />
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, color: "var(--ft-text)", fontSize: 12, borderBottom: "none" }} className="pnum">
-                  {formatBaseMoney(summary.totalValueGbp)}
+                  {formatBaseMoney(summary.totalValueBase)}
                 </td>
-                <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "none", color: summary.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
-                  {summary.totalPlGbp >= 0 ? "+" : ""}{formatBaseMoney(summary.totalPlGbp)}
+                <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "none", color: summary.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
+                  {summary.totalPlBase >= 0 ? "+" : ""}{formatBaseMoney(summary.totalPlBase)}
                 </td>
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 11, borderBottom: "none", color: summary.totalPlPercent == null ? "var(--ft-dim)" : summary.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
                   {summary.totalPlPercent == null
@@ -1640,7 +1640,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   // ── Portfolio snapshot history (localStorage) — must be above early return ──
   const SNAPSHOT_KEY = "ft-portfolio-snapshots";
   useEffect(() => {
-    const totalVal = summary?.totalValueGbp;
+    const totalVal = summary?.totalValueBase;
     const hasPosNow = (investments?.length ?? 0) > 0;
     if (totalVal != null && hasPosNow && totalVal > 0) {
       const todayStr = new Date().toISOString().slice(0, 10);
@@ -1651,7 +1651,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
         localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(Object.fromEntries(sorted)));
       } catch { /* noop */ }
     }
-  }, [summary?.totalValueGbp, investments?.length]);
+  }, [summary?.totalValueBase, investments?.length]);
 
   // ── Check alerts on load (once investments & quotes are available) ──
   useEffect(() => {
@@ -1888,27 +1888,27 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   // G10: allocation, class breakdown, and P&L charts exclude unpriced
   // positions. A pie slice sized off "0" would misrepresent the portfolio.
   const pricedInvs = (investments ?? []).filter((inv) => inv.priceAvailable === true);
-  const pieData = pricedInvs.map((inv, i) => ({ name: inv.ticker, value: Math.round((inv.gbpValue ?? 0) * 100) / 100, color: CHART_COLORS[i % CHART_COLORS.length] }));
+  const pieData = pricedInvs.map((inv, i) => ({ name: inv.ticker, value: Math.round((inv.baseEquivalent ?? 0) * 100) / 100, color: CHART_COLORS[i % CHART_COLORS.length] }));
   const classAllocMap: Record<string, number> = {};
-  pricedInvs.forEach((inv) => { const cls = classMap[inv.id] ?? "Other"; classAllocMap[cls] = (classAllocMap[cls] ?? 0) + (inv.gbpValue ?? 0); });
+  pricedInvs.forEach((inv) => { const cls = classMap[inv.id] ?? "Other"; classAllocMap[cls] = (classAllocMap[cls] ?? 0) + (inv.baseEquivalent ?? 0); });
   const classAllocData = Object.entries(classAllocMap).filter(([, v]) => v > 0).map(([name, value]) => ({ name: name as AssetClass, value: Math.round(value * 100) / 100 }));
   const totalClassValue = classAllocData.reduce((s, d) => s + d.value, 0);
-  const plData = pricedInvs.map((inv) => ({ name: inv.ticker, pl: Math.round((inv.plGbp ?? 0) * 100) / 100, fill: (inv.plPercent ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }));
+  const plData = pricedInvs.map((inv) => ({ name: inv.ticker, pl: Math.round((inv.plBase ?? 0) * 100) / 100, fill: (inv.plPercent ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }));
 
   const dividendPositions = (investments ?? []).filter((inv) => (quoteMap.get(inv.ticker)?.dividendYield ?? 0) > 0);
   const totalAnnualDividend = dividendPositions.reduce((s, inv) => { const q = quoteMap.get(inv.ticker); return q?.dividendYield ? s + (q.dividendYield / 100) * q.price * inv.shares : s; }, 0);
 
   // ── Portfolio Analytics ──
   const portBeta = (() => {
-    if (!summary || summary.totalValueGbp <= 0) return null;
+    if (!summary || summary.totalValueBase <= 0) return null;
     let wb = 0, covered = 0;
-    (investments ?? []).forEach((inv) => { const q = quoteMap.get(inv.ticker); if (q?.beta != null && inv.gbpValue != null) { wb += (inv.gbpValue / summary.totalValueGbp) * q.beta; covered += inv.gbpValue; } });
+    (investments ?? []).forEach((inv) => { const q = quoteMap.get(inv.ticker); if (q?.beta != null && inv.baseEquivalent != null) { wb += (inv.baseEquivalent / summary.totalValueBase) * q.beta; covered += inv.baseEquivalent; } });
     return covered > 0 ? wb : null;
   })();
 
-  const largestPos = summary && summary.totalValueGbp > 0
+  const largestPos = summary && summary.totalValueBase > 0
     ? pricedInvs.reduce<{ ticker: string; pct: number } | null>((best, inv) => {
-        const pct = ((inv.gbpValue ?? 0) / summary.totalValueGbp) * 100;
+        const pct = ((inv.baseEquivalent ?? 0) / summary.totalValueBase) * 100;
         return !best || pct > best.pct ? { ticker: inv.ticker, pct } : best;
       }, null) : null;
 
@@ -1918,9 +1918,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   const kpiCells: KpiCell[] = summary ? [
     {
       label: "PORTFOLIO VALUE",
-      value: formatBaseMoney(summary.totalValueGbp),
+      value: formatBaseMoney(summary.totalValueBase),
       // Surface unavailablePositions the same way /accounts KPI
-      // surfaces unconvertibleAccounts. Server sums totalValueGbp
+      // surfaces unconvertibleAccounts. Server sums totalValueBase
       // over `priced` positions only (see routes/investments.ts) —
       // any position without a live quote is silently excluded.
       // Without this line the desktop user reads a value that
@@ -1936,11 +1936,11 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     },
     {
       label: "TOTAL P&L",
-      value: `${summary.totalPlGbp >= 0 ? "+" : ""}${formatBaseMoney(summary.totalPlGbp)}`,
+      value: `${summary.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(summary.totalPlBase)}`,
       delta: summary.totalPlPercent == null
         ? "—"
         : `${summary.totalPlPercent >= 0 ? "▲" : "▼"} ${Math.abs(summary.totalPlPercent).toFixed(2)}%`,
-      deltaPositive: summary.totalPlGbp >= 0,
+      deltaPositive: summary.totalPlBase >= 0,
     },
     {
       label: "PORTFOLIO BETA",
@@ -2367,7 +2367,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                     <div key={i} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--ft-muted)" }}>
                       <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: d.color, flexShrink: 0 }} />
                       {d.name}
-                      {summary && summary.totalValueGbp > 0 && <span style={{ color: "var(--ft-dim)" }}>{((d.value / summary.totalValueGbp) * 100).toFixed(1)}%</span>}
+                      {summary && summary.totalValueBase > 0 && <span style={{ color: "var(--ft-dim)" }}>{((d.value / summary.totalValueBase) * 100).toFixed(1)}%</span>}
                     </div>
                   ))}
                 </div>
@@ -2393,7 +2393,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           )}
 
           {/* Heat map: positions sized by weight, colored by P&L */}
-          {hasPositions && (investments?.length ?? 0) >= 2 && summary && summary.totalValueGbp > 0 && (
+          {hasPositions && (investments?.length ?? 0) >= 2 && summary && summary.totalValueBase > 0 && (
             <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
               <div className="ft-panel-header">
                 <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO HEAT MAP</div>
@@ -2407,10 +2407,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                       surfaces the gap). */}
                   {pricedInvs
                     .slice()
-                    .sort((a, b) => (b.gbpValue ?? 0) - (a.gbpValue ?? 0))
+                    .sort((a, b) => (b.baseEquivalent ?? 0) - (a.baseEquivalent ?? 0))
                     .map((inv) => {
-                      const gbpVal = inv.gbpValue ?? 0;
-                      const weight = summary.totalValueGbp > 0 ? (gbpVal / summary.totalValueGbp) * 100 : 0;
+                      const gbpVal = inv.baseEquivalent ?? 0;
+                      const weight = summary.totalValueBase > 0 ? (gbpVal / summary.totalValueBase) * 100 : 0;
                       const pct = inv.plPercent ?? 0;
                       const bg = pct > 15 ? "rgba(63,185,80,0.85)" : pct > 7 ? "rgba(63,185,80,0.55)" : pct > 2 ? "rgba(63,185,80,0.3)" : pct > -2 ? "rgba(180,180,180,0.18)" : pct > -7 ? "rgba(248,81,73,0.3)" : pct > -15 ? "rgba(248,81,73,0.55)" : "rgba(248,81,73,0.85)";
                       const textColor = Math.abs(pct) > 7 ? "rgba(255,255,255,0.95)" : "var(--ft-text)";
@@ -2476,10 +2476,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           )}
 
           {/* AI Portfolio Commentary — terminal style */}
-          {hasPositions && summary && summary.totalValueGbp > 0 && (
+          {hasPositions && summary && summary.totalValueBase > 0 && (
             <AiPortfolioCommentary
-              investments={pricedInvs.map((inv) => ({ ticker: inv.ticker, gbpValue: inv.gbpValue ?? 0, quantity: inv.shares }))}
-              totalValue={summary.totalValueGbp}
+              investments={pricedInvs.map((inv) => ({ ticker: inv.ticker, baseEquivalent: inv.baseEquivalent ?? 0, quantity: inv.shares }))}
+              totalValue={summary.totalValueBase}
             />
           )}
 

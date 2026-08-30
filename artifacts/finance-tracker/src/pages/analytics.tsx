@@ -360,12 +360,12 @@ function BigTxRow({ tx: t, index: i, max }: BigTxRowProps) {
     >
       <td style={{ ...td, color: "var(--ft-dim)", fontSize: 9, width: 20 }}>{i + 1}</td>
       <td style={{ ...td, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 0, position: "relative" }}>
-        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${(t.gbpValue / max) * 4}px`, background: "var(--ft-red)", opacity: 0.4 }} />
+        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${(t.baseEquivalent / max) * 4}px`, background: "var(--ft-red)", opacity: 0.4 }} />
         <span style={{ paddingLeft: 8, position: "relative" }}>{t.description || "—"}</span>
       </td>
       <td style={{ ...td, color: "var(--ft-muted)" }}>{t.category || "Other"}</td>
       <td style={{ ...td, color: "var(--ft-dim)" }}>{t.date}</td>
-      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-red)", fontWeight: 700 }}>{formatBaseMoney(t.gbpValue)}</td>
+      <td className="pnum" style={{ ...td, textAlign: "right", color: "var(--ft-red)", fontWeight: 700 }}>{formatBaseMoney(t.baseEquivalent)}</td>
     </tr>
   );
 }
@@ -483,7 +483,7 @@ function AnnotationRow({ annotation: a, index: ai, onDelete }: AnnotationRowProp
   );
 }
 
-interface Tx { id: number; date: string; description: string; type: string; category: string; gbpValue: number; accountName: string; currency: string; nativeAmount: number; }
+interface Tx { id: number; date: string; description: string; type: string; category: string; baseEquivalent: number; accountName: string; currency: string; nativeAmount: number; }
 
 // ─── Category Drill-Through Drawer ───────────────────────────────────────────
 
@@ -508,7 +508,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
   }, [category, expenses, cutoff, range]);
 
   const totalForCategory = useMemo(
-    () => rangedExpenses.reduce((s, t) => s + t.gbpValue, 0),
+    () => rangedExpenses.reduce((s, t) => s + t.baseEquivalent, 0),
     [rangedExpenses]
   );
 
@@ -605,7 +605,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
                   <tr key={t.id} style={{ background: ri % 2 === 0 ? "transparent" : "color-mix(in srgb, var(--ft-raised) 30%, transparent)" }}>
                     <td style={{ ...td, fontSize: 10, color: "var(--ft-dim)", padding: "6px 12px", minWidth: 80 }}>{t.date}</td>
                     <td style={{ ...td, fontSize: 11, padding: "6px 12px", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis" }}>{t.description || "—"}</td>
-                    <td className="pnum" style={{ ...td, fontSize: 11, fontWeight: 700, color: "var(--ft-red)", textAlign: "right", padding: "6px 12px" }}>{formatBaseMoney(t.gbpValue)}</td>
+                    <td className="pnum" style={{ ...td, fontSize: 11, fontWeight: 700, color: "var(--ft-red)", textAlign: "right", padding: "6px 12px" }}>{formatBaseMoney(t.baseEquivalent)}</td>
                     <td style={{ ...td, fontSize: 9, color: "var(--ft-muted)", padding: "6px 12px", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>{t.accountName || "—"}</td>
                   </tr>
                 ))}
@@ -667,21 +667,21 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
   const sixMonthTotals = useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
       const ym = monthsAgoStr(5 - i);
-      return ranged.filter(t => getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
+      return ranged.filter(t => getYYYYMM(t.date) === ym).reduce((s, t) => s + t.baseEquivalent, 0);
     }).filter(v => v > 0);
   }, [ranged]);
   const avgMonthly = sixMonthTotals.length > 0 ? sixMonthTotals.reduce((a, b) => a + b, 0) / sixMonthTotals.length : 0;
 
   // Highest category
   const catMap: Record<string, number> = {};
-  for (const t of ranged) catMap[t.category || "Other"] = (catMap[t.category || "Other"] || 0) + t.gbpValue;
+  for (const t of ranged) catMap[t.category || "Other"] = (catMap[t.category || "Other"] || 0) + t.baseEquivalent;
   const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
 
   // YoY change (this month vs same month last year)
   const lastYear = now.getFullYear() - 1;
   const sameMonthLastYear = `${lastYear}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const thisMonthSpend = expenses.filter(t => getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.gbpValue, 0);
-  const lastYearSameMonth = expenses.filter(t => getYYYYMM(t.date) === sameMonthLastYear).reduce((s, t) => s + t.gbpValue, 0);
+  const thisMonthSpend = expenses.filter(t => getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.baseEquivalent, 0);
+  const lastYearSameMonth = expenses.filter(t => getYYYYMM(t.date) === sameMonthLastYear).reduce((s, t) => s + t.baseEquivalent, 0);
   const yoyPct = pctChange(lastYearSameMonth, thisMonthSpend);
 
   // Spend volatility (std dev of monthly totals)
@@ -689,7 +689,7 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
     const map: Record<string, number> = {};
     for (let i = 11; i >= 0; i--) {
       const ym = monthsAgoStr(i);
-      map[ym] = expenses.filter(t => getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
+      map[ym] = expenses.filter(t => getYYYYMM(t.date) === ym).reduce((s, t) => s + t.baseEquivalent, 0);
     }
     return Object.values(map);
   }, [expenses]);
@@ -701,7 +701,7 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
   const bestMonthEntries = Object.entries(
     expenses.reduce<Record<string, number>>((acc, t) => {
       const ym = getYYYYMM(t.date);
-      acc[ym] = (acc[ym] || 0) + t.gbpValue;
+      acc[ym] = (acc[ym] || 0) + t.baseEquivalent;
       return acc;
     }, {})
   ).filter(([, v]) => v > 0);
@@ -711,7 +711,7 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
     : "—";
 
   // Savings rate this month
-  const thisMonthIncome = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.gbpValue, 0);
+  const thisMonthIncome = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.baseEquivalent, 0);
   const savingsRate = thisMonthIncome > 0 ? Math.round(((thisMonthIncome - thisMonthSpend) / thisMonthIncome) * 100) : null;
 
   const cells: { label: string; value: string; delta?: React.ReactNode; valueColor?: string }[] = [
@@ -780,17 +780,17 @@ function KpiStrip({ expenses, range, onRangeChange }: { expenses: Tx[]; range: R
   const cutoff = cutoffDate(range);
   const ranged = expenses.filter(t => new Date(t.date) >= cutoff);
 
-  const thisMonthSpend = ranged.filter(t => getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.gbpValue, 0);
-  const lastMonthSpend = expenses.filter(t => getYYYYMM(t.date) === lastM).reduce((s, t) => s + t.gbpValue, 0);
+  const thisMonthSpend = ranged.filter(t => getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.baseEquivalent, 0);
+  const lastMonthSpend = expenses.filter(t => getYYYYMM(t.date) === lastM).reduce((s, t) => s + t.baseEquivalent, 0);
   const delta = thisMonthSpend - lastMonthSpend;
 
   const days = range === "all" ? 365 : range === "12m" ? 365 : range === "6m" ? 180 : range === "3m" ? 90 : 30;
-  const dailyAvg = ranged.reduce((s, t) => s + t.gbpValue, 0) / days;
+  const dailyAvg = ranged.reduce((s, t) => s + t.baseEquivalent, 0) / days;
 
-  const largest = ranged.reduce<Tx | null>((top, t) => !top || t.gbpValue > top.gbpValue ? t : top, null);
+  const largest = ranged.reduce<Tx | null>((top, t) => !top || t.baseEquivalent > top.baseEquivalent ? t : top, null);
 
   const catMap: Record<string, number> = {};
-  for (const t of ranged) catMap[t.category || "Other"] = (catMap[t.category || "Other"] || 0) + t.gbpValue;
+  for (const t of ranged) catMap[t.category || "Other"] = (catMap[t.category || "Other"] || 0) + t.baseEquivalent;
   const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
 
   const tiles = [
@@ -804,7 +804,7 @@ function KpiStrip({ expenses, range, onRangeChange }: { expenses: Tx[]; range: R
       ) : null,
     },
     { label: "Daily Average", value: formatBaseMoney(dailyAvg), sub: <span style={{ ...ftLabel }}>over {days}d</span> },
-    { label: "Largest Single", value: largest ? formatBaseMoney(largest.gbpValue) : "—", sub: <span style={{ ...ftLabel, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{largest?.description ?? "—"}</span> },
+    { label: "Largest Single", value: largest ? formatBaseMoney(largest.baseEquivalent) : "—", sub: <span style={{ ...ftLabel, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{largest?.description ?? "—"}</span> },
     { label: "Top Category", value: topCat ? formatBaseMoney(topCat[1]) : "—", sub: <span style={{ ...ftLabel }}>{topCat?.[0] ?? "—"}</span> },
     { label: "Transactions", value: String(ranged.length), sub: <span style={{ ...ftLabel }}>in range</span> },
   ];
@@ -845,7 +845,7 @@ function SpendingVelocity({ allExpenses, budgetTotal, range, onRangeChange }: {
     }
     for (const t of allExpenses) {
       const ym = getYYYYMM(t.date);
-      if (ym in map) map[ym] += t.gbpValue;
+      if (ym in map) map[ym] += t.baseEquivalent;
     }
     const entries = Object.entries(map).map(([ym, total]) => {
       const [, m] = ym.split("-");
@@ -932,16 +932,16 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
     return Array.from({ length: 6 }, (_, i) => {
       const ym = monthsAgoStr(5 - i);
       const [, m] = ym.split("-");
-      const income = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
-      const expense = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
+      const income = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.baseEquivalent, 0);
+      const expense = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.baseEquivalent, 0);
       return { month: MONTH_SHORT[parseInt(m) - 1], ym, income: Math.round(income), expense: Math.round(expense), net: Math.round(income - expense) };
     });
   }, [allTxs]);
 
   const now = new Date();
   const thisM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const curIncome = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.gbpValue, 0);
-  const curExpense = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.gbpValue, 0);
+  const curIncome = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.baseEquivalent, 0);
+  const curExpense = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.baseEquivalent, 0);
   const savingsPct = curIncome > 0 ? Math.round(((curIncome - curExpense) / curIncome) * 100) : 0;
   const pieData = [
     { name: "Income", value: Math.max(curIncome, 0) },
@@ -1123,16 +1123,16 @@ function CategoryIntelligence({ expenses, range, onCategoryClick }: CategoryInte
   const lastM = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
   const cutoff = cutoffDate(range);
   const ranged = expenses.filter(t => new Date(t.date) >= cutoff);
-  const totalSpend = ranged.reduce((s, t) => s + t.gbpValue, 0);
+  const totalSpend = ranged.reduce((s, t) => s + t.baseEquivalent, 0);
 
   const rows = useMemo(() => {
     const map: Record<string, { total: number; count: number; thisM: number; lastM: number }> = {};
     for (const t of ranged) {
       const c = t.category || "Other";
       if (!map[c]) map[c] = { total: 0, count: 0, thisM: 0, lastM: 0 };
-      map[c].total += t.gbpValue; map[c].count += 1;
-      if (getYYYYMM(t.date) === thisM) map[c].thisM += t.gbpValue;
-      if (getYYYYMM(t.date) === lastM) map[c].lastM += t.gbpValue;
+      map[c].total += t.baseEquivalent; map[c].count += 1;
+      if (getYYYYMM(t.date) === thisM) map[c].thisM += t.baseEquivalent;
+      if (getYYYYMM(t.date) === lastM) map[c].lastM += t.baseEquivalent;
     }
     return Object.entries(map).map(([cat, v]) => ({
       cat, ...v, avg: v.count > 0 ? v.total / v.count : 0,
@@ -1251,7 +1251,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${ym}-${String(d).padStart(2, "0")}`;
       const txs = monthTxs.filter(t => t.date === dateStr);
-      result.push({ day: d, date: dateStr, total: txs.reduce((s, t) => s + t.gbpValue, 0), txs });
+      result.push({ day: d, date: dateStr, total: txs.reduce((s, t) => s + t.baseEquivalent, 0), txs });
     }
     return result;
   }, [expenses, y, m]);
@@ -1371,7 +1371,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
                   <span style={{ color: "var(--ft-muted)", fontSize: 9, whiteSpace: "nowrap", maxWidth: 130 }}>
                     {t.description || t.category || "—"}
                   </span>
-                  <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, fontSize: 9, flexShrink: 0 }}>{formatBaseMoney(t.gbpValue)}</span>
+                  <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, fontSize: 9, flexShrink: 0 }}>{formatBaseMoney(t.baseEquivalent)}</span>
                 </div>
               ))}
               {tooltip.day.txs.length > 5 && (
@@ -1408,7 +1408,7 @@ function SpendingHeatmap({ expenses }: { expenses: Tx[] }) {
   const WEEK_LABELS = ["Wk 1","Wk 2","Wk 3","Wk 4","Wk 5"];
   const heatmap = useMemo(() => {
     const grid = Array.from({ length: 7 }, () => Array(5).fill(0));
-    for (const t of expenses) { grid[getDOW(t.date)][getWeekOfMonth(t.date)] += t.gbpValue; }
+    for (const t of expenses) { grid[getDOW(t.date)][getWeekOfMonth(t.date)] += t.baseEquivalent; }
     return grid;
   }, [expenses]);
   const maxVal = Math.max(...heatmap.flat(), 0.01);
@@ -1462,7 +1462,7 @@ function SpendingHeatmap({ expenses }: { expenses: Tx[] }) {
             <tr style={{ borderTop: "1px solid var(--ft-border2)" }}>
               <td style={{ ...td, color: "var(--ft-dim)", fontSize: 9, fontWeight: 600 }}>Total</td>
               {colTotals.map((v, wi) => <td key={wi} className="pnum" style={{ ...td, textAlign: "center", color: "var(--ft-accent)" }}>{formatBaseMoney(v)}</td>)}
-              <td className="pnum" style={{ ...td, textAlign: "right", fontWeight: 700 }}>{formatBaseMoney(expenses.reduce((s, t) => s + t.gbpValue, 0))}</td>
+              <td className="pnum" style={{ ...td, textAlign: "right", fontWeight: 700 }}>{formatBaseMoney(expenses.reduce((s, t) => s + t.baseEquivalent, 0))}</td>
             </tr>
           </tbody>
         </table>
@@ -1476,7 +1476,7 @@ function DayOfWeekPatterns({ expenses }: { expenses: Tx[] }) {
   const data = useMemo(() => {
     const totals = Array(7).fill(0);
     const counts = Array(7).fill(0);
-    for (const t of expenses) { const d = getDOW(t.date); totals[d] += t.gbpValue; counts[d] += 1; }
+    for (const t of expenses) { const d = getDOW(t.date); totals[d] += t.baseEquivalent; counts[d] += 1; }
     return DOW_LABELS.map((name, i) => ({ name, total: Math.round(totals[i]), count: counts[i], weekend: i >= 5 }));
   }, [expenses]);
 
@@ -1519,9 +1519,9 @@ function TopMerchants({ expenses }: { expenses: Tx[] }) {
     for (const t of expenses) {
       const d = t.description?.trim() || "(No description)";
       if (!map[d]) map[d] = { total: 0, count: 0, thisM: 0, lastM: 0 };
-      map[d].total += t.gbpValue; map[d].count += 1;
-      if (getYYYYMM(t.date) === thisM) map[d].thisM += t.gbpValue;
-      if (getYYYYMM(t.date) === lastM) map[d].lastM += t.gbpValue;
+      map[d].total += t.baseEquivalent; map[d].count += 1;
+      if (getYYYYMM(t.date) === thisM) map[d].thisM += t.baseEquivalent;
+      if (getYYYYMM(t.date) === lastM) map[d].lastM += t.baseEquivalent;
     }
     return Object.entries(map)
       .map(([desc, v]) => ({ desc, ...v, avg: v.count > 0 ? v.total / v.count : 0, change: pctChange(v.lastM, v.thisM) }))
@@ -1565,7 +1565,7 @@ function TopMerchants({ expenses }: { expenses: Tx[] }) {
 function MonthDayPattern({ expenses }: { expenses: Tx[] }) {
   const data = useMemo(() => {
     const bars = Array(31).fill(0);
-    for (const t of expenses) bars[new Date(t.date).getDate() - 1] += t.gbpValue;
+    for (const t of expenses) bars[new Date(t.date).getDate() - 1] += t.baseEquivalent;
     return bars.map((v, i) => ({ day: i + 1, total: Math.round(v) }));
   }, [expenses]);
 
@@ -1596,9 +1596,9 @@ function MonthDayPattern({ expenses }: { expenses: Tx[] }) {
 // ─── Biggest Transactions ─────────────────────────────────────────────────────
 function BiggestTransactions({ expenses }: { expenses: Tx[] }) {
   const top8 = useMemo(() =>
-    [...expenses].sort((a, b) => b.gbpValue - a.gbpValue).slice(0, 8)
+    [...expenses].sort((a, b) => b.baseEquivalent - a.baseEquivalent).slice(0, 8)
   , [expenses]);
-  const max = top8[0]?.gbpValue ?? 1;
+  const max = top8[0]?.baseEquivalent ?? 1;
 
   return (
     <div style={{ ...panelStyle, marginBottom: 0 }}>
@@ -1630,7 +1630,7 @@ function RecurringVsOneOff({ expenses }: { expenses: Tx[] }) {
     for (const t of expenses) {
       const d = t.description?.trim() || "(No description)";
       if (!descMap[d]) descMap[d] = { total: 0, months: new Set(), count: 0 };
-      descMap[d].total += t.gbpValue; descMap[d].count += 1; descMap[d].months.add(getYYYYMM(t.date));
+      descMap[d].total += t.baseEquivalent; descMap[d].count += 1; descMap[d].months.add(getYYYYMM(t.date));
     }
     let rec = 0, one = 0;
     const recList: { desc: string; total: number; count: number }[] = [];
@@ -1689,7 +1689,7 @@ function IncomeSourceBreakdown({ allTxs }: { allTxs: Tx[] }) {
     for (const t of allTxs) {
       if (t.type !== "income") continue;
       const cat = t.category || "Uncategorised";
-      map[cat] = (map[cat] ?? 0) + t.gbpValue;
+      map[cat] = (map[cat] ?? 0) + t.baseEquivalent;
     }
     return Object.entries(map)
       .map(([cat, total]) => ({ cat, total: Math.round(total) }))
@@ -1745,8 +1745,8 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
     return Array.from({ length: 12 }, (_, i) => {
       const ym = monthsAgoStr(11 - i);
       const [, m] = ym.split("-");
-      const inc = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
-      const exp = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
+      const inc = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.baseEquivalent, 0);
+      const exp = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.baseEquivalent, 0);
       const rate = inc > 0 ? Math.round(((inc - exp) / inc) * 100) : null;
       return { month: MONTH_SHORT[parseInt(m) - 1], ym, rate, income: Math.round(inc), expense: Math.round(exp) };
     });
@@ -1830,7 +1830,7 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
     const months = Array.from({ length: 12 }, (_, i) => {
       const ym = monthsAgoStr(11 - i);
       const [, m] = ym.split("-");
-      const total = expenses.filter(t => getYYYYMM(t.date) === ym).reduce((s: number, t) => s + t.gbpValue, 0);
+      const total = expenses.filter(t => getYYYYMM(t.date) === ym).reduce((s: number, t) => s + t.baseEquivalent, 0);
       return { ym, label: MONTH_SHORT[parseInt(m) - 1], total };
     }).filter((d: { ym: string; label: string; total: number }) => d.total > 0);
 
@@ -1857,7 +1857,7 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
       const monthExp = expenses.filter(t => getYYYYMM(t.date) === ym);
       const cats = new Set(monthExp.map(t => t.category));
       cats.forEach(cat => {
-        const total = monthExp.filter(t => t.category === cat).reduce((s, t) => s + t.gbpValue, 0);
+        const total = monthExp.filter(t => t.category === cat).reduce((s, t) => s + t.baseEquivalent, 0);
         const arr = catMap.get(cat) ?? [];
         arr.push(total);
         catMap.set(cat, arr);
@@ -1943,7 +1943,7 @@ function IncomeStability({ allTxs }: { allTxs: Tx[] }) {
     const ms = Array.from({ length: 12 }, (_, i) => {
       const ym = monthsAgoStr(11 - i);
       const [, m] = ym.split("-");
-      const total = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === ym).reduce((s: number, t) => s + t.gbpValue, 0);
+      const total = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === ym).reduce((s: number, t) => s + t.baseEquivalent, 0);
       return { ym, label: MONTH_SHORT[parseInt(m) - 1], total };
     });
     const nonZero = ms.filter(m => m.total > 0);
@@ -2023,7 +2023,7 @@ function SeasonalityIndex({ expenses }: { expenses: Tx[] }) {
     const months = Array.from({ length: 12 }, (_, i) => {
       const ym = monthsAgoStr(11 - i);
       const [, m] = ym.split("-");
-      const total = expenses.filter(t => getYYYYMM(t.date) === ym).reduce((s: number, t) => s + t.gbpValue, 0);
+      const total = expenses.filter(t => getYYYYMM(t.date) === ym).reduce((s: number, t) => s + t.baseEquivalent, 0);
       return { ym, label: MONTH_SHORT[parseInt(m) - 1], total };
     });
     const nonZero = months.filter(m => m.total > 0);
@@ -2109,9 +2109,9 @@ function CategoryMomentum({ expenses }: { expenses: Tx[] }) {
       if (ym !== thisYm && ym !== lastYm && ym !== twoAgoYm) continue;
       const cat = t.category ?? "Other";
       const entry = catTotals.get(cat) ?? { this: 0, last: 0, twoAgo: 0 };
-      if (ym === thisYm) entry.this += t.gbpValue;
-      else if (ym === lastYm) entry.last += t.gbpValue;
-      else entry.twoAgo += t.gbpValue;
+      if (ym === thisYm) entry.this += t.baseEquivalent;
+      else if (ym === lastYm) entry.last += t.baseEquivalent;
+      else entry.twoAgo += t.baseEquivalent;
       catTotals.set(cat, entry);
     }
 
@@ -2186,7 +2186,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
   const current = new Date().toISOString().slice(0, 7);
   const prevYYMM = monthsAgoStr(1);
 
-  const incomeThisMonth = allTxs.filter(t => t.gbpValue > 0 && t.date.startsWith(current)).reduce((s, t) => s + t.gbpValue, 0);
+  const incomeThisMonth = allTxs.filter(t => t.baseEquivalent > 0 && t.date.startsWith(current)).reduce((s, t) => s + t.baseEquivalent, 0);
   const income = incomeThisMonth;
 
   const thisMonthExp = expenses.filter(t => t.date.startsWith(current));
@@ -2200,7 +2200,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
   const bucketAmounts: Record<string, number> = {};
   for (const tx of thisMonthExp) {
     const cat = (tx.category || "Other").split(" ").map((w: string) => w[0].toUpperCase() + w.slice(1)).join(" ");
-    bucketAmounts[cat] = (bucketAmounts[cat] || 0) + Math.abs(tx.gbpValue);
+    bucketAmounts[cat] = (bucketAmounts[cat] || 0) + Math.abs(tx.baseEquivalent);
   }
 
   const activeBuckets: [string, number][] = Object.entries(bucketAmounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
@@ -2213,7 +2213,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
   const prevBuckets: Record<string, number> = {};
   for (const tx of prevMonthExp) {
     const cat = (tx.category || "Other").split(" ").map((w: string) => w[0].toUpperCase() + w.slice(1)).join(" ");
-    prevBuckets[cat] = (prevBuckets[cat] || 0) + Math.abs(tx.gbpValue);
+    prevBuckets[cat] = (prevBuckets[cat] || 0) + Math.abs(tx.baseEquivalent);
   }
 
   const rows: { label: string; amount: number; pct: number; color: string; sign: 1 | -1; prev?: number }[] = [
@@ -2309,7 +2309,7 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
     const catTotals: Record<string, number> = {};
     for (const tx of filtered) {
       const raw = (tx.category || "other").toLowerCase();
-      catTotals[raw] = (catTotals[raw] || 0) + Math.abs(tx.gbpValue);
+      catTotals[raw] = (catTotals[raw] || 0) + Math.abs(tx.baseEquivalent);
     }
 
     return UK_BENCHMARKS.map(b => {
@@ -2417,7 +2417,7 @@ function SpendingAnomalies({ expenses }: { expenses: Tx[] }) {
       if (ym !== m0 && ym >= m3) {
         const cat = tx.category || "Other";
         if (!baseline[cat]) baseline[cat] = [];
-        baseline[cat].push(tx.gbpValue);
+        baseline[cat].push(tx.baseEquivalent);
       }
     }
 
@@ -2438,9 +2438,9 @@ function SpendingAnomalies({ expenses }: { expenses: Tx[] }) {
       .map(tx => {
         const s = catStats[tx.category];
         if (!s || s.std < 1) return null;
-        const sigma = (tx.gbpValue - s.mean) / s.std;
+        const sigma = (tx.baseEquivalent - s.mean) / s.std;
         if (sigma < 2) return null;
-        return { description: tx.description, category: tx.category, amount: tx.gbpValue, catAvg: s.mean, sigma, date: tx.date };
+        return { description: tx.description, category: tx.category, amount: tx.baseEquivalent, catAvg: s.mean, sigma, date: tx.date };
       })
       .filter(Boolean)
       .sort((a, b) => (b!.sigma - a!.sigma))
@@ -2512,8 +2512,8 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
     let cum = 0;
     return months.map(ym => {
       const txs = allTxs.filter(t => t.date.startsWith(ym));
-      const income   = txs.filter(t => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-      const expenses = txs.filter(t => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+      const income   = txs.filter(t => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
+      const expenses = txs.filter(t => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0);
       const saved    = income - expenses;
       cum += saved;
       return { month: ym.slice(5), income, expenses, saved, cumulative: cum };
@@ -2589,7 +2589,7 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
     for (const cat of cats) {
       catMonths[cat] = months.map(ym =>
         expenses.filter(t => t.date.startsWith(ym) && (t.category || "").toLowerCase().includes(cat.toLowerCase()))
-          .reduce((s, t) => s + t.gbpValue, 0)
+          .reduce((s, t) => s + t.baseEquivalent, 0)
       );
     }
 
@@ -2677,7 +2677,7 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
       { label: "£250+",    min: 250, max: Infinity },
     ];
 
-    const amounts = expenses.map(t => t.gbpValue);
+    const amounts = expenses.map(t => t.baseEquivalent);
 
     return buckets.map(b => {
       const items = amounts.filter(a => a >= b.min && a < b.max);
@@ -2754,8 +2754,8 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
       const startStr = ms.toISOString().slice(0, 10);
       const endStr = me.toISOString().slice(0, 10);
       const total = expenses
-        .filter(t => t.date >= startStr && t.date <= endStr && t.gbpValue > 0)
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .filter(t => t.date >= startStr && t.date <= endStr && t.baseEquivalent > 0)
+        .reduce((s, t) => s + t.baseEquivalent, 0);
       const mo = ms.getMonth();
       const label = `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][mo]} ${ms.getDate()}`;
       weekBuckets.push({ label, total, weekStart: startStr });
@@ -2838,13 +2838,13 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
     };
 
     const subTxIds = new Set<number>();
-    const subCatTxs = expenses.filter(t => t.gbpValue > 0 && isSubCat(t.category || ""));
+    const subCatTxs = expenses.filter(t => t.baseEquivalent > 0 && isSubCat(t.category || ""));
     subCatTxs.forEach(t => subTxIds.add(t.id));
 
     // Also detect recurring non-sub-category items (same description appearing 3+ months)
     const byDesc = new Map<string, Tx[]>();
     for (const t of expenses) {
-      if (t.gbpValue <= 0) continue;
+      if (t.baseEquivalent <= 0) continue;
       const key = (t.description || "").trim().toLowerCase().slice(0, 40);
       if (!byDesc.has(key)) byDesc.set(key, []);
       byDesc.get(key)!.push(t);
@@ -2872,7 +2872,7 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
       .filter(g => g.txs.length >= 2)
       .map(({ txs, desc }) => {
         const sorted = [...txs].sort((a, b) => b.date.localeCompare(a.date));
-        const total = txs.reduce((s, t) => s + t.gbpValue, 0);
+        const total = txs.reduce((s, t) => s + t.baseEquivalent, 0);
         const months = new Set(txs.map(t => t.date.slice(0, 7))).size;
         const monthlyEst = months > 0 ? total / months : total / txs.length;
         return { desc, count: txs.length, lastDate: sorted[0].date, monthlyEst };
@@ -2963,12 +2963,12 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
     const months: number[] = [];
     for (let i = 0; i < 6; i++) {
       const ym = monthsAgoStr(i);
-      const burn = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
+      const burn = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.baseEquivalent, 0);
       months.push(burn);
     }
     const recentBurn = months.slice(0, 3).reduce((s, v) => s + v, 0) / 3;
-    const totalIncome = allTxs.filter(t => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-    const totalExpenses = allTxs.filter(t => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+    const totalIncome = allTxs.filter(t => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
+    const totalExpenses = allTxs.filter(t => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0);
     const netSavings = Math.max(0, totalIncome - totalExpenses);
     const monthCount = Math.max(1, new Set(allTxs.map(t => getYYYYMM(t.date))).size);
     const monthlyIncome = totalIncome / monthCount;
@@ -3079,10 +3079,10 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
   const hasIncome = allTxs.some(t => t.type === "income");
   const data = useMemo(() => {
     if (!hasIncome) return null;
-    const inc = allTxs.filter(t => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
+    const inc = allTxs.filter(t => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
     const months = Math.max(1, new Set(allTxs.map(t => getYYYYMM(t.date))).size);
     const monthlyIncome = inc / months;
-    const exp = allTxs.filter(t => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+    const exp = allTxs.filter(t => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0);
     const monthlyExpenses = exp / months;
     const monthlySavings = Math.max(0, monthlyIncome - monthlyExpenses);
     const r = rate / 100 / 12;
@@ -3177,13 +3177,13 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
 
 function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
   const data = useMemo(() => {
-    const totalIncome = allTxs.filter(t => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
+    const totalIncome = allTxs.filter(t => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
     if (totalIncome === 0) return { cats: [], totalIncome: 0 };
     const months = Math.max(1, new Set(allTxs.map(t => getYYYYMM(t.date))).size);
     const monthlyIncome = totalIncome / months;
     const catMap: Record<string, number> = {};
     for (const t of allTxs.filter(t2 => t2.type === "expense")) {
-      catMap[t.category || "Other"] = (catMap[t.category || "Other"] || 0) + t.gbpValue / months;
+      catMap[t.category || "Other"] = (catMap[t.category || "Other"] || 0) + t.baseEquivalent / months;
     }
     const totalExpenses = Object.values(catMap).reduce((s, v) => s + v, 0);
     const savings = Math.max(0, monthlyIncome - totalExpenses);
@@ -3251,8 +3251,8 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
       return { fiNumber: 0, currentNW: 0, monthlyContrib: 0, yearsToFI: 0, progressPct: 0, monthlyBurn: 0, hasEnoughData: false };
     }
 
-    const monthlyBurn = recentExpenses.reduce((s, t) => s + t.gbpValue, 0) / 3;
-    const monthlyIncome = recentIncome.reduce((s, t) => s + t.gbpValue, 0) / 3;
+    const monthlyBurn = recentExpenses.reduce((s, t) => s + t.baseEquivalent, 0) / 3;
+    const monthlyIncome = recentIncome.reduce((s, t) => s + t.baseEquivalent, 0) / 3;
     const monthlyContrib = Math.max(0, monthlyIncome - monthlyBurn);
 
     const annualExpenses = monthlyBurn * 12;
@@ -3260,7 +3260,7 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
 
     // Estimate current NW from cumulative net cash flows (rough proxy when no accounts data)
     const allSorted = [...allTxs].sort((a, b) => a.date.localeCompare(b.date));
-    const currentNW = allSorted.reduce((s, t) => t.type === "income" ? s + t.gbpValue : t.type === "expense" ? s - t.gbpValue : s, 0);
+    const currentNW = allSorted.reduce((s, t) => t.type === "income" ? s + t.baseEquivalent : t.type === "expense" ? s - t.baseEquivalent : s, 0);
     const nw = Math.max(0, currentNW);
 
     // Time to FI: FV formula with 5% real growth

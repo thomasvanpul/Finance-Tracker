@@ -179,7 +179,7 @@ type RecentTxRowProps = {
   description: string | null | undefined;
   date: string | undefined;
   category: string;
-  gbpValue: number | null;
+  baseEquivalent: number | null;
   type: string;
   isLast: boolean;
 };
@@ -190,7 +190,7 @@ const TX_TYPE_COLOR_TILE: Record<string, string> = {
   transfer: "var(--ft-amber)",
 };
 
-function RecentTxRow({ description, date, category, gbpValue, type, isLast }: RecentTxRowProps) {
+function RecentTxRow({ description, date, category, baseEquivalent, type, isLast }: RecentTxRowProps) {
   const [hov, setHov] = useState(false);
   const col = TX_TYPE_COLOR_TILE[type] ?? "var(--ft-muted)";
   const sign = type === "income" ? "+" : type === "expense" ? "−" : "";
@@ -239,9 +239,9 @@ function RecentTxRow({ description, date, category, gbpValue, type, isLast }: Re
         </div>
       </div>
       <span className="pnum" style={{
-        ...MONO, fontSize: 14, fontWeight: 700, color: gbpValue == null ? "var(--ft-dim)" : col, flexShrink: 0, letterSpacing: "-0.02em",
+        ...MONO, fontSize: 14, fontWeight: 700, color: baseEquivalent == null ? "var(--ft-dim)" : col, flexShrink: 0, letterSpacing: "-0.02em",
       }}>
-        {gbpValue == null ? "—" : `${sign}${formatBaseMoney(Math.abs(gbpValue))}`}
+        {baseEquivalent == null ? "—" : `${sign}${formatBaseMoney(Math.abs(baseEquivalent))}`}
       </span>
     </div>
   );
@@ -479,7 +479,7 @@ export function CompactRecentTransactions() {
             description={t.description}
             date={t.date}
             category={t.category}
-            gbpValue={t.gbpValue}
+            baseEquivalent={t.baseEquivalent}
             type={t.type}
             isLast={i === rows.length - 1}
           />
@@ -496,7 +496,7 @@ export function CompactSpendingBreakdown() {
   const { data: txs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const top2 = useMemo(() => {
     const map: Record<string, number> = {};
-    txs.forEach(t => { map[t.category] = (map[t.category] ?? 0) + Math.abs(t.gbpValue ?? 0); });
+    txs.forEach(t => { map[t.category] = (map[t.category] ?? 0) + Math.abs(t.baseEquivalent ?? 0); });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 2);
   }, [txs]);
   const top = top2[0] ?? null;
@@ -549,7 +549,7 @@ export function CompactBudgetTracker() {
   const { data: txs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const { over, total, worstPct } = useMemo(() => {
     const spend: Record<string, number> = {};
-    txs.forEach(t => { spend[t.category] = (spend[t.category] ?? 0) + Math.abs(t.gbpValue ?? 0); });
+    txs.forEach(t => { spend[t.category] = (spend[t.category] ?? 0) + Math.abs(t.baseEquivalent ?? 0); });
     let over = 0; let total = 0; let worstPct = 0;
     budgets.forEach(b => {
       total++;
@@ -714,7 +714,7 @@ export function CompactTransactionCalendar() {
   const monthStart = useMemo(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`, [now]);
   const { data: txs = [] } = useListTransactions({ dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const today = now.toISOString().slice(0, 10);
-  const todaySpend = txs.filter(t => t.date === today && t.type === "expense").reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
+  const todaySpend = txs.filter(t => t.date === today && t.type === "expense").reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0);
   return (
     <Tile
       label="TODAY"
@@ -763,8 +763,8 @@ export function CompactMonthComparison() {
   const prevEnd = useMemo(() => monthStart, [monthStart]);
   const { data: thisTxs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const { data: prevTxs = [] } = useListTransactions({ type: "expense", dateFrom: prevMonth, dateTo: prevEnd } as Parameters<typeof useListTransactions>[0]);
-  const thisTotal = useMemo(() => thisTxs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0), [thisTxs]);
-  const prevTotal = useMemo(() => prevTxs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0), [prevTxs]);
+  const thisTotal = useMemo(() => thisTxs.reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0), [thisTxs]);
+  const prevTotal = useMemo(() => prevTxs.reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0), [prevTxs]);
   const delta = thisTotal - prevTotal;
   const color = delta <= 0 ? "var(--ft-green)" : "var(--ft-red)";
   const sign = delta >= 0 ? "+" : "";
@@ -789,7 +789,7 @@ export function CompactSpendingForecast() {
   const forecast = useMemo(() => {
     const d = now.getDate();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const spent = txs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
+    const spent = txs.reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0);
     return d > 0 ? (spent / d) * daysInMonth : 0;
   }, [txs, now]);
   return (
@@ -807,7 +807,7 @@ export function CompactSpendingForecast() {
 export function CompactDailySpend() {
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const { data: todayTxs = [] } = useListTransactions({ type: "expense", dateFrom: today } as Parameters<typeof useListTransactions>[0]);
-  const todaySpend = useMemo(() => todayTxs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0), [todayTxs]);
+  const todaySpend = useMemo(() => todayTxs.reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0), [todayTxs]);
   return (
     <Tile
       label="TODAY SPEND"
@@ -826,7 +826,7 @@ export function CompactTopMerchants() {
   const { data: txs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const top = useMemo(() => {
     const map: Record<string, number> = {};
-    txs.forEach(t => { const m = t.description ?? "Unknown"; map[m] = (map[m] ?? 0) + Math.abs(t.gbpValue ?? 0); });
+    txs.forEach(t => { const m = t.description ?? "Unknown"; map[m] = (map[m] ?? 0) + Math.abs(t.baseEquivalent ?? 0); });
     return Object.entries(map).sort((a, b) => b[1] - a[1])[0] ?? null;
   }, [txs]);
   return (
@@ -875,7 +875,7 @@ export function CompactSpendingVelocity() {
   const monthStart = useMemo(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`, [now]);
   const { data: txs = [] } = useListTransactions({ type: "expense", dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
   const dailyRate = useMemo(() => {
-    const total = txs.reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
+    const total = txs.reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0);
     return now.getDate() > 0 ? total / now.getDate() : 0;
   }, [txs, now]);
   return (
@@ -920,7 +920,7 @@ export function CompactEmergencyFund() {
     for (let i = 1; i <= 3; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const tot = allTxs.filter(t => t.type === "expense" && t.date.startsWith(ym)).reduce((s, t) => s + Math.abs(t.gbpValue ?? 0), 0);
+      const tot = allTxs.filter(t => t.type === "expense" && t.date.startsWith(ym)).reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0);
       if (tot > 0) expenses.push(tot);
     }
     const avg = expenses.length ? expenses.reduce((s, v) => s + v, 0) / expenses.length : 0;
@@ -988,7 +988,7 @@ export function CompactDecisionEngine() {
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
     const spend: Record<string, number> = {};
-    txs.filter(t => t.date >= monthStart).forEach(t => { spend[t.category] = (spend[t.category] ?? 0) + Math.abs(t.gbpValue ?? 0); });
+    txs.filter(t => t.date >= monthStart).forEach(t => { spend[t.category] = (spend[t.category] ?? 0) + Math.abs(t.baseEquivalent ?? 0); });
     budgets.forEach(b => { if ((spend[b.category] ?? 0) > b.monthlyLimit) count++; });
     goals.forEach(g => { if (g.deadline && g.current < g.target) { const days = (new Date(g.deadline).getTime() - now.getTime()) / 86400000; if (days < 180) count++; } });
     return { count };

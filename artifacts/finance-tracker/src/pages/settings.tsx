@@ -1920,12 +1920,12 @@ function CryptoWalletsPanel() {
   // Total counts only wallets that BOTH have a synced balance AND a real
   // price for their chain. `unpriced` tallies the ones we had to skip so we
   // can caveat the total honestly rather than under-reporting it silently.
-  const { totalValueGbp, unpricedCount } = wallets.reduce<{ totalValueGbp: number; unpricedCount: number }>((acc, w) => {
+  const { totalValueBase, unpricedCount } = wallets.reduce<{ totalValueBase: number; unpricedCount: number }>((acc, w) => {
     if (w.balance == null) return acc;
     const price = w.chain === "ETH" ? prices.ETH : prices.BTC;
-    if (price == null) return { totalValueGbp: acc.totalValueGbp, unpricedCount: acc.unpricedCount + 1 };
-    return { totalValueGbp: acc.totalValueGbp + w.balance * price, unpricedCount: acc.unpricedCount };
-  }, { totalValueGbp: 0, unpricedCount: 0 });
+    if (price == null) return { totalValueBase: acc.totalValueBase, unpricedCount: acc.unpricedCount + 1 };
+    return { totalValueBase: acc.totalValueBase + w.balance * price, unpricedCount: acc.unpricedCount };
+  }, { totalValueBase: 0, unpricedCount: 0 });
 
   const hasSynced = wallets.some(w => w.balance != null);
   const hasAnyPricedValue = wallets.some(w => w.balance != null && (w.chain === "ETH" ? prices.ETH : prices.BTC) != null);
@@ -1940,7 +1940,7 @@ function CryptoWalletsPanel() {
           <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
             {hasSynced && hasAnyPricedValue && (
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
-                Total ≈ £<span className="pnum">{totalValueGbp.toLocaleString("en-GB", { maximumFractionDigits: 2 })}</span>
+                Total ≈ £<span className="pnum">{totalValueBase.toLocaleString("en-GB", { maximumFractionDigits: 2 })}</span>
                 {unpricedCount > 0 && (
                   <span style={{ color: "var(--ft-dim)", marginLeft: 6 }}>· {unpricedCount} unpriced</span>
                 )}

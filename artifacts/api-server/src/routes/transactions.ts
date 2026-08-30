@@ -21,13 +21,13 @@ const router: IRouter = Router();
 async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, accountMap: Map<number, string>, userId: string) {
   const nativeAmount = parseFloat(tx.nativeAmount);
   const baseCurrency = await getBaseCurrency(userId);
-  const rawGbp = await toBase(Math.abs(nativeAmount), tx.currency, baseCurrency);
+  const rawBase = await toBase(Math.abs(nativeAmount), tx.currency, baseCurrency);
   // Null passes through per the widened API contract; consumers
   // render the native amount alone.
-  const gbpValue =
-    rawGbp == null
+  const baseEquivalent =
+    rawBase == null
       ? null
-      : Math.round((tx.type === "expense" ? -rawGbp : rawGbp) * 100) / 100;
+      : Math.round((tx.type === "expense" ? -rawBase : rawBase) * 100) / 100;
   return {
     id: tx.id,
     date: tx.date,
@@ -38,7 +38,7 @@ async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, acco
     accountName: accountMap.get(tx.accountId) ?? "Unknown",
     nativeAmount,
     currency: tx.currency,
-    gbpValue,
+    baseEquivalent,
     source: tx.source,
     externalId: tx.externalId ?? null,
     createdAt: tx.createdAt.toISOString(),

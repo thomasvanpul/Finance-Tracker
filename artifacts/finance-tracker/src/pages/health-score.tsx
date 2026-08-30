@@ -706,7 +706,7 @@ export default function HealthScore() {
     if (!monthTxs) return map;
     monthTxs.forEach((tx: Transaction) => {
       const key = tx.category.toLowerCase();
-      map[key] = (map[key] ?? 0) + (tx.gbpValue ?? 0);
+      map[key] = (map[key] ?? 0) + (tx.baseEquivalent ?? 0);
     });
     return map;
   }, [monthTxs]);

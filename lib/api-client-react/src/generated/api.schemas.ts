@@ -225,7 +225,7 @@ export interface Transaction {
   nativeAmount: number;
   currency: string;
   /** @nullable */
-  gbpValue: number | null;
+  baseEquivalent: number | null;
   source: TransactionSource;
   /** @nullable */
   externalId?: string | null;
@@ -499,11 +499,11 @@ export interface Investment {
   /** @nullable */
   currentValue: number | null;
   /** @nullable */
-  plGbp: number | null;
+  plBase: number | null;
   /** @nullable */
   plPercent: number | null;
   /** @nullable */
-  gbpValue: number | null;
+  baseEquivalent: number | null;
   createdAt: string;
 }
 
@@ -524,8 +524,8 @@ export interface InvestmentUpdate {
 }
 
 export interface InvestmentSummary {
-  totalValueGbp: number;
-  totalPlGbp: number;
+  totalValueBase: number;
+  totalPlBase: number;
   /** @nullable */
   totalPlPercent: number | null;
   positions: number;
@@ -980,12 +980,12 @@ export type DashboardSummaryAccountBreakdownItem = {
 };
 
 export type DashboardSummaryPortfolio = {
-  totalValueGbp: number;
-  totalPlGbp: number;
+  totalValueBase: number;
+  totalPlBase: number;
   /** @nullable */
   totalPlPercent: number | null;
   /** @nullable */
-  dayChangeGbp: number | null;
+  dayChangeBase: number | null;
   /** @nullable */
   dayChangePercent: number | null;
 };

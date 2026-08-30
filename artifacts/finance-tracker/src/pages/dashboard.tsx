@@ -195,7 +195,7 @@ function EmergencyFundWidget() {
   }, [accounts]);
 
   const avgMonthlyExpenses = useMemo(() => {
-    const txs = (allTxs ?? []) as { type: string; gbpValue: number | null; date: string }[];
+    const txs = (allTxs ?? []) as { type: string; baseEquivalent: number | null; date: string }[];
     const expenses = txs.filter(t => t.type === "expense");
     if (expenses.length === 0) return 0;
 
@@ -207,7 +207,7 @@ function EmergencyFundWidget() {
       const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const total = expenses
         .filter(t => t.date.startsWith(ym))
-        .reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+        .reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
       monthTotals.push(total);
     }
     const nonZero = monthTotals.filter(v => v > 0);
@@ -533,13 +533,13 @@ function SpendingVelocityPanel() {
   const dayOfMonth = now.getDate();
 
   const avgDailyThis = useMemo(() => {
-    const total = (thisTxs ?? []).reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+    const total = (thisTxs ?? []).reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
     return dayOfMonth > 0 ? total / dayOfMonth : 0;
   }, [thisTxs, dayOfMonth]);
 
   const avgDailyPrev = useMemo(() => {
     const daysInPrev = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
-    const total = (prevTxs ?? []).reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+    const total = (prevTxs ?? []).reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
     return daysInPrev > 0 ? total / daysInPrev : 0;
   }, [prevTxs]);
 
@@ -552,7 +552,7 @@ function SpendingVelocityPanel() {
       const ds = d.toISOString().slice(0, 10);
       const dayTotal = (thisTxs ?? [])
         .filter(t => t.date === ds)
-        .reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+        .reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
       result.push({ label: formatDayLabel(ds), amount: dayTotal });
     }
     return result;
@@ -672,16 +672,16 @@ function AiInsightsStrip() {
     // category" produced by fabricated zeros would be nonsense.
     const catMap: Record<string, number> = {};
     for (const t of thisTxs) {
-      if (t.gbpValue == null) continue;
-      catMap[t.category] = (catMap[t.category] ?? 0) + t.gbpValue;
+      if (t.baseEquivalent == null) continue;
+      catMap[t.category] = (catMap[t.category] ?? 0) + t.baseEquivalent;
     }
     const topCat = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
     if (!topCat) return null;
 
     const prevCatMap: Record<string, number> = {};
     for (const t of prevTxs) {
-      if (t.gbpValue == null) continue;
-      prevCatMap[t.category] = (prevCatMap[t.category] ?? 0) + t.gbpValue;
+      if (t.baseEquivalent == null) continue;
+      prevCatMap[t.category] = (prevCatMap[t.category] ?? 0) + t.baseEquivalent;
     }
 
     const prevAmt = prevCatMap[topCat[0]] ?? 0;
@@ -696,8 +696,8 @@ function AiInsightsStrip() {
 
     const dayMap: Record<string, number> = {};
     for (const t of thisTxs) {
-      if (t.gbpValue == null) continue;
-      dayMap[t.date] = (dayMap[t.date] ?? 0) + t.gbpValue;
+      if (t.baseEquivalent == null) continue;
+      dayMap[t.date] = (dayMap[t.date] ?? 0) + t.baseEquivalent;
     }
     const best = Object.entries(dayMap).sort((a, b) => b[1] - a[1])[0];
     if (!best) return null;
@@ -2172,12 +2172,12 @@ function RecentTransactionsWidgetInline() {
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {tx.description}
           </span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: tx.gbpValue == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
             {/* Native amount alone when FX unavailable; the row still
                 shows its type + description on the left. */}
-            {tx.gbpValue == null
+            {tx.baseEquivalent == null
               ? formatNative(Math.abs(tx.nativeAmount), tx.currency)
-              : `${TYPE_PREFIX[tx.type]}${formatBaseMoney(tx.gbpValue)}`}
+              : `${TYPE_PREFIX[tx.type]}${formatBaseMoney(tx.baseEquivalent)}`}
           </span>
         </div>
       ))}
@@ -2220,7 +2220,7 @@ function DashboardOverview() {
     [accounts]
   );
   const txRows = useMemo(
-    () => recentTxs.slice(0, 6) as Array<{ id: string | number; description: string; gbpValue: number | null; type: string; date: string; category?: string }>,
+    () => recentTxs.slice(0, 6) as Array<{ id: string | number; description: string; baseEquivalent: number | null; type: string; date: string; category?: string }>,
     [recentTxs]
   );
   const upcomingBills = useMemo(
@@ -2342,10 +2342,10 @@ function DashboardOverview() {
                   <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 13, fontWeight: 500, ...C("var(--ft-text)"), marginBottom: 2 }}>{tx.description}</div>
                   <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</div>
                 </div>
-                <span className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(tx.gbpValue == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0 }}>
-                  {tx.gbpValue == null
+                <span className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0 }}>
+                  {tx.baseEquivalent == null
                     ? "—"
-                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.gbpValue))}`}
+                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
                 </span>
               </div>
             );
@@ -2355,10 +2355,10 @@ function DashboardOverview() {
                   <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 10, ...C("var(--ft-text)") }}>{tx.description}</span>
                   <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</span>
                 </VStack>
-                <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(tx.gbpValue == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
-                  {tx.gbpValue == null
+                <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
+                  {tx.baseEquivalent == null
                     ? "—"
-                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.gbpValue))}`}
+                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
                 </span>
               </div>
             );
@@ -2674,8 +2674,8 @@ export default function Dashboard() {
     const expenses = dashData.thisMonth?.expenses ?? 0;
     const savingsRate = dashData.thisMonth?.savingsRate ?? 0;
     const netSavings = dashData.thisMonth?.netSavings ?? 0;
-    const portfolioVal = dashData.portfolio?.totalValueGbp ?? 0;
-    const portfolioPl  = dashData.portfolio?.totalPlGbp ?? 0;
+    const portfolioVal = dashData.portfolio?.totalValueBase ?? 0;
+    const portfolioPl  = dashData.portfolio?.totalPlBase ?? 0;
     const portfolioPct = dashData.portfolio?.totalPlPercent ?? null;
     // Intraday delta (P1b). Nullable — the server returns null when
     // ANY contributing position lacks previousClose or an FX leg.
@@ -2683,7 +2683,7 @@ export default function Dashboard() {
     // change overnight without the user doing anything, and a
     // fabricated zero would make the KPI read "no change today" when
     // the truth is "we don't know". G10: render "—".
-    const dayChangeGbp     = dashData.portfolio?.dayChangeGbp ?? null;
+    const dayChangeBase     = dashData.portfolio?.dayChangeBase ?? null;
     const dayChangePercent = dashData.portfolio?.dayChangePercent ?? null;
     const cash = dashData.totalCash ?? 0;
     const owedToMe = dashData.owing?.totalOwedToMe ?? 0;
@@ -2692,7 +2692,7 @@ export default function Dashboard() {
     // MoM delta: compare current month expenses to previous. Skip
     // unconvertible rows from the prev-month sum; if enough rows drop
     // out the delta is understated, which the KPI accepts silently.
-    const prevExpenses = (prevMonthTxs ?? []).reduce((s, t) => s + (t.gbpValue ?? 0), 0);
+    const prevExpenses = (prevMonthTxs ?? []).reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
     const momDelta = prevExpenses > 0 ? ((expenses - prevExpenses) / prevExpenses) * 100 : 0;
     const momSign = momDelta >= 0 ? "+" : "";
     const momColor = momDelta > 5 ? "var(--ft-red)" : momDelta < -5 ? "var(--ft-green)" : "var(--ft-amber)";
@@ -2768,18 +2768,18 @@ export default function Dashboard() {
     // sign colour on an unknown value).
     const PORTFOLIO_DAY: KpiCellData = {
       label: "24H",
-      value: dayChangeGbp == null
+      value: dayChangeBase == null
         ? "—"
-        : `${dayChangeGbp >= 0 ? "+" : ""}${formatBaseMoney(dayChangeGbp)}`,
+        : `${dayChangeBase >= 0 ? "+" : ""}${formatBaseMoney(dayChangeBase)}`,
       delta: dayChangePercent == null
         ? undefined
         : `${dayChangePercent >= 0 ? "+" : ""}${dayChangePercent.toFixed(2)}%`,
       deltaColor: dayChangePercent == null
         ? "var(--ft-dim)"
         : dayChangePercent >= 0 ? "var(--ft-green)" : "var(--ft-red)",
-      valueColor: dayChangeGbp == null
+      valueColor: dayChangeBase == null
         ? "var(--ft-dim)"
-        : dayChangeGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+        : dayChangeBase >= 0 ? "var(--ft-green)" : "var(--ft-red)",
     };
     const CASH: KpiCellData = {
       label: "CASH",
@@ -2832,8 +2832,8 @@ export default function Dashboard() {
 
     const catMap: Record<string, number> = {};
     for (const t of (monthTxs ?? [])) {
-      if (t.gbpValue == null) continue;
-      catMap[t.category] = (catMap[t.category] ?? 0) + t.gbpValue;
+      if (t.baseEquivalent == null) continue;
+      catMap[t.category] = (catMap[t.category] ?? 0) + t.baseEquivalent;
     }
     const topCategories = Object.entries(catMap)
       .sort((a, b) => b[1] - a[1])

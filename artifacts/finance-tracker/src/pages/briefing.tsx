@@ -26,10 +26,10 @@ interface BriefingData {
   risks: { level: "red" | "amber" | "green"; description: string }[];
 }
 
-type Tx = { date: string; type: string; category: string; gbpValue: number };
+type Tx = { date: string; type: string; category: string; baseEquivalent: number };
 type Budget = { category: string; monthlyLimit: number };
 type Goal = { name: string; target: number; current: number; deadline?: string };
-type Investment = { ticker: string; name?: string; gbpValue: number; quantity?: number; currency?: string };
+type Investment = { ticker: string; name?: string; baseEquivalent: number; quantity?: number; currency?: string };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -429,13 +429,13 @@ export default function Briefing() {
   const overBudgetCount = useMemo(() => {
     if (!budgetsRaw) return 0;
     const spendMap = new Map<string, number>();
-    for (const tx of thisTxs) spendMap.set(tx.category, (spendMap.get(tx.category) ?? 0) + tx.gbpValue);
+    for (const tx of thisTxs) spendMap.set(tx.category, (spendMap.get(tx.category) ?? 0) + tx.baseEquivalent);
     return (budgetsRaw as Budget[]).filter(b => (spendMap.get(b.category) ?? 0) > b.monthlyLimit).length;
   }, [budgetsRaw, thisTxs]);
 
   const budgetSpendMap = useMemo(() => {
     const map = new Map<string, number>();
-    for (const tx of thisTxs) map.set(tx.category, (map.get(tx.category) ?? 0) + tx.gbpValue);
+    for (const tx of thisTxs) map.set(tx.category, (map.get(tx.category) ?? 0) + tx.baseEquivalent);
     return map;
   }, [thisTxs]);
 
@@ -443,9 +443,9 @@ export default function Briefing() {
   const spendingCatData = useMemo(() => {
     if (thisTxs.length === 0) return null;
     const catMap = new Map<string, number>();
-    for (const tx of thisTxs) catMap.set(tx.category, (catMap.get(tx.category) ?? 0) + tx.gbpValue);
+    for (const tx of thisTxs) catMap.set(tx.category, (catMap.get(tx.category) ?? 0) + tx.baseEquivalent);
     const sorted = [...catMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
-    const total = thisTxs.reduce((s, t) => s + t.gbpValue, 0);
+    const total = thisTxs.reduce((s, t) => s + t.baseEquivalent, 0);
     const maxAmt = sorted[0]?.[1] ?? 1;
     return { sorted, total, maxAmt };
   }, [thisTxs]);
@@ -780,7 +780,7 @@ export default function Briefing() {
                   <div style={{ background: "var(--ft-surface)", padding: "14px 16px", borderTop: "2px solid var(--ft-cyan)", minWidth: isMobile ? 0 : 160, flex: isMobile ? "1 1 100%" : undefined }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Portfolio Value</div>
                     <Text as="div" mono size={18} weight={700} color="var(--ft-text)">
-                      <span className="pnum">{formatBaseMoney((invSummary as { totalValueGbp: number }).totalValueGbp)}</span>
+                      <span className="pnum">{formatBaseMoney((invSummary as { totalValueBase: number }).totalValueBase)}</span>
                     </Text>
                   </div>
                   {investmentsRaw && (investmentsRaw as Investment[]).length > 0 && (
@@ -788,12 +788,12 @@ export default function Briefing() {
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Top Holdings</div>
                       <HStack gap={8} wrap>
                         {(investmentsRaw as Investment[]).slice(0, 6).map(inv => {
-                          const totalVal = (invSummary as { totalValueGbp: number }).totalValueGbp;
-                          const pct = totalVal > 0 ? ((inv.gbpValue / totalVal) * 100).toFixed(1) : "—";
+                          const totalVal = (invSummary as { totalValueBase: number }).totalValueBase;
+                          const pct = totalVal > 0 ? ((inv.baseEquivalent / totalVal) * 100).toFixed(1) : "—";
                           return (
                             <div key={inv.ticker} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "4px 8px", display: "flex", gap: 6, alignItems: "baseline" }}>
                               <span style={{ color: "var(--ft-cyan)", fontWeight: 700 }}>{inv.ticker}</span>
-                              <span className="pnum">{formatBaseMoney(inv.gbpValue)}</span>
+                              <span className="pnum">{formatBaseMoney(inv.baseEquivalent)}</span>
                               <span className="pnum" style={{ color: "var(--ft-dim)", fontSize: 9 }}>{pct}%</span>
                             </div>
                           );

@@ -57,17 +57,17 @@ router.get("/investments/summary", async (req, res): Promise<void> => {
   // gap; a priced position with no base-FX leg would previously have
   // summed as 0 via `?? 0` — the same hidden fabrication the G10 fix
   // closed for missing prices. Now filtered explicitly.
-  const priced = enriched.filter((e) => e.priceAvailable && e.gbpValue != null && e.plGbp != null);
-  const totalValueGbp = priced.reduce((s, i) => s + (i.gbpValue as number), 0);
-  const totalPlGbp = priced.reduce((s, i) => s + (i.plGbp as number), 0);
-  const totalCostGbp = totalValueGbp - totalPlGbp;
+  const priced = enriched.filter((e) => e.priceAvailable && e.baseEquivalent != null && e.plBase != null);
+  const totalValueBase = priced.reduce((s, i) => s + (i.baseEquivalent as number), 0);
+  const totalPlBase = priced.reduce((s, i) => s + (i.plBase as number), 0);
+  const totalCostBase = totalValueBase - totalPlBase;
   // No cost basis → no return to compute. Null, not 0. See dashboard.ts
   // portfolioPlPercent for the same rule and reason.
-  const totalPlPercent: number | null = totalCostGbp > 0 ? (totalPlGbp / totalCostGbp) * 100 : null;
+  const totalPlPercent: number | null = totalCostBase > 0 ? (totalPlBase / totalCostBase) * 100 : null;
   res.json(
     GetInvestmentSummaryResponse.parse({
-      totalValueGbp: Math.round(totalValueGbp * 100) / 100,
-      totalPlGbp: Math.round(totalPlGbp * 100) / 100,
+      totalValueBase: Math.round(totalValueBase * 100) / 100,
+      totalPlBase: Math.round(totalPlBase * 100) / 100,
       totalPlPercent: totalPlPercent == null ? null : Math.round(totalPlPercent * 100) / 100,
       positions: enriched.length,
       unavailablePositions: enriched.length - enriched.filter((e) => e.priceAvailable).length,

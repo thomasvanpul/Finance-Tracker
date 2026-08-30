@@ -10,20 +10,20 @@ type MaybePriced = {
   priceAvailable: boolean;
   livePrice: number | null;
   currentValue: number | null;
-  gbpValue: number | null;
-  plGbp: number | null;
+  baseEquivalent: number | null;
+  plBase: number | null;
   plPercent: number | null;
 };
 
 export type PricedInvestment<T extends MaybePriced> = Omit<
   T,
-  "priceAvailable" | "livePrice" | "currentValue" | "gbpValue" | "plGbp" | "plPercent"
+  "priceAvailable" | "livePrice" | "currentValue" | "baseEquivalent" | "plBase" | "plPercent"
 > & {
   priceAvailable: true;
   livePrice: number;
   currentValue: number;
-  gbpValue: number;
-  plGbp: number;
+  baseEquivalent: number;
+  plBase: number;
   plPercent: number;
 };
 

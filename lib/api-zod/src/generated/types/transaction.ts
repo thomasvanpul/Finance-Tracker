@@ -19,7 +19,7 @@ export interface Transaction {
   nativeAmount: number;
   currency: string;
   /** @nullable */
-  gbpValue: number | null;
+  baseEquivalent: number | null;
   source: TransactionSource;
   /** @nullable */
   externalId?: string | null;

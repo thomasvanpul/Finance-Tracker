@@ -581,7 +581,7 @@ export default function NetWorthHistory() {
   const liveAssets = useMemo(() => {
     const accountTotal = (rawAccounts as Array<{ baseEquivalent?: number }>)
       .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
-    const investTotal = (invSummary as { totalValueGbp?: number } | undefined)?.totalValueGbp ?? 0;
+    const investTotal = (invSummary as { totalValueBase?: number } | undefined)?.totalValueBase ?? 0;
     return Math.round((accountTotal + investTotal) * 100) / 100;
   }, [rawAccounts, invSummary]);
 

@@ -21,7 +21,7 @@ interface Transaction {
   accountName: string;
   nativeAmount: number;
   currency: string;
-  gbpValue: number;
+  baseEquivalent: number;
 }
 
 interface RecurringCandidate {
@@ -127,7 +127,7 @@ function detectCandidates(
     }
 
     const avgGbpValue =
-      txs.reduce((s, tx) => s + Math.abs(tx.gbpValue), 0) / txs.length;
+      txs.reduce((s, tx) => s + Math.abs(tx.baseEquivalent), 0) / txs.length;
 
     const lastTx = sorted[sorted.length - 1];
 

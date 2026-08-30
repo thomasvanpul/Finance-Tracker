@@ -20,10 +20,10 @@ export interface Investment {
   /** @nullable */
   currentValue: number | null;
   /** @nullable */
-  plGbp: number | null;
+  plBase: number | null;
   /** @nullable */
   plPercent: number | null;
   /** @nullable */
-  gbpValue: number | null;
+  baseEquivalent: number | null;
   createdAt: string;
 }

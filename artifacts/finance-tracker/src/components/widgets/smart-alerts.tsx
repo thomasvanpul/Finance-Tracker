@@ -191,7 +191,7 @@ export function SmartAlertsWidget() {
       const spent: Record<string, number> = {};
       for (const tx of monthTxs) {
         const key = tx.category.toLowerCase();
-        spent[key] = (spent[key] ?? 0) + (tx.gbpValue ?? 0);
+        spent[key] = (spent[key] ?? 0) + (tx.baseEquivalent ?? 0);
       }
       for (const budget of budgets) {
         const key = budget.category.toLowerCase();
@@ -217,13 +217,13 @@ export function SmartAlertsWidget() {
 
     if (recentTxs) {
       for (const tx of recentTxs) {
-        if (tx.gbpValue == null) continue;
-        if (tx.gbpValue > alertRules.largeTxThreshold) {
+        if (tx.baseEquivalent == null) continue;
+        if (tx.baseEquivalent > alertRules.largeTxThreshold) {
           result.push({
             id: `large-tx-${tx.id}`,
             level: "info",
             title: `Large transaction: ${tx.description}`,
-            detail: `${formatBaseMoney(tx.gbpValue)} on ${tx.date} — ${tx.accountName}`,
+            detail: `${formatBaseMoney(tx.baseEquivalent)} on ${tx.date} — ${tx.accountName}`,
           });
         }
       }

@@ -141,9 +141,9 @@ export function useAlerts() {
     if (budgets.length > 0 && monthTxs) {
       const spent: Record<string, number> = {};
       for (const tx of monthTxs) {
-        if (tx.gbpValue == null) continue;
+        if (tx.baseEquivalent == null) continue;
         const key = tx.category.toLowerCase();
-        spent[key] = (spent[key] ?? 0) + tx.gbpValue;
+        spent[key] = (spent[key] ?? 0) + tx.baseEquivalent;
       }
       for (const budget of budgets) {
         const key = budget.category.toLowerCase();
@@ -173,14 +173,14 @@ export function useAlerts() {
       for (const tx of recentTxs) {
         // A "large transaction" alert needs a magnitude to compare;
         // unconvertible rows can't be judged large or small.
-        if (tx.gbpValue == null) continue;
-        if (tx.gbpValue > alertRules.largeTxThreshold) {
+        if (tx.baseEquivalent == null) continue;
+        if (tx.baseEquivalent > alertRules.largeTxThreshold) {
           result.push({
             id: `large-tx-${tx.id}`,
             level: "info",
             kind: "transaction",
             title: `Large transaction: ${tx.description}`,
-            detail: `${formatBaseMoney(tx.gbpValue)} on ${tx.date} — ${tx.accountName}`,
+            detail: `${formatBaseMoney(tx.baseEquivalent)} on ${tx.date} — ${tx.accountName}`,
           });
         }
       }
@@ -262,15 +262,15 @@ export function useAlerts() {
 
       for (const tx of allTxs) {
         if (tx.type !== "expense") continue;
-        if (tx.gbpValue == null) continue;
+        if (tx.baseEquivalent == null) continue;
         const txMonth = tx.date.slice(0, 7);
         const key = tx.description.toLowerCase().trim();
         if (!byMerchant[key]) byMerchant[key] = { amounts: [], thisMonthAmt: null };
 
         if (txMonth === thisMonthStr) {
-          byMerchant[key].thisMonthAmt = (byMerchant[key].thisMonthAmt ?? 0) + tx.gbpValue;
+          byMerchant[key].thisMonthAmt = (byMerchant[key].thisMonthAmt ?? 0) + tx.baseEquivalent;
         } else {
-          byMerchant[key].amounts.push(tx.gbpValue);
+          byMerchant[key].amounts.push(tx.baseEquivalent);
         }
       }
 

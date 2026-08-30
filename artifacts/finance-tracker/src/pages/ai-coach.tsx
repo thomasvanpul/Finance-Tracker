@@ -338,8 +338,8 @@ export default function AiCoach() {
     const map = new Map<string, number>();
     for (const tx of transactions) {
       if (!tx.date.startsWith(thisMonth) || tx.type !== "expense") continue;
-      if (tx.gbpValue == null) continue;
-      map.set(tx.category, (map.get(tx.category) ?? 0) + tx.gbpValue);
+      if (tx.baseEquivalent == null) continue;
+      map.set(tx.category, (map.get(tx.category) ?? 0) + tx.baseEquivalent);
     }
     return [...map.entries()]
       .map(([category, total]) => ({ category, total }))
@@ -351,8 +351,8 @@ export default function AiCoach() {
     const map = new Map<string, number>();
     for (const tx of transactions) {
       if (!tx.date.startsWith(lastMonth) || tx.type !== "expense") continue;
-      if (tx.gbpValue == null) continue;
-      map.set(tx.category, (map.get(tx.category) ?? 0) + tx.gbpValue);
+      if (tx.baseEquivalent == null) continue;
+      map.set(tx.category, (map.get(tx.category) ?? 0) + tx.baseEquivalent);
     }
     return [...map.entries()]
       .map(([category, total]) => ({ category, total }))
@@ -485,8 +485,8 @@ export default function AiCoach() {
       const spendMap = new Map<string, number>();
       for (const tx of transactions) {
         if (tx.type !== "expense" || !tx.date.startsWith(thisM)) continue;
-        if (tx.gbpValue == null) continue;
-        spendMap.set(tx.category, (spendMap.get(tx.category) ?? 0) + tx.gbpValue);
+        if (tx.baseEquivalent == null) continue;
+        spendMap.set(tx.category, (spendMap.get(tx.category) ?? 0) + tx.baseEquivalent);
       }
       for (const b of budgets as Array<{ id: number; category: string; monthlyLimit: number }>) {
         const spent = spendMap.get(b.category) ?? 0;
@@ -514,11 +514,11 @@ export default function AiCoach() {
     }
 
     if (investments && investmentSummary) {
-      const total = (investmentSummary as { totalValueGbp: number }).totalValueGbp;
+      const total = (investmentSummary as { totalValueBase: number }).totalValueBase;
       if (total > 0) {
         const byTicker = new Map<string, number>();
-        for (const inv of investments as Array<{ ticker: string; gbpValue: number }>) {
-          byTicker.set(inv.ticker, (byTicker.get(inv.ticker) ?? 0) + inv.gbpValue);
+        for (const inv of investments as Array<{ ticker: string; baseEquivalent: number }>) {
+          byTicker.set(inv.ticker, (byTicker.get(inv.ticker) ?? 0) + inv.baseEquivalent);
         }
         const [topTicker, topVal] = [...byTicker.entries()].sort((a, b) => b[1] - a[1])[0] ?? ["", 0];
         const pct = (topVal / total) * 100;

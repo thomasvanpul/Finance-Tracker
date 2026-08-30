@@ -531,9 +531,9 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
         // Transactions whose FX conversion is unavailable are excluded
         // from category totals — a fabricated 0 would silently under-
         // report the category, worse than omitting the row.
-        if (t.gbpValue == null) return;
+        if (t.baseEquivalent == null) return;
         const cat = t.category || "Uncategorised";
-        map.set(cat, (map.get(cat) ?? 0) + Math.abs(t.gbpValue));
+        map.set(cat, (map.get(cat) ?? 0) + Math.abs(t.baseEquivalent));
       });
     return Array.from(map.entries())
       .map(([category, total]) => ({ category, total }))
@@ -921,7 +921,7 @@ interface RecentTxRowProps {
     category: string;
     nativeAmount: number;
     currency: string;
-    gbpValue: number | null;
+    baseEquivalent: number | null;
   };
 }
 
@@ -1309,7 +1309,7 @@ interface AccountRowProps {
   baseCurrency: string;
   privacyStyle: React.CSSProperties;
   accountMeta: Record<string, AccountMeta>;
-  healthTxs: { accountName: string; date: string; type: string; gbpValue: number; nativeAmount: number; currency: string; category: string; description: string; id: number }[] | undefined;
+  healthTxs: { accountName: string; date: string; type: string; baseEquivalent: number; nativeAmount: number; currency: string; category: string; description: string; id: number }[] | undefined;
   onToggleExpand: (id: number) => void;
   onHighlightRef: (el: HTMLDivElement | null) => void;
   onOpenEdit: (id: number) => void;
@@ -1353,7 +1353,7 @@ function AccountTableRow({
     acctTxs.forEach((t) => {
       const m = t.date.slice(0, 7);
       const sign = t.type === "income" ? 1 : t.type === "expense" ? -1 : 0;
-      monthMap.set(m, (monthMap.get(m) ?? 0) + sign * Math.abs(t.gbpValue));
+      monthMap.set(m, (monthMap.get(m) ?? 0) + sign * Math.abs(t.baseEquivalent));
     });
     const bars = Array.from(monthMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
@@ -1703,7 +1703,7 @@ export default function Accounts() {
         setNwHistory(existing);
         return;
       }
-      const entry = { date: today, netWorth: dashData.netWorth, cash: dashData.totalCash, portfolio: dashData.portfolio.totalValueGbp };
+      const entry = { date: today, netWorth: dashData.netWorth, cash: dashData.totalCash, portfolio: dashData.portfolio.totalValueBase };
       const updated = [...existing, entry].slice(-365);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
       setNwHistory(updated);
@@ -1727,11 +1727,11 @@ export default function Accounts() {
     (healthTxs ?? []).forEach((tx) => {
       // Skip FX-unavailable transactions from the monthly cash-flow
       // roll-up; a fabricated 0 would silently under-report the month.
-      if (tx.gbpValue == null) return;
+      if (tx.baseEquivalent == null) return;
       const month = tx.date.slice(0, 7);
       const cur = monthMap.get(month) ?? { income: 0, expense: 0 };
-      if (tx.type === "income") cur.income += tx.gbpValue;
-      else if (tx.type === "expense") cur.expense += Math.abs(tx.gbpValue);
+      if (tx.type === "income") cur.income += tx.baseEquivalent;
+      else if (tx.type === "expense") cur.expense += Math.abs(tx.baseEquivalent);
       monthMap.set(month, cur);
     });
     return Array.from(monthMap.entries())
@@ -1752,9 +1752,9 @@ export default function Accounts() {
     (healthTxs ?? [])
       .filter((tx) => tx.type === "expense" && tx.date.startsWith(thisMonth))
       .forEach((tx) => {
-        if (tx.gbpValue == null) return;
+        if (tx.baseEquivalent == null) return;
         const cat = tx.category || "Other";
-        map.set(cat, (map.get(cat) ?? 0) + Math.abs(tx.gbpValue));
+        map.set(cat, (map.get(cat) ?? 0) + Math.abs(tx.baseEquivalent));
       });
     return Array.from(map.entries())
       .map(([category, total]) => ({ category, total }))
@@ -2147,7 +2147,7 @@ export default function Accounts() {
         // Persona strip totals skip unconvertible accounts; message
         // just reads a slightly lower figure rather than lying via 0.
         const totalCash = (accounts ?? []).reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
-        const portfolio = (dashData as { portfolio?: { totalValueGbp?: number } } | undefined)?.portfolio?.totalValueGbp ?? 0;
+        const portfolio = (dashData as { portfolio?: { totalValueBase?: number } } | undefined)?.portfolio?.totalValueBase ?? 0;
         const msgs: Record<string, string | null> = {
           market:  totalCash > 0 ? `${formatBaseMoney(totalCash)} cash available — allocate surplus to investment positions via Portfolio.` : null,
           budget:  `Your accounts are the source of truth for your budget — reconcile against your budget limits monthly.`,
@@ -2241,7 +2241,7 @@ export default function Accounts() {
         const nwDelta = prevNw !== null && currNw !== null ? currNw - prevNw : null;
 
         // Portfolio from dash data
-        const portfolioVal = (dashData as { portfolio?: { totalValueGbp?: number } } | undefined)?.portfolio?.totalValueGbp ?? 0;
+        const portfolioVal = (dashData as { portfolio?: { totalValueBase?: number } } | undefined)?.portfolio?.totalValueBase ?? 0;
         const netWorth = totalCash + portfolioVal;
 
         // Most recently active account

@@ -26,7 +26,7 @@ interface Tx {
   description: string;
   type: string;
   category: string;
-  gbpValue: number;
+  baseEquivalent: number;
 }
 
 // ─── style atoms ─────────────────────────────────────────────────────────────
@@ -174,10 +174,10 @@ function SpendingHeatmap({ txs, year }: { txs: Tx[]; year: number }) {
       const ym = `${year}-${String(i + 1).padStart(2, "0")}`;
       const expenses = txs
         .filter((t) => t.type === "expense" && getYYYYMM(t.date) === ym)
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .reduce((s, t) => s + t.baseEquivalent, 0);
       const income = txs
         .filter((t) => t.type === "income" && getYYYYMM(t.date) === ym)
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .reduce((s, t) => s + t.baseEquivalent, 0);
       const txCount = txs.filter((t) => getYYYYMM(t.date) === ym).length;
       return { name, ym, expenses: Math.round(expenses), income: Math.round(income), txCount };
     });
@@ -254,8 +254,8 @@ function QuarterBreakdown({ txs, year, prevTxs }: { txs: Tx[]; year: number; pre
       const months = [0, 1, 2].map((m) => q * 3 + m + 1);
       const yms = months.map((m) => `${year}-${String(m).padStart(2, "0")}`);
       const qTxs = txs.filter((t) => yms.some((ym) => getYYYYMM(t.date) === ym));
-      const income = qTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-      const expenses = qTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+      const income = qTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
+      const expenses = qTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0);
       const net = income - expenses;
       const savingsRate = income > 0 ? (net / income) * 100 : null;
 
@@ -264,8 +264,8 @@ function QuarterBreakdown({ txs, year, prevTxs }: { txs: Tx[]; year: number; pre
       if (prevTxs) {
         const prevYms = months.map((m) => `${year - 1}-${String(m).padStart(2, "0")}`);
         const prevQTxs = prevTxs.filter((t) => prevYms.some((ym) => getYYYYMM(t.date) === ym));
-        const prevIncome = prevQTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-        const prevExpenses = prevQTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+        const prevIncome = prevQTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
+        const prevExpenses = prevQTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0);
         prevNet = prevIncome - prevExpenses;
       }
 
@@ -376,14 +376,14 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
   const expenses = txs.filter((t) => t.type === "expense");
   const incomes = txs.filter((t) => t.type === "income");
 
-  const biggestExpense = expenses.reduce<Tx | null>((top, t) => !top || t.gbpValue > top.gbpValue ? t : top, null);
-  const biggestIncome = incomes.reduce<Tx | null>((top, t) => !top || t.gbpValue > top.gbpValue ? t : top, null);
+  const biggestExpense = expenses.reduce<Tx | null>((top, t) => !top || t.baseEquivalent > top.baseEquivalent ? t : top, null);
+  const biggestIncome = incomes.reduce<Tx | null>((top, t) => !top || t.baseEquivalent > top.baseEquivalent ? t : top, null);
 
   const monthlyNet: Record<string, number> = {};
   for (const t of txs) {
     const ym = getYYYYMM(t.date);
     if (!monthlyNet[ym]) monthlyNet[ym] = 0;
-    monthlyNet[ym] += t.type === "income" ? t.gbpValue : -t.gbpValue;
+    monthlyNet[ym] += t.type === "income" ? t.baseEquivalent : -t.baseEquivalent;
   }
   const monthlyEntries = Object.entries(monthlyNet);
   const bestMonthEntry = monthlyEntries.sort((a, b) => b[1] - a[1])[0];
@@ -394,7 +394,7 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
       .filter((t) => t.type === "income")
       .reduce<Record<string, number>>((acc, t) => {
         const ym = getYYYYMM(t.date);
-        acc[ym] = (acc[ym] ?? 0) + t.gbpValue;
+        acc[ym] = (acc[ym] ?? 0) + t.baseEquivalent;
         return acc;
       }, {})
   ).sort((a, b) => b[1] - a[1])[0];
@@ -404,7 +404,7 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
       .filter((t) => t.type === "expense")
       .reduce<Record<string, number>>((acc, t) => {
         const ym = getYYYYMM(t.date);
-        acc[ym] = (acc[ym] ?? 0) + t.gbpValue;
+        acc[ym] = (acc[ym] ?? 0) + t.baseEquivalent;
         return acc;
       }, {})
   ).sort((a, b) => a[1] - b[1])[0];
@@ -413,14 +413,14 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
     {
       icon: "▲",
       label: "Largest Single Income",
-      value: biggestIncome ? formatBaseMoney(biggestIncome.gbpValue) : "—",
+      value: biggestIncome ? formatBaseMoney(biggestIncome.baseEquivalent) : "—",
       sub: biggestIncome ? `${biggestIncome.date} · ${biggestIncome.description}` : "—",
       color: "var(--ft-green)",
     },
     {
       icon: "▼",
       label: "Largest Single Expense",
-      value: biggestExpense ? formatBaseMoney(biggestExpense.gbpValue) : "—",
+      value: biggestExpense ? formatBaseMoney(biggestExpense.baseEquivalent) : "—",
       sub: biggestExpense ? `${biggestExpense.date} · ${biggestExpense.description}` : "—",
       color: "var(--ft-red)",
     },
@@ -530,11 +530,11 @@ function CategoryRow({ row, rank }: CategoryRowProps) {
 }
 
 function CategoryBreakdown({ expenses }: { expenses: Tx[] }) {
-  const total = expenses.reduce((s, t) => s + t.gbpValue, 0) || 1;
+  const total = expenses.reduce((s, t) => s + t.baseEquivalent, 0) || 1;
   const catMap: Record<string, number> = {};
   for (const t of expenses) {
     const c = t.category || "Other";
-    catMap[c] = (catMap[c] || 0) + t.gbpValue;
+    catMap[c] = (catMap[c] || 0) + t.baseEquivalent;
   }
   const top5 = Object.entries(catMap)
     .sort((a, b) => b[1] - a[1])
@@ -586,9 +586,9 @@ function MonthByMonth({ txs, year }: { txs: Tx[]; year: number }) {
     return MONTH_SHORT.map((month, i) => {
       const ym = `${year}-${String(i + 1).padStart(2, "0")}`;
       const income = txs.filter((t) => t.type === "income" && getYYYYMM(t.date) === ym)
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .reduce((s, t) => s + t.baseEquivalent, 0);
       const expenses = txs.filter((t) => t.type === "expense" && getYYYYMM(t.date) === ym)
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .reduce((s, t) => s + t.baseEquivalent, 0);
       return { month, income: Math.round(income), expenses: Math.round(expenses) };
     });
   }, [txs, year]);
@@ -642,10 +642,10 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
       const ym = `${year}-${String(i + 1).padStart(2, "0")}`;
       const prevYm = `${year - 1}-${String(i + 1).padStart(2, "0")}`;
 
-      const currIncome = currentTxs.filter((t) => t.type === "income" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
-      const currExpenses = currentTxs.filter((t) => t.type === "expense" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.gbpValue, 0);
-      const prevIncome = prevTxs.filter((t) => t.type === "income" && getYYYYMM(t.date) === prevYm).reduce((s, t) => s + t.gbpValue, 0);
-      const prevExpenses = prevTxs.filter((t) => t.type === "expense" && getYYYYMM(t.date) === prevYm).reduce((s, t) => s + t.gbpValue, 0);
+      const currIncome = currentTxs.filter((t) => t.type === "income" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.baseEquivalent, 0);
+      const currExpenses = currentTxs.filter((t) => t.type === "expense" && getYYYYMM(t.date) === ym).reduce((s, t) => s + t.baseEquivalent, 0);
+      const prevIncome = prevTxs.filter((t) => t.type === "income" && getYYYYMM(t.date) === prevYm).reduce((s, t) => s + t.baseEquivalent, 0);
+      const prevExpenses = prevTxs.filter((t) => t.type === "expense" && getYYYYMM(t.date) === prevYm).reduce((s, t) => s + t.baseEquivalent, 0);
 
       return {
         month,
@@ -657,10 +657,10 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
     });
   }, [currentTxs, prevTxs, year]);
 
-  const currTotalIncome = currentTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-  const currTotalExpenses = currentTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
-  const prevTotalIncome = prevTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-  const prevTotalExpenses = prevTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+  const currTotalIncome = currentTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
+  const currTotalExpenses = currentTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0);
+  const prevTotalIncome = prevTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
+  const prevTotalExpenses = prevTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0);
 
   const incomeDiff = currTotalIncome - prevTotalIncome;
   const expensesDiff = currTotalExpenses - prevTotalExpenses;
@@ -748,9 +748,9 @@ function SavingsRateChart({ txs, year }: { txs: Tx[]; year: number }) {
     return MONTH_SHORT.map((month, i) => {
       const ym = `${year}-${String(i + 1).padStart(2, "0")}`;
       const income = txs.filter((t) => t.type === "income" && getYYYYMM(t.date) === ym)
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .reduce((s, t) => s + t.baseEquivalent, 0);
       const expenses = txs.filter((t) => t.type === "expense" && getYYYYMM(t.date) === ym)
-        .reduce((s, t) => s + t.gbpValue, 0);
+        .reduce((s, t) => s + t.baseEquivalent, 0);
       const rate = income > 0 ? Math.round(((income - expenses) / income) * 100) : null;
       return { month, rate, income: Math.round(income), expenses: Math.round(expenses) };
     });
@@ -843,13 +843,13 @@ function StreaksAndFacts({ txs, year }: { txs: Tx[]; year: number }) {
 
   const allExpenses = txs.filter((t) => t.type === "expense");
   const avgExpense = allExpenses.length > 0
-    ? allExpenses.reduce((s, t) => s + t.gbpValue, 0) / allExpenses.length
+    ? allExpenses.reduce((s, t) => s + t.baseEquivalent, 0) / allExpenses.length
     : 0;
 
   const monthExpenses: Record<string, number> = {};
   for (const t of allExpenses) {
     const ym = getYYYYMM(t.date);
-    monthExpenses[ym] = (monthExpenses[ym] || 0) + t.gbpValue;
+    monthExpenses[ym] = (monthExpenses[ym] || 0) + t.baseEquivalent;
   }
   const priceyMonthEntry = Object.entries(monthExpenses).sort((a, b) => b[1] - a[1])[0];
   const priceyMonthStr = priceyMonthEntry
@@ -895,8 +895,8 @@ function NetWorthDelta({ txs }: { txs: Tx[] }) {
   const sorted = [...txs].sort((a, b) => a.date.localeCompare(b.date));
   if (sorted.length < 2) return null;
 
-  const totalIncome = txs.filter((t) => t.type === "income").reduce((s, t) => s + t.gbpValue, 0);
-  const totalExpenses = txs.filter((t) => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0);
+  const totalIncome = txs.filter((t) => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0);
+  const totalExpenses = txs.filter((t) => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0);
   const delta = totalIncome - totalExpenses;
 
   const accentCol = delta >= 0 ? "var(--ft-green)" : "var(--ft-red)";
@@ -1029,7 +1029,7 @@ function ShareableCard({ income, expenses, txCount, year }: {
 function exportYearCSV(txs: Tx[], year: number) {
   const header = ["Date", "Description", "Type", "Category", "GBP"];
   const escape = (v: string | number) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s; };
-  const lines = [header.join(","), ...txs.map((t) => [t.date, t.description, t.type, t.category ?? "", t.gbpValue.toFixed(2)].map(escape).join(","))];
+  const lines = [header.join(","), ...txs.map((t) => [t.date, t.description, t.type, t.category ?? "", t.baseEquivalent.toFixed(2)].map(escape).join(","))];
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1062,20 +1062,20 @@ export default function YearReviewPage() {
   const hasPrevYear = prevYearTxs.length > 0;
 
   const totalIncome = useMemo(
-    () => yearTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.gbpValue, 0),
+    () => yearTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0),
     [yearTxs]
   );
   const totalExpenses = useMemo(
-    () => yearTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0),
+    () => yearTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0),
     [yearTxs]
   );
 
   const prevIncome = useMemo(
-    () => prevYearTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.gbpValue, 0),
+    () => prevYearTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.baseEquivalent, 0),
     [prevYearTxs]
   );
   const prevExpenses = useMemo(
-    () => prevYearTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.gbpValue, 0),
+    () => prevYearTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.baseEquivalent, 0),
     [prevYearTxs]
   );
 
@@ -1101,16 +1101,16 @@ export default function YearReviewPage() {
     const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
 
     const catMap: Record<string, number> = {};
-    for (const t of expenses) catMap[t.category || "Other"] = (catMap[t.category || "Other"] ?? 0) + t.gbpValue;
+    for (const t of expenses) catMap[t.category || "Other"] = (catMap[t.category || "Other"] ?? 0) + t.baseEquivalent;
     const topCatEntry = Object.entries(catMap).sort((a, b) => b[1] - a[1])[0];
 
-    const biggestExpense = expenses.reduce<Tx | null>((top, t) => !top || t.gbpValue > top.gbpValue ? t : top, null);
-    const biggestIncome = incomes.reduce<Tx | null>((top, t) => !top || t.gbpValue > top.gbpValue ? t : top, null);
+    const biggestExpense = expenses.reduce<Tx | null>((top, t) => !top || t.baseEquivalent > top.baseEquivalent ? t : top, null);
+    const biggestIncome = incomes.reduce<Tx | null>((top, t) => !top || t.baseEquivalent > top.baseEquivalent ? t : top, null);
 
     const monthlyNet: Record<string, number> = {};
     for (const t of yearTxs) {
       const ym = t.date.slice(0, 7);
-      monthlyNet[ym] = (monthlyNet[ym] ?? 0) + (t.type === "income" ? t.gbpValue : -t.gbpValue);
+      monthlyNet[ym] = (monthlyNet[ym] ?? 0) + (t.type === "income" ? t.baseEquivalent : -t.baseEquivalent);
     }
     const bestMonthEntry = Object.entries(monthlyNet).sort((a, b) => b[1] - a[1])[0];
 
@@ -1215,7 +1215,7 @@ export default function YearReviewPage() {
                 {wrappedData.biggestIncome && (
                   <div style={{ marginTop: 24, padding: "12px 20px", border: "1px solid var(--ft-border)", maxWidth: 360 }}>
                     <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 4 }}>LARGEST SINGLE INCOME</div>
-                    <div className="pnum" style={{ fontSize: 18, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(wrappedData.biggestIncome.gbpValue)}</div>
+                    <div className="pnum" style={{ fontSize: 18, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(wrappedData.biggestIncome.baseEquivalent)}</div>
                     <div style={{ fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>{wrappedData.biggestIncome.description} · {wrappedData.biggestIncome.date}</div>
                   </div>
                 )}
@@ -1265,7 +1265,7 @@ export default function YearReviewPage() {
             {chapter === 4 && (() => {
               const expenseList = yearTxs.filter(t => t.type === "expense");
               const catMap: Record<string, number> = {};
-              for (const t of expenseList) catMap[t.category || "Other"] = (catMap[t.category || "Other"] ?? 0) + t.gbpValue;
+              for (const t of expenseList) catMap[t.category || "Other"] = (catMap[t.category || "Other"] ?? 0) + t.baseEquivalent;
               const topCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
               const maxVal = topCats[0]?.[1] ?? 1;
               return (
@@ -1295,7 +1295,7 @@ export default function YearReviewPage() {
                   {wrappedData.biggestExpense && (
                     <div style={{ padding: "16px", border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.05)", textAlign: "left" }}>
                       <div style={{ fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-red)", marginBottom: 8 }}>BIGGEST EXPENSE</div>
-                      <div className="pnum" style={{ fontSize: 22, fontWeight: 700, color: "var(--ft-red)", marginBottom: 4 }}>{formatBaseMoney(wrappedData.biggestExpense.gbpValue)}</div>
+                      <div className="pnum" style={{ fontSize: 22, fontWeight: 700, color: "var(--ft-red)", marginBottom: 4 }}>{formatBaseMoney(wrappedData.biggestExpense.baseEquivalent)}</div>
                       <div style={{ fontSize: 10, color: "var(--ft-muted)", marginBottom: 2 }}>{wrappedData.biggestExpense.description}</div>
                       <Text as="div" size={9} color="var(--ft-dim)">{wrappedData.biggestExpense.date}</Text>
                     </div>

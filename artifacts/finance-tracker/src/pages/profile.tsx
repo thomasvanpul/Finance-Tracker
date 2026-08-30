@@ -557,8 +557,8 @@ export default function Profile() {
   // Profile stats skip unconvertible transactions; "total volume"
   // and "largest" only sum figures the FX layer could actually
   // stand behind.
-  const totalVolume = txList.reduce((sum, t) => sum + (t.gbpValue == null ? 0 : Math.abs(t.gbpValue)), 0);
-  const largestTx = txList.reduce<number>((max, t) => t.gbpValue == null ? max : Math.max(max, Math.abs(t.gbpValue)), 0);
+  const totalVolume = txList.reduce((sum, t) => sum + (t.baseEquivalent == null ? 0 : Math.abs(t.baseEquivalent)), 0);
+  const largestTx = txList.reduce<number>((max, t) => t.baseEquivalent == null ? max : Math.max(max, Math.abs(t.baseEquivalent)), 0);
 
   const categoryMap: Record<string, number> = {};
   for (const t of txList) {
@@ -586,9 +586,9 @@ export default function Profile() {
 
   const largestTxEntry = txList.reduce<typeof txList[0] | null>((best, t) => {
     // Only compare rows that have a GBP value to compare.
-    if (t.gbpValue == null) return best;
-    if (best === null || best.gbpValue == null) return t;
-    return Math.abs(t.gbpValue) > Math.abs(best.gbpValue) ? t : best;
+    if (t.baseEquivalent == null) return best;
+    if (best === null || best.baseEquivalent == null) return t;
+    return Math.abs(t.baseEquivalent) > Math.abs(best.baseEquivalent) ? t : best;
   }, null);
 
   function handleSignOut() {
@@ -784,10 +784,10 @@ export default function Profile() {
     });
   }
 
-  if (largestTxEntry && largestTxEntry.gbpValue != null) {
+  if (largestTxEntry && largestTxEntry.baseEquivalent != null) {
     timelineItems.push({
       date: new Date(largestTxEntry.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
-      label: `Largest transaction — ${formatBaseMoney(Math.abs(largestTxEntry.gbpValue))}`,
+      label: `Largest transaction — ${formatBaseMoney(Math.abs(largestTxEntry.baseEquivalent))}`,
       sub: largestTxEntry.description,
     });
   }

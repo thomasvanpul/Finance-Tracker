@@ -12,7 +12,7 @@ describe("computeHoldings — categorises from account.type (no residual)", () =
         { type: "property",   baseEquivalent: 94600 },
         { type: "other",      baseEquivalent:   150 },
       ],
-      portfolio: { totalValueGbp: 8380 },
+      portfolio: { totalValueBase: 8380 },
     });
     expect(h).toEqual({
       cash: 16264,
@@ -45,7 +45,7 @@ describe("computeHoldings — categorises from account.type (no residual)", () =
 
   it("portfolio positions alone still populate invested", () => {
     const h = computeHoldings({
-      portfolio: { totalValueGbp: 8380 },
+      portfolio: { totalValueBase: 8380 },
     });
     expect(h.investment).toBe(8380);
     expect(h.cash).toBe(0);
@@ -55,12 +55,12 @@ describe("computeHoldings — categorises from account.type (no residual)", () =
   it("investment-typed account and portfolio positions both feed invested", () => {
     // A brokerage account itself (uninvested cash) is 'investment' typed;
     // the positions it holds live in the investments table and surface via
-    // portfolio.totalValueGbp. Both add to the same visual bucket.
+    // portfolio.totalValueBase. Both add to the same visual bucket.
     const h = computeHoldings({
       accountBreakdown: [
         { type: "investment", baseEquivalent: 690 },
       ],
-      portfolio: { totalValueGbp: 8380 },
+      portfolio: { totalValueBase: 8380 },
     });
     expect(h.investment).toBe(9070);
   });
@@ -76,7 +76,7 @@ describe("computeHoldings — categorises from account.type (no residual)", () =
         { type: "cash",     baseEquivalent: 12260 },
         { type: "property", baseEquivalent: 94600 },
       ],
-      portfolio: { totalValueGbp: 8380 },
+      portfolio: { totalValueBase: 8380 },
     });
     // Property is what the DB says, not what's left over after subtracting.
     expect(h.property).toBe(94600);

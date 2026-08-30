@@ -31,8 +31,8 @@ interface Position {
   priceAvailable: boolean;
   livePrice: number | null;
   currentValue: number | null;
-  gbpValue: number | null;
-  plGbp: number | null;
+  baseEquivalent: number | null;
+  plBase: number | null;
   plPercent: number | null;
 }
 
@@ -63,13 +63,13 @@ export function MobileInvestments() {
   // Totals sum priced positions only — never fabricate a zero for an
   // unquoted ticker (see G10). The API's summary already applies the same
   // filter, so prefer it when present.
-  const totalValue = summary?.totalValueGbp ?? priced.reduce((s, i) => s + i.gbpValue, 0);
-  const totalPl = summary?.totalPlGbp ?? priced.reduce((s, i) => s + i.plGbp, 0);
+  const totalValue = summary?.totalValueBase ?? priced.reduce((s, i) => s + i.baseEquivalent, 0);
+  const totalPl = summary?.totalPlBase ?? priced.reduce((s, i) => s + i.plBase, 0);
   // Percent has no honest fallback — a 0.00% badge next to a real +£3.20 P&L
   // reads as "no movement", the exact opposite of what happened.
   const totalPlPct = summary?.totalPlPercent ?? null;
   const sorted = [...positions].sort(
-    (a, b) => (b.gbpValue ?? -Infinity) - (a.gbpValue ?? -Infinity),
+    (a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity),
   );
 
   return (
@@ -155,7 +155,7 @@ export function MobileInvestments() {
         // G10: unpriced positions render "—" for both P&L and £ — never
         // "£0.00" or a "0.00%" P&L, which read as real numbers.
         const priced = isPriced(h);
-        const plColor = priced && h.plGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+        const plColor = priced && h.plBase >= 0 ? "var(--ft-green)" : "var(--ft-red)";
         return (
           <div
             key={h.id}
@@ -182,7 +182,7 @@ export function MobileInvestments() {
             <div style={{ width: PL_COL_W, flexShrink: 0, textAlign: "right" }}>
               {priced ? (
                 <Text as="span" mono size={12} weight={600} color={plColor} numeric>
-                  {h.plGbp >= 0 ? "+" : "−"}{nfmt(Math.abs(h.plPercent), { decimals: 2 })}%
+                  {h.plBase >= 0 ? "+" : "−"}{nfmt(Math.abs(h.plPercent), { decimals: 2 })}%
                 </Text>
               ) : (
                 <Text as="span" mono size={12} color="var(--ft-dim)">—</Text>
@@ -191,7 +191,7 @@ export function MobileInvestments() {
             <div style={{ width: AMOUNT_COL_W, flexShrink: 0, textAlign: "right" }}>
               {priced ? (
                 <Text as="div" mono size={14} weight={600} numeric>
-                  £{nfmt(h.gbpValue, { decimals: 2 })}
+                  £{nfmt(h.baseEquivalent, { decimals: 2 })}
                 </Text>
               ) : (
                 <Text as="div" mono size={14} color="var(--ft-dim)">—</Text>

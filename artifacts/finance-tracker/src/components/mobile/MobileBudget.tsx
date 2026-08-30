@@ -51,9 +51,9 @@ export function MobileBudget() {
   let unconvertibleExpenses = 0;
   for (const t of txns) {
     if (t.type !== "expense") continue;
-    if (t.gbpValue == null) { unconvertibleExpenses += 1; continue; }
+    if (t.baseEquivalent == null) { unconvertibleExpenses += 1; continue; }
     const k = (t.category || "Uncategorised").toLowerCase();
-    spendByCat.set(k, (spendByCat.get(k) ?? 0) + Math.abs(t.gbpValue));
+    spendByCat.set(k, (spendByCat.get(k) ?? 0) + Math.abs(t.baseEquivalent));
   }
 
   type Row = { id: number | string; category: string; spent: number; limit: number; pct: number; over: boolean };

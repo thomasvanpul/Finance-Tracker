@@ -329,7 +329,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
     const today = new Date().toISOString().slice(0, 10);
     const existing = loadHistory();
     if (existing.some(e => e.date === today)) { setHistory(existing); return; }
-    const newEntry: HistoryEntry = { date: today, netWorth: d.netWorth, cash: d.totalCash, portfolio: d.portfolio.totalValueGbp };
+    const newEntry: HistoryEntry = { date: today, netWorth: d.netWorth, cash: d.totalCash, portfolio: d.portfolio.totalValueBase };
     const updated = [...existing, newEntry].slice(-MAX_ENTRIES);
     saveHistory(updated);
     setHistory(updated);
@@ -345,7 +345,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   const kpis = d ? [
     { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true },
     { label: "Total Cash",   raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false },
-    { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueGbp), color: d.portfolio.totalPlGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlGbp >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlGbp)}`, animate: false },
+    { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueBase), color: d.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlBase)}`, animate: false },
     { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false },
   ] : [];
 
@@ -357,7 +357,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const breakdownItems = d ? [
     { label: "Cash",      value: formatBaseMoney(d.totalCash),                color: "var(--ft-accent)" },
-    { label: "Portfolio", value: formatBaseMoney(d.portfolio.totalValueGbp),  color: "var(--ft-green)" },
+    { label: "Portfolio", value: formatBaseMoney(d.portfolio.totalValueBase),  color: "var(--ft-green)" },
     { label: "Net Debt",  value: formatBaseMoney(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)" },
   ] : [];
 

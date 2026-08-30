@@ -143,8 +143,8 @@ export function DividendTracker({ investments, quoteMap }: DividendTrackerProps)
                 // G10: fall back to a 1:1 GBP ratio when the live price is
                 // absent — dividend yield is still meaningful, but we can't
                 // compute a native-vs-GBP conversion ratio without it.
-                const gbpRatio = inv.livePrice != null && inv.livePrice > 0 && inv.gbpValue != null
-                  ? inv.gbpValue / (inv.livePrice * inv.shares)
+                const gbpRatio = inv.livePrice != null && inv.livePrice > 0 && inv.baseEquivalent != null
+                  ? inv.baseEquivalent / (inv.livePrice * inv.shares)
                   : 1;
                 return (
                   <tr key={inv.id} style={{ borderBottom: "1px solid rgba(33,38,45,0.6)", background: "var(--ft-base)" }}>

@@ -150,7 +150,7 @@ export function exportCsv(rows: Array<{
   nativeAmount: number;
   currency: string;
   accountName: string;
-  gbpValue?: number | null;
+  baseEquivalent?: number | null;
 }>) {
   const header = ["Date", "Description", "Category", "Type", "Amount", "Currency", "Account", "GBP Value"];
   const escape = (v: string | number) => {
@@ -160,7 +160,7 @@ export function exportCsv(rows: Array<{
   const lines = [
     header.join(","),
     ...rows.map((r) =>
-      [r.date, r.description, r.category, r.type, Math.abs(r.nativeAmount), r.currency, r.accountName, r.gbpValue != null ? Math.abs(r.gbpValue).toFixed(2) : ""]
+      [r.date, r.description, r.category, r.type, Math.abs(r.nativeAmount), r.currency, r.accountName, r.baseEquivalent != null ? Math.abs(r.baseEquivalent).toFixed(2) : ""]
         .map(escape)
         .join(",")
     ),
@@ -178,11 +178,11 @@ export function exportCsv(rows: Array<{
   URL.revokeObjectURL(url);
 }
 
-export function exportJson(rows: Array<{ date: string; description: string; category: string; type: string; nativeAmount: number; currency: string; gbpValue: number | null; accountName: string }>) {
-  // gbpValue: null passes through as `null` in the JSON. Consumers can
+export function exportJson(rows: Array<{ date: string; description: string; category: string; type: string; nativeAmount: number; currency: string; baseEquivalent: number | null; accountName: string }>) {
+  // baseEquivalent: null passes through as `null` in the JSON. Consumers can
   // tell a real 0 apart from an FX-unavailable row. A downstream tool
   // pulling this must not sum null as zero.
-  const data = rows.map((r) => ({ date: r.date, description: r.description, category: r.category, type: r.type, amount: Math.abs(r.nativeAmount), currency: r.currency, gbpValue: r.gbpValue == null ? null : Math.abs(r.gbpValue), account: r.accountName }));
+  const data = rows.map((r) => ({ date: r.date, description: r.description, category: r.category, type: r.type, amount: Math.abs(r.nativeAmount), currency: r.currency, baseEquivalent: r.baseEquivalent == null ? null : Math.abs(r.baseEquivalent), account: r.accountName }));
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");

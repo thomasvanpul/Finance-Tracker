@@ -214,21 +214,21 @@ function DaysUntilBadge({ dateStr }: { dateStr: string }) {
 
 interface DetectedCandidate {
   description: string;
-  transactions: Array<{ date: string; gbpValue: number }>;
+  transactions: Array<{ date: string; baseEquivalent: number }>;
   avgAmount: number;
   monthCount: number;
 }
 
 function detectRecurring(
-  txs: Array<{ description: string; date: string; gbpValue: number; type: string }>,
+  txs: Array<{ description: string; date: string; baseEquivalent: number; type: string }>,
   dismissed: string[],
 ): DetectedCandidate[] {
-  const groups = new Map<string, Array<{ date: string; gbpValue: number }>>();
+  const groups = new Map<string, Array<{ date: string; baseEquivalent: number }>>();
   for (const tx of txs) {
     if (tx.type !== "expense") continue;
     const key = tx.description.toLowerCase().trim();
     if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push({ date: tx.date, gbpValue: tx.gbpValue });
+    groups.get(key)!.push({ date: tx.date, baseEquivalent: tx.baseEquivalent });
   }
 
   const candidates: DetectedCandidate[] = [];
@@ -239,12 +239,12 @@ function detectRecurring(
     if (entries.length < 3) continue;
     const months = new Set(entries.map(e => e.date.slice(0, 7)));
     if (months.size < 2) continue;
-    const sorted = [...entries].sort((a, b) => a.gbpValue - b.gbpValue);
-    const median = sorted[Math.floor(sorted.length / 2)].gbpValue;
+    const sorted = [...entries].sort((a, b) => a.baseEquivalent - b.baseEquivalent);
+    const median = sorted[Math.floor(sorted.length / 2)].baseEquivalent;
     if (median <= 0) continue;
-    const allWithinRange = entries.every(e => Math.abs(e.gbpValue - median) / median <= 0.10);
+    const allWithinRange = entries.every(e => Math.abs(e.baseEquivalent - median) / median <= 0.10);
     if (!allWithinRange) continue;
-    const avgAmount = entries.reduce((s, e) => s + e.gbpValue, 0) / entries.length;
+    const avgAmount = entries.reduce((s, e) => s + e.baseEquivalent, 0) / entries.length;
     candidates.push({
       description: origDesc,
       transactions: [...entries].sort((a, b) => b.date.localeCompare(a.date)),
@@ -710,8 +710,8 @@ export default function Subscriptions() {
     // than skewing the detector.
     return detectRecurring(
       txs
-        .filter((t): t is typeof t & { gbpValue: number } => t.gbpValue != null)
-        .map(t => ({ description: t.description, date: t.date, gbpValue: t.gbpValue, type: t.type })),
+        .filter((t): t is typeof t & { baseEquivalent: number } => t.baseEquivalent != null)
+        .map(t => ({ description: t.description, date: t.date, baseEquivalent: t.baseEquivalent, type: t.type })),
       dismissed,
     );
   }, [txs, dismissed]);
@@ -729,13 +729,13 @@ export default function Subscriptions() {
       // "Last tx" for a subscription needs a GBP amount to display;
       // rows without a conversion don't count as the last known charge.
       const matches = txs
-        .filter(t => t.description.toLowerCase().includes(sub.name.toLowerCase()) && t.type === "expense" && t.gbpValue != null)
+        .filter(t => t.description.toLowerCase().includes(sub.name.toLowerCase()) && t.type === "expense" && t.baseEquivalent != null)
         .sort((a, b) => b.date.localeCompare(a.date));
       if (matches.length > 0) {
         map.set(sub.id, {
           date: matches[0].date,
-          amount: matches[0].gbpValue!,
-          prevAmount: matches.length > 1 ? matches[1].gbpValue : null,
+          amount: matches[0].baseEquivalent!,
+          prevAmount: matches.length > 1 ? matches[1].baseEquivalent : null,
         });
       }
     }

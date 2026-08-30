@@ -4,7 +4,8 @@
 //
 // Correctness — 30 Aug 2026.
 // This function used to divide by `fx.rates[currency] ?? 1` and return
-// the result as `gbpValue`. That was literal GBP: the FX cache is
+// the result as `gbpValue` (renamed to `baseEquivalent` in the naming
+// pass that followed). That was literal GBP: the FX cache is
 // GBP-pivoted (market.ts:207), so a USD position came back in GBP
 // regardless of the user's base currency. For a base-MYR user the
 // summary endpoint was handing the frontend GBP figures which
@@ -13,21 +14,15 @@
 // closed for cash.
 //
 // Fix: take the user's base currency, pivot through GBP the same way
-// toBase() does in market.ts, and return the base-currency value. The
-// field is still named `gbpValue` at this commit; the rename to
-// `baseEquivalent` (with the matching rename for plGbp → plBase, and
-// totalValueGbp / totalPlGbp / dayChangeGbp) is the next commit, so
-// this one is behaviour-only and cannot silently regress a naming
-// sweep in the same diff.
+// toBase() does in market.ts, and return the base-currency value.
 //
 // The `?? 1` fallback is also removed. If either FX leg is missing
 // (fromRate for the position's currency, or toRate for the user's
 // base) the value fields go null — the same shape the G10 contract
-// already uses for missing prices. Callers who currently sum
-// `gbpValue` without a null-guard start under-counting missing
-// positions; the summary-endpoint reduces are updated in the same
-// commit to skip null-value rows explicitly, matching how they
-// already skip !priceAvailable.
+// already uses for missing prices. Callers who used to sum
+// `gbpValue` with `?? 0` now skip null-value rows explicitly in the
+// summary-endpoint reduces, matching how they already skip
+// !priceAvailable.
 //
 // plPercent fabrication is removed here too — divisor-guard survey
 // item, `costBasis > 0 ? … : 0` on a percentage rendered a nonzero
@@ -70,16 +65,16 @@ interface PricedFields {
   // yields a native currentValue but no base equivalent. Callers must
   // treat this the same as they treat priceAvailable=false for base
   // aggregates. OpenAPI already declares these three as [number, null].
-  gbpValue: number | null;
-  plGbp: number | null;
+  baseEquivalent: number | null;
+  plBase: number | null;
   plPercent: number | null;
 }
 interface UnpricedFields {
   priceAvailable: false;
   livePrice: null;
   currentValue: null;
-  gbpValue: null;
-  plGbp: null;
+  baseEquivalent: null;
+  plBase: null;
   plPercent: null;
 }
 
@@ -117,9 +112,9 @@ export function enrichInvestment(
       priceAvailable: false,
       livePrice: null,
       currentValue: null,
-      plGbp: null,
+      plBase: null,
       plPercent: null,
-      gbpValue: null,
+      baseEquivalent: null,
     };
   }
 
@@ -150,8 +145,8 @@ export function enrichInvestment(
     priceAvailable: true,
     livePrice,
     currentValue: round(currentValue),
-    plGbp: plBase == null ? null : round(plBase),
+    plBase: plBase == null ? null : round(plBase),
     plPercent: plPercent == null ? null : round(plPercent),
-    gbpValue: baseValue == null ? null : round(baseValue),
+    baseEquivalent: baseValue == null ? null : round(baseValue),
   };
 }

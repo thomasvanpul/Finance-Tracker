@@ -600,8 +600,8 @@ export default function Fire() {
   // ── Derived defaults from live data ────────────────────────────────────────
 
   const defaultPortfolio = useMemo(() => {
-    if (investData?.totalValueGbp != null && investData.totalValueGbp > 0) {
-      return Math.round(investData.totalValueGbp);
+    if (investData?.totalValueBase != null && investData.totalValueBase > 0) {
+      return Math.round(investData.totalValueBase);
     }
     if (dashData?.netWorth != null && dashData.netWorth > 0) {
       return Math.round(dashData.netWorth);
@@ -611,7 +611,7 @@ export default function Fire() {
 
   const defaultMonthlyExpenses = useMemo(() => {
     if (!recentTxs || recentTxs.length === 0) return 2000;
-    const total = recentTxs.reduce((sum, t) => sum + (t.gbpValue ?? 0), 0);
+    const total = recentTxs.reduce((sum, t) => sum + (t.baseEquivalent ?? 0), 0);
     return Math.round(total / 3);
   }, [recentTxs]);
 

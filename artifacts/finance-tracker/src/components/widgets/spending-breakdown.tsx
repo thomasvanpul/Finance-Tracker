@@ -215,13 +215,13 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
 
   const categoryTotals = (data ?? []).reduce<Record<string, number>>((acc, tx) => {
     const cat = tx.category || "Other";
-    acc[cat] = (acc[cat] ?? 0) + (tx.gbpValue ?? 0);
+    acc[cat] = (acc[cat] ?? 0) + (tx.baseEquivalent ?? 0);
     return acc;
   }, {});
 
   const prevCategoryTotals = (prevData ?? []).reduce<Record<string, number>>((acc, tx) => {
     const cat = tx.category || "Other";
-    acc[cat] = (acc[cat] ?? 0) + (tx.gbpValue ?? 0);
+    acc[cat] = (acc[cat] ?? 0) + (tx.baseEquivalent ?? 0);
     return acc;
   }, {});
 

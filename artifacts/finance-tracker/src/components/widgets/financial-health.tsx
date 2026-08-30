@@ -22,7 +22,7 @@ type ScoreResult = {
 function computeScore(d: {
   thisMonth: { savingsRate: number; expenses: number };
   netLiquidity: number;
-  portfolio: { totalPlGbp: number; totalValueGbp: number };
+  portfolio: { totalPlBase: number; totalValueBase: number };
   totalCash: number;
 }): ScoreResult {
   const savingsRate = Math.min(30, d.thisMonth.savingsRate * 1.5);
@@ -36,8 +36,8 @@ function computeScore(d: {
         : Math.max(0, 12 + (rawLiquidity / Math.abs(rawLiquidity || 1)) * 12);
 
   const portfolioRatio =
-    d.portfolio.totalValueGbp > 0
-      ? d.portfolio.totalPlGbp / d.portfolio.totalValueGbp
+    d.portfolio.totalValueBase > 0
+      ? d.portfolio.totalPlBase / d.portfolio.totalValueBase
       : 0;
   const portfolio = Math.min(20, Math.max(0, 10 + portfolioRatio * 200));
 

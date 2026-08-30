@@ -27,7 +27,7 @@ interface Tx {
   date: string;
   type: string;
   category: string;
-  gbpValue: number;
+  baseEquivalent: number;
 }
 
 interface UpcomingItem {
@@ -165,8 +165,8 @@ function computeBaseTrend(allTxs: Tx[]): { dailyIncome: number; dailyExpense: nu
   for (const tx of allTxs) {
     const d = new Date(tx.date);
     if (d < cutoff || d > today) continue;
-    if (tx.type === "income") totalIncome += Math.abs(tx.gbpValue);
-    else if (tx.type === "expense") totalExpense += Math.abs(tx.gbpValue);
+    if (tx.type === "income") totalIncome += Math.abs(tx.baseEquivalent);
+    else if (tx.type === "expense") totalExpense += Math.abs(tx.baseEquivalent);
   }
 
   return {
