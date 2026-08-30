@@ -850,55 +850,92 @@ renderer for a decorative avatar is real battery and bundle cost.
   logo craft pass (commits `09706de` + `5ce48db`) that were verified
   but deliberately not fixed:
 
-  **G22.1 · Cap overlap at the two junctions.** The three strokes meet at
-  (6, 23) and (22, 5). Rounded caps on each stroke extend 1.0 units
-  past each endpoint (now that STROKE_VERT = STROKE_DIAG = 2.0), and
-  because the caps are drawn in the stroke's own colour (verticals in
-  `--nr-mark-vert`, diagonal in `--ft-accent`) the caps overlap as a
-  small colour discontinuity at each junction. At (22, 5) the peak dot
-  (r=2.4 at rest, 3 on hover, `--ft-accent`) partly hides it; at (6, 23)
-  it's exposed.
-  **Fix option:** rewrite the three strokes as a single `<path>` with
-  `strokeLinejoin="round"` and geometric joins instead of overlapping
-  caps. Disrupts the per-stroke draw classes (each currently has its
-  own class for the sequential hover animation), so the animation
-  wiring becomes a `<path>`-with-`stroke-dashoffset` pattern per
-  segment. Feasible; not urgent. **Verdict:** leave as-is until the
-  overlap becomes visible in a specific context (higher zoom, light
-  theme). Log so it isn't rediscovered.
+  **G22.1 · Cap overlap at the two junctions — DONE (`e0ec42c`,
+  30 Aug 2026).** Fixed via draw-order + endpoint-shift, not via
+  the single-path/single-colour rewrite the original entry proposed
+  — that route is impossible for a two-tone mark (SVG only offers
+  real `strokeLinejoin` mitres within a single `<path>` with a
+  single colour). Actual fix: diagonal endpoints pulled one unit
+  inward along the diagonal ((6,23)→(7,22), (22,5)→(21,6)), draw
+  order reversed so verticals paint over the diagonal's round caps
+  at the corners, verticals switched to `strokeLinecap="butt"` so
+  no cap domes protrude past the mark's y=5/y=23 bounds. Sequential
+  three-stroke animation preserved. `DIAG_LEN` updated 24.2 → 21.3.
+  Trade-off documented at the commit: diagonal visibly stops one
+  unit short of the corners in raw geometry, but the vertical
+  covers those pixels — normal-viewing users see a clean corner;
+  only high-zoom inspection reveals the endpoint. This is a "clean
+  deterministic edge," not a true mitre.
 
-  **G22.2 · Optical centring — mark sits ~0.5 units low in the 28-box.**
-  Mark bounding box (verticals + baseline + cap extension): x centre
-  ≈ 14 (matches viewBox centre 14), y centre ≈ 14.65 (vs viewBox
-  centre 14). Combined with the diagonal-heavy composition (peak dot
-  and rings pull attention to upper-right), the visual centre reads
-  low.
-  **Fix:** `transform="translate(0, -0.5)"` on the SVG root would
-  optically centre it. **This is a design change to positioning, not a
-  craft edit.** Not applied per Thomas's "don't redesign" instruction.
-  Logged so it can be a deliberate design decision if the mark ever
-  moves to a hero placement where optical alignment reads more
-  strongly than in the header.
+  **G22.2 · Optical centring — mark sits low in the 28-box.**
+  Numbers updated 30 Aug after `e0ec42c` (butt-cap verticals) and
+  `6f787ad` (rings removed) changed the geometric bounding box.
+  New geometric bbox (verticals + baseline, excluding the peak dot
+  since it's a small element that reads as an accent, not extent):
+  top y=5 (no more cap extension — butt caps land flush), bottom
+  y ≈ 25.4 (baseline midline y=25, half-stroke 0.4). Centre y ≈
+  15.2. viewBox centre is y=14. So the geometric centre is now
+  ~1.2 units LOW rather than the 0.65 units the original entry
+  cited — butt caps removed the extension that used to pull the
+  geometric top up.
+  Optical reading is unchanged, and arguably slightly worse. The
+  ring removal took away one of the two upper-right accents (peak
+  dot + rings) that pulled attention up; only the peak dot remains
+  now. Without the ring's outward pull, the visual weight of the
+  mark's lower half (the diagonal base + the baseline) reads more
+  strongly, and the whole mark still sits low relative to the box.
+  **Fix (unchanged):** `transform="translate(0, -0.5)"` — or,
+  updated for the new geometry, `translate(0, -1)` — on the SVG
+  root would optically centre it. Still a design change, still not
+  applied. Logged so it can be a deliberate decision if the mark
+  ever moves to a hero placement.
 
-  **G22.3 · Sub-20px sizes need distinct heavier-stroke variants.** At
-  20 px the 2.0 stroke renders as 1.43 px — sub-2px, aggressively
-  anti-aliased regardless of coordinate choice. At 16 px it's 1.14 px
-  — sub-pixel. No amount of coordinate maths on the current SVG makes
-  these sharp; the fix is a purpose-built SVG per small size, with
-  heavier strokes and simpler geometry (drop the baseline and rings at
-  16 px; drop the ring at 20 px).
-  **Existing state:** `public/favicon.svg` ships a heavier variant
-  (stroke 2.6, viewBox 0 0 32 32, hardcoded `void` theme colours,
-  inline background rect, no baseline opacity). It's visually
-  consistent with the header mark — same three-stroke shape, same peak
-  dot, same baseline treatment — but doesn't share code with
-  `logo.tsx`. Acceptable for a browser favicon (favicons are static
-  and don't need theme responsiveness). Same coordinate imprecision as
-  the header (2.6 stroke on integer endpoint at 32 px = still
-  anti-aliased), but at 32 px the effective render is more forgiving.
-  **Follow-up:** if a tab-bar-size mark ever ships (currently the tab
-  bar uses text labels, no mark), it needs a purpose-built SVG at
-  ~20 px. Not urgent.
+  **G22.3 · Sub-20px sizes need distinct heavier-stroke variants
+  — still open, and now the favicon + PWA icons have DIVERGED from
+  the header mark (30 Aug).** At 20 px the 2.0 stroke renders as
+  1.43 px — sub-2px, aggressively anti-aliased regardless of
+  coordinate choice. At 16 px it's 1.14 px — sub-pixel. No amount
+  of coordinate maths on the current SVG makes these sharp; the fix
+  is a purpose-built SVG per small size, with heavier strokes and
+  simpler geometry (drop the baseline at 16 px).
+  **Existing static-SVG assets, all in `artifacts/finance-tracker/public/`:**
+    - `favicon.svg` (viewBox 32×32, stroke 2.6, colours #CDD6F4 / #F4A21E / #08090B)
+    - `icons/apple-touch-icon.svg` (viewBox 180×180, stroke 13, #E6EDF3 / #F4A21E / #0D1117)
+    - `icons/icon-192.svg` (viewBox 192×192, stroke 14, same colours as 180)
+    - `icons/icon-512.svg` (viewBox 512×512, stroke 36, same)
+    - `icons/icon-maskable-512.svg` (viewBox 512×512, stroke 30, same, 80px safe-zone inset)
+  **Divergence — introduced 30 Aug by `e0ec42c` + `6f787ad`:** all
+  five files still exhibit the G22.1 cap-collision defect that the
+  header mark just fixed. Each uses three separate `<line>` elements
+  with `stroke-linecap="round"` meeting corner-to-corner, and none
+  has the diagonal-inward + verticals-drawn-last + butt-cap
+  correction. At favicon size (32 px browser tab) the effect is
+  usually below the pixel threshold; at 180+ px (installed PWA
+  icon, apple-touch-icon on the home screen) it's visible.
+  **Additional inconsistencies, unrelated to Change 1:** favicon
+  uses colour hex #CDD6F4 for verticals while the other four use
+  #E6EDF3 — two different "text on dark" values with no theme-
+  token source. Header uses `var(--nr-mark-vert)` at rest and
+  `var(--ft-text)` on hover, resolving to different actual colours
+  depending on the active `--ft-*` theme. No shared source: five
+  hand-maintained SVGs will drift on every mark change.
+  **What it would take to bring them in line:**
+    1. Apply the cap-collision fix to each file: pull diagonal
+       endpoints one unit inward along the diagonal, reorder JSX so
+       verticals draw after diagonal, switch verticals to
+       `stroke-linecap="butt"`. ~15 lines edited per file, no
+       structural change. Half an hour for all five.
+    2. Unify the colour hexes across the four PWA icons and the
+       favicon. Pick one "verticals" colour and one "accent"; drop
+       the two variants (#CDD6F4 vs #E6EDF3). Ten minutes.
+    3. (Optional, larger) — extract a shared SVG generator so a
+       future change to the mark ships across all size variants
+       automatically. `scripts/src/render-icons.ts` reading a single
+       geometry-and-colour source and writing all five files. Half
+       a day; worth it once mark iteration outpaces manual edits.
+  **Follow-up (unchanged from before):** if a tab-bar-size mark
+  ever ships (currently the tab bar uses text labels, no mark), it
+  needs a purpose-built SVG at ~20 px with heavier strokes.
 
   **G22.4 · iOS AppIcon.appiconset is one PNG — App Store rejection
   bait.** Confirmed inventory:
