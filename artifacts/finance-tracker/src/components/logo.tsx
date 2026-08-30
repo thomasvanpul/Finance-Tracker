@@ -29,7 +29,6 @@ const VERT_LEN = 18.5;
 // public/favicon.svg; smaller phone sizes are a follow-up).
 const STROKE_VERT = 2.0;
 const STROKE_DIAG = 2.0;
-const STROKE_RING = 1.6;   // element-level baseline; keyframes still animate it during the burst
 
 export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; size?: number }) {
   return (
@@ -82,16 +81,6 @@ export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; si
           100% { transform: translate(21px, 6px) scale(0);   opacity: 0; }
         }
 
-        /* ── peak burst (two rings) ── */
-        @keyframes nr-ring-1 {
-          0%   { r: 2.8; opacity: 1;   stroke-width: 1.6; }
-          100% { r: 10;  opacity: 0;   stroke-width: 0.4; }
-        }
-        @keyframes nr-ring-2 {
-          0%   { r: 2.8; opacity: 0.6; stroke-width: 1; }
-          100% { r: 16;  opacity: 0;   stroke-width: 0.2; }
-        }
-
         /* ── ghost historical lines ── */
         @keyframes nr-ghost {
           from { opacity: 0; }
@@ -128,9 +117,6 @@ export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; si
           transform-origin: 0 0;
           animation: nr-travel 0.37s cubic-bezier(0.4, 0, 0.2, 1) 0.15s both;
         }
-
-        .nr-ring-1 { animation: nr-ring-1 0.55s ease-out 0.5s both; }
-        .nr-ring-2 { animation: nr-ring-2 0.85s ease-out 0.53s both; }
 
         .nr-ghost-a { animation: nr-ghost 0.3s ease-out 0.28s both; }
         .nr-ghost-b { animation: nr-ghost 0.3s ease-out 0.35s both; }
@@ -206,14 +192,6 @@ export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; si
             x1="22" y1="5" x2="22" y2="23"
             stroke="var(--nr-mark-vert)" strokeWidth={STROKE_VERT} strokeLinecap="butt" />
       }
-
-      {/* ── Burst rings (hover only, timed after draw completes) ── */}
-      {hovered && (
-        <>
-          <circle key="r1" className="nr-ring-1" cx="22" cy="5" r="2.8" fill="none" stroke="var(--ft-accent)" strokeWidth={STROKE_RING} opacity="0" />
-          <circle key="r2" className="nr-ring-2" cx="22" cy="5" r="2.8" fill="none" stroke="var(--ft-accent)" strokeWidth={STROKE_RING} opacity="0" />
-        </>
-      )}
 
       {/* ── Peak dot ── */}
       <circle
