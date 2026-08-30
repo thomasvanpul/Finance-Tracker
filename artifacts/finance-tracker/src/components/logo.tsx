@@ -1,7 +1,13 @@
 import { useState } from "react";
 
-// Diagonal length: sqrt((22-6)²+(23-5)²) ≈ 24.1 — used for stroke-dasharray
-const DIAG_LEN = 24.2;
+// Diagonal length: sqrt((21-7)²+(6-22)²) = sqrt(452) ≈ 21.26 — used
+// for stroke-dasharray on the sequential-draw animation. Was 24.2
+// when the diagonal ran corner-to-corner (6,23)→(22,5); the 30-Aug
+// cap-collision fix pulled the endpoints one unit inward along the
+// diagonal so the vertical strokes (drawn on top) hide the
+// diagonal's round caps. See the diagonal <line> below for the
+// geometry note.
+const DIAG_LEN = 21.3;
 const VERT_LEN = 18.5;
 
 // Stroke widths — one constant per element, used by BOTH hover and rest
@@ -65,11 +71,15 @@ export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; si
           100% { stroke-dashoffset: 0; }
         }
 
-        /* ── traveling dot along diagonal ── */
+        /* ── traveling dot along diagonal ──
+           Path matches the visible diagonal endpoints (7,22)→(21,6),
+           updated in the 30-Aug cap-collision fix. Dot enters at the
+           actual line start rather than the conceptual corner, so
+           it appears to trace along the yellow stroke exactly. */
         @keyframes nr-travel {
-          0%   { transform: translate(6px, 23px) scale(1.4); opacity: 1; }
-          85%  { transform: translate(22px, 5px)  scale(1.8); opacity: 0.9; }
-          100% { transform: translate(22px, 5px)  scale(0);   opacity: 0; }
+          0%   { transform: translate(7px, 22px) scale(1.4); opacity: 1; }
+          85%  { transform: translate(21px, 6px) scale(1.8); opacity: 0.9; }
+          100% { transform: translate(21px, 6px) scale(0);   opacity: 0; }
         }
 
         /* ── peak burst (two rings) ── */
@@ -148,24 +158,37 @@ export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; si
         </>
       )}
 
-      {/* ── Left vertical stroke ── */}
+      {/* ── Diagonal ── (drawn BEFORE the verticals so the vertical
+           strokes cover the diagonal's round caps at the corners.
+           Endpoints are pulled ONE UNIT INWARD along the diagonal —
+           (6,23)→(7,22) and (22,5)→(21,6) — so the cap semicircles
+           sit fully inside the 2-wide vertical strokes at x=6 and
+           x=22. The vertical is drawn on top, painting over the cap
+           entirely. No visible yellow blob at the corners; no soft
+           cap-on-cap blend between the two stroke colours. This is
+           the "clean deterministic edge" fix for BACKLOG G22.1 — a
+           real mitre join would require a single-path single-colour
+           mark, which loses the two-tone. */}
+      {hovered
+        ? <line key="hd" className="nr-draw-d"
+            x1="7" y1="22" x2="21" y2="6"
+            stroke="var(--ft-accent)" strokeWidth={STROKE_DIAG} strokeLinecap="round" />
+        : <line key="id" className="nr-idle-diag"
+            x1="7" y1="22" x2="21" y2="6"
+            stroke="var(--ft-accent)" strokeWidth={STROKE_DIAG} strokeLinecap="round" />
+      }
+
+      {/* ── Left vertical stroke ── (butt caps: flush termination at
+           y=5 and y=23. Round caps here would produce visible dots
+           extending into the gap between the mark and the baseline
+           at y=25. Butt gives a clean bounded mark.) */}
       {hovered
         ? <line key="hl" className="nr-draw-l"
             x1="6" y1="23" x2="6" y2="5"
-            stroke="var(--ft-text)" strokeWidth={STROKE_VERT} strokeLinecap="round" />
+            stroke="var(--ft-text)" strokeWidth={STROKE_VERT} strokeLinecap="butt" />
         : <line key="il"
             x1="6" y1="23" x2="6" y2="5"
-            stroke="var(--nr-mark-vert)" strokeWidth={STROKE_VERT} strokeLinecap="round" />
-      }
-
-      {/* ── Diagonal ── */}
-      {hovered
-        ? <line key="hd" className="nr-draw-d"
-            x1="6" y1="23" x2="22" y2="5"
-            stroke="var(--ft-accent)" strokeWidth={STROKE_DIAG} strokeLinecap="round" />
-        : <line key="id" className="nr-idle-diag"
-            x1="6" y1="23" x2="22" y2="5"
-            stroke="var(--ft-accent)" strokeWidth={STROKE_DIAG} strokeLinecap="round" />
+            stroke="var(--nr-mark-vert)" strokeWidth={STROKE_VERT} strokeLinecap="butt" />
       }
 
       {/* ── Traveling dot along diagonal (hover only) ── */}
@@ -174,14 +197,14 @@ export function LogoMark({ hovered = false, size = 28 }: { hovered?: boolean; si
           cx="0" cy="0" r="2" fill="var(--ft-accent)" opacity="0" />
       )}
 
-      {/* ── Right vertical stroke ── */}
+      {/* ── Right vertical stroke ── (butt caps, same reason as left) */}
       {hovered
         ? <line key="hr" className="nr-draw-r"
             x1="22" y1="5" x2="22" y2="23"
-            stroke="var(--ft-text)" strokeWidth={STROKE_VERT} strokeLinecap="round" />
+            stroke="var(--ft-text)" strokeWidth={STROKE_VERT} strokeLinecap="butt" />
         : <line key="ir"
             x1="22" y1="5" x2="22" y2="23"
-            stroke="var(--nr-mark-vert)" strokeWidth={STROKE_VERT} strokeLinecap="round" />
+            stroke="var(--nr-mark-vert)" strokeWidth={STROKE_VERT} strokeLinecap="butt" />
       }
 
       {/* ── Burst rings (hover only, timed after draw completes) ── */}
