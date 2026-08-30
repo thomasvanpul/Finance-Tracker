@@ -30,9 +30,6 @@ import { Check, Lock } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
 import { useWidgets, WIDGET_REGISTRY } from "@/contexts/widgets-context";
-import { THEME_REWARDS, isThemeUnlocked } from "@/lib/learn-xp";
-import { useTotalXP } from "@/hooks/use-total-xp";
-import { ThemeRewardsPanel } from "@/components/investments/learn-tab";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId } from "@/lib/bot-skins";
 import { BotPreview, type Phase } from "@/components/ai-wanderer";
 import { ConnectionsPanel } from "./settings-connections";
@@ -670,15 +667,15 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
   const isMobile = useIsMobile();
   const [hoveredTheme, setHoveredTheme] = useState<FintrackTheme | null>(null);
   const [accentOverride, setAccentOverride] = useState(() => ls("nr-accent-override", ""));
-  // F5: total XP composes learn topics + cat rules (local) with
-  // completed goals + synced providers (API). Themes gate on total.
-  const learnXP = useTotalXP().total;
   const previewId = hoveredTheme ?? theme;
   const previewSwatch = SWATCH_DATA.find(x => x.id === previewId)!;
 
-  const unlockedSwatchIds = new Set<string>(["void", ...THEME_REWARDS.filter(r => learnXP >= r.requiredXP).map(r => r.id)]);
-  const visibleSwatches = SWATCH_DATA.filter(s => unlockedSwatchIds.has(s.id));
-  const lockedSwatches = SWATCH_DATA.filter(s => !unlockedSwatchIds.has(s.id));
+  // All themes are available. The historical XP-gating mechanism was
+  // removed 30 Aug when /learn was deleted — a lock icon pointing at
+  // a route the user cannot reach is a control that cannot work.
+  // See CLAUDE.md § Hard constraints on the "feature the user can
+  // see and can never use" defect class.
+  const visibleSwatches = SWATCH_DATA;
 
   // Dark first, Light second: the product's default is dark and most
   // users pick from there. Within each group: alphabetical, so the
@@ -697,19 +694,10 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
   const renderSwatch = (s: typeof SWATCH_DATA[number]) => {
     const isActive = theme === s.id;
     const isHovered = hoveredTheme === s.id;
-    const reward = THEME_REWARDS.find(r => r.id === s.id);
-    const rarityColor = reward ? RARITY_COLOR[reward.rarity] : "var(--ft-dim)";
     return (
       <button
         key={s.id}
-        // Belt-and-braces: visibleSwatches already filters out locked
-        // themes, but the click handler also refuses a locked id so
-        // no future refactor / programmatic call can slip through.
-        // Same predicate used on mobile (see MobileSettings).
-        onClick={() => {
-          if (!isThemeUnlocked(s.id, learnXP)) return;
-          setTheme(s.id);
-        }}
+        onClick={() => setTheme(s.id)}
         onMouseEnter={() => setHoveredTheme(s.id)}
         onMouseLeave={() => setHoveredTheme(null)}
         aria-pressed={isActive}
@@ -732,12 +720,6 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
         </div>
         <Text as="div" align="center">
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: isActive ? s.accent : "var(--ft-muted)", display: "block" }}>{s.label}</span>
-          {reward && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: rarityColor, display: "block", marginTop: 1 }}>{reward.rarity}</span>
-          )}
-          {!reward && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-dim)", display: "block", marginTop: 1 }}>DEFAULT</span>
-          )}
         </Text>
       </button>
     );
@@ -764,14 +746,6 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
             ),
           )}
         </div>
-        {lockedSwatches.length > 0 && (
-          <div style={{ padding: "10px 16px", borderTop: "1px solid var(--ft-border)", background: "var(--ft-surface)", display: "flex", alignItems: "center", gap: 6 }}>
-            <Lock size={10} style={{ color: "var(--ft-dim)", flexShrink: 0 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
-              <span className="pnum">{lockedSwatches.length}</span> theme{lockedSwatches.length !== 1 ? "s" : ""} locked — earn XP in Learn to unlock
-            </span>
-          </div>
-        )}
         {/* Live preview box — shows hovered swatch on hover, active theme otherwise */}
         <div style={{ padding: "12px 16px", borderTop: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
           <HStack gap={8} align="baseline" marginBottom={8}>
@@ -803,17 +777,6 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
               </div>
             );
           })()}
-        </div>
-      </div>
-
-      {/* XP Theme Rewards */}
-      <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> XP Rewards</div>
-        <div style={{ padding: "12px 16px", background: "var(--ft-surface)" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", marginBottom: 10 }}>
-            VOID is the default theme. Earn XP in <Text as="span" color="var(--ft-accent)">Learn</Text> to unlock more.
-          </div>
-          <ThemeRewardsPanel totalXP={learnXP} />
         </div>
       </div>
 
@@ -1280,10 +1243,6 @@ function WardrobePanel() {
   const [blinking, setBlinking] = useState(false);
   const [autoPlay, setAutoPlay] = useState(true);
   const phaseIdxRef = useRef(0);
-  // F5: skin unlocks chain through theme unlocks. Total XP drives
-  // the theme threshold, so wardrobe reads the same composed total.
-  const learnXP = useTotalXP().total;
-
   useEffect(() => {
     const id = setInterval(() => {
       setBlinking(true);
@@ -1362,15 +1321,18 @@ function WardrobePanel() {
         </div>
         <div style={{ padding: "4px 0" }}>
           {SKINS.map((skin) => {
-            const themeReq = skin.requiredTheme ? THEME_REWARDS.find(t => t.id === skin.requiredTheme) : null;
-            const isOwned = !themeReq || learnXP >= themeReq.requiredXP;
+            // Skin `requiredTheme` field is kept on the data as a
+            // historical marker of the intended rarity gate, but the
+            // usability check is dropped — the theme was unlocked via
+            // XP, and XP no longer has a source. Every skin is
+            // pickable. See CLAUDE.md § Hard constraints.
             const isActive = skinId === skin.id;
             const rarityCol = RARITY_COLOR_MAP[skin.rarity] ?? "var(--ft-dim)";
             return (
-              <div key={skin.id} onClick={() => isOwned && pickSkin(skin.id)} style={{ ...ROW, cursor: isOwned ? "pointer" : "not-allowed", opacity: isOwned ? 1 : 0.5, background: isActive && isOwned ? "var(--ft-raised)" : "transparent", borderLeft: isActive && isOwned ? `2px solid ${rarityCol}` : "2px solid transparent", paddingLeft: 12, transition: "background 0.1s", alignItems: "flex-start", paddingTop: 10, paddingBottom: 10 }}>
+              <div key={skin.id} onClick={() => pickSkin(skin.id)} style={{ ...ROW, cursor: "pointer", background: isActive ? "var(--ft-raised)" : "transparent", borderLeft: isActive ? `2px solid ${rarityCol}` : "2px solid transparent", paddingLeft: 12, transition: "background 0.1s", alignItems: "flex-start", paddingTop: 10, paddingBottom: 10 }}>
                 <div style={{ flex: 1 }}>
                   <HStack gap={6} align="center" marginBottom={3}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive && isOwned ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>{skin.rarity}</span>
                   </HStack>
                   <Text as="div" mono size={10} color="var(--ft-muted)" lineHeight={1.5} mb={skin.perks.length > 0 ? 5 : 0}>{skin.desc}</Text>
@@ -1379,12 +1341,10 @@ function WardrobePanel() {
                       {skin.perks.map((perk) => (<span key={perk} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>))}
                     </HStack>
                   )}
-                  {!isOwned && themeReq && (<Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em" mt={5}>Requires <span className="pnum">{themeReq.requiredXP.toLocaleString()}</span> XP to unlock</Text>)}
                 </div>
                 <HStack gap={6} align="center" marginTop={2} shrink={false}>
-                  {!isOwned && <Lock style={{ width: 10, height: 10, color: "var(--ft-dim)" }} />}
-                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${isActive && isOwned ? rarityCol : "var(--ft-border2)"}`, background: isActive && isOwned ? rarityCol : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {isActive && isOwned && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />}
+                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${isActive ? rarityCol : "var(--ft-border2)"}`, background: isActive ? rarityCol : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {isActive && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />}
                   </div>
                 </HStack>
               </div>

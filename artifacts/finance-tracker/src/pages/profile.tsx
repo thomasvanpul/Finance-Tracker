@@ -14,7 +14,6 @@ import {
   useListGoals,
 } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
-import { getLevel, getLearnXP } from "@/lib/learn-xp";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 import { SignInMethodsPanel } from "@/components/sign-in-methods-panel";
@@ -481,9 +480,6 @@ export default function Profile() {
   const [imageUploadError, setImageUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // XP / level
-  const [totalXP] = useState(() => getLearnXP());
-
   const user = session?.user;
   const userInitial = (user?.name?.[0] ?? user?.email?.[0] ?? "U").toUpperCase();
 
@@ -798,8 +794,6 @@ export default function Profile() {
 
   timelineItems.sort((a, b) => a.date.localeCompare(b.date));
 
-  const lvl = getLevel(totalXP);
-
   const usageStorageRows = [
     { label: "Auto-Cat Rules", value: String(catRulesCount), note: catRulesCount === 0 ? "none" : undefined },
     { label: "TX Templates", value: String(templatesCount), note: templatesCount === 0 ? "none" : undefined },
@@ -991,26 +985,6 @@ export default function Profile() {
           </Text>
         </div>
       </HStack>
-
-      {/* XP progress bar + level badge */}
-      <div style={{ padding: "10px 14px", borderTop: "1px solid var(--ft-border)", marginTop: 12, background: "var(--ft-raised)" }}>
-        <HStack align="center" justify="between" marginBottom={6}>
-          <HStack gap={8} align="center">
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: lvl.color, background: `${lvl.color}18`, border: `1px solid ${lvl.color}40`, padding: "1px 7px", letterSpacing: "0.1em" }}>
-              {lvl.name}
-            </span>
-            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 700 }}>{totalXP} XP</span>
-          </HStack>
-          {lvl.next && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-              <span className="pnum">{lvl.next.minXP - totalXP}</span> to {lvl.next.name}
-            </span>
-          )}
-        </HStack>
-        <div style={{ width: "100%", height: 3, background: "var(--ft-border)" }}>
-          <div style={{ height: "100%", width: `${lvl.progress}%`, background: lvl.color }} />
-        </div>
-      </div>
 
       {/* Photo editor */}
       {editingImage && (
