@@ -136,7 +136,13 @@ function scanFile(filePath: string): Hit[] {
   return hits;
 }
 
-describe("no-raw-api-fetch lock (#17)", () => {
+// AST source-scanner locks walk the whole src/ tree. Vitest's default
+// 5s testTimeout is sized for unit tests; on a loaded machine the scan
+// crosses it (this file was observed at 5081ms under load and 2342ms
+// in isolation on 30 Aug 2026). 15s = 3× the observed worst-case for
+// headroom against CPU contention. A suite that fails one run in eight
+// is a suite people stop believing.
+describe("no-raw-api-fetch lock (#17)", { timeout: 15_000 }, () => {
   it("every /api call in src/ goes through apiFetch or customFetch", () => {
     const hits: Hit[] = [];
     for (const file of walk(SCAN_ROOT)) {

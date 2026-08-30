@@ -89,7 +89,15 @@ describe("rate-limit predicate · which /api/auth/* paths get the strict limiter
 
 // ── (b) trust proxy · two different client IPs → two different req.ip ───────
 
-describe("trust proxy · client IPs from X-Forwarded-For land in distinct buckets", () => {
+// Integration test — boots express on a random port + does HTTP round-
+// trips through express-rate-limit's middleware chain. Vitest's default
+// 5s testTimeout is a unit-test ceiling; under CPU contention the server-
+// boot + fetch pair have been observed to cross it (G10 was one file
+// losing ~5 tests in 1 run out of 8, ERR_ERL_KEY_GEN_IPV6 warnings from
+// express-rate-limit both files carry — same shape as api-fetch.lock's
+// 5081ms observation). 10s = 2× default, enough for HTTP round-trip
+// under load without inviting real hangs to sleep.
+describe("trust proxy · client IPs from X-Forwarded-For land in distinct buckets", { timeout: 10_000 }, () => {
   let app: Express;
   let server: Server;
   let baseUrl: string;

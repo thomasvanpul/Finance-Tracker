@@ -88,7 +88,12 @@ async function hit(userId: string): Promise<number> {
 
 // ── Property tests ───────────────────────────────────────────────────────────
 
-describe("aiLimiter · buckets are per userId, not per source IP", () => {
+// Integration test — boots express on a random port + does HTTP round-
+// trips + exhausts the limiter's bucket (three requests per test). Same
+// flake-under-load shape as app.rate-limit.test.ts (see G10). 10s
+// testTimeout = 2× vitest default. Sized for HTTP round-trip under
+// contention, not a hang budget.
+describe("aiLimiter · buckets are per userId, not per source IP", { timeout: 10_000 }, () => {
   it("two different userIds land in DIFFERENT buckets — one exhausts, the other still gets through", async () => {
     // Exhaust user A's budget (max=2).
     expect(await hit("user-alice")).toBe(200);

@@ -452,7 +452,11 @@ function formatDefect(d: Defect): string {
 
 // ── The tests ──────────────────────────────────────────────────────────────
 
-describe("demo-fabrication lock (#16)", () => {
+// AST source-scanner. Walks the whole src/ tree twice (Shape A named
+// declarations + Shape B ternary-else literals). Same flake shape as
+// Lock #17 — vitest's 5s default is a unit-test ceiling. 15s gives
+// 3× headroom against CPU contention. See api-fetch.lock.test.ts.
+describe("demo-fabrication lock (#16)", { timeout: 15_000 }, () => {
   const defects = scanAll();
 
   it("Shape A · no named DEMO/MOCK/SAMPLE constants or flags in src/", () => {
