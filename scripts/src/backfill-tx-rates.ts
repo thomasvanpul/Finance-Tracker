@@ -36,7 +36,21 @@
 //   - No published rate limit; 100ms polite pace is enough.
 
 import { and, eq, isNull, sql } from "drizzle-orm";
-import { db, transactionsTable, appSettingsTable } from "@workspace/db";
+import { db, transactionsTable, appSettingsTable, userTable } from "@workspace/db";
+
+// Frankfurter's live currency list. Any (from, to) pair where BOTH
+// endpoints are in this set is fillable; a row with a currency
+// outside it will stay null after the backfill and needs another
+// path (or be accepted as read-path-fallback-forever). Kept literal
+// so the plan output can name specific unfillable rows rather than
+// just count them. Source: https://api.frankfurter.dev/v1/currencies
+// (30 Aug 2026 snapshot, ECB reference set).
+const FRANKFURTER_CURRENCIES = new Set([
+  "AUD", "BGN", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "EUR",
+  "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "ISK", "JPY", "KRW",
+  "MXN", "MYR", "NOK", "NZD", "PHP", "PLN", "RON", "SEK", "SGD",
+  "THB", "TRY", "USD", "ZAR",
+]);
 
 // ── Branch guard ────────────────────────────────────────────────────
 const DEV_DB_HOST = "ep-withered-night-abucoq17";
@@ -143,33 +157,96 @@ async function loadBaseCurrencyMap(userIds: Set<string>): Promise<Map<string, st
   return map;
 }
 
+// Emails for plan-output readability. Kept small — we only look up
+// users that appear in the null-rate row set, not the whole user
+// table.
+async function loadUserEmailMap(userIds: Set<string>): Promise<Map<string, string>> {
+  if (userIds.size === 0) return new Map();
+  const rows = await db
+    .select({ id: userTable.id, email: userTable.email })
+    .from(userTable);
+  const map = new Map<string, string>();
+  for (const r of rows) if (userIds.has(r.id)) map.set(r.id, r.email ?? "(no email)");
+  return map;
+}
+
+interface UserBreakdown {
+  userId: string;
+  email: string;
+  baseCurrency: string;
+  totalRows: number;
+  sameCurrencyRows: number;
+  frankfurterFillRows: number;
+  unfillableRows: number;
+  unfillableReasons: Map<string, number>;   // currency → count
+}
+
 interface Plan {
   totalRows: number;
   rowsSameCurrency: number;
   rowsNeedingFetch: number;
   rowsMissingBase: number;
+  rowsUnfillable: number;
   uniquePairs: Array<{ date: string; from: string; to: string; rowCount: number }>;
-  rowsPerUser: Map<string, number>;
+  users: UserBreakdown[];
   currenciesEncountered: Set<string>;
+  unfillableCurrencies: Set<string>;
 }
 
 async function buildPlan(): Promise<Plan> {
   const rows = await loadNullRateRows();
   const userIds = new Set(rows.map((r) => r.userId));
-  const baseByUser = await loadBaseCurrencyMap(userIds);
+  const [baseByUser, emailByUser] = await Promise.all([
+    loadBaseCurrencyMap(userIds),
+    loadUserEmailMap(userIds),
+  ]);
 
-  const rowsPerUser = new Map<string, number>();
+  const perUser = new Map<string, UserBreakdown>();
   const currenciesEncountered = new Set<string>();
+  const unfillableCurrencies = new Set<string>();
   const pairCounts = new Map<string, { date: string; from: string; to: string; rowCount: number }>();
   let rowsSameCurrency = 0;
   let rowsMissingBase = 0;
+  let rowsUnfillable = 0;
 
   for (const r of rows) {
-    rowsPerUser.set(r.userId, (rowsPerUser.get(r.userId) ?? 0) + 1);
     currenciesEncountered.add(r.currency);
-    const base = baseByUser.get(r.userId);
-    if (!base) { rowsMissingBase += 1; continue; }
-    if (r.currency === base) { rowsSameCurrency += 1; continue; }
+    const base = baseByUser.get(r.userId) ?? null;
+
+    let u = perUser.get(r.userId);
+    if (!u) {
+      u = {
+        userId: r.userId,
+        email: emailByUser.get(r.userId) ?? "(unknown)",
+        baseCurrency: base ?? "(none)",
+        totalRows: 0,
+        sameCurrencyRows: 0,
+        frankfurterFillRows: 0,
+        unfillableRows: 0,
+        unfillableReasons: new Map(),
+      };
+      perUser.set(r.userId, u);
+    }
+    u.totalRows += 1;
+
+    if (!base) { rowsMissingBase += 1; u.unfillableRows += 1; continue; }
+    if (r.currency === base) { rowsSameCurrency += 1; u.sameCurrencyRows += 1; continue; }
+
+    // Frankfurter coverage check: both endpoints must be in the ECB
+    // set. Anything else stays null (read-path fallback continues to
+    // work for it, but the row won't be locked to a stored rate).
+    if (!FRANKFURTER_CURRENCIES.has(r.currency) || !FRANKFURTER_CURRENCIES.has(base)) {
+      rowsUnfillable += 1;
+      u.unfillableRows += 1;
+      unfillableCurrencies.add(r.currency);
+      const reason = FRANKFURTER_CURRENCIES.has(r.currency)
+        ? `base ${base} not in Frankfurter set`
+        : `${r.currency} not in Frankfurter set`;
+      u.unfillableReasons.set(reason, (u.unfillableReasons.get(reason) ?? 0) + 1);
+      continue;
+    }
+
+    u.frankfurterFillRows += 1;
     const key = `${r.date}|${r.currency}|${base}`;
     const existing = pairCounts.get(key);
     if (existing) existing.rowCount += 1;
@@ -179,13 +256,17 @@ async function buildPlan(): Promise<Plan> {
   return {
     totalRows: rows.length,
     rowsSameCurrency,
-    rowsNeedingFetch: rows.length - rowsSameCurrency - rowsMissingBase,
+    rowsNeedingFetch: pairCounts.size === 0
+      ? 0
+      : rows.length - rowsSameCurrency - rowsMissingBase - rowsUnfillable,
     rowsMissingBase,
+    rowsUnfillable,
     uniquePairs: [...pairCounts.values()].sort((a, b) =>
       a.date.localeCompare(b.date) || a.from.localeCompare(b.from) || a.to.localeCompare(b.to),
     ),
-    rowsPerUser,
+    users: [...perUser.values()].sort((a, b) => b.totalRows - a.totalRows),
     currenciesEncountered,
+    unfillableCurrencies,
   };
 }
 
@@ -193,16 +274,43 @@ function printPlan(plan: Plan): void {
   console.log("");
   console.log("== BACKFILL PLAN ==");
   console.log(`  Total null-rate rows:        ${plan.totalRows}`);
-  console.log(`  Same-currency (rate = 1):    ${plan.rowsSameCurrency}`);
+  console.log(`  Same-currency (rate = 1):    ${plan.rowsSameCurrency}   (no HTTP)`);
   console.log(`  Needing Frankfurter fetch:   ${plan.rowsNeedingFetch}`);
   console.log(`  Missing base (skipped):      ${plan.rowsMissingBase}`);
+  console.log(`  Unfillable — stay null:      ${plan.rowsUnfillable}`);
+  if (plan.unfillableCurrencies.size > 0) {
+    console.log(`    (currencies outside Frankfurter: ${[...plan.unfillableCurrencies].sort().join(", ")})`);
+  }
   console.log(`  Unique (date,from,to) pairs: ${plan.uniquePairs.length}`);
   console.log(`  Currencies encountered:      ${[...plan.currenciesEncountered].sort().join(", ")}`);
-  console.log(`  Users touched:               ${plan.rowsPerUser.size}`);
-  if (plan.rowsPerUser.size <= 10) {
-    console.log(`  Rows per user:`);
-    for (const [uid, count] of [...plan.rowsPerUser.entries()].sort((a, b) => b[1] - a[1])) {
-      console.log(`    ${uid.slice(0, 8)}...  ${count}`);
+  console.log("");
+
+  console.log(`── PER-USER BREAKDOWN (${plan.users.length} users) ──`);
+  for (const u of plan.users) {
+    console.log(`  ${u.email}   (base: ${u.baseCurrency})`);
+    console.log(`    total null-rate rows:   ${u.totalRows}`);
+    console.log(`      same-currency (rate=1): ${u.sameCurrencyRows}`);
+    console.log(`      Frankfurter fills:      ${u.frankfurterFillRows}`);
+    if (u.unfillableRows > 0) {
+      console.log(`      unfillable:             ${u.unfillableRows}`);
+      for (const [reason, count] of u.unfillableReasons.entries()) {
+        console.log(`        - ${reason}: ${count}`);
+      }
+    }
+  }
+  console.log("");
+
+  console.log(`── UNIQUE (date, from, to) TUPLES TO QUERY (${plan.uniquePairs.length}) ──`);
+  for (const p of plan.uniquePairs) {
+    console.log(`  ${p.date}  ${p.from} → ${p.to}   (${p.rowCount} row${p.rowCount === 1 ? "" : "s"})`);
+  }
+  console.log("");
+
+  // Legacy tail — kept for the earlier compact-output consumers.
+  if (plan.users.length <= 10) {
+    console.log(`  Rows per user (short form):`);
+    for (const u of plan.users) {
+      console.log(`    ${u.userId.slice(0, 8)}...  ${u.totalRows}`);
     }
   }
   console.log("");
@@ -236,6 +344,13 @@ async function apply(plan: Plan): Promise<void> {
       rateAsOfDate = r.date;
       sameCurrency += 1;
     } else {
+      // Skip pairs Frankfurter doesn't cover — no point burning HTTP
+      // on a call we know will 404. Row stays null; read-path
+      // fallback via live toBase() handles it.
+      if (!FRANKFURTER_CURRENCIES.has(r.currency) || !FRANKFURTER_CURRENCIES.has(base)) {
+        stayedNull += 1;
+        continue;
+      }
       const key = `${r.date}|${r.currency}|${base}`;
       let cached = rateCache.get(key);
       if (cached === undefined) {
