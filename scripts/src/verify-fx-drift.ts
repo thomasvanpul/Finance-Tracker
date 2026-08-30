@@ -26,11 +26,25 @@ import { and, eq, sql } from "drizzle-orm";
 import { db, transactionsTable } from "@workspace/db";
 
 const DEV_DB_HOST = "ep-withered-night-abucoq17";
+const PROD_DB_HOST = "ep-dark-hall-ab7g28of";
 
-function assertDev(): void {
+function parseArgs(): { branch: "dev" | "prod" } {
+  const args = process.argv.slice(2);
+  const flag = args.find((a) => a.startsWith("--branch="));
+  const branch = flag?.split("=")[1] as "dev" | "prod" | undefined;
+  if (branch !== "dev" && branch !== "prod") {
+    console.error("Usage: verify-fx-drift --branch=dev|prod");
+    process.exit(1);
+  }
+  return { branch };
+}
+
+function assertBranch(branch: "dev" | "prod"): void {
   const url = process.env.DATABASE_URL ?? "";
-  if (!url.includes(DEV_DB_HOST)) {
-    console.error(`[verify] refusing to run — expected dev host "${DEV_DB_HOST}"`);
+  const expected = branch === "dev" ? DEV_DB_HOST : PROD_DB_HOST;
+  if (!url.includes(expected)) {
+    console.error(`[verify] refusing to run — --branch=${branch} but DATABASE_URL host isn't "${expected}"`);
+    console.error(`[verify] observed: ${url ? url.replace(/:[^@/]+@/, ":***@") : "(unset)"}`);
     process.exit(1);
   }
 }
@@ -70,13 +84,23 @@ const MUTATED_FX: FxRates = {
 };
 
 async function main(): Promise<void> {
-  assertDev();
+  const { branch } = parseArgs();
+  assertBranch(branch);
+  console.log(`[verify] connected to ${branch} branch`);
 
-  // Pick a real stored-rate row — first MYR expense in the seed set.
+  // Pick a real Frankfurter-filled row — an MYR expense whose
+  // stored rate is NOT 1. On prod both users hold MYR rows, but the
+  // MYR-base user's MYR rows carry rate=1 (same-currency, trivial);
+  // the GBP-base user's MYR rows carry a real Frankfurter fill. The
+  // interesting proof is against the non-trivial case.
   const [row] = await db
     .select()
     .from(transactionsTable)
-    .where(and(eq(transactionsTable.currency, "MYR"), sql`${transactionsTable.nativeToBaseRate} IS NOT NULL`))
+    .where(and(
+      eq(transactionsTable.currency, "MYR"),
+      sql`${transactionsTable.nativeToBaseRate} IS NOT NULL`,
+      sql`${transactionsTable.nativeToBaseRate} != 1`,
+    ))
     .limit(1);
 
   if (!row) {

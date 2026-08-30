@@ -9,7 +9,8 @@
     "screenshot": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/screenshot.ts",
     "backfill:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/backfill-tx-rates.ts --branch=dev",
     "backfill:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/backfill-tx-rates.ts --branch=prod",
-    "verify:fx-drift": "tsx --env-file-if-exists=../lib/db/.env ./src/verify-fx-drift.ts",
+    "verify:fx-drift:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/verify-fx-drift.ts --branch=dev",
+    "verify:fx-drift:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/verify-fx-drift.ts --branch=prod",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
