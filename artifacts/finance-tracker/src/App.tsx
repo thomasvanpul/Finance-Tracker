@@ -19,6 +19,8 @@ import NotFound from "@/pages/not-found";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PhoneShell } from "@/components/phone/PhoneShell";
 import { PhoneScreenSkeleton } from "@/components/phone/PhoneScreenSkeleton";
+import { CurrencySync } from "@/components/currency-sync";
+import { useBaseCurrency } from "@/lib/currency-store";
 import { PageTransitionOverlay } from "@/components/page-transition";
 
 // Dashboard is eager — it is the landing route; a lazy round-trip here buys nothing.
@@ -187,6 +189,12 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 function Router() {
+  // Subscribe to the base-currency store at this level so the whole
+  // shell subtree (PhoneShell OR Layout) re-renders when the sync
+  // effect resolves. Without this a component that mounted with
+  // baseCurrency === null keeps rendering formatBaseMoney → "—" until
+  // some other cause triggers a re-render. See lib/currency-store.ts.
+  useBaseCurrency();
   const isMobile = useIsMobile();
   const [location] = useLocation();
 
@@ -274,6 +282,7 @@ function App() {
             <AuthGate>
               <OnboardingGate>
                 <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                  <CurrencySync />
                   <DefaultPageRedirector />
                   <PageTransitionOverlay />
                   <Router />

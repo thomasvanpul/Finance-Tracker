@@ -9,7 +9,7 @@ import { createPortal } from "react-dom";
 import { useFintrackTheme } from "@/contexts/theme-context";
 import { authClient } from "@/lib/auth-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetMarketQuotes, useGetDashboard, useGetSettingsCurrency } from "@workspace/api-client-react";
+import { useGetMarketQuotes, useGetDashboard } from "@workspace/api-client-react";
 import { useTickers } from "@/contexts/tickers-context";
 import { usePrivacy, PrivNum } from "@/contexts/privacy-context";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
@@ -19,7 +19,6 @@ import { KeyboardShortcuts, useKeyboardShortcuts } from "@/components/keyboard-s
 import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, ChevronLeft, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Home, CreditCard, ArrowLeftRight, BarChart2, PieChart, LineChart, TrendingUp, FileText, Briefcase, Activity, Target, Calendar, RefreshCw, Users, Grid3X3, X } from "lucide-react";
 import { Logo, LogoMark } from "@/components/logo";
 import { formatBaseMoney } from "@/lib/utils";
-import { setBaseCurrency } from "@/lib/currency-store";
 import { ThemeEffects } from "@/components/theme-effects";
 import { useEasterEggs, EasterEggRenderer } from "@/components/easter-eggs";
 import { AiAgent } from "@/components/ai-agent";
@@ -1240,10 +1239,12 @@ export function Layout({ children }: LayoutProps) {
   const sidebarWidthRef = useRef(sidebarWidth);
   sidebarWidthRef.current = sidebarWidth;
   const { data: dashboardData } = useGetDashboard();
-  const { data: currencyData } = useGetSettingsCurrency();
-  useEffect(() => {
-    if (currencyData?.baseCurrency) setBaseCurrency(currencyData.baseCurrency);
-  }, [currencyData?.baseCurrency]);
+  // Currency sync moved to app level (components/currency-sync.tsx) so
+  // it fires on every mount path — PhoneShell and Layout both. Before
+  // 30 Aug it lived here, which meant PhoneShell never triggered it
+  // and every wrapped route on phone rendered "—" for base-currency
+  // values permanently. See CLAUDE.md § Hard constraints on the
+  // "one setter, one shell" invariant.
   const pendingGRef = useRef(false);
   const { overlay: eggOverlay, clearOverlay, logoRef } = useEasterEggs();
 
