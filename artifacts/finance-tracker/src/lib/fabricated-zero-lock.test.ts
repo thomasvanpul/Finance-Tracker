@@ -88,7 +88,11 @@ const MONEY_FIELD_PATTERN = /\b(?:baseEquivalent|gbpValue|convertedGbp|equivalen
 // underreport site the codebase has agreed to tolerate. Prefer fixing.
 const BASELINE_FILES: ReadonlySet<string> = new Set([
   "artifacts/api-server/src/routes/dashboard.ts",
-  "artifacts/api-server/src/routes/investments.ts",
+  // routes/investments.ts removed 30-Aug — the two `?? 0` reduces in
+  // /investments/summary were the file's only fabrication sites. The
+  // 30-Aug enrich-investment correctness fix filters null-value rows
+  // explicitly before summing, matching the shape used for missing-price
+  // rows. Same pass fixed the plPercent divisor-guard (`: 0` → `: null`).
   "artifacts/finance-tracker/src/components/global-search.tsx",
   "artifacts/finance-tracker/src/components/mobile/MobileAccounts.tsx",
   "artifacts/finance-tracker/src/components/mobile/MobileAnalytics.tsx",

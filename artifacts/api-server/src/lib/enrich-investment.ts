@@ -1,6 +1,37 @@
 // Enrichment for a single investment position. Extracted from
 // routes/investments.ts so the G10 contract (nullable live-price fields
 // when the market API can't supply them) is testable.
+//
+// Correctness — 30 Aug 2026.
+// This function used to divide by `fx.rates[currency] ?? 1` and return
+// the result as `gbpValue`. That was literal GBP: the FX cache is
+// GBP-pivoted (market.ts:207), so a USD position came back in GBP
+// regardless of the user's base currency. For a base-MYR user the
+// summary endpoint was handing the frontend GBP figures which
+// formatBaseMoney then stamped with "RM" — wrong digits under the
+// right symbol, exactly the class of defect the mobile ledger purge
+// closed for cash.
+//
+// Fix: take the user's base currency, pivot through GBP the same way
+// toBase() does in market.ts, and return the base-currency value. The
+// field is still named `gbpValue` at this commit; the rename to
+// `baseEquivalent` (with the matching rename for plGbp → plBase, and
+// totalValueGbp / totalPlGbp / dayChangeGbp) is the next commit, so
+// this one is behaviour-only and cannot silently regress a naming
+// sweep in the same diff.
+//
+// The `?? 1` fallback is also removed. If either FX leg is missing
+// (fromRate for the position's currency, or toRate for the user's
+// base) the value fields go null — the same shape the G10 contract
+// already uses for missing prices. Callers who currently sum
+// `gbpValue` without a null-guard start under-counting missing
+// positions; the summary-endpoint reduces are updated in the same
+// commit to skip null-value rows explicitly, matching how they
+// already skip !priceAvailable.
+//
+// plPercent fabrication is removed here too — divisor-guard survey
+// item, `costBasis > 0 ? … : 0` on a percentage rendered a nonzero
+// ratio for a cost basis of zero. Null is the honest answer.
 
 import type { StockPriceData, FxRatesData } from "./market";
 
@@ -35,9 +66,13 @@ interface PricedFields {
   priceAvailable: true;
   livePrice: number;
   currentValue: number;
-  gbpValue: number;
-  plGbp: number;
-  plPercent: number;
+  // Nullable in the priced case too: a live price with no FX pivot
+  // yields a native currentValue but no base equivalent. Callers must
+  // treat this the same as they treat priceAvailable=false for base
+  // aggregates. OpenAPI already declares these three as [number, null].
+  gbpValue: number | null;
+  plGbp: number | null;
+  plPercent: number | null;
 }
 interface UnpricedFields {
   priceAvailable: false;
@@ -54,6 +89,7 @@ export function enrichInvestment(
   inv: InvestmentRow,
   priceMap: Map<string, StockPriceData>,
   fx: FxRatesData,
+  baseCurrency: string,
 ): EnrichedPosition {
   const shares = parseFloat(inv.shares);
   const costPrice = parseFloat(inv.costPricePerShare);
@@ -91,19 +127,31 @@ export function enrichInvestment(
   const currentValue = shares * livePrice;
   const costBasis = shares * costPrice;
   const plNative = currentValue - costBasis;
-  const plPercent = costBasis > 0 ? (plNative / costBasis) * 100 : 0;
-  const fxRate = currency === "GBP" ? 1 : fx.rates[currency] ?? 1;
-  const gbpValue = currentValue / fxRate;
-  const costGbp = costBasis / fxRate;
-  const plGbp = gbpValue - costGbp;
+  // Divisor guard: a zero cost basis makes the percentage undefined,
+  // not zero. Null propagates through totals honestly; the old `: 0`
+  // fabricated a break-even return for a position that had no cost.
+  const plPercent = costBasis > 0 ? (plNative / costBasis) * 100 : null;
+
+  // Pivot through GBP using the same math as toBase() in market.ts.
+  // Missing either leg drops base-denominated fields to null — matches
+  // the G10 shape for missing prices and stops the "USD figure served
+  // as GBP" lie the `?? 1` fallback used to hide.
+  const fromRate = currency === "GBP" ? 1 : fx.rates[currency];
+  const toRate = baseCurrency === "GBP" ? 1 : fx.rates[baseCurrency];
+  const baseValue: number | null =
+    fromRate && toRate ? (currentValue / fromRate) * toRate : null;
+  const baseCost: number | null =
+    fromRate && toRate ? (costBasis / fromRate) * toRate : null;
+  const plBase: number | null =
+    baseValue != null && baseCost != null ? baseValue - baseCost : null;
 
   return {
     ...base,
     priceAvailable: true,
     livePrice,
     currentValue: round(currentValue),
-    plGbp: round(plGbp),
-    plPercent: round(plPercent),
-    gbpValue: round(gbpValue),
+    plGbp: plBase == null ? null : round(plBase),
+    plPercent: plPercent == null ? null : round(plPercent),
+    gbpValue: baseValue == null ? null : round(baseValue),
   };
 }

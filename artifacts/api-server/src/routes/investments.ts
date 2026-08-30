@@ -12,6 +12,7 @@ import {
 } from "@workspace/api-zod";
 import { getStockPrices, getFxRates } from "../lib/market";
 import { enrichInvestment } from "../lib/enrich-investment";
+import { getBaseCurrency } from "../lib/app-settings-db";
 
 const router: IRouter = Router();
 
@@ -32,8 +33,11 @@ router.get("/investments", async (req, res): Promise<void> => {
     .from(investmentsTable)
     .where(eq(investmentsTable.userId, userId))
     .orderBy(investmentsTable.createdAt);
-  const { priceMap, fx } = await fetchPriceContext(investments);
-  const enriched = investments.map((inv) => enrichInvestment(inv, priceMap, fx));
+  const [{ priceMap, fx }, baseCurrency] = await Promise.all([
+    fetchPriceContext(investments),
+    getBaseCurrency(userId),
+  ]);
+  const enriched = investments.map((inv) => enrichInvestment(inv, priceMap, fx, baseCurrency));
   res.json(ListInvestmentsResponse.parse(enriched));
 });
 
@@ -43,14 +47,19 @@ router.get("/investments/summary", async (req, res): Promise<void> => {
     .select()
     .from(investmentsTable)
     .where(eq(investmentsTable.userId, userId));
-  const { priceMap, fx } = await fetchPriceContext(investments);
-  const enriched = investments.map((inv) => enrichInvestment(inv, priceMap, fx));
-  // Totals sum only priceAvailable positions — the API contract this
-  // endpoint promises. unavailablePositions surfaces the gap so the UI
-  // can name it rather than quietly under-report.
-  const priced = enriched.filter((e) => e.priceAvailable);
-  const totalValueGbp = priced.reduce((s, i) => s + (i.gbpValue ?? 0), 0);
-  const totalPlGbp = priced.reduce((s, i) => s + (i.plGbp ?? 0), 0);
+  const [{ priceMap, fx }, baseCurrency] = await Promise.all([
+    fetchPriceContext(investments),
+    getBaseCurrency(userId),
+  ]);
+  const enriched = investments.map((inv) => enrichInvestment(inv, priceMap, fx, baseCurrency));
+  // Totals sum only priceAvailable positions AND positions whose base
+  // FX pivot succeeded. unavailablePositions surfaces the missing-price
+  // gap; a priced position with no base-FX leg would previously have
+  // summed as 0 via `?? 0` — the same hidden fabrication the G10 fix
+  // closed for missing prices. Now filtered explicitly.
+  const priced = enriched.filter((e) => e.priceAvailable && e.gbpValue != null && e.plGbp != null);
+  const totalValueGbp = priced.reduce((s, i) => s + (i.gbpValue as number), 0);
+  const totalPlGbp = priced.reduce((s, i) => s + (i.plGbp as number), 0);
   const totalCostGbp = totalValueGbp - totalPlGbp;
   // No cost basis → no return to compute. Null, not 0. See dashboard.ts
   // portfolioPlPercent for the same rule and reason.
@@ -61,7 +70,7 @@ router.get("/investments/summary", async (req, res): Promise<void> => {
       totalPlGbp: Math.round(totalPlGbp * 100) / 100,
       totalPlPercent: totalPlPercent == null ? null : Math.round(totalPlPercent * 100) / 100,
       positions: enriched.length,
-      unavailablePositions: enriched.length - priced.length,
+      unavailablePositions: enriched.length - enriched.filter((e) => e.priceAvailable).length,
     })
   );
 });
@@ -82,8 +91,11 @@ router.post("/investments", async (req, res): Promise<void> => {
       userId,
     })
     .returning();
-  const { priceMap, fx } = await fetchPriceContext([inv]);
-  res.status(201).json(UpdateInvestmentResponse.parse(enrichInvestment(inv, priceMap, fx)));
+  const [{ priceMap, fx }, baseCurrency] = await Promise.all([
+    fetchPriceContext([inv]),
+    getBaseCurrency(userId),
+  ]);
+  res.status(201).json(UpdateInvestmentResponse.parse(enrichInvestment(inv, priceMap, fx, baseCurrency)));
 });
 
 router.patch("/investments/:id", async (req, res): Promise<void> => {
@@ -110,8 +122,11 @@ router.patch("/investments/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Investment not found" });
     return;
   }
-  const { priceMap, fx } = await fetchPriceContext([inv]);
-  res.json(UpdateInvestmentResponse.parse(enrichInvestment(inv, priceMap, fx)));
+  const [{ priceMap, fx }, baseCurrency] = await Promise.all([
+    fetchPriceContext([inv]),
+    getBaseCurrency(userId),
+  ]);
+  res.json(UpdateInvestmentResponse.parse(enrichInvestment(inv, priceMap, fx, baseCurrency)));
 });
 
 router.delete("/investments/:id", async (req, res): Promise<void> => {
