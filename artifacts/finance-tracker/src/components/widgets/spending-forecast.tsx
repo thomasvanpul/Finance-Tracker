@@ -347,8 +347,24 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
 
   const { data: txs, isLoading } = useListTransactions({ dateFrom: thisMonthStart, dateTo: today });
 
+  // Signed baseEquivalent + magnitude arithmetic (fix 31 Aug):
+  // expense rows are negative, so totalSpentSoFar summed to a
+  // negative. Then:
+  //   - dailyRate = negative / dayOfMonth  → negative
+  //   - projectedTotal = negative * days   → negative
+  //   - budgetVariance = negative - positive_budget → big negative
+  //     (read as "way under budget" no matter how much you spent)
+  //   - spendPace = negative / positive_budget → negative (nonsense
+  //     as a percentage)
+  //   - catSpent held signed negatives; sort DESC put smallest
+  //     spend at top
+  // Everything downstream inverted. Fix: Math.abs at the reduce
+  // step, skip unconvertible. Downstream math now reads right.
   const expenses = (txs ?? []).filter((tx) => tx.type === "expense");
-  const totalSpentSoFar = expenses.reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+  const totalSpentSoFar = expenses.reduce(
+    (s, tx) => tx.baseEquivalent == null ? s : s + Math.abs(tx.baseEquivalent),
+    0,
+  );
   const dailyRate = dayOfMonth > 0 ? totalSpentSoFar / dayOfMonth : 0;
   const projectedTotal = dailyRate * daysInMonth;
 
@@ -361,10 +377,12 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
     ? totalSpentSoFar / totalBudget
     : totalSpentSoFar / Math.max(projectedTotal, 1);
 
-  // Category breakdown
+  // Category breakdown — MAGNITUDES so the sort below actually
+  // puts biggest spend first (was showing smallest-first).
   const catSpent = expenses.reduce<Record<string, number>>((acc, tx) => {
+    if (tx.baseEquivalent == null) return acc;
     const cat = tx.category || "Other";
-    acc[cat] = (acc[cat] ?? 0) + (tx.baseEquivalent ?? 0);
+    acc[cat] = (acc[cat] ?? 0) + Math.abs(tx.baseEquivalent);
     return acc;
   }, {});
 

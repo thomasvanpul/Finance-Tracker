@@ -177,28 +177,39 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
     (tx) => tx.date >= lastMonthBounds.start && tx.date <= lastMonthBounds.end
   );
 
-  // Income comparison
+  // Signed baseEquivalent (fix 31 Aug): expense reduces below summed
+  // signed negatives, then `sort((a, b) => b.thisMonth -
+  // a.thisMonth)` DESC put the LEAST-negative (smallest spend)
+  // categories first. "Top 6" was showing the 6 smallest categories.
+  // Same class as spending-breakdown's bug. Also income reduces had
+  // `?? 0` which fabricated zeros for unconvertible rows.
+  // Fix: Math.abs on the expense reduces so they carry magnitudes
+  // (sort DESC then means largest first); skip unconvertible on
+  // both income and expense reduces.
   const thisIncome = thisMonthTxs
     .filter((tx) => tx.type === "income")
-    .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+    .reduce((s, tx) => tx.baseEquivalent == null ? s : s + Math.abs(tx.baseEquivalent), 0);
   const lastIncome = lastMonthTxs
     .filter((tx) => tx.type === "income")
-    .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+    .reduce((s, tx) => tx.baseEquivalent == null ? s : s + Math.abs(tx.baseEquivalent), 0);
 
-  // Category expense totals
+  // Category expense totals — MAGNITUDES so the sort below actually
+  // puts biggest spend first.
   const thisCats = thisMonthTxs
     .filter((tx) => tx.type === "expense")
     .reduce<Record<string, number>>((acc, tx) => {
+      if (tx.baseEquivalent == null) return acc;
       const cat = tx.category || "Other";
-      acc[cat] = (acc[cat] ?? 0) + (tx.baseEquivalent ?? 0);
+      acc[cat] = (acc[cat] ?? 0) + Math.abs(tx.baseEquivalent);
       return acc;
     }, {});
 
   const lastCats = lastMonthTxs
     .filter((tx) => tx.type === "expense")
     .reduce<Record<string, number>>((acc, tx) => {
+      if (tx.baseEquivalent == null) return acc;
       const cat = tx.category || "Other";
-      acc[cat] = (acc[cat] ?? 0) + (tx.baseEquivalent ?? 0);
+      acc[cat] = (acc[cat] ?? 0) + Math.abs(tx.baseEquivalent);
       return acc;
     }, {});
 

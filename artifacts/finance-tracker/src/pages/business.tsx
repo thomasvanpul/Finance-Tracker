@@ -932,11 +932,34 @@ export default function Business() {
     [transactions, businessCategories]
   );
 
+  // Sign convention for these reduces (fix 31 Aug — six sites in this
+  // file):
+  //
+  //   tx.baseEquivalent is SIGNED by enrichTransaction — income
+  //   positive, expense NEGATIVE. Summing signed values yields a
+  //   MAGNITUDE for income (already positive) but a NEGATIVE total
+  //   for expense. Downstream code then does `income - expenses` and
+  //   `income - (negative)` = income + magnitude → grossProfit and
+  //   ytdProfit were displayed as roughly double the truth. The VAT
+  //   sites were the most consequential: `vatReclaimable` was a
+  //   NEGATIVE VAT figure and `netVat = vatCollected - vatReclaimable`
+  //   subtracted a negative → the reclaim inflated the VAT you owe
+  //   the taxman.
+  //
+  //   Fix: `Math.abs` on the expense sums so they carry magnitudes;
+  //   `income - expenses` then means what it reads. Also explicit
+  //   `if (baseEquivalent == null) continue` in each reduce so
+  //   unconvertible transactions drop out cleanly rather than
+  //   fabricating a zero (Bug 2 in the same six sites, tracked by
+  //   Lock #16).
   const businessIncome = useMemo(
     () =>
       businessTxs
         .filter((tx) => tx.type === "income")
-        .reduce((sum, tx) => sum + (tx.baseEquivalent ?? 0), 0),
+        .reduce((sum, tx) => {
+          if (tx.baseEquivalent == null) return sum;
+          return sum + Math.abs(tx.baseEquivalent);
+        }, 0),
     [businessTxs]
   );
 
@@ -944,7 +967,10 @@ export default function Business() {
     () =>
       businessTxs
         .filter((tx) => tx.type === "expense")
-        .reduce((sum, tx) => sum + (tx.baseEquivalent ?? 0), 0),
+        .reduce((sum, tx) => {
+          if (tx.baseEquivalent == null) return sum;
+          return sum + Math.abs(tx.baseEquivalent);
+        }, 0),
     [businessTxs]
   );
 
@@ -965,11 +991,17 @@ export default function Business() {
   );
 
   const ytdIncome = useMemo(
-    () => ytdIncomeTxs.reduce((sum, tx) => sum + (tx.baseEquivalent ?? 0), 0),
+    () => ytdIncomeTxs.reduce((sum, tx) => {
+      if (tx.baseEquivalent == null) return sum;
+      return sum + Math.abs(tx.baseEquivalent);
+    }, 0),
     [ytdIncomeTxs]
   );
   const ytdExpenses = useMemo(
-    () => ytdExpenseTxs.reduce((sum, tx) => sum + (tx.baseEquivalent ?? 0), 0),
+    () => ytdExpenseTxs.reduce((sum, tx) => {
+      if (tx.baseEquivalent == null) return sum;
+      return sum + Math.abs(tx.baseEquivalent);
+    }, 0),
     [ytdExpenseTxs]
   );
 
@@ -983,8 +1015,9 @@ export default function Business() {
     const map = new Map<string, number>();
     for (const tx of businessTxs) {
       if (tx.type !== "expense") continue;
+      if (tx.baseEquivalent == null) continue;
       const cat = tx.category ?? "Other";
-      map.set(cat, (map.get(cat) ?? 0) + (tx.baseEquivalent ?? 0));
+      map.set(cat, (map.get(cat) ?? 0) + Math.abs(tx.baseEquivalent));
     }
     return Array.from(map.entries())
       .map(([name, value]) => ({ name, value }))
@@ -1003,12 +1036,18 @@ export default function Business() {
         .filter(
           (tx) => tx.type === "income" && txYear(tx.date) === yr && txMonth(tx.date) === month
         )
-        .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+        .reduce((s, tx) => {
+          if (tx.baseEquivalent == null) return s;
+          return s + Math.abs(tx.baseEquivalent);
+        }, 0);
       const expenses = businessTxs
         .filter(
           (tx) => tx.type === "expense" && txYear(tx.date) === yr && txMonth(tx.date) === month
         )
-        .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+        .reduce((s, tx) => {
+          if (tx.baseEquivalent == null) return s;
+          return s + Math.abs(tx.baseEquivalent);
+        }, 0);
       return { name, revenue, expenses, profit: revenue - expenses };
     });
   }, [businessTxs, yr]);
@@ -1021,12 +1060,21 @@ export default function Business() {
       const y = txYear(tx.date);
       return y === yr && qMonths.includes(m);
     });
+    // VAT: multiply each tx's magnitude by the rate. Signed sums
+    // here silently inverted the reclaim vs collected side; wrong
+    // VAT is the most consequential item in this file.
     const vatCollected = qTxs
       .filter((tx) => tx.type === "income")
-      .reduce((s, tx) => s + (tx.baseEquivalent ?? 0) * VAT_RATE, 0);
+      .reduce((s, tx) => {
+        if (tx.baseEquivalent == null) return s;
+        return s + Math.abs(tx.baseEquivalent) * VAT_RATE;
+      }, 0);
     const vatReclaimable = qTxs
       .filter((tx) => tx.type === "expense")
-      .reduce((s, tx) => s + (tx.baseEquivalent ?? 0) * VAT_RATE, 0);
+      .reduce((s, tx) => {
+        if (tx.baseEquivalent == null) return s;
+        return s + Math.abs(tx.baseEquivalent) * VAT_RATE;
+      }, 0);
     const netVat = vatCollected - vatReclaimable;
     return { vatCollected, vatReclaimable, netVat };
   }, [businessTxs, vatQuarter, yr]);

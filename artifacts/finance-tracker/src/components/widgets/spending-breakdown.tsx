@@ -213,20 +213,40 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
   const { data, isLoading } = useListTransactions({ type: "expense", dateFrom, dateTo });
   const { data: prevData } = useListTransactions({ type: "expense", dateFrom: prevDateFrom, dateTo: prevDateTo });
 
+  // ── two bugs the previous shape had, fixed in this pass ──
+  // 1. baseEquivalent on an expense row is NEGATIVE (signed by
+  //    enrichTransaction). Summing signed values then sorting
+  //    `b - a` descending put the LEAST-negative category first —
+  //    the eight SMALLEST spend categories rendered as "top eight".
+  //    Rent at -£925 ranked below Spotify at -£11.99. Fix: Math.abs
+  //    before summing, so accumulator holds spend magnitudes.
+  // 2. `(tx.baseEquivalent ?? 0)` fabricated a zero for
+  //    unconvertible expenses — same defect class as the ~90-site
+  //    survey and Lock #16's fabricated-zero pattern. An expense
+  //    with no FX rate silently counted as £0 rather than being
+  //    excluded from that category's total, under-reporting spend
+  //    without a signal. Fix: explicit `if (v == null) continue`
+  //    skip so unconvertible expenses drop out of the total, and
+  //    the total's implicit "convertible only" scope is correct.
   const categoryTotals = (data ?? []).reduce<Record<string, number>>((acc, tx) => {
+    if (tx.baseEquivalent == null) return acc;
     const cat = tx.category || "Other";
-    acc[cat] = (acc[cat] ?? 0) + (tx.baseEquivalent ?? 0);
+    acc[cat] = (acc[cat] ?? 0) + Math.abs(tx.baseEquivalent);
     return acc;
   }, {});
 
   const prevCategoryTotals = (prevData ?? []).reduce<Record<string, number>>((acc, tx) => {
+    if (tx.baseEquivalent == null) return acc;
     const cat = tx.category || "Other";
-    acc[cat] = (acc[cat] ?? 0) + (tx.baseEquivalent ?? 0);
+    acc[cat] = (acc[cat] ?? 0) + Math.abs(tx.baseEquivalent);
     return acc;
   }, {});
 
   const prevHasData = Object.keys(prevCategoryTotals).length > 0;
 
+  // Now that accumulators are magnitudes, `b - a` descending puts
+  // the largest-spend categories first, which is what "top 8" was
+  // always supposed to mean.
   const sorted = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const total = sorted.reduce((s, [, v]) => s + v, 0);
 

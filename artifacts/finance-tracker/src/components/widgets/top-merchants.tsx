@@ -23,14 +23,28 @@ function getMonthPrefix(offsetMonths: number): string {
 }
 
 function rankMerchants(expenses: { description: string; baseEquivalent: number | null }[]): { name: string; total: number }[] {
+  // Signed baseEquivalent + sort DESC (fix 31 Aug): expense rows are
+  // negative, so summing signed and sorting `b - a` descending put
+  // the LEAST-negative (smallest spend) first. The "top merchants"
+  // widget was showing the smallest merchants at the top for
+  // months. Fix: Math.abs before summing so accumulator holds
+  // spend magnitudes; sort DESC then means largest first. Also
+  // skip unconvertible rows rather than fabricating a zero into
+  // the merchant's total.
   const totals = expenses.reduce<Record<string, number>>((acc, tx) => {
-    acc[tx.description] = (acc[tx.description] ?? 0) + (tx.baseEquivalent ?? 0);
+    if (tx.baseEquivalent == null) return acc;
+    acc[tx.description] = (acc[tx.description] ?? 0) + Math.abs(tx.baseEquivalent);
     return acc;
   }, {});
   return Object.entries(totals)
     .map(([name, total]) => ({ name, total }))
     .sort((a, b) => b.total - a.total);
 }
+
+// Exported under a __-prefixed alias for the sibling regression test
+// (top-merchants.test.ts). Internal use in this file stays named
+// rankMerchants so the render tree reads cleanly.
+export { rankMerchants as __rankMerchantsForTest };
 
 interface MerchantRowProps {
   merchant: { name: string; total: number };
@@ -117,7 +131,14 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
   const limit = isExpanded ? 8 : 5;
   const topMerchants = thisRanked.slice(0, limit);
 
-  const monthlyTotal = thisMonthExpenses.reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+  // Both totals: same fix as rankMerchants — Math.abs so signed
+  // negatives are turned into magnitudes; skip unconvertible. The
+  // delta below still reads correctly because both sides are
+  // now consistent magnitudes.
+  const monthlyTotal = thisMonthExpenses.reduce(
+    (s, tx) => tx.baseEquivalent == null ? s : s + Math.abs(tx.baseEquivalent),
+    0,
+  );
   const maxTotal = topMerchants[0]?.total ?? 0;
 
   const otherTotal = thisRanked.slice(8).reduce((s, m) => s + m.total, 0);
@@ -127,7 +148,10 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
     ...(otherTotal > 0 ? [{ name: "Other", value: otherTotal, color: "var(--ft-border2)" }] : []),
   ];
 
-  const prevMonthTotal = lastMonthExpenses.reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+  const prevMonthTotal = lastMonthExpenses.reduce(
+    (s, tx) => tx.baseEquivalent == null ? s : s + Math.abs(tx.baseEquivalent),
+    0,
+  );
   const totalDelta = monthlyTotal - prevMonthTotal;
   const totalDeltaColor = totalDelta <= 0 ? "var(--ft-green)" : "var(--ft-red)";
 

@@ -611,7 +611,16 @@ export default function Fire() {
 
   const defaultMonthlyExpenses = useMemo(() => {
     if (!recentTxs || recentTxs.length === 0) return 2000;
-    const total = recentTxs.reduce((sum, t) => sum + (t.baseEquivalent ?? 0), 0);
+    // recentTxs is pre-filtered to type="expense" (line 598).
+    // baseEquivalent is signed negative for expenses → summing gave
+    // a NEGATIVE default monthlyExpenses, seeding the FIRE
+    // calculator with a negative starting figure. Every downstream
+    // calc (withdrawal rate, years-to-FIRE, contribution needed)
+    // inverted. Fix 31 Aug: Math.abs per-row, skip unconvertible.
+    const total = recentTxs.reduce(
+      (sum, t) => t.baseEquivalent == null ? sum : sum + Math.abs(t.baseEquivalent),
+      0,
+    );
     return Math.round(total / 3);
   }, [recentTxs]);
 

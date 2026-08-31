@@ -1737,8 +1737,16 @@ function SummaryStrip({ transactions, upcoming, year, month }: { transactions: T
   const prefix = toYYYYMM(year, month);
   const monthTx = transactions.filter((t) => t.date.startsWith(prefix));
   const monthBills = upcoming.filter((u) => u.dueDate.startsWith(prefix));
-  const income = monthTx.filter((t) => t.type === "income").reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
-  const expenses = monthTx.filter((t) => t.type === "expense").reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
+  // Signed baseEquivalent (fix 31 Aug): expense rows are negative;
+  // `income - expenses` was `income - (negative)` = income +
+  // magnitude → calendar summary strip net was 2× spend above the
+  // truth. Math.abs both sums; skip unconvertible.
+  const income = monthTx
+    .filter((t) => t.type === "income")
+    .reduce((s, t) => t.baseEquivalent == null ? s : s + Math.abs(t.baseEquivalent), 0);
+  const expenses = monthTx
+    .filter((t) => t.type === "expense")
+    .reduce((s, t) => t.baseEquivalent == null ? s : s + Math.abs(t.baseEquivalent), 0);
   const net = income - expenses;
   const billsPaid = monthBills.filter((u) => u.status === "paid").length;
   const billsPending = monthBills.filter((u) => u.status === "pending").length;

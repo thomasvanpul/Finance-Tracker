@@ -261,8 +261,19 @@ export default function Projection() {
     if (nw == null || !recentTxs || recentTxs.length === 0) {
       return { startNetWorth: 0, avgMonthlySavings: 0, hasEnoughData: false };
     }
-    const income = recentTxs.filter(t => t.type === "income").reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
-    const expenses = recentTxs.filter(t => t.type === "expense").reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
+    // Signed baseEquivalent (fix 31 Aug): expense rows are negative;
+    // `income - expenses` was `income - (negative)` = income +
+    // magnitude → savings inflated by 2× actual spend. The
+    // Math.max(0, …) clamp masked the sign confusion by pinning
+    // negative results at zero, but positive results were wrong-
+    // too-high, not wrong-in-the-clamp direction.
+    // Math.abs both, skip unconvertible.
+    const income = recentTxs
+      .filter(t => t.type === "income")
+      .reduce((s, t) => t.baseEquivalent == null ? s : s + Math.abs(t.baseEquivalent), 0);
+    const expenses = recentTxs
+      .filter(t => t.type === "expense")
+      .reduce((s, t) => t.baseEquivalent == null ? s : s + Math.abs(t.baseEquivalent), 0);
     return { startNetWorth: nw, avgMonthlySavings: Math.max(0, (income - expenses) / 3), hasEnoughData: true };
   }, [dash, recentTxs]);
 

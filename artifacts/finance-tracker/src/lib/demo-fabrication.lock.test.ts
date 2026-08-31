@@ -186,7 +186,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/widgets/budget-tracker.tsx", line: 133, reason: "grid column count: expanded=3, collapsed=2" },
   { path: "artifacts/finance-tracker/src/components/widgets/cash-flow.tsx", line: 141, reason: "chart height in px (220 expanded or 150 collapsed)" },
   { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 132, reason: "row cap: 30 expanded or 15 collapsed" },
-  { path: "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx", line: 117, reason: "row cap: 8 expanded or 5 collapsed" },
+  { path: "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx", line: 131, reason: "row cap: 8 expanded or 5 collapsed" },
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1560, reason: "border thickness (2px hi-value, 4px normal)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1272, reason: "chart bar width in px (38 mobile / 44 desktop)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1273, reason: "chart bar height in px (34 mobile / 40 desktop)" },

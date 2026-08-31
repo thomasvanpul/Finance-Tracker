@@ -79,15 +79,24 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
   const { dateFrom } = getMonthBounds();
   const monthPrefix = dateFrom.slice(0, 7);
 
+  // Signed baseEquivalent (fix 31 Aug): every reduce and sort below
+  // was operating on negative signed values from expense rows.
+  // Sums came out negative → `isUnder = todayTotal <= dailyAvg`
+  // compared two negatives with confusing semantics (more spend =
+  // more negative → "isUnder" reads as "less spending" when it
+  // was actually MORE). Sort DESC on negative values put the SMALLEST
+  // expenses at the top of the "today mini list". Chart data ended
+  // up negative and the chart drew inverted. Fix: Math.abs at
+  // every reduce; sort by Math.abs for the mini list.
   const allExpenses = (data ?? []).filter(tx => tx.type === "expense");
 
   const todayTotal = allExpenses
     .filter(tx => tx.date === today)
-    .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+    .reduce((s, tx) => tx.baseEquivalent == null ? s : s + Math.abs(tx.baseEquivalent), 0);
 
   const thisMonthExpenses = allExpenses
     .filter(tx => tx.date.startsWith(monthPrefix))
-    .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+    .reduce((s, tx) => tx.baseEquivalent == null ? s : s + Math.abs(tx.baseEquivalent), 0);
 
   const dailyAvg = dayOfMonth > 0 ? thisMonthExpenses / dayOfMonth : 0;
   const vsAvg = todayTotal - dailyAvg;
@@ -109,14 +118,18 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
     const dayStr = `${monthPrefix}-${String(d).padStart(2, "0")}`;
     const total = allExpenses
       .filter(tx => tx.date === dayStr)
-      .reduce((s, tx) => s + (tx.baseEquivalent ?? 0), 0);
+      .reduce((s, tx) => tx.baseEquivalent == null ? s : s + Math.abs(tx.baseEquivalent), 0);
     return { day: d, total };
   });
 
-  // Today's transactions for the mini list
+  // Today's transactions for the mini list — sort by magnitude
+  // descending so the LARGEST expenses of the day show first.
+  // Nullable-safe: fall to -Infinity so unconvertible rows sink to
+  // the bottom rather than jumping to the top (which they did
+  // under the previous `?? -Infinity` on signed values).
   const todayTxs = allExpenses
     .filter(tx => tx.date === today)
-    .sort((a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity))
+    .sort((a, b) => (b.baseEquivalent == null ? -Infinity : Math.abs(b.baseEquivalent)) - (a.baseEquivalent == null ? -Infinity : Math.abs(a.baseEquivalent)))
     .slice(0, 4);
 
   // Month pacing: days elapsed / total days
