@@ -68,6 +68,15 @@ interface PhoneEntityRowProps {
   amount?: PhoneEntityRowAmount;
   onTap?: () => void;
   isLast?: boolean;
+  /**
+   * When true, the row visually recedes: glyph tint drops to muted grey
+   * (ignoring identity.tone), the amount renders one type-tier smaller
+   * and muted (ignoring amount.tone). Used on screens where a row of
+   * this type is not the subject — e.g. an income row on SPENDING,
+   * where the hero explicitly excludes income. The row is still
+   * tappable and still swipeable; only the visual weight drops.
+   */
+  subdued?: boolean;
 }
 
 // Palette excludes --ft-red. See header note.
@@ -90,7 +99,16 @@ function hashString(input: string): number {
 export function deriveInitials(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return "?";
-  const parts = trimmed.split(/\s+/).slice(0, 2);
+  // Split on whitespace, then skip tokens that don't start with a
+  // letter or digit. This drops standalone dash tokens (em, en,
+  // hyphen — a habit in labels like "Rent — Kensington") which would
+  // otherwise produce initials like "R—" for a two-word name. The
+  // Unicode property {L}/{N} also handles non-Latin scripts (Malay
+  // rows on a Malaysian user's ledger, Chinese descriptions).
+  const parts = trimmed
+    .split(/\s+/)
+    .filter((p) => /^[\p{L}\p{N}]/u.test(p))
+    .slice(0, 2);
   const chars = parts.map((p) => p[0]?.toUpperCase() ?? "").join("");
   return chars || trimmed[0]?.toUpperCase() || "?";
 }
@@ -108,10 +126,12 @@ export function PhoneEntityRow({
   amount,
   onTap,
   isLast,
+  subdued = false,
 }: PhoneEntityRowProps) {
   const glyphLabel = identity?.label ?? deriveInitials(primary);
-  const glyphTone = identity?.tone ?? deriveTone(primary);
-  const amountTone = amount?.tone ?? "var(--ft-text)";
+  const glyphTone = subdued ? "var(--ft-dim)" : (identity?.tone ?? deriveTone(primary));
+  const amountTone = subdued ? "var(--ft-muted)" : (amount?.tone ?? "var(--ft-text)");
+  const amountSize = subdued ? "var(--ft-text-body)" : "var(--ft-text-md)";
 
   return (
     <HoverRow
@@ -194,8 +214,8 @@ export function PhoneEntityRow({
             className="pnum"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: "var(--ft-text-md)",
-              fontWeight: 700,
+              fontSize: amountSize,
+              fontWeight: subdued ? 500 : 700,
               color: amountTone,
               whiteSpace: "nowrap",
             }}

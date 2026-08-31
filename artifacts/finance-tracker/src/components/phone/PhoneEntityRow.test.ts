@@ -35,6 +35,29 @@ describe("deriveInitials", () => {
     // custom account name — better to show something than a literal '?'
     expect(deriveInitials("*Starbucks")).toBe("*");
   });
+
+  // Regression bar for the 31 Aug device defect: "Rent — Kensington"
+  // rendered as "R—" because the em-dash was treated as a word.
+  // Fix filters out tokens that don't begin with a letter/digit, so
+  // standalone dashes are ignored and initials come from the real
+  // words on either side.
+  it("ignores standalone em-dash separators between words", () => {
+    expect(deriveInitials("Rent — Kensington")).toBe("RK");
+  });
+  it("ignores standalone en-dash separators between words", () => {
+    expect(deriveInitials("Rent – Kensington")).toBe("RK");
+  });
+  it("ignores standalone hyphen separators between words", () => {
+    expect(deriveInitials("Rent - Kensington")).toBe("RK");
+  });
+  it("still produces a single-letter monogram for a single-word input", () => {
+    expect(deriveInitials("Netflix")).toBe("N");
+  });
+  it("skips leading dash-only tokens and uses the real words", () => {
+    // e.g. "— Rent — Kensington" or "- Discretionary spend"
+    expect(deriveInitials("— Rent")).toBe("R");
+    expect(deriveInitials("- Discretionary spend")).toBe("DS");
+  });
 });
 
 describe("deriveTone", () => {

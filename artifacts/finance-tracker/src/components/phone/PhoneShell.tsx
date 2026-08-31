@@ -5,6 +5,7 @@ import { PhoneTabBar } from "./PhoneTabBar";
 import { DirectoryScreen } from "./DirectoryScreen";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 import { DesktopOnlyScreen } from "./DesktopOnlyScreen";
+import { SpendingScreen } from "./SpendingScreen";
 
 // Directory-wrapped desktop pages. Lazy-loaded so the phone bundle doesn't
 // pay for pages a phone user may never visit. Only pages that phone users
@@ -183,7 +184,6 @@ const placeholderStyle: React.CSSProperties = {
   color: "var(--ft-dim)",
 };
 function WorthStub()      { return <div style={placeholderStyle}>WORTH</div>; }
-function SpendingStub()   { return <div style={placeholderStyle}>SPENDING</div>; }
 function UpcomingStub()   { return <div style={placeholderStyle}>UPCOMING</div>; }
 function PhoneNotFound()  { return <div style={{ ...placeholderStyle, fontSize: 14 }}>Route not wired</div>; }
 
@@ -256,7 +256,7 @@ export function PhoneShell() {
           </Route>
 
           <Route path="/worth" component={WorthStub} />
-          <Route path="/spending" component={SpendingStub} />
+          <Route path="/spending" component={SpendingScreen} />
           <Route path="/upcoming" component={UpcomingStub} />
           <Route path="/directory" component={DirectoryScreen} />
 
@@ -265,10 +265,10 @@ export function PhoneShell() {
           <Route path="/portfolio" component={WorthStub} />
           <Route path="/investments" component={WorthStub} />
 
-          <Route path="/transactions" component={SpendingStub} />
-          <Route path="/budget" component={SpendingStub} />
-          <Route path="/analytics" component={SpendingStub} />
-          <Route path="/cashflow" component={SpendingStub} />
+          <Route path="/transactions" component={SpendingScreen} />
+          <Route path="/budget" component={SpendingScreen} />
+          <Route path="/analytics" component={SpendingScreen} />
+          <Route path="/cashflow" component={SpendingScreen} />
 
           <Route path="/recurring" component={UpcomingStub} />
           <Route path="/subscriptions" component={UpcomingStub} />

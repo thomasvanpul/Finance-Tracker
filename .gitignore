@@ -53,3 +53,9 @@ Thumbs.db
 # Build output
 artifacts/finance-tracker/public/
 design-import/
+
+# Review-loop working state — a chat writes .review/next.md before a
+# session; the session writes .review/report.md and .review/done back.
+# Neither belongs in git history; the record of what shipped lives in
+# commits + Atlas notes, not here.
+.review/
