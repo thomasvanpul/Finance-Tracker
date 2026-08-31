@@ -220,14 +220,17 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
   //    the eight SMALLEST spend categories rendered as "top eight".
   //    Rent at -£925 ranked below Spotify at -£11.99. Fix: Math.abs
   //    before summing, so accumulator holds spend magnitudes.
-  // 2. `(tx.baseEquivalent ?? 0)` fabricated a zero for
-  //    unconvertible expenses — same defect class as the ~90-site
-  //    survey and Lock #16's fabricated-zero pattern. An expense
+  // 2. Fabricated zero on nullable baseEquivalent — same defect
+  //    class as the ~90-site survey and Lock #16's fabricated-zero
+  //    pattern. Under the pre-fix null-coalesce shape, an expense
   //    with no FX rate silently counted as £0 rather than being
   //    excluded from that category's total, under-reporting spend
   //    without a signal. Fix: explicit `if (v == null) continue`
   //    skip so unconvertible expenses drop out of the total, and
   //    the total's implicit "convertible only" scope is correct.
+  //    (Comment intentionally does NOT quote the bad pattern —
+  //    Lock #16's regex greps source text and would trip on the
+  //    quoted example.)
   const categoryTotals = (data ?? []).reduce<Record<string, number>>((acc, tx) => {
     if (tx.baseEquivalent == null) return acc;
     const cat = tx.category || "Other";

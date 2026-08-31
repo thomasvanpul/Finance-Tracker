@@ -112,29 +112,32 @@ const BASELINE_FILES: ReadonlySet<string> = new Set([
   "artifacts/finance-tracker/src/components/widgets/budget-tracker.tsx",
   "artifacts/finance-tracker/src/components/widgets/cash-runway.tsx",
   "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx",
-  "artifacts/finance-tracker/src/components/widgets/daily-spend.tsx",
+  // daily-spend.tsx removed 31-Aug — sign-bug fix pass (commit f97217e)
+  // replaced every ?? 0 reduce with explicit null-skip + Math.abs.
   "artifacts/finance-tracker/src/components/widgets/decision-engine.tsx",
-  "artifacts/finance-tracker/src/components/widgets/month-comparison.tsx",
+  // month-comparison.tsx removed 31-Aug — same sign-bug fix pass.
   "artifacts/finance-tracker/src/components/widgets/net-worth.tsx",
   "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx",
   "artifacts/finance-tracker/src/components/widgets/smart-alerts.tsx",
-  "artifacts/finance-tracker/src/components/widgets/spending-breakdown.tsx",
-  "artifacts/finance-tracker/src/components/widgets/spending-forecast.tsx",
+  // spending-breakdown.tsx removed 31-Aug — fixed in the earlier
+  // (pre-batch) sign-bug pass.
+  // spending-forecast.tsx removed 31-Aug — sign-bug fix pass.
   "artifacts/finance-tracker/src/components/widgets/subscription-tracker.tsx",
-  "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx",
+  // top-merchants.tsx removed 31-Aug — sign-bug fix pass.
   "artifacts/finance-tracker/src/pages/accounts.tsx",
   "artifacts/finance-tracker/src/pages/budget.tsx",
-  "artifacts/finance-tracker/src/pages/business.tsx",
-  "artifacts/finance-tracker/src/pages/calendar.tsx",
+  // business.tsx removed 31-Aug — sign-bug fix pass (six sites incl.
+  // two VAT calcs).
+  // calendar.tsx removed 31-Aug — sign-bug fix pass.
   "artifacts/finance-tracker/src/pages/cashflow.tsx",
   "artifacts/finance-tracker/src/pages/dashboard.tsx",
   "artifacts/finance-tracker/src/pages/decisions.tsx",
   "artifacts/finance-tracker/src/pages/family-finance.tsx",
-  "artifacts/finance-tracker/src/pages/fire.tsx",
+  // fire.tsx removed 31-Aug — sign-bug fix pass (defaultMonthlyExpenses).
   "artifacts/finance-tracker/src/pages/health-score.tsx",
   "artifacts/finance-tracker/src/pages/investments.tsx",
   "artifacts/finance-tracker/src/pages/net-worth-history.tsx",
-  "artifacts/finance-tracker/src/pages/projection.tsx",
+  // projection.tsx removed 31-Aug — sign-bug fix pass (avgMonthlySavings).
   "artifacts/finance-tracker/src/pages/tax.tsx",
   "artifacts/finance-tracker/src/pages/upcoming.tsx",
   "artifacts/finance-tracker/src/pages/whatif.tsx",
