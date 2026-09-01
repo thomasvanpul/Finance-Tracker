@@ -6,6 +6,7 @@ import { DirectoryScreen } from "./DirectoryScreen";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 import { DesktopOnlyScreen } from "./DesktopOnlyScreen";
 import { SpendingScreen } from "./SpendingScreen";
+import { WorthScreen } from "./WorthScreen";
 
 // Directory-wrapped desktop pages. Lazy-loaded so the phone bundle doesn't
 // pay for pages a phone user may never visit. Only pages that phone users
@@ -183,7 +184,6 @@ const placeholderStyle: React.CSSProperties = {
   letterSpacing: "0.15em",
   color: "var(--ft-dim)",
 };
-function WorthStub()      { return <div style={placeholderStyle}>WORTH</div>; }
 function UpcomingStub()   { return <div style={placeholderStyle}>UPCOMING</div>; }
 function PhoneNotFound()  { return <div style={{ ...placeholderStyle, fontSize: 14 }}>Route not wired</div>; }
 
@@ -255,15 +255,15 @@ export function PhoneShell() {
             {() => <MobileHome />}
           </Route>
 
-          <Route path="/worth" component={WorthStub} />
+          <Route path="/worth" component={WorthScreen} />
           <Route path="/spending" component={SpendingScreen} />
           <Route path="/upcoming" component={UpcomingStub} />
           <Route path="/directory" component={DirectoryScreen} />
 
-          <Route path="/accounts" component={WorthStub} />
-          <Route path="/net-worth" component={WorthStub} />
-          <Route path="/portfolio" component={WorthStub} />
-          <Route path="/investments" component={WorthStub} />
+          <Route path="/accounts" component={WorthScreen} />
+          <Route path="/net-worth" component={WorthScreen} />
+          <Route path="/portfolio" component={WorthScreen} />
+          <Route path="/investments" component={WorthScreen} />
 
           <Route path="/transactions" component={SpendingScreen} />
           <Route path="/budget" component={SpendingScreen} />
