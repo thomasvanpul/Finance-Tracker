@@ -241,8 +241,56 @@ function clearCachedSession(): void {
   }
 }
 
+// Cold-start hint. If the initial useSession() query is still pending
+// after 2 seconds, probe /api/healthz via looksLikeColdStart() (3-second
+// soft timeout on that probe). If the probe times out too, we're
+// probably waiting on a Render free-tier wake, so surface the
+// existing "server is waking" copy inside the skeleton — otherwise the
+// user stares at a dark shimmer for up to 60 s with no signal that
+// anything is actually happening.
+//
+// Threshold reasoning (see .review/archive/2026-09-01T0909-*.report.md
+// §2 for the full argument): warm session round-trips are 300–600 ms,
+// so 2000 ms is ~3× ceiling — a warm launch never shows the hint. 3 s
+// is the perceived-broken threshold in mobile UX literature; the
+// hint appears before the user reaches for the app switcher. On a
+// warm launch that resolves at 500 ms the hint never renders at all
+// because the timer is cancelled by the isPending → false transition.
+//
+// Wire uses looksLikeColdStart() (auth-errors.ts:197) and the copy at
+// makeAuthError("server_waking").message rather than inventing a
+// second mechanism — the whole point of this hook is that the parts
+// already exist and were just fired from the wrong place.
+const COLD_START_HINT_DELAY_MS = 2000;
+
+function useColdStartHint(isPending: boolean): boolean {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!isPending) {
+      setShow(false);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      // Probe async; setState in the resolver checks the cancelled
+      // flag rather than the closure's isPending, because
+      // looksLikeColdStart takes up to 3 s and isPending may have
+      // resolved by then.
+      void looksLikeColdStart().then((cold) => {
+        if (!cancelled && cold) setShow(true);
+      });
+    }, COLD_START_HINT_DELAY_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [isPending]);
+  return show;
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
+  const showColdStartHint = useColdStartHint(isPending);
   const { providers, passwordResetEnabled, passkeyEnabled, loading: providersLoading } = useAuthProviders();
   const browserSupportsWebAuthn = useBrowserWebAuthnSupport();
   const passkeyAvailable = passkeyEnabled && browserSupportsWebAuthn;
@@ -303,10 +351,41 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     // Session-loading placeholder. Uses the same shape-matching skeleton
     // as the rest of the app so the pre-auth flash is gone. Wrapped in
     // a flex column filling the viewport since there is no shell above
-    // auth-gate to give it a flex slot.
+    // auth-gate to give it a flex slot. When looksLikeColdStart() says
+    // yes after 2 s (see useColdStartHint above), the "server is
+    // waking" copy appears inside the skeleton instead of a silent
+    // shimmer for the full Render wake window.
     return (
       <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "var(--ft-base)" }}>
         <PhoneScreenSkeleton shape="plain" />
+        {showColdStartHint && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)",
+              display: "flex",
+              justifyContent: "center",
+              padding: "0 24px",
+              pointerEvents: "none",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 12,
+                color: "var(--ft-dim)",
+                textAlign: "center",
+                letterSpacing: "0.02em",
+              }}
+            >
+              {makeAuthError("server_waking").message}
+            </span>
+          </div>
+        )}
       </div>
     );
   }
