@@ -168,6 +168,36 @@ figure came from. Value is encoded by length or area — depth is decoration and
 never data. Eleven themes including a light one (`arctic`), so all colour comes
 from `--ft-*` tokens and hierarchy comes from structure and scale, never hue.
 
+## iOS build — scene lifecycle (TN3187)
+
+`ios/App/App/{AppDelegate.swift, SceneDelegate.swift, Info.plist}` are
+hand-edited to adopt Apple's UIScene lifecycle. Reason: iOS 27 fails to
+launch any app built with the latest SDK that does not adopt scenes.
+
+The SceneDelegate is a pure forwarder — every UISceneDelegate callback
+calls `SceneDelegateProxy.shared` from `@capacitor/ios`. Capacitor 8.5.0
+ships `CAPSceneDelegateProxy.swift` but its `cap add ios` template still
+emits the pre-scene AppDelegate + Info.plist, so a fresh `cap add ios`
+would overwrite the migration. `cap sync ios` is safe — it only writes
+into `App/public/` and `App/capacitor.config.json`.
+
+If Capacitor is upgraded and the template later gains scene support, the
+hand-edited AppDelegate/SceneDelegate/Info.plist can be replaced by the
+upstream template's equivalents. Until then, treat those three files as
+load-bearing and preserve them across any regeneration.
+
+The lock test `src/lib/ios-scene-adoption.lock.test.ts` asserts the three
+files stay coherent — SceneDelegate is a forwarder, AppDelegate declares
+`configurationForConnecting`, and the configuration NAME in the Swift
+source matches `UISceneConfigurationName` in the plist. Name drift is the
+silent failure this test exists to catch.
+
+Also hand-edited to load `SceneDelegate.swift`: `ios/App/App.xcodeproj/project.pbxproj`
+carries four references to the new file (PBXBuildFile, PBXFileReference,
+the App group children, and the Sources build phase). Xcode will
+re-serialise the file on any GUI edit — verify the file is still listed
+in Sources after any Xcode-driven change.
+
 ## A hazard that has already bitten
 
 `artifacts/finance-tracker/` used to contain its own `.git` — a dead Replit-era
