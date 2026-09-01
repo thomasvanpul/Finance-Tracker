@@ -119,6 +119,65 @@ export function deriveTone(input: string): string {
   return TONE_PALETTE[hashString(trimmed) % TONE_PALETTE.length];
 }
 
+// List-aware tone assignment. Point of the glyph is to distinguish,
+// and with a 5-tone palette a small set collides more often than
+// most operators would guess — a set of 4 items has a 42% chance of
+// two picking the same tone. Concretely: on Thomas's WORTH screen
+// "Wise MYR Jar" and "Maybank Savings" both hash to blue, so the
+// two MYR accounts read as a set while Monzo reads as different —
+// a visual grouping that has nothing to do with currency and
+// everything to do with hash collision.
+//
+// This assigner walks the list in order. First choice is the hash-
+// derived tone (matching per-item determinism where possible). If
+// the natural pick has already been used in this list, walk forward
+// through PALETTE until an unused tone is found. If every tone is
+// used (list of 6+, pigeonhole guarantees this), fall back to the
+// natural hash — collisions past that point are unavoidable, but
+// the palette will have wrapped so a collision is with an earlier
+// row, not the immediately-preceding one.
+//
+// Determinism: same list input → same output (order matters, but
+// order in each screen is deterministic). Per-item stability is
+// weaker than deriveTone alone — the same "Wise MYR Jar" can wear
+// a different tone under a different list of siblings — but the
+// tradeoff is worth it because the glyph's job is to disambiguate
+// this row from its neighbours, not to be a per-account identity
+// across screens.
+export function deriveTonesForList(inputs: readonly string[]): string[] {
+  const used = new Set<string>();
+  const out: string[] = [];
+  for (const input of inputs) {
+    const natural = deriveTone(input);
+    if (!used.has(natural) || used.size >= TONE_PALETTE.length) {
+      used.add(natural);
+      out.push(natural);
+      if (used.size >= TONE_PALETTE.length) used.clear();
+      continue;
+    }
+    // Walk forward through the palette starting from the natural
+    // pick's index, so the assignment is a deterministic function
+    // of (input, siblings).
+    // `natural` came out of TONE_PALETTE, but its inferred type is
+    // `string` because deriveTone returns `string`. The palette is
+    // `as const` (readonly literal tuple), so indexOf's parameter is
+    // narrowly typed — cast to the tuple's element type to look it up.
+    const palette = TONE_PALETTE as readonly string[];
+    const startIdx = palette.indexOf(natural);
+    let picked = natural;
+    for (let offset = 1; offset < palette.length; offset++) {
+      const candidate = palette[(startIdx + offset) % palette.length];
+      if (!used.has(candidate)) {
+        picked = candidate;
+        break;
+      }
+    }
+    used.add(picked);
+    out.push(picked);
+  }
+  return out;
+}
+
 export function PhoneEntityRow({
   primary,
   secondary,

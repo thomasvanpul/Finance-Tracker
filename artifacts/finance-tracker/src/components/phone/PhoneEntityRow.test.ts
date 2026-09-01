@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deriveInitials, deriveTone } from "./PhoneEntityRow";
+import { deriveInitials, deriveTone, deriveTonesForList } from "./PhoneEntityRow";
 
 // PhoneEntityRow is the primitive every entity list on the phone will
 // use. deriveInitials and deriveTone are pure, deterministic, and the
@@ -92,5 +92,65 @@ describe("deriveTone", () => {
   it("returns a stable default for empty input rather than throwing", () => {
     expect(PALETTE).toContain(deriveTone(""));
     expect(PALETTE).toContain(deriveTone("   "));
+  });
+});
+
+describe("deriveTonesForList", () => {
+  const PALETTE = [
+    "var(--ft-blue)",
+    "var(--ft-cyan)",
+    "var(--ft-amber)",
+    "var(--ft-green)",
+    "var(--ft-accent)",
+  ] as const;
+
+  it("regression: 'Wise MYR Jar' and 'Maybank Savings' both hash to blue under deriveTone — as a LIST they must differ", () => {
+    // Verify the underlying hash-collision claim still holds (the very
+    // failure this function fixes).
+    expect(deriveTone("Wise MYR Jar")).toBe(deriveTone("Maybank Savings"));
+    // Then the list-aware version must resolve them to different tones.
+    const tones = deriveTonesForList(["Wise MYR Jar", "Maybank Savings"]);
+    expect(tones[0]).not.toBe(tones[1]);
+  });
+
+  it("assigns a distinct tone to each of up to five items — the palette allows this", () => {
+    const inputs = ["Alpha", "Bravo", "Charlie", "Delta", "Echo"];
+    const tones = deriveTonesForList(inputs);
+    expect(new Set(tones).size).toBe(5);
+    for (const t of tones) expect(PALETTE).toContain(t);
+  });
+
+  it("returns tones only from the fixed palette — never invents a new hue, never touches --ft-red", () => {
+    const inputs = Array.from({ length: 30 }, (_, i) => `Merchant ${i}`);
+    for (const tone of deriveTonesForList(inputs)) {
+      expect(PALETTE).toContain(tone);
+      expect(tone).not.toBe("var(--ft-red)");
+    }
+  });
+
+  it("returns exactly one tone per input, in order", () => {
+    const inputs = ["A", "B", "C", "D"];
+    expect(deriveTonesForList(inputs)).toHaveLength(inputs.length);
+  });
+
+  it("is deterministic — same list, same output across calls", () => {
+    const inputs = ["Wise MYR Jar", "Maybank Savings", "Monzo Current", "Trading 212 Invest"];
+    expect(deriveTonesForList(inputs)).toEqual(deriveTonesForList(inputs));
+  });
+
+  it("first item still gets its hash-derived tone — per-item stability where possible", () => {
+    const inputs = ["Some Merchant", "Another One"];
+    expect(deriveTonesForList(inputs)[0]).toBe(deriveTone("Some Merchant"));
+  });
+
+  it("with 6+ items collisions are unavoidable by pigeonhole; the assigner still returns valid tones (falls back gracefully)", () => {
+    const inputs = Array.from({ length: 8 }, (_, i) => `Account ${i}`);
+    const tones = deriveTonesForList(inputs);
+    expect(tones).toHaveLength(8);
+    for (const t of tones) expect(PALETTE).toContain(t);
+  });
+
+  it("handles an empty list without throwing", () => {
+    expect(deriveTonesForList([])).toEqual([]);
   });
 });

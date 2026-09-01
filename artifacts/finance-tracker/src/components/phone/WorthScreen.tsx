@@ -7,7 +7,7 @@ import {
 import { useBaseCurrency } from "@/lib/currency-store";
 import { formatBaseMoney, formatNative } from "@/lib/utils";
 
-import { PhoneEntityRow, deriveTone } from "./PhoneEntityRow";
+import { PhoneEntityRow, deriveTone, deriveTonesForList } from "./PhoneEntityRow";
 import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 import { InsightSlot } from "./InsightSlot";
@@ -237,6 +237,26 @@ export function WorthScreen() {
     () => computeCurrencyExposure(accounts, positions),
     [accounts, positions],
   );
+
+  // Glyph tones — assigned across the whole visible list at once so
+  // two accounts with hash-colliding names (e.g. "Wise MYR Jar" and
+  // "Maybank Savings" both blue) don't read as a set. See
+  // deriveTonesForList in PhoneEntityRow.tsx. Keyed by account.id /
+  // position.id so the same tone follows a row across reorders. Order
+  // of insertion here mirrors the on-screen order (cash → holdings →
+  // positions) so the assigner walks the palette in the order the
+  // user's eye does.
+  const tonesById = useMemo(() => {
+    const orderedIds: string[] = [];
+    const orderedLabels: string[] = [];
+    for (const a of cashAccounts) { orderedIds.push(`a:${a.id}`); orderedLabels.push(a.name); }
+    for (const a of holdingAccounts) { orderedIds.push(`a:${a.id}`); orderedLabels.push(a.name); }
+    for (const p of positions) { orderedIds.push(`p:${p.id}`); orderedLabels.push(p.ticker); }
+    const tones = deriveTonesForList(orderedLabels);
+    const m = new Map<string, string>();
+    orderedIds.forEach((id, i) => m.set(id, tones[i]));
+    return m;
+  }, [cashAccounts, holdingAccounts, positions]);
   const unconvertibleAccounts = dashboard?.unconvertibleAccounts ?? 0;
 
   const [detailSubject, setDetailSubject] = useState<DetailSubject | null>(null);
@@ -297,7 +317,7 @@ export function WorthScreen() {
         />
 
         {currencyExposure.rows.length >= 2 && (
-          <CurrencySplit exposure={currencyExposure} />
+          <CurrencySplit exposure={currencyExposure} baseCurrency={baseCurrency} />
         )}
 
         <InsightSlot insight={null} onDismiss={() => { /* no producers yet */ }} />
@@ -308,6 +328,7 @@ export function WorthScreen() {
             subtotal={cashSubtotal}
             accounts={cashAccounts}
             baseCurrency={baseCurrency}
+            tonesById={tonesById}
             onTap={(a) => setDetailSubject({ kind: "account", account: a })}
           />
         )}
@@ -318,6 +339,7 @@ export function WorthScreen() {
             accounts={holdingAccounts}
             positions={positions}
             baseCurrency={baseCurrency}
+            tonesById={tonesById}
             onTapAccount={(a) => setDetailSubject({ kind: "account", account: a })}
             onTapPosition={(p) => setDetailSubject({ kind: "position", position: p })}
           />
@@ -357,9 +379,20 @@ function WorthHero({
   // First-of-current-month for the delta label — matches HOME's shape
   // ("since 1 Aug") so the two hero devices read as siblings.
   const startOfMonthLabel = `since 1 ${monthShort}`;
+  // On the 1st of the month the "since 1 <month>" window is at most 24
+  // hours wide, and the proxy that supplies mtdDelta (dashboard.thisMonth.
+  // netSavings) has known day-1 uncertainty — a zero reads as
+  // "no change so far this month" but is really "the reference point IS
+  // right now". Same failure class as the +0.00% Investments row already
+  // removed. Falling back to "since 1 <last month>" is rejected: it
+  // would show a different metric under the same label (MTD vs
+  // month-over-month), which is more dishonest than showing —. The dash
+  // resolves on the 2nd, when there's a genuine day-vs-yesterday
+  // comparison available.
+  const isFirstOfMonth = now.getDate() === 1;
 
   let deltaLine: React.ReactNode = null;
-  if (mtdDelta != null && mtdPct != null) {
+  if (!isFirstOfMonth && mtdDelta != null && mtdPct != null) {
     const positive = mtdDelta >= 0;
     const sign = positive ? "+" : "−";
     const colour = positive ? "var(--ft-green)" : "var(--ft-red)";
@@ -423,7 +456,7 @@ function WorthHero({
 
 // ── currency split ──────────────────────────────────────────────────
 
-function CurrencySplit({ exposure }: { exposure: CurrencyExposure }) {
+function CurrencySplit({ exposure, baseCurrency }: { exposure: CurrencyExposure; baseCurrency: string | null }) {
   // Only render currencies materially large enough to matter — sub-1%
   // exposures are noise on a phone. Below-threshold currencies still
   // contribute to totalBase; they're just not enumerated.
@@ -480,6 +513,13 @@ function CurrencySplit({ exposure }: { exposure: CurrencyExposure }) {
             <span className="pnum" style={{ flex: 1, textAlign: "right" }}>
               {formatBaseMoney(row.baseValue)}
             </span>
+            {/*
+              Blank the native column when the row IS the base currency —
+              otherwise the base row prints its value twice (£16,808.17
+              then 16,808.17 GBP). Same pattern the account rows already
+              use in AccountRow. Reserve the width via visibility:hidden
+              so all rows stay in the same column grid.
+            */}
             <span
               className="pnum"
               style={{
@@ -487,6 +527,7 @@ function CurrencySplit({ exposure }: { exposure: CurrencyExposure }) {
                 textAlign: "right",
                 color: "var(--ft-muted)",
                 fontSize: 12,
+                visibility: row.currency === baseCurrency ? "hidden" : "visible",
               }}
             >
               {formatNative(row.nativeValue, row.currency)}
@@ -522,12 +563,14 @@ function AccountSection({
   subtotal,
   accounts,
   baseCurrency,
+  tonesById,
   onTap,
 }: {
   label: string;
   subtotal: number | null;
   accounts: readonly Account[];
   baseCurrency: string | null;
+  tonesById: Map<string, string>;
   onTap: (a: Account) => void;
 }) {
   return (
@@ -538,6 +581,7 @@ function AccountSection({
           key={a.id}
           account={a}
           baseCurrency={baseCurrency}
+          tone={tonesById.get(`a:${a.id}`)}
           isLast={i === accounts.length - 1}
           onTap={() => onTap(a)}
         />
@@ -551,6 +595,7 @@ function HoldingsSection({
   accounts,
   positions,
   baseCurrency,
+  tonesById,
   onTapAccount,
   onTapPosition,
 }: {
@@ -558,6 +603,7 @@ function HoldingsSection({
   accounts: readonly Account[];
   positions: readonly Position[];
   baseCurrency: string | null;
+  tonesById: Map<string, string>;
   onTapAccount: (a: Account) => void;
   onTapPosition: (p: Position) => void;
 }) {
@@ -577,6 +623,7 @@ function HoldingsSection({
             key={`a-${a.id}`}
             account={a}
             baseCurrency={baseCurrency}
+            tone={tonesById.get(`a:${a.id}`)}
             isLast={isLast}
             onTap={() => onTapAccount(a)}
           />
@@ -589,6 +636,7 @@ function HoldingsSection({
             key={`p-${p.id}`}
             position={p}
             baseCurrency={baseCurrency}
+            tone={tonesById.get(`p:${p.id}`)}
             isLast={isLast}
             onTap={() => onTapPosition(p)}
           />
@@ -603,11 +651,13 @@ function HoldingsSection({
 function AccountRow({
   account,
   baseCurrency,
+  tone,
   isLast,
   onTap,
 }: {
   account: Account;
   baseCurrency: string | null;
+  tone?: string;
   isLast: boolean;
   onTap: () => void;
 }) {
@@ -623,10 +673,15 @@ function AccountRow({
   const nativeStr = baseCurrency != null && account.currency !== baseCurrency
     ? formatNative(account.balance, account.currency)
     : undefined;
-  // Secondary line: for cash sections the type is redundant (whole
-  // section is "CASH"). For holdings, type marks pension/property/etc.
-  // Currency mirror is subordinate — visible via the native line.
-  const secondary = account.type === "cash"
+  // Secondary line: skip when it would just restate the section header
+  // above. CASH accounts already sit under a "CASH" header, and
+  // "investment" holding accounts already sit under a "HOLDINGS"
+  // header — the SPENDING fix that dropped "Monzo Current" beneath
+  // every row was the same class. Non-investment holdings
+  // (pension, property, etc.) still carry information the header
+  // does not — they stay.
+  const REDUNDANT_TYPES: ReadonlySet<string> = new Set(["cash", "investment"]);
+  const secondary = REDUNDANT_TYPES.has(account.type)
     ? undefined
     : account.type.toUpperCase();
 
@@ -634,7 +689,7 @@ function AccountRow({
     <PhoneEntityRow
       primary={account.name}
       secondary={secondary}
-      identity={{ tone: deriveTone(account.name) }}
+      identity={{ tone: tone ?? deriveTone(account.name) }}
       amount={{
         value: baseStr,
         native: nativeStr,
@@ -648,11 +703,13 @@ function AccountRow({
 function PositionRow({
   position,
   baseCurrency,
+  tone,
   isLast,
   onTap,
 }: {
   position: Position;
   baseCurrency: string | null;
+  tone?: string;
   isLast: boolean;
   onTap: () => void;
 }) {
@@ -673,7 +730,7 @@ function PositionRow({
     <PhoneEntityRow
       primary={position.name}
       secondary={secondary}
-      identity={{ label: glyphLabel, tone: deriveTone(position.ticker) }}
+      identity={{ label: glyphLabel, tone: tone ?? deriveTone(position.ticker) }}
       amount={{
         value: baseStr,
         native: nativeStr,
