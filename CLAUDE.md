@@ -69,6 +69,14 @@ response carries `x-render-origin-server`. The database is Neon
 (`eu-west-2`), an independent free-tier account that survives any provider
 change on the API side.
 
+Render sleeps at 15 min idle on the free tier. Keep-alive is cron-job.org
+hitting `/api/healthz` every minute, with a Healthchecks.io dead-man's-
+switch as the failure-visibility layer. The `.github/workflows/keep-alive.yml`
+workflow is deprecated (measured median gap 260 min against a 10-min
+schedule) and lives only as a documented failure record. Upgrade thresholds
+(healthz p95 > 800ms/7d OR endpoint p95 > 1500ms/3d = time to consider
+Render Starter at £66/yr) and full operational detail are in `docs/OPERATIONS.md`.
+
 Local development points at the Neon branch **`dev`** (`br-cold-term-abp7fwtk`),
 a copy-on-write clone of production carrying real data. Safe to migrate, seed
 and break. The production URL is preserved in `lib/db/.env.production.backup`.

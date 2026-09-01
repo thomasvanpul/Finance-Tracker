@@ -1,41 +1,48 @@
-# Keep-alive ping to Render so the free-tier service does not idle-sleep.
+# DEPRECATED — this workflow no longer keeps Render warm.
 #
-# ── Instance-hours arithmetic — do NOT "optimise" this cron away ────────────
-# Render's free web service ceiling is 750 instance-hours per calendar month.
-# A 31-day month running 24/7 uses 24 * 31 = 744 hours. That leaves 6 hours of
-# headroom — enough to survive a deploy or two but not enough to justify
-# running a second warm instance. Any month with 30 days or fewer stays well
-# below the ceiling.
+# Between 2026-08-26 and 2026-09-01 GitHub Actions fired this schedule
+# a median of once every 260 minutes against a 10-minute cron, with the
+# worst gap 737 minutes and every single one of the 29 measured gaps
+# exceeding Render's 15-minute idle threshold (measurement:
+# `gh run list --workflow=keep-alive.yml`). The mitigation was
+# decorative — Render slept between every gap, and the next visitor
+# paid a 30–60s cold-start every time.
 #
-# Instance hours measure UPTIME, not traffic. This works identically at 1
-# user or 100,000; keep-alive costs nothing in $ and the incremental req is
-# rounding-error compared to normal traffic. The signal to leave the free
-# tier is latency-under-load, not this counter (see docs/PLAN-Q3.md Phase 0.1
-# and Appendix A).
+# The header comment on the original file predicted "5-15 min drift
+# under load" but nobody ever measured what actually ran. The same
+# failure class as a lock that passes while broken.
 #
-# The pinger CANNOT live on the service itself — a sleeping instance cannot
-# wake itself. It must run externally, which is why this is a GitHub
-# Actions cron and not a node-cron inside api-server.
+# ── Current arrangement ──────────────────────────────────────────────────
+# Primary keep-alive is cron-job.org (1-minute interval, free,
+# commercial-safe per ToS). Signup and monitor URL are documented in
+# docs/OPERATIONS.md § "Uptime pinger and dead-man's-switch".
 #
-# ── GitHub cron caveat ──────────────────────────────────────────────────────
-# GitHub does not guarantee cron precision, especially on free plans; a
-# scheduled workflow can be delayed by 5–15 minutes under load. Ten-minute
-# cadence gives ~15 min effective ceiling in the worst case, which is still
-# well inside Render's 15-min idle threshold. If cold starts return, the
-# first thing to check is Actions run history — a skipped or delayed run
-# will show up there.
+# Failure-visibility layer is a Healthchecks.io dead-man's-switch. The
+# api-server's /api/healthz handler POSTs to HEALTHCHECKS_PING_URL on
+# every request; Healthchecks alerts if no heartbeat arrives inside the
+# check's expected window. This catches "cron-job.org itself broke" and
+# every related silent-failure mode that this GitHub Actions workflow
+# didn't.
+#
+# ── Why the file is still here ───────────────────────────────────────────
+# So that a future maintainer with the same idea finds the evidence
+# in-repo before implementing it again. Do not credit this file with
+# keeping Render warm. Do not re-enable it as primary. If you decide
+# GitHub Actions cron has improved, MEASURE first with
+# `gh run list --workflow=keep-alive.yml --limit 30` and confirm the
+# actual gap distribution before pointing anything at it.
+#
+# Left disabled below: no `schedule:` trigger, so it never runs on its
+# own. Kept only as a manually-triggerable escape hatch for the
+# operator who wants to warm Render exactly once after a deploy or a
+# provider swap.
 
-name: keep-alive-render
+name: keep-alive-render (DEPRECATED — manual trigger only)
 
 on:
-  schedule:
-    # Every 10 minutes. Cron uses UTC.
-    - cron: "*/10 * * * *"
-  # Manual trigger for post-deploy verification.
+  # No schedule. See header above.
   workflow_dispatch:
 
-# Only one keep-alive run at a time. If a previous run is still pinging
-# (network stall), skip rather than pile up.
 concurrency:
   group: keep-alive-render
   cancel-in-progress: false
@@ -45,12 +52,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Ping /api/healthz
+      - name: Ping /api/healthz (manual)
         env:
-          # Repo secret. Full URL to /api/healthz on the Render service,
-          # e.g. https://numeris-api.onrender.com/api/healthz. Kept in
-          # secrets rather than hardcoded so the workflow keeps working
-          # if the service is redeployed to a new URL.
           RENDER_HEALTH_URL: ${{ secrets.RENDER_HEALTH_URL }}
         run: |
           set -euo pipefail
@@ -58,10 +61,6 @@ jobs:
             echo "::error::RENDER_HEALTH_URL secret is not set. Add it in repo Settings → Secrets → Actions."
             exit 1
           fi
-          # -sSf: silent progress, still show errors, fail on 4xx/5xx.
-          # --max-time 60: a cold start takes ~50s, so 60s covers the
-          # first-ping-after-sleep case that this cron exists to prevent.
-          # Retries: on transient network hiccups only, not on HTTP errors.
           curl -sSf --max-time 60 --retry 3 --retry-delay 5 --retry-connrefused \
                -o /dev/null -w "HTTP %{http_code} · total %{time_total}s\n" \
                "$RENDER_HEALTH_URL"
