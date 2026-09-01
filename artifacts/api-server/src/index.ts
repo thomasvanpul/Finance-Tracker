@@ -4,6 +4,7 @@ import { alpacaStream } from "./lib/alpaca-stream";
 import { verifyProvidersAtBoot } from "./lib/ai-config";
 import { migrateAtBoot } from "./lib/migrate";
 import { verifySchemaAtBoot } from "./lib/verify-schema";
+import { pruneRequestMetrics, REQUEST_METRICS_RETENTION_DAYS } from "./lib/request-metrics";
 
 const rawPort = process.env["PORT"];
 
@@ -63,6 +64,31 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
   alpacaStream.connect();
+
+  // Retention for request_metrics — prune at boot (catches long-idle
+  // deploys where the previous prune ran days ago) and every 24 h on
+  // an in-process interval (covers the always-warm case once the
+  // pinger is wired). Fire-and-forget: pruning failure is a log line,
+  // not a boot failure. See lib/request-metrics.ts.
+  void pruneRequestMetrics()
+    .then((deleted) =>
+      logger.info({ deleted, retentionDays: REQUEST_METRICS_RETENTION_DAYS },
+        "request-metrics: boot prune complete"),
+    )
+    .catch((err) => logger.warn({ err: err instanceof Error ? err.message : String(err) },
+        "request-metrics: boot prune failed"));
+  setInterval(
+    () => {
+      void pruneRequestMetrics()
+        .then((deleted) =>
+          logger.info({ deleted, retentionDays: REQUEST_METRICS_RETENTION_DAYS },
+            "request-metrics: interval prune complete"),
+        )
+        .catch((err) => logger.warn({ err: err instanceof Error ? err.message : String(err) },
+            "request-metrics: interval prune failed"));
+    },
+    24 * 60 * 60 * 1000,
+  ).unref(); // .unref() so this interval doesn't keep the process alive on shutdown
   // Verify every AI provider's configured models against its live
   // models list — Groq, Cerebras, OpenRouter in parallel. Non-blocking:
   // server is already accepting requests. If any provider's model is

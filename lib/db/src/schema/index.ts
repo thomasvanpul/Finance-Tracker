@@ -12,3 +12,4 @@ export * from "./budgets";
 export * from "./goals";
 export * from "./subscriptions";
 export * from "./connections";
+export * from "./request-metrics";

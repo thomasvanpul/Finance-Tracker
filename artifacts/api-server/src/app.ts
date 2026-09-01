@@ -14,6 +14,7 @@ import marketProvidersRouter from "./routes/market-providers";
 import aiStatusRouter from "./routes/ai-status";
 import { logger } from "./lib/logger";
 import { auth } from "./lib/better-auth";
+import { requestMetricsMiddleware } from "./lib/request-metrics";
 
 // True only when NODE_ENV is explicitly "development". Unset NODE_ENV → false → full production enforcement.
 const IS_DEV = process.env.NODE_ENV === "development";
@@ -50,6 +51,14 @@ app.use(
     },
   }),
 );
+
+// Per-request timing capture into request_metrics. See lib/request-metrics.ts
+// for skipped paths, retention window, and failure discipline. Placed after
+// pino-http (so pino's :req.id is available for correlated debugging) but
+// before routers, CORS and every other middleware — the res.on('finish')
+// listener fires after the response is sent regardless of which handler
+// produced it, so latency of the insert never touches the response path.
+app.use(requestMetricsMiddleware);
 
 const configuredOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
