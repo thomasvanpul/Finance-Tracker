@@ -71,7 +71,7 @@ type Transaction = typeof transactionsTable.$inferSelect;
 type Upcoming = typeof upcomingTable.$inferSelect;
 type Debt = typeof debtsTable.$inferSelect;
 
-interface OwingRow { name: string; amountBase: number; direction: "they_owe_me" | "i_owe_them" }
+interface OwingRow { name: string; amountBase: number; direction: "they_owe_me" | "i_owe_them"; date: string }
 
 async function processAccounts(accounts: Account[], baseCurrency: string) {
   let unconvertibleAccounts = 0;
@@ -208,7 +208,7 @@ async function processPendingDebts(pendingDebts: Debt[], baseCurrency: string) {
   const converted = await Promise.all(
     pendingDebts.map(async (d) => {
       const gbp = await toBase(parseFloat(d.nativeAmount), d.currency, baseCurrency);
-      return { gbp, direction: d.direction, name: d.personName };
+      return { gbp, direction: d.direction, name: d.personName, date: d.date };
     }),
   );
   let totalOwedToMe = 0;
@@ -218,7 +218,7 @@ async function processPendingDebts(pendingDebts: Debt[], baseCurrency: string) {
     if (c.gbp == null) continue;
     if (c.direction === "they_owe_me") totalOwedToMe += c.gbp;
     else totalIOwe += c.gbp;
-    rows.push({ name: c.name, amountBase: c.gbp, direction: c.direction as OwingRow["direction"] });
+    rows.push({ name: c.name, amountBase: c.gbp, direction: c.direction as OwingRow["direction"], date: c.date });
   }
   return { totalOwedToMe, totalIOwe, rows };
 }
@@ -252,6 +252,7 @@ async function processMyParticipations(
       name: `${payerName} · ${c.expense.description}`,
       amountBase: c.gbp,
       direction: "i_owe_them",
+      date: c.expense.date,
     });
   }
   return { totalIOwe, rows };
@@ -289,6 +290,7 @@ async function processMyPayerExpenses(
       name: `${c.p.name} · ${c.expense.description}`,
       amountBase: c.gbp,
       direction: "they_owe_me",
+      date: c.expense.date,
     });
   }
   return { totalOwedToMe, rows };
@@ -567,10 +569,15 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const totalOwedToMe = debtsResult.totalOwedToMe + payerExpensesResult.totalOwedToMe;
   const totalIOwe = debtsResult.totalIOwe + participationsResult.totalIOwe;
   const owingRows = [...debtsResult.rows, ...participationsResult.rows, ...payerExpensesResult.rows];
+  const today = new Date();
   const topPending = owingRows
     .sort((a, b) => b.amountBase - a.amountBase)
     .slice(0, 3)
-    .map((r) => ({ name: r.name, amountBase: Math.round(r.amountBase * 100) / 100, direction: r.direction }));
+    .map((r) => {
+      const debtDate = new Date(r.date + "T00:00:00Z");
+      const daysOutstanding = Math.round((today.getTime() - debtDate.getTime()) / 86_400_000);
+      return { name: r.name, amountBase: Math.round(r.amountBase * 100) / 100, direction: r.direction, daysOutstanding };
+    });
 
   const monthNet = monthIncome - monthExpenses;
   const savingsRate = monthIncome > 0 ? (monthNet / monthIncome) * 100 : 0;

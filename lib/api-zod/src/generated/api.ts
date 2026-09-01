@@ -54,7 +54,8 @@ export const GetDashboardResponse = zod.object({
   "topPending": zod.array(zod.object({
   "name": zod.string(),
   "amountBase": zod.number(),
-  "direction": zod.enum(['they_owe_me', 'i_owe_them'])
+  "direction": zod.enum(['they_owe_me', 'i_owe_them']),
+  "daysOutstanding": zod.number().optional()
 })).optional()
 }),
   "monthlyHistory": zod.array(zod.object({

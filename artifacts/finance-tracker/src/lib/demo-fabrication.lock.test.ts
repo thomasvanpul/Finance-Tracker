@@ -148,7 +148,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // is a mathematical placeholder that never renders as a currency figure.
   { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", line: 1488, reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
   { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", line: 148, reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
-  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 950, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
+  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 549, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
   { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 133, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 544, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1532, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
@@ -198,7 +198,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
 
   // Formatting / config defaults — decimal counts, period lengths.
   { path: "artifacts/finance-tracker/src/components/mobile/mobile-format.ts", line: 10, reason: "default decimals count (2) for nfmt when unspecified" },
-  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 27, reason: "default decimals count (2) for local nfmt fallback" },
+  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 42, reason: "default decimals count (2) for local nfmt fallback" },
   { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", line: 236, reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
 
   // Streaks, thresholds — non-money integers.

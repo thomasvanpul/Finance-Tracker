@@ -201,6 +201,68 @@ function UpcomingHero({ outgoings, income, loading }: HeroProps) {
   );
 }
 
+// ─── Countdown strip ─────────────────────────────────────────────────────────
+
+function daysLabel(days: number): string {
+  if (days <= 0) return "TODAY";
+  if (days === 1) return "1 DAY";
+  return `${days} DAYS`;
+}
+
+function CountdownStrip({ items, now }: { items: UpcomingItem[]; now: Date }) {
+  const top3 = useMemo(
+    () =>
+      items
+        .filter((i) => i.status === "pending" && i.type === "expense")
+        .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+        .slice(0, 3),
+    [items],
+  );
+  if (top3.length === 0) return null;
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 8,
+        padding: "10px 16px",
+        overflowX: "auto",
+        scrollbarWidth: "none",
+        borderBottom: "1px solid var(--ft-border)",
+        background: "var(--ft-surface)",
+      }}
+    >
+      {top3.map((item) => {
+        const days = daysUntil(item.dueDate, now);
+        const urgent = days <= 3;
+        return (
+          <div
+            key={item.id}
+            style={{
+              flex: "0 0 auto",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 10px",
+              border: `1px solid ${urgent ? "var(--ft-red)" : "var(--ft-border)"}`,
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.1em",
+              color: urgent ? "var(--ft-red)" : "var(--ft-dim)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <span style={{ color: urgent ? "var(--ft-red)" : "var(--ft-text)", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>
+              {item.description.toUpperCase()}
+            </span>
+            <span style={{ opacity: 0.5 }}>·</span>
+            <span>{daysLabel(days)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Lens strip ──────────────────────────────────────────────────────────────
 
 function LensStrip({ active, onChange }: { active: Lens; onChange: (l: Lens) => void }) {
@@ -385,6 +447,7 @@ export function UpcomingScreen() {
         loading={heroLoading}
       />
 
+      <CountdownStrip items={pendingItems} now={now} />
       <LensStrip active={lens} onChange={setLens} />
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>

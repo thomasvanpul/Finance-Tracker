@@ -14,6 +14,15 @@ import { InsightSlot } from "./InsightSlot";
 import { MobileEmptyState } from "@/components/mobile/mobile-ui";
 import { PhoneSectionError } from "@/components/mobile/mobile-ui";
 import { MobileSheet } from "@/components/mobile-sheet";
+import {
+  computeHoldings,
+  ViewMode,
+  ViewTab,
+  RingView,
+  BandsView,
+  BlocksView,
+  type BandsMonth,
+} from "./CompositionChart";
 
 // WORTH — the balance-sheet tab. What am I worth, across currencies and
 // across assets, as a 5-second check.
@@ -260,6 +269,17 @@ export function WorthScreen() {
   const unconvertibleAccounts = dashboard?.unconvertibleAccounts ?? 0;
 
   const [detailSubject, setDetailSubject] = useState<DetailSubject | null>(null);
+  const [chartView, setChartView] = useState<ViewMode>("ring");
+
+  const holdings = useMemo(() => computeHoldings(dashboard), [dashboard]);
+  const bandsMonths: BandsMonth[] = useMemo(
+    () =>
+      (dashboard?.monthlyHistory ?? []).map((m) => ({
+        month: m.month,
+        composition: m.composition ?? null,
+      })),
+    [dashboard],
+  );
 
   // ── render branches ────────────────────────────────────────────
   if (isError) {
@@ -315,6 +335,41 @@ export function WorthScreen() {
           unconvertibleAccounts={unconvertibleAccounts}
           loading={isLoading && netWorth == null}
         />
+
+        {/* ── Composition chart ─────────────────────────────────────────── */}
+        <div style={{ padding: "0 16px 16px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              minHeight: 44,
+              borderBottomWidth: 1,
+              borderBottomStyle: "solid",
+              borderBottomColor: "var(--ft-border)",
+              marginBottom: 12,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                letterSpacing: "0.14em",
+                color: "var(--ft-dim)",
+              }}
+            >
+              COMPOSITION
+            </span>
+            <div style={{ display: "flex", gap: 4 }}>
+              <ViewTab label="RING" active={chartView === "ring"} onClick={() => setChartView("ring")} />
+              <ViewTab label="BANDS" active={chartView === "bands"} onClick={() => setChartView("bands")} />
+              <ViewTab label="BLOCKS" active={chartView === "blocks"} onClick={() => setChartView("blocks")} />
+            </div>
+          </div>
+          {chartView === "ring" && <RingView holdings={holdings} />}
+          {chartView === "bands" && <BandsView months={bandsMonths} />}
+          {chartView === "blocks" && <BlocksView holdings={holdings} />}
+        </div>
 
         {currencyExposure.rows.length >= 2 && (
           <CurrencySplit exposure={currencyExposure} baseCurrency={baseCurrency} />

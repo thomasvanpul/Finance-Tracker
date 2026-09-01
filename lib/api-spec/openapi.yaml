@@ -2212,6 +2212,8 @@ components:
                   direction:
                     type: string
                     enum: [they_owe_me, i_owe_them]
+                  daysOutstanding:
+                    type: number
         monthlyHistory:
           type: array
           items:

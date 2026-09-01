@@ -11,4 +11,5 @@ export type DashboardSummaryOwingTopPendingItem = {
   name: string;
   amountBase: number;
   direction: DashboardSummaryOwingTopPendingItemDirection;
+  daysOutstanding?: number;
 };

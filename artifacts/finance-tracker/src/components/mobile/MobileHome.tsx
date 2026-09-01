@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
 import {
@@ -9,13 +9,28 @@ import {
   useListUpcoming,
 } from "@workspace/api-client-react";
 import { MobileEmptyState } from "./mobile-ui";
-import { BlockField } from "@/components/primitives/block-field";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { MarketPane } from "./MarketPane";
 import { NewsPane } from "./NewsPane";
 import { loadPersonaIds, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
-import { DIRECTORY_ITEM_COUNT } from "@/components/phone/DirectoryScreen";
+import { InsightSlot } from "@/components/phone/InsightSlot";
+import {
+  computeHoldings,
+  type Holdings,
+  type AccountType,
+  type HoldingsInput,
+} from "@/components/phone/CompositionChart";
+import {
+  selectInsight,
+  loadDismissedIds,
+  dismissInsight,
+  type Insight,
+} from "@/lib/spending-insights";
+
+// Re-export for callers that import these from MobileHome.
+export type { Holdings, AccountType, HoldingsInput };
+export { computeHoldings };
 
 // ── Number rule (docs/MOBILE-CONCEPT.md § Approved 13 Aug 2026, second pass) ──
 // Separators always. Two decimals for facts. No decimals for shapes.
@@ -52,72 +67,15 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   INR: "₹",
 };
 
-// ── View switcher state ──
-type ViewMode = "blocks" | "bands" | "ring";
-
 interface MobileHomeProps {
   // Placeholder — MobileHome takes no runtime props today. The empty
   // interface stays so PhoneShell can pass future context (persona
   // overrides, tab-scoped fx rates) without changing the call site.
 }
 
-// ── Holdings composition (pure, testable) ────────────────────────────────────
-// Categorises real accounts from the DashboardSummary.accountBreakdown array
-// using each account's declared `type`. No residual; no subtraction. If an
-// account is uncategorised in the DB it defaults to 'cash' (per the C1
-// backfill rule), so nothing lands in `other` unless a user has deliberately
-// set it there. Portfolio positions add to `invested` on top of any
-// investment-typed accounts.
-export type AccountType = "cash" | "investment" | "pension" | "property" | "other";
-
-export interface HoldingsInput {
-  accountBreakdown?: Array<{ type: AccountType; baseEquivalent: number | null }>;
-  portfolio?: { totalValueBase?: number };
-}
-// Bucket keys match the DB column values 1:1 so the loop is `buckets[a.type]`
-// with no translation table.
-export interface Holdings {
-  cash: number;
-  investment: number;
-  pension: number;
-  property: number;
-  other: number;
-}
-export function computeHoldings(d: HoldingsInput | null | undefined): Holdings {
-  const buckets: Holdings = { cash: 0, investment: 0, pension: 0, property: 0, other: 0 };
-  for (const a of d?.accountBreakdown ?? []) {
-    // Skip accounts whose FX conversion is unavailable; the block-
-    // field visualisation below reads each bucket as a proportion, so
-    // a fabricated 0 would shrink the wrong bucket. Total shown on
-    // the NET WORTH headline (dashboard.netWorth) already matches
-    // this skip-based sum.
-    if (a.baseEquivalent == null) continue;
-    buckets[a.type] += a.baseEquivalent;
-  }
-  // Portfolio positions live in a separate table from accounts. An investment
-  // account itself holds the uninvested cash (part of buckets.investment via
-  // its 'investment' type); the position value is added here. Skip when
-  // portfolio total is null — same argument as the FX-null skip on
-  // accountBreakdown above: adding a fabricated 0 shrinks the bucket the
-  // block-field visualisation is trying to show honestly.
-  if (d?.portfolio?.totalValueBase != null) {
-    buckets.investment += d.portfolio.totalValueBase;
-  }
-  return buckets;
-}
-
 export function MobileHome(_props: MobileHomeProps) {
   const [, navigate] = useLocation();
   const { privacy: _privacy } = usePrivacy();
-  // Initial view accepts ?view=bands / ?view=ring / ?view=blocks so
-  // the harness (and any deep-link) can land straight on a specific
-  // switcher tab. Defaults to blocks. Explicit switcher clicks
-  // override — this only seeds the first render.
-  const [view, setView] = useState<ViewMode>(() => {
-    if (typeof window === "undefined") return "blocks";
-    const q = new URLSearchParams(window.location.search).get("view");
-    return q === "bands" || q === "ring" ? q : "blocks";
-  });
 
   const now = new Date();
   const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -151,7 +109,6 @@ export function MobileHome(_props: MobileHomeProps) {
   const totalCash = holdings.cash;
 
   const activeAccounts = dashboard?.accountBreakdown ?? [];
-  const currencyCount = new Set(activeAccounts.map((a) => a.currency)).size;
   const unconvertibleAccounts = dashboard?.unconvertibleAccounts ?? 0;
   const persona = useActivePersona();
 
@@ -162,6 +119,19 @@ export function MobileHome(_props: MobileHomeProps) {
   // (deployed API one commit behind), we fall back to the count-only
   // rendering below. Both cases coexist.
   const topPending = dashboard?.owing.topPending ?? [];
+
+  // ── Insight pipeline ──────────────────────────────────────────────────────
+  const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(
+    () => loadDismissedIds(),
+  );
+  const currentInsight = useMemo<Insight | null>(
+    () => selectInsight(txns, { baseCurrency: dashboard?.baseCurrency ?? null, upcomingItems, topPending }, dismissedInsights),
+    [txns, dashboard, upcomingItems, topPending, dismissedInsights],
+  );
+  const handleDismissInsight = useCallback((id: string) => {
+    dismissInsight(id);
+    setDismissedInsights((prev) => new Set([...prev, id]));
+  }, []);
 
   const activeSubs = subs.filter((s) => s.active);
   const upcomingBills = activeSubs
@@ -181,19 +151,6 @@ export function MobileHome(_props: MobileHomeProps) {
     .filter((i) => i.dueDate >= todayStr && i.dueDate <= in30Str)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     .slice(0, 2);
-  const monthlySubTotalGbp = activeSubs.reduce((sum, s) => {
-    if (s.currency !== "GBP") return sum; // no FX in this pane
-    const per =
-      s.frequency === "monthly"
-        ? s.amount
-        : s.frequency === "annual"
-          ? s.amount / 12
-          : s.frequency === "quarterly"
-            ? s.amount / 3
-            : s.amount * 4.33; // weekly
-    return sum + per;
-  }, 0);
-
   const lastDayOfMonth = new Date(
     now.getFullYear(),
     now.getMonth() + 1,
@@ -387,48 +344,6 @@ export function MobileHome(_props: MobileHomeProps) {
           </VStack>
         )}
 
-        {/* Holdings header + BLOCKS / BANDS / RING switcher */}
-        <HStack align="center" justify="between" padding="0 18px 10px">
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/net-worth");
-            }}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              minHeight: 44,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.16em",
-              color: "var(--ft-dim)",
-              textDecoration: "none",
-              cursor: "pointer",
-            }}
-          >
-            HOLDINGS ›
-          </a>
-          <HStack align="center" height={44} gap={2}>
-            <ViewTab label="BLOCKS" active={view === "blocks"} onClick={() => setView("blocks")} />
-            <ViewTab label="BANDS" active={view === "bands"} onClick={() => setView("bands")} />
-            <ViewTab label="RING" active={view === "ring"} onClick={() => setView("ring")} />
-          </HStack>
-        </HStack>
-
-        {/* Chart area — one of BLOCKS / BANDS / RING */}
-        <div style={{ padding: "0 18px" }}>
-          {view === "blocks" && <BlockField holdings={holdings} />}
-          {view === "bands" && (
-            <BandsView
-              months={(dashboard?.monthlyHistory ?? []).map((m) => ({
-                month: m.month,
-                composition: m.composition ?? null,
-              }))}
-            />
-          )}
-          {view === "ring" && <RingView holdings={holdings} />}
-        </div>
-
         {/* Claimed (liabilities are outlined, no depth).
             C2-4: when the API supplies topPending, list up to 3
             counterparties by name + amount underneath the total.
@@ -471,6 +386,8 @@ export function MobileHome(_props: MobileHomeProps) {
           </VStack>
         )}
 
+        <InsightSlot insight={currentInsight} onDismiss={handleDismissInsight} />
+
         {/* Cashflow section — only when there is anything to plot */}
         {txns.length > 0 && (
           <>
@@ -490,16 +407,6 @@ export function MobileHome(_props: MobileHomeProps) {
             </div>
           </>
         )}
-
-        {/* Accounts section */}
-        <SectionHeader
-          label={`LIQUID · £ · ${currencyCount || 1} ${(currencyCount || 1) === 1 ? "CURRENCY" : "CURRENCIES"}`}
-          link="ACCOUNTS ›"
-          onLink={() => navigate("/accounts")}
-        />
-        <div style={{ padding: "0 18px" }}>
-          <AccountsList accounts={activeAccounts} />
-        </div>
 
         {/* Markets pane — the only element that differs tomorrow morning
             without the user doing anything. Scoped to holdings + implied
@@ -539,314 +446,6 @@ export function MobileHome(_props: MobileHomeProps) {
           </a>
         </div>
 
-        {/* Elsewhere in Numeris */}
-        <div
-          style={{
-            marginTop: 12,
-            padding: "16px 18px 24px",
-            borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-          }}
-        >
-          <MonoLabel size={11} letterSpacing="0.16em" mb={4}>
-            ELSEWHERE IN NUMERIS
-          </MonoLabel>
-          <ElsewhereRow
-            label="Investments"
-            valueLabel={
-              dashboard?.portfolio.totalPlPercent != null
-                ? nfmt(dashboard.portfolio.totalPlPercent, { sign: true }) + "%"
-                : "—"
-            }
-            valueColor={
-              dashboard?.portfolio.totalPlPercent == null
-                ? "var(--ft-dim)"
-                : dashboard.portfolio.totalPlPercent >= 0
-                  ? "var(--ft-green)"
-                  : "var(--ft-red)"
-            }
-            onClick={() => navigate("/portfolio")}
-          />
-          <ElsewhereRow
-            label="Goals"
-            valueLabel="—"
-            valueColor="var(--ft-dim)"
-            onClick={() => navigate("/goals")}
-          />
-          <ElsewhereRow
-            label="Subscriptions"
-            valueLabel={
-              activeSubs.length
-                ? `${nfmt(monthlySubTotalGbp, { symbol: "£" })} a month`
-                : "—"
-            }
-            valueColor="var(--ft-dim)"
-            onClick={() => navigate("/subscriptions")}
-          />
-          {/* Currency row dropped: no FX data and no honest destination. */}
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/directory");
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              minHeight: 44,
-              textDecoration: "none",
-              color: "var(--ft-dim)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              cursor: "pointer",
-            }}
-          >
-            ALL {DIRECTORY_ITEM_COUNT} PLACES · SEARCH ›
-          </a>
-        </div>
-    </div>
-  );
-}
-
-// ── View switcher tab ────────────────────────────────────────────────────────
-function ViewTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  const base: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 52,
-    height: 26,
-    padding: "0 8px",
-    fontFamily: "var(--font-mono)",
-    fontSize: 11,
-    letterSpacing: "0.06em",
-    cursor: "pointer",
-    boxSizing: "border-box",
-  };
-  const on: React.CSSProperties = {
-    background: "var(--ft-text)",
-    color: "var(--ft-base)",
-  };
-  const off: React.CSSProperties = {
-    color: "var(--ft-dim)",
-    borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-border)",
-  };
-  return (
-    <div
-      onClick={onClick}
-      style={{ display: "flex", alignItems: "center", minHeight: 44, cursor: "pointer" }}
-    >
-      <span style={{ ...base, ...(active ? on : off) }}>{label}</span>
-    </div>
-  );
-}
-// Bucket colours for BANDS + RING. Kept as one const so the two views
-// stay in visual sync — a colour drift would make the same bucket
-// read differently across the switcher.
-const BUCKET_ORDER: (keyof Holdings)[] = ["cash", "investment", "pension", "property", "other"];
-const BUCKET_LABEL: Record<keyof Holdings, string> = {
-  cash: "CASH",
-  investment: "INVESTED",
-  pension: "PENSION",
-  property: "PROPERTY",
-  other: "OTHER",
-};
-// Colour = position in the type ladder, not hue-as-data. All values
-// route through --ft-* tokens so all 11 themes (arctic light included)
-// render legibly. Neutral steps rather than a rainbow — hierarchy
-// through structure and scale.
-const BUCKET_COLOR: Record<keyof Holdings, string> = {
-  cash: "var(--ft-text)",
-  investment: "var(--ft-accent)",
-  pension: "var(--ft-blue)",
-  property: "var(--ft-green)",
-  other: "var(--ft-dim)",
-};
-
-function bucketTotal(h: Holdings): number {
-  return h.cash + h.investment + h.pension + h.property + h.other;
-}
-
-// ── RING ──────────────────────────────────────────────────────────
-// A single doughnut of the CURRENT holdings composition. Uses the
-// same `holdings` that BLOCKS uses — no historical data needed, so
-// this view was already satisfiable from existing API fields
-// (accountBreakdown + portfolio.totalValueBase). No schema change.
-function RingView({ holdings }: { holdings: Holdings }) {
-  const total = bucketTotal(holdings);
-  if (total <= 0) {
-    return (
-      <div
-        style={{
-          width: "100%", maxWidth: 354, height: 296,
-          boxShadow: "10px -10px 0 0 var(--ft-border)",
-          background: "var(--ft-surface)",
-          display: "grid", placeItems: "center",
-          fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)",
-          letterSpacing: "0.14em",
-        }}
-      >
-        NO POSITIONS
-      </div>
-    );
-  }
-  // SVG donut. Two circles: an outer stroked path per bucket, and
-  // an inner disc for the central label. Circumference maths in
-  // one place. Radius chosen so 296px height accommodates label
-  // + legend below.
-  const RADIUS = 82;
-  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-  let offset = 0;
-  const segments: { key: keyof Holdings; length: number; offset: number; color: string }[] = [];
-  for (const key of BUCKET_ORDER) {
-    const v = holdings[key];
-    if (v <= 0) continue;
-    const length = (v / total) * CIRCUMFERENCE;
-    segments.push({ key, length, offset, color: BUCKET_COLOR[key] });
-    offset += length;
-  }
-  return (
-    <div
-      style={{
-        width: "100%", maxWidth: 354, minHeight: 296,
-        boxShadow: "10px -10px 0 0 var(--ft-border)",
-        background: "var(--ft-surface)",
-        display: "flex", flexDirection: "column", alignItems: "stretch",
-        padding: 16, boxSizing: "border-box", gap: 16,
-      }}
-    >
-      <div style={{ display: "grid", placeItems: "center" }}>
-        <svg width={200} height={200} viewBox="0 0 200 200">
-          {/* Track — hairline so 0-value buckets still read as absent */}
-          <circle cx={100} cy={100} r={RADIUS} fill="none" stroke="var(--ft-border)" strokeWidth={1} />
-          {segments.map((s) => (
-            <circle
-              key={s.key}
-              cx={100} cy={100} r={RADIUS} fill="none"
-              stroke={s.color} strokeWidth={16}
-              strokeDasharray={`${s.length} ${CIRCUMFERENCE - s.length}`}
-              strokeDashoffset={-s.offset}
-              transform="rotate(-90 100 100)"
-            />
-          ))}
-          <text x={100} y={100} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono)" fontSize={11} fill="var(--ft-dim)" letterSpacing="0.12em">HOLDINGS</text>
-          <text x={100} y={116} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono)" fontSize={11} fontWeight={700} fill="var(--ft-text)">£{nfmt(total, { decimals: 0 })}</text>
-        </svg>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-        {BUCKET_ORDER.filter((k) => holdings[k] > 0).map((k) => (
-          <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 10, height: 10, background: BUCKET_COLOR[k], flex: "none" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.08em", color: "var(--ft-dim)" }}>{BUCKET_LABEL[k]}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", marginLeft: "auto" }}>
-              {Math.round((holdings[k] / total) * 100)}%
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── BANDS ─────────────────────────────────────────────────────────
-// 12-month stacked bars of composition per bucket. Each month is
-// either a stack of segments (has snapshot) or a hollow band (no
-// snapshot — historical months before feature landing). NEVER a
-// fabricated zero — that would show composition drift that never
-// happened.
-interface BandsMonth {
-  month: string;
-  composition: Holdings | null;
-}
-function BandsView({ months }: { months: BandsMonth[] }) {
-  if (months.length === 0) {
-    return (
-      <div
-        style={{
-          width: "100%", maxWidth: 354, height: 296,
-          boxShadow: "10px -10px 0 0 var(--ft-border)",
-          background: "var(--ft-surface)",
-          display: "grid", placeItems: "center",
-          fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)",
-          letterSpacing: "0.14em",
-        }}
-      >
-        NO HISTORY
-      </div>
-    );
-  }
-  // Compute the max non-null total so bars share a y-axis.
-  const maxTotal = Math.max(
-    1,
-    ...months.map((m) => (m.composition ? bucketTotal(m.composition) : 0)),
-  );
-  const BAR_H = 200;
-  const BAR_W = 20;
-  const GAP = 4;
-  const chartW = months.length * (BAR_W + GAP);
-
-  return (
-    <div
-      style={{
-        width: "100%", maxWidth: 354, minHeight: 296,
-        boxShadow: "10px -10px 0 0 var(--ft-border)",
-        background: "var(--ft-surface)",
-        padding: 16, boxSizing: "border-box",
-        display: "flex", flexDirection: "column", gap: 16,
-      }}
-    >
-      <div style={{ overflowX: "auto" }}>
-        <svg width={chartW} height={BAR_H + 40} viewBox={`0 0 ${chartW} ${BAR_H + 40}`}>
-          {months.map((m, i) => {
-            const x = i * (BAR_W + GAP);
-            if (!m.composition) {
-              // Hollow band — no snapshot for this month. Drawn as a
-              // dotted rectangle at the max height so the reader can
-              // see the gap. Per the design constitution: dotted
-              // means not-yet-real.
-              return (
-                <g key={m.month}>
-                  <rect
-                    x={x} y={0} width={BAR_W} height={BAR_H}
-                    fill="none" stroke="var(--ft-border)"
-                    strokeDasharray="2 2" strokeWidth={1}
-                  />
-                  <text x={x + BAR_W / 2} y={BAR_H + 14} textAnchor="middle" fontFamily="var(--font-mono)" fontSize={9} fill="var(--ft-dim)">{m.month.slice(5)}</text>
-                </g>
-              );
-            }
-            const total = bucketTotal(m.composition);
-            const scale = total / maxTotal;
-            let cursorY = BAR_H;
-            const segs: { key: keyof Holdings; h: number; y: number }[] = [];
-            for (const key of BUCKET_ORDER) {
-              const v = m.composition[key];
-              if (v <= 0) continue;
-              const h = (v / total) * BAR_H * scale;
-              cursorY -= h;
-              segs.push({ key, h, y: cursorY });
-            }
-            return (
-              <g key={m.month}>
-                {segs.map((s) => (
-                  <rect
-                    key={s.key}
-                    x={x} y={s.y} width={BAR_W} height={s.h}
-                    fill={BUCKET_COLOR[s.key]}
-                  />
-                ))}
-                <text x={x + BAR_W / 2} y={BAR_H + 14} textAnchor="middle" fontFamily="var(--font-mono)" fontSize={9} fill="var(--ft-dim)">{m.month.slice(5)}</text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-        {BUCKET_ORDER.map((k) => (
-          <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 10, height: 10, background: BUCKET_COLOR[k], flex: "none" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.08em", color: "var(--ft-dim)" }}>{BUCKET_LABEL[k]}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -1016,67 +615,6 @@ function CashflowChart({
   );
 }
 
-// ── Accounts list ────────────────────────────────────────────────────────────
-type Acct = {
-  id: number;
-  name: string;
-  currency: string;
-  balance: number;
-  baseEquivalent: number | null;
-};
-
-function AccountsList({ accounts }: { accounts: Acct[] }) {
-  if (!accounts.length) {
-    return (
-      <div style={{ padding: "12px 0", fontSize: 13, color: "var(--ft-dim)" }}>
-        No accounts.
-      </div>
-    );
-  }
-  return (
-    <VStack>
-      {accounts.map((a, i) => (
-        // Row borders are one-off dividers between siblings. Inline
-        // stays; primitives don't own row rules.
-        <div
-          key={a.id}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 10,
-            minHeight: 44,
-            borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-            ...(i === accounts.length - 1
-              ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
-              : {}),
-            fontSize: 14,
-          }}
-        >
-          <Text as="span" size={14}>{a.name}</Text>
-          {a.currency === "GBP" ? (
-            <Text as="span" mono size={13} numeric>
-              {a.baseEquivalent == null ? "—" : nfmt(a.baseEquivalent)}
-            </Text>
-          ) : (
-            // Foreign account row: native amount always honest; the
-            // "≈" line drops to "—" when the FX rate is unavailable.
-            <HStack gap={10} align="baseline">
-              <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
-                {(CURRENCY_SYMBOLS[a.currency] ?? a.currency + " ") +
-                  nfmt(a.balance)} ≈
-              </Text>
-              <Text as="span" mono size={13} color={a.baseEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
-                {a.baseEquivalent == null ? "—" : nfmt(a.baseEquivalent)}
-              </Text>
-            </HStack>
-          )}
-        </div>
-      ))}
-    </VStack>
-  );
-}
-
 // ── Upcoming list ────────────────────────────────────────────────────────────
 // Two row kinds share the same rendering:
 //   - BILL (from subscriptions): negative amount, red
@@ -1164,41 +702,3 @@ function UpcomingList({
   );
 }
 
-// ── Elsewhere row ────────────────────────────────────────────────────────────
-function ElsewhereRow({
-  label,
-  valueLabel,
-  valueColor,
-  onClick,
-}: {
-  label: string;
-  valueLabel: string;
-  valueColor: string;
-  onClick: () => void;
-}) {
-  // Kept as an <a> (not HStack) because the row is a link — semantic HTML
-  // matters even for imperative onClick. Border-bottom + no-underline are
-  // one-off surface on the link. Text primitives own the two children.
-  return (
-    <a
-      onClick={(e) => {
-        e.preventDefault();
-        onClick();
-      }}
-      style={{
-        display: "flex",
-        alignItems: "baseline",
-        justifyContent: "space-between",
-        minHeight: 44,
-        borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)",
-        textDecoration: "none",
-        color: "var(--ft-text)",
-        fontSize: 14,
-        cursor: "pointer",
-      }}
-    >
-      <Text as="span" size={14}>{label}</Text>
-      <Text as="span" mono size={11} color={valueColor}>{valueLabel}</Text>
-    </a>
-  );
-}
