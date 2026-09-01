@@ -96,6 +96,45 @@ router.get("/upcoming/summary", async (req, res): Promise<void> => {
   );
 });
 
+router.post("/upcoming", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const parsed = CreateUpcomingItemBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { dueDate, description, category, type, frequency, nativeAmount, currency, accountId } = parsed.data;
+
+  // No rate snapshot at write time. Unlike transactions (historical records where
+  // the exchange rate at the moment of the transaction is the fact), upcoming items
+  // are future obligations — their base-currency equivalent should reflect the rate
+  // in effect when they land, not when they were entered. enrichUpcoming calls
+  // toBase() live on every read, which is the correct behaviour here.
+  const [inserted] = await db
+    .insert(upcomingTable)
+    .values({
+      dueDate,
+      description,
+      category,
+      type,
+      frequency,
+      status: "pending",
+      nativeAmount: String(nativeAmount),
+      currency,
+      accountId: accountId ?? null,
+      userId,
+    })
+    .returning();
+
+  const accounts = await db
+    .select({ id: accountsTable.id, name: accountsTable.name })
+    .from(accountsTable)
+    .where(eq(accountsTable.userId, userId));
+  const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
+  const enriched = await enrichUpcoming(inserted, accountMap, userId);
+  res.status(201).json(enriched);
+});
+
 router.post("/upcoming/installments", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
   const parsed = GenerateInstallmentsBody.safeParse(req.body);
