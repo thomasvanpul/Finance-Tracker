@@ -5,6 +5,7 @@ import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, txToBase, getStockPrices } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { trailingMonthRanges, localDateString } from "../lib/date-ranges";
+import { captureAccountSnapshots } from "../lib/account-snapshots";
 
 const router: IRouter = Router();
 
@@ -473,27 +474,34 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   };
 
   const thisMonthKey = ranges[ranges.length - 1]!.month;
-  await db
-    .insert(nwSnapshotsTable)
-    .values({
-      userId,
-      month: thisMonthKey,
-      cash: String(liveCompositionRounded.cash),
-      investment: String(liveCompositionRounded.investment),
-      pension: String(liveCompositionRounded.pension),
-      property: String(liveCompositionRounded.property),
-      other: String(liveCompositionRounded.other),
-    })
-    .onConflictDoUpdate({
-      target: [nwSnapshotsTable.userId, nwSnapshotsTable.month],
-      set: {
+  await Promise.all([
+    db
+      .insert(nwSnapshotsTable)
+      .values({
+        userId,
+        month: thisMonthKey,
         cash: String(liveCompositionRounded.cash),
         investment: String(liveCompositionRounded.investment),
         pension: String(liveCompositionRounded.pension),
         property: String(liveCompositionRounded.property),
         other: String(liveCompositionRounded.other),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: [nwSnapshotsTable.userId, nwSnapshotsTable.month],
+        set: {
+          cash: String(liveCompositionRounded.cash),
+          investment: String(liveCompositionRounded.investment),
+          pension: String(liveCompositionRounded.pension),
+          property: String(liveCompositionRounded.property),
+          other: String(liveCompositionRounded.other),
+        },
+      }),
+    // Per-account daily snapshot fan-out. Write-once per (accountId, date)
+    // — first dashboard read of the day captures, later reads no-op.
+    // Independent of the nw_snapshots upsert (different table, different
+    // grain), so run in parallel with it.
+    captureAccountSnapshots(userId),
+  ]);
   // Patch the map so the composition lookup below sees the just-written
   // value without a second SELECT.
   snapshotMap.set(thisMonthKey, {

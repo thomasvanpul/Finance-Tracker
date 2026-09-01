@@ -6,6 +6,7 @@ export * from "./investments";
 export * from "./debts";
 export * from "./shared-expenses";
 export * from "./nw-snapshots";
+export * from "./account-balance-snapshots";
 export * from "./app-settings";
 export * from "./budgets";
 export * from "./goals";

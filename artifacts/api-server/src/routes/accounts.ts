@@ -11,6 +11,7 @@ import {
 } from "@workspace/api-zod";
 import { getFxRates, toBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
+import { captureAccountSnapshots } from "../lib/account-snapshots";
 
 const router: IRouter = Router();
 
@@ -85,6 +86,15 @@ router.patch("/accounts/:id", async (req, res): Promise<void> => {
   if (!account) {
     res.status(404).json({ error: "Account not found" });
     return;
+  }
+  // Capture today's snapshot AFTER the balance UPDATE lands, so if today
+  // has no snapshot yet the corrected value is what's recorded (rather
+  // than the pre-correction balance). If today's snapshot already exists,
+  // write-once no-ops and the correction becomes a delta in tomorrow's
+  // snapshot — the gap logic can classify that jump as a correction
+  // because there is no matching transaction.
+  if (parsed.data.balance !== undefined) {
+    await captureAccountSnapshots(userId);
   }
   const enriched = await enrichAccount(account, userId);
   res.json(UpdateAccountResponse.parse(enriched));
