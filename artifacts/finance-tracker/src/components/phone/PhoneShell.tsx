@@ -7,6 +7,7 @@ import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 import { DesktopOnlyScreen } from "./DesktopOnlyScreen";
 import { SpendingScreen } from "./SpendingScreen";
 import { WorthScreen } from "./WorthScreen";
+import { UpcomingScreen } from "./UpcomingScreen";
 
 // Directory-wrapped desktop pages. Lazy-loaded so the phone bundle doesn't
 // pay for pages a phone user may never visit. Only pages that phone users
@@ -184,7 +185,7 @@ const placeholderStyle: React.CSSProperties = {
   letterSpacing: "0.15em",
   color: "var(--ft-dim)",
 };
-function UpcomingStub()   { return <div style={placeholderStyle}>UPCOMING</div>; }
+// UpcomingStub removed — UpcomingScreen is the live implementation.
 function PhoneNotFound()  { return <div style={{ ...placeholderStyle, fontSize: 14 }}>Route not wired</div>; }
 
 // The tab screens absorb legacy URLs while the merge tabs are being built.
@@ -257,7 +258,7 @@ export function PhoneShell() {
 
           <Route path="/worth" component={WorthScreen} />
           <Route path="/spending" component={SpendingScreen} />
-          <Route path="/upcoming" component={UpcomingStub} />
+          <Route path="/upcoming" component={UpcomingScreen} />
           <Route path="/directory" component={DirectoryScreen} />
 
           <Route path="/accounts" component={WorthScreen} />
@@ -270,9 +271,9 @@ export function PhoneShell() {
           <Route path="/analytics" component={SpendingScreen} />
           <Route path="/cashflow" component={SpendingScreen} />
 
-          <Route path="/recurring" component={UpcomingStub} />
-          <Route path="/subscriptions" component={UpcomingStub} />
-          <Route path="/calendar" component={UpcomingStub} />
+          <Route path="/recurring" component={UpcomingScreen} />
+          <Route path="/subscriptions" component={UpcomingScreen} />
+          <Route path="/calendar" component={UpcomingScreen} />
 
           {/* Wrapped desktop pages — the D5 ratchet keeps this list
               equal to WRAPPED_ROUTES. Only routes phones can usefully
