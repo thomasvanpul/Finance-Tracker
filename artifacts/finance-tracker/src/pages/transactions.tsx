@@ -402,8 +402,6 @@ function TxLedgerEmpty({ openAdd }: { openAdd: () => void }) {
         gap: 14,
         padding: "60px 24px",
         minHeight: "calc(100vh - 260px)",
-        border: "1px solid var(--ft-border)",
-        background: "var(--ft-surface)",
         fontFamily: "var(--font-mono)",
         textAlign: "center",
       }}
@@ -1237,7 +1235,7 @@ export default function Transactions() {
     return (
       <VStack gap="var(--ft-row-gap)">
         {/* KPI bar skeleton */}
-        <div className="ft-scroll-x" style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <div className="ft-scroll-x">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", minWidth: 640 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)" }}>
@@ -1249,7 +1247,7 @@ export default function Transactions() {
           </div>
         </div>
         {/* Filter bar skeleton */}
-        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <div>
           <div style={{ display: "flex", height: 28, alignItems: "center", gap: 0, borderBottom: "1px solid var(--ft-border)" }}>
             {[80, 120, 100, 120, 80, 80, 60].map((w, i) => (
               <div key={i} style={{ width: w, padding: "0 10px", borderRight: "1px solid var(--ft-border)", height: "100%", display: "flex", alignItems: "center" }}>
@@ -1266,7 +1264,7 @@ export default function Transactions() {
           </HStack>
         </div>
         {/* Table skeleton */}
-        <div style={{ border: "1px solid var(--ft-border)" }}>
+        <div>
           <div style={{ display: "flex", height: 34, alignItems: "center", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", padding: "0 12px" }}>
             <FtSkeleton width={160} height={10} />
           </div>
@@ -2164,7 +2162,7 @@ export default function Transactions() {
       </Dialog>
 
       {/* ── KPI bar — Bloomberg-style 6-cell strip (desktop only) ── */}
-      <div className="ft-hide-mobile" style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+      <div className="ft-hide-mobile" style={{ borderBottom: "1px solid var(--ft-border)" }}>
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)" }}>
           {/* TX COUNT */}
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
@@ -2275,7 +2273,7 @@ export default function Transactions() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `2px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", borderLeft: `2px solid ${color}`, padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -2292,7 +2290,7 @@ export default function Transactions() {
 
       {/* ── Mobile Wise-style summary strip ── */}
       {isMobile && (
-        <div style={{ border: "1px solid var(--ft-border)", borderTop: "none", background: "var(--ft-surface)" }}>
+        <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
           <div style={{ padding: "5px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <MonoLabel as="span" size={9} letterSpacing="0.10em">
               {kpiDateFrom && kpiDateTo
