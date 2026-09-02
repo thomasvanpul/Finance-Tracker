@@ -12,8 +12,10 @@ multi-tenant — every table carries `userId`.
 ## 1. Data arrives by itself
 
 Open banking replaces manual entry. Connect once, transactions and balances flow
-in continuously. UK providers: TrueLayer, Plaid, GoCardless. Malaysia has no open
-banking API, so Maybank stays on import until one exists.
+in continuously. UK providers: TrueLayer, Plaid, Enable Banking (GoCardless closed
+to new signups in 2026). Manual CSV import is the realistic default until an
+open-banking integration is live. Malaysia has no open banking API, so Maybank
+stays on import. See `docs/OPEN-BANKING.md` for current provider status.
 
 **Design consequence, important:** "3 uncategorised transfers need a category" is
 an artifact of half-formed data. With automatic ingest and auto-categorisation
