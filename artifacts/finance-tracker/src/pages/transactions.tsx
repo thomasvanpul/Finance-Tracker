@@ -2478,7 +2478,7 @@ export default function Transactions() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="ft-filter-input"
-              style={{ width: "100%", paddingLeft: 26, paddingRight: 8, height: 26, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none", boxSizing: "border-box" as const }}
+              style={{ width: "100%", paddingLeft: 26, paddingRight: 8, height: 26, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", boxSizing: "border-box" as const }}
             />
           </div>
           {/* Type buttons */}
@@ -2497,7 +2497,7 @@ export default function Transactions() {
                 border: "1px solid",
                 borderColor: filterType === t ? "var(--ft-accent)" : "var(--ft-border2)",
                 background: filterType === t ? "var(--ft-accent)" : "transparent",
-                color: filterType === t ? "var(--ft-bg)" : "var(--ft-muted)",
+                color: filterType === t ? "var(--ft-base)" : "var(--ft-muted)",
                 textTransform: "uppercase" as const,
               }}
             >
@@ -2536,7 +2536,7 @@ export default function Transactions() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", cursor: "pointer" }}
+            style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", cursor: "pointer" }}
           >
             <option value="date-desc">DATE ↓</option>
             <option value="date-asc">DATE ↑</option>
@@ -2615,7 +2615,7 @@ export default function Transactions() {
             {/* Category */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>CATEGORY</span>
-              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)" }}>
+              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
                 <option value="all">all</option>
                 {(allCategories as string[]).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -2623,7 +2623,7 @@ export default function Transactions() {
             {/* Account */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>ACCOUNT</span>
-              <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)" }}>
+              <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
                 <option value="all">all</option>
                 {(allAccounts as string[]).map(a => <option key={a} value={a}>{a}</option>)}
               </select>
@@ -2637,16 +2637,16 @@ export default function Transactions() {
                 onChange={(e) => setFilterTag(e.target.value)}
                 placeholder="#tag"
                 className="ft-filter-input"
-                style={{ height: 26, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none" }}
+                style={{ height: 26, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }}
               />
             </div>
             {/* Date range */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>DATE RANGE</span>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none" }} />
+                <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }} />
                 <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>–</span>
-                <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none" }} />
+                <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }} />
               </div>
               <div style={{ display: "flex", gap: 4 }}>
                 <button type="button" onClick={() => applyQuickRange("lastmonth")} style={{ height: 20, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" as const }}>LAST MO</button>
@@ -2657,9 +2657,9 @@ export default function Transactions() {
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>AMOUNT</span>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} placeholder="min" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
+                <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} placeholder="min" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
                 <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>–</span>
-                <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} placeholder="max" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
+                <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} placeholder="max" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
               </div>
             </div>
           </div>
