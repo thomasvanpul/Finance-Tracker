@@ -32,14 +32,14 @@ function computeScore(d: {
     rawLiquidity > 0
       ? 25
       : rawLiquidity === 0
-        ? 12
+        ? 0
         : Math.max(0, 12 + (rawLiquidity / Math.abs(rawLiquidity || 1)) * 12);
 
   const portfolioRatio =
     d.portfolio.totalValueBase > 0
       ? d.portfolio.totalPlBase / d.portfolio.totalValueBase
       : 0;
-  const portfolio = Math.min(20, Math.max(0, 10 + portfolioRatio * 200));
+  const portfolio = Math.min(20, Math.max(0, portfolioRatio * 200));
 
   const monthsCovered = d.totalCash / Math.max(1, d.thisMonth.expenses);
   const cashBuffer = Math.min(25, (monthsCovered / 3) * 25);

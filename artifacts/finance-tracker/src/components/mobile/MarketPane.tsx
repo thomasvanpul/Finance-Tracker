@@ -9,6 +9,7 @@ import {
   type StockQuote,
 } from "@workspace/api-client-react";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { StaleAsOf } from "@/components/StaleAsOf";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
 import { formatMoney } from "@/lib/utils";
 import { getBaseCurrency } from "@/lib/currency-store";
@@ -26,8 +27,9 @@ import { getBaseCurrency } from "@/lib/currency-store";
 
 // StockQuote (regenerated 2026-08-16 with changePercent + previousClose
 // added to the OpenAPI spec) now carries the runtime fields the server
-// has always returned. Local widening removed.
-type QuoteExt = StockQuote;
+// has always returned. `stale` is set by the server when serving cached
+// data past the fresh window — not yet in the generated schema.
+type QuoteExt = StockQuote & { stale?: boolean };
 
 // GBP-based FX pairs mirror the api-server's FX_PAIRS map in
 // lib/market.ts. Kept as a client-side constant so we can turn a user's
@@ -143,6 +145,20 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
     return m;
   }, [quotes]);
 
+  // Stale-serve indicator: find the oldest server-side updatedAt among
+  // quotes the server has flagged as stale. The 45-min FX cache means
+  // the user may see no movement for up to 45 minutes — this makes that
+  // explicit rather than looking like a frozen screen.
+  const staleTs = useMemo(() => {
+    let oldest: number | null = null;
+    for (const q of quotes as QuoteExt[]) {
+      if (!q.stale) continue;
+      const ts = new Date(q.updatedAt).getTime();
+      if (oldest === null || ts < oldest) oldest = ts;
+    }
+    return oldest;
+  }, [quotes]);
+
   // Nothing to show and no holdings → don't render the pane at all.
   // A first-run user with no accounts and no positions doesn't need a
   // MARKETS section that would just show "—" everywhere.
@@ -181,6 +197,11 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
             INVESTMENTS ›
           </a>
         </HStack>
+        {staleTs !== null && (
+          <div style={{ marginTop: 4 }}>
+            <StaleAsOf ts={staleTs} isFresh={false} compact />
+          </div>
+        )}
       </div>
 
       <VStack paddingX={18} marginTop={6}>
