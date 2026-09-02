@@ -277,11 +277,13 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
         transform: "translate(-50%, -50%)",
         width: "min(480px, 92vw)",
         maxHeight: "70vh",
+        animation: "bot-appear 0.12s ease-out forwards",
       } : {
         bottom: anchorBottom,
         right: anchorRight,
         width: 360,
         maxHeight: 520,
+        animation: "bot-appear 0.12s ease-out forwards",
       }),
       background: isWandererSling ? sk.bg : "var(--ft-surface)",
       // Wanderer skins keep their character-shaped border. Default
@@ -388,6 +390,7 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
 
       <style>{`
         @keyframes sling-in { 0%{opacity:0;transform:scale(0.7) translateY(12px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes bot-appear { 0%{opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0)} }
       `}</style>
     </div>
   );
