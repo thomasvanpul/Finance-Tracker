@@ -549,7 +549,6 @@ function SectionDivider({
       }}>
         {label}
       </span>
-      <div style={{ flex: 1, height: "1px", background: "var(--ft-border)" }} />
       {onClick && (
         <ChevronRight size={8} style={{
           flexShrink: 0,
@@ -1190,6 +1189,7 @@ export function Layout({ children }: LayoutProps) {
   const [moreOpen, setMoreOpen] = useState(() => {
     try { return localStorage.getItem("nr-sidebar-more") === "1"; } catch { return false; }
   });
+  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
     try {
       const r = localStorage.getItem("nr-sidebar-collapsed-sections");
@@ -1606,7 +1606,18 @@ export function Layout({ children }: LayoutProps) {
                     const hasActiveInSection = section.items.some(item => isActive(item.href));
                     const isSectionCollapsed = !effectiveCollapsed && collapsedSections.has(section.label) && !hasActiveInSection;
                     return (
-                    <div key={`${section.label}-${i}`}>
+                    <div
+                      key={`${section.label}-${i}`}
+                      onMouseEnter={() => setHoveredSection(section.label)}
+                      onMouseLeave={() => setHoveredSection(null)}
+                      style={{
+                        border: !effectiveCollapsed && hoveredSection === section.label
+                          ? "1px solid var(--ft-border2)"
+                          : "1px solid transparent",
+                        borderRadius: 2,
+                        transition: "border-color 0.1s",
+                      }}
+                    >
                       <SectionDivider
                         label={section.label}
                         collapsed={effectiveCollapsed}
