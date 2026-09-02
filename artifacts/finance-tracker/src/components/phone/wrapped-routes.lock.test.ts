@@ -44,6 +44,7 @@ import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { SLOT_OPTIONS } from "@/lib/tab-slot";
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = join(dirname(__filename), "..", "..", "..", "..", "..");
@@ -307,6 +308,63 @@ ${desktopOnlyCalls.map((c) => `{${c}}`).join("\n")}
       const wrapped = new Set(r.listedWrapped);
       const overlap = r.listedDesktopOnly.filter((p) => wrapped.has(p));
       expect(overlap).toEqual(["/pension"]);
+    });
+
+    // ── Invariants 4–5: tab-URL purity ───────────────────────────────────────
+    // The phone has four tab positions: HOME · WORTH · [slot] · DIRECTORY.
+    // The slot cycles through available SlotOptions (currently SPENDING,
+    // MARKETS, UPCOMING). All tab-owned URLs must be absent from both
+    // WRAPPED_ROUTES and DESKTOP_ONLY_ROUTES — wrapping a tab URL would mean
+    // the route is both a tab and a drill-in, which produces two conflicting
+    // animations and breaks the tab bar active-indicator logic.
+    //
+    // OWING is intentionally excluded: it is a slot option but available:false,
+    // so it is still in WRAPPED_ROUTES until OwingScreen ships. The filter on
+    // SLOT_OPTIONS.available enforces this — the lock only fires once the slot
+    // is promoted to phone-native.
+
+    const FIXED_TAB_URLS = ["/", "/worth", "/directory"] as const;
+    const AVAILABLE_SLOT_URLS = SLOT_OPTIONS.filter((o) => o.available).map((o) => o.href);
+    const TAB_OWNED_URLS = [...FIXED_TAB_URLS, ...AVAILABLE_SLOT_URLS];
+
+    it(
+      "tab-owned URLs are not in WRAPPED_ROUTES (tab purity)",
+      () => {
+        const wrapped = new Set(LIVE.listedWrapped);
+        const clash = TAB_OWNED_URLS.filter((u) => wrapped.has(u));
+        if (clash.length === 0) return;
+        throw new Error(
+          `Lock #18 · tab URL collision in WRAPPED_ROUTES (${clash.length}):\n` +
+            clash.map((u) => `  ${u}`).join("\n") +
+            `\n\nThese URLs belong to phone tabs. Wrapping a tab URL produces two conflicting animations and breaks the active indicator. Remove them from WRAPPED_ROUTES — or, if the slot is being retired, set it available:false in tab-slot.ts first.`,
+        );
+      },
+    );
+
+    it(
+      "tab-owned URLs are not in DESKTOP_ONLY_ROUTES (tab purity)",
+      () => {
+        const desktopOnly = new Set(LIVE.listedDesktopOnly);
+        const clash = TAB_OWNED_URLS.filter((u) => desktopOnly.has(u));
+        if (clash.length === 0) return;
+        throw new Error(
+          `Lock #18 · tab URL collision in DESKTOP_ONLY_ROUTES (${clash.length}):\n` +
+            clash.map((u) => `  ${u}`).join("\n") +
+            `\n\nThese URLs belong to phone tabs. A tab URL must never render DesktopOnlyScreen — it is always reachable from the tab bar. Remove them from DESKTOP_ONLY_ROUTES.`,
+        );
+      },
+    );
+
+    it("bites when a tab URL appears in WRAPPED_ROUTES (tab-purity fixture)", () => {
+      const wrapped = new Set(["/goals", "/markets"]);
+      const clash = TAB_OWNED_URLS.filter((u) => wrapped.has(u));
+      expect(clash).toEqual(["/markets"]);
+    });
+
+    it("bites when a tab URL appears in DESKTOP_ONLY_ROUTES (tab-purity fixture)", () => {
+      const desktopOnly = new Set(["/business", "/spending"]);
+      const clash = TAB_OWNED_URLS.filter((u) => desktopOnly.has(u));
+      expect(clash).toEqual(["/spending"]);
     });
 
     it("passes when all three sets are consistent and disjoint (control)", () => {

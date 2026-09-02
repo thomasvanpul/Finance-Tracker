@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef, useSyncExternalStore } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { apiFetch } from "@/lib/api-fetch";
 import { getAiStyle, setAiStylePref, type AiStyle } from "@/components/ai-agent";
@@ -33,6 +33,10 @@ import { useWidgets, WIDGET_REGISTRY } from "@/contexts/widgets-context";
 import { getBotSkin, setBotSkin, SKINS, type BotSkinId } from "@/lib/bot-skins";
 import { BotPreview, type Phase } from "@/components/ai-wanderer";
 import { ConnectionsPanel } from "./settings-connections";
+import {
+  SLOT_OPTIONS, saveSlotId, clearSlotId, loadSlotId, slotIdForPersona,
+  SLOT_UPDATE_EVENT,
+} from "@/lib/tab-slot";
 
 const WARDROBE_PHASES: Phase[] = ["idle", "sitting", "coffee", "thinking", "dancing", "complaining", "tired", "jumping", "lying"];
 
@@ -437,6 +441,19 @@ function TerminalProfilePanel() {
   const [previewPersona, setPreviewPersona] = useState<PersonaId | null>(null);
   const [showMatrix, setShowMatrix] = useState(false);
 
+  const activePersona = useActivePersona();
+  const savedSlotId = useSyncExternalStore(
+    (cb) => {
+      window.addEventListener(SLOT_UPDATE_EVENT, cb);
+      return () => window.removeEventListener(SLOT_UPDATE_EVENT, cb);
+    },
+    loadSlotId,
+    () => null,
+  );
+  const defaultSlotId = slotIdForPersona(activePersona);
+  const effectiveSlotId = savedSlotId ?? defaultSlotId;
+  const isSlotPinned = savedSlotId != null;
+
   function toggle(id: PersonaId) {
     if (id === "full") { setSelected(new Set(["full"])); setSaved(false); return; }
     setSelected((prev) => {
@@ -644,6 +661,65 @@ function TerminalProfilePanel() {
             <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
               Sidebar, widgets, and default page update immediately.
             </span>
+          </div>
+
+          {/* ── Third tab slot ───────────────────────────────── */}
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--ft-border)" }}>
+            <div style={{ ...mono, fontSize: 8, letterSpacing: "0.14em", color: "var(--ft-dim)", textTransform: "uppercase", marginBottom: 8 }}>
+              THIRD TAB SLOT · PHONE
+            </div>
+            <p style={{ ...mono, fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.6, marginBottom: 12 }}>
+              The slot is the third position in the phone tab bar — HOME · WORTH · [slot] · DIRECTORY.
+              Your profile sets a default; pin a different one here to override it.
+            </p>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+              {SLOT_OPTIONS.map((opt) => {
+                const isActive = effectiveSlotId === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    disabled={!opt.available}
+                    onClick={() => {
+                      if (!opt.available) return;
+                      if (savedSlotId === opt.id) clearSlotId();
+                      else saveSlotId(opt.id);
+                    }}
+                    style={{
+                      ...mono, fontSize: 10, letterSpacing: "0.1em",
+                      padding: "5px 12px",
+                      background: isActive ? "var(--ft-accent)" : "var(--ft-raised)",
+                      border: `1px solid ${isActive ? "var(--ft-accent)" : "var(--ft-border)"}`,
+                      color: !opt.available
+                        ? "var(--ft-border2)"
+                        : isActive
+                        ? "var(--ft-base)"
+                        : "var(--ft-dim)",
+                      cursor: opt.available ? "pointer" : "not-allowed",
+                      opacity: !opt.available ? 0.45 : 1,
+                      transition: "all 0.12s",
+                    }}
+                    title={!opt.available ? "Coming soon" : undefined}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", display: "flex", alignItems: "center", gap: 6 }}>
+              {isSlotPinned ? (
+                <>
+                  <span>Pinned. Profile default is {defaultSlotId.toUpperCase()}.</span>
+                  <button
+                    onClick={clearSlotId}
+                    style={{ ...mono, fontSize: 9, color: "var(--ft-accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    Reset
+                  </button>
+                </>
+              ) : (
+                <span>Following profile default ({defaultSlotId.toUpperCase()}).</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -92,7 +92,7 @@ interface SubScore {
   key: string;
   label: string;
   weight: number;
-  score: number;
+  score: number | null;
   insight: string;
   action?: string;
   pointGain?: number;
@@ -129,8 +129,8 @@ function calcSavingsRateScore(rate: number): number {
   return lerp(rate, 20, 70, 30, 100);
 }
 
-function calcDebtLoadScore(totalDebt: number, monthlyIncome: number): number {
-  if (monthlyIncome <= 0) return 50;
+function calcDebtLoadScore(totalDebt: number, monthlyIncome: number): number | null {
+  if (monthlyIncome <= 0) return null;
   const ratio = totalDebt / monthlyIncome;
   if (ratio <= 0) return 100;
   if (ratio <= 1) return lerp(ratio, 0, 100, 1, 70);
@@ -139,8 +139,8 @@ function calcDebtLoadScore(totalDebt: number, monthlyIncome: number): number {
   return 0;
 }
 
-function calcBillReliabilityScore(upcoming: UpcomingItem[], today: Date): number {
-  if (upcoming.length === 0) return 100;
+function calcBillReliabilityScore(upcoming: UpcomingItem[], today: Date): number | null {
+  if (upcoming.length === 0) return null;
   const total = upcoming.length;
   const overdue = upcoming.filter((item) => {
     if (item.status === "paid") return false;
@@ -154,7 +154,7 @@ function calcBillReliabilityScore(upcoming: UpcomingItem[], today: Date): number
   return 30;
 }
 
-function calcSpendingConsistencyScore(monthlyHistory: Array<{ expenses: number | null }>): number {
+function calcSpendingConsistencyScore(monthlyHistory: Array<{ expenses: number | null }>): number | null {
   // Null expenses mean the month had unconvertible transactions —
   // omit them from the consistency calc rather than treating them as
   // 0, which would spuriously inflate variance. Same argument as the
@@ -162,7 +162,7 @@ function calcSpendingConsistencyScore(monthlyHistory: Array<{ expenses: number |
   const totals = monthlyHistory
     .map((m) => m.expenses)
     .filter((v): v is number => v != null && v > 0);
-  if (totals.length < 2) return 50;
+  if (totals.length < 2) return null;
   const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
   if (mean <= 0) return 50;
   const variance = totals.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / totals.length;
@@ -180,8 +180,8 @@ function calcEmergencyFundScore(goals: SavingsGoal[]): number {
   return Math.min((fund.current / fund.target) * 100, 100);
 }
 
-function calcBudgetAdherenceScore(budgets: Budget[], spentByCategory: Record<string, number>): number {
-  if (budgets.length === 0) return 50;
+function calcBudgetAdherenceScore(budgets: Budget[], spentByCategory: Record<string, number>): number | null {
+  if (budgets.length === 0) return null;
   const overBudget = budgets.filter((b) => {
     const spent = spentByCategory[b.category.toLowerCase()] ?? 0;
     return spent > b.monthlyLimit;
@@ -261,12 +261,12 @@ function ColorLegendItem({ label, color }: ColorLegendItemProps) {
 
 interface PillarMiniBarProps {
   label: string;
-  score: number;
+  score: number | null;
   weight: number;
 }
 
 function PillarMiniBar({ label, score, weight }: PillarMiniBarProps) {
-  const color = scoreColor(score);
+  const color = score !== null ? scoreColor(score) : "var(--ft-dim)";
   return (
     <div style={{
       display: "grid", gridTemplateColumns: "130px 1fr 42px 28px",
@@ -277,10 +277,10 @@ function PillarMiniBar({ label, score, weight }: PillarMiniBarProps) {
         {label}
       </div>
       <div style={{ height: 4, background: "var(--ft-raised)", overflow: "hidden", position: "relative" as const }}>
-        <div style={{ height: "100%", width: `${score}%`, background: color }} />
+        <div style={{ height: "100%", width: `${score ?? 0}%`, background: color }} />
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color, textAlign: "right" as const, letterSpacing: "-0.01em" }}>
-        {Math.round(score)}
+        {score !== null ? Math.round(score) : "—"}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", textAlign: "right" as const }}>
         ×{Math.round(weight * 100)}%
@@ -467,8 +467,8 @@ interface SubScoreRowProps {
 }
 
 function SubScoreRow({ sub, rank }: SubScoreRowProps) {
-  const color = scoreColor(sub.score);
-  const grade = letterGrade(sub.score);
+  const color = sub.score !== null ? scoreColor(sub.score) : "var(--ft-dim)";
+  const grade = sub.score !== null ? letterGrade(sub.score) : "—";
   const [hovered, setHovered] = useState<boolean>(false);
 
   return (
@@ -505,7 +505,7 @@ function SubScoreRow({ sub, rank }: SubScoreRowProps) {
       {/* Progress bar + insight */}
       <div>
         <div style={{ height: 3, background: "var(--ft-border)", marginBottom: 5, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${sub.score}%`, background: color }} />
+          <div style={{ height: "100%", width: `${sub.score ?? 0}%`, background: color }} />
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5 }}>
           {sub.insight}
@@ -519,7 +519,7 @@ function SubScoreRow({ sub, rank }: SubScoreRowProps) {
       </div>
       {/* Score */}
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color, textAlign: "right" as const }}>
-        {Math.round(sub.score)}
+        {sub.score !== null ? Math.round(sub.score) : "—"}
       </div>
       {/* Grade badge */}
       <div style={{
@@ -759,7 +759,8 @@ export default function HealthScore() {
       if (totalPendingDebt === 0) return null;
       const ratio = monthlyIncome > 0 ? totalPendingDebt / monthlyIncome : 0;
       if (ratio <= 1) return null;
-      const gain = Math.round((calcDebtLoadScore(monthlyIncome, monthlyIncome) - debtScore) * 0.2);
+      const atOneX = calcDebtLoadScore(monthlyIncome, monthlyIncome) ?? 0;
+      const gain = Math.round((atOneX - (debtScore ?? 0)) * 0.2);
       return { action: "Reduce debt to under 1x monthly income", gain: Math.max(gain, 1) };
     }
 
@@ -777,7 +778,7 @@ export default function HealthScore() {
         (item: UpcomingItem) => item.status !== "paid" && new Date(item.dueDate) < now
       ).length;
       if (overdue === 0) return null;
-      return { action: `Pay ${overdue} overdue bill${overdue > 1 ? "s" : ""}`, gain: Math.round((100 - billScore) * 0.15) };
+      return { action: `Pay ${overdue} overdue bill${overdue > 1 ? "s" : ""}`, gain: Math.round((100 - (billScore ?? 100)) * 0.15) };
     }
 
     function insightConsistency(): string {
@@ -830,26 +831,35 @@ export default function HealthScore() {
 
     return [
       { key: "savings", label: "Savings Rate", weight: 0.25, score: Math.round(savingsScore), insight: insightSavings(), action: sa?.action, pointGain: sa?.gain },
-      { key: "debt", label: "Debt Load", weight: 0.2, score: Math.round(debtScore), insight: insightDebt(), action: da?.action, pointGain: da?.gain },
-      { key: "bills", label: "Bill Reliability", weight: 0.15, score: Math.round(billScore), insight: insightBills(), action: ba?.action, pointGain: ba?.gain },
-      { key: "consistency", label: "Spending Consistency", weight: 0.15, score: Math.round(consistencyScore), insight: insightConsistency() },
+      { key: "debt", label: "Debt Load", weight: 0.2, score: debtScore !== null ? Math.round(debtScore) : null, insight: insightDebt(), action: da?.action, pointGain: da?.gain },
+      { key: "bills", label: "Bill Reliability", weight: 0.15, score: billScore !== null ? Math.round(billScore) : null, insight: insightBills(), action: ba?.action, pointGain: ba?.gain },
+      { key: "consistency", label: "Spending Consistency", weight: 0.15, score: consistencyScore !== null ? Math.round(consistencyScore) : null, insight: insightConsistency() },
       { key: "emergency", label: "Emergency Fund", weight: 0.15, score: Math.round(efScore), insight: insightEF(), action: ea?.action, pointGain: ea?.gain },
-      { key: "budget", label: "Budget Adherence", weight: 0.1, score: Math.round(budgetScore), insight: insightBudget(), action: bua?.action, pointGain: bua?.gain },
-    ].sort((a, b) => a.score - b.score);
+      { key: "budget", label: "Budget Adherence", weight: 0.1, score: budgetScore !== null ? Math.round(budgetScore) : null, insight: insightBudget(), action: bua?.action, pointGain: bua?.gain },
+    ].sort((a, b) => (a.score ?? -1) - (b.score ?? -1));
   }, [
     dashboard, totalPendingDebt, monthlyIncome, upcoming, last6Months,
     savingsGoals, budgets, spentByCategory, now,
   ]);
 
   // ── Composite score ───────────────────────────────────────────────────────────
+  // Gate: no score for an account with no transactions at all — savings=0 and
+  // emergency=0 are real observations, but they come from empty inputs and would
+  // produce a misleading 0 on a brand-new account. "—" is more honest than 0
+  // when there is simply nothing to evaluate yet.
+  const hasAnyTransactions = (allTxs?.length ?? 0) > 0;
 
-  const compositeScore = useMemo(
-    () => Math.round(subScores.reduce((total, s) => total + s.score * s.weight, 0)),
-    [subScores]
-  );
+  const compositeScore = useMemo((): number | null => {
+    if (!hasAnyTransactions) return null;
+    const nonNull = subScores.filter((s): s is SubScore & { score: number } => s.score !== null);
+    if (nonNull.length === 0) return null;
+    const totalWeight = nonNull.reduce((t, s) => t + s.weight, 0);
+    const weightedSum = nonNull.reduce((t, s) => t + s.score * s.weight, 0);
+    return Math.round(weightedSum / totalWeight);
+  }, [subScores, hasAnyTransactions]);
 
-  const grade = letterGrade(compositeScore);
-  const color = scoreColor(compositeScore);
+  const grade = compositeScore !== null ? letterGrade(compositeScore) : "—";
+  const color = compositeScore !== null ? scoreColor(compositeScore) : "var(--ft-dim)";
 
   // ── Recommendations ───────────────────────────────────────────────────────────
 
@@ -864,7 +874,7 @@ export default function HealthScore() {
 
     const ratio = monthlyIncome > 0 ? totalPendingDebt / monthlyIncome : 0;
     if (ratio > 3) {
-      const impact = Math.round((calcDebtLoadScore(monthlyIncome, monthlyIncome) - calcDebtLoadScore(totalPendingDebt, monthlyIncome)) * 0.2);
+      const impact = Math.round(((calcDebtLoadScore(monthlyIncome, monthlyIncome) ?? 0) - (calcDebtLoadScore(totalPendingDebt, monthlyIncome) ?? 0)) * 0.2);
       list.push({ id: "debt", text: `Debt is ${ratio.toFixed(1)}x monthly income. Reduce to under 1x to gain ~+${Math.max(impact, 1)} pts.`, impact: Math.max(impact, 1), color: "var(--ft-red)", priority: "critical" });
     }
 
@@ -915,21 +925,21 @@ export default function HealthScore() {
     if (allBillsPaid) unlock("bills-clean", "Bill Perfectionist", "calendar", "All upcoming bills paid on time!");
     if (budgets.length > 0) unlock("first-budget", "Budget Planner", "barchart", "Set up your first budget category.");
     if ((allTxs ?? []).some((tx: Transaction) => tx.type === "income")) unlock("first-investment", "Tracker Initiated", "zap", "Started tracking income and investments.");
-    if (compositeScore >= 80) unlock("score-80", "Financial Health Star", "star", "Achieved a score of 80+ on Financial Health!");
+    if (compositeScore !== null && compositeScore >= 80) unlock("score-80", "Financial Health Star", "star", "Achieved a score of 80+ on Financial Health!");
     if (changed) { setAchievements(updated); saveAchievements(updated); }
   }, [dashboard, upcoming, budgets, allTxs, compositeScore, now, achievements]);
 
   // ── Save score snapshot on data load ─────────────────────────────────────────
   useEffect(() => {
     if (dashLoading || txLoading || debtsLoading || upcomingLoading) return;
-    if (compositeScore === 0) return;
+    if (!compositeScore) return;
     const updated = saveScoreSnapshot(compositeScore);
     setScoreHistory(updated);
   }, [compositeScore, dashLoading, txLoading, debtsLoading, upcomingLoading]);
 
   // ── Score trend vs. 7 days ago ────────────────────────────────────────────────
   const scoreTrend = useMemo(() => {
-    if (scoreHistory.length < 2) return null;
+    if (compositeScore === null || scoreHistory.length < 2) return null;
     const sorted = [...scoreHistory].sort((a, b) => a.date.localeCompare(b.date));
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -1009,7 +1019,7 @@ export default function HealthScore() {
       <div style={{ display: "grid", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}
            className="ft-four-col"
            data-cols="4">
-        <KpiStripCell label="Composite Score" value={String(compositeScore)} unit="/ 100" color={color} />
+        <KpiStripCell label="Composite Score" value={compositeScore !== null ? String(compositeScore) : "—"} unit={compositeScore !== null ? "/ 100" : ""} color={color} />
         <KpiStripCell label="Grade" value={grade} unit="" color={color} />
         <KpiStripCell
           label="Score Trend (7d)"
@@ -1032,8 +1042,17 @@ export default function HealthScore() {
             }}>
               Loading…
             </div>
-          ) : (
+          ) : compositeScore !== null ? (
             <ScoreGauge score={compositeScore} color={color} grade={grade} />
+          ) : (
+            <div style={{
+              width: 220, height: 220, border: "1px solid var(--ft-border)", background: "var(--ft-surface)",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+              fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)",
+            }}>
+              <span style={{ fontSize: 36, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "-0.02em" }}>—</span>
+              <span style={{ fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>add transactions to score</span>
+            </div>
           )}
           {/* Color legend */}
           <HStack gap={4} justify="center" marginTop={6}>
@@ -1057,11 +1076,11 @@ export default function HealthScore() {
                 Grade {grade}
               </div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
-                {compositeScore}/100
+                {compositeScore !== null ? `${compositeScore}/100` : "—"}
               </div>
             </HStack>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color, fontWeight: 700, lineHeight: 1.3 }}>
-              {gradeDescription(compositeScore)}
+              {compositeScore !== null ? gradeDescription(compositeScore) : "Add transactions to generate your score."}
             </div>
             {scoreTrend !== null && (
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--ft-border)" }}>

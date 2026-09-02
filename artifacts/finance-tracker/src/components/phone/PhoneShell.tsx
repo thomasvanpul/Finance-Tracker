@@ -8,6 +8,7 @@ import { DesktopOnlyScreen } from "./DesktopOnlyScreen";
 import { SpendingScreen } from "./SpendingScreen";
 import { WorthScreen } from "./WorthScreen";
 import { UpcomingScreen } from "./UpcomingScreen";
+import { MarketScreen } from "./MarketScreen";
 
 // Directory-wrapped desktop pages. Lazy-loaded so the phone bundle doesn't
 // pay for pages a phone user may never visit. Only pages that phone users
@@ -258,6 +259,7 @@ export function PhoneShell() {
 
           <Route path="/worth" component={WorthScreen} />
           <Route path="/spending" component={SpendingScreen} />
+          <Route path="/markets" component={MarketScreen} />
           <Route path="/upcoming" component={UpcomingScreen} />
           <Route path="/directory" component={DirectoryScreen} />
 
