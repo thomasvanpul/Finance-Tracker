@@ -395,7 +395,7 @@ function KpiCell({
       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 }}>
         {label}
       </div>
-      <div style={{ ...mono, fontSize: hero ? 20 : 16, fontWeight: 700, color: color ?? "var(--ft-text)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div style={{ ...mono, fontSize: hero ? 20 : 16, fontWeight: 700, color: color ?? "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>
         <span className="pnum">{value}</span>
       </div>
       {sub && <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{sub}</div>}

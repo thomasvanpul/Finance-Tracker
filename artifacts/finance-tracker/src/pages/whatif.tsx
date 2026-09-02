@@ -121,7 +121,7 @@ const formulaBlock = (children: React.ReactNode) => (
 function BigNumber({ value, label, color = "var(--ft-text)", size = 24 }: { value: string; label: string; color?: string; size?: number }) {
   return (
     <div>
-      <div style={{ ...mono, fontSize: size, fontWeight: 700, color, lineHeight: 1, letterSpacing: size >= 24 ? "-0.025em" : undefined, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+      <div style={{ ...mono, fontSize: size, fontWeight: 700, color, lineHeight: 1, letterSpacing: size >= 24 ? "-0.025em" : undefined, minWidth: 0 }}>
         <span className="pnum">{value}</span>
       </div>
       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 4 }}>

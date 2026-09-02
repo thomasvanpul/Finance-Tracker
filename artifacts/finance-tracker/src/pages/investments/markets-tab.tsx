@@ -726,7 +726,7 @@ export function MarketsTab() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", marginLeft: "auto", opacity: 0.5, letterSpacing: "0.04em" }}>↗</span>
           )}
         </HStack>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: color ?? "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: color ?? "var(--ft-text)" }}>{value}</div>
       </div>
     );
 
@@ -1344,7 +1344,7 @@ export function MarketsTab() {
                   <HStack gap={14} align="center" marginBottom={14}>
                     <div style={{ fontSize: 38, fontFamily: "var(--font-mono)", fontWeight: 700, color: gradeColor, lineHeight: 1 }}>{rating.grade}</div>
                     <div>
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: gradeColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{rating.overall.toFixed(1)}<Text as="span" size={11} color="var(--ft-dim)">/10</Text></div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: gradeColor }}>{rating.overall.toFixed(1)}<Text as="span" size={11} color="var(--ft-dim)">/10</Text></div>
                       <Text as="div" mono size={9} color="var(--ft-dim)" mt={1}>Overall Score</Text>
                     </div>
                   </HStack>
