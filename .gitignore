@@ -59,3 +59,6 @@ design-import/
 # Neither belongs in git history; the record of what shipped lives in
 # commits + Atlas notes, not here.
 .review/
+
+# Agent worktrees — created and removed automatically; not project files
+.claude/worktrees/
