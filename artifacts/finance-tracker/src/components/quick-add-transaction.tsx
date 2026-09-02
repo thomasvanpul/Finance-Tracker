@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { enqueueOutbox, isNetworkError, OutboxQueued } from "@/lib/outbox-db";
 import { applyAutoCategory } from "@/lib/auto-cat";
 import { apiFetch } from "@/lib/api-fetch";
 import { useLocation } from "wouter";
@@ -207,18 +208,17 @@ export function QuickAddTransaction({ open, onClose }: Props) {
       });
       return;
     }
+    const body = {
+      nativeAmount: Math.abs(amount),
+      currency: form.currency,
+      type: form.type,
+      description: form.description,
+      category: form.category,
+      accountId: parseInt(form.accountId, 10),
+      date: form.date,
+    };
     try {
-      await createTransaction.mutateAsync({
-        data: {
-          nativeAmount: Math.abs(amount),
-          currency: form.currency,
-          type: form.type,
-          description: form.description,
-          category: form.category,
-          accountId: parseInt(form.accountId, 10),
-          date: form.date,
-        },
-      });
+      await createTransaction.mutateAsync({ data: body });
       queryClient.invalidateQueries({ queryKey: getListTransactionsQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetTransactionSummaryQueryKey() });
@@ -226,6 +226,13 @@ export function QuickAddTransaction({ open, onClose }: Props) {
       reset();
       onClose();
     } catch (err) {
+      if (err instanceof OutboxQueued || isNetworkError(err)) {
+        await enqueueOutbox("POST", "/api/transactions", body);
+        toast({ title: "Queued — will sync when connected" });
+        reset();
+        onClose();
+        return;
+      }
       toast({
         title: "Failed to add transaction",
         description: err instanceof Error ? err.message : "Unknown error",

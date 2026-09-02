@@ -2,7 +2,10 @@ import { Link, useLocation } from "wouter";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useNetworkStatus } from "@/hooks/use-network-status";
+import { useOutboxReplay } from "@/hooks/use-outbox-replay";
 import { useAppResume } from "@/hooks/use-app-resume";
+import { SyncBadge } from "@/components/sync-badge";
+import { useToast } from "@/hooks/use-toast";
 import { MobileFab } from "@/components/mobile-fab";
 import { CountryMark, COUNTRY_FOR_CITY } from "@/components/currency-mark";
 import { createPortal } from "react-dom";
@@ -1271,6 +1274,11 @@ export function Layout({ children }: LayoutProps) {
   }, [queryClient]);
   const { pullY, isRefreshing, touchHandlers: pullHandlers } = usePullToRefresh(refreshAll);
   const isOnline = useNetworkStatus();
+  const { toast } = useToast();
+  useOutboxReplay(
+    (count) => toast({ title: `Synced ${count} pending change${count === 1 ? "" : "s"}` }),
+    () => toast({ title: "A pending change could not be saved", variant: "destructive" }),
+  );
   useAppResume(refreshAll);
   const { dismiss: dismissKeyboard } = useKeyboard();
 
@@ -2045,6 +2053,9 @@ export function Layout({ children }: LayoutProps) {
               <span>SEARCH</span>
               <span style={{ color: "var(--ft-dim)", fontSize: 9, borderLeft: "1px solid var(--ft-border)", paddingLeft: 6 }}>⌘K</span>
             </button>
+
+            {/* Pending sync badge — only visible when offline writes are queued */}
+            <SyncBadge />
 
             {/* Privacy toggle */}
             <button

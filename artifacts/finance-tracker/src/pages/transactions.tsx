@@ -14,6 +14,7 @@ import {
   getGetDashboardQueryKey,
 } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/api-fetch";
+import { enqueueOutbox, isNetworkError } from "@/lib/outbox-db";
 import { formatBaseMoney, formatNative, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PrivDesc } from "@/contexts/privacy-context";
@@ -812,21 +813,37 @@ export default function Transactions() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault(); setSubmitting(true);
+    const body = { date: form.date, description: form.description, type: form.type, category: form.category, accountId: parseInt(form.accountId), nativeAmount: parseFloat(form.nativeAmount), currency: form.currency };
     try {
-      await createTx.mutateAsync({ data: { date: form.date, description: form.description, type: form.type, category: form.category, accountId: parseInt(form.accountId), nativeAmount: parseFloat(form.nativeAmount), currency: form.currency } });
+      await createTx.mutateAsync({ data: body });
       invalidate(); setAddOpen(false); toast({ title: "Transaction added" });
       haptic.success();
-    } catch { toast({ title: "Failed to add transaction", variant: "destructive" }); haptic.error(); }
+    } catch (err) {
+      if (isNetworkError(err)) {
+        await enqueueOutbox("POST", "/api/transactions", body);
+        setAddOpen(false); toast({ title: "Queued — will sync when connected" });
+      } else {
+        toast({ title: "Failed to add transaction", variant: "destructive" }); haptic.error();
+      }
+    }
     finally { setSubmitting(false); }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault(); if (editId === null) return; setSubmitting(true);
+    const body = { date: form.date, description: form.description, type: form.type, category: form.category, nativeAmount: parseFloat(form.nativeAmount), currency: form.currency };
     try {
-      await updateTx.mutateAsync({ id: editId, data: { date: form.date, description: form.description, type: form.type, category: form.category, nativeAmount: parseFloat(form.nativeAmount), currency: form.currency } });
+      await updateTx.mutateAsync({ id: editId, data: body });
       invalidate(); setEditId(null); toast({ title: "Transaction updated" });
       haptic.success();
-    } catch { toast({ title: "Failed to update", variant: "destructive" }); haptic.error(); }
+    } catch (err) {
+      if (isNetworkError(err)) {
+        await enqueueOutbox("PATCH", `/api/transactions/${editId}`, body);
+        setEditId(null); toast({ title: "Queued — will sync when connected" });
+      } else {
+        toast({ title: "Failed to update", variant: "destructive" }); haptic.error();
+      }
+    }
     finally { setSubmitting(false); }
   };
 
@@ -836,8 +853,13 @@ export default function Transactions() {
     try {
       await deleteTx.mutateAsync({ id });
       invalidate();
-    } catch {
-      toast({ title: "Failed to delete transaction", variant: "destructive" });
+    } catch (err) {
+      if (isNetworkError(err)) {
+        await enqueueOutbox("DELETE", `/api/transactions/${id}`, null);
+        toast({ title: "Queued — will sync when connected" });
+      } else {
+        toast({ title: "Failed to delete transaction", variant: "destructive" });
+      }
     }
   }, [deleteTx, invalidate, toast]);
 
