@@ -148,3 +148,5 @@ main().catch((err) => {
   console.error("survival check failed:", err);
   process.exit(1);
 });
+
+export {};

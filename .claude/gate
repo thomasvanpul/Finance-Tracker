@@ -1,0 +1,1 @@
+git diff --exit-code --quiet -- '*test*' && npm run typecheck
