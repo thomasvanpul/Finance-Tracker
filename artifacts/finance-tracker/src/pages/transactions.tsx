@@ -1531,6 +1531,8 @@ export default function Transactions() {
       key={key}
       type="button"
       onClick={() => applyQuickRange(key)}
+      onMouseEnter={(e) => { if (activeQuickRange !== key) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-muted)"; }}
+      onMouseLeave={(e) => { if (activeQuickRange !== key) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }}
       style={{
         height: 22,
         padding: "0 7px",
@@ -2488,6 +2490,8 @@ export default function Transactions() {
               key={t}
               type="button"
               onClick={() => setFilterType(t)}
+              onMouseEnter={(e) => { if (filterType !== t) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-text)"; }}
+              onMouseLeave={(e) => { if (filterType !== t) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-muted)"; }}
               style={{
                 height: 28,
                 padding: "0 9px",

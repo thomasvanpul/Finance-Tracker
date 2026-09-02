@@ -2099,7 +2099,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           </div>
           <button
             onClick={() => setAlertsBannerDismissed(true)}
-            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: "0 2px" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-text)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }}
+            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: "0 2px", transition: "color 0.1s" }}
           >
             <X style={{ width: 13, height: 13 }} />
           </button>
@@ -2298,14 +2300,17 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                   {/* Period selector */}
                   <HStack gap={2}>
                     {PERIODS.map((p) => (
-                      <button key={p} onClick={() => setHistPeriod(p)} style={{
-                        fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "2px 7px",
-                        border: "1px solid", letterSpacing: "0.06em", cursor: "pointer",
-                        borderColor: histPeriod === p ? "var(--ft-blue)" : "var(--ft-border)",
-                        background: histPeriod === p ? "rgba(96,165,250,0.15)" : "transparent",
-                        color: histPeriod === p ? "var(--ft-blue)" : "var(--ft-dim)",
-                        transition: "background 0.1s, color 0.1s, border-color 0.1s",
-                      }}>{p.toUpperCase()}</button>
+                      <button key={p} onClick={() => setHistPeriod(p)}
+                        onMouseEnter={(e) => { if (histPeriod !== p) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-muted)"; }}
+                        onMouseLeave={(e) => { if (histPeriod !== p) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }}
+                        style={{
+                          fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "2px 7px",
+                          border: "1px solid", letterSpacing: "0.06em", cursor: "pointer",
+                          borderColor: histPeriod === p ? "var(--ft-blue)" : "var(--ft-border)",
+                          background: histPeriod === p ? "rgba(96,165,250,0.15)" : "transparent",
+                          color: histPeriod === p ? "var(--ft-blue)" : "var(--ft-dim)",
+                          transition: "background 0.1s, color 0.1s, border-color 0.1s",
+                        }}>{p.toUpperCase()}</button>
                     ))}
                   </HStack>
                 </div>

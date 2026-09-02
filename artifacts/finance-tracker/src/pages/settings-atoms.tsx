@@ -61,16 +61,21 @@ export function SectionHeader({ label, accent = "var(--ft-accent)" }: { label: s
 }
 
 export function ActionBtn({ label, variant = "accent", onClick, disabled }: { label: string; variant?: "accent" | "muted" | "danger"; onClick: () => void; disabled?: boolean }) {
+  const [hov, setHov] = useState(false);
   const color = variant === "danger" ? "var(--ft-red)" : variant === "muted" ? "var(--ft-muted)" : "var(--ft-accent)";
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      onMouseEnter={() => { if (!disabled) setHov(true); }}
+      onMouseLeave={() => setHov(false)}
       style={{
         fontFamily: "var(--font-mono)", fontSize: 11, color,
-        background: "transparent", border: `1px solid ${color}`,
+        background: hov ? `color-mix(in srgb, ${color} 8%, transparent)` : "transparent",
+        border: `1px solid ${color}`,
         padding: "7px 18px", cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
+        transition: "background 0.12s",
       }}
     >&gt; {label}</button>
   );

@@ -2676,6 +2676,8 @@ export default function Settings() {
                   <button
                     key={item.id}
                     onClick={() => setActivePanel(item.id)}
+                    onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = "var(--ft-raised)"; }}
+                    onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                     style={{
                       display: "block", width: "100%", textAlign: "left",
                       padding: "7px 14px 7px 16px",

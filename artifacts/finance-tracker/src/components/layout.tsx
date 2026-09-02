@@ -368,7 +368,9 @@ function ClockDisplay({ clock }: { clock: string; }) {
             <span>WORLD CLOCK — MAJOR EXCHANGES</span>
             <button
               onClick={() => setEditing((e) => !e)}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 8, color: editing ? "var(--ft-amber)" : "var(--ft-dim)", padding: "0 2px", letterSpacing: "0.06em" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 8, color: editing ? "var(--ft-amber)" : "var(--ft-dim)", padding: "0 2px", letterSpacing: "0.06em", transition: "opacity 0.1s" }}
             >{editing ? "DONE" : "EDIT"}</button>
           </div>
 
@@ -382,7 +384,7 @@ function ClockDisplay({ clock }: { clock: string; }) {
             return (
               <div key={city.tz} style={{ display: "flex", alignItems: "center", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", gap: 8 }}>
                 {editing && (
-                  <button onClick={() => removeCity(city.tz)} title="Remove" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-red)", fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0 }}>✕</button>
+                  <button onClick={() => removeCity(city.tz)} title="Remove" onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.6"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-red)", fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0, transition: "opacity 0.1s" }}>✕</button>
                 )}
                 <span style={{ color: "var(--ft-dim)", flexShrink: 0 }}>
                   <CountryMark code={city.country} size={11} />
@@ -417,7 +419,7 @@ function ClockDisplay({ clock }: { clock: string; }) {
                 ))}
               </select>
               <button onClick={addCity} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "4px 10px", cursor: "pointer", fontWeight: 700 }}>+ ADD</button>
-              <button onClick={resetToDefault} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "4px 10px", cursor: "pointer" }}>RESET</button>
+              <button onClick={resetToDefault} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-text)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "4px 10px", cursor: "pointer", transition: "color 0.1s" }}>RESET</button>
             </div>
           )}
 
