@@ -263,3 +263,23 @@ Thomas keeps his external memory at `~/Library/Mobile Documents/iCloud~md~obsidi
 Read `hot.md`, then `AI-RULES.md`, then `index.md` (a router — pick an area, open that area index only).
 Read `Atlas/Working-Preferences.md` for how he wants you to behave.
 Write decisions, constraints and status changes back to it as they happen. Full spec in `~/.claude/CLAUDE.md`.
+
+
+## Machine-wide hooks (added 2026-09-03 from a Desktop chat, not by a session in this repo)
+
+Three hooks now run on every Claude Code session on this machine. Full detail in `~/.claude/CLAUDE.md`.
+
+- **`Stop` → `~/.claude/hooks/gate.py`** — runs this repo's gate before a session may finish. If red, the session is blocked and handed the real output. Do not weaken, skip or edit the gate or its tests to pass. If the gate is wrong, say so and stop.
+- **`SessionStart` → `~/.claude/hooks/gate-status.py`** — reports whether the gate is already green or red at the start of a session, so pre-existing breakage is visible before work begins rather than at the end.
+- **`UserPromptSubmit` → `~/.claude/hooks/session-length-nudge.py`** — prompts a `/save-session` handoff at 25 and 40 prompts.
+
+**This repo's gate:** `git diff --exit-code --quiet -- '*test*' && npm run typecheck` in `.claude/gate`.
+
+### What was changed here on 2026-09-03 to make that gate green
+
+`npm run typecheck` was failing on 20+ pre-existing errors. Two causes, both fixed:
+
+1. `scripts/tsconfig.json` had `lib: ["es2022"]` inherited from the base, with no `dom`. Code inside Playwright `page.evaluate()` callbacks legitimately references browser globals (`document`, `window`, `indexedDB`, `navigator.onLine`), which the compiler could not see. Fixed by setting `lib: ["es2022", "dom"]` in `scripts/tsconfig.json` only. The base config is untouched, so nothing else in the workspace gains DOM types.
+2. `hello.ts`, `news-survival-check.ts` and `theme-contrast.ts` had no top-level `import` or `export`, so TypeScript treated them as global scripts rather than modules. Fifteen files in `scripts/src` declare `main()`, and the global ones collided — hence `TS2393 Duplicate function implementation` and the downstream `.catch does not exist on type void`. Fixed by appending `export {};` to the three affected files, which is behaviour-neutral and makes each a module.
+
+`npm run typecheck` now exits 0. These changes are uncommitted as of writing; review `git diff` before committing.
