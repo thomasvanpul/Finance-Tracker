@@ -2040,7 +2040,7 @@ interface TerminalLayoutProps {
 
 function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
   return (
-    <VStack gap={6}>
+    <VStack gap={16}>
       {/* AI Insights — only shown if AI available */}
       <AiInsightsPanel {...aiInsightsProps} />
 
@@ -2960,7 +2960,7 @@ export default function Dashboard() {
           ) : isMobile ? (
             /* Mobile: compact tile DnD — matches view mode exactly, just adds grip + remove strip */
             <DndContext sensors={mobileSensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOverMobile} onDragEnd={handleDragEndMobile} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) setOrder(preDragOrderRef.current); }}>
-              <div className="ft-mobile-widget-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              <div className="ft-mobile-widget-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <SortableContext items={enabledIds} strategy={rectSortingStrategy}>
                   {enabledIds.map(id => (
                     <SortableCompactTile key={id} id={id} onRemove={() => toggle(id)} isFullWidth={COMPACT_WIDGET_FULL_WIDTH.has(id)} activeId={activeId} />
@@ -3003,9 +3003,9 @@ export default function Dashboard() {
           ) : (
             /* Desktop: drag-and-drop two-column grid */
             <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
-              <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
                 {/* Left column */}
-                <VStack gap={10} grow>
+                <VStack gap={16} grow>
                   <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
                     {leftIds.map((id, idx) => (
                       <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} anyDragging={activeId !== null} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
@@ -3013,7 +3013,7 @@ export default function Dashboard() {
                   </SortableContext>
                 </VStack>
                 {/* Right column */}
-                <VStack gap={10} grow>
+                <VStack gap={16} grow>
                   <SortableContext items={rightIds} strategy={verticalListSortingStrategy}>
                     {rightIds.map((id, idx) => (
                       <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} anyDragging={activeId !== null} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
@@ -3060,7 +3060,7 @@ export default function Dashboard() {
               <AiInsightsPanel {...aiInsightsProps} />
               <div
                 className="ft-mobile-widget-grid"
-                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}
+                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
               >
                 {enabledIds.map(id => (
                   <div
@@ -3095,15 +3095,15 @@ export default function Dashboard() {
                   }
                 }}
               >
-                <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <VStack gap={10} grow>
+                <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                  <VStack gap={16} grow>
                     <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
                       {leftIds.map(id => (
                         <LongPressDraggableWidget key={id} id={id} anyDragging={activeId !== null} onExpand={() => setExpandedWidgetId(id)} />
                       ))}
                     </SortableContext>
                   </VStack>
-                  <VStack gap={10} grow>
+                  <VStack gap={16} grow>
                     <SortableContext items={rightIds} strategy={verticalListSortingStrategy}>
                       {rightIds.map(id => (
                         <LongPressDraggableWidget key={id} id={id} anyDragging={activeId !== null} onExpand={() => setExpandedWidgetId(id)} />
