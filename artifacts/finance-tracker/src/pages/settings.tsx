@@ -2643,9 +2643,9 @@ export default function Settings() {
           <div style={{ padding: "12px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
             <Text as="span" color="var(--ft-accent)">·</Text> System Config
           </div>
-          {navGroups.map(group => (
-            <div key={group.label}>
-              <div style={{ padding: "10px 14px 3px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 700 }}>
+          {navGroups.map((group, gi) => (
+            <div key={group.label} style={gi > 0 ? { borderTop: "1px solid var(--ft-border)", marginTop: 4, paddingTop: 4 } : undefined}>
+              <div style={{ padding: "6px 14px 3px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", fontWeight: 700 }}>
                 {group.label}
               </div>
               {group.items.map(item => {
