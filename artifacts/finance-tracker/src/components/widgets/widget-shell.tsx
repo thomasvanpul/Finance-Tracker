@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "wouter";
+import { useDashboardCustomize } from "../../lib/dashboard-customize-context";
 
 interface WidgetShellProps {
   title: string;
@@ -22,31 +23,33 @@ export function WidgetShell({
   headerRight,
 }: WidgetShellProps) {
   const [hovered, setHovered] = useState(false);
+  const isCustomizing = useDashboardCustomize();
   const accentColor = accent ?? "var(--ft-accent)";
 
   return (
     <div
       style={{
-        background: "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
-        borderLeft: `2px solid ${accentColor}`,
         overflow: "hidden",
-        transition: "border-color 0.15s",
-        ...(hovered && { borderColor: "var(--ft-border2)", borderLeftColor: accentColor }),
+        ...(isCustomizing && {
+          border: "1px solid var(--ft-border)",
+          ...(hovered && { borderColor: "var(--ft-border2)" }),
+        }),
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Header */}
+      {/* Header — raised band in customize mode, flat title at rest */}
       <div style={{
-        background: "var(--ft-raised)",
-        borderBottom: "1px solid var(--ft-border)",
         padding: "0 12px",
         height: 34,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 8,
+        ...(isCustomizing && {
+          background: "var(--ft-raised)",
+          borderBottom: "1px solid var(--ft-border)",
+        }),
       }}>
         <span style={{
           fontFamily: "var(--font-mono)",
@@ -54,7 +57,7 @@ export function WidgetShell({
           fontWeight: 600,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "var(--ft-muted)",
+          color: "var(--ft-dim)",
           display: "flex",
           alignItems: "center",
           gap: 6,

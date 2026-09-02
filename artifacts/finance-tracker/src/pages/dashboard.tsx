@@ -62,6 +62,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 import { oneShotInsight } from "@/lib/ai-chat-client";
+import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -127,11 +128,12 @@ function loadSavingsTarget(): number {
 function SavingsRateKpi() {
   const { data: dashData } = useGetDashboard();
   const target = useMemo(() => loadSavingsTarget(), []);
+  const isCustomizing = useDashboardCustomize();
 
   const savingsRate = dashData?.thisMonth?.savingsRate ?? null;
 
   if (savingsRate === null) return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-green)", minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-green)" }), minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
       No data yet
     </div>
   );
@@ -148,7 +150,7 @@ function SavingsRateKpi() {
       : "var(--ft-red)";
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${barColor}`, minHeight: 160, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
+    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${barColor}` }), minHeight: 160, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
       {/* Header */}
       <HStack align="baseline" justify="between" minWidth0>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>SAVINGS RATE</span>
@@ -185,6 +187,7 @@ function SavingsRateKpi() {
 function EmergencyFundWidget() {
   const { data: accounts } = useListAccounts({});
   const { data: allTxs } = useListTransactions({});
+  const isCustomizing = useDashboardCustomize();
 
   // Sum all accounts as liquid savings (the Account schema has no type
   // field). Unconvertible accounts fall out — the dashboard's own
@@ -227,13 +230,13 @@ function EmergencyFundWidget() {
   const barColor = valueColor;
 
   if (accounts === undefined) return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-amber)", minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-amber)" }), minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
       Loading…
     </div>
   );
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${valueColor}`, minHeight: 180, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
+    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${valueColor}` }), minHeight: 180, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
       {/* Header */}
       <HStack align="baseline" justify="between" minWidth0>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>EMERGENCY FUND</span>
@@ -2845,6 +2848,7 @@ export default function Dashboard() {
   }, [dashData, monthTxs]);
 
   return (
+    <DashboardCustomizeContext.Provider value={isCustomizing}>
     <div>
       {/* Expanded widget modal */}
       {expandedWidgetId && (
@@ -3133,5 +3137,6 @@ export default function Dashboard() {
         </div>
       )}
     </div>
+    </DashboardCustomizeContext.Provider>
   );
 }
