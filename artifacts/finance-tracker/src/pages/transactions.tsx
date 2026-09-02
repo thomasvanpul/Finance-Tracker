@@ -2482,20 +2482,32 @@ export default function Transactions() {
               style={{ paddingLeft: 24, paddingRight: 8, fontSize: 11, height: 28, background: "transparent", border: "none", outline: "none", color: "var(--ft-text)", fontFamily: "var(--font-mono)", width: "100%" }}
             />
           </div>
-          {/* TYPE */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderLeft: "1px solid var(--ft-border)", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">TYPE</MonoLabel>
-          </div>
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as "all" | TxType)}
-            style={{ height: 28, fontSize: 11, background: "transparent", border: "none", outline: "none", color: filterType !== "all" ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", padding: "0 6px", cursor: "pointer", borderRight: "1px solid var(--ft-border)", minWidth: 80, flexShrink: 0 }}
-          >
-            <option value="all">all</option>
-            <option value="income">income</option>
-            <option value="expense">expense</option>
-            <option value="transfer">transfer</option>
-          </select>
+          {/* TYPE — grouped buttons per tester feedback */}
+          {(["all", "income", "expense", "transfer"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setFilterType(t)}
+              style={{
+                height: 28,
+                padding: "0 9px",
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.06em",
+                background: filterType === t ? "var(--ft-raised)" : "transparent",
+                color: filterType === t ? "var(--ft-text)" : "var(--ft-muted)",
+                borderLeft: "1px solid var(--ft-border)",
+                borderTop: "none",
+                borderBottom: "none",
+                borderRight: "none",
+                cursor: "pointer",
+                flexShrink: 0,
+                transition: "background 0.1s, color 0.1s",
+              }}
+            >
+              {t.toUpperCase()}
+            </button>
+          ))}
           {/* CATEGORY */}
           <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
             <MonoLabel as="span" size={9} letterSpacing="0.10em">CAT</MonoLabel>
