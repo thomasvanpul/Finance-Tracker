@@ -796,11 +796,11 @@ input[type="checkbox"]:checked {
 
 .ft-panel-label {
   font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ft-muted);
+  color: var(--ft-text);
 }
 
 .ft-panel-label .accent-dot {

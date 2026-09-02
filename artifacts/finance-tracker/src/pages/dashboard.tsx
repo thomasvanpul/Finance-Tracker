@@ -841,17 +841,15 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
     }}>
       {/* Terminal panel header */}
       <div style={{
-        background: "var(--ft-raised)",
         borderBottom: "1px solid var(--ft-border)",
         padding: "0 12px",
         height: "var(--ft-panel-header-h)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        marginBottom: 8,
       }}>
-        <span className="ft-panel-label">
-          <span className="accent-dot">·</span> AI INSIGHTS
-        </span>
+        <span className="ft-panel-label">AI INSIGHTS</span>
         <button
           onClick={handleRefresh}
           title="Refresh AI insights"
@@ -2016,17 +2014,15 @@ function DashboardKpiBar({
 function SectionHeader({ label, right }: { label: string; right?: React.ReactNode }) {
   return (
     <div style={{
-      background: "var(--ft-raised)",
       borderBottom: "1px solid var(--ft-border)",
       padding: "0 12px",
       height: "var(--ft-panel-header-h)",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
+      marginBottom: 8,
     }}>
-      <span className="ft-panel-label">
-        <span className="accent-dot">·</span>{label}
-      </span>
+      <span className="ft-panel-label">{label}</span>
       {right}
     </div>
   );

@@ -38,7 +38,7 @@ export function WidgetShell({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Header — raised band in customize mode, flat title at rest */}
+      {/* Header — hairline rule always; raised background only in customize mode */}
       <div style={{
         padding: "0 12px",
         height: 34,
@@ -46,27 +46,24 @@ export function WidgetShell({
         alignItems: "center",
         justifyContent: "space-between",
         gap: 8,
+        borderBottom: "1px solid var(--ft-border)",
+        marginBottom: 8,
         ...(isCustomizing && {
           background: "var(--ft-raised)",
-          borderBottom: "1px solid var(--ft-border)",
         }),
       }}>
         <span style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          fontWeight: 600,
+          fontSize: 12,
+          fontWeight: 700,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "var(--ft-dim)",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
+          color: "var(--ft-text)",
           minWidth: 0,
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
         }}>
-          <span style={{ color: accentColor, fontSize: 12, lineHeight: 1, flexShrink: 0 }}>▪</span>
           {title}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
