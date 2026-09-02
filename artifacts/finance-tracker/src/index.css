@@ -734,12 +734,12 @@ input[type="checkbox"]:checked {
   --ft-border:  #1E1800;
   --ft-border2: #2E2400;
   --ft-text:    #F0E6C8;
-  --ft-muted:   #8A6A18;
-  --ft-dim:     #62480A;
+  --ft-muted:   #C8A030;
+  --ft-dim:     #9A7820;
   --ft-accent:  #C8941E;
   --ft-amber:   #D4A017;
   --ft-green:   #4ECCA3;
-  --ft-red:     #CC3333;
+  --ft-red:     #E84040;
   --ft-blue:    #6699BB;
   --ft-cyan:    #EED080;
 }
@@ -751,9 +751,9 @@ input[type="checkbox"]:checked {
   --ft-border:  #2D0009;
   --ft-border2: #440015;
   --ft-text:    #F5C2C7;
-  --ft-muted:   #9A3A4E;
-  --ft-dim:     #7A1A2A;
-  --ft-accent:  #CC1A2F;
+  --ft-muted:   #E8707F;
+  --ft-dim:     #CC404F;
+  --ft-accent:  #FF3344;
   --ft-amber:   #FF6600;
   --ft-green:   #1A8C3A;
   --ft-red:     #FF0022;

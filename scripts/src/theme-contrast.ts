@@ -7,11 +7,8 @@
 // Usage:
 //   pnpm --filter @workspace/scripts exec tsx src/theme-contrast.ts
 //
-// Prints a table of every text-on-surface pair for every LIGHT theme
-// and exits non-zero if any pair fails the WCAG AA threshold. Dark
-// themes are excluded — the audit's finding is that light themes are
-// where contrast defects keep landing, so this file's discipline is
-// scoped to them.
+// Prints a table of every text-on-surface pair for every theme (light and
+// dark) and exits non-zero if any pair fails the WCAG AA threshold.
 
 interface Palette {
   base: string; surface: string; raised: string;
@@ -24,7 +21,15 @@ interface Palette {
   id9: string; id10: string; id11: string; id12: string;
 }
 
-// ── Themes ───────────────────────────────────────────────────────────────────
+interface DarkPalette {
+  base: string; surface: string; raised: string;
+  border: string; border2: string;
+  text: string; muted: string; dim: string;
+  accent: string;
+  amber: string; green: string; red: string; blue: string; cyan: string;
+}
+
+// ── Light themes ──────────────────────────────────────────────────────────────
 
 const arctic: Palette = {
   base: "#F0F4F8", surface: "#FFFFFF", raised: "#E8EDF5",
@@ -86,6 +91,92 @@ const linen: Palette = {
 
 const LIGHT_THEMES: Record<string, Palette> = { arctic, parchment, slate, linen };
 
+// ── Dark themes ───────────────────────────────────────────────────────────────
+// Dark themes inherit the :root identity ramp (bright values tuned for dark
+// surfaces) and are not required to define --ft-id-*. We check all text,
+// status, border and accent pairs but skip the id ramp.
+
+const phosphor: DarkPalette = {
+  base: "#020802", surface: "#050F05", raised: "#0A1A0A",
+  border: "#0D2A0D", border2: "#1A3D1A",
+  text: "#39FF14", muted: "#2A9918", dim: "#1E7010",
+  accent: "#7FFF00",
+  amber: "#FF8C00", green: "#00FF88", red: "#FF4444", blue: "#00FFCC", cyan: "#AAFFAA",
+};
+
+const amber: DarkPalette = {
+  base: "#0A0600", surface: "#120C00", raised: "#1C1400",
+  border: "#2A1E00", border2: "#3D2B00",
+  text: "#FFB000", muted: "#AA7828", dim: "#7A5510",
+  accent: "#FFD700",
+  amber: "#FFA500", green: "#AAFF44", red: "#FF4400", blue: "#44AAFF", cyan: "#FFEE88",
+};
+
+const midnight: DarkPalette = {
+  base: "#010817", surface: "#05112A", raised: "#091A3D",
+  border: "#0F2456", border2: "#163070",
+  text: "#E8F0FF", muted: "#7A99CC", dim: "#4A6AA0",
+  accent: "#4D9FFF",
+  amber: "#FF9500", green: "#2EFF9F", red: "#FF4466", blue: "#80BFFF", cyan: "#00DDFF",
+};
+
+const matrix: DarkPalette = {
+  base: "#000300", surface: "#010601", raised: "#020902",
+  border: "#003300", border2: "#004400",
+  text: "#00CC33", muted: "#009944", dim: "#006622",
+  accent: "#00FF41",
+  amber: "#FFAA00", green: "#00FF41", red: "#FF3300", blue: "#00FFCC", cyan: "#AAFFAA",
+};
+
+const synthwave: DarkPalette = {
+  base: "#0D001A", surface: "#170028", raised: "#220040",
+  border: "#2D0050", border2: "#440077",
+  text: "#E8D5FF", muted: "#AA66DD", dim: "#8800AA",
+  accent: "#FF007A",
+  amber: "#FF6B00", green: "#39FF4E", red: "#FF1133", blue: "#00C8FF", cyan: "#CC88FF",
+};
+
+const deepSpace: DarkPalette = {
+  base: "#010108", surface: "#06060F", raised: "#0C0C1E",
+  border: "#0F0F20", border2: "#1A1A38",
+  text: "#C8D0E8", muted: "#7880B0", dim: "#505090",
+  accent: "#7B5EA7",
+  amber: "#FFD166", green: "#2ECC71", red: "#FF4455", blue: "#4466FF", cyan: "#00DDEE",
+};
+
+const mario: DarkPalette = {
+  base: "#5C94FC", surface: "#3A70DC", raised: "#2850C0",
+  border: "#1A38A0", border2: "#102890",
+  text: "#FCFCFC", muted: "#D4E4FF", dim: "#C0D4FF",
+  accent: "#F8C800",
+  amber: "#D07010", green: "#3ABB3A", red: "#CC2000", blue: "#1830A0", cyan: "#90C8FC",
+};
+
+const gilded: DarkPalette = {
+  base: "#080600", surface: "#0E0C00", raised: "#161200",
+  border: "#1E1800", border2: "#2E2400",
+  text: "#F0E6C8", muted: "#C8A030", dim: "#9A7820",
+  accent: "#C8941E",
+  // red was #CC3333 (3.82:1 on #0E0C00) — below 4.5:1 for body text.
+  // Brightened to clear the threshold while staying recognisably red.
+  amber: "#D4A017", green: "#4ECCA3", red: "#E84040", blue: "#6699BB", cyan: "#EED080",
+};
+
+const bloodline: DarkPalette = {
+  base: "#0F0003", surface: "#1A0008", raised: "#250010",
+  border: "#2D0009", border2: "#440015",
+  text: "#F5C2C7", muted: "#E8707F", dim: "#CC404F",
+  // accent was #CC1A2F (3.59:1 on #1A0008) — below 4.5:1 for body text.
+  // Brightened to vivid crimson to clear the threshold.
+  accent: "#FF3344",
+  amber: "#FF6600", green: "#1A8C3A", red: "#FF0022", blue: "#6688AA", cyan: "#FF8899",
+};
+
+const DARK_THEMES: Record<string, DarkPalette> = {
+  phosphor, amber, midnight, matrix, synthwave,
+  "deep-space": deepSpace, mario, gilded, bloodline,
+};
+
 // ── WCAG contrast math ───────────────────────────────────────────────────────
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -125,6 +216,7 @@ function contrast(fg: string, bg: string): number {
 
 type Threshold = 4.5 | 3.0;
 interface Pair { fg: keyof Palette; bg: keyof Palette; threshold: Threshold; label: string; }
+interface DarkPair { fg: keyof DarkPalette; bg: keyof DarkPalette; threshold: Threshold; label: string; }
 
 const PAIRS: Pair[] = [
   // Text on the three surface levels.
@@ -158,12 +250,44 @@ const PAIRS: Pair[] = [
   { fg: "border2", bg: "surface", threshold: 3.0, label: "border2 on surface (UI)" },
 ];
 
+const DARK_PAIRS: DarkPair[] = [
+  { fg: "text", bg: "surface", threshold: 4.5, label: "text on surface" },
+  { fg: "text", bg: "base", threshold: 4.5, label: "text on base" },
+  { fg: "text", bg: "raised", threshold: 4.5, label: "text on raised" },
+  { fg: "muted", bg: "surface", threshold: 4.5, label: "muted on surface" },
+  { fg: "muted", bg: "raised", threshold: 4.5, label: "muted on raised" },
+  { fg: "dim", bg: "surface", threshold: 3.0, label: "dim on surface (large/UI)" },
+  { fg: "accent", bg: "surface", threshold: 4.5, label: "accent on surface" },
+  { fg: "amber", bg: "surface", threshold: 4.5, label: "amber on surface" },
+  { fg: "green", bg: "surface", threshold: 4.5, label: "green on surface" },
+  { fg: "red", bg: "surface", threshold: 4.5, label: "red on surface" },
+  { fg: "blue", bg: "surface", threshold: 4.5, label: "blue on surface" },
+  { fg: "cyan", bg: "surface", threshold: 4.5, label: "cyan on surface" },
+  { fg: "border", bg: "surface", threshold: 3.0, label: "border on surface (UI)" },
+  { fg: "border", bg: "base", threshold: 3.0, label: "border on base (UI)" },
+  { fg: "border2", bg: "surface", threshold: 3.0, label: "border2 on surface (UI)" },
+];
+
 // ── Runner ───────────────────────────────────────────────────────────────────
 
 interface Row { theme: string; label: string; fg: string; bg: string; ratio: number; threshold: Threshold; pass: boolean; }
 
 function checkTheme(theme: string, p: Palette): Row[] {
   return PAIRS.map((pair) => {
+    const fg = p[pair.fg];
+    const bg = p[pair.bg];
+    const ratio = contrast(fg, bg);
+    return {
+      theme, label: pair.label, fg, bg,
+      ratio: Math.round(ratio * 100) / 100,
+      threshold: pair.threshold,
+      pass: ratio >= pair.threshold,
+    };
+  });
+}
+
+function checkDarkTheme(theme: string, p: DarkPalette): Row[] {
+  return DARK_PAIRS.map((pair) => {
     const fg = p[pair.fg];
     const bg = p[pair.bg];
     const ratio = contrast(fg, bg);
@@ -192,15 +316,27 @@ function printTable(rows: Row[]): void {
 
 function main(): void {
   const all: Row[] = [];
+
+  console.log("\n════ LIGHT THEMES ════════════════════════════════════════════════════════════");
   for (const [name, palette] of Object.entries(LIGHT_THEMES)) {
     const rows = checkTheme(name, palette);
     printTable(rows);
     all.push(...rows);
   }
+
+  console.log("\n════ DARK THEMES ═════════════════════════════════════════════════════════════");
+  for (const [name, palette] of Object.entries(DARK_THEMES)) {
+    const rows = checkDarkTheme(name, palette);
+    printTable(rows);
+    all.push(...rows);
+  }
+
   const failures = all.filter((r) => !r.pass);
   console.log("");
   if (failures.length === 0) {
-    console.log(`All ${all.length} pairs across ${Object.keys(LIGHT_THEMES).length} light themes pass WCAG AA thresholds.`);
+    const lightCount = Object.keys(LIGHT_THEMES).length;
+    const darkCount = Object.keys(DARK_THEMES).length;
+    console.log(`All ${all.length} pairs across ${lightCount} light + ${darkCount} dark themes pass WCAG AA thresholds.`);
     return;
   }
   console.log(`FAIL: ${failures.length} pair(s) below threshold:`);
