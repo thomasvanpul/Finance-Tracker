@@ -767,7 +767,7 @@ function PositionRow({
     <PhoneEntityRow
       primary={position.name}
       secondary={secondary}
-      identity={{ label: glyphLabel, tone: tone ?? deriveTone(position.ticker) }}
+      identity={{ label: glyphLabel, tone: "var(--ft-blue)" }}
       amount={{
         value: baseStr,
         native: nativeStr,
