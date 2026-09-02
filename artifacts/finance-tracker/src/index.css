@@ -51,8 +51,9 @@
    RELAXED on mobile — the desktop bans below do NOT apply under 768px.
    Reference apps the phone UI is measured against: Yahoo Finance mobile,
    plus the modern-fintech reference set. Those are the target for craft.
-   ~  border-radius 16-24px on cards, sheets, buttons and floating nav.
-      Tables and aligned metric columns stay square.
+   ~  border-radius 16-24px on floating surfaces: sheets, drawers, modals,
+      buttons, and floating nav. Inline sections of a scrolling page use
+      no radius or 8px maximum. Tables and aligned metric columns stay square.
    ~  sans-serif is permitted, and preferred, for display numbers and labels.
       Tabular figures are still required for any number in an aligned column
       or list, so rows line up.

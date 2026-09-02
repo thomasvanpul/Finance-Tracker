@@ -522,28 +522,9 @@ function CurrencySplit({ exposure, baseCurrency }: { exposure: CurrencyExposure;
   if (materialRows.length < 2) return null;
 
   return (
-    <div
-      style={{
-        margin: "0 16px 12px",
-        padding: "12px 14px",
-        background: "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
-        borderRadius: 16,
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--ft-text-xs)",
-          letterSpacing: "0.16em",
-          color: "var(--ft-dim)",
-        }}
-      >
-        BY CURRENCY
-      </div>
+    <div>
+      <SectionHeader label="BY CURRENCY" />
+      <div style={{ padding: "6px 16px 8px", display: "flex", flexDirection: "column", gap: 4 }}>
       {materialRows.map((row) => {
         const pct = (row.baseValue / total) * 100;
         return (
@@ -590,6 +571,7 @@ function CurrencySplit({ exposure, baseCurrency }: { exposure: CurrencyExposure;
           </div>
         );
       })}
+      </div>
     </div>
   );
 }
