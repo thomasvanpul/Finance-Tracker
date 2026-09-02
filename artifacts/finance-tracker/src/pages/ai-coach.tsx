@@ -882,7 +882,7 @@ export default function AiCoach() {
               transition: "background 0.15s, border-color 0.15s",
             }}
           >
-            <Send size={15} style={{ color: !input.trim() ? "var(--ft-dim)" : "var(--ft-bg, #0D1117)" }} />
+            <Send size={15} style={{ color: !input.trim() ? "var(--ft-dim)" : "var(--ft-base)" }} />
           </button>
         </div>
         <div style={{ marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
