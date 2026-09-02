@@ -1198,6 +1198,7 @@ interface PortfolioPositionsTableProps {
   classMap: Record<number, AssetClass>;
   tickerFilter: string;
   onTickerFilterChange: (v: string) => void;
+  onAdd: () => void;
   onDetailOpen: (id: number) => void;
   onEdit: (id: number) => void;
   onDelete: (id: number) => void;
@@ -1214,6 +1215,7 @@ function PortfolioPositionsTable({
   classMap,
   tickerFilter,
   onTickerFilterChange,
+  onAdd,
   onDetailOpen,
   onEdit,
   onDelete,
@@ -1258,29 +1260,54 @@ function PortfolioPositionsTable({
   };
 
   return (
-    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+    <div>
       {/* Panel header */}
       <div className="ft-panel-header">
         <div className="ft-panel-label">
           <span className="accent-dot">·</span>
           POSITIONS — LIVE MARKET DATA ({baseCurrency ?? "—"})
         </div>
-        <input
-          className="ft-filter-input"
-          placeholder="Filter ticker / name…"
-          value={tickerFilter}
-          onChange={(e) => onTickerFilterChange(e.target.value)}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            padding: "3px 8px",
-            background: "var(--ft-raised)",
-            border: "1px solid var(--ft-border2)",
-            color: "var(--ft-text)",
-            outline: "none",
-            width: 160,
-          }}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input
+            className="ft-filter-input"
+            placeholder="Filter ticker / name…"
+            value={tickerFilter}
+            onChange={(e) => onTickerFilterChange(e.target.value)}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              padding: "3px 8px",
+              background: "var(--ft-raised)",
+              border: "1px solid var(--ft-border2)",
+              color: "var(--ft-text)",
+              outline: "none",
+              width: 160,
+            }}
+          />
+          <button
+            type="button"
+            onClick={onAdd}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              letterSpacing: "0.08em",
+              color: "var(--ft-accent)",
+              background: "transparent",
+              border: "1px solid var(--ft-border2)",
+              padding: "3px 10px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              flexShrink: 0,
+              whiteSpace: "nowrap" as const,
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-accent)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-border2)"; }}
+          >
+            <Plus size={10} />ADD POSITION
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -1979,61 +2006,12 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     <VStack gap="var(--ft-row-gap)">
       {/* KPI Bar — replaces PageHeader on this data page */}
       <div>
-        <div style={{ position: "relative" }}>
-          <InvKpiBar cells={kpiCells} style={isMobile ? undefined : { paddingRight: 220 }} />
-          {/* Stale-as-of for the summary — same rule as accounts and
-              the dashboard net-worth widget. Only renders when the
-              query is past its fresh window or refetch is failing.
-              Positioned below the KPI bar so it reads as a caveat on
-              the totals above. */}
-          {summaryIsStale && summary && (
-            <div style={{ padding: "6px 14px", textAlign: "right" }}>
-              <StaleAsOf ts={summaryUpdatedAt} isFresh={false} />
-            </div>
-          )}
-          <Button
-            onClick={openAdd}
-            size="sm"
-            style={{
-              position: "absolute",
-              right: 0,
-              top: "50%",
-              transform: "translateY(-50%)",
-              height: 30,
-              background: "var(--ft-accent)",
-              color: "var(--ft-base)",
-              border: "none",
-              borderRadius: 0,
-              fontSize: 11,
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              padding: "0 16px",
-            }}
-            className="inv-add-btn-desktop"
-          >
-            <Plus className="w-3.5 h-3.5 mr-1.5" />ADD POSITION
-          </Button>
-        </div>
-        <div className="inv-add-btn-mobile" style={{ display: "none" }}>
-          <Button
-            onClick={openAdd}
-            size="sm"
-            style={{
-              width: "100%",
-              background: "var(--ft-accent)",
-              color: "var(--ft-base)",
-              border: "none",
-              borderRadius: 0,
-              fontSize: 11,
-              fontFamily: "var(--font-mono)",
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-            }}
-          >
-            <Plus className="w-3.5 h-3.5 mr-1.5" />ADD POSITION
-          </Button>
-        </div>
+        <InvKpiBar cells={kpiCells} />
+        {summaryIsStale && summary && (
+          <div style={{ padding: "6px 14px", textAlign: "right" }}>
+            <StaleAsOf ts={summaryUpdatedAt} isFresh={false} />
+          </div>
+        )}
       </div>
 
       {/* Persona context strip */}
@@ -2502,6 +2480,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
             classMap={classMap}
             tickerFilter={tickerFilter}
             onTickerFilterChange={setTickerFilter}
+            onAdd={openAdd}
             onDetailOpen={setDetailId}
             onEdit={openEdit}
             onDelete={handleDelete}
