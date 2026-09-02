@@ -834,8 +834,6 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
 
   return (
     <div style={{
-      background: "var(--ft-surface)",
-      border: "1px solid var(--ft-border)",
       marginBottom: 6,
     }}>
       {/* Terminal panel header */}
@@ -1890,7 +1888,6 @@ function DashboardKpiBar({
       gridTemplateColumns: `auto auto repeat(${cells.length}, 1fr)`,
       gap: 1,
       background: "var(--ft-border)",
-      border: "1px solid var(--ft-border)",
       marginBottom: 6,
       overflowX: "auto",
       scrollbarWidth: "none",
@@ -2052,7 +2049,7 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
         </div>
 
         {/* Recent Transactions — 40%: custom compact inline table */}
-        <div style={{ flex: "2 1 0", minWidth: 0, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
+        <div style={{ flex: "2 1 0", minWidth: 0, overflow: "hidden" }}>
           <SectionHeader
             label="RECENT TRANSACTIONS"
             right={
@@ -2077,7 +2074,7 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
         </div>
 
         {/* Smart Alerts panel — SmartAlertsWidget renders flat rows, wrap in panel */}
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
+        <div style={{ overflow: "hidden" }}>
           <SectionHeader label="ALERTS" />
           <div style={{ padding: "6px 0", minHeight: 42 }}>
             <SmartAlertsWidget />
@@ -2189,7 +2186,7 @@ function RecentTransactionsWidgetInline() {
 
 const OV_MONO: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
 const OV_LABEL: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.13em", textTransform: "uppercase" as const };
-const OV_SURFACE: React.CSSProperties = { background: "var(--ft-surface)", border: "1px solid var(--ft-border)" };
+const OV_SURFACE: React.CSSProperties = {};
 const OV_CLIP: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, minWidth: 0 };
 
 function DashboardOverview() {
@@ -2240,9 +2237,9 @@ function DashboardOverview() {
         <div
           style={{ ...OV_SURFACE, padding: "14px 16px", borderLeft: "3px solid var(--ft-accent)", cursor: "pointer" }}
           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
           onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
-          onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
+          onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
         >
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
             <div>
@@ -2372,9 +2369,9 @@ function DashboardOverview() {
           <div
             style={{ ...OV_SURFACE, padding: "12px 14px", cursor: "pointer" }}
             onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
             onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
-            onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
+            onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
               <span style={{ ...OV_LABEL, borderBottom: "1px solid var(--ft-border)", paddingBottom: 2 }}>UPCOMING BILLS</span>
