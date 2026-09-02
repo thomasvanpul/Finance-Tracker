@@ -86,7 +86,7 @@ function detectCandidates(
   const candidates: RecurringCandidate[] = [];
 
   for (const [key, { transactions: txs }] of groups) {
-    if (txs.length < 2) continue;
+    if (txs.length < 3) continue;
 
     const sorted = [...txs].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
@@ -110,6 +110,13 @@ function detectCandidates(
 
     if (!frequency) continue;
     if (frequency !== "monthly") continue;
+
+    // Amount-stability gate: all occurrences must be within ±20% of the median.
+    // A price rise updates the series rather than creating a new one.
+    const amounts = sorted.map(t => Math.abs(t.baseEquivalent));
+    const sortedAmounts = amounts.slice().sort((a, b) => a - b);
+    const medianAmount = sortedAmounts[Math.floor(sortedAmounts.length / 2)];
+    if (medianAmount > 0 && !amounts.every(a => Math.abs(a - medianAmount) / medianAmount <= 0.2)) continue;
 
     if (normalizedExisting.has(key)) continue;
 

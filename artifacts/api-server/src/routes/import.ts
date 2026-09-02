@@ -12,6 +12,7 @@ import { parseWiseCsv } from "../lib/csv-import/wise";
 import { parseChaseCsv } from "../lib/csv-import/chase";
 import { logger } from "../lib/logger";
 import { normalizeMerchant } from "../lib/merchant-normalizer";
+import { stripBom } from "../lib/csv-import/utils";
 
 const router: IRouter = Router();
 
@@ -61,7 +62,7 @@ router.post("/import/csv", upload.single("file"), async (req, res): Promise<void
     return;
   }
 
-  const fileContent = req.file.buffer.toString("utf-8");
+  const fileContent = stripBom(req.file.buffer.toString("utf-8"));
   const parsers: Record<string, (content: string) => { rows: any[]; errors: string[] }> = {
     revolut: parseRevolutCsv,
     maybank: parseMaybankCsv,
@@ -106,7 +107,7 @@ router.post("/import/csv", upload.single("file"), async (req, res): Promise<void
       date: row.date,
       description: normalizeMerchant(row.description),
       type: row.amount > 0 ? "income" : "expense",
-      category: "Other",
+      category: row.category ?? "Other",
       accountId,
       nativeAmount: String(Math.abs(row.amount)),
       currency: row.currency,

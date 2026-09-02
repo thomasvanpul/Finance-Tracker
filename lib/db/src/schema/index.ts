@@ -13,3 +13,4 @@ export * from "./goals";
 export * from "./subscriptions";
 export * from "./connections";
 export * from "./request-metrics";
+export * from "./recurring-patterns";

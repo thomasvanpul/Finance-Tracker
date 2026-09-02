@@ -1,5 +1,6 @@
 import { parse } from "csv-parse/sync";
 import type { NormalizedTransaction } from "./revolut";
+import { parseAmount } from "./utils";
 
 // Chase UK exported CSV columns:
 // Date,Description,Amount,Balance
@@ -27,14 +28,15 @@ export function parseChaseCsv(fileContent: string): { rows: NormalizedTransactio
       ? (record["Description"] || record["Memo"] || "Chase transaction")
       : (record["Description"] || "Chase transaction");
     const amountRaw = record["Amount"];
+    const chaseCategory = isUS ? (record["Category"] ?? "").trim() : undefined;
 
     if (!dateRaw || !amountRaw) {
       errors.push(`Row ${i + 2}: missing required field(s), skipped`);
       continue;
     }
 
-    const amount = parseFloat(amountRaw.replace(/[£,]/g, ""));
-    if (Number.isNaN(amount)) {
+    const amount = parseAmount(amountRaw);
+    if (amount === null) {
       errors.push(`Row ${i + 2}: could not parse amount "${amountRaw}", skipped`);
       continue;
     }
@@ -43,7 +45,6 @@ export function parseChaseCsv(fileContent: string): { rows: NormalizedTransactio
     let date: string;
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateRaw)) {
       const [p1, p2, yyyy] = dateRaw.split("/");
-      // US format: MM/DD/YYYY; UK format: DD/MM/YYYY
       date = isUS
         ? `${yyyy}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}`
         : `${yyyy}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}`;
@@ -52,8 +53,33 @@ export function parseChaseCsv(fileContent: string): { rows: NormalizedTransactio
     }
 
     const currency = isUS ? "USD" : "GBP";
-    rows.push({ date, description, amount, currency });
+    const category = chaseCategory ? mapChaseCategory(chaseCategory) : undefined;
+    rows.push({ date, description, amount, currency, category });
   }
 
   return { rows, errors };
+}
+
+const CHASE_CATEGORY_MAP: Record<string, string> = {
+  "Food & Drink": "Food & Drink",
+  "Travel": "Travel",
+  "Shopping": "Shopping",
+  "Entertainment": "Entertainment",
+  "Health & Wellness": "Health",
+  "Bills & Utilities": "Bills",
+  "Personal": "Other",
+  "Education": "Education",
+  "Fees & Adjustments": "Fees",
+  "Gifts & Donations": "Gifts",
+  "Gas": "Transport",
+  "Groceries": "Food & Drink",
+  "Automotive": "Transport",
+  "Home": "Home",
+  "Business Services": "Other",
+  "Professional Services": "Other",
+  "Other": "Other",
+};
+
+function mapChaseCategory(raw: string): string {
+  return CHASE_CATEGORY_MAP[raw] ?? "Other";
 }

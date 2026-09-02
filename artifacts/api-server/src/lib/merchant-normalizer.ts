@@ -7,6 +7,12 @@ interface Rule {
 }
 
 const RULES: Rule[] = [
+  // ── Digital Wallets (must precede general brand rules) ────────────────────
+  { pattern: /apple\s?pay/i,            name: "Apple Pay" },
+  { pattern: /google\s?pay/i,           name: "Google Pay" },
+  { pattern: /samsung\s?pay/i,          name: "Samsung Pay" },
+  { pattern: /paypal\s?credit/i,        name: "PayPal Credit" },
+
   // ── E-commerce / Retail ────────────────────────────────────────────────────
   { pattern: /amzn|amazon/i,            name: "Amazon" },
   { pattern: /ebay/i,                   name: "eBay" },
@@ -16,6 +22,13 @@ const RULES: Rule[] = [
   { pattern: /zalando/i,                name: "Zalando" },
   { pattern: /shein/i,                  name: "Shein" },
   { pattern: /temu/i,                   name: "Temu" },
+  { pattern: /argos/i,                  name: "Argos" },
+  { pattern: /currys/i,                 name: "Currys" },
+  { pattern: /john\s?lewis/i,           name: "John Lewis" },
+  { pattern: /next\b/i,                 name: "Next" },
+  { pattern: /h\s?&\s?m\b/i,            name: "H&M" },
+  { pattern: /zara/i,                   name: "Zara" },
+  { pattern: /primark/i,                name: "Primark" },
   { pattern: /apple\.com|apple store|itunes/i, name: "Apple" },
   { pattern: /google\s?(play|llc|one|storage|fi)/i, name: "Google" },
   { pattern: /microsoft/i,              name: "Microsoft" },
@@ -55,6 +68,11 @@ const RULES: Rule[] = [
   { pattern: /tfl|transport\s?for\s?london/i, name: "TfL" },
   { pattern: /eurostar/i,               name: "Eurostar" },
   { pattern: /national\s?rail/i,        name: "National Rail" },
+  { pattern: /greater\s?anglia/i,       name: "Greater Anglia" },
+  { pattern: /avanti\s?west/i,          name: "Avanti West Coast" },
+  { pattern: /greater\s?manchester\s?(rail|tram|supertram)/i, name: "Greater Manchester Transport" },
+  { pattern: /crosscountry\s?trains/i,  name: "CrossCountry" },
+  { pattern: /south\s?western\s?railway/i, name: "South Western Railway" },
 
   // ── Supermarkets ──────────────────────────────────────────────────────────
   { pattern: /tesco/i,                  name: "Tesco" },
@@ -75,6 +93,7 @@ const RULES: Rule[] = [
   { pattern: /shell\b/i,                name: "Shell" },
   { pattern: /esso/i,                   name: "Esso" },
   { pattern: /texaco/i,                 name: "Texaco" },
+  { pattern: /exxon(mobil)?/i,          name: "ExxonMobil" },
   { pattern: /jet\b/i,                  name: "Jet" },
 
   // ── Coffee / Cafes ────────────────────────────────────────────────────────
@@ -96,7 +115,7 @@ const RULES: Rule[] = [
   { pattern: /five\s?guys/i,            name: "Five Guys" },
 
   // ── Finance & Banking ─────────────────────────────────────────────────────
-  { pattern: /paypal/i,                 name: "PayPal" },
+  { pattern: /paypal(?!\s?credit)/i,    name: "PayPal" },
   { pattern: /stripe/i,                 name: "Stripe" },
   { pattern: /monzo/i,                  name: "Monzo" },
   { pattern: /starling/i,               name: "Starling Bank" },
@@ -118,6 +137,9 @@ const RULES: Rule[] = [
   { pattern: /octopus\s?energy/i,       name: "Octopus Energy" },
   { pattern: /bulb\b/i,                 name: "Bulb" },
   { pattern: /edf\b/i,                  name: "EDF Energy" },
+  { pattern: /scottish\s?power/i,       name: "ScottishPower" },
+  { pattern: /ovo\s?energy/i,           name: "OVO Energy" },
+  { pattern: /npower/i,                 name: "npower" },
   { pattern: /thames\s?water/i,         name: "Thames Water" },
   { pattern: /severn\s?trent/i,         name: "Severn Trent" },
   { pattern: /bt\b|british\s?telecom/i, name: "BT" },

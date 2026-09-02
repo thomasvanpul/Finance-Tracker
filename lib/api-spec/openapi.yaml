@@ -934,6 +934,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/Goal"
 
+  # ── RECURRING PATTERNS ────────────────────────────────────────────────────
+  /recurring-patterns:
+    get:
+      operationId: listRecurringPatterns
+      tags: [recurring]
+      summary: Detect and list recurring transaction patterns
+      responses:
+        "200":
+          description: List of detected recurring patterns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecurringPattern"
+
   # ── SUBSCRIPTIONS ─────────────────────────────────────────────────────────
   /subscriptions:
     get:
@@ -1905,6 +1921,33 @@ components:
             $ref: "#/components/schemas/GoalHistoryEntry"
 
     # ── SUBSCRIPTIONS ─────────────────────────────────────────────────────────
+    RecurringPattern:
+      type: object
+      required: [id, normalizedKey, displayName, intervalDays, expectedAmount, currency, lastOccurrence, occurrenceCount, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        normalizedKey:
+          type: string
+        displayName:
+          type: string
+        intervalDays:
+          type: integer
+        expectedAmount:
+          type: number
+        currency:
+          type: string
+        lastOccurrence:
+          type: string
+        nextExpected:
+          type: string
+        occurrenceCount:
+          type: integer
+        status:
+          type: string
+          enum: [active, lapsed]
+
     Subscription:
       type: object
       required: [id, name, amount, currency, frequency, category, startDate, active, manuallyAdded]

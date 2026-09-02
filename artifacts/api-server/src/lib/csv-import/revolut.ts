@@ -5,6 +5,7 @@ export interface NormalizedTransaction {
   description: string;
   amount: number; // signed: negative = expense, positive = income
   currency: string;
+  category?: string; // app-level category if the source bank supplies one
 }
 
 // Revolut's exported CSV (Profile -> Statement -> Export as CSV) has these columns:

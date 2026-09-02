@@ -1135,4 +1135,18 @@ export const Disable2faResponse = zod.object({
   "ok": zod.boolean()
 })
 
+export const ListRecurringPatternsResponseItem = zod.object({
+  id: zod.string().uuid(),
+  normalizedKey: zod.string(),
+  displayName: zod.string(),
+  intervalDays: zod.number().int(),
+  expectedAmount: zod.number(),
+  currency: zod.string(),
+  lastOccurrence: zod.string(),
+  nextExpected: zod.string().optional(),
+  occurrenceCount: zod.number().int(),
+  status: zod.enum(["active", "lapsed"]),
+})
+export const ListRecurringPatternsResponse = zod.array(ListRecurringPatternsResponseItem)
+
 

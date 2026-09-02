@@ -20,6 +20,7 @@ import receiptRouter from "./receipt";
 import connectionsRouter from "./connections";
 import enableBankingRouter from "./enable-banking";
 import sharedExpensesRouter from "./shared-expenses";
+import recurringRouter from "./recurring";
 
 const router: IRouter = Router();
 
@@ -40,6 +41,7 @@ router.use(enableBankingRouter);
 router.use(importRouter);
 router.use(debtsRouter);
 router.use(sharedExpensesRouter);
+router.use(recurringRouter);
 router.use(settingsRouter);
 router.use(aiRouter);
 // Mount prefixes here are RELATIVE — this router is itself already
