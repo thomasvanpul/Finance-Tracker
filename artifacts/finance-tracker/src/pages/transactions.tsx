@@ -573,7 +573,8 @@ export default function Transactions() {
 
   const hasFilters = search || filterType !== "all" || filterCategory !== "all" || filterAccount !== "all" || filterDateFrom || filterDateTo || amountMin || amountMax || filterTag;
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
-  const activeFilterCount = [filterType !== "all", filterCategory !== "all", filterAccount !== "all", !!(filterDateFrom || filterDateTo), !!(amountMin || amountMax), !!filterTag].filter(Boolean).length;
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const activeFilterCount = [filterCategory !== "all", filterAccount !== "all", !!(filterDateFrom || filterDateTo), !!(amountMin || amountMax), !!filterTag].filter(Boolean).length;
 
   // Reset pagination when filters change
   useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, filterTag]);
@@ -2465,205 +2466,204 @@ export default function Transactions() {
 
       {/* ── Desktop filter bar — compact single-row terminal style ── */}
       {!isMobile && (
-      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-        {/* Row A: search · type · category · account · sort · tag · clear */}
-        <div className="ft-scroll-x" style={{ borderBottom: "1px solid var(--ft-border)" }}>
-          <HStack align="stretch" minWidth="max-content">
-          {/* SEARCH label */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 10px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">SEARCH</MonoLabel>
-          </div>
-          <div style={{ position: "relative", flex: 1, minWidth: 160, display: "flex", alignItems: "center" }}>
-            <Search className="absolute left-2.5 w-3 h-3" style={{ color: "var(--ft-dim)", pointerEvents: "none" }} />
+      <div>
+        {/* Single always-visible row */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0", flexWrap: "wrap" as const }}>
+          {/* Search */}
+          <div style={{ position: "relative", flex: "0 0 200px" }}>
+            <Search size={11} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", color: "var(--ft-dim)", pointerEvents: "none" }} />
             <input
               ref={searchInputRef}
-              placeholder="description, category, account…  ( / )"
+              placeholder="search…  ( / )"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="ft-filter-input"
-              style={{ paddingLeft: 24, paddingRight: 8, fontSize: 11, height: 28, background: "transparent", border: "none", outline: "none", color: "var(--ft-text)", fontFamily: "var(--font-mono)", width: "100%" }}
+              style={{ width: "100%", paddingLeft: 26, paddingRight: 8, height: 26, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none", boxSizing: "border-box" as const }}
             />
           </div>
-          {/* TYPE — grouped buttons per tester feedback */}
+          {/* Type buttons */}
           {(["all", "income", "expense", "transfer"] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setFilterType(t)}
-              onMouseEnter={(e) => { if (filterType !== t) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-text)"; }}
-              onMouseLeave={(e) => { if (filterType !== t) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-muted)"; }}
               style={{
-                height: 28,
+                height: 26,
                 padding: "0 9px",
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
-                letterSpacing: "0.06em",
-                background: filterType === t ? "var(--ft-raised)" : "transparent",
-                color: filterType === t ? "var(--ft-text)" : "var(--ft-muted)",
-                borderLeft: "1px solid var(--ft-border)",
-                borderTop: "none",
-                borderBottom: "none",
-                borderRight: "none",
+                fontSize: 9,
+                letterSpacing: "0.08em",
                 cursor: "pointer",
-                flexShrink: 0,
-                transition: "background 0.1s, color 0.1s",
+                border: "1px solid",
+                borderColor: filterType === t ? "var(--ft-accent)" : "var(--ft-border2)",
+                background: filterType === t ? "var(--ft-accent)" : "transparent",
+                color: filterType === t ? "var(--ft-bg)" : "var(--ft-muted)",
+                textTransform: "uppercase" as const,
               }}
             >
-              {t.toUpperCase()}
+              {t}
             </button>
           ))}
-          {/* CATEGORY */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">CAT</MonoLabel>
-          </div>
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            style={{ height: 28, fontSize: 11, background: "transparent", border: "none", outline: "none", color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", padding: "0 6px", cursor: "pointer", borderRight: "1px solid var(--ft-border)", minWidth: 100, flexShrink: 0 }}
-          >
-            <option value="all">all</option>
-            {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          {/* ACCOUNT */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">ACCT</MonoLabel>
-          </div>
-          <select
-            value={filterAccount}
-            onChange={(e) => setFilterAccount(e.target.value)}
-            style={{ height: 28, fontSize: 11, background: "transparent", border: "none", outline: "none", color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", padding: "0 6px", cursor: "pointer", borderRight: "1px solid var(--ft-border)", minWidth: 100, flexShrink: 0 }}
-          >
-            <option value="all">all</option>
-            {allAccounts.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
-          {/* SORT */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">SORT</MonoLabel>
-          </div>
+          {/* Quick date presets */}
+          {(["today", "week", "month", "lastmonth", "3m", "all"] as const).map((k) => {
+            const labels: Record<string, string> = { today: "TODAY", week: "WEEK", month: "MONTH", lastmonth: "LAST MO", "3m": "3M", all: "ALL" };
+            const isActive = activeQuickRange === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => applyQuickRange(k)}
+                style={{
+                  height: 26,
+                  padding: "0 8px",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 9,
+                  letterSpacing: "0.08em",
+                  cursor: "pointer",
+                  border: "1px solid",
+                  borderColor: isActive ? "var(--ft-accent)" : "var(--ft-border2)",
+                  background: isActive ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
+                  color: isActive ? "var(--ft-accent)" : "var(--ft-dim)",
+                  whiteSpace: "nowrap" as const,
+                  textTransform: "uppercase" as const,
+                }}
+              >
+                {labels[k]}
+              </button>
+            );
+          })}
+          {/* Sort */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            style={{ height: 28, fontSize: 11, background: "transparent", border: "none", outline: "none", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", padding: "0 6px", cursor: "pointer", borderRight: "1px solid var(--ft-border)", minWidth: 130, flexShrink: 0 }}
+            style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", cursor: "pointer" }}
           >
-            <option value="date-desc">date ↓</option>
-            <option value="date-asc">date ↑</option>
-            <option value="amount-high">amount ↓</option>
-            <option value="amount-low">amount ↑</option>
+            <option value="date-desc">DATE ↓</option>
+            <option value="date-asc">DATE ↑</option>
+            <option value="amount-high">AMOUNT ↓</option>
+            <option value="amount-low">AMOUNT ↑</option>
           </select>
-          {/* TAG */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">TAG</MonoLabel>
-          </div>
-          <div style={{ position: "relative", display: "flex", alignItems: "center", flex: "0 0 90px" }}>
-            <input
-              type="text"
-              placeholder="filter…"
-              value={filterTag}
-              onChange={(e) => setFilterTag(e.target.value)}
-              className="ft-filter-input"
-              style={{ height: 28, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", outline: "none", color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", width: "100%" }}
-            />
-          </div>
+          {/* Filters toggle */}
+          <button
+            type="button"
+            onClick={() => setFilterPanelOpen(o => !o)}
+            style={{
+              height: 26,
+              padding: "0 10px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 9,
+              letterSpacing: "0.08em",
+              cursor: "pointer",
+              border: "1px solid",
+              borderColor: filterPanelOpen ? "var(--ft-accent)" : "var(--ft-border2)",
+              background: filterPanelOpen ? "color-mix(in srgb, var(--ft-accent) 10%, transparent)" : "transparent",
+              color: filterPanelOpen ? "var(--ft-accent)" : "var(--ft-muted)",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              textTransform: "uppercase" as const,
+            }}
+          >
+            <SlidersHorizontal style={{ width: 10, height: 10 }} />
+            FILTERS{activeFilterCount > 0 ? ` ·${activeFilterCount}` : ""}
+          </button>
           {/* Clear */}
           {hasFilters && (
             <button
               type="button"
               onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); }}
-              style={{ height: 28, padding: "0 10px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "none", borderLeft: "1px solid var(--ft-border)", color: "var(--ft-red)", cursor: "pointer", flexShrink: 0 }}
+              style={{ height: 26, padding: "0 10px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", cursor: "pointer", border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-red)" }}
               aria-label="Clear all filters"
             >
-              ✕ CLR
+              CLR
             </button>
           )}
-          </HStack>
         </div>
-
-        {/* Row B: quick date ranges · date from · date to · amount range */}
-        <div className="ft-scroll-x">
-          <div style={{ display: "flex", alignItems: "stretch", minWidth: "max-content" }}
-        >
-          {/* Quick ranges */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 10px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">RANGE</MonoLabel>
+        {/* Active chips — only when panel is closed */}
+        {!filterPanelOpen && activeFilterCount > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, paddingBottom: 6 }}>
+            {filterCategory !== "all" && (
+              <button type="button" onClick={() => setFilterCategory("all")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                CAT: {filterCategory} ×
+              </button>
+            )}
+            {filterAccount !== "all" && (
+              <button type="button" onClick={() => setFilterAccount("all")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                ACCT: {filterAccount} ×
+              </button>
+            )}
+            {(filterDateFrom || filterDateTo) && (
+              <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); applyQuickRange("all"); }} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                {filterDateFrom || "…"}–{filterDateTo || "…"} ×
+              </button>
+            )}
+            {filterTag && (
+              <button type="button" onClick={() => setFilterTag("")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                #{filterTag} ×
+              </button>
+            )}
+            {(amountMin || amountMax) && (
+              <button type="button" onClick={() => { setAmountMin(""); setAmountMax(""); }} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                {amountMin || "0"}–{amountMax || "∞"} ×
+              </button>
+            )}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 0, borderRight: "1px solid var(--ft-border)" }}>
-            {(["Today", "Week", "Month", "Last Mo", "3M", "All"] as const).map((label, i) => {
-              const keys = ["today", "week", "month", "lastmonth", "3m", "all"] as const;
-              const k = keys[i];
-              const isActive = activeQuickRange === k;
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => applyQuickRange(k)}
-                  style={{
-                    height: 26,
-                    padding: "0 8px",
-                    fontSize: 9,
-                    fontFamily: "var(--font-mono)",
-                    letterSpacing: "0.06em",
-                    background: isActive ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
-                    border: "none",
-                    borderRight: "1px solid var(--ft-border)",
-                    color: isActive ? "var(--ft-accent)" : "var(--ft-dim)",
-                    cursor: "pointer",
-                    whiteSpace: "nowrap" as const,
-                    textTransform: "uppercase" as const,
-                  }}
-                >
-                  {label}
-                </button>
-              );
-            })}
+        )}
+        {/* Expanded filter panel */}
+        {filterPanelOpen && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr", gap: 12, padding: "8px 0 10px", borderTop: "1px solid var(--ft-border2)" }}>
+            {/* Category */}
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>CATEGORY</span>
+              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)" }}>
+                <option value="all">all</option>
+                {(allCategories as string[]).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            {/* Account */}
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>ACCOUNT</span>
+              <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)" }}>
+                <option value="all">all</option>
+                {(allAccounts as string[]).map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+            {/* Tag */}
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>TAG</span>
+              <input
+                type="text"
+                value={filterTag}
+                onChange={(e) => setFilterTag(e.target.value)}
+                placeholder="#tag"
+                className="ft-filter-input"
+                style={{ height: 26, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none" }}
+              />
+            </div>
+            {/* Date range */}
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>DATE RANGE</span>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none" }} />
+                <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>–</span>
+                <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none" }} />
+              </div>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button type="button" onClick={() => applyQuickRange("lastmonth")} style={{ height: 20, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" as const }}>LAST MO</button>
+                <button type="button" onClick={() => applyQuickRange("3m")} style={{ height: 20, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" as const }}>3M</button>
+              </div>
+            </div>
+            {/* Amount */}
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>AMOUNT</span>
+              <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} placeholder="min" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
+                <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>–</span>
+                <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} placeholder="max" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-bg2)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
+              </div>
+            </div>
           </div>
-          {/* DATE FROM label */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">FROM</MonoLabel>
-          </div>
-          <input
-            type="date"
-            value={filterDateFrom}
-            onChange={(e) => setFilterDateFrom(e.target.value)}
-            style={{ height: 26, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", borderRight: "1px solid var(--ft-border)", outline: "none", color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", flexShrink: 0, width: 126 }}
-          />
-          {/* DATE TO label */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">TO</MonoLabel>
-          </div>
-          <input
-            type="date"
-            value={filterDateTo}
-            onChange={(e) => setFilterDateTo(e.target.value)}
-            style={{ height: 26, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", borderRight: "1px solid var(--ft-border)", outline: "none", color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", flexShrink: 0, width: 126 }}
-          />
-          {/* AMOUNT MIN */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">£ MIN</MonoLabel>
-          </div>
-          <input
-            type="number"
-            placeholder="0.00"
-            value={amountMin}
-            min="0"
-            step="0.01"
-            onChange={(e) => setAmountMin(e.target.value)}
-            style={{ height: 26, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", borderRight: "1px solid var(--ft-border)", outline: "none", color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", width: 72, flexShrink: 0 }}
-          />
-          {/* AMOUNT MAX */}
-          <div style={{ display: "flex", alignItems: "center", padding: "0 8px", borderRight: "1px solid var(--ft-border)", background: "var(--ft-raised)", flexShrink: 0 }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">£ MAX</MonoLabel>
-          </div>
-          <input
-            type="number"
-            placeholder="∞"
-            value={amountMax}
-            min="0"
-            step="0.01"
-            onChange={(e) => setAmountMax(e.target.value)}
-            style={{ height: 26, padding: "0 6px", fontSize: 11, background: "transparent", border: "none", outline: "none", color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", width: 72, flexShrink: 0 }}
-          />
-          </div>
-        </div>
+        )}
       </div>
       )}
 
@@ -2782,8 +2782,8 @@ export default function Transactions() {
         </div>
       )}
 
-      {/* ── Transaction ledger ��─ */}
-      <div style={{ border: "1px solid var(--ft-border)" }}>
+      {/* ── Transaction ledger ──*/}
+      <div>
         {/* Panel header — Bloomberg · SECTION NAME pattern */}
         <div className="ft-panel-header">
           <HStack gap={8} align="center">
