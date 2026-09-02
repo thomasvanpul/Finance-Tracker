@@ -131,7 +131,7 @@
 
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Cascadia Code", monospace;
-  --font-head: "Space Grotesk", system-ui, sans-serif;
+  --font-head: "IBM Plex Sans", system-ui, sans-serif;
 }
 
 :root {
