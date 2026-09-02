@@ -1997,8 +1997,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
             style={{
               position: "absolute",
               right: 0,
-              top: 0,
-              bottom: 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              height: 30,
               background: "var(--ft-accent)",
               color: "var(--ft-base)",
               border: "none",
