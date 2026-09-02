@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, timestamp, integer, date, uniqueIndex, check } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, timestamp, integer, date, uniqueIndex, check, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -49,6 +49,15 @@ export const transactionsTable = pgTable("transactions", {
   // seconds of createdAt means snapshotted live at write. Don't add
   // a source column later — the timestamp already tells the story.
   rateAsOf: timestamp("rate_as_of", { withTimezone: true }),
+  // Two-leg transfer support. Both columns are null for legacy one-sided
+  // transfers (rows created before this migration). When both are present:
+  // - transferGroupId links the debit and credit legs (same UUID on both)
+  // - transferDirection 'out' = money leaving the account (debit leg)
+  //                    'in'  = money arriving (credit leg)
+  // balance.ts skips the early-return only when transferDirection is set,
+  // so legacy rows continue to have no balance adjustment.
+  transferGroupId: uuid("transfer_group_id"),
+  transferDirection: text("transfer_direction"), // 'out' | 'in' | null (legacy)
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (t) => [

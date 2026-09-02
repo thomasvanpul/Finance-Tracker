@@ -46,6 +46,8 @@ async function enrichTransaction(tx: typeof transactionsTable.$inferSelect, acco
     source: tx.source,
     externalId: tx.externalId ?? null,
     createdAt: tx.createdAt.toISOString(),
+    transferGroupId: tx.transferGroupId ?? null,
+    transferDirection: (tx.transferDirection as "out" | "in" | null) ?? null,
   };
 }
 
@@ -94,19 +96,73 @@ router.post("/transactions", async (req, res): Promise<void> => {
   // backfill / read-path fallback handle it — refusing the write
   // when an FX API is down would fail the app at its one job.
   const baseCurrency = await getBaseCurrency(userId);
-  const { rate, asOf } = await snapshotFxRate(parsed.data.currency, baseCurrency);
+  const { toAccountId, toNativeAmount, toCurrency, ...coreData } = parsed.data;
+
+  // Two-leg transfer: write debit and credit atomically, adjust both balances.
+  if (coreData.type === "transfer" && toAccountId != null) {
+    const outAmount = coreData.nativeAmount;
+    const inAmount = toNativeAmount ?? outAmount;
+    const inCurrency = toCurrency ?? coreData.currency;
+    const transferGroupId = crypto.randomUUID();
+
+    const { rate: outRate, asOf: outAsOf } = await snapshotFxRate(coreData.currency, baseCurrency);
+    const { rate: inRate, asOf: inAsOf } = await snapshotFxRate(inCurrency, baseCurrency);
+
+    const [debitLeg] = await db.transaction(async (dbTx) => {
+      const rows = await dbTx
+        .insert(transactionsTable)
+        .values([
+          {
+            ...coreData,
+            nativeAmount: String(outAmount),
+            userId,
+            nativeToBaseRate: outRate == null ? null : String(outRate),
+            rateAsOf: outAsOf,
+            transferGroupId,
+            transferDirection: "out",
+          },
+          {
+            ...coreData,
+            accountId: toAccountId,
+            nativeAmount: String(inAmount),
+            currency: inCurrency,
+            userId,
+            nativeToBaseRate: inRate == null ? null : String(inRate),
+            rateAsOf: inAsOf,
+            transferGroupId,
+            transferDirection: "in",
+          },
+        ])
+        .returning();
+      await adjustAccountBalance(coreData.accountId, outAmount, coreData.currency, "transfer", false, dbTx, "out");
+      await adjustAccountBalance(toAccountId, inAmount, inCurrency, "transfer", false, dbTx, "in");
+      return rows;
+    });
+
+    const accounts = await db
+      .select({ id: accountsTable.id, name: accountsTable.name })
+      .from(accountsTable)
+      .where(eq(accountsTable.userId, userId));
+    const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
+    const enriched = await enrichTransaction(debitLeg, accountMap, userId);
+    res.status(201).json(UpdateTransactionResponse.parse(enriched));
+    return;
+  }
+
+  // Single-leg write (income, expense, or legacy one-sided transfer).
+  const { rate, asOf } = await snapshotFxRate(coreData.currency, baseCurrency);
   const [tx] = await db.transaction(async (dbTx) => {
     const rows = await dbTx
       .insert(transactionsTable)
       .values({
-        ...parsed.data,
-        nativeAmount: String(parsed.data.nativeAmount),
+        ...coreData,
+        nativeAmount: String(coreData.nativeAmount),
         userId,
         nativeToBaseRate: rate == null ? null : String(rate),
         rateAsOf: asOf,
       })
       .returning();
-    await adjustAccountBalance(parsed.data.accountId, parsed.data.nativeAmount, parsed.data.currency, parsed.data.type, false, dbTx);
+    await adjustAccountBalance(coreData.accountId, coreData.nativeAmount, coreData.currency, coreData.type, false, dbTx);
     return rows;
   });
 
@@ -224,7 +280,37 @@ router.delete("/transactions/:id", async (req, res): Promise<void> => {
       .where(and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId)))
       .returning();
     if (!row) return null;
-    await adjustAccountBalance(row.accountId, parseFloat(row.nativeAmount), row.currency, row.type, true, dbTx);
+    await adjustAccountBalance(
+      row.accountId,
+      parseFloat(row.nativeAmount),
+      row.currency,
+      row.type,
+      true,
+      dbTx,
+      row.transferDirection ?? undefined,
+    );
+    // If this was a linked transfer leg, also delete the paired leg so
+    // we don't leave an orphan that would under-count or over-count the balance.
+    if (row.transferGroupId) {
+      const [paired] = await dbTx
+        .delete(transactionsTable)
+        .where(and(
+          eq(transactionsTable.transferGroupId, row.transferGroupId),
+          eq(transactionsTable.userId, userId),
+        ))
+        .returning();
+      if (paired) {
+        await adjustAccountBalance(
+          paired.accountId,
+          parseFloat(paired.nativeAmount),
+          paired.currency,
+          paired.type,
+          true,
+          dbTx,
+          paired.transferDirection ?? undefined,
+        );
+      }
+    }
     return row;
   });
   if (!txRow) {

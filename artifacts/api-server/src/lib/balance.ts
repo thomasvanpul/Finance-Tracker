@@ -12,14 +12,14 @@ type DbOrTx =
 
 /**
  * Adjust an account's native-currency balance after a transaction.
- * - income  → balance increases
- * - expense → balance decreases
- * - transfer → no change (handled elsewhere)
- * Pass reverse=true to undo a previous adjustment (e.g. on delete).
+ * - income   → balance increases
+ * - expense  → balance decreases
+ * - transfer, direction='out' → balance decreases (debit leg)
+ * - transfer, direction='in'  → balance increases (credit leg)
+ * - transfer, direction=null  → no change (legacy one-sided row, pre-migration)
  *
- * Pass a Drizzle transaction object as dbOrTx to run atomically with the
- * surrounding insert/delete — this prevents a crash between the two
- * operations from leaving balance and transaction table out of sync.
+ * Pass reverse=true to undo a previous adjustment (e.g. on delete).
+ * Pass a Drizzle transaction object as dbOrTx to run atomically.
  */
 export async function adjustAccountBalance(
   accountId: number,
@@ -28,8 +28,9 @@ export async function adjustAccountBalance(
   txType: string,
   reverse = false,
   dbOrTx: DbOrTx = db,
+  transferDirection?: string | null,
 ): Promise<void> {
-  if (txType === "transfer") return;
+  if (txType === "transfer" && !transferDirection) return;
 
   const [acct] = await dbOrTx
     .select({ id: accountsTable.id, currency: accountsTable.currency })
@@ -63,7 +64,7 @@ export async function adjustAccountBalance(
     delta = converted;
   }
 
-  if (txType === "expense") delta = -delta;
+  if (txType === "expense" || (txType === "transfer" && transferDirection === "out")) delta = -delta;
   if (reverse) delta = -delta;
 
   await dbOrTx.execute(

@@ -165,7 +165,9 @@ export const ListTransactionsResponseItem = zod.object({
   "baseEquivalent": zod.number().nullable(),
   "source": zod.enum(['manual', 'wise', 'csv']),
   "externalId": zod.string().nullish(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "transferGroupId": zod.string().uuid().nullish(),
+  "transferDirection": zod.enum(['out', 'in']).nullish()
 })
 export const ListTransactionsResponse = zod.array(ListTransactionsResponseItem)
 
@@ -180,7 +182,10 @@ export const CreateTransactionBody = zod.object({
   "category": zod.string(),
   "accountId": zod.number(),
   "nativeAmount": zod.number(),
-  "currency": zod.string()
+  "currency": zod.string(),
+  "toAccountId": zod.number().optional(),
+  "toNativeAmount": zod.number().optional(),
+  "toCurrency": zod.string().optional()
 })
 
 
