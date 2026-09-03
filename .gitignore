@@ -62,3 +62,7 @@ design-import/
 
 # Agent worktrees — created and removed automatically; not project files
 .claude/worktrees/
+
+# Claude Code gate hook cache — machine-local, not shared
+.claude/gate.timing
+.claude/gate.auto
