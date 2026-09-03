@@ -91,7 +91,8 @@ describe("verifySchemaAtBoot", () => {
     const {
       accountsTable, appSettingsTable, budgetsTable, connectionsTable,
       debtsTable, dismissedSubscriptionsTable, goalsTable, investmentsTable,
-      nwSnapshotsTable, sharedExpensesTable, sharedExpenseParticipantsTable,
+      nwSnapshotsTable, recurringPatternsTable, sharedExpensesTable,
+      sharedExpenseParticipantsTable,
       sharedExpenseSettlementsTable, subscriptionsTable, transactionsTable,
       upcomingTable, userTable, sessionTable, accountTable,
       verificationTable, passkeyTable, totpTable, twoFactorTable,
@@ -106,6 +107,7 @@ describe("verifySchemaAtBoot", () => {
       goals: goalsTable,
       investments: investmentsTable,
       nw_snapshots: nwSnapshotsTable,
+      recurring_patterns: recurringPatternsTable,
       shared_expenses: sharedExpensesTable,
       shared_expense_participants: sharedExpenseParticipantsTable,
       shared_expense_settlements: sharedExpenseSettlementsTable,
