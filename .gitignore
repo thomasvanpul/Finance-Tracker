@@ -66,3 +66,4 @@ design-import/
 # Claude Code gate hook cache — machine-local, not shared
 .claude/gate.timing
 .claude/gate.auto
+.projectname
