@@ -1,0 +1,11 @@
+{
+  "browser": [
+    "playwright@1.61.1 in scripts"
+  ],
+  "test_scripts": [
+    "test (artifacts/api-server)",
+    "test (artifacts/finance-tracker)",
+    "screenshot (scripts)"
+  ],
+  "shot_scripts": 13
+}

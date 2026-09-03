@@ -7,6 +7,7 @@
     "hello": "tsx ./src/hello.ts",
     "seed:dev": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/seed-dev-user.ts",
     "screenshot": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/screenshot.ts",
+    "inspect": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/inspect.ts",
     "backfill:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/backfill-tx-rates.ts --branch=dev",
     "backfill:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/backfill-tx-rates.ts --branch=prod",
     "verify:fx-drift:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/verify-fx-drift.ts --branch=dev",
