@@ -118,6 +118,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
   return (
     <div
+      data-nr-route-state="onboarding"
       style={{
         position: "fixed",
         inset: 0,

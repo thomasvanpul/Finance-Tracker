@@ -30,10 +30,13 @@ export function WidgetShell({
     <div
       style={{
         overflow: "hidden",
-        ...(isCustomizing && {
-          border: "1px solid var(--ft-border)",
-          ...(hovered && { borderColor: "var(--ft-border2)" }),
-        }),
+        // The border used to appear only in customize mode, which meant the
+        // one view where widget boundaries mattered least was the only view
+        // that had them. 1px, zero radius, packed — the boundary is the
+        // whole job, so it does not need to be decorative.
+        border: "1px solid var(--ft-border)",
+        background: "var(--ft-surface)",
+        ...(hovered && { borderColor: "var(--ft-border2)" }),
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

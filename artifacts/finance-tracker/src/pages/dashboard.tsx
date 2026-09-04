@@ -836,7 +836,7 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
   if (!loading && insights === null) return null;
 
   return (
-    <div style={{
+    <div className="ft-widget-frame" style={{
       marginBottom: 6,
     }}>
       {/* Terminal panel header */}
@@ -847,7 +847,6 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        marginBottom: 8,
       }}>
         <span className="ft-panel-label">AI INSIGHTS</span>
         <button
@@ -901,7 +900,9 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                 }}
               >
                 <Zap size={10} style={{ color: "var(--ft-accent)", flexShrink: 0, marginTop: 1, opacity: 0.8 }} />
-                <Text as="span" mono size={10} color="var(--ft-muted)" lineHeight={1.6}>
+                {/* Prose, not a figure. Mono here made three sentences read
+                    as a log dump; sans is what a sentence wants. */}
+                <Text as="span" size={10} color="var(--ft-muted)" lineHeight={1.6}>
                   {text}
                 </Text>
               </div>
@@ -2020,7 +2021,6 @@ function SectionHeader({ label, right }: { label: string; right?: React.ReactNod
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: 8,
     }}>
       <span className="ft-panel-label">{label}</span>
       {right}
@@ -2036,7 +2036,8 @@ interface TerminalLayoutProps {
 
 function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
   return (
-    <VStack gap={16}>
+    // 6, matching the intra-row gap. At 16 the rows read as separate pages.
+    <VStack gap={6}>
       {/* AI Insights — only shown if AI available */}
       <AiInsightsPanel {...aiInsightsProps} />
 
@@ -2048,7 +2049,7 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
         </div>
 
         {/* Recent Transactions — 40%: custom compact inline table */}
-        <div style={{ flex: "2 1 0", minWidth: 0, overflow: "hidden" }}>
+        <div className="ft-widget-frame" style={{ flex: "2 1 0", minWidth: 0, overflow: "hidden" }}>
           <SectionHeader
             label="RECENT TRANSACTIONS"
             right={
@@ -2073,7 +2074,7 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
         </div>
 
         {/* Smart Alerts panel — SmartAlertsWidget renders flat rows, wrap in panel */}
-        <div style={{ overflow: "hidden" }}>
+        <div className="ft-widget-frame" style={{ overflow: "hidden" }}>
           <SectionHeader label="ALERTS" />
           <div style={{ padding: "6px 0", minHeight: 42 }}>
             <SmartAlertsWidget />

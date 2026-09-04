@@ -8,13 +8,15 @@
     "seed:dev": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/seed-dev-user.ts",
     "screenshot": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/screenshot.ts",
     "inspect": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/inspect.ts",
+    "verify:inspect-assertions": "tsx ./src/verify-inspect-assertions.ts",
     "backfill:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/backfill-tx-rates.ts --branch=dev",
     "backfill:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/backfill-tx-rates.ts --branch=prod",
     "verify:fx-drift:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/verify-fx-drift.ts --branch=dev",
     "verify:fx-drift:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/verify-fx-drift.ts --branch=prod",
     "verify:tx-rate-lock:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/verify-tx-rate-lock.ts --branch=dev",
     "verify:tx-rate-lock:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/verify-tx-rate-lock.ts --branch=prod",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx ./src/app-routes.test.ts"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",

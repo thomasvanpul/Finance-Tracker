@@ -22,6 +22,7 @@ import { execFileSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
+import { assertRoutesKnown, routeArgsFrom } from "./app-routes.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(__dirname, "..", "..");
@@ -189,6 +190,12 @@ async function main(): Promise<void> {
   if (passthrough.length === 0) {
     throw new Error("nothing to inspect — pass --route /dashboard (all screenshot.ts flags are forwarded)");
   }
+
+  // Before anything expensive. A mistyped route used to cost two dev server
+  // boots, a Neon round-trip and a screenshot of the 404 page, and then
+  // exited 0. Now it costs one file read and exits 1.
+  const { routes, viewport } = routeArgsFrom(passthrough);
+  assertRoutesKnown(routes, viewport);
 
   await claimPort(API_PORT);
   await claimPort(WEB_PORT);

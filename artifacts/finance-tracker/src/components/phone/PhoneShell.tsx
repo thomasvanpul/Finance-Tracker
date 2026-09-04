@@ -187,7 +187,7 @@ const placeholderStyle: React.CSSProperties = {
   color: "var(--ft-dim)",
 };
 // UpcomingStub removed — UpcomingScreen is the live implementation.
-function PhoneNotFound()  { return <div style={{ ...placeholderStyle, fontSize: 14 }}>Route not wired</div>; }
+function PhoneNotFound()  { return <div data-nr-route-state="not-found" style={{ ...placeholderStyle, fontSize: 14 }}>Route not wired</div>; }
 
 // The tab screens absorb legacy URLs while the merge tabs are being built.
 // /accounts, /net-worth, /portfolio, /investments resolve to WORTH.

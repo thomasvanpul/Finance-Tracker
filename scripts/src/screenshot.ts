@@ -12,17 +12,23 @@
 //   pnpm --filter @workspace/scripts screenshot -- \
 //     --routes /accounts,/net-worth --themes void,arctic --viewport mobile
 
-import { chromium, type Browser, type BrowserContext } from "playwright";
+import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { mkdir } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
+import { assertRoutesKnown } from "./app-routes.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── Config ───────────────────────────────────────────────────────────────────
 const FRONTEND = process.env.SCREENSHOT_FRONTEND ?? "http://localhost:4321";
 const OUTPUT_DIR = resolve(__dirname, "..", "screenshots");
+
+// A rendered Numeris page carries far more text than this. The threshold
+// only has to separate "the app drew something" from "the bundle threw and
+// React unmounted the tree", which is a two-orders-of-magnitude gap.
+const BLANK_PAGE_MIN_CHARS = 40;
 
 type Viewport = "mobile" | "desktop";
 const VIEWPORTS: Record<Viewport, { width: number; height: number }> = {
@@ -66,6 +72,11 @@ function parseArgs(argv: string[]): Args {
   for (const t of themeList) {
     if (!VALID_THEMES.has(t)) throw new Error(`unknown theme "${t}"`);
   }
+
+  // A route was already validated the same way by inspect.ts before it
+  // started two dev servers. Repeated here because screenshot.ts is also
+  // run directly, and because the cost is one file read.
+  assertRoutesKnown(routeList, viewportRaw);
 
   return { routes: routeList, themes: themeList, viewport: viewportRaw, name };
 }
@@ -208,23 +219,89 @@ function slug(s: string): string {
   return s.replace(/^\//, "root").replace(/\//g, "-").replace(/[^a-z0-9-]/gi, "_").toLowerCase();
 }
 
+// Refuse to write a PNG of something that is not the page that was asked for.
+//
+// Three shapes, all of which screenshotted happily and exited 0 before this
+// existed: the 404 component, a page that navigated somewhere else after
+// load, and a blank body. Each produced a file that looked like evidence.
+//
+// The 404/auth/onboarding check keys on data-nr-route-state, set on the four
+// fallback roots (pages/not-found.tsx, PhoneShell's PhoneNotFound,
+// auth-gate.tsx, onboarding.tsx). An attribute survives copy edits that a
+// heading-text match would not.
+const FALLBACK_REASON: Record<string, string> = {
+  "not-found": "the 404 component rendered — this path is not in the router for this viewport",
+  auth: "the sign-in screen rendered — the seeded session was not accepted",
+  onboarding: "the onboarding flow rendered — the onboarding-complete keys did not take",
+};
+
+export async function assertRendered(page: Page, route: string): Promise<void> {
+  const seen = await page.evaluate(() => ({
+    state: document.querySelector("[data-nr-route-state]")?.getAttribute("data-nr-route-state") ?? null,
+    textLength: (document.body?.innerText ?? "").trim().length,
+    path: window.location.pathname + window.location.search,
+  }));
+
+  const fail = (why: string): never => {
+    throw new Error(`${route}: ${why} — refusing to write a PNG. (landed on ${seen.path})`);
+  };
+
+  if (seen.state !== null) {
+    fail(FALLBACK_REASON[seen.state] ?? `the app reported route state "${seen.state}"`);
+  }
+  if (seen.textLength < BLANK_PAGE_MIN_CHARS) {
+    fail(`the page rendered ${seen.textLength} characters of text, under the ${BLANK_PAGE_MIN_CHARS}-character floor — blank or crashed`);
+  }
+  // BASE_URL is "" under the harness (inspect sets BASE_PATH=/), so the
+  // requested route and the landed pathname are directly comparable.
+  const landed = seen.path.split("?")[0].replace(/\/$/, "") || "/";
+  const asked = route.split("?")[0].replace(/\/$/, "") || "/";
+  if (landed !== asked) {
+    fail(`the app navigated away to ${landed} after load`);
+  }
+}
+
 async function captureOne(context: BrowserContext, route: string, theme: string, viewport: Viewport, explicitName: string | null): Promise<string> {
   const page = await context.newPage();
   // Inject the theme before any script runs, matching ThemeProvider's storage key.
+  // SCREENSHOT_AI_INSIGHTS='["one insight"]' primes the dashboard's AI
+  // insights cache so the panel can be looked at without a live model. Same
+  // precedent as SCREENSHOT_NULL_FOREIGN_FX above: some display paths are
+  // unreachable from a seeded account, and "I could not see it" is how a
+  // three-column grid holding one card survived.
+  const aiInsights = process.env.SCREENSHOT_AI_INSIGHTS ?? null;
+  const aiSeed = aiInsights === null ? "" : `
+    window.sessionStorage.setItem("ft-dashboard-ai-insights", JSON.stringify({
+      insights: ${JSON.stringify(JSON.parse(aiInsights) as string[])},
+      ts: Date.now(),
+    }));`;
+
   await page.addInitScript(`try {
     window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});
     window.localStorage.setItem("ft-onboarding-complete", "1");
-    window.localStorage.setItem("nr-onboarding-complete", "1");
+    window.localStorage.setItem("nr-onboarding-complete", "1");${aiSeed}
   } catch (e) {}`);
+
+  // Reported, not fatal. An uncaught exception does not always blank the
+  // page — a component below an error boundary can throw while the shell
+  // still screenshots convincingly — so the PNG is still written, but the
+  // operator is told the render was not clean.
+  const pageErrors: string[] = [];
+  page.on("pageerror", (err) => pageErrors.push(err.message));
 
   const url = new URL(route, FRONTEND).toString();
   await page.goto(url, { waitUntil: "networkidle", timeout: 20000 });
   // Small settle for any theme-effects that mount.
   await page.waitForTimeout(400);
 
+  await assertRendered(page, route);
+
   const name = explicitName ?? `${slug(route)}_${viewport}_${theme}`;
   const path = resolve(OUTPUT_DIR, `${name}.png`);
   await page.screenshot({ path, fullPage: true });
+  for (const message of pageErrors) {
+    console.warn(`[screenshot] WARNING ${route}: uncaught page error — ${message}`);
+  }
   await page.unrouteAll({ behavior: "ignoreErrors" });
   await page.close();
   return path;
@@ -255,7 +332,12 @@ async function main(): Promise<void> {
   await browser.close();
 }
 
-main().catch((err) => {
-  console.error("[screenshot] failed:", err);
-  process.exit(1);
-});
+// Only run when this file IS the command. assertRendered is exported so the
+// assertion can be exercised against a real browser without booting the whole
+// harness; importing it must not sign in to anything.
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err) => {
+    console.error("[screenshot] failed:", err);
+    process.exit(1);
+  });
+}

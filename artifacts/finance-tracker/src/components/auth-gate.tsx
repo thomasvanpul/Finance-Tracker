@@ -870,6 +870,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div
+      data-nr-route-state="auth"
       style={{
         minHeight: "100dvh",
         background: "var(--ft-base)",

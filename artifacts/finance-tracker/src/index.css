@@ -132,6 +132,12 @@
 
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Cascadia Code", monospace;
+  /* The heading face. Until this cycle --font-head had exactly one reference
+     in the whole product — the fallback avatar monogram in the sidebar — so
+     nothing that reads as a heading used a heading font. Section headers were
+     mono, which is why the app read as a toy terminal rather than a real one.
+     No new family is introduced: IBM Plex Sans is already loaded, and it is
+     institutional rather than decorative. Mono keeps the figures. */
   --font-head: "IBM Plex Sans", system-ui, sans-serif;
 }
 
@@ -776,6 +782,14 @@ input[type="checkbox"]:checked {
   background: color-mix(in srgb, var(--ft-accent) 88%, black);
 }
 
+/* A dashboard block that builds its own panel from SectionHeader + content
+   rather than going through WidgetShell. Same 1px, same zero radius, so the
+   two kinds of block are indistinguishable once drawn. */
+.ft-widget-frame {
+  border: 1px solid var(--ft-border);
+  background: var(--ft-surface);
+}
+
 /* ── Terminal layout primitives ── */
 .ft-panel {
   background: var(--ft-surface);
@@ -794,11 +808,17 @@ input[type="checkbox"]:checked {
   gap: 8px;
 }
 
+/* Every section header on the dashboard resolves here. Mono is right for
+   figures and aligned columns; mono for the words above them is what made
+   the whole surface read as monospace. Uppercase and letterspacing are kept
+   — the terminal register is in the case and the tracking, not in the face.
+   Weight drops 700 -> 600 because Plex Sans at 700 is heavier on the page
+   than JetBrains Mono at 700 was. */
 .ft-panel-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-head);
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--ft-text);
 }
@@ -901,9 +921,19 @@ input[type="checkbox"]:checked {
   gap: 10px;
 }
 
+/* The panel renders however many insights the model returned — the prompt
+   asks for 3, but 1 and 2 are ordinary replies. A fixed repeat(3, 1fr) laid
+   a single insight into one third of the panel and left the other two thirds
+   blank, which read as a broken widget rather than as one insight.
+   auto-fit derives the track count from the card count, so 1 card fills the
+   row, 2 halve it and 3 third it. min(100%, …) keeps the floor from
+   overflowing a container narrower than the floor itself. Because the count
+   is now derived, the per-breakpoint column overrides this class used to
+   carry are gone — they were hand-maintained restatements of the same
+   arithmetic. */
 .ft-dashboard-insights {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 8px;
 }
 
@@ -938,7 +968,6 @@ input[type="checkbox"]:checked {
   .ft-five-col           { grid-template-columns: repeat(3, 1fr) !important; }
   .ft-four-col           { grid-template-columns: repeat(3, 1fr) !important; }
   .ft-three-col          { grid-template-columns: repeat(2, 1fr) !important; }
-  .ft-dashboard-insights { grid-template-columns: repeat(2, 1fr) !important; }
   /* KPI bars pack 4–7 cells inline via `gridTemplateColumns:
      "repeat(N, 1fr)"` and stayed N-column at every desktop width. At
      the narrow end that gave each cell ~80–110px, tight enough that
@@ -955,7 +984,6 @@ input[type="checkbox"]:checked {
   .ft-three-col          { grid-template-columns: 1fr !important; }
   .ft-two-col            { grid-template-columns: 1fr !important; }
   .ft-two-col-auto       { grid-template-columns: 1fr !important; }
-  .ft-dashboard-insights { grid-template-columns: 1fr !important; }
   .ft-dashboard-two-col  { flex-direction: column !important; }
   .ft-chart-sidebar      { grid-template-columns: 1fr !important; }
   .ft-wardrobe-layout    { grid-template-columns: 1fr !important; }
@@ -1142,9 +1170,6 @@ input[type="checkbox"]:checked {
   }
 
   /* Insights grid → single col */
-  .ft-dashboard-insights {
-    grid-template-columns: 1fr !important;
-  }
   /* Clamp insight text to 2 lines — prevents tall cards from long sentences */
   .ft-dashboard-insights > div > :last-child {
     display: -webkit-box;
@@ -1471,10 +1496,6 @@ input[type="checkbox"]:checked {
   }
 
   /* Tighten insights grid */
-  .ft-dashboard-insights {
-    grid-template-columns: 1fr 1fr !important;
-  }
-
   /* KPI bars on tablet: allow horizontal scroll for dense bars */
   .ft-kpi-bar,
   .ft-kpi-bar.ft-kpi-grid {
