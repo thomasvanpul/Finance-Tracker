@@ -654,11 +654,9 @@ function AddGroupPanel({ onAdd, onCancel }: AddGroupPanelProps) {
     <div
       style={{
         background: "var(--ft-surface)",
-        border: "1px solid var(--ft-border2)",
-        borderLeft: "3px solid var(--ft-accent)",
+        border: "1px solid var(--ft-border)",
         padding: "14px 16px",
-        borderRadius: 2,
-        marginBottom: 8,
+        marginBottom: 6,
       }}
     >
       <div
@@ -2037,6 +2035,7 @@ function StatCell({ label, value, color, sub }: StatCellProps) {
   // paid amber, etc.). The border is just decoration.
   return (
     <div
+      className="ft-kpi-bar-cell"
       style={{
         background: "var(--ft-surface)",
         padding: "10px 12px",
@@ -2126,8 +2125,7 @@ function GroupSummaryStats({ group, expenses, myName }: GroupSummaryStatsProps) 
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 1,
-          background: "var(--ft-border)",
+          background: "var(--ft-surface)",
           border: "1px solid var(--ft-border)",
         }}
       >
@@ -2149,7 +2147,7 @@ function GroupSummaryStats({ group, expenses, myName }: GroupSummaryStatsProps) 
 
       {/* Category breakdown bar */}
       {categoryTotals.length > 1 && total > 0 && (
-        <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-amber)", padding: "8px 10px" }}>
+        <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
           <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--ft-dim)", marginBottom: 6 }}>
             Spend by category
           </div>
@@ -2656,8 +2654,6 @@ export default function SplitPage() {
           padding: "10px 14px",
           background: "var(--ft-surface)",
           border: "1px solid var(--ft-border)",
-          borderLeft: "3px solid var(--ft-accent)",
-          borderRadius: 2,
         }}
       >
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -2987,7 +2983,7 @@ export default function SplitPage() {
         const unsettledGroups = activeGroups.length;
         const totalExpenseCount = allExpenses.length;
         return (
-          <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, border: "1px solid var(--ft-border)", background: "var(--ft-border)", marginBottom: 4 }}>
+          <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
             {[
               { label: "Active Groups", value: String(unsettledGroups), color: "var(--ft-blue)" },
               { label: "Total Expenses", value: String(totalExpenseCount), color: "var(--ft-text)" },
@@ -3004,7 +3000,7 @@ export default function SplitPage() {
                   : "var(--ft-dim)",
               },
             ].map((kpi) => (
-              <div key={kpi.label} style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
+              <div key={kpi.label} className="ft-kpi-bar-cell" style={{ padding: "10px 14px" }}>
                 <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{kpi.label}</div>
                 <div className="pnum" style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-mono)", color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
               </div>
@@ -3028,7 +3024,7 @@ export default function SplitPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>

@@ -158,16 +158,6 @@ function getDaysOld(createdAt: string): number {
   return Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function getCardBorderStyle(direction: Direction, age: AgeBucket): React.CSSProperties {
-  if (age === "overdue") {
-    return { borderLeft: "3px solid var(--ft-red)" };
-  }
-  if (direction === "i_owe_them") {
-    return { borderLeft: "3px solid var(--ft-red)" };
-  }
-  return { borderLeft: "3px solid var(--ft-green)" };
-}
-
 function getCardBackground(age: AgeBucket): string {
   if (age === "overdue") return "rgba(248,81,73,0.04)";
   if (age === "old") return "rgba(255,166,0,0.04)";
@@ -408,7 +398,6 @@ function StrategyTab() {
                 style={{
                   background: "var(--ft-base)",
                   border: "1px solid var(--ft-border)",
-                  borderLeft: "3px solid var(--ft-amber)",
                   padding: "10px 14px",
                   display: "flex",
                   alignItems: "center",
@@ -529,7 +518,6 @@ function StrategyTab() {
                   style={{
                     background: "var(--ft-base)",
                     border: "1px solid var(--ft-border)",
-                    borderLeft: `3px solid var(--ft-accent)`,
                     padding: "10px 14px",
                     display: "flex",
                     alignItems: "center",
@@ -1097,7 +1085,7 @@ export default function Owing() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -1301,8 +1289,8 @@ export default function Owing() {
           {/* ── Received IOUs section ── */}
           {(receivedLoading || (receivedDebts && receivedDebts.length > 0)) && (
             <div
-              className="rounded-sm border overflow-hidden"
-              style={{ borderColor: "var(--ft-border)", borderLeft: "3px solid var(--ft-cyan, #56b6c2)" }}
+              className="border overflow-hidden"
+              style={{ borderColor: "var(--ft-border)" }}
             >
               <div
                 className="px-3 py-2 flex items-center justify-between border-b"
@@ -1563,7 +1551,7 @@ export default function Owing() {
             <div style={{ background: "var(--ft-base)", padding: filtered.length > 0 ? "10px" : 0, display: "flex", flexDirection: "column", gap: 8 }}>
               {isLoading && (
                 Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-border2)", borderRadius: 3, padding: "12px 14px" }}>
+                  <div key={i} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "12px 14px" }}>
                     <Skeleton className="h-4 w-40 mb-2" />
                     <Skeleton className="h-3 w-64 mb-2" />
                     <Skeleton className="h-3 w-28" />
@@ -1588,10 +1576,8 @@ export default function Owing() {
                     style={{
                       background: d.status === "settled" ? "transparent" : getCardBackground(age),
                       border: "1px solid var(--ft-border)",
-                      borderRadius: 3,
                       overflow: "hidden",
                       opacity: d.status === "settled" ? 0.65 : 1,
-                      ...(d.status === "settled" ? { borderLeft: "3px solid var(--ft-border2)" } : getCardBorderStyle(d.direction as Direction, age)),
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", minHeight: 44 }}>

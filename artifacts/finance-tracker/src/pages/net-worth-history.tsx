@@ -23,7 +23,7 @@ import {
   Cell,
 } from "recharts";
 import { formatBaseMoney } from "@/lib/utils";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -236,31 +236,6 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Toolti
   );
 }
 
-// ── Panel Header ───────────────────────────────────────────────────────────
-
-function PanelHeader({ children, color = "var(--ft-accent)" }: { children: React.ReactNode; color?: string }) {
-  return (
-    <div style={{
-      background: "var(--ft-raised)",
-      borderBottom: "1px solid var(--ft-border)",
-      borderLeft: `3px solid ${color}`,
-      padding: "0 16px 0 13px",
-      height: 34,
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      fontFamily: "var(--font-mono)",
-      fontSize: 10,
-      fontWeight: 600,
-      letterSpacing: "0.08em",
-      textTransform: "uppercase" as const,
-      color: "var(--ft-muted)",
-    }}>
-      {children}
-    </div>
-  );
-}
-
 // ── Empty State ────────────────────────────────────────────────────────────
 
 function EmptyState({ onAdd, isMobile }: { onAdd: () => void; isMobile: boolean }) {
@@ -273,7 +248,7 @@ function EmptyState({ onAdd, isMobile }: { onAdd: () => void; isMobile: boolean 
       display: "flex",
       flexDirection: "column",
     }}>
-      <PanelHeader color="var(--ft-dim)">No snapshots yet</PanelHeader>
+      <PanelHeader>No snapshots yet</PanelHeader>
       <div style={{
         display: "flex",
         flexDirection: "column",
@@ -827,7 +802,7 @@ export default function NetWorthHistory() {
         const persona = PERSONAS.find(p => p.id === pid);
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             {persona && <span style={{ color: "var(--ft-dim)", flexShrink: 0, fontSize: 9 }}>{persona.code}</span>}
             <span>{msg}</span>
@@ -879,9 +854,9 @@ export default function NetWorthHistory() {
 
       {/* ── KPI Bar ── */}
       {history.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
           {/* Current Net Worth — hero number */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Net Worth</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1, whiteSpace: "nowrap" }}>
               {formatBaseMoney(currentNW)}
@@ -892,7 +867,7 @@ export default function NetWorthHistory() {
           </div>
 
           {/* MTD */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${mtdChange === null ? "var(--ft-border)" : mtdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>MTD Change</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: mtdChange === null ? "var(--ft-muted)" : mtdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
               {mtdChange === null ? "—" : `${mtdChange >= 0 ? "+" : ""}${formatBaseMoney(mtdChange)}`}
@@ -901,7 +876,7 @@ export default function NetWorthHistory() {
           </div>
 
           {/* YTD */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: `2px solid ${ytdChange === null ? "var(--ft-border)" : ytdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)"}` }}>
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>YTD Change</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: ytdChange === null ? "var(--ft-muted)" : ytdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
               {ytdChange === null ? "—" : `${ytdChange >= 0 ? "+" : ""}${formatBaseMoney(ytdChange)}`}
@@ -910,7 +885,7 @@ export default function NetWorthHistory() {
           </div>
 
           {/* All-time high */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-cyan)" }}>
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>All-Time High</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-cyan)", lineHeight: 1 }}>
               {allTimeHigh ? formatBaseMoney(allTimeHigh.netWorth) : "—"}
@@ -921,7 +896,7 @@ export default function NetWorthHistory() {
           </div>
 
           {/* All-time low */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-amber)", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
+          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: "none", borderBottom: "none", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Best Single Month</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>
               {bestMonthIncrease > 0 ? `+${formatBaseMoney(bestMonthIncrease)}` : (allTimeLow ? formatBaseMoney(allTimeLow.netWorth) : "—")}
@@ -935,13 +910,13 @@ export default function NetWorthHistory() {
 
       {/* ── Live data mini strip (only if no history yet) ── */}
       {liveAssets > 0 && history.length === 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
           {[
             { label: "Live Assets", value: formatBaseMoney(liveAssets), color: "var(--ft-green)" },
             { label: "Live Liabilities", value: formatBaseMoney(liveLiabilities), color: "var(--ft-red)" },
             { label: "Current Net Worth", value: formatBaseMoney(liveAssets - liveLiabilities), color: (liveAssets - liveLiabilities) >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
           ].map((cell, i) => (
-            <div key={cell.label} style={{ padding: "12px 16px", background: "var(--ft-surface)" }}>
+            <div key={cell.label} style={{ padding: "12px 16px", borderRight: i < 2 ? "1px solid var(--ft-border)" : "none" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{cell.label}</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: i === 2 ? 18 : 14, fontWeight: 700, color: cell.color, lineHeight: 1, whiteSpace: "nowrap" }}>{cell.value}</div>
             </div>
@@ -951,20 +926,18 @@ export default function NetWorthHistory() {
 
       {/* ── Snapshot form ── */}
       {showForm && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
           <div style={{
-            background: "var(--ft-raised)",
             borderBottom: "1px solid var(--ft-border)",
-            borderLeft: "3px solid var(--ft-green)",
-            padding: "0 16px 0 13px",
-            height: 34,
+            padding: "0 12px",
+            minHeight: "var(--ft-panel-header-h)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
           }}>
-            <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
+            <span className="ft-panel-label">
               Record Today&apos;s Net Worth
-            </Text>
+            </span>
             {liveAssets > 0 && (
               <button
                 onClick={autoFillFromLiveData}
@@ -1014,8 +987,8 @@ export default function NetWorthHistory() {
 
       {/* ── Milestone form ── */}
       {showMilestoneForm && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
-          <PanelHeader color="var(--ft-blue)">Add Milestone</PanelHeader>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
+          <PanelHeader>Add Milestone</PanelHeader>
           <div style={{ padding: "16px 20px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12, marginBottom: 12 }}>
               <div>
@@ -1044,21 +1017,19 @@ export default function NetWorthHistory() {
 
       {/* ── Main chart ── */}
       {history.length > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
           <div style={{
-            background: "var(--ft-raised)",
             borderBottom: "1px solid var(--ft-border)",
-            borderLeft: `3px solid ${trendColor}`,
-            padding: "0 16px 0 13px",
-            height: 36,
+            padding: "0 12px",
+            minHeight: "var(--ft-panel-header-h)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
           }}>
             <HStack gap={16} align="center">
-              <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
+              <span className="ft-panel-label">
                 Net Worth Timeline
-              </Text>
+              </span>
               {projectedIn12Months !== null && (
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                   Projected 12m:{" "}
@@ -1163,8 +1134,8 @@ export default function NetWorthHistory() {
 
       {/* ── Stacked assets/liabilities chart ── */}
       {history.length >= 2 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
-          <PanelHeader color="var(--ft-green)">Assets vs Liabilities</PanelHeader>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
+          <PanelHeader>Assets vs Liabilities</PanelHeader>
           <div style={{ padding: "16px 20px 12px" }}>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={filtered} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
@@ -1210,7 +1181,7 @@ export default function NetWorthHistory() {
           {/* Auto milestones */}
           {autoMilestones.length > 0 && (
             <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
-              <PanelHeader color="var(--ft-green)">Wealth Milestones</PanelHeader>
+              <PanelHeader>Wealth Milestones</PanelHeader>
               <div style={{ padding: "0 16px 12px" }}>
                 {autoMilestones.slice(0, 10).map((m) => {
                   const isHit = currentNW >= m.value;
@@ -1241,15 +1212,15 @@ export default function NetWorthHistory() {
           {/* Allocation donut */}
           {allocationSlices.length > 0 && latestEntry && (
             <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
-              <PanelHeader color="var(--ft-cyan)">Allocation Breakdown</PanelHeader>
+              <PanelHeader>Allocation Breakdown</PanelHeader>
               <div style={{ padding: "16px 16px 12px" }}>
                 <AllocationDonut slices={allocationSlices} />
-                <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
-                  <div style={{ padding: "8px 12px", background: "var(--ft-raised)" }}>
+                <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", border: "1px solid var(--ft-border)" }}>
+                  <div style={{ padding: "8px 12px", borderRight: "1px solid var(--ft-border)" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Total Assets</div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(latestEntry.totalAssets)}</div>
                   </div>
-                  <div style={{ padding: "8px 12px", background: "var(--ft-raised)" }}>
+                  <div style={{ padding: "8px 12px" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Total Liabilities</div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: latestEntry.totalLiabilities > 0 ? "var(--ft-red)" : "var(--ft-dim)" }}>
                       {latestEntry.totalLiabilities > 0 ? formatBaseMoney(latestEntry.totalLiabilities) : "£0"}
@@ -1273,20 +1244,18 @@ export default function NetWorthHistory() {
 
       {/* ── Monthly stats table ── */}
       {monthlyStats.length > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
           <div style={{
-            background: "var(--ft-raised)",
             borderBottom: "1px solid var(--ft-border)",
-            borderLeft: "3px solid var(--ft-accent)",
-            padding: "0 16px 0 13px",
-            height: 34,
+            padding: "0 12px",
+            minHeight: "var(--ft-panel-header-h)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
           }}>
-            <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
+            <span className="ft-panel-label">
               Monthly Breakdown
-            </Text>
+            </span>
             <Text as="span" mono size={9} color="var(--ft-dim)">
               End-of-month · last {monthlyStats.length} months
             </Text>
@@ -1358,13 +1327,11 @@ export default function NetWorthHistory() {
 
       {/* ── Target Net Worth Calculator ── */}
       {history.length > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
           <div style={{
-            background: "var(--ft-raised)",
             borderBottom: "1px solid var(--ft-border)",
-            borderLeft: "3px solid var(--ft-blue)",
-            padding: isMobile ? "8px 14px 8px 11px" : "0 16px 0 13px",
-            minHeight: 34,
+            padding: "0 12px",
+            minHeight: "var(--ft-panel-header-h)",
             display: "flex",
             flexWrap: isMobile ? "wrap" : "nowrap",
             alignItems: isMobile ? "flex-start" : "center",
@@ -1372,9 +1339,9 @@ export default function NetWorthHistory() {
             gap: isMobile ? 6 : 0,
           }}>
             <HStack gap={10} align="center">
-              <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
+              <span className="ft-panel-label">
                 Target Net Worth
-              </Text>
+              </span>
               {targetNw > 0 && currentNW > 0 && (
                 <Text as="span" mono size={9} color="var(--ft-dim)">
                   — {Math.min(100, (currentNW / targetNw) * 100).toFixed(1)}% reached
@@ -1482,11 +1449,12 @@ export default function NetWorthHistory() {
 
       {/* ── User Milestones list ── */}
       {milestones.length > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
-          <PanelHeader color="var(--ft-blue)">Custom Milestones</PanelHeader>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
+          <PanelHeader>Custom Milestones</PanelHeader>
           <VStack gap={0} padding="8px 16px 12px">
             {milestones.map((m, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, borderLeft: `3px solid ${m.color ?? "var(--ft-accent)"}`, paddingLeft: 10, padding: "6px 0 6px 10px", borderBottom: "1px solid var(--ft-border)" }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0", borderBottom: "1px solid var(--ft-border)" }}>
+                <span aria-hidden="true" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: m.color ?? "var(--ft-accent)", flexShrink: 0 }}>■</span>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", minWidth: 60, flexShrink: 0, whiteSpace: "nowrap" }}>{shortDate(m.date)}</div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, whiteSpace: "nowrap", minWidth: 0 }}>{m.label}</div>
                 <button
@@ -1510,7 +1478,7 @@ export default function NetWorthHistory() {
       {/* ── Snapshot log ── */}
       {history.length > 0 && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
-          <PanelHeader color="var(--ft-dim)">Snapshot Log — {history.length} entries</PanelHeader>
+          <PanelHeader>Snapshot Log — {history.length} entries</PanelHeader>
           {isMobile ? (
             <div>
               {[...history].reverse().map((e, idx, arr) => {

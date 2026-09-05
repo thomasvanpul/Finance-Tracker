@@ -14,7 +14,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { oneShotInsight } from "@/lib/ai-chat-client";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 interface HistoryEntry {
   date: string;
@@ -125,15 +125,13 @@ interface KpiCellProps {
   label: string;
   children: React.ReactNode;
   sub?: React.ReactNode;
-  accentTop?: string;
 }
 
-function KpiCell({ label, children, sub, accentTop }: KpiCellProps) {
+function KpiCell({ label, children, sub }: KpiCellProps) {
   return (
-    <div style={{
+    <div className="ft-kpi-bar-cell" style={{
       background: "var(--ft-surface)",
       padding: "10px 16px",
-      borderTop: accentTop ? `2px solid ${accentTop}` : "2px solid transparent",
       minWidth: 110,
     }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>
@@ -168,7 +166,6 @@ function InsightCard({ label, name, value, accentColor }: InsightCardProps) {
       style={{
         background: hov ? `color-mix(in srgb, ${accentColor} 5%, var(--ft-surface))` : "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
-        borderLeft: `3px solid ${accentColor}`,
         padding: "12px 14px",
         minWidth: 180,
         flexShrink: 0,
@@ -179,7 +176,7 @@ function InsightCard({ label, name, value, accentColor }: InsightCardProps) {
         {label}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
-        {name}
+        <span style={{ color: accentColor, marginRight: 6 }}>■</span>{name}
       </div>
       <Text as="div" mono size={10} weight={600}>
         {value}
@@ -355,8 +352,7 @@ function GoalCard({
       onTouchCancel={() => setHov(false)}
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        border: `1px solid ${done ? "rgba(86,211,100,0.3)" : "var(--ft-border)"}`,
-        borderTop: `2px solid ${done ? "#56D364" : color}`,
+        border: "1px solid var(--ft-border)",
         padding: isMobile ? "12px 14px" : "14px 16px",
         position: "relative",
         opacity: done ? 0.7 : 1,
@@ -541,12 +537,11 @@ function GoalCard({
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
-                  gap: 1,
-                  background: "var(--ft-border)",
+                  gap: 6,
                   marginBottom: 10,
                 }}
               >
-                <div style={{ background: "var(--ft-surface)", padding: "8px 10px" }}>
+                <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Months to Complete</div>
                   <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
                     {projectedMonths < Infinity ? projectedMonths : "—"}
@@ -557,7 +552,7 @@ function GoalCard({
                 </div>
 
                 {goal.deadline && deadlineMonthsRemaining > 0 && (
-                  <div style={{ background: "var(--ft-surface)", padding: "8px 10px" }}>
+                  <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Required Monthly</div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
                       {formatBaseMoney(requiredMonthly)}
@@ -569,7 +564,7 @@ function GoalCard({
                 )}
 
                 {projectedDate && (
-                  <div style={{ background: "var(--ft-surface)", padding: "8px 10px" }}>
+                  <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Projected Date</div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color }}>
                       {formatMonthYear(projectedDate)}
@@ -581,7 +576,7 @@ function GoalCard({
                 )}
 
                 {deadlineFeasibility && (
-                  <div style={{ background: "var(--ft-surface)", padding: "8px 10px" }}>
+                  <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Deadline Status</div>
                     {deadlineFeasibility === "achievable" && (
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-green)", display: "flex", alignItems: "center", gap: 4 }}><Check size={10} /> Achievable</div>
@@ -779,7 +774,7 @@ function GoalCard({
 
                 return (
                   <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-border2)", paddingLeft: 6, marginBottom: 6 }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
                       History
                     </div>
                     <div style={{ width: "100%", height: 120 }}>
@@ -815,16 +810,7 @@ interface AiCoachCardProps {
 
 function AiCoachCard({ text, loading }: AiCoachCardProps) {
   return (
-    <div
-      style={{
-        background: "var(--ft-surface)",
-        borderLeft: "3px solid var(--ft-accent)",
-        padding: "12px 14px",
-      }}
-    >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "var(--ft-accent)", fontWeight: 700, marginBottom: 8 }}>
-        · Coach
-      </div>
+    <Panel title="Coach" padding="12px 14px">
       {loading || text === null ? (
         <div style={{ height: 28, background: "var(--ft-raised)", borderRadius: 2, opacity: 0.5 }} />
       ) : (
@@ -832,7 +818,7 @@ function AiCoachCard({ text, loading }: AiCoachCardProps) {
           {text}
         </div>
       )}
-    </div>
+    </Panel>
   );
 }
 
@@ -923,9 +909,8 @@ function AiGoalCoach({ goalItems }: AiGoalCoachProps) {
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
-        gap: 1,
-        marginBottom: 16,
-        background: "var(--ft-border)",
+        gap: 6,
+        marginBottom: 6,
       }}
     >
       {cards.map((text, i) => (
@@ -1178,20 +1163,20 @@ export default function Goals() {
 
   if (goalsLoading) {
     return (
-      <VStack gap={16}>
+      <VStack gap={6}>
         <HStack align="center" justify="between">
           <FtSkeleton width={140} height={14} />
           <FtSkeleton width={100} height={28} />
         </HStack>
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 1, background: "var(--ft-border)", borderTop: "2px solid var(--ft-accent)" }}>
+        <div className="ft-kpi-bar" style={{ gridTemplateColumns: "repeat(6, 1fr)" }}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} style={{ background: "var(--ft-surface)", padding: "12px 16px" }}>
+            <div key={i} className="ft-kpi-bar-cell" style={{ background: "var(--ft-surface)", padding: "12px 16px" }}>
               <FtSkeleton width="60%" height={9} />
               <div style={{ marginTop: 6 }}><FtSkeleton width="80%" height={18} /></div>
             </div>
           ))}
         </div>
-        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 20 }}>
               <HStack gap={12} marginBottom={12}>
@@ -1257,7 +1242,7 @@ export default function Goals() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -1267,31 +1252,22 @@ export default function Goals() {
       {/* ── KPI Bar (border-as-gap grid) ── */}
       {goals.length > 0 && (
         <>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8, marginBottom: 8 }}>
-            Portfolio Overview
-          </div>
-          <div className="ft-kpi-bar" style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(6, 1fr)",
-            gap: 1,
-            background: "var(--ft-border)",
-            marginBottom: 16,
-          }}>
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+          <PanelHeader>Portfolio Overview</PanelHeader>
+          <div className="ft-kpi-bar" style={{ gridTemplateColumns: "repeat(6, 1fr)", border: "none" }}>
             <KpiCell
               label="Total Goals"
-              accentTop="var(--ft-accent)"
               sub={<><Text as="span" color="var(--ft-green)">{achievedGoals.length}</Text> done · <Text as="span" color="var(--ft-accent)">{unachievedGoals.length}</Text> active</>}
             >
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{goals.length}</div>
             </KpiCell>
 
-            <KpiCell label="Total Target" accentTop="var(--ft-text)" sub="across all goals">
+            <KpiCell label="Total Target" sub="across all goals">
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{formatBaseMoney(totalTarget)}</div>
             </KpiCell>
 
             <KpiCell
               label="Current Saved"
-              accentTop="var(--ft-green)"
               sub={<><span className="pnum">{totalPct.toFixed(1)}%</span> overall</>}
             >
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-green)", lineHeight: 1 }}>{formatBaseMoney(totalSaved)}</div>
@@ -1302,7 +1278,6 @@ export default function Goals() {
 
             <KpiCell
               label="Monthly Surplus"
-              accentTop={monthlySurplus >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
               sub={<><span className="pnum">{formatBaseMoney(monthlyIncome)}</span> in · <span className="pnum">{formatBaseMoney(monthlyExpenses)}</span> out</>}
             >
               {dashLoading ? (
@@ -1317,7 +1292,6 @@ export default function Goals() {
 
             <KpiCell
               label="Feasibility"
-              accentTop={kpiFeasibilityAccent}
             >
               {feasibilityStatus === "none" ? (
                 <Text as="div" mono size={11} color="var(--ft-dim)">—</Text>
@@ -1333,22 +1307,21 @@ export default function Goals() {
               )}
             </KpiCell>
 
-            <KpiCell label="Monthly Needed" accentTop="var(--ft-accent)" sub="to hit all deadlines">
+            <KpiCell label="Monthly Needed" sub="to hit all deadlines">
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-accent)", lineHeight: 1 }}>
                 {combinedMonthlyNeeded > 0 ? formatBaseMoney(combinedMonthlyNeeded) : "—"}
               </div>
             </KpiCell>
           </div>
+        </div>
         </>
       )}
 
       {/* ── Goal Insights Summary ── */}
       {goals.length >= 2 && (mostUrgent || biggestGap || closestToDone) && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-amber)", paddingLeft: 8, marginBottom: 8 }}>
-            Insights
-          </div>
-          <div style={{ display: "flex", gap: 8, overflowX: "auto" }}>
+        <div style={{ marginBottom: 6, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader>Insights</PanelHeader>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: 6 }}>
             {mostUrgent && (
               <InsightCard
                 label="Most Urgent"
@@ -1399,10 +1372,7 @@ export default function Goals() {
 
       {/* ── Add Goal Form ── */}
       {showForm && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-accent)", padding: 20, marginBottom: 16 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>
-            New Goal
-          </div>
+        <Panel className="mb-1.5" title="New Goal" padding={20}>
           <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <div>
               <label style={labelStyle}>Goal Name</label>
@@ -1473,12 +1443,12 @@ export default function Goals() {
               Cancel
             </button>
           </HStack>
-        </div>
+        </Panel>
       )}
 
       {/* ── Empty State ── */}
       {goals.length === 0 && !showForm && (
-        <div style={{ border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-border2)", background: "var(--ft-surface)", padding: "40px 32px", minHeight: "calc(100vh - 260px)", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "40px 32px", minHeight: "calc(100vh - 260px)", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
             NO GOALS DEFINED
           </div>
@@ -1517,13 +1487,9 @@ export default function Goals() {
 
       {/* ── Goal Cards Grid ── */}
       {goals.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8, marginBottom: 10 }}>
-            Active Goals
-          </div>
-        </div>
-      )}
-      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader>Active Goals</PanelHeader>
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, padding: 6 }}>
         {goals.map((goal) => (
           <GoalCard
             key={goal.id}
@@ -1551,13 +1517,15 @@ export default function Goals() {
             onSetDeadline={handleSetDeadline}
           />
         ))}
-      </div>
+        </div>
+        </div>
+      )}
 
       {/* ── Goals Summary Footer ── */}
       {goals.length > 0 && (
         <PanelBox padding="14px 20px" borderTop="2px solid var(--ft-border2)"><HStack gap={16} align="center" justify="between" wrap marginTop={16}>
           <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-green)", paddingLeft: 6, marginBottom: 6 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
               Portfolio Summary
             </div>
             <Text as="div" mono size={11} color="var(--ft-muted)">

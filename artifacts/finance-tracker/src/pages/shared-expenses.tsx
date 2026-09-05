@@ -110,7 +110,7 @@ export default function SharedExpensesPage() {
         </PanelBox>
       )}
 
-      <VStack gap={12} marginTop={16}>
+      <VStack gap={6} marginTop={6}>
         {expenses.map((e) => (
           <ExpenseCard key={e.id} expense={e} currentUserId={currentUserId} />
         ))}
