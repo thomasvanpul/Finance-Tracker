@@ -17,7 +17,7 @@ import { PiggyBank, CalendarCheck, BarChart3, Zap, Star } from "lucide-react";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { Activity } from "lucide-react";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Persona focus areas ───────────────────────────────────────────────────────
 const PERSONA_HEALTH_FOCUS: Record<string, { label: string; tip: string; keys: string[] }> = {
@@ -225,7 +225,7 @@ interface KpiStripCellProps {
 
 function KpiStripCell({ label, value, unit, color }: KpiStripCellProps) {
   return (
-    <div style={{ background: "var(--ft-surface)", borderTop: `2px solid ${color}`, padding: "10px 14px" }}>
+    <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", padding: "10px 14px" }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 4 }}>
         {label}
       </div>
@@ -263,15 +263,17 @@ interface PillarMiniBarProps {
   label: string;
   score: number | null;
   weight: number;
+  isLast?: boolean;
 }
 
-function PillarMiniBar({ label, score, weight }: PillarMiniBarProps) {
+function PillarMiniBar({ label, score, weight, isLast }: PillarMiniBarProps) {
   const color = score !== null ? scoreColor(score) : "var(--ft-dim)";
   return (
     <div style={{
       display: "grid", gridTemplateColumns: "130px 1fr 42px 28px",
       alignItems: "center", gap: 8, background: "var(--ft-surface)",
       padding: "6px 10px",
+      borderBottom: isLast ? "none" : "1px solid var(--ft-border)",
     }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
         {label}
@@ -464,9 +466,10 @@ function ScoreGauge({ score, color, grade }: ScoreGaugeProps) {
 interface SubScoreRowProps {
   sub: SubScore;
   rank: number;
+  isLast?: boolean;
 }
 
-function SubScoreRow({ sub, rank }: SubScoreRowProps) {
+function SubScoreRow({ sub, rank, isLast }: SubScoreRowProps) {
   const color = sub.score !== null ? scoreColor(sub.score) : "var(--ft-dim)";
   const grade = sub.score !== null ? letterGrade(sub.score) : "—";
   const [hovered, setHovered] = useState<boolean>(false);
@@ -484,8 +487,7 @@ function SubScoreRow({ sub, rank }: SubScoreRowProps) {
         background: hovered
           ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
           : "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
-        borderLeft: `3px solid ${color}`,
+        borderBottom: isLast ? "none" : "1px solid var(--ft-border)",
         cursor: "default",
         transition: "background 0.1s",
       }}>
@@ -561,7 +563,7 @@ function AchievementBadge({ achievement }: AchievementBadgeProps) {
           ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
           : "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
-        borderLeft: "3px solid var(--ft-accent)", padding: "9px 12px",
+        padding: "9px 12px",
         cursor: "default",
         transition: "background 0.1s",
       }}>
@@ -629,9 +631,10 @@ interface RecRowProps {
   rank: number;
   priorityLabel: string;
   priorityColor: string;
+  isLast?: boolean;
 }
 
-function RecRow({ rec, rank, priorityLabel, priorityColor }: RecRowProps) {
+function RecRow({ rec, rank, priorityLabel, priorityColor, isLast }: RecRowProps) {
   const [hovered, setHovered] = useState<boolean>(false);
   return (
     <div
@@ -642,7 +645,7 @@ function RecRow({ rec, rank, priorityLabel, priorityColor }: RecRowProps) {
         background: hovered
           ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
           : "var(--ft-surface)",
-        borderLeft: `3px solid ${rec.color}`, padding: "10px 14px",
+        borderBottom: isLast ? "none" : "1px solid var(--ft-border)", padding: "10px 14px",
         cursor: "default",
         transition: "background 0.1s",
       }}>
@@ -991,9 +994,8 @@ export default function HealthScore() {
       {personaFocus && persona && (
         <div style={{
           display: "flex", alignItems: "flex-start", gap: 12,
-          padding: "10px 14px", marginBottom: 16,
-          border: `1px solid ${personaColor}33`,
-          borderLeft: `3px solid ${personaColor}`,
+          padding: "10px 14px", marginBottom: 6,
+          border: "1px solid var(--ft-border)",
           background: "var(--ft-surface)",
           fontFamily: "var(--font-mono)",
         }}>
@@ -1016,7 +1018,7 @@ export default function HealthScore() {
       )}
 
       {/* ── KPI strip (border-as-gap grid) ── */}
-      <div style={{ display: "grid", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}
+      <div style={{ display: "grid", background: "var(--ft-surface)", borderTop: "1px solid var(--ft-border)", borderLeft: "1px solid var(--ft-border)", marginBottom: 6 }}
            className="ft-four-col"
            data-cols="4">
         <KpiStripCell label="Composite Score" value={compositeScore !== null ? String(compositeScore) : "—"} unit={compositeScore !== null ? "/ 100" : ""} color={color} />
@@ -1031,7 +1033,7 @@ export default function HealthScore() {
       </div>
 
       {/* ── Hero: gauge + grade description + mini bars ── */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "auto 1fr", gap: isMobile ? 16 : 32, alignItems: "center", marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "auto 1fr", gap: isMobile ? 6 : 32, alignItems: "center", marginBottom: 6 }}>
         {/* Gauge */}
         <div>
           {isLoading ? (
@@ -1068,9 +1070,9 @@ export default function HealthScore() {
         </div>
 
         {/* Right panel: grade + mini bars */}
-        <VStack gap={16}>
+        <VStack gap={6}>
           {/* Grade interpretation */}
-          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, padding: "12px 16px" }}>
+          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "12px 16px" }}>
             <HStack align="center" justify="between" marginBottom={6}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>
                 Grade {grade}
@@ -1094,51 +1096,46 @@ export default function HealthScore() {
           </div>
 
           {/* Compact mini-bar summary (border-as-gap grid) */}
-          <div style={{ display: "grid", gap: 1, background: "var(--ft-border)" }}>
-            {[...subScores].sort((a, b) => b.weight - a.weight).map((s) => (
-              <PillarMiniBar key={s.key} label={s.label} score={s.score} weight={s.weight} />
+          <div style={{ display: "grid", border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            {[...subScores].sort((a, b) => b.weight - a.weight).map((s, i, arr) => (
+              <PillarMiniBar key={s.key} label={s.label} score={s.score} weight={s.weight} isLast={i === arr.length - 1} />
             ))}
           </div>
         </VStack>
       </div>
 
       {/* ── Score Breakdown (detailed rows, sorted worst-first) ── */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{
-          fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)",
-          textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 8,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8,
-        }}>
-          <span>Score Breakdown · sorted by weakest first</span>
-          <span style={{ color: "var(--ft-muted)", textTransform: "none" as const, letterSpacing: 0, borderLeft: "none", paddingLeft: 0 }}>
+      <div style={{ marginBottom: 6, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <PanelHeader right={
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
             {subScores.filter(s => s.action).length} improvement{subScores.filter(s => s.action).length !== 1 ? "s" : ""} available
           </span>
-        </div>
-        <VStack gap={6}>
+        }>
+          Score Breakdown · sorted by weakest first
+        </PanelHeader>
+        <VStack gap={0}>
           {subScores.map((s, i) => (
-            <SubScoreRow key={s.key} sub={s} rank={i + 1} />
+            <SubScoreRow key={s.key} sub={s} rank={i + 1} isLast={i === subScores.length - 1} />
           ))}
         </VStack>
       </div>
 
       {/* ── Top Recommendations ── */}
       {recommendations.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, borderLeft: "3px solid var(--ft-amber)", paddingLeft: 8 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>
-              Improvement Recommendations
-            </div>
+        <div style={{ marginBottom: 6, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader right={
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", fontWeight: 700 }}>
               +{recommendations.reduce((s, r) => s + r.impact, 0)} pts potential
             </div>
-          </div>
-          <div style={{ display: "grid", gap: 1, background: "var(--ft-border)" }}>
+          }>
+            Improvement Recommendations
+          </PanelHeader>
+          <div style={{ display: "grid" }}>
             {recommendations.map((rec, i) => {
               const priorityLabel = rec.priority === "critical" ? "CRITICAL" : rec.priority === "high" ? "HIGH" : "MEDIUM";
               const priorityColor = rec.priority === "critical" ? "var(--ft-red)" : rec.priority === "high" ? "var(--ft-amber)" : "var(--ft-blue)";
               return (
-                <RecRow key={rec.id} rec={rec} rank={i + 1} priorityLabel={priorityLabel} priorityColor={priorityColor} />
+                <RecRow key={rec.id} rec={rec} rank={i + 1} priorityLabel={priorityLabel} priorityColor={priorityColor} isLast={i === recommendations.length - 1} />
               );
             })}
           </div>
@@ -1147,19 +1144,13 @@ export default function HealthScore() {
 
       {/* ── Score history chart ── */}
       {scoreHistory.length >= 2 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{
-            fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)",
-            textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 8,
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8,
-          }}>
-            <span>Score History · {scoreHistory.length} snapshots</span>
-            <span style={{ color: "var(--ft-muted)", textTransform: "none" as const, letterSpacing: 0 }}>
-              <span className="pnum">Min {scoreMin} · Max {scoreMax} · Δ {scoreMax - scoreMin} pts</span>
-            </span>
-          </div>
-          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-accent)", padding: "16px 12px 8px" }}>
+        <div style={{ marginBottom: 6, background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
+          <PanelHeader right={
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>Min {scoreMin} · Max {scoreMax} · Δ {scoreMax - scoreMin} pts</span>
+          }>
+            Score History · {scoreHistory.length} snapshots
+          </PanelHeader>
+          <div style={{ padding: "16px 12px 8px" }}>
             <ResponsiveContainer width="100%" height={160}>
               <AreaChart data={scoreHistory} margin={{ top: 4, right: 8, bottom: 0, left: -8 }}>
                 <defs>
@@ -1207,11 +1198,9 @@ export default function HealthScore() {
       {scoreHistory.length >= 5 && (() => {
         const last7 = [...scoreHistory].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 7);
         return (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 8, borderLeft: "3px solid var(--ft-border2)", paddingLeft: 8 }}>
-              Recent Score Log
-            </div>
-            <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
+          <div style={{ marginBottom: 6, background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
+            <PanelHeader>Recent Score Log</PanelHeader>
+            <div>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "var(--ft-raised)" }}>
@@ -1239,23 +1228,17 @@ export default function HealthScore() {
       })()}
 
       {/* ── Achievements ── */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>
-            Achievements
-          </div>
-          {achievements.length > 0 && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)" }}>
+      <div style={{ marginBottom: 6, background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
+        <PanelHeader right={achievements.length > 0 ? (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
               {achievements.length} unlocked
             </span>
-          )}
-        </div>
+          ) : undefined}>
+          Achievements
+        </PanelHeader>
 
         {achievements.length === 0 ? (
-          <div style={{
-            border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-border2)",
-            background: "var(--ft-surface)",
-          }}>
+          <div>
             {[
               { id: "savings-20", name: "Super Saver", icon: "piggybank", condition: "Savings rate > 20%" },
               { id: "bills-clean", name: "Bill Perfectionist", icon: "calendar", condition: "All bills paid on time" },
@@ -1266,7 +1249,7 @@ export default function HealthScore() {
             ))}
           </div>
         ) : (
-          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
+          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6, padding: 6 }}>
             {achievements.map((a) => <AchievementBadge key={a.id} achievement={a} />)}
           </div>
         )}

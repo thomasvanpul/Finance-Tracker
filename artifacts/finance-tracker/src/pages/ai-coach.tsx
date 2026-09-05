@@ -6,7 +6,7 @@ import { formatBaseMoney } from "@/lib/utils";
 import { PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { PageHeader } from "@/components/page-header";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -178,8 +178,6 @@ function MessageBubble({ msg }: { msg: Message; index: number }) {
         maxWidth: "80%",
         background: isUser ? "var(--ft-raised)" : "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
-        borderLeft: `2px solid ${isUser ? "var(--ft-accent)" : "var(--ft-blue)"}`,
-        borderRadius: 2,
         padding: "10px 14px",
         color: "var(--ft-text)",
         whiteSpace: "pre-wrap",
@@ -253,7 +251,6 @@ function SmartInsightCard({
         display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
         background: hov ? "var(--ft-raised)" : "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
-        borderLeft: `3px solid ${item.color}`,
         cursor: "pointer", textAlign: "left",
         transition: "background 0.1s",
         width: "100%",
@@ -608,7 +605,7 @@ export default function AiCoach() {
         </div>
       )}
       {aiAvailable === false && (
-        <div style={{ marginBottom: 12, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "2px solid var(--ft-red)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "baseline", gap: 8 }}>
+        <div style={{ marginBottom: 12, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "baseline", gap: 8 }}>
           <MonoLabel as="span" size={9} color="var(--ft-red)" letterSpacing="0.14em">AI OFFLINE</MonoLabel>
           <span style={{ fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5 }}>
             No AI provider is currently configured or verified. Check /api/ai/status for the per-provider health (Groq, Cerebras, OpenRouter).
@@ -646,13 +643,13 @@ export default function AiCoach() {
 
             {/* Context-loaded KPI strip — border-as-gap grid */}
             {(dashboard?.thisMonth?.income != null || topCategories.length > 0) && (
-              <div style={{ width: "100%", maxWidth: 480 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>
-                  Context loaded
-                </div>
-                <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+              <div style={{ width: "100%", maxWidth: 480, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+                <PanelHeader>Context loaded</PanelHeader>
+                {/* Cells are conditional, so each draws its own right/bottom rule;
+                    the frame's top/left come from the wrapper. */}
+                <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderLeft: "1px solid var(--ft-border)", marginLeft: -1, marginBottom: -1 }}>
                   {dashboard?.thisMonth?.income != null && (
-                    <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderTop: `2px solid ${dashboard.thisMonth.income! > 0 ? "var(--ft-green)" : "var(--ft-border2)"}` }}>
+                    <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Income</div>
                       <Text as="div" mono size={15} weight={700} color={dashboard.thisMonth.income! > 0 ? "var(--ft-green)" : "var(--ft-muted)"}>
                         <span className="pnum">{formatBaseMoney(dashboard.thisMonth.income!)}</span>
@@ -661,7 +658,7 @@ export default function AiCoach() {
                     </div>
                   )}
                   {dashboard?.thisMonth?.expenses != null && (
-                    <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderTop: `2px solid ${dashboard.thisMonth.expenses! > 0 ? "var(--ft-red)" : "var(--ft-border2)"}` }}>
+                    <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Spent</div>
                       <Text as="div" mono size={15} weight={700} color={dashboard.thisMonth.expenses! > 0 ? "var(--ft-red)" : "var(--ft-muted)"}>
                         <span className="pnum">{formatBaseMoney(dashboard.thisMonth.expenses!)}</span>
@@ -670,7 +667,7 @@ export default function AiCoach() {
                     </div>
                   )}
                   {dashboard?.thisMonth?.savingsRate != null && (
-                    <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderTop: `2px solid ${srAccent}` }}>
+                    <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Savings Rate</div>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: srColor }}>
                         <span className="pnum">{srPct!.toFixed(0)}%</span>
@@ -713,7 +710,7 @@ export default function AiCoach() {
               }
               return (
                 <VStack gap={4} wide maxWidth={480}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                     <MonoLabel as="span" size={8} letterSpacing="0.14em">Common questions</MonoLabel>
                   </div>
                   {starters.map((s) => (
@@ -727,11 +724,9 @@ export default function AiCoach() {
                         padding: "9px 12px",
                         background: "var(--ft-surface)",
                         border: "1px solid var(--ft-border)",
-                        borderLeft: "2px solid var(--ft-accent)",
                         cursor: isStreaming || aiAvailable === false ? "not-allowed" : "pointer",
                         textAlign: "left",
                         width: "100%",
-                        borderRadius: 2,
                       }}
                     >
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{s.label}</span>
@@ -745,7 +740,7 @@ export default function AiCoach() {
             {/* Smart Insights — data-triggered "needs attention" cards */}
             {smartInsights.length > 0 && (
               <div style={{ width: "100%", maxWidth: 480 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, borderLeft: "3px solid var(--ft-amber)", paddingLeft: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                   <Zap size={10} style={{ color: "var(--ft-amber)" }} />
                   <Text as="span" mono upper size={8} weight={700} color="var(--ft-amber)" letterSpacing="0.14em">Needs attention</Text>
                 </div>
@@ -765,7 +760,7 @@ export default function AiCoach() {
 
             {/* Persona-scoped prompts — flavour for the user's chosen focus */}
             <VStack gap={4} wide maxWidth={480}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, borderLeft: "3px solid var(--ft-blue)", paddingLeft: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <MonoLabel as="span" size={8} letterSpacing="0.14em">Persona picks</MonoLabel>
                 {primaryPersona && (
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-blue)", padding: "1px 6px", border: "1px solid var(--ft-blue)", letterSpacing: "0.06em" }}>
@@ -815,7 +810,7 @@ export default function AiCoach() {
                 narrow case where lastError is set but no bubble was
                 ever opened (fetch failed before applyEvent ran). */}
             {lastError && messages[messages.length - 1]?.status !== "error" && (
-              <div style={{ marginBottom: 16, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "2px solid var(--ft-red)" }}>
+              <div style={{ marginBottom: 16, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
                 <StreamingError message={lastError} />
               </div>
             )}

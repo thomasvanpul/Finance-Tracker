@@ -287,10 +287,9 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
       }),
       background: isWandererSling ? sk.bg : "var(--ft-surface)",
       // Wanderer skins keep their character-shaped border. Default
-      // panel uses a 2px accent left-border for identity + hairline
-      // right/bottom, no box-shadow (constitution — data surfaces).
+      // panel is a plain hairline frame, no box-shadow (constitution —
+      // data surfaces). No accent stripe: the frame is the identity.
       border: isWandererSling ? sk.border : "1px solid var(--ft-border2)",
-      borderLeft: isWandererSling ? sk.border : "2px solid var(--ft-accent)",
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
@@ -438,7 +437,6 @@ function EmptyState({ location, onPick }: { location: string; onPick: (prompt: s
               color: "var(--ft-text)",
               background: "var(--ft-surface)",
               border: "1px solid var(--ft-border)",
-              borderLeft: "2px solid var(--ft-accent)",
               cursor: "pointer",
               lineHeight: 1.5,
               borderRadius: 2,
@@ -454,7 +452,7 @@ function EmptyState({ location, onPick }: { location: string; onPick: (prompt: s
 
 // ── Message bubble ─────────────────────────────────────────────────────
 // Terminal-styled hairline rect (2px radius, not pill). User right,
-// model left. Accent left-border marks role. Streaming captions +
+// model left. Alignment, background and the COACH tag mark role. Streaming captions +
 // reduced-capacity + cut + error render inside via shared visuals.
 function MessageBubble({ msg }: { msg: Message }) {
   const isUser = msg.role === "user";
@@ -466,7 +464,6 @@ function MessageBubble({ msg }: { msg: Message }) {
         color: "var(--ft-text)",
         padding: "8px 11px",
         border: "1px solid var(--ft-border)",
-        borderLeft: `2px solid ${isUser ? "var(--ft-accent)" : "var(--ft-blue)"}`,
         borderRadius: 2,
         whiteSpace: "pre-wrap",
         wordBreak: "break-word",

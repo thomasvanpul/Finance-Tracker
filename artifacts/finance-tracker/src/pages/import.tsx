@@ -14,7 +14,7 @@ import {
   Clock,
   X,
 } from "lucide-react";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -121,11 +121,12 @@ const labelStyle: React.CSSProperties = {
 const card: React.CSSProperties = {
   background: "var(--ft-surface)",
   border: "1px solid var(--ft-border)",
-  padding: 20,
-  marginBottom: 16,
+  marginBottom: 6,
   boxSizing: "border-box",
   width: "100%",
 };
+// Body padding sits below the PanelHeader, which keeps its own metrics.
+const cardBody: React.CSSProperties = { padding: 20 };
 
 const th: React.CSSProperties = {
   ...mono,
@@ -670,26 +671,10 @@ function Step1({
 
   return (
     <div style={card}>
-      {/* Step header */}
-      <div style={{ marginBottom: 16, borderBottom: "1px solid var(--ft-border)", paddingBottom: 12 }}>
-        <div
-          style={{
-            ...mono,
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--ft-accent)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            marginBottom: 2,
-            borderLeft: "3px solid var(--ft-accent)",
-            paddingLeft: 8,
-          }}
-        >
-          Step 1 — Paste or Upload File
-        </div>
-        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", paddingLeft: 11 }}>
-          Paste your bank export below, or upload a .csv, .ofx, or .qif file
-        </div>
+      <PanelHeader>Step 1 — Paste or Upload File</PanelHeader>
+      <div style={cardBody}>
+      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
+        Paste your bank export below, or upload a .csv, .ofx, or .qif file
       </div>
 
       {/* Drop zone */}
@@ -782,9 +767,8 @@ function Step1({
         <div
           style={{
             marginTop: 14,
-            background: "var(--ft-base)",
+            background: "var(--ft-surface)",
             border: "1px solid var(--ft-border)",
-            borderLeft: "2px solid var(--ft-accent)",
             padding: 12,
           }}
         >
@@ -800,6 +784,7 @@ function Step1({
           </button>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -857,26 +842,10 @@ function Step2({
 
   return (
     <div style={card}>
-      {/* Step header */}
-      <div style={{ marginBottom: 16, borderBottom: "1px solid var(--ft-border)", paddingBottom: 12 }}>
-        <div
-          style={{
-            ...mono,
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--ft-accent)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            marginBottom: 2,
-            borderLeft: "3px solid var(--ft-accent)",
-            paddingLeft: 8,
-          }}
-        >
-          Step 2 — Map Columns
-        </div>
-        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", paddingLeft: 11 }}>
-          Tell Numeris which CSV column maps to each field · <span className="pnum">{headers.length}</span> columns detected
-        </div>
+      <PanelHeader>Step 2 — Map Columns</PanelHeader>
+      <div style={cardBody}>
+      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
+        Tell Numeris which CSV column maps to each field · <span className="pnum">{headers.length}</span> columns detected
       </div>
 
       {/* Quick Format Presets — order varies by persona (item 14) */}
@@ -891,7 +860,7 @@ function Step2({
 
       {/* Column mapping */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ ...labelStyle, marginBottom: 8, borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 8 }}>Column mapping</div>
+        <div style={{ ...labelStyle, marginBottom: 8 }}>Column mapping</div>
         <HStack gap={10} wrap marginBottom={10}>
           <ColSelect field="date" label="Date" />
           <ColSelect field="description" label="Description" />
@@ -901,7 +870,7 @@ function Step2({
 
       {/* Amount format selector */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ ...labelStyle, marginBottom: 8, borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 8 }}>Amount format</div>
+        <div style={{ ...labelStyle, marginBottom: 8 }}>Amount format</div>
         <HStack gap={6} wrap>
           {[
             { v: "signed" as AmountFormat, label: "Single column (+ income, − expense)" },
@@ -932,14 +901,13 @@ function Step2({
       {/* Preview table */}
       {previewRows.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ ...labelStyle, marginBottom: 8, borderLeft: "3px solid var(--ft-border2)", paddingLeft: 8 }}>
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader>
             Preview — first {Math.min(5, previewRows.length)} of <span className="pnum">{previewRows.length}</span> rows
-          </div>
+          </PanelHeader>
           <div
             style={{
               overflowX: "auto",
-              border: "1px solid var(--ft-border)",
-              background: "var(--ft-surface)",
             }}
           >
             <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 10 }}>
@@ -972,6 +940,7 @@ function Step2({
               </tbody>
             </table>
           </div>
+          </div>
         </div>
       )}
 
@@ -991,6 +960,7 @@ function Step2({
           <ChevronRight size={12} />
         </button>
       </HStack>
+      </div>
     </div>
   );
 }
@@ -1068,26 +1038,10 @@ function Step3({
 
   return (
     <div style={card}>
-      {/* Step header */}
-      <div style={{ marginBottom: 16, borderBottom: "1px solid var(--ft-border)", paddingBottom: 12 }}>
-        <div
-          style={{
-            ...mono,
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--ft-accent)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            marginBottom: 2,
-            borderLeft: "3px solid var(--ft-accent)",
-            paddingLeft: 8,
-          }}
-        >
-          Step 3 — Review &amp; Import
-        </div>
-        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", paddingLeft: 11 }}>
-          <span className="pnum">{selectedCount}</span> of <span className="pnum">{rows.length}</span> transactions selected · <span className="pnum">{incomeCount}</span> income · <span className="pnum">{expenseCount}</span> expenses
-        </div>
+      <PanelHeader>Step 3 — Review &amp; Import</PanelHeader>
+      <div style={cardBody}>
+      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
+        <span className="pnum">{selectedCount}</span> of <span className="pnum">{rows.length}</span> transactions selected · <span className="pnum">{incomeCount}</span> income · <span className="pnum">{expenseCount}</span> expenses
       </div>
 
       {/* KPI strip (border-as-gap). Desktop port: per-cell borderTop
@@ -1096,14 +1050,14 @@ function Step3({
           Colour on the value remains only where SEMANTIC: green for
           income, red for expenses. Total and Selected use text colour
           — a count is not positive or negative. */}
-      <div style={{ display: "grid", gap: 1, background: "var(--ft-border)", marginBottom: 14 }} className="ft-four-col">
+      <div style={{ display: "grid", background: "var(--ft-surface)", borderTop: "1px solid var(--ft-border)", borderLeft: "1px solid var(--ft-border)", marginBottom: 14 }} className="ft-four-col">
         {[
           { label: "Total Rows", value: String(rows.length), color: "var(--ft-text)" },
           { label: "Selected", value: String(selectedCount), color: "var(--ft-text)" },
           { label: "Income", value: String(incomeCount), color: "var(--ft-green)" },
           { label: "Expenses", value: String(expenseCount), color: "var(--ft-red)" },
         ].map(k => (
-          <div key={k.label} style={{ background: "var(--ft-surface)", padding: "7px 12px" }}>
+          <div key={k.label} style={{ background: "var(--ft-surface)", padding: "7px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 3 }}>
               {k.label}
             </div>
@@ -1282,6 +1236,7 @@ function Step3({
           )}
         </button>
       </HStack>
+      </div>
     </div>
   );
 }
@@ -1680,10 +1635,9 @@ export default function ImportPage() {
               fontSize: 10,
               color: "var(--ft-muted)",
               border: "1px solid var(--ft-border)",
-              borderLeft: `2px solid ${color}`,
               background: "var(--ft-surface)",
-              padding: "8px 14px 8px 12px",
-              marginBottom: 16,
+              padding: "8px 12px",
+              marginBottom: 6,
               display: "flex",
               gap: 8,
               alignItems: "flex-start",
@@ -1705,9 +1659,8 @@ export default function ImportPage() {
           style={{
             background: errorCount === 0 ? "rgba(86,211,100,0.08)" : "rgba(244,162,30,0.08)",
             border: `1px solid ${errorCount === 0 ? "rgba(86,211,100,0.35)" : "rgba(244,162,30,0.35)"}`,
-            borderLeft: `3px solid ${errorCount === 0 ? "var(--ft-green)" : "var(--ft-amber)"}`,
             padding: "12px 16px",
-            marginBottom: 16,
+            marginBottom: 6,
             display: "flex",
             alignItems: "center",
             gap: 12,

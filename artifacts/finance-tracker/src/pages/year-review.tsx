@@ -16,7 +16,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -39,21 +39,10 @@ const label: React.CSSProperties = {
   letterSpacing: "0.08em",
   textTransform: "uppercase",
 };
-const secTitle: React.CSSProperties = {
-  ...mono,
-  fontSize: 9,
-  fontWeight: 700,
-  color: "var(--ft-dim)",
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
-  padding: "7px 16px",
-  borderBottom: "1px solid var(--ft-border)",
-  background: "var(--ft-base)",
-};
 const panel: React.CSSProperties = {
   background: "var(--ft-surface)",
   border: "1px solid var(--ft-border)",
-  marginBottom: 16,
+  marginBottom: 6,
 };
 const th: React.CSSProperties = {
   ...mono,
@@ -145,13 +134,14 @@ function KpiStrip({ income, expenses, txCount, year, prevIncome, prevExpenses }:
   ];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${tiles.length}, 1fr)`, gap: 1, background: "var(--ft-border)", border: "1px solid var(--ft-border)", marginBottom: 16, overflow: "hidden" }}>
-      {tiles.map((tile) => (
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${tiles.length}, 1fr)`, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6 }}>
+      {tiles.map((tile, i) => (
         <div
           key={tile.label}
           style={{
             padding: "10px 16px",
             background: "var(--ft-surface)",
+            borderRight: i === tiles.length - 1 ? "none" : "1px solid var(--ft-border)",
             minWidth: 0,
           }}
         >
@@ -187,7 +177,7 @@ function SpendingHeatmap({ txs, year }: { txs: Tx[]; year: number }) {
 
   return (
     <div style={panel}>
-      <div style={{ ...secTitle, borderLeft: "3px solid var(--ft-red)" }}>Monthly Spend Heatmap</div>
+      <PanelHeader>Monthly Spend Heatmap</PanelHeader>
       <div style={{ padding: 16 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 3, marginBottom: 8 }}>
           {monthData.map((m) => {
@@ -278,17 +268,16 @@ function QuarterBreakdown({ txs, year, prevTxs }: { txs: Tx[]; year: number; pre
 
   return (
     <div style={panel}>
-      <div style={{ ...secTitle, borderLeft: "3px solid var(--ft-amber)" }}>Quarter-by-Quarter Breakdown</div>
-      <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--ft-border)" }}>
-        {quarters.map((q) => {
+      <PanelHeader>Quarter-by-Quarter Breakdown</PanelHeader>
+      <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", border: "none" }}>
+        {quarters.map((q, qi) => {
           const hasTx = q.txCount > 0;
-          const accentColor = q.net >= 0 && hasTx ? "var(--ft-green)" : hasTx ? "var(--ft-red)" : "var(--ft-border)";
           return (
             <div
               key={q.label}
               style={{
                 padding: "14px 16px",
-                borderLeft: `3px solid ${accentColor}`,
+                borderRight: qi === quarters.length - 1 ? "none" : "1px solid var(--ft-border)",
                 background: hasTx ? "var(--ft-surface)" : "var(--ft-base)",
                 opacity: hasTx ? 1 : 0.5,
               }}
@@ -352,7 +341,6 @@ function MilestoneCard({ item, i, total }: { item: { icon: string; label: string
         padding: "12px 16px",
         borderRight: "1px solid var(--ft-border)",
         borderBottom: i >= total - 3 ? "none" : "1px solid var(--ft-border)",
-        borderLeft: `3px solid ${item.color}`,
         background: hovered ? `color-mix(in srgb, ${item.color} 5%, var(--ft-surface))` : "var(--ft-surface)",
         transition: "background 0.12s ease",
         cursor: "default",
@@ -458,7 +446,7 @@ function BiggestMoments({ txs }: { txs: Tx[] }) {
 
   return (
     <div style={panel}>
-      <div style={{ ...secTitle, borderLeft: "3px solid var(--ft-cyan)" }}>Notable Milestones &amp; Callouts</div>
+      <PanelHeader>Notable Milestones &amp; Callouts</PanelHeader>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 0 }}>
         {callouts.map((item, i) => (
           <MilestoneCard key={item.label} item={item} i={i} total={callouts.length} />
@@ -504,7 +492,6 @@ function CategoryRow({ row, rank }: CategoryRowProps) {
         padding: "4px 6px",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
         transition: "background 0.1s",
-        borderRadius: 1,
       }}
     >
       <div style={{ ...mono, fontSize: 9, color: "var(--ft-border2)", width: 14, textAlign: "right", flexShrink: 0 }}>{rank + 1}</div>
@@ -543,7 +530,7 @@ function CategoryBreakdown({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={{ ...panel, marginBottom: 0 }}>
-      <div style={{ ...secTitle, borderLeft: "3px solid var(--ft-accent)" }}>Top 5 Spending Categories</div>
+      <PanelHeader>Top 5 Spending Categories</PanelHeader>
       <div style={{ padding: "16px" }}>
         {top5.length === 0 ? (
           <div style={{ textAlign: "center", padding: "28px 0", border: "1px dashed var(--ft-border)" }}>
@@ -595,7 +582,7 @@ function MonthByMonth({ txs, year }: { txs: Tx[]; year: number }) {
 
   return (
     <div style={{ ...panel, marginBottom: 0 }}>
-      <div style={{ ...secTitle, borderLeft: "3px solid var(--ft-blue)" }}>Month-by-Month Income vs Expenses</div>
+      <PanelHeader>Month-by-Month Income vs Expenses</PanelHeader>
       <div style={{ padding: "16px 8px 8px 8px" }}>
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={data} margin={{ top: 4, right: 0, left: -10, bottom: 0 }} barGap={2}>
@@ -667,17 +654,17 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
 
   return (
     <div style={panel}>
-      <div style={{ ...secTitle, borderLeft: "3px solid var(--ft-green)" }}>Year-over-Year Comparison — {year} vs {year - 1}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+      <PanelHeader>Year-over-Year Comparison — {year} vs {year - 1}</PanelHeader>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderBottom: "1px solid var(--ft-border)" }}>
         {[
           { label: "Income", curr: currTotalIncome, prev: prevTotalIncome, diff: incomeDiff, positiveIsGood: true },
           { label: "Expenses", curr: currTotalExpenses, prev: prevTotalExpenses, diff: expensesDiff, positiveIsGood: false },
           { label: "Net Savings", curr: currTotalIncome - currTotalExpenses, prev: prevTotalIncome - prevTotalExpenses, diff: (currTotalIncome - currTotalExpenses) - (prevTotalIncome - prevTotalExpenses), positiveIsGood: true },
-        ].map((item) => {
+        ].map((item, idx, arr) => {
           const diffColor = item.diff === 0 ? "var(--ft-dim)" : (item.diff > 0) === item.positiveIsGood ? "var(--ft-green)" : "var(--ft-red)";
           const diffPct = item.prev !== 0 ? ((item.diff / Math.abs(item.prev)) * 100) : null;
           return (
-            <div key={item.label} style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
+            <div key={item.label} style={{ padding: "10px 14px", background: "var(--ft-surface)", borderRight: idx === arr.length - 1 ? "none" : "1px solid var(--ft-border)" }}>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>{item.label}</div>
               <HStack gap={12} align="baseline">
                 <div>
@@ -761,7 +748,7 @@ function SavingsRateChart({ txs, year }: { txs: Tx[]; year: number }) {
 
   return (
     <div style={panel}>
-      <div style={{ ...secTitle, borderLeft: "3px solid var(--ft-amber)" }}>Monthly Savings Rate</div>
+      <PanelHeader>Monthly Savings Rate</PanelHeader>
       <div style={{ padding: "16px 8px 8px 8px" }}>
         <ResponsiveContainer width="100%" height={160}>
           <LineChart data={data} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
@@ -866,7 +853,7 @@ function StreaksAndFacts({ txs, year }: { txs: Tx[]; year: number }) {
 
   return (
     <div style={panel}>
-      <div style={{ ...secTitle, borderLeft: "3px solid var(--ft-blue)" }}>Data Points &amp; Habits</div>
+      <PanelHeader>Data Points &amp; Habits</PanelHeader>
       <VStack gap={0}>
         {facts.map((f, i) => (
           <HoverRow
@@ -901,9 +888,9 @@ function NetWorthDelta({ txs }: { txs: Tx[] }) {
 
   const accentCol = delta >= 0 ? "var(--ft-green)" : "var(--ft-red)";
   return (
-    <div style={{ ...panel, overflow: "hidden", borderLeft: `3px solid ${accentCol}` }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 1, background: "var(--ft-border)" }}>
-        <div style={{ padding: "18px 20px", background: "var(--ft-surface)" }}>
+    <div style={panel}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto" }}>
+        <div style={{ padding: "18px 20px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)" }}>
           <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Net Worth Delta This Year</div>
           <div className="pnum" style={{ ...mono, fontSize: 32, fontWeight: 700, color: accentCol, letterSpacing: "-0.03em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
             {delta >= 0 ? "+" : ""}{formatBaseMoney(delta)}
@@ -941,9 +928,10 @@ interface ShareTileProps {
   text: string;
   value: string;
   color: string;
+  isLast?: boolean;
 }
 
-function ShareTile({ text, value, color }: ShareTileProps) {
+function ShareTile({ text, value, color, isLast }: ShareTileProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -951,6 +939,7 @@ function ShareTile({ text, value, color }: ShareTileProps) {
       onMouseLeave={() => setHov(false)}
       style={{
         padding: "12px 16px",
+        borderRight: isLast ? "none" : "1px solid var(--ft-border)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
       }}
@@ -980,12 +969,12 @@ function ShareableCard({ income, expenses, txCount, year }: {
 
   return (
     <div style={{
-      background: "var(--ft-base)",
+      background: "var(--ft-surface)",
       border: "1px solid var(--ft-border)",
-      borderLeft: "4px solid var(--ft-accent)",
-      padding: "24px 28px",
-      marginBottom: 16,
+      marginBottom: 6,
     }}>
+      <PanelHeader>Shareable Summary Card</PanelHeader>
+      <div style={{ padding: "24px 28px" }}>
       <HStack align="start" justify="between" marginBottom={20}>
         <div>
           <div style={{ ...mono, fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>
@@ -1002,9 +991,9 @@ function ShareableCard({ income, expenses, txCount, year }: {
           </div>
         </div>
       </HStack>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
-        {tiles.map((s) => (
-          <ShareTile key={s.text} text={s.text} value={s.value} color={s.color} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", border: "1px solid var(--ft-border)", marginBottom: 16 }}>
+        {tiles.map((s, i) => (
+          <ShareTile key={s.text} text={s.text} value={s.value} color={s.color} isLast={i === tiles.length - 1} />
         ))}
       </div>
       <div style={{ height: 4, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", overflow: "hidden", marginBottom: 6 }}>
@@ -1019,6 +1008,7 @@ function ShareableCard({ income, expenses, txCount, year }: {
         <span style={{ marginLeft: 12 }}>
           {savingsRate >= 20 ? "· on target (≥20%)" : savingsRate >= 10 ? "· below target — aim for 20%" : "· below 10% — review spending"}
         </span>
+      </div>
       </div>
     </div>
   );
@@ -1479,7 +1469,7 @@ export default function YearReviewPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span className="pnum">{msg}</span>
           </div>
@@ -1528,7 +1518,7 @@ export default function YearReviewPage() {
           <SpendingHeatmap txs={yearTxs} year={year} />
 
           {/* Two-column: Categories + Month-by-Month */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
             <CategoryBreakdown expenses={yearTxs.filter((t) => t.type === "expense")} />
             <MonthByMonth txs={yearTxs} year={year} />
           </div>
@@ -1551,9 +1541,6 @@ export default function YearReviewPage() {
           <NetWorthDelta txs={yearTxs} />
 
           {/* Shareable card */}
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-            SHAREABLE SUMMARY CARD
-          </div>
           <ShareableCard
             income={totalIncome}
             expenses={totalExpenses}

@@ -15,7 +15,7 @@ import {
 } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { SignInMethodsPanel } from "@/components/sign-in-methods-panel";
 
 const PANEL: React.CSSProperties = {
@@ -24,20 +24,21 @@ const PANEL: React.CSSProperties = {
   overflow: "hidden",
 };
 
+// Only consumer left is SignInMethodsPanel's headerStyle prop (shared component,
+// not converted here); everything local uses <PanelHeader>. Mirrors it.
 const HEADER: React.CSSProperties = {
-  background: "var(--ft-raised)",
   borderBottom: "1px solid var(--ft-border)",
   padding: "0 12px",
-  height: 34,
+  minHeight: "var(--ft-panel-header-h)",
   display: "flex",
   alignItems: "center",
   gap: 8,
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
+  fontFamily: "var(--font-head)",
+  fontSize: 12,
   fontWeight: 600,
-  letterSpacing: "0.08em",
+  letterSpacing: "0.07em",
   textTransform: "uppercase",
-  color: "var(--ft-muted)",
+  color: "var(--ft-text)",
 };
 
 const MONO_LABEL: React.CSSProperties = {
@@ -58,7 +59,7 @@ const MONO_VAL: React.CSSProperties = {
 // ── KPI Cell ──────────────────────────────────────────────────────────────────
 
 // KPI grid cell with hover state
-function KpiCell({ label, value, accent }: { label: string; value: string; accent?: string }) {
+function KpiCell({ label, value, isLast }: { label: string; value: string; isLast?: boolean }) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -69,6 +70,7 @@ function KpiCell({ label, value, accent }: { label: string; value: string; accen
           ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
           : "var(--ft-surface)",
         padding: "8px 10px",
+        borderRight: isLast ? "none" : "1px solid var(--ft-border)",
         transition: "background 0.12s",
       }}
     >
@@ -79,7 +81,6 @@ function KpiCell({ label, value, accent }: { label: string; value: string; accen
           ...MONO_VAL,
           fontSize: 12,
           fontWeight: 700,
-          color: accent ?? "var(--ft-text)",
         }}
       >
         {value}
@@ -90,20 +91,19 @@ function KpiCell({ label, value, accent }: { label: string; value: string; accen
 
 // ── KPI Strip ─────────────────────────────────────────────────────────────────
 
-// KPI strip using border-as-gap pattern
-function KpiStrip({ items }: { items: { label: string; value: string; accent?: string }[] }) {
+// KPI strip: one row of a framed table — cells carry their own right rule.
+// `divider` draws the row rule when a second strip follows inside one frame.
+function KpiStrip({ items, divider }: { items: { label: string; value: string }[]; divider?: boolean }) {
   return (
     <div
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${items.length}, 1fr)`,
-        gap: 1,
-        background: "var(--ft-border)",
-        border: "1px solid var(--ft-border)",
+        borderBottom: divider ? "1px solid var(--ft-border)" : undefined,
       }}
     >
-      {items.map(({ label, value, accent }) => (
-        <KpiCell key={label} label={label} value={value} accent={accent} />
+      {items.map(({ label, value }, i) => (
+        <KpiCell key={label} label={label} value={value} isLast={i === items.length - 1} />
       ))}
     </div>
   );
@@ -321,7 +321,6 @@ function PersonaRow({
         alignItems: "center",
         gap: 10,
         padding: "9px 12px",
-        borderLeft: `3px solid ${color}`,
         borderBottom: isLast ? undefined : "1px solid var(--ft-border)",
       }}
     >
@@ -341,7 +340,7 @@ function PersonaRow({
 
 // ── Data Export Cell ──────────────────────────────────────────────────────────
 
-function DataExportCell({ label, value }: { label: string; value: string }) {
+function DataExportCell({ label, value, isLast }: { label: string; value: string; isLast?: boolean }) {
   const [hov, setHov] = useState<boolean>(false);
   return (
     <div
@@ -350,6 +349,7 @@ function DataExportCell({ label, value }: { label: string; value: string }) {
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         padding: "6px 10px",
+        borderRight: isLast ? "none" : "1px solid var(--ft-border)",
         transition: "background 0.12s",
       }}
     >
@@ -816,13 +816,14 @@ export default function Profile() {
 
   const identityPanel = (
     <div style={PANEL}>
-      <div style={HEADER}>
-        <User size={10} style={{ color: "var(--ft-accent)" }} />
-        <span>Identity</span>
-        <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: user?.emailVerified ? "var(--ft-green)" : "var(--ft-amber)" }}>
+      <PanelHeader right={
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: user?.emailVerified ? "var(--ft-green)" : "var(--ft-amber)" }}>
           {user?.emailVerified ? "● VERIFIED" : "○ UNVERIFIED"}
         </span>
-      </div>
+      }>
+        <User size={10} />
+        <span>Identity</span>
+      </PanelHeader>
 
       {/* Avatar + name row */}
       <HStack gap={14} align="start" padding="14px 14px 0">
@@ -1082,19 +1083,20 @@ export default function Profile() {
       {/* KPI grid — border-as-gap pattern */}
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
         <div style={{ padding: "8px 14px 4px", ...MONO_LABEL }}>Portfolio Snapshot</div>
-        <KpiStrip items={[
-          { label: "Net Worth", value: netWorth == null ? "—" : formatBaseMoney(netWorth), accent: netWorth == null ? "var(--ft-border2)" : netWorth >= 0 ? "var(--ft-blue)" : "var(--ft-red)" },
+        <div style={{ border: "1px solid var(--ft-border)", margin: "0 14px 10px" }}>
+        <KpiStrip divider items={[
+          { label: "Net Worth", value: netWorth == null ? "—" : formatBaseMoney(netWorth) },
           { label: "Accounts", value: String(accountCount) },
           { label: "Transactions", value: String(txCount) },
-          { label: "Active Debts", value: String(activeDebts), accent: activeDebts > 0 ? "var(--ft-amber)" : "var(--ft-dim)" },
+          { label: "Active Debts", value: String(activeDebts) },
         ]} />
-        <div style={{ height: 1, background: "var(--ft-border)", margin: "1px 0" }} />
         <KpiStrip items={[
           { label: "Total Volume", value: totalVolume > 0 ? formatBaseMoney(totalVolume) : "—" },
           { label: "Largest TX", value: largestTx > 0 ? formatBaseMoney(largestTx) : "—" },
           { label: "Top Category", value: topCategory },
           { label: "Member", value: memberDays !== null ? `${memberDays}d` : "—" },
         ]} />
+        </div>
       </div>
 
       {/* Footer actions */}
@@ -1126,15 +1128,14 @@ export default function Profile() {
 
   const activityPanel = (
     <div style={PANEL}>
-      <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-accent)", paddingLeft: 10 }}>
-        <Activity size={10} style={{ color: "var(--ft-accent)" }} />
-        <span>Activity Timeline</span>
-        {timelineItems.length > 0 && (
-          <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+      <PanelHeader right={timelineItems.length > 0 ? (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
             {timelineItems.length} event{timelineItems.length !== 1 ? "s" : ""}
           </span>
-        )}
-      </div>
+        ) : undefined}>
+        <Activity size={10} />
+        <span>Activity Timeline</span>
+      </PanelHeader>
       <div style={{ background: "var(--ft-surface)" }}>
         {timelineItems.length === 0 ? (
           <VStack gap={8} align="center" padding="24px 16px">
@@ -1205,9 +1206,7 @@ export default function Profile() {
 
   const sessionPanel = (
     <div style={PANEL}>
-      <div style={HEADER}>
-        <Text as="span" color="var(--ft-accent)">·</Text> Session
-      </div>
+      <PanelHeader>Session</PanelHeader>
       <div style={{ background: "var(--ft-surface)", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
@@ -1241,9 +1240,7 @@ export default function Profile() {
 
   const prefsPanel = (
     <div style={PANEL}>
-      <div style={HEADER}>
-        <Text as="span" color="var(--ft-accent)">·</Text> Preferences
-      </div>
+      <PanelHeader>Preferences</PanelHeader>
       <div style={{ background: "var(--ft-surface)" }}>
         {/* Currency row */}
         <HoverRow style={{ padding: "9px 14px", borderBottom: "1px solid var(--ft-border)" }}>
@@ -1264,8 +1261,8 @@ export default function Profile() {
         {/* Amount display */}
         <div style={{ padding: "9px 14px", borderBottom: "1px solid var(--ft-border)" }}>
           <div style={{ ...MONO_LABEL, marginBottom: 6 }}>Show Amounts As</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
-            {(["GBP", "Native", "Both"] as const).map(opt => (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
+            {(["GBP", "Native", "Both"] as const).map((opt, i, arr) => (
               <button
                 key={opt}
                 onClick={() => setAmountDisplay(opt)}
@@ -1275,6 +1272,7 @@ export default function Profile() {
                   color: amountDisplay === opt ? "var(--ft-accent)" : "var(--ft-muted)",
                   background: amountDisplay === opt ? "color-mix(in srgb, var(--ft-accent) 10%, var(--ft-surface))" : "var(--ft-surface)",
                   border: "none",
+                  borderRight: i === arr.length - 1 ? "none" : "1px solid var(--ft-border)",
                   padding: "5px 4px",
                   cursor: "pointer",
                   letterSpacing: "0.04em",
@@ -1290,8 +1288,8 @@ export default function Profile() {
         {/* Date format */}
         <div style={{ padding: "9px 14px" }}>
           <div style={{ ...MONO_LABEL, marginBottom: 6 }}>Date Format</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
-            {(["DD/MM/YYYY", "MM/DD/YYYY"] as const).map(opt => (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", border: "1px solid var(--ft-border)" }}>
+            {(["DD/MM/YYYY", "MM/DD/YYYY"] as const).map((opt, i, arr) => (
               <button
                 key={opt}
                 onClick={() => setDateFormat(opt)}
@@ -1301,6 +1299,7 @@ export default function Profile() {
                   color: dateFormat === opt ? "var(--ft-accent)" : "var(--ft-muted)",
                   background: dateFormat === opt ? "color-mix(in srgb, var(--ft-accent) 10%, var(--ft-surface))" : "var(--ft-surface)",
                   border: "none",
+                  borderRight: i === arr.length - 1 ? "none" : "1px solid var(--ft-border)",
                   padding: "5px 4px",
                   cursor: "pointer",
                   letterSpacing: "0.04em",
@@ -1318,13 +1317,14 @@ export default function Profile() {
 
   const usagePanel = (
     <div style={PANEL}>
-      <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-blue)", paddingLeft: 10 }}>
-        <Database size={10} style={{ color: "var(--ft-blue)" }} />
-        <span>Local Storage</span>
-        <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+      <PanelHeader right={
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
           {ftKeyCount} keys
         </span>
-      </div>
+      }>
+        <Database size={10} />
+        <span>Local Storage</span>
+      </PanelHeader>
       <div style={{ background: "var(--ft-surface)" }}>
         {usageStorageRows.map(({ label, value, note }, i) => (
           <UsageStorageRow
@@ -1347,9 +1347,9 @@ export default function Profile() {
     const primaryColor = PERSONA_COLORS[primary.id];
     return (
       <div style={PANEL}>
-        <div style={{ ...HEADER, borderLeft: `3px solid ${primaryColor}`, paddingLeft: 10 }}>
+        <PanelHeader>
           <span style={{ color: primaryColor }}>{PERSONA_GLYPHS[primary.id]}</span> Terminal Profile
-        </div>
+        </PanelHeader>
         <VStack gap={0}>
           {activePersonas.map((p, i) => (
             <PersonaRow
@@ -1374,10 +1374,10 @@ export default function Profile() {
   const authPanel = <SignInMethodsPanel panelStyle={PANEL} headerStyle={HEADER} />;
 
   const dangerPanel = (
-    <div style={{ ...PANEL, border: "1px solid color-mix(in srgb, var(--ft-red) 40%, var(--ft-border))" }}>
-      <div style={{ ...HEADER, borderBottom: "1px solid color-mix(in srgb, var(--ft-red) 40%, var(--ft-border))", borderLeft: "3px solid var(--ft-red)", paddingLeft: 10, color: "var(--ft-red)" }}>
-        <span>·</span> Danger Zone
-      </div>
+    <div style={PANEL}>
+      <PanelHeader>
+        <Text as="span" mono color="var(--ft-red)">■</Text> Danger Zone
+      </PanelHeader>
       <div style={{ background: "color-mix(in srgb, var(--ft-red) 3%, var(--ft-surface))", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
           Permanent and irreversible. Proceed with care.
@@ -1452,12 +1452,10 @@ export default function Profile() {
   const twoFaKey = twoFaUri.replace(/^.*secret=([^&]+).*$/, "$1");
 
   const securityPanel = (
-    <div style={{ maxWidth: 520, width: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ maxWidth: 520, width: "100%", display: "flex", flexDirection: "column", gap: 6 }}>
       {/* Change Password */}
       <div style={PANEL}>
-        <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-amber)", paddingLeft: 10 }}>
-          <Text as="span" color="var(--ft-amber)">·</Text> Change Password
-        </div>
+        <PanelHeader>Change Password</PanelHeader>
         <form onSubmit={handleChangePassword} style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 12, background: "var(--ft-surface)" }}>
           <VStack gap={4}>
             <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Current password</Label>
@@ -1483,12 +1481,13 @@ export default function Profile() {
 
       {/* Two-Factor Authentication */}
       <div style={PANEL}>
-        <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 10 }}>
-          <Text as="span" color="var(--ft-cyan)">·</Text> Two-Factor Authentication
-          <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, padding: "1px 6px", background: twoFaEnabled ? "rgba(63,185,80,0.15)" : "rgba(255,255,255,0.05)", color: twoFaEnabled ? "var(--ft-green)" : "var(--ft-dim)", border: `1px solid ${twoFaEnabled ? "rgba(63,185,80,0.3)" : "var(--ft-border)"}` }}>
+        <PanelHeader right={
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "1px 6px", background: twoFaEnabled ? "rgba(63,185,80,0.15)" : "rgba(255,255,255,0.05)", color: twoFaEnabled ? "var(--ft-green)" : "var(--ft-dim)", border: `1px solid ${twoFaEnabled ? "rgba(63,185,80,0.3)" : "var(--ft-border)"}` }}>
             {twoFaEnabled ? "● ON" : "○ OFF"}
           </span>
-        </div>
+        }>
+          Two-Factor Authentication
+        </PanelHeader>
         <div style={{ padding: "14px 16px", background: "var(--ft-surface)" }}>
           {!twoFaEnabled && twoFaStep === "idle" && (
             <div>
@@ -1570,7 +1569,7 @@ export default function Profile() {
 
       {/* Sessions */}
       <div style={PANEL}>
-        <div style={HEADER}><Text as="span" color="var(--ft-accent)">·</Text> Sessions</div>
+        <PanelHeader>Sessions</PanelHeader>
         <div style={{ padding: "12px 14px", background: "var(--ft-surface)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>Current device</div>
@@ -1589,15 +1588,14 @@ export default function Profile() {
 
       {/* Login Activity */}
       <div style={PANEL}>
-        <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-muted)", paddingLeft: 10 }}>
-          <Clock size={10} style={{ color: "var(--ft-accent)" }} />
-          <span>Login Activity</span>
-          {loginHistory.length > 0 && (
-            <span style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+        <PanelHeader right={loginHistory.length > 0 ? (
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
               {loginHistory.length} event{loginHistory.length !== 1 ? "s" : ""}
             </span>
-          )}
-        </div>
+          ) : undefined}>
+          <Clock size={10} />
+          <span>Login Activity</span>
+        </PanelHeader>
         <div style={{ background: "var(--ft-surface)" }}>
           {loginHistory.length === 0 ? (
             <VStack gap={6} align="center" padding="20px 16px">
@@ -1623,13 +1621,13 @@ export default function Profile() {
   );
 
   const privacyPanel = (
-    <VStack gap={10} wide maxWidth={560}>
+    <VStack gap={6} wide maxWidth={560}>
       {/* Amount Privacy */}
       <div style={PANEL}>
-        <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-accent)", paddingLeft: 10 }}>
-          <Eye size={10} style={{ color: "var(--ft-accent)" }} />
+        <PanelHeader>
+          <Eye size={10} />
           <span>Amount Privacy</span>
-        </div>
+        </PanelHeader>
         <HoverRow style={{ padding: "10px 14px", borderBottom: blurAmounts ? "1px solid var(--ft-border)" : undefined }}>
           <HStack gap={12} align="center" justify="between">
             <div>
@@ -1661,9 +1659,7 @@ export default function Profile() {
 
       {/* Data Masking */}
       <div style={PANEL}>
-        <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-muted)", paddingLeft: 10 }}>
-          <Text as="span" color="var(--ft-accent)">·</Text> Data Masking
-        </div>
+        <PanelHeader>Data Masking</PanelHeader>
         <HoverRow style={{ padding: "10px 14px", borderBottom: "1px solid var(--ft-border)" }}>
           <HStack gap={12} align="center" justify="between">
             <div>
@@ -1703,14 +1699,12 @@ export default function Profile() {
 
       {/* Data Export */}
       <div style={PANEL}>
-        <div style={{ ...HEADER, borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 10 }}>
-          <span style={{ color: "var(--ft-cyan)" }}>·</span> Data Export
-        </div>
+        <PanelHeader>Data Export</PanelHeader>
         <div style={{ padding: "12px 14px", background: "var(--ft-surface)", display: "flex", flexDirection: "column", gap: 10 }}>
           {/* Export KPI strip — border-as-gap pattern */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 2 }}>
-            {exportCells.map(({ label, value }) => (
-              <DataExportCell key={label} label={label} value={value} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", border: "1px solid var(--ft-border)", marginBottom: 2 }}>
+            {exportCells.map(({ label, value }, i) => (
+              <DataExportCell key={label} label={label} value={value} isLast={i === exportCells.length - 1} />
             ))}
           </div>
           <Text as="div" mono size={10} color="var(--ft-muted)">
@@ -1749,13 +1743,13 @@ export default function Profile() {
       </div>
 
       {activeTab === "account" && (
-        <div className="ft-profile-account-grid" style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 12, alignItems: "start" }}>
-          <VStack gap={10}>
+        <div className="ft-profile-account-grid" style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 6, alignItems: "start" }}>
+          <VStack gap={6}>
             {identityPanel}
             {activityPanel}
             {sessionPanel}
           </VStack>
-          <VStack gap={10}>
+          <VStack gap={6}>
             {prefsPanel}
             {personaPanel}
             {usagePanel}
