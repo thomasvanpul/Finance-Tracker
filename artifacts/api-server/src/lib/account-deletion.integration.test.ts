@@ -40,6 +40,7 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
       { id: other, name: "Other", email: `del-test-other-${stamp}@numeris.invalid` },
     ]);
     await db.insert(s.appSettingsTable).values({ userId: victim });
+    await db.insert(s.userPreferencesTable).values({ userId: victim, key: "ft-tx-notes", value: "{}" });
     await db.insert(s.sessionTable).values({ id: `sess-${stamp}`, token: `tok-${stamp}`, expiresAt: new Date(Date.now() + 60_000), userId: victim, ipAddress: "203.0.113.9", userAgent: "vitest" });
     await db.insert(s.accountTable).values({ id: `acc-${stamp}`, accountId: victim, providerId: "credential", userId: victim, password: "hash" });
     await db.insert(s.passkeyTable).values({ id: `pk-${stamp}`, publicKey: "pk", userId: victim, credentialID: `cred-${stamp}`, counter: 0, deviceType: "singleDevice", backedUp: false });
