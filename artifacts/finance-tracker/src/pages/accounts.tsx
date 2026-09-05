@@ -1025,6 +1025,7 @@ function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex
     <div
       style={{
         display: "flex",
+        flexWrap: "wrap",
         alignItems: "center",
         gap: 6,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
@@ -2366,7 +2367,7 @@ export default function Accounts() {
                   })}
                 </div>
                 {/* Currency rows */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "4px 16px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "4px 16px" }}>
                   {currencyTotals.map(({ currency, total }, i) => (
                     <CurrencyExposureRow
                       key={currency}
