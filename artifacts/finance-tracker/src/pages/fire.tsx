@@ -837,7 +837,7 @@ export default function Fire() {
             position: "relative",
           }}>
             {progressPct > 12 && (
-              <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "rgba(0,0,0,0.6)", whiteSpace: "nowrap" }}>
+              <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-base)", whiteSpace: "nowrap" }}>
                 {formatBaseMoney(effPortfolio)}
               </span>
             )}
