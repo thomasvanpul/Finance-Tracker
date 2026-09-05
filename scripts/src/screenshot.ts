@@ -135,7 +135,13 @@ async function signIn(context: BrowserContext): Promise<string> {
 // only honest way to put the app in that state.
 type Restore = () => Promise<void>;
 
-async function applyAccountPrefs(context: BrowserContext, cookie: string, args: Args): Promise<Restore> {
+// The account theme wins over the localStorage seed once theme-sync hydrates,
+// so a capture asked for as "void" rendered whatever the account had. The
+// returned setTheme is called before every capture so the PNG is the theme
+// its filename claims; the original is restored after the run.
+type AccountPrefs = { restore: Restore; setTheme: (theme: string) => Promise<void> };
+
+async function applyAccountPrefs(context: BrowserContext, cookie: string, args: Args): Promise<AccountPrefs> {
   const headers = { "Content-Type": "application/json", "Origin": FRONTEND, Cookie: cookie };
   const restores: Restore[] = [];
 
@@ -161,9 +167,20 @@ async function applyAccountPrefs(context: BrowserContext, cookie: string, args: 
     console.log(`[screenshot] tab-slot ${before.tabSlot} → ${args.tabSlot} (restored after run)`);
     restores.push(() => put("/api/settings/tab-slot", { tabSlot: before.tabSlot }));
   }
-  return async () => {
+  const themeBefore = await get<{ theme: string }>("/api/settings/theme");
+  let themeNow = themeBefore.theme;
+  restores.push(() => put("/api/settings/theme", { theme: themeBefore.theme }));
+  const setTheme = async (theme: string): Promise<void> => {
+    if (theme === themeNow) return;
+    await put("/api/settings/theme", { theme });
+    console.log(`[screenshot] theme ${themeNow} → ${theme} (restored after run)`);
+    themeNow = theme;
+  };
+
+  const restore = async () => {
     for (const r of restores.reverse()) await r();
   };
+  return { restore, setTheme };
 }
 
 // Intercept /api/* on the frontend origin and forward directly to the api-server
@@ -382,12 +399,13 @@ async function main(): Promise<void> {
 
   await interceptApiRequests(context);
   const apiCookie = await signIn(context);
-  const restore = await applyAccountPrefs(context, apiCookie, args);
+  const { restore, setTheme } = await applyAccountPrefs(context, apiCookie, args);
 
   try {
     for (const route of args.routes) {
       for (const theme of args.themes) {
         const explicit = args.routes.length === 1 && args.themes.length === 1 ? args.name : null;
+        await setTheme(theme);
         const outPath = await captureOne(context, route, theme, args.viewport, explicit, args.persona);
         console.log(`[screenshot] ${route} · ${args.viewport} · ${theme} → ${outPath}`);
       }
