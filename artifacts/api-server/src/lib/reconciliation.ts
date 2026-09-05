@@ -212,7 +212,9 @@ export async function computeReconciliation(input: ReconciliationInput): Promise
     });
   }
 
-  const convertible = accounts.filter((a) => a.gapBase != null);
+  // Explicit null-skip, not `?? 0`: an unconvertible account is reported
+  // in unconvertibleAccounts, never folded into the total as zero.
+  const convertibleGaps = accounts.map((a) => a.gapBase).filter((g): g is number => g != null);
   return {
     status: "ok",
     baseCurrency,
@@ -221,8 +223,8 @@ export async function computeReconciliation(input: ReconciliationInput): Promise
     periodTo: today,
     days: daysBetween(period.from, today),
     dataAvailableSince,
-    gapBase: convertible.length === 0 ? null : round4(convertible.reduce((s, a) => s + (a.gapBase ?? 0), 0)),
+    gapBase: convertibleGaps.length === 0 ? null : round4(convertibleGaps.reduce((s, g) => s + g, 0)),
     accounts,
-    unconvertibleAccounts: accounts.length - convertible.length,
+    unconvertibleAccounts: accounts.length - convertibleGaps.length,
   };
 }
