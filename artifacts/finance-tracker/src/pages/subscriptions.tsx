@@ -24,8 +24,8 @@ import {
   PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid,
 } from "recharts";
-import { CreditCard, Plus, Trash2, Edit2, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { CreditCard, Plus, Trash2, Edit2, AlertTriangle, Calendar } from "lucide-react";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -288,8 +288,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
           alignItems: "start", gap: 0,
           background: "var(--ft-surface)",
           borderBottom: "1px solid var(--ft-border2)",
-          borderLeft: `3px solid ${status === "active" ? "var(--ft-green)" : "var(--ft-border2)"}`,
-          padding: "9px 10px 9px 12px",
+          padding: "9px 10px",
         }}>
           <div style={{ minWidth: 0 }}>
             <HStack gap={6} align="center" marginBottom={3}>
@@ -1078,7 +1077,7 @@ export default function Subscriptions() {
   const handleDeleteSub = useCallback((id: number) => deleteSub(id), [deleteConfirmId]);
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
+    <div className="space-y-1.5 animate-in fade-in duration-300">
       <PageHeader
         icon={CreditCard}
         title="Subscriptions & Recurring"
@@ -1160,28 +1159,27 @@ export default function Subscriptions() {
       <div style={{
         display: "grid",
         gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "2fr 1fr 1fr 1fr 1fr",
-        gap: 1,
-        background: "var(--ft-border)",
+        background: "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
       }}>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 20px", borderTop: "2px solid var(--ft-blue)" }}>
+        <div style={{ background: "var(--ft-surface)", padding: "12px 20px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Monthly Cost</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--ft-blue)", lineHeight: 1 }}>{formatBaseMoney(totalMonthly)}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>{activeSubs.length} active subscription{activeSubs.length !== 1 ? "s" : ""}</div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderTop: "2px solid var(--ft-accent)" }}>
+        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderRight: isMobile ? undefined : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Annual Cost</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-accent)", lineHeight: 1 }}>{formatBaseMoney(totalAnnual)}</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>{formatBaseMoney(totalMonthly * 12)} projected</div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderTop: `2px solid ${couldSave > 0 ? "var(--ft-amber)" : "var(--ft-green)"}` }}>
+        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Could Save / mo</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: couldSave > 0 ? "var(--ft-amber)" : "var(--ft-green)", lineHeight: 1 }}>{formatBaseMoney(couldSave)}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
             {couldSave > 0 ? `${cancelCandidates.length} inactive >60d` : "all subs active"}
           </div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderTop: `2px solid ${renewingThisWeek.length > 0 ? "var(--ft-red)" : "var(--ft-border2)"}` }}>
+        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderRight: isMobile ? undefined : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Renewing This Week</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: renewingThisWeek.length > 0 ? "var(--ft-red)" : "var(--ft-text)", lineHeight: 1 }}>
             {renewingThisWeek.length}
@@ -1192,7 +1190,7 @@ export default function Subscriptions() {
               : "nothing due"}
           </div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderTop: "2px solid var(--ft-border2)", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
+        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Renewals (30d)</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>
             {upcomingRenewals.length}
@@ -1229,13 +1227,10 @@ export default function Subscriptions() {
 
       {/* ── Auto-detected candidates ─────────────────────────────────────── */}
       {unconfirmedCandidates.length > 0 && (
-        <div className="border" style={{ borderColor: "var(--ft-border)" }}>
-          <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ background: "rgba(34,211,238,0.07)", borderColor: "rgba(34,211,238,0.2)", overflow: "hidden" }}>
-            <span className="text-xs font-bold uppercase tracking-wide" style={{ flexShrink: 0, color: "var(--ft-cyan)", fontFamily: "var(--font-mono)" }}>
-              ▼ DETECTED RECURRING — {unconfirmedCandidates.length} candidate{unconfirmedCandidates.length !== 1 ? "s" : ""}
-            </span>
-            <span className="text-xs" style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--ft-dim)" }}>appeared 3+ times, consistent amounts</span>
-          </div>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader right={<Text as="span" mono size={10} color="var(--ft-dim)">appeared 3+ times, consistent amounts</Text>}>
+            DETECTED RECURRING — {unconfirmedCandidates.length} candidate{unconfirmedCandidates.length !== 1 ? "s" : ""}
+          </PanelHeader>
           <div className="divide-y" style={{ borderColor: "var(--ft-border)" }}>
             {unconfirmedCandidates.map(c => (
               <CandidateRow
@@ -1251,14 +1246,12 @@ export default function Subscriptions() {
 
       {/* ── Cancel recommendations ─────────────────────────────────────────── */}
       {cancelCandidates.length > 0 && (
-        <div className="border" style={{ borderColor: "var(--ft-amber)", background: "rgba(230,162,60,0.04)" }}>
-          <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ borderColor: "rgba(230,162,60,0.3)" }}>
-            <AlertTriangle className="w-3.5 h-3.5" style={{ color: "var(--ft-amber)" }} />
-            <span className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--ft-amber)", fontFamily: "var(--font-mono)" }}>
-              CONSIDER CANCELLING — {cancelCandidates.length} sub{cancelCandidates.length !== 1 ? "s" : ""} unused &gt;45 days
-            </span>
-          </div>
-          <div className="divide-y" style={{ borderColor: "rgba(230,162,60,0.15)" }}>
+        <div style={{ border: "1px solid var(--ft-amber)", background: "var(--ft-surface)" }}>
+          <PanelHeader>
+            <AlertTriangle className="w-3.5 h-3.5" style={{ color: "var(--ft-amber)", flexShrink: 0 }} />
+            CONSIDER CANCELLING — {cancelCandidates.length} sub{cancelCandidates.length !== 1 ? "s" : ""} unused &gt;45 days
+          </PanelHeader>
+          <div className="divide-y" style={{ borderColor: "var(--ft-border)" }}>
             {cancelCandidates.map(sub => {
               const last = lastTxByName.get(sub.id);
               const days = last ? daysSince(last.date) : 0;
@@ -1286,14 +1279,10 @@ export default function Subscriptions() {
           { label: "20 yr", months: 240 },
         ];
         return (
-          <div className="border" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
-            <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-raised)" }}>
-              <TrendingUp className="w-3.5 h-3.5" style={{ color: "var(--ft-green)" }} />
-              <span className="text-xs font-bold uppercase tracking-wide font-mono" style={{ color: "var(--ft-green)" }}>
-                Opportunity Cost — invest <span className="pnum">{formatBaseMoney(Math.round(couldSave * 100) / 100)}</span>/mo instead
-              </span>
-              <span className="text-xs" style={{ color: "var(--ft-dim)" }}>at 7% annual growth</span>
-            </div>
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <PanelHeader right={<Text as="span" mono size={10} color="var(--ft-dim)">at 7% annual growth</Text>}>
+              <span>Opportunity Cost — invest <span className="pnum">{formatBaseMoney(Math.round(couldSave * 100) / 100)}</span>/mo instead</span>
+            </PanelHeader>
             <div className="ft-three-col grid grid-cols-3 divide-x" style={{ borderColor: "var(--ft-border)" }}>
               {horizons.map(({ label, months }) => {
                 const val = fv(months);
@@ -1312,12 +1301,10 @@ export default function Subscriptions() {
       })()}
 
       {/* ── Subscription list grouped by renewal date ──────────────────────── */}
-      <div style={{ border: "1px solid var(--ft-border)" }}>
-        <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 6px 10px", background: "rgba(88,166,255,0.07)", borderBottom: "1px solid rgba(88,166,255,0.18)", gap: 8, borderLeft: "3px solid var(--ft-blue)" }}>
-          <Text as="span" mono upper size={10} weight={700} color="var(--ft-blue)" letterSpacing="0.06em">
-            ▼ SUBSCRIPTION LIST — {filteredSubs.length}{filteredSubs.length !== subs.length ? ` of ${subs.length}` : ""} total
-          </Text>
-        </div>
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <PanelHeader>
+          SUBSCRIPTION LIST — {filteredSubs.length}{filteredSubs.length !== subs.length ? ` of ${subs.length}` : ""} total
+        </PanelHeader>
 
         {/* Filter bar */}
         <div className="ft-filter-bar" style={{ display: "flex", gap: 6, padding: "8px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", flexWrap: "wrap", alignItems: "center" }}>
@@ -1428,21 +1415,20 @@ export default function Subscriptions() {
       {/* ── Renewals grouped by date bucket ─────────────────────────────────── */}
       {subsByRenewalGroup.length > 0 && (
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px 8px 11px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", borderLeft: "3px solid var(--ft-accent)" }}>
-            <Calendar size={12} style={{ color: "var(--ft-accent)" }} />
-            <Text as="span" mono upper size={10} weight={700} color="var(--ft-accent)" letterSpacing="0.08em">
-              Renewal Schedule
-            </Text>
-          </div>
+          <PanelHeader>Renewal Schedule</PanelHeader>
           {subsByRenewalGroup.map((group) => (
             <div key={group.label}>
               {/* Group header */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 14px 5px 11px", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)", borderTop: "1px solid var(--ft-border)", borderLeft: `3px solid ${group.color}` }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: group.color }}>{group.label}</span>
-                <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-                  {group.subs.length} sub{group.subs.length !== 1 ? "s" : ""} · {formatBaseMoney(group.subs.reduce((s, sub) => s + sub.amount, 0))} total
-                </span>
-              </div>
+              <PanelHeader
+                right={
+                  <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                    {group.subs.length} sub{group.subs.length !== 1 ? "s" : ""} · {formatBaseMoney(group.subs.reduce((s, sub) => s + sub.amount, 0))} total
+                  </span>
+                }
+              >
+                <Text as="span" mono color={group.color}>■</Text>
+                {group.label}
+              </PanelHeader>
               {/* Column headers — desktop only */}
               {!isMobile && (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 60px 100px", borderBottom: "1px solid var(--ft-border)", padding: "3px 14px" }}>
@@ -1461,11 +1447,14 @@ export default function Subscriptions() {
 
       {/* ── Charts ────────────────────────────────────────────────────────── */}
       {activeSubs.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
           {/* Pie by category */}
-          <div className="border p-4" style={{ background: "var(--ft-surface)", borderColor: "var(--ft-border)" }}>
-            <div className="text-xs font-bold mb-0.5 uppercase tracking-wide" style={{ color: "var(--ft-blue)", fontFamily: "var(--font-mono)", borderLeft: "3px solid var(--ft-blue)", paddingLeft: 8 }}>Spend by Category</div>
-            <div className="text-xs mb-3 pl-3" style={{ color: "var(--ft-dim)" }}>Monthly equivalent · active subscriptions</div>
+          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
+            <PanelHeader>
+              Spend by Category
+              <Text as="span" mono size={10} color="var(--ft-muted)">Monthly equivalent · active subscriptions</Text>
+            </PanelHeader>
+            <div className="p-4">
             {pieData.length === 0 ? (
               <div className="text-center py-6 text-xs" style={{ color: "var(--ft-dim)" }}>No data</div>
             ) : (
@@ -1488,12 +1477,16 @@ export default function Subscriptions() {
                 </div>
               </>
             )}
+            </div>
           </div>
 
           {/* Projected 12-month area chart */}
-          <div className="border p-4" style={{ background: "var(--ft-surface)", borderColor: "var(--ft-border)" }}>
-            <div className="text-xs font-bold mb-0.5 uppercase tracking-wide" style={{ color: "var(--ft-green)", fontFamily: "var(--font-mono)", borderLeft: "3px solid var(--ft-green)", paddingLeft: 8 }}>Projected Monthly Cost</div>
-            <div className="text-xs mb-3 pl-3" style={{ color: "var(--ft-dim)" }}>Next 12 months · annual charges spike in their renewal month</div>
+          <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
+            <PanelHeader>
+              Projected Monthly Cost
+              <Text as="span" mono size={10} color="var(--ft-muted)">Next 12 months · annual charges spike in their renewal month</Text>
+            </PanelHeader>
+            <div className="p-4">
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={projectedData} margin={{ top: 4, right: 8, left: -4, bottom: 0 }}>
                 <defs>
@@ -1513,6 +1506,7 @@ export default function Subscriptions() {
                 <Area type="monotone" dataKey="cost" stroke="var(--ft-green)" strokeWidth={2} fill="url(#subAreaGrad)" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           </div>
         </div>
       )}

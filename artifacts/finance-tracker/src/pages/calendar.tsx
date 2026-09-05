@@ -5,7 +5,7 @@ import { formatBaseMoney, formatNative } from "@/lib/utils";
 import type { Transaction, UpcomingItem, Subscription } from "@workspace/api-client-react";
 import { Download, Upload, Plus, Bell, BellOff, Calendar, X, Check, AlignJustify, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -502,9 +502,10 @@ interface WeekStripDayCellProps {
   dayNum: string;
   isToday: boolean;
   events: FeedEvent[];
+  isLast?: boolean;
 }
 
-function WeekStripDayCell({ dateStr, dayName, dayNum, isToday, events }: WeekStripDayCellProps) {
+function WeekStripDayCell({ dateStr, dayName, dayNum, isToday, events, isLast = false }: WeekStripDayCellProps) {
   return (
     <div
       key={dateStr}
@@ -514,6 +515,7 @@ function WeekStripDayCell({ dateStr, dayName, dayNum, isToday, events }: WeekStr
           : "var(--ft-surface)",
         padding: "7px 8px 10px",
         minHeight: 72,
+        borderRight: isLast ? undefined : "1px solid var(--ft-border)",
       }}
     >
       <VStack marginBottom={6}>
@@ -806,6 +808,7 @@ function SummaryStripCell({ label, value, color, sub, accentBorderColor: _accent
   const [hov, setHov] = useState(false);
   return (
     <div
+      className="ft-kpi-bar-cell"
       style={{
         padding: "8px 12px", background: hov
           ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
@@ -892,10 +895,10 @@ function WeekDayCell({ date, dayData, feedEvs, custEvs, onAddEvent }: WeekDayCel
       {feedEvs.slice(0, 3).map((ev, i) => {
         const feed = PREDEFINED_FEEDS.find(f => f.id === ev.feedId);
         const c = feed?.color ?? "var(--ft-border)";
-        return <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${c} 13%, transparent)`, color: feed?.color ?? "var(--ft-dim)", borderLeft: `2px solid ${c}`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>;
+        return <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${c} 13%, transparent)`, color: feed?.color ?? "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>;
       })}
       {custEvs.slice(0, 3).map((ev, i) => (
-        <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${ev.color} 13%, transparent)`, color: ev.color, borderLeft: `2px solid ${ev.color}`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
+        <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${ev.color} 13%, transparent)`, color: ev.color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
       ))}
       {income > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>+{formatBaseMoney(income)}</div>}
       {expenses > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>-{formatBaseMoney(expenses)}</div>}
@@ -931,25 +934,24 @@ function ThisWeekStrip({ enabledFeeds, feedEventMap }: { enabledFeeds: string[];
   if (!hasAny && enabledFeeds.length === 0) return null;
 
   return (
-    <div className="ft-scroll-x" style={{ marginBottom: 16, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+    <div className="ft-scroll-x" style={{ marginBottom: 6, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
       <div style={{ minWidth: 480 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 12px 5px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)" }}>
-          <HStack gap={8} align="center">
-            <div style={{ width: 2, height: 10, background: "var(--ft-accent)", flexShrink: 0 }} />
-            <Text as="span" mono upper size={9} weight={700} color="var(--ft-accent)" letterSpacing="0.1em">This Week in Markets</Text>
-          </HStack>
-          {!hasAny && (
-            <Text as="span" mono size={9} color="var(--ft-dim)">No events — enable feeds via Sources</Text>
-          )}
-          {hasAny && (
-            <Text as="span" mono size={9} color="var(--ft-dim)">
-              {days.reduce((s, d) => s + d.events.length, 0)} event{days.reduce((s, d) => s + d.events.length, 0) !== 1 ? "s" : ""} this week
-            </Text>
-          )}
-        </div>
-        {/* border-as-gap 7-column strip */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 1, background: "var(--ft-border)" }}>
-          {days.map((day) => (
+        <PanelHeader
+          right={
+            !hasAny ? (
+              <Text as="span" mono size={9} color="var(--ft-dim)">No events — enable feeds via Sources</Text>
+            ) : (
+              <Text as="span" mono size={9} color="var(--ft-dim)">
+                {days.reduce((s, d) => s + d.events.length, 0)} event{days.reduce((s, d) => s + d.events.length, 0) !== 1 ? "s" : ""} this week
+              </Text>
+            )
+          }
+        >
+          This Week in Markets
+        </PanelHeader>
+        {/* 7-column strip: cells carry their own right rule */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+          {days.map((day, i) => (
             <WeekStripDayCell
               key={day.dateStr}
               dateStr={day.dateStr}
@@ -957,6 +959,7 @@ function ThisWeekStrip({ enabledFeeds, feedEventMap }: { enabledFeeds: string[];
               dayNum={day.dayNum}
               isToday={day.isToday}
               events={day.events}
+              isLast={i === days.length - 1}
             />
           ))}
         </div>
@@ -1026,8 +1029,9 @@ function EventForm({
   };
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: 16, marginBottom: 12 }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Add Event</div>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6 }}>
+      <PanelHeader>Add Event</PanelHeader>
+      <div style={{ padding: 16 }}>
       <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
         <div style={{ gridColumn: "1 / -1" }}>
           <label style={lbl}>Title</label>
@@ -1066,6 +1070,7 @@ function EventForm({
           Cancel
         </button>
       </HStack>
+      </div>
     </div>
   );
 }
@@ -1115,25 +1120,22 @@ function SourcesPanel({
     onImport(feed);
   }
 
-  const headerStyle: React.CSSProperties = {
-    fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)",
-    letterSpacing: "0.1em", textTransform: "uppercase", padding: "8px 14px 4px",
-    borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)",
-  };
-
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", minWidth: 280, maxWidth: 320 }}>
-      <div style={{ background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)", padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)" }}>Calendar Sources</span>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", display: "flex", alignItems: "center" }}>
-          <X size={12} />
-        </button>
-      </div>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", minWidth: 280, maxWidth: 320 }}>
+      <PanelHeader
+        right={
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", display: "flex", alignItems: "center" }}>
+            <X size={12} />
+          </button>
+        }
+      >
+        Calendar Sources
+      </PanelHeader>
 
       {/* Predefined feeds by category */}
       {feedCategories.map((cat) => (
         <div key={cat}>
-          <div style={headerStyle}>{cat}</div>
+          <PanelHeader>{cat}</PanelHeader>
           {PREDEFINED_FEEDS.filter((f) => f.category === cat).map((feed) => (
             <FeedItemRow
               key={feed.id}
@@ -1148,7 +1150,7 @@ function SourcesPanel({
       {/* Imported feeds */}
       {importedFeeds.length > 0 && (
         <div>
-          <div style={headerStyle}>Imported</div>
+          <PanelHeader>Imported</PanelHeader>
           {importedFeeds.map((feed) => (
             <ImportedFeedRow
               key={feed.id}
@@ -1209,40 +1211,28 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
   const displayDate = `${day} ${MONTH_NAMES[(month ?? 1) - 1]}`;
   const [deleteConfirmEvId, setDeleteConfirmEvId] = useState<string | null>(null);
 
-  const sectionLabel: React.CSSProperties = {
-    padding: "4px 12px 3px",
-    fontSize: 8,
-    fontFamily: "var(--font-mono)",
-    color: "var(--ft-muted)",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    fontWeight: 700,
-    background: "var(--ft-raised)",
-    borderBottom: "1px solid var(--ft-border)",
-  };
-
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: 0, minWidth: 268, maxWidth: 320, fontFamily: "var(--font-mono)" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 0, minWidth: 268, maxWidth: 320, fontFamily: "var(--font-mono)" }}>
       {/* Header */}
-      <div style={{ background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", padding: "9px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <HStack gap={8} align="center">
-          <div style={{ width: 2, height: 14, background: "var(--ft-accent)", flexShrink: 0 }} />
-          <Text as="span" size={12} weight={700} color="var(--ft-text)">{displayDate}</Text>
-        </HStack>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 }}>
-          <X size={12} />
-        </button>
-      </div>
+      <PanelHeader
+        right={
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 }}>
+            <X size={12} />
+          </button>
+        }
+      >
+        {displayDate}
+      </PanelHeader>
 
       {/* Day KPI strip */}
       {(data.totalIncome > 0 || data.totalExpenses > 0) && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border2)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
           {[
             { label: "In", value: data.totalIncome, color: "var(--ft-green)" },
             { label: "Out", value: data.totalExpenses, color: "var(--ft-red)" },
             { label: "Net", value: data.net, color: data.net >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ padding: "7px 10px", background: "var(--ft-surface)" }}>
+          ].map(({ label, value, color }, i, arr) => (
+            <div key={label} style={{ padding: "7px 10px", background: "var(--ft-surface)", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
               <div style={{ fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>{label}</div>
               <div className="pnum" style={{ fontSize: 12, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>
                 {value !== 0 ? formatBaseMoney(Math.abs(value)) : "—"}
@@ -1255,7 +1245,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
       {/* Calendar feed events */}
       {feedEvents.length > 0 && (
         <div>
-          <div style={{ ...sectionLabel, borderLeft: "3px solid var(--ft-blue)" }}>Market Events</div>
+          <PanelHeader>Market Events</PanelHeader>
           {feedEvents.map((ev, i) => (
             <DayFeedEventRow key={i} ev={ev} />
           ))}
@@ -1265,7 +1255,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
       {/* Custom events */}
       {customEvents.length > 0 && (
         <div>
-          <div style={{ ...sectionLabel, borderLeft: "3px solid var(--ft-accent)" }}>My Events</div>
+          <PanelHeader>My Events</PanelHeader>
           {customEvents.map((ev) => (
             <DayCustomEventRow
               key={ev.id}
@@ -1283,7 +1273,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
       {/* Transactions */}
       {data.transactions.length > 0 && (
         <div>
-          <div style={{ ...sectionLabel, borderLeft: "3px solid var(--ft-muted)" }}>Transactions</div>
+          <PanelHeader>Transactions</PanelHeader>
           {data.transactions.map((tx) => (
             <DayTxRow key={tx.id} tx={tx} />
           ))}
@@ -1293,7 +1283,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
       {/* Bills */}
       {data.upcoming.length > 0 && (
         <div>
-          <div style={{ ...sectionLabel, borderLeft: "3px solid var(--ft-amber)" }}>Upcoming Bills</div>
+          <PanelHeader>Upcoming Bills</PanelHeader>
           {data.upcoming.map((item) => (
             <DayBillRow key={item.id} item={item} />
           ))}
@@ -1303,7 +1293,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
       {/* Subscriptions due */}
       {data.subscriptions.length > 0 && (
         <div>
-          <div style={{ ...sectionLabel, borderLeft: "3px solid var(--ft-cyan)" }}>Subscriptions Due</div>
+          <PanelHeader>Subscriptions Due</PanelHeader>
           {data.subscriptions.map((sub) => (
             <DaySubRow key={sub.id} sub={sub} />
           ))}
@@ -1615,17 +1605,7 @@ function AgendaView({ dayMap, feedEventMap, customEventMap, todayStr, debtEvents
       {grouped.map(({ week, days }) => (
         <div key={week}>
           {/* Week header */}
-          <div style={{
-            padding: "5px 14px",
-            background: "var(--ft-raised)",
-            borderBottom: "1px solid var(--ft-border)",
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <div style={{ width: 2, height: 10, background: "var(--ft-border2)", flexShrink: 0 }} />
-            <Text as="span" mono upper size={8} weight={600} color="var(--ft-muted)" letterSpacing="0.1em">
-              {fmtWeekRange(week)}
-            </Text>
-          </div>
+          <PanelHeader>{fmtWeekRange(week)}</PanelHeader>
           {days.map(({ date: ds, events: dayEvs }) => (
             <div key={ds}>
               <div
@@ -1757,9 +1737,8 @@ function SummaryStrip({ transactions, upcoming, year, month }: { transactions: T
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(5, 1fr)",
-        gap: 1,
-        background: "var(--ft-border)",
-        borderTop: "1px solid var(--ft-border2)",
+        border: "none",
+        borderTop: "1px solid var(--ft-border)",
       }}
     >
       {[
@@ -1973,7 +1952,7 @@ export default function CalendarPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -1981,7 +1960,7 @@ export default function CalendarPage() {
       })()}
 
       {/* Controls */}
-      <div className="ft-filter-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 }}>
+      <div className="ft-filter-bar" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 8 }}>
         {/* Left: nav */}
         <HStack gap={6} align="center">
           {viewMode === "month" && (
@@ -2012,16 +1991,16 @@ export default function CalendarPage() {
         </HStack>
 
         {/* Center: view mode */}
-        <div style={{ display: "flex", gap: 1, border: "1px solid var(--ft-border)", overflow: "hidden" }}>
+        <div style={{ display: "flex", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
           {([
             { id: "month", icon: <LayoutGrid size={10} />, label: "Month" },
             { id: "week", icon: <CalendarDays size={10} />, label: "Week" },
             { id: "agenda", icon: <AlignJustify size={10} />, label: "Agenda" },
-          ] as const).map(({ id, icon, label }) => (
+          ] as const).map(({ id, icon, label }, i, arr) => (
             <button
               key={id}
               onClick={() => setViewMode(id)}
-              style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-mono)", fontSize: 9, padding: "4px 10px", cursor: "pointer", border: "none", background: viewMode === id ? "var(--ft-accent)" : "var(--ft-surface)", color: viewMode === id ? "var(--ft-base)" : "var(--ft-muted)", letterSpacing: "0.06em" }}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-mono)", fontSize: 9, padding: "4px 10px", cursor: "pointer", border: "none", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none", background: viewMode === id ? "var(--ft-accent)" : "var(--ft-surface)", color: viewMode === id ? "var(--ft-base)" : "var(--ft-muted)", letterSpacing: "0.06em" }}
             >
               {icon} {label}
             </button>
@@ -2059,11 +2038,11 @@ export default function CalendarPage() {
 
       <ThisWeekStrip enabledFeeds={enabledFeeds} feedEventMap={feedEventMap} />
 
-      <HStack gap={12} align="center" justify="between" wrap marginBottom={8}>
+      <HStack gap={12} align="center" justify="between" wrap marginBottom={6}>
         <Legend />
       </HStack>
 
-      <HStack gap={12} align="start" wrap>
+      <HStack gap={6} align="start" wrap>
         {/* Calendar */}
         <div style={{ flex: 1 }}>
           <style>{`.add-event-btn:hover { opacity: 1 !important; }`}</style>

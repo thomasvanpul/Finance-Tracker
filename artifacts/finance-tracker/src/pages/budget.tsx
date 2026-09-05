@@ -27,7 +27,7 @@ import {
 import { formatBaseMoney } from "@/lib/utils";
 import type { Transaction } from "@workspace/api-client-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -221,6 +221,7 @@ function BudgetKpiCell({ label, value, sub, extra, isPriv = false }: BudgetKpiCe
   const [hov, setHov] = React.useState(false);
   return (
     <div
+      className="ft-kpi-bar-cell"
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
@@ -419,53 +420,6 @@ function CopyCandidateRow({ candidate: c, index, onChange }: CopyCandidateRowPro
   );
 }
 
-// ── Panel header helper ───────────────────────────────────────────────────────
-
-function PanelHeader({
-  title,
-  right,
-}: {
-  title: string;
-  right?: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        height: "var(--ft-panel-header-h)",
-        padding: "0 14px",
-        background: "var(--ft-raised)",
-        borderBottom: "1px solid var(--ft-border)",
-        gap: 8,
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          fontWeight: 500,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase" as const,
-          color: "var(--ft-muted)",
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <Text as="span" color="var(--ft-accent)">·</Text>
-        {title}
-      </div>
-      {right && (
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {right}
-        </div>
-      )}
-    </div>
-  );
-}
-
 const BUDGET_AI_CACHE_KEY = "ft-budget-ai-insight";
 
 // ── AiBudgetInsight component ─────────────────────────────────────────────────
@@ -526,12 +480,9 @@ function AiBudgetInsight(_props: AiBudgetInsightProps) {
       style={{
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
-        borderLeft: "3px solid var(--ft-amber)",
       }}
     >
-      <PanelHeader
-        title="AI Analysis"
-        right={
+      <PanelHeader right={
           !loading ? (
             <button
               onClick={() => {
@@ -556,8 +507,7 @@ function AiBudgetInsight(_props: AiBudgetInsightProps) {
               <RefreshCw size={11} />
             </button>
           ) : undefined
-        }
-      />
+        }>AI Analysis</PanelHeader>
       <div style={{ padding: "10px 14px" }}>
         {loading ? (
           <div
@@ -1460,8 +1410,8 @@ export default function Budget() {
           ))}
         </div>
         {/* Budget rows skeleton */}
-        <div style={{ border: "1px solid var(--ft-border)", marginTop: 12 }}>
-          <div style={{ height: "var(--ft-panel-header-h)", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)", padding: "0 14px", display: "flex", alignItems: "center" }}>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginTop: 6 }}>
+          <div style={{ height: "var(--ft-panel-header-h)", borderBottom: "1px solid var(--ft-border)", padding: "0 12px", display: "flex", alignItems: "center" }}>
             <FtSkeleton width={160} height={10} />
           </div>
           {Array.from({ length: 4 }).map((_, i) => (
@@ -1505,17 +1455,14 @@ export default function Budget() {
   if (sortedBudgets.length === 0 && !showCopyPanel) {
     const QUICK_CATEGORIES = ["Groceries", "Transport", "Eating Out", "Entertainment", "Utilities", "Health", "Clothing", "Subscriptions"];
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {/* Terminal-style empty state */}
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-          <PanelHeader
-            title="Budget Monitor"
-            right={
+          <PanelHeader right={
               <MonoLabel as="span" size={8} letterSpacing="0.10em">
                 NO CATEGORIES DEFINED
               </MonoLabel>
-            }
-          />
+            }>Budget Monitor</PanelHeader>
           <div style={{ padding: "32px 40px", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {/* ASCII preview */}
             <div
@@ -1694,10 +1641,9 @@ export default function Budget() {
         className="ft-kpi-bar"
         style={{
           display: "grid",
-          gap: 1,
           gridTemplateColumns: "repeat(6, 1fr)",
           border: "1px solid var(--ft-border)",
-          background: "var(--ft-border)",
+          background: "var(--ft-surface)",
         }}
       >
         {[
@@ -1817,9 +1763,7 @@ export default function Budget() {
             border: "1px solid var(--ft-border)",
           }}
         >
-          <PanelHeader
-            title="Budget Health Summary"
-            right={
+          <PanelHeader right={
               <div className="ft-hide-mobile" style={{ display: "flex", gap: 12, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                 {(["exceeded", "warning", "on-track", "under", "empty"] as HealthStatus[]).map((s) => {
                   const info = getBudgetHealth(s === "exceeded" ? 1.1 : s === "warning" ? 0.85 : s === "on-track" ? 0.6 : s === "under" ? 0.2 : 0, s === "empty" ? 0 : 1);
@@ -1840,8 +1784,7 @@ export default function Budget() {
                   );
                 })}
               </div>
-            }
-          />
+            }>Budget Health Summary</PanelHeader>
           <HStack gap={6} wrap padding="8px 14px 10px">
             {sortedBudgets.map((b) => {
               const sp = spentByCategory[b.category.toLowerCase()] ?? 0;
@@ -1884,10 +1827,9 @@ export default function Budget() {
           style={{
             background: "var(--ft-surface)",
             border: "1px solid var(--ft-border)",
-            borderLeft: "3px solid var(--ft-cyan)",
           }}
         >
-          <PanelHeader title="Zero-Based Budget" />
+          <PanelHeader>Zero-Based Budget</PanelHeader>
           <div
             style={{
               padding: "10px 14px",
@@ -1956,18 +1898,14 @@ export default function Budget() {
         const atRisk = forecastData.filter((f) => !f.onTrack);
         const onTrackCount = forecastData.filter((f) => f.onTrack).length;
         const totalProjectedOverspend = atRisk.reduce((s, f) => s + f.projectedOverspend, 0);
-        const accentColor = atRisk.length > 0 ? "var(--ft-amber)" : "var(--ft-green)";
         return (
           <div
             style={{
               background: "var(--ft-surface)",
               border: "1px solid var(--ft-border)",
-              borderLeft: `3px solid ${accentColor}`,
             }}
           >
-            <PanelHeader
-              title="Month-End Forecast"
-              right={
+            <PanelHeader right={
                 <div className="ft-hide-mobile" style={{ display: "flex", gap: 16, fontFamily: "var(--font-mono)", fontSize: 10 }}>
                   <span>
                     <span style={{ color: "var(--ft-dim)", fontSize: 8, textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>on track </span>
@@ -1984,8 +1922,7 @@ export default function Budget() {
                     </span>
                   )}
                 </div>
-              }
-            />
+              }>Month-End Forecast</PanelHeader>
             <div style={{ padding: "8px 14px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
               Day {dayOfMonth} of {daysInMonth} · current burn rate extrapolated
             </div>
@@ -2010,8 +1947,8 @@ export default function Budget() {
 
       {/* ── Budget table ── */}
       {sortedBudgets.length === 0 ? (
-        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-accent)" }}>
-          <PanelHeader title="Monthly Targets" />
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader>Monthly Targets</PanelHeader>
           <div
             style={{
               padding: "28px 14px",
@@ -2036,17 +1973,13 @@ export default function Budget() {
           style={{
             border: "1px solid var(--ft-border)",
             background: "var(--ft-surface)",
-            borderLeft: "3px solid var(--ft-accent)",
           }}
         >
-          <PanelHeader
-            title="Monthly Targets"
-            right={
+          <PanelHeader right={
               <MonoLabel as="span" size={8} letterSpacing="0.12em">
                 SORTED BY % USED ▼
               </MonoLabel>
-            }
-          />
+            }>Monthly Targets</PanelHeader>
           {/* Table scroll wrapper — desktop only; mobile renders cards above */}
           <div className={isMobile ? undefined : "ft-scroll-x"}>
             {/* Column headers — desktop only */}
@@ -2144,7 +2077,7 @@ export default function Budget() {
           border: "1px solid var(--ft-border)",
         }}
       >
-        <PanelHeader title="Add Budget Category" />
+        <PanelHeader>Add Budget Category</PanelHeader>
         <div style={{ padding: "12px 14px" }}>
           <HStack gap={8} align="end" wrap>
             <div style={{ flex: 2, minWidth: 180 }}>
@@ -2197,10 +2130,9 @@ export default function Budget() {
           style={{
             background: "var(--ft-surface)",
             border: "1px solid var(--ft-border)",
-            borderLeft: "3px solid var(--ft-accent)",
           }}
         >
-          <PanelHeader title={`${MONTH_NAMES[lastMonth - 1]} ${lastMonthYear} Actuals — Confirm to Import`} />
+          <PanelHeader>{`${MONTH_NAMES[lastMonth - 1]} ${lastMonthYear} Actuals — Confirm to Import`}</PanelHeader>
           <div style={{ padding: "12px 14px" }}>
             <VStack gap={2} marginBottom={12}>
               {copyCandidates.map((c, i) => (
@@ -2235,9 +2167,7 @@ export default function Budget() {
             border: "1px solid var(--ft-border)",
           }}
         >
-          <PanelHeader
-            title="Budget vs Actuals"
-            right={
+          <PanelHeader right={
               <div style={{ display: "flex", gap: 12, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                 <HStack gap={4} align="center">
                   <span style={{ display: "inline-block", width: 8, height: 8, background: "var(--ft-dim)", opacity: 0.4, borderRadius: 0 }} />
@@ -2256,8 +2186,7 @@ export default function Budget() {
                   &gt;=100%
                 </span>
               </div>
-            }
-          />
+            }>Budget vs Actuals</PanelHeader>
           <div style={{ padding: "12px 14px 16px" }}>
             <ResponsiveContainer width="100%" height={Math.max(chartData.length * 36, 120)}>
               <BarChart
@@ -2308,10 +2237,9 @@ export default function Budget() {
             style={{
               background: "var(--ft-surface)",
               border: "1px solid var(--ft-border)",
-              borderLeft: "3px solid var(--ft-amber)",
             }}
           >
-            <PanelHeader title="Unbudgeted Spending This Month" />
+            <PanelHeader>Unbudgeted Spending This Month</PanelHeader>
             <div style={{ padding: "10px 14px", display: "flex", flexWrap: "wrap", gap: 6 }}>
               {unbudgeted.map((cat) => {
                 const displayCat = Object.keys(spentByCategory).find(

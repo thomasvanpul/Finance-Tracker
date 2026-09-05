@@ -19,7 +19,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -108,7 +108,7 @@ const card: React.CSSProperties = {
   background: "var(--ft-surface)",
   border: "1px solid var(--ft-border)",
   padding: 20,
-  marginBottom: 16,
+  marginBottom: 6,
 };
 const th: React.CSSProperties = {
   ...mono,
@@ -299,16 +299,14 @@ interface KpiTileProps {
   label: string;
   value: string;
   color: string;
-  accentTop?: string;
   sub?: string | null;
 }
 
-function KpiTile({ label, value, color, accentTop, sub }: KpiTileProps) {
+function KpiTile({ label, value, color, sub }: KpiTileProps) {
   return (
-    <div style={{
+    <div className="ft-kpi-bar-cell" style={{
       background: "var(--ft-surface)",
       padding: "10px 14px",
-      borderTop: accentTop ? `2px solid ${accentTop}` : "2px solid transparent",
     }}>
       <div style={{ ...labelStyle, marginBottom: 4 }}>{label}</div>
       <div className="pnum" style={{ ...mono, fontSize: 17, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
@@ -550,7 +548,7 @@ export default function CashflowPage() {
         <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 20 }}>
           CASH FLOW FORECAST
         </div>
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-accent)", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 16, minHeight: "calc(100vh - 160px)", justifyContent: "center" }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 16, minHeight: "calc(100vh - 160px)", justifyContent: "center" }}>
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ opacity: 0.25 }}>
             <path d="M8 36L18 24l8 8 8-12 6 6" stroke="var(--ft-text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <circle cx="8" cy="36" r="2" fill="var(--ft-text)" />
@@ -662,17 +660,11 @@ export default function CashflowPage() {
           ref={settingsRef}
           style={{
             ...card,
-            marginBottom: 12,
-            padding: "14px 20px",
-            borderColor: "rgba(244,162,30,0.3)",
-            borderLeft: "3px solid var(--ft-amber)",
-            background: "rgba(244,162,30,0.04)",
+            padding: 0,
           }}
         >
-          <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 14 }}>
-            SCENARIO MULTIPLIERS
-          </div>
-          <HStack gap={32} align="start" wrap>
+          <PanelHeader>Scenario Multipliers</PanelHeader>
+          <HStack gap={32} align="start" wrap padding="14px 20px">
             <div>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-green)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
                 Optimistic
@@ -744,62 +736,53 @@ export default function CashflowPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span className="pnum">{msg}</span>
           </div>
         );
       })()}
 
-      {/* KPI strip section header */}
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 8, marginBottom: 8 }}>
-        Balance Metrics
-      </div>
-
-      {/* KPI strip (border-as-gap grid) */}
+      {/* KPI strip: header inside the frame, cells carry their own right rule */}
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+      <PanelHeader>Balance Metrics</PanelHeader>
       <div
         className="ft-kpi-bar"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, 1fr)",
-          gap: 1,
-          marginBottom: 16,
-          background: "var(--ft-border)",
+          border: "none",
         }}
       >
         <KpiTile
           label="Today's Balance"
           value={formatBaseMoney(startingBalance)}
           color="var(--ft-text)"
-          accentTop="var(--ft-cyan)"
         />
         <KpiTile
           label={`Projected (${horizon}d)`}
           value={formatBaseMoney(finalBalance)}
           color={finalBalance >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-          accentTop={finalBalance >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
           sub={finalBalance !== startingBalance ? `${finalBalance >= startingBalance ? "+" : ""}${formatBaseMoney(finalBalance - startingBalance)} change` : null}
         />
         <KpiTile
           label="Avg Net / Month"
           value={`${baseMonthlyNet >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(baseMonthlyNet))}`}
           color={baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-          accentTop={baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
           sub={`${baseDailyIncome > 0 ? `in ${formatBaseMoney(baseDailyIncome * 30)}/mo` : "no income"} · out ${formatBaseMoney(baseDailyExpense * 30)}/mo`}
         />
         <KpiTile
           label="Lowest Point"
           value={formatBaseMoney(lowestPoint === Infinity ? 0 : lowestPoint)}
           color={lowestPoint < 0 ? "var(--ft-red)" : "var(--ft-muted)"}
-          accentTop={lowestPoint < 0 ? "var(--ft-red)" : undefined}
           sub={lowestPoint < 0 ? "dips below zero" : null}
         />
         <KpiTile
           label="Highest Point"
           value={formatBaseMoney(highestPoint === -Infinity ? 0 : highestPoint)}
           color="var(--ft-green)"
-          accentTop="var(--ft-green)"
         />
+      </div>
       </div>
 
       {/* Projected final balance — big number */}
@@ -810,7 +793,6 @@ export default function CashflowPage() {
         gap: 24,
         padding: "16px 20px",
         flexWrap: "wrap",
-        borderLeft: `3px solid ${scenarioColor}`,
       }}>
         <div>
           <div style={{ ...labelStyle, marginBottom: 4 }}>PROJECTED FINAL BALANCE · {horizon}D · {scenario.toUpperCase()}</div>
@@ -835,7 +817,6 @@ export default function CashflowPage() {
           <div style={{
             background: "var(--ft-red)15",
             border: "1px solid var(--ft-red)44",
-            borderLeft: "3px solid var(--ft-red)",
             padding: "10px 16px",
           }}>
             <div style={{ ...labelStyle, color: "var(--ft-red)", marginBottom: 4 }}>BREAK-EVEN DATE</div>
@@ -852,7 +833,6 @@ export default function CashflowPage() {
           <div style={{
             background: "var(--ft-red)15",
             border: "1px solid var(--ft-red)44",
-            borderLeft: "3px solid var(--ft-red)",
             padding: "10px 16px",
             marginLeft: breakEvenDate ? 0 : "auto",
           }}>
@@ -865,11 +845,12 @@ export default function CashflowPage() {
       </div>
 
       {/* Area chart */}
-      <div style={card}>
-        <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8, marginBottom: 12 }}>
-          <Text as="span" weight={700} color="var(--ft-accent)">BALANCE PROJECTION</Text>
-          <span style={{ color: "var(--ft-dim)", marginLeft: 12, fontSize: 8 }}>Day-by-day projected cumulative balance · based on 3-month avg trend</span>
-        </div>
+      <div style={{ ...card, padding: 0 }}>
+        <PanelHeader>
+          Balance Projection
+          <Text as="span" mono size={10} color="var(--ft-muted)">Day-by-day projected cumulative balance · based on 3-month avg trend</Text>
+        </PanelHeader>
+        <div style={{ padding: 20 }}>
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={projection} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
             <defs>
@@ -938,18 +919,19 @@ export default function CashflowPage() {
             />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Events table */}
-      <div style={card}>
-        <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-blue)", paddingLeft: 8, marginBottom: 12 }}>
-          <Text as="span" weight={700} color="var(--ft-accent)">SCHEDULED EVENTS</Text>
-          <span style={{ color: "var(--ft-dim)", marginLeft: 12, fontSize: 8 }}>Upcoming bills and income within the {horizon}-day horizon</span>
-        </div>
+      <div style={{ ...card, padding: 0 }}>
+        <PanelHeader>
+          Scheduled Events
+          <Text as="span" mono size={10} color="var(--ft-muted)">Upcoming bills and income within the {horizon}-day horizon</Text>
+        </PanelHeader>
+        <div style={{ padding: 20 }}>
         {eventRows.length === 0 ? (
           <div style={{
             border: "1px solid var(--ft-border)",
-            borderLeft: "3px solid var(--ft-border2)",
             background: "var(--ft-surface)",
             padding: "24px 20px",
             fontFamily: "var(--font-mono)",
@@ -979,11 +961,12 @@ export default function CashflowPage() {
             </table>
           </div>
         )}
+        </div>
       </div>
 
       {/* Scenario legend */}
       <div style={{ ...card, padding: "12px 16px", display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ ...labelStyle, borderLeft: "3px solid var(--ft-border2)", paddingLeft: 6 }}>SCENARIOS:</div>
+        <div style={labelStyle}>SCENARIOS:</div>
         {(["optimistic", "base", "pessimistic"] as Scenario[]).map((s) => (
           <ScenarioLegendItem key={s} s={s} multipliers={multipliers} />
         ))}

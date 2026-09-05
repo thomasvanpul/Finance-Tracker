@@ -7,7 +7,7 @@ import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Repeat2 } from "lucide-react";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ const card: React.CSSProperties = {
   background: "var(--ft-surface)",
   border: "1px solid var(--ft-border)",
   padding: 20,
-  marginBottom: 16,
+  marginBottom: 6,
 };
 const th: React.CSSProperties = {
   ...mono,
@@ -200,43 +200,6 @@ function detectRecurring(txs: Tx[]): RecurringPattern[] {
   return patterns.sort((a, b) => b.estimatedAmount - a.estimatedAmount);
 }
 
-// ─── Section header with left accent bar ────────────────────────────────────
-
-interface SectionHeaderProps {
-  title: string;
-  sub?: string;
-  accentColor?: string;
-  right?: React.ReactNode;
-}
-
-function SectionHeader({ title, sub, accentColor = "var(--ft-accent)", right }: SectionHeaderProps) {
-  return (
-    <HStack gap={8} align="start" justify="between" wrap marginBottom={sub ? 0 : 10}>
-      <div>
-        <div style={{
-          ...mono,
-          fontSize: 10,
-          fontWeight: 700,
-          color: accentColor,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          borderLeft: `3px solid ${accentColor}`,
-          paddingLeft: 8,
-          marginBottom: sub ? 2 : 0,
-        }}>
-          {title}
-        </div>
-        {sub && (
-          <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 14, paddingLeft: 8 }}>
-            {sub}
-          </div>
-        )}
-      </div>
-      {right}
-    </HStack>
-  );
-}
-
 // ─── KPI bar ─────────────────────────────────────────────────────────────────
 
 interface KpiBarProps {
@@ -281,14 +244,12 @@ function KpiBar({ patterns, rules }: KpiBarProps) {
       value: formatBaseMoney(monthlyTotal),
       sub: `${patterns.length} active patterns`,
       color: monthlyTotal > 0 ? "var(--ft-red)" : "var(--ft-muted)",
-      accent: monthlyTotal > 0 ? "var(--ft-red)" : "var(--ft-border2)",
     },
     {
       label: "Annual Total",
       value: formatBaseMoney(annualTotal),
       sub: "projected recurring",
       color: annualTotal > 0 ? "var(--ft-amber)" : "var(--ft-muted)",
-      accent: annualTotal > 0 ? "var(--ft-amber)" : "var(--ft-border2)",
     },
     {
       label: "Due Within 7 Days",
@@ -297,26 +258,26 @@ function KpiBar({ patterns, rules }: KpiBarProps) {
         ? dueWithin7.slice(0, 2).map((p) => p.merchantName.slice(0, 14)).join(", ") + (dueWithin7.length > 2 ? "…" : "")
         : "nothing due soon",
       color: dueWithin7.length > 0 ? "var(--ft-amber)" : "var(--ft-green)",
-      accent: dueWithin7.length > 0 ? "var(--ft-amber)" : "var(--ft-green)",
     },
     {
       label: "Active Rules",
       value: String(activeRules),
       sub: `${rules.length} total rules`,
       color: "var(--ft-accent)",
-      accent: "var(--ft-accent)",
     },
   ];
 
   const isMobile = useIsMobile();
+  const cols = isMobile ? 2 : 4;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
-      {kpis.map((k) => (
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+      {kpis.map((k, i) => (
         <div
           key={k.label}
           style={{
             background: "var(--ft-surface)",
-            borderLeft: `3px solid ${k.accent}`,
+            borderRight: i % cols === cols - 1 ? undefined : "1px solid var(--ft-border)",
+            borderBottom: i < kpis.length - cols ? "1px solid var(--ft-border)" : undefined,
             padding: isMobile ? "8px 12px" : "10px 16px",
             minWidth: 0,
           }}
@@ -571,9 +532,9 @@ function CalendarView({ patterns }: { patterns: RecurringPattern[] }) {
   return (
     <div>
       <HStack align="baseline" justify="between" marginBottom={10}>
-        <div style={{ ...mono, fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8 }}>
+        <Text as="div" mono size={10} weight={700} upper letterSpacing="0.1em">
           {today.toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase()} — PAYMENT CALENDAR
-        </div>
+        </Text>
         {monthTotal > 0 && (
           <div style={{ ...mono, fontSize: 10, color: "var(--ft-red)" }}>
             <span className="pnum">{formatBaseMoney(monthTotal)}</span> due this month
@@ -641,11 +602,11 @@ function TrendStrip({ txs }: { txs: Tx[] }) {
     <div style={{
       display: "grid",
       gridTemplateColumns: "auto 1fr",
-      gap: 1,
-      marginBottom: 16,
-      background: "var(--ft-border)",
+      marginBottom: 6,
+      border: "1px solid var(--ft-border)",
+      background: "var(--ft-surface)",
     }}>
-      <div style={{ background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-cyan)", padding: "8px 14px" }}>
+      <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "8px 14px" }}>
         <div style={{ ...labelStyle, marginBottom: 2 }}>Recurring Spend Trend</div>
       </div>
       <div style={{ background: "var(--ft-surface)", padding: "8px 14px", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
@@ -836,11 +797,8 @@ function AutoDetected({
   const in7d = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
 
   return (
-    <div style={card}>
-      <SectionHeader
-        title="AUTO-DETECTED RECURRING TRANSACTIONS"
-        sub="Matched by description + interval + amount within ±10% · Confidence scored 0–100"
-        right={
+    <div style={{ ...card, padding: 0 }}>
+      <PanelHeader right={
           <HStack gap={4}>
             {(["cards", "calendar", "category"] as const).map((m) => (
               <button
@@ -859,8 +817,8 @@ function AutoDetected({
               </button>
             ))}
           </HStack>
-        }
-      />
+        }>AUTO-DETECTED RECURRING TRANSACTIONS <Text as="span" mono size={10} color="var(--ft-muted)">Matched by description + interval + amount within ±10% · Confidence scored 0–100</Text></PanelHeader>
+      <div style={{ padding: 20 }}>
 
       {viewMode === "calendar" && (
         <div style={{ marginBottom: 8 }}>
@@ -946,6 +904,7 @@ function AutoDetected({
           )}
         </>
       )}
+      </div>
     </div>
   );
 }
@@ -1185,12 +1144,8 @@ function ManualRules({
   const CATEGORIES = ["Subscriptions", "Utilities", "Insurance", "Transport", "Food & Drink", "Health", "Entertainment", "Education", "Other"];
 
   return (
-    <div style={card}>
-      <SectionHeader
-        title="MANUAL RULES"
-        sub="Define rules to auto-categorize transactions by description keyword"
-        accentColor="var(--ft-cyan)"
-        right={
+    <div style={{ ...card, padding: 0 }}>
+      <PanelHeader right={
           rules.length > 0 ? (
             <button
               onClick={() => exportRulesCSV(rules, allTxs)}
@@ -1199,8 +1154,8 @@ function ManualRules({
               ↓ CSV
             </button>
           ) : undefined
-        }
-      />
+        }>MANUAL RULES <Text as="span" mono size={10} color="var(--ft-muted)">Define rules to auto-categorize transactions by description keyword</Text></PanelHeader>
+      <div style={{ padding: 20 }}>
 
       {/* Add form */}
       <div className="ft-filter-bar" style={{
@@ -1371,6 +1326,7 @@ function ManualRules({
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -1465,12 +1421,9 @@ function ApplyRules({
   };
 
   return (
-    <div style={card}>
-      <SectionHeader
-        title="APPLY RULES"
-        sub="Preview and apply active rules to un-categorized transactions"
-        accentColor="var(--ft-green)"
-      />
+    <div style={{ ...card, padding: 0 }}>
+      <PanelHeader>APPLY RULES <Text as="span" mono size={10} color="var(--ft-muted)">Preview and apply active rules to un-categorized transactions</Text></PanelHeader>
+      <div style={{ padding: 20 }}>
 
       <HStack gap={10} align="start" wrap marginBottom={16}>
         <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", alignSelf: "center" }}>
@@ -1538,6 +1491,7 @@ function ApplyRules({
           — ALL TRANSACTIONS CATEGORIZED — no active rules match uncategorized transactions
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -1639,7 +1593,7 @@ export default function RecurringPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
