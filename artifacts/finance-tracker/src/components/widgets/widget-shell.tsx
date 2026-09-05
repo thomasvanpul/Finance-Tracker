@@ -44,7 +44,7 @@ export function WidgetShell({
       {/* Header — hairline rule always; raised background only in customize mode */}
       <div style={{
         padding: "0 12px",
-        height: 34,
+        height: "var(--ft-panel-header-h)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -55,13 +55,9 @@ export function WidgetShell({
           background: "var(--ft-raised)",
         }),
       }}>
-        <span style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color: "var(--ft-text)",
+        {/* Same .ft-panel-label as every PanelHeader, so the dashboard and
+            the pages share one title face rather than two near-misses. */}
+        <span className="ft-panel-label" style={{
           minWidth: 0,
           overflow: "hidden",
           textOverflow: "ellipsis",

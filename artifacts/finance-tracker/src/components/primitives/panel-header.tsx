@@ -1,31 +1,47 @@
 import type { ReactNode } from "react";
 
 // ── PanelHeader ─────────────────────────────────────────────────────────────
-// Mono uppercase panel title strip. Fixed padding, border-bottom, tone.
-// No `style?` escape hatch — was here for symmetry with PanelBox, no caller
-// ever passed one, removed to make the CLAUDE.md primitives rule hold.
+// The one section header. It sits INSIDE the panel frame as the frame's
+// internal rule, never floating above unframed content. Fixed height from
+// --ft-panel-header-h (density-aware), 12px title from .ft-panel-label, a
+// hairline below, and an optional right-hand slot for controls.
+//
+// No accent dot, no coloured stripe, no raised background: the frame around
+// the panel is what says "this is one object", and a 3px accent border is
+// the single most cited AI-design tell. Where an accent carried meaning it
+// belongs on the label text or a leading glyph passed in as children.
+//
+// No `style?` escape hatch — see the primitives rule in CLAUDE.md.
 
 interface PanelHeaderProps {
   children: ReactNode;
+  right?: ReactNode;
   className?: string;
 }
 
-export function PanelHeader({ children, className }: PanelHeaderProps) {
+export function PanelHeader({ children, right, className }: PanelHeaderProps) {
   return (
     <div
       className={className}
       style={{
-        padding: "var(--ft-cell-py) var(--ft-cell-px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+        minHeight: "var(--ft-panel-header-h)",
+        padding: "0 12px",
         borderBottom: "1px solid var(--ft-border)",
-        fontFamily: "var(--font-mono)",
-        fontSize: 9,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase" as const,
-        color: "var(--ft-dim)",
         transition: "var(--ft-theme-transition)",
       }}
     >
-      {children}
+      <span className="ft-panel-label" style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 6 }}>
+        {children}
+      </span>
+      {right !== undefined && right !== null && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {right}
+        </div>
+      )}
     </div>
   );
 }
