@@ -77,7 +77,7 @@ import {
   Line,
   ReferenceLine,
 } from "recharts";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 type Currency =
   | "GBP"
@@ -576,7 +576,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
           display: "flex",
           alignItems: "center",
           gap: 12,
-          marginBottom: 16,
+          marginBottom: 6,
           paddingBottom: 10,
           borderBottom: "1px solid var(--ft-raised)",
         }}
@@ -600,10 +600,9 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
         </span>
       </div>
 
-      <div className="ft-four-col" style={{ display: "grid", gap: 20 }}>
+      <div className="ft-four-col" style={{ display: "grid", gap: 6 }}>
         {/* Col 1: Balance history */}
-        <div>
-          <div style={sectionLabel}>Net Worth History</div>
+        <Panel title="Net Worth History" padding="10px 12px">
           {nwHistory.length === 0 ? (
             <div
               style={{
@@ -665,13 +664,10 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
               </AreaChart>
             </ResponsiveContainer>
           )}
-        </div>
+        </Panel>
 
         {/* Col 2: Monthly spending breakdown */}
-        <div>
-          <div style={sectionLabel}>
-            Spending This Month
-          </div>
+        <Panel title="Spending This Month" padding="10px 12px">
           {loadingMonthly ? (
             <div style={{ fontSize: 10, color: "var(--ft-dim)" }}>Loading…</div>
           ) : categorySpend.length === 0 ? (
@@ -697,11 +693,10 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
         {/* Col 3: Recent transactions */}
-        <div>
-          <div style={sectionLabel}>Recent Transactions</div>
+        <Panel title="Recent Transactions" padding="10px 12px">
           {loadingMonthly ? (
             <Text as="div" size={10} color="var(--ft-dim)">Loading…</Text>
           ) : recentTxs.length === 0 ? (
@@ -722,7 +717,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
         {/* Col 4: Notes, target balance, APY */}
         {(() => {
@@ -753,6 +748,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
           };
 
           return (
+            <PanelBox padding="10px 12px">
             <VStack gap={14}>
               {/* Notes */}
               <div>
@@ -903,6 +899,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
                 )}
               </div>
             </VStack>
+            </PanelBox>
           );
         })()}
       </div>
@@ -1110,7 +1107,6 @@ function OnboardingStep({ step, title, desc, action, onClick, color }: Onboardin
     <div
       style={{
         border: `1px solid ${color}33`,
-        borderRadius: 3,
         padding: "16px 18px",
         background: hov ? `${color}12` : `${color}08`,
         transition: "background 0.1s",
@@ -1245,9 +1241,11 @@ interface KpiCellProps {
   accent: string;
   icon: React.ReactNode;
   isFinancial?: boolean;
+  /** Last cell in its row: no right hairline, the frame closes it. */
+  isLast?: boolean;
 }
 
-function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false }: KpiCellProps) {
+function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false, isLast = false }: KpiCellProps) {
   // The `accent` prop is deliberately ignored (renamed `_accent`).
   // Rainbow per-cell colour was decoration; per docs/MOBILE-CONCEPT.md
   // § Desktop port, colour is semantic or absent. Icon renders in
@@ -1266,6 +1264,8 @@ function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false
         flexDirection: "column",
         gap: 4,
         minWidth: 0,
+        borderRight: isLast ? undefined : "1px solid var(--ft-border)",
+        borderBottom: "1px solid var(--ft-border)",
       }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -1414,7 +1414,6 @@ function AccountTableRow({
             flex: 1,
             padding: isMobile ? "10px 12px" : "7px 12px",
             borderRight: "1px solid var(--ft-raised)",
-            borderLeft: account.isWiseLinked ? "3px solid var(--ft-blue)" : "3px solid var(--ft-accent)",
           }}
         >
           {isMobile ? (
@@ -2035,7 +2034,7 @@ export default function Accounts() {
   );
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
+    <div className="space-y-1.5 animate-in fade-in duration-300">
       <PageHeader
         icon={Wallet}
         title="Accounts"
@@ -2158,8 +2157,8 @@ export default function Accounts() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ color: "var(--ft-accent)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>·</span>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ color, fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>·</span>
             <span className="pnum">{msg}</span>
           </div>
         );
@@ -2270,12 +2269,12 @@ export default function Accounts() {
         }).sort((a, b) => (b.total ?? -Infinity) - (a.total ?? -Infinity));
 
         return (
-          <div style={{ border: "1px solid var(--ft-border)" }}>
-            {/* KPI row — border-as-gap grid */}
-            <div className="ft-scroll-x" style={{ borderBottom: "1px solid var(--ft-border)", minWidth: 0 }}>
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            {/* KPI row — each cell carries its own right/bottom hairline */}
+            <div className="ft-scroll-x" style={{ minWidth: 0 }}>
               <div
                 className="ft-acct-metrics-row"
-                style={{ display: "grid", gap: 1, background: "var(--ft-border)", gridTemplateColumns: "repeat(4, 1fr)" }}
+                style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}
               >
               <KpiCell
                 label="Total Cash"
@@ -2326,6 +2325,7 @@ export default function Accounts() {
                 sub={mostRecentAccount ? `last txn ${mostRecentAccount.lastTxDate}` : "no transactions"}
                 accent="var(--ft-blue)"
                 icon={<Landmark className="w-3.5 h-3.5" />}
+                isLast
               />
               </div>
             </div>
@@ -2382,10 +2382,10 @@ export default function Accounts() {
             )}
 
             {/* Accounts KPI second row */}
-            <div className="ft-scroll-x" style={{ borderBottom: "1px solid var(--ft-border)", minWidth: 0 }}>
+            <div className="ft-scroll-x" style={{ minWidth: 0 }}>
               <div
                 className="ft-acct-metrics-row"
-                style={{ display: "grid", gap: 1, background: "var(--ft-border)", gridTemplateColumns: "repeat(3, 1fr)" }}
+                style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}
               >
               <KpiCell
                 label="Accounts"
@@ -2407,6 +2407,7 @@ export default function Accounts() {
                 sub={accounts!.filter((a) => !a.lastSyncedAt).length > 0 ? `${accounts!.filter((a) => !a.lastSyncedAt).length} manual` : "all synced"}
                 accent="var(--ft-amber)"
                 icon={<RefreshCw className="w-3.5 h-3.5" />}
+                isLast
               />
               </div>
             </div>
@@ -2578,22 +2579,9 @@ export default function Accounts() {
       )}
 
       {/* Accounts spreadsheet table */}
-      <div className="border" style={{ borderColor: "var(--ft-border)" }}>
-        {/* Section title — no controls, never wraps */}
-        <div
-          className="px-3 py-1.5 text-xs font-bold border-b"
-          style={{
-            background: "var(--ft-green)22",
-            borderColor: "var(--ft-green)44",
-            borderLeft: "3px solid var(--ft-green)",
-            color: "var(--ft-green)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          ▼ CASH ACCOUNTS — Multi-Currency ({baseCurrency} Base)
-        </div>
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        {/* Section title — no controls */}
+        <PanelHeader>CASH ACCOUNTS — Multi-Currency ({baseCurrency} Base)</PanelHeader>
         {/* Filter bar — separate row, wraps fine */}
         <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", flexWrap: "wrap" }}>
           <input
@@ -2934,13 +2922,20 @@ export default function Accounts() {
       {/* ── FX Rates Strip ───────────────────────────────────────── */}
       {fxRates && (
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-          <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(34,211,238,0.05)", borderColor: "rgba(34,211,238,0.18)", borderLeft: "3px solid var(--ft-cyan)", color: "var(--ft-cyan)", overflow: "hidden" }}>
-            <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap" }}>▼ FX RATES — Live · GBP Base</span>
-            <span style={{ marginLeft: 8, flexShrink: 0, fontSize: 9, fontWeight: 400, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
-              {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-            </span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 1, background: "var(--ft-border)" }}>
+          <PanelHeader
+            right={
+              <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">
+                {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+              </Text>
+            }
+          >
+            FX RATES — Live · GBP Base
+          </PanelHeader>
+          {/* Every FxRateCell carries its own right + bottom hairline; the
+              grid wraps at auto-fill so "last in row" is unknowable here.
+              The -1px margins put the outermost cell rules on the panel
+              frame instead of doubling it. */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", marginRight: -1, marginBottom: -1 }}>
             {Object.entries(fxRates.rates ?? {})
               .filter(([ccy]) => ["USD", "EUR", "MYR", "JPY", "CNY", "AUD", "SGD", "HKD", "CAD", "CHF", "INR", "THB"].includes(ccy))
               .sort(([a], [b]) => {
@@ -2956,12 +2951,10 @@ export default function Accounts() {
       )}
 
       {/* ── Cash Flow + Category Grid ─────────────────────────────── */}
-      <div className="ft-two-col" style={{ display: "grid", gap: 0, border: "1px solid var(--ft-border)" }}>
+      <div className="ft-two-col" style={{ display: "grid", gap: 0, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
         {/* Monthly Cash Flow Chart */}
         <div style={{ borderRight: "1px solid var(--ft-border)", minWidth: 0 }}>
-          <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(34,197,94,0.05)", borderColor: "rgba(34,197,94,0.2)", borderLeft: "3px solid var(--ft-green)", color: "var(--ft-green)", overflow: "hidden", whiteSpace: "nowrap" }}>
-            ▼ MONTHLY CASH FLOW — Last 6 Months
-          </div>
+          <PanelHeader>MONTHLY CASH FLOW — Last 6 Months</PanelHeader>
           {monthlyFlow.length === 0 ? (
             <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
               NO TRANSACTION HISTORY — <Text as="span" size={10} color="var(--ft-accent)">import or add transactions to begin</Text>
@@ -3002,12 +2995,10 @@ export default function Accounts() {
 
         {/* This Month Summary */}
         <div style={{ minWidth: 0 }}>
-          <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(245,158,11,0.05)", borderColor: "rgba(245,158,11,0.2)", borderLeft: "3px solid var(--ft-amber)", color: "var(--ft-amber)", overflow: "hidden", whiteSpace: "nowrap" }}>
-            ▼ THIS MONTH — {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase()}
-          </div>
+          <PanelHeader>THIS MONTH — {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase()}</PanelHeader>
           {monthlySummary ? (
             <VStack gap={10} padding="12px 16px">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                 <MonthlySummaryCell label="INCOME" value={formatBaseMoney(monthlySummary.totalIncome)} color="var(--ft-green)" />
                 <MonthlySummaryCell label="EXPENSES" value={formatBaseMoney(monthlySummary.totalExpenses)} color="var(--ft-red)" />
                 <MonthlySummaryCell label="NET SAVINGS" value={formatBaseMoney(monthlySummary.netSavings)} color={monthlySummary.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)"} />
@@ -3088,12 +3079,9 @@ function CurrencyConverter({ fxRates, baseCurrency }: { fxRates: Record<string, 
       <datalist id="ft-ccy-list">
         {allCurrencies.map((c) => <option key={c} value={c} />)}
       </datalist>
-      <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "rgba(96,165,250,0.05)", borderColor: "rgba(96,165,250,0.2)", borderLeft: "3px solid var(--ft-blue)", color: "var(--ft-blue)", overflow: "hidden", whiteSpace: "nowrap" }}>
-        ▼ CURRENCY CONVERTER
-        <span style={{ marginLeft: 8, flexShrink: 0, fontSize: 9, fontWeight: 400, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
-          — type any currency code
-        </span>
-      </div>
+      <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">— type any currency code</Text>}>
+        CURRENCY CONVERTER
+      </PanelHeader>
       <HStack gap={10} align="center" wrap padding="14px 16px">
         <input
           type="number"

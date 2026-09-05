@@ -16,7 +16,7 @@ import {
 // ─── annotation storage ──────────────────────────────────────────────────────
 
 // Helpers, constants, and types extracted to analytics-helpers.ts
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import {
   loadAnnotations, saveAnnotations,
   DOW_LABELS, MONTH_SHORT,
@@ -51,32 +51,12 @@ const ftLabel: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
-const ftPanelLabel: React.CSSProperties = {
-  ...mono,
-  fontSize: 10,
-  fontWeight: 500,
-  color: "var(--ft-muted)",
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-};
-
-// Terminal panel header style
-const panelHeaderStyle: React.CSSProperties = {
-  background: "var(--ft-raised)",
-  borderBottom: "1px solid var(--ft-border)",
-  padding: "0 12px",
-  height: "var(--ft-panel-header-h)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  flexShrink: 0,
-};
-
-// Terminal panel wrapper
+// Terminal panel wrapper — the frame. The header inside it is the shared
+// PanelHeader primitive (components/primitives/panel-header.tsx).
 const panelStyle: React.CSSProperties = {
   background: "var(--ft-surface)",
   border: "1px solid var(--ft-border)",
-  marginBottom: 8,
+  marginBottom: 6,
 };
 
 const th: React.CSSProperties = {
@@ -102,19 +82,6 @@ const td: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
-// Section header with accent dot
-function PanelHeader({ title, right }: { title: string; right?: React.ReactNode }) {
-  return (
-    <div style={{ ...panelHeaderStyle, flexWrap: "wrap", gap: "4px 8px", height: "auto", minHeight: "var(--ft-panel-header-h)", paddingTop: 4, paddingBottom: 4 }}>
-      <HStack gap={6} align="center">
-        <Text as="span" mono size={12} color="var(--ft-accent)" lineHeight={1}>·</Text>
-        <span style={ftPanelLabel}>{title}</span>
-      </HStack>
-      {right && <HStack gap={4} align="center" wrap>{right}</HStack>}
-    </div>
-  );
-}
-
 // Not-enough-data empty state that keeps the panel's chrome visible so a new
 // user can still see the capability. Never render numbers, bars, rows or dates
 // in this slot — the whole point is to replace fabricated content with an
@@ -122,7 +89,7 @@ function PanelHeader({ title, right }: { title: string; right?: React.ReactNode 
 function PanelEmpty({ title, message }: { title: string; message: string }) {
   return (
     <div style={panelStyle}>
-      <PanelHeader title={title} />
+      <PanelHeader>{title}</PanelHeader>
       <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.02em", lineHeight: 1.6 }}>
         {message}
       </div>
@@ -177,9 +144,11 @@ interface AnalyticsKpiCellProps {
   delta?: React.ReactNode;
   valueColor?: string;
   accentColor?: string;
+  /** Last cell in its row: no right hairline, the strip frame closes it. */
+  isLast?: boolean;
 }
 
-function AnalyticsKpiCell({ label, value, delta, valueColor, accentColor: _accentColor }: AnalyticsKpiCellProps) {
+function AnalyticsKpiCell({ label, value, delta, valueColor, accentColor: _accentColor, isLast = false }: AnalyticsKpiCellProps) {
   // accentColor was a decorative rainbow stripe (per-cell red/amber/blue/
   // muted). CLAUDE.md § Anti-Vibe Constitution bans "rainbow ratings" —
   // colour is not encoding rank, so drop the prop's effect and let the
@@ -193,7 +162,7 @@ function AnalyticsKpiCell({ label, value, delta, valueColor, accentColor: _accen
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
         padding: isMobile ? "8px 10px" : "var(--ft-metric-py) 12px",
-        borderTop: "1px solid var(--ft-border)",
+        borderRight: isLast ? undefined : "1px solid var(--ft-border)",
         minWidth: 0,
       }}
       onMouseEnter={() => setHov(true)}
@@ -548,43 +517,31 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
           // via flexShrink:0.
         }}
       >
-        <div
-          style={{
-            borderBottom: "1px solid var(--ft-border)",
-            padding: "0 16px",
-            height: "var(--ft-panel-header-h)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            flexShrink: 0,
-            background: "var(--ft-raised)",
-          }}
+        <PanelHeader
+          right={
+            <HStack gap={12} align="center">
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+                {rangedExpenses.length} tx · <span className="pnum">{formatBaseMoney(totalForCategory)}</span>
+              </span>
+              <button
+                onClick={onClose}
+                style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 18, lineHeight: 1, padding: "2px 4px", flexShrink: 0 }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-text)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+                aria-label="Close drawer"
+              >
+                ×
+              </button>
+            </HStack>
+          }
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Text as="span" mono size={12} color="var(--ft-accent)">·</Text>
-            <div>
-              <div style={{ ...ftLabel, marginBottom: 1 }}>Category</div>
-              <Text as="div" mono upper size={12} weight={700} color="var(--ft-accent)" letterSpacing="0.06em">
-                {category ?? ""}
-              </Text>
-            </div>
+          <div>
+            <div style={{ ...ftLabel, marginBottom: 1 }}>Category</div>
+            <Text as="div" mono upper size={12} weight={700} color="var(--ft-text)" letterSpacing="0.06em">
+              {category ?? ""}
+            </Text>
           </div>
-          <HStack gap={12} align="center">
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
-              {rangedExpenses.length} tx · <span className="pnum">{formatBaseMoney(totalForCategory)}</span>
-            </span>
-            <button
-              onClick={onClose}
-              style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 18, lineHeight: 1, padding: "2px 4px", flexShrink: 0 }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--ft-text)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ft-dim)"; }}
-              aria-label="Close drawer"
-            >
-              ×
-            </button>
-          </HStack>
-        </div>
+        </PanelHeader>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
           {rangedExpenses.length === 0 ? (
@@ -655,6 +612,7 @@ function RangeSelector({ value, onChange }: { value: Range; onChange: (r: Range)
 // ─── Page-level KPI Bar ───────────────────────────────────────────────────────
 
 function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: Tx[]; range: Range }) {
+  const isMobile = useIsMobile();
   const now = new Date();
   const thisM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const prevDate = new Date(now); prevDate.setMonth(prevDate.getMonth() - 1);
@@ -754,17 +712,21 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
   return (
     <div
       className="ft-kpi-bar"
-      style={{ display: "grid", gap: 1, background: "var(--ft-border)", gridTemplateColumns: `repeat(${cells.length}, 1fr)`, borderBottom: "1px solid var(--ft-border)", marginBottom: 8 }}
+      style={{ display: "grid", gridTemplateColumns: `repeat(${cells.length}, 1fr)`, marginBottom: 6 }}
     >
-      {cells.map((c) => (
-        <AnalyticsKpiCell
-          key={c.label}
-          label={c.label}
-          value={c.value}
-          delta={c.delta}
-          valueColor={c.valueColor}
-        />
-      ))}
+      {cells.map((c, i) => {
+        const cols = isMobile ? 3 : cells.length;
+        return (
+          <AnalyticsKpiCell
+            key={c.label}
+            label={c.label}
+            value={c.value}
+            delta={c.delta}
+            valueColor={c.valueColor}
+            isLast={(i + 1) % cols === 0 || i === cells.length - 1}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -810,20 +772,24 @@ function KpiStrip({ expenses, range, onRangeChange }: { expenses: Tx[]; range: R
   ];
 
   return (
-    <div style={{ ...panelStyle, marginBottom: 8 }}>
-      <PanelHeader title="Spend Summary" right={<RangeSelector value={range} onChange={onRangeChange} />} />
+    <div style={panelStyle}>
+      <PanelHeader right={<RangeSelector value={range} onChange={onRangeChange} />}>Spend Summary</PanelHeader>
       <div
         className="ft-kpi-bar"
-        style={{ display: "grid", gap: 1, background: "var(--ft-border)", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : `repeat(${tiles.length}, 1fr)` }}
+        style={{ display: "grid", border: "none", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : `repeat(${tiles.length}, 1fr)` }}
       >
-        {tiles.map((t) => (
-          <AnalyticsKpiCell
-            key={t.label}
-            label={t.label}
-            value={t.value}
-            delta={t.sub}
-          />
-        ))}
+        {tiles.map((t, i) => {
+          const cols = isMobile ? 3 : tiles.length;
+          return (
+            <AnalyticsKpiCell
+              key={t.label}
+              label={t.label}
+              value={t.value}
+              delta={t.sub}
+              isLast={(i + 1) % cols === 0 || i === tiles.length - 1}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -866,7 +832,6 @@ function SpendingVelocity({ allExpenses, budgetTotal, range, onRangeChange }: {
   return (
     <div style={panelStyle}>
       <PanelHeader
-        title="Spending Velocity"
         right={
           <HStack gap={10} align="center">
             <HStack gap={4} align="center">
@@ -878,7 +843,9 @@ function SpendingVelocity({ allExpenses, budgetTotal, range, onRangeChange }: {
             <RangeSelector value={range} onChange={onRangeChange} />
           </HStack>
         }
-      />
+      >
+        Spending Velocity
+      </PanelHeader>
       <div style={{ padding: "8px 0 8px 0" }}>
         <ResponsiveContainer width="100%" height={180}>
           <ComposedChart data={data} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
@@ -965,9 +932,9 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
     .slice(-4);
 
   return (
-    <div className="ft-chart-sidebar" style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: 8, marginBottom: 8 }}>
+    <div className="ft-chart-sidebar" style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: 6, marginBottom: 6 }}>
       <div style={panelStyle}>
-        <PanelHeader title="Income vs Expense" />
+        <PanelHeader>Income vs Expense</PanelHeader>
         <div style={{ padding: "8px 0 4px 0" }}>
           <ResponsiveContainer width="100%" height={160}>
             <ComposedChart data={bars} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
@@ -1069,7 +1036,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
 
       {/* This Month split panel */}
       <div style={{ ...panelStyle, marginBottom: 0, display: "flex", flexDirection: "column" }}>
-        <PanelHeader title="This Month Split" />
+        <PanelHeader>This Month Split</PanelHeader>
         <VStack align="center" justify="center" padding="12px 8px" grow>
           <div style={{ position: "relative", width: 140, height: 140 }}>
             <PieChart width={140} height={140}>
@@ -1162,9 +1129,10 @@ function CategoryIntelligence({ expenses, range, onCategoryClick }: CategoryInte
   return (
     <div style={panelStyle}>
       <PanelHeader
-        title="Category Intelligence"
         right={<>{sortBtn("total","Total")} {sortBtn("count","Count")} {sortBtn("change","Change")}</>}
-      />
+      >
+        Category Intelligence
+      </PanelHeader>
       <div style={{ overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
@@ -1275,7 +1243,6 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader
-        title={`Daily Spend Heatmap · ${CAL_MONTH_NAMES[m]} ${y}`}
         right={
           <HStack gap={4} align="center">
             <button onClick={() => navigateMonth(-1)}
@@ -1289,7 +1256,9 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
               onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-muted)"; }}>›</button>
           </HStack>
         }
-      />
+      >
+        {`Daily Spend Heatmap · ${CAL_MONTH_NAMES[m]} ${y}`}
+      </PanelHeader>
       <div style={{ padding: "8px 12px" }}>
         <div className="ft-scroll-x" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         {/* Day-of-week headers */}
@@ -1417,7 +1386,7 @@ function SpendingHeatmap({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={{ ...panelStyle, marginBottom: 0 }}>
-      <PanelHeader title="Spending Pattern · Day × Week" />
+      <PanelHeader>Spending Pattern · Day × Week</PanelHeader>
       <div style={{ overflowX: "auto", padding: "0 0 4px 0" }}>
         <table style={{ borderCollapse: "collapse", minWidth: 360 }}>
           <thead>
@@ -1482,7 +1451,7 @@ function DayOfWeekPatterns({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={{ ...panelStyle, marginBottom: 0 }}>
-      <PanelHeader title="Spend by Day of Week" />
+      <PanelHeader>Spend by Day of Week</PanelHeader>
       <div style={{ padding: "4px 0" }}>
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
@@ -1533,7 +1502,7 @@ function TopMerchants({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Top Merchants / Payees" />
+      <PanelHeader>Top Merchants / Payees</PanelHeader>
       {merchants.length === 0 ? (
         <div style={{ ...ftLabel, textAlign: "center", padding: "20px 0" }}>No expense data yet</div>
       ) : (
@@ -1573,7 +1542,7 @@ function MonthDayPattern({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Month Day Spending Pattern" />
+      <PanelHeader>Month Day Spending Pattern</PanelHeader>
       <div style={{ padding: "4px 0" }}>
         <ResponsiveContainer width="100%" height={130}>
           <BarChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
@@ -1602,7 +1571,7 @@ function BiggestTransactions({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={{ ...panelStyle, marginBottom: 0 }}>
-      <PanelHeader title="Biggest Transactions · All Time" />
+      <PanelHeader>Biggest Transactions · All Time</PanelHeader>
       <div style={{ overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
@@ -1646,7 +1615,7 @@ function RecurringVsOneOff({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={{ ...panelStyle, marginBottom: 0 }}>
-      <PanelHeader title="Recurring vs One-Off" />
+      <PanelHeader>Recurring vs One-Off</PanelHeader>
       <div style={{ padding: "10px 12px" }}>
         <HStack justify="between" marginBottom={5}>
           <span style={{ ...mono, fontSize: 11, color: "var(--ft-amber)" }}>Recurring <span className="pnum">{formatBaseMoney(recurring)}</span> (<span className="pnum">{recPct}%</span>)</span>
@@ -1701,9 +1670,9 @@ function IncomeSourceBreakdown({ allTxs }: { allTxs: Tx[] }) {
   if (categories.length === 0) return null;
 
   return (
-    <div className="ft-chart-sidebar" style={{ display: "grid", gridTemplateColumns: "1fr 220px", gap: 8, marginBottom: 8 }}>
+    <div className="ft-chart-sidebar" style={{ display: "grid", gridTemplateColumns: "1fr 220px", gap: 6, marginBottom: 6 }}>
       <div style={panelStyle}>
-        <PanelHeader title="Income Sources" />
+        <PanelHeader>Income Sources</PanelHeader>
         <div style={{ padding: "8px 12px" }}>
           {categories.slice(0, 10).map((c, i) => (
             <IncomeSourceRow
@@ -1718,7 +1687,7 @@ function IncomeSourceBreakdown({ allTxs }: { allTxs: Tx[] }) {
         </div>
       </div>
       <div style={panelStyle}>
-        <PanelHeader title="Income Share" />
+        <PanelHeader>Income Share</PanelHeader>
         <VStack align="center" justify="center" padding="8px 0">
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
@@ -1759,7 +1728,6 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader
-        title="Savings Rate Trend (12 months)"
         right={
           <HStack gap={8} align="center">
             {latestRate !== null && (
@@ -1773,7 +1741,9 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
             </HStack>
           </HStack>
         }
-      />
+      >
+        Savings Rate Trend (12 months)
+      </PanelHeader>
       <div style={{ padding: "8px 0 4px 0" }}>
         <ResponsiveContainer width="100%" height={160}>
           <ComposedChart data={data} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
@@ -1880,13 +1850,14 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader
-        title="Spending Volatility (σ)"
         right={
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: cvColor, letterSpacing: "0.08em" }}>
             CV {cv}% · {cvLabel}
           </span>
         }
-      />
+      >
+        Spending Volatility (σ)
+      </PanelHeader>
       <VStack gap={12} padding="10px 14px">
         {/* Mini bar chart — 12-month spend bars */}
         <HStack gap={3} align="end" height={56}>
@@ -1904,9 +1875,9 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
           })}
         </HStack>
         {/* Stats row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
-          {([["MEAN/MO", formatBaseMoney(mean), "var(--ft-text)"], ["STD DEV (σ)", formatBaseMoney(sigma), cvColor], ["COEFF VAR", `${cv}%`, cvColor]] as [string, string, string][]).map(([lbl, val, col]) => (
-            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", border: "1px solid var(--ft-border)" }}>
+          {([["MEAN/MO", formatBaseMoney(mean), "var(--ft-text)"], ["STD DEV (σ)", formatBaseMoney(sigma), cvColor], ["COEFF VAR", `${cv}%`, cvColor]] as [string, string, string][]).map(([lbl, val, col], i) => (
+            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 10px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{val}</div>
             </div>
@@ -1968,14 +1939,16 @@ function IncomeStability({ allTxs }: { allTxs: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Income Stability (12 months)"
+      <PanelHeader
         right={
           <HStack gap={8} align="center">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>CV {cv}%</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: stabilityColor, border: `1px solid ${stabilityColor}44`, padding: "2px 7px", letterSpacing: "0.07em" }}>{stabilityLabel}</span>
           </HStack>
         }
-      />
+      >
+        Income Stability (12 months)
+      </PanelHeader>
       <VStack gap={10} padding="10px 14px">
         {/* 12M income bar chart */}
         <HStack gap={3} align="end" height={64}>
@@ -1999,14 +1972,14 @@ function IncomeStability({ allTxs }: { allTxs: Tx[] }) {
           avg <span className="pnum">{formatBaseMoney(mean)}</span>/mo
         </div>
         {/* Stats grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
           {([
             ["BEST MONTH",  bestM  ? `${bestM.label} ${formatBaseMoney(bestM.total)}`   : "—", "var(--ft-green)"],
             ["WORST MONTH", worstM ? `${worstM.label} ${formatBaseMoney(worstM.total)}` : "—", "var(--ft-amber)"],
             ["STAB (CV)",   `${cv}%`,                                                     stabilityColor  ],
             ["MoM CHANGE",  latestMom != null ? `${latestMom > 0 ? "+" : ""}${latestMom}%` : "—", latestMom != null && latestMom > 0 ? "var(--ft-green)" : latestMom != null ? "var(--ft-red)" : "var(--ft-dim)"],
-          ] as [string, string, string][]).map(([lbl, val, col]) => (
-            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px" }}>
+          ] as [string, string, string][]).map(([lbl, val, col], i) => (
+            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px", borderRight: i < 3 ? "1px solid var(--ft-border)" : undefined }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{val}</div>
             </div>
@@ -2041,9 +2014,11 @@ function SeasonalityIndex({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Spending Seasonality (12M Index)"
+      <PanelHeader
         right={<span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>100 = monthly average · <span className="pnum">{formatBaseMoney(mean)}</span>/mo</span>}
-      />
+      >
+        Spending Seasonality (12M Index)
+      </PanelHeader>
       <VStack gap={10} padding="10px 14px">
         {/* Index bar chart */}
         <HStack gap={3} align="end" height={60}>
@@ -2139,7 +2114,7 @@ function CategoryMomentum({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Category Momentum (MoM Δ)" />
+      <PanelHeader>Category Momentum (MoM Δ)</PanelHeader>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -2232,13 +2207,14 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
   return (
     <div style={panelStyle}>
       <PanelHeader
-        title="Cash Flow Waterfall"
         right={
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: savingsColor, fontWeight: 700, letterSpacing: "0.06em" }}>
             {savingsRate >= 0 ? "+" : ""}{savingsRate.toFixed(0)}% saved · this month
           </span>
         }
-      />
+      >
+        Cash Flow Waterfall
+      </PanelHeader>
       <div style={{ paddingBottom: 4 }}>
         {rows.map((row, i) => {
           const isFirst = i === 0;
@@ -2332,13 +2308,14 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader
-        title="Category Benchmark · UK Avg"
         right={
           <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
             ONS Family Spending 2022/23 · 3-month avg
           </Text>
         }
-      />
+      >
+        Category Benchmark · UK Avg
+      </PanelHeader>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
@@ -2457,13 +2434,14 @@ function SpendingAnomalies({ expenses }: { expenses: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader
-        title="Spending Anomalies"
         right={
           <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
             vs 3-month category baseline · current month
           </Text>
         }
-      />
+      >
+        Spending Anomalies
+      </PanelHeader>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
@@ -2530,16 +2508,19 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Monthly Net Delta · 6M" right={
+      <PanelHeader right={
         <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">income vs expenses · monthly delta</Text>
-      } />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 1, background: "var(--ft-border)", margin: "0 0 1px" }}>
-        {data.map((d) => {
+      }
+      >
+        Monthly Net Delta · 6M
+      </PanelHeader>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)" }}>
+        {data.map((d, i) => {
           const incH  = maxVal > 0 ? Math.round((d.income   / maxVal) * 80) : 0;
           const expH  = maxVal > 0 ? Math.round((d.expenses / maxVal) * 80) : 0;
           const pos   = d.saved >= 0;
           return (
-            <div key={d.month} style={{ background: "var(--ft-surface)", padding: "10px 10px 8px", display: "flex", flexDirection: "column", gap: 4 }}>
+            <div key={d.month} style={{ background: "var(--ft-surface)", padding: "10px 10px 8px", display: "flex", flexDirection: "column", gap: 4, borderRight: i < data.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>{d.month}</div>
               <HStack gap={3} align="end" height={80}>
                 <VStack justify="end" grow>
@@ -2613,9 +2594,12 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Category Forecast · Next Month" right={
+      <PanelHeader right={
         <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">weighted 3-month trend projection</Text>
-      } />
+      }
+      >
+        Category Forecast · Next Month
+      </PanelHeader>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
@@ -2694,9 +2678,12 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Transaction Size Distribution" right={
+      <PanelHeader right={
         <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">all-time expenses · count histogram</Text>
-      } />
+      }
+      >
+        Transaction Size Distribution
+      </PanelHeader>
       <VStack gap={6} padding="12px 16px 4px">
         {data.map((d, i) => {
           const barW = maxCount > 0 ? (d.count / maxCount) * 100 : 0;
@@ -2777,7 +2764,7 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Weekly Spending Pulse" />
+      <PanelHeader>Weekly Spending Pulse</PanelHeader>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
         {[
           { label: "This Week", value: thisWeek, delta: wowChange, show: true },
@@ -2889,7 +2876,6 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
   return (
     <div style={panelStyle}>
       <PanelHeader
-        title="Subscription Tracker"
         right={
           <HStack gap={10} align="baseline">
             <span className="pnum" style={{ ...mono, fontSize: 12, fontWeight: 700, color: "var(--ft-red)" }}>
@@ -2898,7 +2884,9 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
             <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}><span className="pnum">{formatBaseMoney(totalAnnual)}</span>/yr</span>
           </HStack>
         }
-      />
+      >
+        Subscription Tracker
+      </PanelHeader>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -2999,9 +2987,12 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Financial Runway" right={
+      <PanelHeader right={
         <span style={{ ...mono, fontSize: 9, padding: "2px 7px", border: `1px solid ${runwayStatusColor}`, color: runwayStatusColor, letterSpacing: "0.06em" }}>{runwayStatus}</span>
-      } />
+      }
+      >
+        Financial Runway
+      </PanelHeader>
       <div style={{ padding: "12px 14px", display: "grid", gridTemplateColumns: "minmax(140px, auto) 1fr", gap: "12px 28px", alignItems: "start" }} className="ft-two-col-auto">
         {/* Left: key metrics */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 140 }}>
@@ -3110,7 +3101,7 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Savings Projection" right={
+      <PanelHeader right={
         <HStack gap={8} align="center">
           <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>Return:</span>
           {[3, 5, 7, 10].map(r => (
@@ -3119,7 +3110,10 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
             </button>
           ))}
         </HStack>
-      } />
+      }
+      >
+        Savings Projection
+      </PanelHeader>
       <VStack gap={10} padding="10px 14px">
         <HStack gap={20} align="baseline">
           <div>
@@ -3204,9 +3198,12 @@ function PaycheckAllocation({ allTxs }: { allTxs: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="Paycheck Allocation" right={
+      <PanelHeader right={
         <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>per <span className="pnum">£{totalIncome.toFixed(0)}</span> monthly income</span>
-      } />
+      }
+      >
+        Paycheck Allocation
+      </PanelHeader>
       <div style={{ padding: "10px 14px" }}>
         {/* Stacked bar */}
         <div style={{ display: "flex", height: 14, marginBottom: 12, overflow: "hidden" }}>
@@ -3298,7 +3295,7 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
 
   return (
     <div style={panelStyle}>
-      <PanelHeader title="FIRE Tracker" />
+      <PanelHeader>FIRE Tracker</PanelHeader>
       <VStack gap={16} padding={isMobile ? "14px 12px" : "16px 16px"}>
 
         {/* Progress arc + FI number */}
@@ -3327,14 +3324,14 @@ function FireTracker({ allTxs }: { allTxs: Tx[] }) {
           </VStack>
 
           {/* Key metrics grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", border: "1px solid var(--ft-border)" }}>
             {[
               { label: "FI Number (25× annual)", value: formatBaseMoney(displayFI), color: "var(--ft-accent)" },
               { label: "Current Net Worth", value: formatBaseMoney(displayNW), color: "var(--ft-text)" },
               { label: "Monthly Spend", value: `${formatBaseMoney(displayMonthlyBurn)}/mo`, color: "var(--ft-red)" },
               { label: "Monthly Savings", value: `${formatBaseMoney(displayContrib)}/mo`, color: "var(--ft-green)" },
-            ].map(cell => (
-              <div key={cell.label} style={{ background: "var(--ft-surface)", padding: "10px 12px" }}>
+            ].map((cell, i) => (
+              <div key={cell.label} style={{ background: "var(--ft-surface)", padding: "10px 12px", borderRight: i % 2 === 0 ? "1px solid var(--ft-border)" : undefined, borderBottom: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
                 <div style={{ ...ftLabel, marginBottom: 3, fontSize: 8 }}>{cell.label}</div>
                 <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: cell.color }}>{cell.value}</div>
               </div>
@@ -3392,9 +3389,9 @@ export default function Analytics() {
     return (
       <VStack gap={0}>
         {/* KPI Bar skeleton */}
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 8 }}>
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", marginBottom: 6 }}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} style={{ padding: "10px 12px", background: "var(--ft-surface)" }}>
+            <div key={i} style={{ padding: "10px 12px", background: "var(--ft-surface)", borderRight: i < 5 ? "1px solid var(--ft-border)" : undefined }}>
               <FtSkeleton width="60%" height={9} />
               <div style={{ marginTop: 6 }}><FtSkeleton width="85%" height={16} /></div>
               <div style={{ marginTop: 4 }}><FtSkeleton width="40%" height={9} /></div>
@@ -3404,9 +3401,9 @@ export default function Analytics() {
         {/* Panel skeletons */}
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} style={{ ...panelStyle }}>
-            <div style={panelHeaderStyle}>
+            <PanelHeader>
               <FtSkeleton width={160} height={10} />
-            </div>
+            </PanelHeader>
             <div style={{ padding: "12px" }}>
               <FtSkeleton width="100%" height={120} />
             </div>
@@ -3439,7 +3436,6 @@ export default function Analytics() {
             fontFamily: "var(--font-mono)",
             fontSize: 10,
             color: "var(--ft-dim)",
-            borderLeft: `2px solid ${color}`,
             borderBottom: "1px solid var(--ft-border)",
             background: "var(--ft-surface)",
             padding: "6px 14px",
@@ -3473,7 +3469,7 @@ export default function Analytics() {
           gap: 0,
           overflowX: "auto",
           scrollbarWidth: "none" as const,
-          marginBottom: 8,
+          marginBottom: 6,
         }}
       >
         {tabs.map((tab) => (
@@ -3519,7 +3515,7 @@ export default function Analytics() {
 
       {/* ── Mobile range selector row (hidden on desktop) ── */}
       {isMobile && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
           <RangeSelector value={range} onChange={setRange} />
         </div>
       )}
@@ -3552,7 +3548,7 @@ export default function Analytics() {
           <TopMerchants expenses={expenses} />
           <CategoryBenchmark expenses={expenses} />
           <SpendingAnomalies expenses={expenses} />
-          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
             <BiggestTransactions expenses={expenses} />
             <RecurringVsOneOff expenses={expenses} />
           </div>
@@ -3563,7 +3559,7 @@ export default function Analytics() {
       {/* ── Tab: Patterns ── */}
       {activeTab === "patterns" && (
         <>
-          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+          <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
             <SpendingHeatmap expenses={expenses} />
             <DayOfWeekPatterns expenses={expenses} />
           </div>
