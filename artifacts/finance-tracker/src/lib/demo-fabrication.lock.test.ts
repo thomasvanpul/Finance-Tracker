@@ -184,7 +184,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/primitives/block-field.tsx", line: 162, reason: "grid-row count for hero/no-hero layout" },
   { path: "artifacts/finance-tracker/src/components/theme-effects.tsx", line: 960, reason: "line stroke width (2.5px thick or 1.2px thin)" },
   { path: "artifacts/finance-tracker/src/components/widgets/budget-tracker.tsx", line: 133, reason: "grid column count: expanded=3, collapsed=2" },
-  { path: "artifacts/finance-tracker/src/pages/recurring.tsx", line: 271, reason: "grid column count for the KPI strip: phone=2, desktop=4 — drives the borderRight column rules, not a figure" },
+  { path: "artifacts/finance-tracker/src/pages/recurring.tsx", line: 181, reason: "grid column count for the KPI strip: phone=2, desktop=4 — drives the borderRight column rules, not a figure" },
   { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 1325, reason: "grid column count for the KPI strip: phone=2, desktop=5 — drives the borderRight column rules, not a figure" },
   { path: "artifacts/finance-tracker/src/components/widgets/cash-flow.tsx", line: 142, reason: "chart height in px (220 expanded or 150 collapsed)" },
   { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 131, reason: "row cap: 30 expanded or 15 collapsed" },

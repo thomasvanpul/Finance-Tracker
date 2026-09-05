@@ -3,6 +3,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryClient } from "@tanstack/react-query";
 import { useListTransactions, useUpdateTransaction, getListTransactionsQueryKey } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
+import { detectRecurring, type RecurringPattern } from "@/lib/recurring-detect";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
@@ -21,19 +22,6 @@ interface Tx {
   nativeAmount: number;
   currency: string;
   accountId: number;
-}
-
-interface RecurringPattern {
-  id: string;
-  merchantName: string;
-  estimatedAmount: number;
-  frequency: string;
-  lastOccurrence: string;
-  nextEstimated: string | null;
-  occurrences: number;
-  category: string;
-  intervalDays: number;
-  confidence: number; // 0–100
 }
 
 interface RecurringRule {
@@ -120,84 +108,6 @@ function loadRules(): RecurringRule[] {
 
 function saveRules(rules: RecurringRule[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rules));
-}
-
-function detectRecurring(txs: Tx[]): RecurringPattern[] {
-  const groups: Record<string, Tx[]> = {};
-  for (const tx of txs) {
-    if (tx.type !== "expense") continue;
-    const key = tx.description.trim().toLowerCase();
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(tx);
-  }
-
-  const patterns: RecurringPattern[] = [];
-
-  for (const [key, items] of Object.entries(groups)) {
-    if (items.length < 2) continue;
-
-    const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
-
-    const intervals: number[] = [];
-    for (let i = 1; i < sorted.length; i++) {
-      const prev = new Date(sorted[i - 1].date).getTime();
-      const curr = new Date(sorted[i].date).getTime();
-      intervals.push(Math.round((curr - prev) / 86_400_000));
-    }
-
-    const avgInterval = intervals.reduce((s, v) => s + v, 0) / intervals.length;
-    const stdDev = Math.sqrt(
-      intervals.reduce((s, v) => s + Math.pow(v - avgInterval, 2), 0) / intervals.length
-    );
-    const intervalConsistency = avgInterval > 0 ? Math.max(0, 1 - stdDev / avgInterval) : 0;
-
-    let frequency = "";
-    if (avgInterval >= 5 && avgInterval <= 9) frequency = "weekly";
-    else if (avgInterval >= 25 && avgInterval <= 35) frequency = "monthly";
-    else if (avgInterval >= 85 && avgInterval <= 95) frequency = "quarterly";
-    else if (avgInterval >= 355 && avgInterval <= 375) frequency = "yearly";
-    else if (items.length >= 3) frequency = `~${Math.round(avgInterval)}d`;
-
-    if (!frequency) continue;
-
-    const amounts = sorted.map((t) => t.baseEquivalent);
-    const avgAmt = amounts.reduce((s, v) => s + v, 0) / amounts.length;
-    const withinTolerance = amounts.every(
-      (a) => Math.abs(a - avgAmt) / avgAmt <= 0.1
-    );
-    if (!withinTolerance) continue;
-
-    const amountVariance = amounts.reduce((s, a) => s + Math.abs(a - avgAmt) / avgAmt, 0) / amounts.length;
-    const amountConsistency = Math.max(0, 1 - amountVariance / 0.1);
-
-    const occurrenceScore = Math.min(1, (items.length - 1) / 5);
-
-    const confidence = Math.round(
-      (intervalConsistency * 0.4 + amountConsistency * 0.4 + occurrenceScore * 0.2) * 100
-    );
-
-    const lastDate = new Date(sorted[sorted.length - 1].date);
-    let nextEstimated: string | null = null;
-    if (!isNaN(lastDate.getTime())) {
-      const next = new Date(lastDate.getTime() + avgInterval * 86_400_000);
-      nextEstimated = next.toISOString().slice(0, 10);
-    }
-
-    patterns.push({
-      id: `rec-${key.slice(0, 20)}`,
-      merchantName: sorted[0].description,
-      estimatedAmount: Math.round(avgAmt * 100) / 100,
-      frequency,
-      lastOccurrence: sorted[sorted.length - 1].date,
-      nextEstimated,
-      occurrences: items.length,
-      category: sorted[sorted.length - 1].category || "",
-      intervalDays: Math.round(avgInterval),
-      confidence,
-    });
-  }
-
-  return patterns.sort((a, b) => b.estimatedAmount - a.estimatedAmount);
 }
 
 // ─── KPI bar ─────────────────────────────────────────────────────────────────
@@ -584,8 +494,8 @@ function TrendStrip({ txs }: { txs: Tx[] }) {
     for (const tx of txs) {
       if (tx.type !== "expense") continue;
       const yr = parseInt(tx.date.slice(0, 4), 10);
-      if (yr === cy) thisYear += tx.baseEquivalent;
-      else if (yr === ly) lastYear += tx.baseEquivalent;
+      if (yr === cy) thisYear += Math.abs(tx.baseEquivalent);
+      else if (yr === ly) lastYear += Math.abs(tx.baseEquivalent);
     }
     const delta = thisYear - lastYear;
     const pct = lastYear > 0 ? (delta / lastYear) * 100 : null;
@@ -643,7 +553,9 @@ interface ConfidenceBadgeProps {
   score: number;
 }
 
-function ConfidenceBadge({ score }: ConfidenceBadgeProps) {
+function ConfidenceBadge({ score: rawScore }: ConfidenceBadgeProps) {
+  // Clamp at the render as a second line; the detector is where the fix lives.
+  const score = Math.min(100, Math.max(0, rawScore));
   const color =
     score >= 80 ? "var(--ft-green)" :
     score >= 50 ? "var(--ft-amber)" : "var(--ft-red)";
@@ -715,7 +627,7 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
         <div style={{ flex: 1, height: 2, background: "var(--ft-border)" }}>
           <div style={{
             height: "100%",
-            width: `${p.confidence}%`,
+            width: `${Math.min(100, Math.max(0, p.confidence))}%`,
             background: p.confidence >= 80 ? "var(--ft-green)" : p.confidence >= 50 ? "var(--ft-amber)" : "var(--ft-red)",
           }} />
         </div>
