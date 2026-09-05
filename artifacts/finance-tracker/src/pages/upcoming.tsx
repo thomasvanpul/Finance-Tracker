@@ -125,12 +125,10 @@ function computeForecast(
 
 function SummaryKpiCell({
   label,
-  accentColor,
   children,
   borderRight = true,
 }: {
   label: string;
-  accentColor: string;
   children: React.ReactNode;
   borderRight?: boolean;
 }) {
@@ -138,7 +136,6 @@ function SummaryKpiCell({
     <div style={{
       padding: "10px 14px",
       background: "var(--ft-surface)",
-      borderTop: `2px solid ${accentColor}`,
       borderRight: borderRight ? "1px solid var(--ft-border)" : undefined,
     }}>
       <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 4, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.4px" }}>{label}</div>
@@ -160,7 +157,6 @@ function ForecastKpiCell({
     <div style={{
       padding: "12px 14px",
       background: "var(--ft-surface)",
-      borderTop: `2px solid ${isPositive ? "var(--ft-green)" : "var(--ft-red)"}`,
       borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
     }}>
       <HStack gap={6} align="center" marginBottom={6}>
@@ -886,22 +882,22 @@ export default function Upcoming() {
       {/* Summary bar — border-as-gap grid */}
       {summary && (
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-          <SummaryKpiCell label="30d Outgoings" accentColor="var(--ft-red)">
+          <SummaryKpiCell label="30d Outgoings">
             <Text as="div" mono size={14} weight={700} color="var(--ft-red)" lineHeight={1}>
               <span className="pnum">-{formatBaseMoney(summary.committedOutgoings30d)}</span>
             </Text>
           </SummaryKpiCell>
-          <SummaryKpiCell label="30d Income" accentColor="var(--ft-green)">
+          <SummaryKpiCell label="30d Income">
             <Text as="div" mono size={14} weight={700} color="var(--ft-green)" lineHeight={1}>
               <span className="pnum">+{formatBaseMoney(summary.expectedIncome30d)}</span>
             </Text>
           </SummaryKpiCell>
-          <SummaryKpiCell label="30d Net" accentColor={isNet30Pos ? "var(--ft-green)" : "var(--ft-red)"}>
+          <SummaryKpiCell label="30d Net">
             <Text as="div" mono size={14} weight={700} color={isNet30Pos ? "var(--ft-green)" : "var(--ft-red)"} lineHeight={1}>
               <span className="pnum">{isNet30Pos ? "+" : ""}{formatBaseMoney(net30)}</span>
             </Text>
           </SummaryKpiCell>
-          <SummaryKpiCell label="Overdue" accentColor={overdueCount > 0 ? "var(--ft-red)" : "var(--ft-green)"} borderRight={false}>
+          <SummaryKpiCell label="Overdue" borderRight={false}>
             <HStack gap={6} align="center">
               {overdueCount > 0 ? (
                 <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-red)", lineHeight: 1 }}>

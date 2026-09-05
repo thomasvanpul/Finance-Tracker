@@ -1203,7 +1203,7 @@ export default function Subscriptions() {
 
       {/* ── Coming Up This Week ─────────────────────────────────────────────── */}
       {renewingThisWeek.length > 0 && (
-        <div style={{ border: "1px solid rgba(255,123,114,0.35)", borderTop: "2px solid var(--ft-red)", background: "rgba(255,123,114,0.04)" }}>
+        <div style={{ border: "1px solid rgba(255,123,114,0.35)", background: "rgba(255,123,114,0.04)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderBottom: "1px solid rgba(255,123,114,0.2)" }}>
             <Calendar size={12} style={{ color: "var(--ft-red)", flexShrink: 0 }} />
             <Text as="span" mono upper size={10} weight={700} color="var(--ft-red)" letterSpacing="0.08em">

@@ -489,7 +489,6 @@ function CashFlowPreviewPanel() {
     <div style={{
       background: "var(--ft-surface)",
       border: "1px solid var(--ft-border)",
-      borderTop: "2px solid var(--ft-cyan)",
       padding: "14px 16px",
     }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 12 }}>
@@ -569,7 +568,6 @@ function SpendingVelocityPanel() {
     <div style={{
       background: "var(--ft-surface)",
       border: "1px solid var(--ft-border)",
-      borderTop: `2px solid ${onTrack ? "var(--ft-green)" : "var(--ft-amber)"}`,
       padding: "14px 16px",
     }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 12 }}>

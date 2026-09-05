@@ -533,7 +533,6 @@ function ReceiptViewerModal({
             style={{
               background: "var(--ft-surface)",
               border: "1px solid var(--ft-border)",
-              borderTop: "2px solid var(--ft-id-6)",
               padding: "12px 14px",
               minWidth: 220,
               maxWidth: 300,
@@ -943,7 +942,6 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
       style={{
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border2)",
-        borderTop: "2px solid var(--ft-accent)",
         padding: "14px 16px",
         borderRadius: 2,
       }}
@@ -1718,7 +1716,6 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
       style={{
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
-        borderTop: "2px solid var(--ft-cyan)",
         borderRadius: 2,
         padding: "12px 14px",
       }}

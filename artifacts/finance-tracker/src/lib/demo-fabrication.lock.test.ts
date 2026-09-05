@@ -136,8 +136,8 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // Preview-mode UI state — theme-swatch preview, widget-carousel preview.
   // Not a data fabrication; the "preview" here is a controlled UI state
   // toggled by the user, and no financial value is invented.
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1507, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1509, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1505, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1507, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 746, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 747, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
@@ -187,7 +187,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/recurring.tsx", line: 271, reason: "grid column count for the KPI strip: phone=2, desktop=4 — drives the borderRight column rules, not a figure" },
   { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 1325, reason: "grid column count for the KPI strip: phone=2, desktop=5 — drives the borderRight column rules, not a figure" },
   { path: "artifacts/finance-tracker/src/components/widgets/cash-flow.tsx", line: 142, reason: "chart height in px (220 expanded or 150 collapsed)" },
-  { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 132, reason: "row cap: 30 expanded or 15 collapsed" },
+  { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 131, reason: "row cap: 30 expanded or 15 collapsed" },
   { path: "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx", line: 131, reason: "row cap: 8 expanded or 5 collapsed" },
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1559, reason: "border thickness (2px hi-value, 4px normal)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1240, reason: "chart bar width in px (38 mobile / 44 desktop)" },
@@ -195,8 +195,8 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 437, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 441, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 795, reason: "chart bar min height in px (4px)" },
-  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 512, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
-  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 513, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
+  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 508, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
+  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 509, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
 
   // Formatting / config defaults — decimal counts, period lengths.
   { path: "artifacts/finance-tracker/src/components/mobile/mobile-format.ts", line: 10, reason: "default decimals count (2) for nfmt when unspecified" },

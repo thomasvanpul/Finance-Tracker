@@ -97,7 +97,6 @@ function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
         padding: "8px 10px",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
         border: "1px solid var(--ft-border)",
-        borderTop: `2px solid ${color}`,
         transition: "background 0.1s",
       }}
     >

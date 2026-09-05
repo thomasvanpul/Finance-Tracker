@@ -386,8 +386,8 @@ function StrategyTab() {
           the "set a rate" CTA is visible before the user reads a strategy
           that excludes them. No interest is computed until they enter one. */}
       {debtsAwaitingApr.length > 0 && (
-        <PanelBox borderTop="2px solid var(--ft-amber)">
-          <PanelHeader>APR needed · {debtsAwaitingApr.length} debt{debtsAwaitingApr.length !== 1 ? "s" : ""} not in strategy</PanelHeader>
+        <PanelBox>
+          <PanelHeader><span style={{ color: "var(--ft-amber)" }}>APR needed · {debtsAwaitingApr.length} debt{debtsAwaitingApr.length !== 1 ? "s" : ""} not in strategy</span></PanelHeader>
           <div style={{ padding: "8px 14px 4px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6 }}>
             Enter each debt's annual interest rate to include it in the payoff strategy. We won't guess a default — interest cost depends entirely on the rate, and inventing one would misprice the payoff order.
           </div>
@@ -468,7 +468,7 @@ function StrategyTab() {
       {/* Summary strip */}
       {result && (
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-          <PanelBox borderTop="2px solid var(--ft-green)" padding="12px 14px">
+          <PanelBox padding="12px 14px">
             <MonoLabel mb={4}>Debt-free in</MonoLabel>
             <Text as="div" mono size={20} weight={700} color="var(--ft-green)" lineHeight={1}>
               {result.months}
@@ -479,7 +479,7 @@ function StrategyTab() {
             </div>
           </PanelBox>
 
-          <PanelBox borderTop="2px solid var(--ft-amber)" padding="12px 14px">
+          <PanelBox padding="12px 14px">
             <MonoLabel mb={4}>Total Interest</MonoLabel>
             <Text as="div" mono size={20} weight={700} color="var(--ft-amber)" lineHeight={1}>
               <span className="pnum">{formatBaseMoney(result.totalInterest)}</span>
@@ -489,7 +489,7 @@ function StrategyTab() {
             </div>
           </PanelBox>
 
-          <PanelBox borderTop={`2px solid ${savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)"}`} padding="12px 14px">
+          <PanelBox padding="12px 14px">
             <MonoLabel mb={4}>vs {mode === "snowball" ? "Avalanche" : "Snowball"}</MonoLabel>
             <Text as="div" mono size={20} weight={700} color={savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)"} lineHeight={1}>
               {savingsVsAlt >= 0 ? "saves " : "costs "}<span className="pnum">{formatBaseMoney(Math.abs(savingsVsAlt))}</span>
@@ -1101,10 +1101,7 @@ export default function Owing() {
       )}
 
       {/* ── Net balance hero ── */}
-      <PanelBox
-        borderTop={`3px solid ${netPosition !== 0 ? (netPosition >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-border2)"}`}
-        padding="16px 20px"
-      >
+      <PanelBox padding="16px 20px">
         <HStack wrap align="center" gap={24}>
         <div>
           <MonoLabel letterSpacing="0.1em" mb={6}>Net Position</MonoLabel>

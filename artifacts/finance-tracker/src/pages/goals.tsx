@@ -1523,7 +1523,7 @@ export default function Goals() {
 
       {/* ── Goals Summary Footer ── */}
       {goals.length > 0 && (
-        <PanelBox padding="14px 20px" borderTop="2px solid var(--ft-border2)"><HStack gap={16} align="center" justify="between" wrap marginTop={16}>
+        <PanelBox padding="14px 20px"><HStack gap={16} align="center" justify="between" wrap marginTop={16}>
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
               Portfolio Summary
