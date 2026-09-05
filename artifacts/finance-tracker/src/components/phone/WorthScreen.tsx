@@ -5,6 +5,8 @@ import {
 } from "@workspace/api-client-react";
 
 import { useBaseCurrency } from "@/lib/currency-store";
+import { useActivePersona } from "@/lib/persona-hook";
+import { worthSectionOrder } from "@/lib/persona-emphasis";
 import { formatBaseMoney, formatNative } from "@/lib/utils";
 
 import { PhoneEntityRow, deriveTone, deriveTonesForList } from "./PhoneEntityRow";
@@ -184,6 +186,7 @@ function computeCurrencyExposure(
 }
 
 export function WorthScreen() {
+  const persona = useActivePersona();
   const baseCurrency = useBaseCurrency();
   const {
     data: dashboard,
@@ -377,27 +380,36 @@ export function WorthScreen() {
 
         <InsightSlot insight={null} onDismiss={() => { /* no producers yet */ }} />
 
-        {cashAccounts.length > 0 && (
-          <AccountSection
-            label="CASH"
-            subtotal={cashSubtotal}
-            accounts={cashAccounts}
-            baseCurrency={baseCurrency}
-            tonesById={tonesById}
-            onTap={(a) => setDetailSubject({ kind: "account", account: a })}
-          />
-        )}
-
-        {(holdingAccounts.length > 0 || positions.length > 0) && (
-          <HoldingsSection
-            subtotal={holdingsSubtotal}
-            accounts={holdingAccounts}
-            positions={positions}
-            baseCurrency={baseCurrency}
-            tonesById={tonesById}
-            onTapAccount={(a) => setDetailSubject({ kind: "account", account: a })}
-            onTapPosition={(p) => setDetailSubject({ kind: "position", position: p })}
-          />
+        {/* Persona ordering (lib/persona-emphasis.ts): a markets persona
+            reads HOLDINGS first, everyone else CASH first. Same two
+            sections either way — order is the only thing that changes. */}
+        {worthSectionOrder(persona).map((section) =>
+          section === "cash" ? (
+            cashAccounts.length > 0 && (
+              <AccountSection
+                key="cash"
+                label="CASH"
+                subtotal={cashSubtotal}
+                accounts={cashAccounts}
+                baseCurrency={baseCurrency}
+                tonesById={tonesById}
+                onTap={(a) => setDetailSubject({ kind: "account", account: a })}
+              />
+            )
+          ) : (
+            (holdingAccounts.length > 0 || positions.length > 0) && (
+              <HoldingsSection
+                key="holdings"
+                subtotal={holdingsSubtotal}
+                accounts={holdingAccounts}
+                positions={positions}
+                baseCurrency={baseCurrency}
+                tonesById={tonesById}
+                onTapAccount={(a) => setDetailSubject({ kind: "account", account: a })}
+                onTapPosition={(p) => setDetailSubject({ kind: "position", position: p })}
+              />
+            )
+          ),
         )}
       </div>
 

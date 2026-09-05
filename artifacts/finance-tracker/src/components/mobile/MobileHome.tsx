@@ -14,6 +14,7 @@ import { MarketPane } from "./MarketPane";
 import { NewsPane } from "./NewsPane";
 import { loadPersonaIds, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
+import { homeSectionOrder } from "@/lib/persona-emphasis";
 import { InsightSlot } from "@/components/phone/InsightSlot";
 import {
   computeHoldings,
@@ -388,35 +389,45 @@ export function MobileHome(_props: MobileHomeProps) {
 
         <InsightSlot insight={currentInsight} onDismiss={handleDismissInsight} />
 
-        {/* Cashflow section — only when there is anything to plot */}
-        {txns.length > 0 && (
-          <>
-            <SectionHeader
-              label={`${monthName} · LIQUID`}
-              link="CASHFLOW ›"
-              onLink={() => navigate("/cashflow")}
-            />
-            <div style={{ padding: "0 18px" }}>
-              <CashflowChart
-                days={dailyBalances}
-                todayIndex={todayIndex}
-                lastDay={lastDayOfMonth}
-                low={monthLow}
-                monthShortMixed={monthShortMixed}
-              />
+        {/* Persona ordering (lib/persona-emphasis.ts): a markets persona
+            sees market movement above the cashflow chart, everyone else
+            the reverse. Both blocks render for every persona; only the
+            sequence changes. News travels with the markets pane. */}
+        {homeSectionOrder(persona).map((section) =>
+          section === "cashflow" ? (
+            /* Cashflow section — only when there is anything to plot */
+            txns.length > 0 && (
+              <div key="cashflow">
+                <SectionHeader
+                  label={`${monthName} · LIQUID`}
+                  link="CASHFLOW ›"
+                  onLink={() => navigate("/cashflow")}
+                />
+                <div style={{ padding: "0 18px" }}>
+                  <CashflowChart
+                    days={dailyBalances}
+                    todayIndex={todayIndex}
+                    lastDay={lastDayOfMonth}
+                    low={monthLow}
+                    monthShortMixed={monthShortMixed}
+                  />
+                </div>
+              </div>
+            )
+          ) : (
+            <div key="markets">
+              {/* Markets pane — the only element that differs tomorrow morning
+                  without the user doing anything. Scoped to holdings + implied
+                  FX pairs; renders nothing when the user has neither. */}
+              <MarketPane onOpenInvestments={() => navigate("/investments")} />
+
+              {/* F3 · news pane. All-or-nothing: header + list render
+                  together only when NewsPane has anchor-tied items to
+                  show. See components/mobile/NewsPane.tsx. */}
+              <NewsPane onOpenInvestments={() => navigate("/investments")} />
             </div>
-          </>
+          ),
         )}
-
-        {/* Markets pane — the only element that differs tomorrow morning
-            without the user doing anything. Scoped to holdings + implied
-            FX pairs; renders nothing when the user has neither. */}
-        <MarketPane onOpenInvestments={() => navigate("/investments")} />
-
-        {/* F3 · news pane. All-or-nothing: header + list render
-            together only when NewsPane has anchor-tied items to
-            show. See components/mobile/NewsPane.tsx. */}
-        <NewsPane onOpenInvestments={() => navigate("/investments")} />
 
         {/* Coming section */}
         <SectionHeader
