@@ -409,7 +409,8 @@ input[type="checkbox"]:checked {
 /* Column header style */
 .xls-col-header {
   background: var(--ft-surface);
-  border-bottom: 2px solid var(--ft-border2);
+  /* No per-cell rule: the header grid that contains these cells draws the
+     1px border2 rule. A 2px cell rule stacked on it read as 3px. */
   font-size: 10px;
   font-weight: 600;
   color: var(--ft-muted);
