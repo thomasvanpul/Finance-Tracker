@@ -1091,6 +1091,23 @@ export interface DeleteUserAccountResult {
   tables: DeleteUserAccountResultTables;
 }
 
+export type UserPreferencesPreferences = {[key: string]: string};
+
+export interface UserPreferences {
+  preferences: UserPreferencesPreferences;
+}
+
+export type UserPreferencesPatchPreferences = {[key: string]: string | null};
+
+export interface UserPreferencesPatch {
+  preferences: UserPreferencesPatchPreferences;
+}
+
+export interface UserPreferencesPatchResult {
+  updated: number;
+  removed: number;
+}
+
 /**
  * The user-chosen third position in the phone tab bar
 (HOME · WORTH · [slot] · DIRECTORY). null means no override:

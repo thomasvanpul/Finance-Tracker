@@ -78,6 +78,9 @@ import type {
   UpdateBudgetBody,
   UpdateGoalBody,
   UpdateSubscriptionBody,
+  UserPreferences,
+  UserPreferencesPatch,
+  UserPreferencesPatchResult,
   WiseStatus,
   WiseSyncResult
 } from './api.schemas';
@@ -4837,6 +4840,156 @@ export const useUpdateSettingsTheme = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateSettingsThemeMutationOptions(options));
+    }
+
+export const getGetSettingsPreferencesUrl = () => {
+
+
+
+
+  return `/api/settings/preferences`
+}
+
+/**
+ * Opaque string values keyed by the same names the client uses in localStorage (BACKLOG § G20/B). The server does not interpret them.
+ * @summary Every account-level UI preference for the current user
+ */
+export const getSettingsPreferences = async ( options?: RequestInit): Promise<UserPreferences> => {
+
+  return customFetch<UserPreferences>(getGetSettingsPreferencesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSettingsPreferencesQueryKey = () => {
+    return [
+    `/api/settings/preferences`
+    ] as const;
+    }
+
+
+export const getGetSettingsPreferencesQueryOptions = <TData = Awaited<ReturnType<typeof getSettingsPreferences>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSettingsPreferencesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSettingsPreferences>>> = ({ signal }) => getSettingsPreferences({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSettingsPreferences>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSettingsPreferencesQueryResult = NonNullable<Awaited<ReturnType<typeof getSettingsPreferences>>>
+export type GetSettingsPreferencesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Every account-level UI preference for the current user
+ */
+
+export function useGetSettingsPreferences<TData = Awaited<ReturnType<typeof getSettingsPreferences>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsPreferences>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSettingsPreferencesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateSettingsPreferencesUrl = () => {
+
+
+
+
+  return `/api/settings/preferences`
+}
+
+/**
+ * At most 50 keys per request; keys match ^[a-z][a-z0-9:_.-]{1,63}$; values are at most 262144 characters.
+ * @summary Upsert (string) or remove (null) account-level preferences
+ */
+export const updateSettingsPreferences = async (userPreferencesPatch: UserPreferencesPatch, options?: RequestInit): Promise<UserPreferencesPatchResult> => {
+
+  return customFetch<UserPreferencesPatchResult>(getUpdateSettingsPreferencesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      userPreferencesPatch,)
+  }
+);}
+
+
+
+
+export const getUpdateSettingsPreferencesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsPreferences>>, TError,{data: BodyType<UserPreferencesPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSettingsPreferences>>, TError,{data: BodyType<UserPreferencesPatch>}, TContext> => {
+
+const mutationKey = ['updateSettingsPreferences'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSettingsPreferences>>, {data: BodyType<UserPreferencesPatch>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateSettingsPreferences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSettingsPreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updateSettingsPreferences>>>
+    export type UpdateSettingsPreferencesMutationBody = BodyType<UserPreferencesPatch>
+    export type UpdateSettingsPreferencesMutationError = ErrorType<void>
+
+    /**
+ * @summary Upsert (string) or remove (null) account-level preferences
+ */
+export const useUpdateSettingsPreferences = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsPreferences>>, TError,{data: BodyType<UserPreferencesPatch>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSettingsPreferences>>,
+        TError,
+        {data: BodyType<UserPreferencesPatch>},
+        TContext
+      > => {
+      return useMutation(getUpdateSettingsPreferencesMutationOptions(options));
     }
 
 export const getGetSettingsTabSlotUrl = () => {

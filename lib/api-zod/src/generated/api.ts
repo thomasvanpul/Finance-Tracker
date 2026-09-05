@@ -1153,6 +1153,29 @@ export const UpdateSettingsThemeBody = zod.object({
 
 
 /**
+ * Opaque string values keyed by the same names the client uses in localStorage (BACKLOG § G20/B). The server does not interpret them.
+ * @summary Every account-level UI preference for the current user
+ */
+export const GetSettingsPreferencesResponse = zod.object({
+  "preferences": zod.record(zod.string(), zod.string())
+})
+
+
+/**
+ * At most 50 keys per request; keys match ^[a-z][a-z0-9:_.-]{1,63}$; values are at most 262144 characters.
+ * @summary Upsert (string) or remove (null) account-level preferences
+ */
+export const UpdateSettingsPreferencesBody = zod.object({
+  "preferences": zod.record(zod.string(), zod.string().nullable())
+})
+
+export const UpdateSettingsPreferencesResponse = zod.object({
+  "updated": zod.number(),
+  "removed": zod.number()
+})
+
+
+/**
  * @summary Get the current user's phone tab-slot override
  */
 export const GetSettingsTabSlotResponse = zod.object({

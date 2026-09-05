@@ -1211,6 +1211,43 @@ paths:
         "200":
           description: Updated
 
+  /settings/preferences:
+    get:
+      operationId: getSettingsPreferences
+      tags: [settings]
+      summary: Every account-level UI preference for the current user
+      description: >-
+        Opaque string values keyed by the same names the client uses in
+        localStorage (BACKLOG § G20/B). The server does not interpret them.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPreferences"
+    patch:
+      operationId: updateSettingsPreferences
+      tags: [settings]
+      summary: Upsert (string) or remove (null) account-level preferences
+      description: >-
+        At most 50 keys per request; keys match ^[a-z][a-z0-9:_.-]{1,63}$;
+        values are at most 262144 characters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPreferencesPatch"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPreferencesPatchResult"
+        "400":
+          description: Invalid key, value type, size, or too many keys
   /settings/tab-slot:
     get:
       operationId: getSettingsTabSlot
@@ -2267,6 +2304,30 @@ components:
             type: integer
           description: Rows removed per table (request_metrics_anonymised counts rows kept with the user id removed)
 
+    UserPreferences:
+      type: object
+      required: [preferences]
+      properties:
+        preferences:
+          type: object
+          additionalProperties:
+            type: string
+    UserPreferencesPatch:
+      type: object
+      required: [preferences]
+      properties:
+        preferences:
+          type: object
+          additionalProperties:
+            type: [string, "null"]
+    UserPreferencesPatchResult:
+      type: object
+      required: [updated, removed]
+      properties:
+        updated:
+          type: integer
+        removed:
+          type: integer
     TabSlotSettings:
       type: object
       required: [tabSlot]

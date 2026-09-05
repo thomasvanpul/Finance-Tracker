@@ -167,7 +167,15 @@ app.all("/api/auth/{*path}", (req, res, next) => {
   return next();
 }, toNodeHandler(auth));
 
-app.use(express.json());
+// One path takes a larger JSON body: PATCH /api/settings/preferences
+// receives a first-sign-in migration of every account-level localStorage
+// key (see routes/preferences.ts; the server-side cap is 50 keys × 256 KiB
+// per request). Everything else keeps the 100 KB default.
+const jsonDefault = express.json();
+const jsonPreferences = express.json({ limit: "4mb" });
+app.use((req, res, next) =>
+  (req.path === "/api/settings/preferences" ? jsonPreferences : jsonDefault)(req, res, next),
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
