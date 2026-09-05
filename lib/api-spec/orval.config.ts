@@ -2,8 +2,17 @@ import { defineConfig, InputTransformerFn } from "orval";
 import path from "path";
 
 const root = path.resolve(__dirname, "..", "..");
-const apiClientReactSrc = path.resolve(root, "lib", "api-client-react", "src");
-const apiZodSrc = path.resolve(root, "lib", "api-zod", "src");
+
+// ORVAL_OUT_ROOT redirects BOTH generated trees (and the mutator lookup)
+// to another root with the same lib/<pkg>/src layout. The generated-drift
+// lock (artifacts/api-server/src/routes/generated-drift.lock.test.ts)
+// regenerates into a temp root and diffs it against the committed output,
+// so a hand edit to lib/*/src/generated/** fails a test instead of living
+// on silently until the next real codegen wipes it. Unset, output lands in
+// the workspace exactly as before.
+const outRoot = process.env.ORVAL_OUT_ROOT ?? root;
+const apiClientReactSrc = path.resolve(outRoot, "lib", "api-client-react", "src");
+const apiZodSrc = path.resolve(outRoot, "lib", "api-zod", "src");
 
 // Our exports make assumptions about the title of the API being "Api" (i.e. generated output is `api.ts`).
 const titleTransformer: InputTransformerFn = (config) => {
