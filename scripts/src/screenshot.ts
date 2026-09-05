@@ -379,6 +379,17 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
   // match, so a tap-target or column-width claim can be a measurement
   // rather than a reading of the source. Same precedent as the env toggles
   // above: opt-in, no effect on the PNG.
+  // SCREENSHOT_SCROLL_TO='<css selector>' scrolls the first match into
+  // view before measuring and capturing. The app scrolls inside its own
+  // container, so fullPage:true never reaches below the first viewport;
+  // this is how a section further down a phone screen gets looked at.
+  const scrollTo = process.env.SCREENSHOT_SCROLL_TO ?? null;
+  if (scrollTo !== null) {
+    const found = await page.$eval(scrollTo, (el) => { el.scrollIntoView({ block: "start" }); return true; }).catch(() => false);
+    if (!found) console.log(`[scroll] ${route} ${scrollTo}: no match`);
+    await page.waitForTimeout(200);
+  }
+
   const measure = process.env.SCREENSHOT_MEASURE ?? null;
   if (measure !== null) {
     const boxes = await page.$$eval(measure, (els) => els.map((el) => {
