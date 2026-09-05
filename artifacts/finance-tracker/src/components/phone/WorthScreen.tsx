@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   useGetDashboard,
   useListInvestments,
+  useGetAccountsReconciliation,
 } from "@workspace/api-client-react";
 
 import { useBaseCurrency } from "@/lib/currency-store";
@@ -13,6 +14,9 @@ import { PhoneEntityRow, deriveTone, deriveTonesForList } from "./PhoneEntityRow
 import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 import { InsightSlot } from "./InsightSlot";
+import { reconciliationInsight } from "@/lib/reconciliation-insight";
+import { loadDismissedIds, dismissInsight } from "@/lib/spending-insights";
+import { QuickAddTransaction } from "@/components/quick-add-transaction";
 import { MobileEmptyState } from "@/components/mobile/mobile-ui";
 import { PhoneSectionError } from "@/components/mobile/mobile-ui";
 import { MobileSheet } from "@/components/mobile-sheet";
@@ -274,6 +278,21 @@ export function WorthScreen() {
   const [detailSubject, setDetailSubject] = useState<DetailSubject | null>(null);
   const [chartView, setChartView] = useState<ViewMode>("ring");
 
+  // Reconciliation gap — the one WORTH insight. Its data is a separate
+  // read so the balance sheet never waits on it; while it is loading or
+  // insufficient the slot stays empty (lib/reconciliation-insight.ts).
+  const { data: reconciliation } = useGetAccountsReconciliation();
+  const [addOpen, setAddOpen] = useState(false);
+  const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(() => loadDismissedIds());
+  const worthInsight = useMemo(() => {
+    const insight = reconciliationInsight(reconciliation, () => setAddOpen(true));
+    return insight != null && !dismissedInsights.has(insight.id) ? insight : null;
+  }, [reconciliation, dismissedInsights]);
+  const handleDismissInsight = (id: string) => {
+    dismissInsight(id);
+    setDismissedInsights((prev) => new Set([...prev, id]));
+  };
+
   const holdings = useMemo(() => computeHoldings(dashboard), [dashboard]);
   const bandsMonths: BandsMonth[] = useMemo(
     () =>
@@ -378,7 +397,7 @@ export function WorthScreen() {
           <CurrencySplit exposure={currencyExposure} baseCurrency={baseCurrency} />
         )}
 
-        <InsightSlot insight={null} onDismiss={() => { /* no producers yet */ }} />
+        <InsightSlot insight={worthInsight} onDismiss={handleDismissInsight} />
 
         {/* Persona ordering (lib/persona-emphasis.ts): a markets persona
             reads HOLDINGS first, everyone else CASH first. Same two
@@ -420,6 +439,7 @@ export function WorthScreen() {
           onClose={() => setDetailSubject(null)}
         />
       )}
+      <QuickAddTransaction open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
   );
 }

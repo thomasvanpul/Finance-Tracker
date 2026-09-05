@@ -78,6 +78,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { ReconciliationPanel } from "@/components/widgets/reconciliation-panel";
 
 type Currency =
   | "GBP"
@@ -2578,6 +2579,9 @@ export default function Accounts() {
           )}
         </div>
       )}
+
+      {/* Reconciliation gap — the reasoning behind the phone WORTH insight */}
+      <ReconciliationPanel />
 
       {/* Accounts spreadsheet table */}
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
