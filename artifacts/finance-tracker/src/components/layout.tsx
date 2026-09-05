@@ -1373,6 +1373,10 @@ export function Layout({ children }: LayoutProps) {
   const userEmail = session?.user?.email ?? "";
 
   const handleSignOut = async () => {
+    // Push any account-level preference still queued, then drop the
+    // account-level keys so the next person here starts clean.
+    const { clearAccountStorage } = await import("@/lib/account-storage");
+    await clearAccountStorage();
     await authClient.signOut();
     // Clear the native bearer token if we have one. No-op on web.
     // Without this a fresh sign-in on the same device inherits the

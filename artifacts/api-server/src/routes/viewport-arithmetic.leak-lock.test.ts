@@ -65,6 +65,12 @@ const EXEMPT_FILES: ReadonlySet<string> = new Set([
   // a flex column instead). File-level exemption because the sign-in
   // form's minHeight:100dvh is a legitimate page-root fill.
   "artifacts/finance-tracker/src/components/auth-gate.tsx",
+  // Sits between AuthGate and the shell (App.tsx: AuthGate →
+  // PreferencesGate → OnboardingGate). While it holds children for the
+  // one preferences round-trip there is no shell mounted above it, so
+  // the placeholder fills the viewport exactly as auth-gate's session
+  // placeholder does — same skeleton, same flex column.
+  "artifacts/finance-tracker/src/components/preferences-gate.tsx",
 ]);
 
 function walk(dir: string): string[] {

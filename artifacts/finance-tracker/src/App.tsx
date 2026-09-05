@@ -16,6 +16,7 @@ import { Onboarding } from "@/components/onboarding";
 import { isOnboardingComplete, LS_ONBOARDING_FOLLOWUP_KEY } from "@/lib/persona";
 import { hydratePersonaFromServer } from "@/lib/persona-sync";
 import { hydrateTabSlotFromServer } from "@/lib/tab-slot";
+import { PreferencesGate } from "@/components/preferences-gate";
 import NotFound from "@/pages/not-found";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PhoneShell } from "@/components/phone/PhoneShell";
@@ -286,6 +287,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <AuthGate>
+              <PreferencesGate>
               <OnboardingGate>
                 <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
                   <CurrencySync />
@@ -295,6 +297,7 @@ function App() {
                 </WouterRouter>
                 <Toaster />
               </OnboardingGate>
+              </PreferencesGate>
             </AuthGate>
           </TooltipProvider>
         </QueryClientProvider>

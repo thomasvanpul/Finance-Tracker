@@ -634,6 +634,8 @@ export default function Profile() {
     if (!deleteEmailMatches || deleteAccount.isPending) return;
     try {
       const result = await deleteAccount.mutateAsync({ data: { email: deleteEmail.trim() } });
+      const { discardAccountStorage } = await import("@/lib/account-storage");
+      discardAccountStorage();
       for (const key of Object.keys(localStorage)) {
         if (/^(ft-|nr-|numeris|ix-companion)/.test(key)) localStorage.removeItem(key);
       }
@@ -649,7 +651,9 @@ export default function Profile() {
     }
   }
 
-  function handleSignOut() {
+  async function handleSignOut() {
+    const { clearAccountStorage } = await import("@/lib/account-storage");
+    await clearAccountStorage();
     authClient.signOut().then(async () => {
       // Clear the native bearer token — no-op on web. See the same
       // pattern in components/layout.tsx.
