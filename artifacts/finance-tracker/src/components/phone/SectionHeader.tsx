@@ -41,8 +41,7 @@ export function SectionHeader({ label, right, tone = "default", icon }: SectionH
       style={{
         background: "var(--ft-raised)",
         borderBottom: "1px solid var(--ft-border)",
-        borderLeft: toneColour ? `3px solid ${toneColour}` : undefined,
-        paddingLeft: toneColour ? 10 : 12,
+        paddingLeft: 12,
         paddingRight: 12,
         minHeight: 34,
         display: "flex",
@@ -53,7 +52,7 @@ export function SectionHeader({ label, right, tone = "default", icon }: SectionH
         fontWeight: 600,
         letterSpacing: "0.08em",
         textTransform: "uppercase",
-        color: tone === "red" ? "var(--ft-red)" : "var(--ft-muted)",
+        color: toneColour ?? "var(--ft-muted)",
       }}
     >
       {icon}

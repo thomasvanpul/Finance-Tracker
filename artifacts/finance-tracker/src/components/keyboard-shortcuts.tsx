@@ -152,7 +152,6 @@ export function KeyboardShortcuts({ open, onClose }: Props) {
                 style={{
                   borderRight: "1px solid var(--ft-border)",
                   borderBottom: "1px solid var(--ft-border)",
-                  borderLeft: accent ? `3px solid ${accent}` : undefined,
                 }}
               >
                 <div style={{

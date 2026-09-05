@@ -633,7 +633,6 @@ function BudgetTableRow({
           gap: 0,
           background: rowBgM,
           borderBottom: "1px solid var(--ft-border2)",
-          borderLeft: isOver ? "3px solid var(--ft-red)" : `3px solid ${fillColor}`,
           padding: "9px 10px 9px 12px",
         }}
         onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = isOver ? "color-mix(in srgb, var(--ft-red) 10%, var(--ft-surface))" : "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"; }}
@@ -707,7 +706,6 @@ function BudgetTableRow({
         gridTemplateColumns: "1fr 100px 120px 70px 80px 90px 100px 120px 80px",
         background: rowBg,
         borderBottom: isOver ? "1px solid color-mix(in srgb, var(--ft-red) 25%, var(--ft-border2))" : "1px solid var(--ft-border2)",
-        borderLeft: isOver ? "3px solid var(--ft-red)" : `2px solid ${fillColor}`,
         minWidth: 800,
         alignItems: "center",
         transition: "background 0.12s ease",
