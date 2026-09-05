@@ -21,6 +21,7 @@ import connectionsRouter from "./connections";
 import enableBankingRouter from "./enable-banking";
 import sharedExpensesRouter from "./shared-expenses";
 import recurringRouter from "./recurring";
+import accountRouter from "./account";
 
 const router: IRouter = Router();
 
@@ -43,6 +44,7 @@ router.use(debtsRouter);
 router.use(sharedExpensesRouter);
 router.use(recurringRouter);
 router.use(settingsRouter);
+router.use(accountRouter);
 router.use(aiRouter);
 // Mount prefixes here are RELATIVE — this router is itself already
 // mounted at /api by app.ts, so writing "/api/digest" here would give

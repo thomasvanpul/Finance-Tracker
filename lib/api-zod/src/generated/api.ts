@@ -1091,6 +1091,20 @@ export const DownloadBackupResponse = zod.object({
 
 
 /**
+ * Irreversible. Removes the user row; every user-owned table cascades from it (accounts, transactions, upcoming, investments, debts, budgets, goals, subscriptions, connections and their encrypted credentials, snapshots, recurring patterns, shared expenses, sessions, passkeys, 2FA). Verification tokens are deleted by email; request metrics keep their timing rows with the user id removed. Rows in other users' data that named this user keep their text and lose the link. Third-party tokens (Wise, Alpaca, Kraken, OAuth grants) are destroyed here, not revoked at the provider. Confirmation is the account email, typed exactly.
+ * @summary Delete the signed-in user's account and everything they own
+ */
+export const DeleteUserAccountBody = zod.object({
+  "email": zod.string().describe('The account email, typed by the user as confirmation')
+})
+
+export const DeleteUserAccountResponse = zod.object({
+  "deletedRows": zod.number().describe('Rows removed across every table, the user row included'),
+  "tables": zod.record(zod.string(), zod.number()).describe('Rows removed per table (request_metrics_anonymised counts rows kept with the user id removed)')
+})
+
+
+/**
  * @summary Get the current base currency
  */
 export const GetSettingsCurrencyResponse = zod.object({

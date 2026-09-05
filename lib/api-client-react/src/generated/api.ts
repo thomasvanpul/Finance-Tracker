@@ -39,6 +39,8 @@ import type {
   DebtInput,
   DebtSummary,
   DebtUpdate,
+  DeleteUserAccountInput,
+  DeleteUserAccountResult,
   DismissSubscriptionBody,
   DownloadBackup200,
   ErrorResponse,
@@ -4320,6 +4322,78 @@ export function useDownloadBackup<TData = Awaited<ReturnType<typeof downloadBack
 
 
 
+
+export const getDeleteUserAccountUrl = () => {
+
+
+
+
+  return `/api/account/delete`
+}
+
+/**
+ * Irreversible. Removes the user row; every user-owned table cascades from it (accounts, transactions, upcoming, investments, debts, budgets, goals, subscriptions, connections and their encrypted credentials, snapshots, recurring patterns, shared expenses, sessions, passkeys, 2FA). Verification tokens are deleted by email; request metrics keep their timing rows with the user id removed. Rows in other users' data that named this user keep their text and lose the link. Third-party tokens (Wise, Alpaca, Kraken, OAuth grants) are destroyed here, not revoked at the provider. Confirmation is the account email, typed exactly.
+ * @summary Delete the signed-in user's account and everything they own
+ */
+export const deleteUserAccount = async (deleteUserAccountInput: DeleteUserAccountInput, options?: RequestInit): Promise<DeleteUserAccountResult> => {
+
+  return customFetch<DeleteUserAccountResult>(getDeleteUserAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deleteUserAccountInput,)
+  }
+);}
+
+
+
+
+export const getDeleteUserAccountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUserAccount>>, TError,{data: BodyType<DeleteUserAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteUserAccount>>, TError,{data: BodyType<DeleteUserAccountInput>}, TContext> => {
+
+const mutationKey = ['deleteUserAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteUserAccount>>, {data: BodyType<DeleteUserAccountInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  deleteUserAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteUserAccountMutationResult = NonNullable<Awaited<ReturnType<typeof deleteUserAccount>>>
+    export type DeleteUserAccountMutationBody = BodyType<DeleteUserAccountInput>
+    export type DeleteUserAccountMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete the signed-in user's account and everything they own
+ */
+export const useDeleteUserAccount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteUserAccount>>, TError,{data: BodyType<DeleteUserAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteUserAccount>>,
+        TError,
+        {data: BodyType<DeleteUserAccountInput>},
+        TContext
+      > => {
+      return useMutation(getDeleteUserAccountMutationOptions(options));
+    }
 
 export const getGetSettingsCurrencyUrl = () => {
 

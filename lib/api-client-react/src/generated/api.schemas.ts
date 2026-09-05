@@ -1074,6 +1074,23 @@ export interface ThemeSettings {
   theme: ThemeSettingsTheme;
 }
 
+export interface DeleteUserAccountInput {
+  /** The account email, typed by the user as confirmation */
+  email: string;
+}
+
+/**
+ * Rows removed per table (request_metrics_anonymised counts rows kept with the user id removed)
+ */
+export type DeleteUserAccountResultTables = {[key: string]: number};
+
+export interface DeleteUserAccountResult {
+  /** Rows removed across every table, the user row included */
+  deletedRows: number;
+  /** Rows removed per table (request_metrics_anonymised counts rows kept with the user id removed) */
+  tables: DeleteUserAccountResultTables;
+}
+
 /**
  * The user-chosen third position in the phone tab bar
 (HOME · WORTH · [slot] · DIRECTORY). null means no override:
