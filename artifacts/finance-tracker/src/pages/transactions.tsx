@@ -49,7 +49,7 @@ import { haptic } from "@/lib/haptics";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeDelete } from "@/hooks/use-swipe-delete";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 import {
   type TxType, type Currency, type TxForm, type TxFormErrors,
@@ -1255,7 +1255,7 @@ export default function Transactions() {
 
   if (isLoading || isSummaryLoading) {
     return (
-      <VStack gap="var(--ft-row-gap)">
+      <VStack gap={6}>
         {/* KPI bar skeleton */}
         <div className="ft-scroll-x">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", minWidth: 640 }}>
@@ -1286,8 +1286,8 @@ export default function Transactions() {
           </HStack>
         </div>
         {/* Table skeleton */}
-        <div>
-          <div style={{ display: "flex", height: 34, alignItems: "center", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", padding: "0 12px" }}>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <div style={{ display: "flex", minHeight: "var(--ft-panel-header-h)", alignItems: "center", borderBottom: "1px solid var(--ft-border)", padding: "0 12px" }}>
             <FtSkeleton width={160} height={10} />
           </div>
           {/* Column headers skeleton */}
@@ -1322,7 +1322,7 @@ export default function Transactions() {
 
   if (isError) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-1.5">
         <ErrorState message={(error as Error)?.message ?? "Could not load transactions. Check your connection and try again."} />
       </div>
     );
@@ -1627,10 +1627,9 @@ export default function Transactions() {
         style={{
           borderColor: "var(--ft-border)",
           background: selectedIds.has(tx.id) ? "color-mix(in srgb, var(--ft-blue) 8%, var(--ft-base))" : isKeyboardSelected ? "var(--ft-raised)" : hovered ? "var(--ft-raised)" : "var(--ft-surface)",
-          borderLeft: isKeyboardSelected ? "2px solid var(--ft-accent)" : selectedIds.has(tx.id) ? "2px solid var(--ft-accent)" : "2px solid transparent",
           opacity: pendingDeleteIds.has(tx.id) ? 0.4 : 1,
           textDecoration: pendingDeleteIds.has(tx.id) ? "line-through" : "none",
-          transition: isMobile ? "opacity 0.15s, background 0.1s, border-left-color 0.1s, transform 0.15s ease" : "opacity 0.15s, background 0.1s, border-left-color 0.1s",
+          transition: isMobile ? "opacity 0.15s, background 0.1s, transform 0.15s ease" : "opacity 0.15s, background 0.1s",
           ...(isMobile ? { transform: `translateX(${swipe.offset}px)` } : {}),
         }}
       >
@@ -1688,7 +1687,7 @@ export default function Transactions() {
         <div style={{ width: 90, minWidth: 90, flexShrink: 0, padding: indented ? "6px 10px 6px 20px" : "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
           {formatDate(tx.date)}
         </div>
-        <div style={{ flex: 1, minWidth: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ flex: 1, minWidth: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: isKeyboardSelected ? "var(--ft-accent)" : "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
             <PrivDesc>{tx.description}</PrivDesc>
           </span>
@@ -2005,7 +2004,7 @@ export default function Transactions() {
   const kpiDateTo = filtered.length > 0 ? filtered.reduce((a, b) => a.date > b.date ? a : b).date : null;
 
   return (
-    <VStack gap="var(--ft-row-gap)">
+    <VStack gap={6}>
       <CsvImportModal
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
@@ -2058,7 +2057,7 @@ export default function Transactions() {
           <DialogHeader><DialogTitle>Split Transaction</DialogTitle></DialogHeader>
           {splitTx && (
             <form onSubmit={handleSplitSubmit}>
-              <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, padding: "10px 14px", marginBottom: 16 }}>
+              <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: "10px 14px", marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: "var(--ft-dim)", marginBottom: 4 }}>ORIGINAL TRANSACTION</div>
                 <HStack align="center" justify="between">
                   <div>
@@ -2184,7 +2183,7 @@ export default function Transactions() {
       </Dialog>
 
       {/* ── KPI bar — Bloomberg-style 6-cell strip (desktop only) ── */}
-      <div className="ft-hide-mobile" style={{ borderBottom: "1px solid var(--ft-border)" }}>
+      <div className="ft-hide-mobile">
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)" }}>
           {/* TX COUNT */}
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
@@ -2295,7 +2294,7 @@ export default function Transactions() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", borderLeft: `2px solid ${color}`, padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -2312,15 +2311,12 @@ export default function Transactions() {
 
       {/* ── Mobile Wise-style summary strip ── */}
       {isMobile && (
-        <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
-          <div style={{ padding: "5px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <MonoLabel as="span" size={9} letterSpacing="0.10em">
-              {kpiDateFrom && kpiDateTo
-                ? kpiDateFrom === kpiDateTo ? kpiDateFrom : `${kpiDateFrom} → ${kpiDateTo}`
-                : "All Transactions"}
-            </MonoLabel>
-            <Text as="span" mono size={9} color="var(--ft-dim)">{filtered.length} TX</Text>
-          </div>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">{filtered.length} TX</Text>}>
+            {kpiDateFrom && kpiDateTo
+              ? kpiDateFrom === kpiDateTo ? kpiDateFrom : `${kpiDateFrom} → ${kpiDateTo}`
+              : "All Transactions"}
+          </PanelHeader>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
             <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>In</div>
@@ -2347,7 +2343,7 @@ export default function Transactions() {
       {/* ── Mobile filter bar: search + bottom-sheet for all filters ── */}
       {isMobile && (
         <>
-          <PanelBox padding="6px 10px" borderTop="none"><HStack gap={6} align="center">
+          <PanelBox padding="6px 10px"><HStack gap={6} align="center">
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 2, padding: "0 8px", height: 32 }}>
               <Search style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
               <input
@@ -2392,7 +2388,7 @@ export default function Transactions() {
             </select>
           </HStack></PanelBox>
           {activeFilterCount > 0 && (
-            <div style={{ display: "flex", gap: 6, padding: "5px 10px", flexWrap: "wrap" as const, borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 6, padding: "5px 10px", flexWrap: "wrap" as const, border: "1px solid var(--ft-border)", background: "var(--ft-surface)", alignItems: "center" }}>
               {filterType !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-blue) 15%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-blue) 40%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-blue)" }}>{filterType}</span>}
               {filterCategory !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-accent) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-accent)" }}>{filterCategory}</span>}
               {filterAccount !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-green) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-green) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>{filterAccount}</span>}
@@ -2486,7 +2482,7 @@ export default function Transactions() {
 
       {/* ── Desktop filter bar — compact single-row terminal style ── */}
       {!isMobile && (
-      <div>
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "0 10px" }}>
         {/* Single always-visible row */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0", flexWrap: "wrap" as const }}>
           {/* Search */}
@@ -2803,25 +2799,9 @@ export default function Transactions() {
       )}
 
       {/* ── Transaction ledger ──*/}
-      <div>
-        {/* Panel header — Bloomberg · SECTION NAME pattern */}
-        <div className="ft-panel-header">
-          <HStack gap={8} align="center">
-            <span className="ft-panel-label">
-              <span className="accent-dot">·</span>
-              TRANSACTION LEDGER
-            </span>
-            <Text as="span" mono size={10} color="var(--ft-dim)">
-              {hasFilters ? `${filtered.length} of ${transactions?.length ?? 0}` : `${filtered.length} entries`}
-            </Text>
-            {groupByMerchant && (
-              <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY MERCHANT</span>
-            )}
-            {groupByDay && !groupByMerchant && (
-              <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY DAY</span>
-            )}
-          </HStack>
-          {!isMobile && <HStack gap={4}>
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <PanelHeader right={isMobile ? undefined : (
+          <HStack gap={4}>
             <button
               type="button"
               onClick={() => { setGroupByDay((v) => !v); if (groupByMerchant) setGroupByMerchant(false); }}
@@ -2874,8 +2854,19 @@ export default function Transactions() {
             >
               PDF
             </button>
-          </HStack>}
-        </div>
+          </HStack>
+        )}>
+          Transaction Ledger
+          <Text as="span" mono size={10} color="var(--ft-dim)">
+            {hasFilters ? `${filtered.length} of ${transactions?.length ?? 0}` : `${filtered.length} entries`}
+          </Text>
+          {groupByMerchant && (
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY MERCHANT</span>
+          )}
+          {groupByDay && !groupByMerchant && (
+            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY DAY</span>
+          )}
+        </PanelHeader>
 
         <div
           className={isMobile ? undefined : "ft-scroll-x"}

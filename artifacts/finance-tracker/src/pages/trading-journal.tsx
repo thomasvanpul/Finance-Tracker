@@ -24,7 +24,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { formatBaseMoney } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -213,18 +213,7 @@ const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 const panel: React.CSSProperties = {
   background: "var(--ft-surface)",
   border: "1px solid var(--ft-border)",
-  marginBottom: 16,
-};
-
-const sectionHead: React.CSSProperties = {
-  ...mono,
-  fontSize: 9,
-  letterSpacing: "0.1em",
-  textTransform: "uppercase",
-  color: "var(--ft-dim)",
-  padding: "8px 16px",
-  borderBottom: "1px solid var(--ft-border)",
-  background: "var(--ft-base)",
+  marginBottom: 6,
 };
 
 const th: React.CSSProperties = {
@@ -390,6 +379,8 @@ function KpiCell({
         padding: "10px 14px",
         minWidth: 0,
         background: "var(--ft-surface)",
+        borderRight: "1px solid var(--ft-border)",
+        borderBottom: "1px solid var(--ft-border)",
       }}
     >
       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 }}>
@@ -408,7 +399,7 @@ function KpiCell({
 function StreakCell({ streak }: { streak: { type: "win" | "loss" | null; count: number } }) {
   if (!streak.type) {
     return (
-      <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
+      <div style={{ padding: "10px 14px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
         <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 }}>Current Streak</div>
         <div style={{ ...mono, fontSize: 16, fontWeight: 700, color: "var(--ft-dim)" }}>—</div>
       </div>
@@ -418,7 +409,7 @@ function StreakCell({ streak }: { streak: { type: "win" | "loss" | null; count: 
   const color = isWin ? "var(--ft-green)" : "var(--ft-red)";
   const bars = Math.min(streak.count, 8);
   return (
-    <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
+    <div style={{ padding: "10px 14px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 }}>Current Streak</div>
       <HStack gap={6} align="center">
         <div style={{ ...mono, fontSize: 16, fontWeight: 700, color }}>
@@ -496,17 +487,17 @@ function TradeCallouts({ closed }: { closed: Trade[] }) {
   if (!best && !worst) return null;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, marginBottom: 16, background: "var(--ft-border)" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", marginBottom: 6, background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
       {[
         { label: "Best Trade", trade: best, color: "var(--ft-green)", icon: "▲" },
         { label: "Worst Trade", trade: worst, color: "var(--ft-red)", icon: "▼" },
-      ].map(({ label, trade, color, icon }) => (
+      ].map(({ label, trade, color, icon }, i) => (
         <div
           key={label}
           style={{
             padding: "12px 16px",
             background: "var(--ft-surface)",
-            borderLeft: `3px solid ${color}`,
+            borderRight: i === 0 ? "1px solid var(--ft-border)" : "none",
           }}
         >
           <HStack gap={8} align="center" marginBottom={6}>
@@ -555,9 +546,7 @@ function PnlBarsChart({ closed }: { closed: Trade[] }) {
 
   return (
     <div style={panel}>
-      <div style={{ ...sectionHead, borderLeft: "3px solid var(--ft-accent)" }}>
-        P&amp;L Per Trade — Color-Coded
-      </div>
+      <PanelHeader>P&amp;L Per Trade — Color-Coded</PanelHeader>
       <div style={{ padding: "16px 8px 8px 8px", height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -1228,16 +1217,16 @@ export default function TradingJournal() {
         }
       />
 
-      {/* ── KPI Bar — border-as-gap grid ─────────────────────────────────────── */}
+      {/* ── KPI Bar — wrapping grid: the frame's top/left sit on the container,
+          each cell draws its own right/bottom rule ────────────────────────── */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(110px, 1fr))",
-          gap: 1,
-          background: "var(--ft-border)",
-          border: "1px solid var(--ft-border)",
-          marginBottom: 16,
-          overflow: "hidden",
+          background: "var(--ft-surface)",
+          borderTop: "1px solid var(--ft-border)",
+          borderLeft: "1px solid var(--ft-border)",
+          marginBottom: 6,
         }}
       >
         <KpiCell
@@ -1307,23 +1296,10 @@ export default function TradingJournal() {
       {showForm && (
         <div
           ref={formRef}
-          style={{
-            ...panel,
-            marginBottom: 20,
-            border: "1px solid var(--ft-border2)",
-          }}
+          style={panel}
         >
-          <div
-            style={{
-              ...sectionHead,
-              borderLeft: "3px solid var(--ft-accent)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span>{editId ? "Edit Trade" : "Log New Trade"}</span>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <PanelHeader right={
+            <>
               <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>Tab to navigate · Enter to submit</span>
               <button
                 type="button"
@@ -1332,8 +1308,10 @@ export default function TradingJournal() {
               >
                 <X size={12} />
               </button>
-            </div>
-          </div>
+            </>
+          }>
+            {editId ? "Edit Trade" : "Log New Trade"}
+          </PanelHeader>
           <form onSubmit={handleSubmit} style={{ padding: "16px 16px 20px" }}>
             {/* Row 1: Ticker, Date, Close Date, Direction, Status */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "12px 16px", marginBottom: 14 }}>
@@ -1536,10 +1514,10 @@ export default function TradingJournal() {
       {/* ── Open Positions ─────────────────────────────────────────────────────── */}
       {openTrades.length > 0 && (
         <div style={panel}>
-          <div style={{ ...sectionHead, borderLeft: "3px solid var(--ft-amber)" }}>
+          <PanelHeader>
             Open Positions — <span className="pnum">{openTrades.length}</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 1, background: "var(--ft-border)" }}>
+          </PanelHeader>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
             {openTrades.map((trade) => (
               <OpenPositionCard
                 key={trade.id}
@@ -1556,17 +1534,18 @@ export default function TradingJournal() {
       <div style={panel}>
         <div
           style={{
-            ...sectionHead,
-            borderLeft: "3px solid var(--ft-blue)",
             display: "flex",
-            alignItems: "flex-start",
+            alignItems: "center",
             justifyContent: "space-between",
             flexWrap: "wrap",
             gap: 8,
+            minHeight: "var(--ft-panel-header-h)",
+            padding: "4px 12px",
+            borderBottom: "1px solid var(--ft-border)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span>Trade Log — <span className="pnum">{filtered.length}{trades.length !== filtered.length ? `/${trades.length}` : ""}</span> entries</span>
+            <span className="ft-panel-label">Trade Log — <span className="pnum">{filtered.length}{trades.length !== filtered.length ? `/${trades.length}` : ""}</span> entries</span>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
@@ -1730,13 +1709,13 @@ export default function TradingJournal() {
           {/* P&L bars chart */}
           <PnlBarsChart closed={closed} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 6, marginBottom: 6 }}>
             {/* Equity curve */}
             <div style={panel}>
-              <div style={{ ...sectionHead, borderLeft: "3px solid var(--ft-green)" }}>
-                <TrendingUp size={10} style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+              <PanelHeader>
+                <TrendingUp size={10} />
                 Cumulative Equity Curve
-              </div>
+              </PanelHeader>
               <div style={{ padding: "16px 8px 8px 8px", height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={equityCurve} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -1780,7 +1759,7 @@ export default function TradingJournal() {
             {/* Setup win rate */}
             {setupStats.length > 0 && (
               <div style={panel}>
-                <div style={{ ...sectionHead, borderLeft: "3px solid var(--ft-cyan)" }}>Win Rate by Setup</div>
+                <PanelHeader>Win Rate by Setup</PanelHeader>
                 <div style={{ padding: "16px 8px 8px 0", height: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={setupStats} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} layout="vertical">
@@ -1818,8 +1797,8 @@ export default function TradingJournal() {
 
       {/* ── Setup analysis table ──────────────────────────────────────────────── */}
       {setupStats.length > 0 && (
-        <div style={{ ...panel, marginBottom: 16 }}>
-          <div style={{ ...sectionHead, borderLeft: "3px solid var(--ft-cyan)" }}>Setup Analysis</div>
+        <div style={panel}>
+          <PanelHeader>Setup Analysis</PanelHeader>
           <div className="ft-scroll-x">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -1845,7 +1824,7 @@ export default function TradingJournal() {
 
       {/* ── Monthly breakdown ─────────────────────────────────────────────────── */}
       <div style={panel}>
-        <div style={{ ...sectionHead, borderLeft: "3px solid var(--ft-blue)" }}>Monthly Performance — Last 12 Months</div>
+        <PanelHeader>Monthly Performance — Last 12 Months</PanelHeader>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 0 }}>
           {monthlyStats.map((m) => (
             <MonthCell key={m.key} m={m} />

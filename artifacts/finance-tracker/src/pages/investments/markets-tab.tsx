@@ -1471,7 +1471,7 @@ export function MarketsTab() {
                     {tldr && (
                       <div style={{
                         marginTop: 6, padding: "6px 10px",
-                        background: "rgba(163,113,247,0.06)", borderLeft: "2px solid rgba(163,113,247,0.35)",
+                        background: "var(--ft-raised)", border: "1px solid var(--ft-border)",
                         fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", lineHeight: 1.6,
                       }}>
                         <span style={{ fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.06em", marginRight: 6 }}>AI▸</span>
@@ -1500,7 +1500,7 @@ export function MarketsTab() {
           up top names the shared cause instead of leaving the user to
           infer it from a wall of dashes. */}
       {quotesUnavailable && (
-        <div style={{ border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-amber)", background: "var(--ft-surface)", padding: "12px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "12px 16px", display: "flex", gap: 12, alignItems: "flex-start" }}>
           <div style={{ flex: 1 }}>
             <MonoLabel as="div" size={10} letterSpacing="0.12em" color="var(--ft-amber)">
               QUOTES UNAVAILABLE

@@ -59,7 +59,7 @@ import {
   TICK_PERIODS_SET, TICK_INTERVAL_MAP, isUSTicker,
   newsScore, timeAgo, fmtCap, fmtNum,
 } from "@/components/investments/markets-data";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import {
   CandlestickLayer, OHLCTooltip, RangeBar, RecBar, RatingBar,
 } from "@/components/investments/markets-widgets";
@@ -635,16 +635,11 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header bar */}
-      <HStack gap={8} align="center" justify="between" wrap>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)" }}>REBALANCING CALCULATOR</div>
-          <Text as="div" size={11} color="var(--ft-dim)" mt={2}>
-            Set target allocations per asset class · Buy/Sell amounts computed automatically
-          </Text>
-        </div>
-        <HStack gap={10} align="center">
+    <div className="space-y-1.5">
+      {/* Table — the calculator title is the frame's own header */}
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <PanelHeader right={(
+          <>
           {!targetSumOk && (
             <Text as="span" mono size={11} color="var(--ft-amber)">
               Targets sum: {totalTargetPct.toFixed(1)}% (must equal 100%)
@@ -668,11 +663,15 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
           >
             EQUAL WEIGHT
           </button>
-        </HStack>
-      </HStack>
-
-      {/* Table */}
-      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
+          </>
+        )}>
+          Rebalancing Calculator
+        </PanelHeader>
+        <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)" }}>
+          <Text as="div" size={11} color="var(--ft-dim)">
+            Set target allocations per asset class · Buy/Sell amounts computed automatically
+          </Text>
+        </div>
         <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
           {/* Header */}
           <div style={{ display: "flex", background: "var(--ft-surface)" }}>
@@ -887,15 +886,8 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
   if (!visible || investments.length === 0 || totalValue <= 0) return null;
 
   return (
-    <div style={{
-      background: "var(--ft-raised)",
-      borderLeft: "2px solid var(--ft-accent)",
-      padding: "10px 14px",
-      marginBottom: 0,
-    }}>
-      {/* Header */}
-      <HStack align="center" justify="between" marginBottom={8}>
-        <Text as="span" mono size={10} weight={700} color="var(--ft-accent)" letterSpacing="0.08em">· PORTFOLIO INTELLIGENCE</Text>
+    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+      <PanelHeader right={
         <button
           onClick={() => {
             try { sessionStorage.removeItem(AI_COMMENTARY_CACHE_KEY); } catch { /* noop */ }
@@ -912,8 +904,10 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
             style={{ width: 12, height: 12 }}
           />
         </button>
-      </HStack>
-
+      }>
+        Portfolio Intelligence
+      </PanelHeader>
+      <div style={{ padding: "10px 12px" }}>
       {/* Commentary text */}
       {loading && !commentary && (
         <Text as="div" mono size={12} color="var(--ft-dim)" letterSpacing="0.01em" lineHeight={1.75}>
@@ -954,6 +948,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
             ))}
         </HStack>
       )}
+      </div>
     </div>
   );
 }
@@ -1041,12 +1036,9 @@ function PortfolioValueOverTimePanel({ snapshots }: PortfolioValueOverTimePanelP
   if (last90.length < 2) {
     return (
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-        <div className="ft-panel-header">
-          <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO VALUE OVER TIME</div>
-          <Text as="span" mono size={9} color="var(--ft-dim)">
-            {daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked
-          </Text>
-        </div>
+        <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">{daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked</Text>}>
+          Portfolio Value Over Time
+        </PanelHeader>
         <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
           Collecting snapshots… check back tomorrow ({daysTracked} snapshot{daysTracked !== 1 ? "s" : ""} so far)
         </div>
@@ -1056,17 +1048,12 @@ function PortfolioValueOverTimePanel({ snapshots }: PortfolioValueOverTimePanelP
 
   return (
     <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-      <div className="ft-panel-header">
-        <HStack gap={12} align="center">
-          <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO VALUE OVER TIME</div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: netChangeColor }}>
-            {netChange >= 0 ? "▲" : "▼"} {Math.abs(netChange).toFixed(1)}%
-          </span>
-        </HStack>
-        <Text as="span" mono size={9} color="var(--ft-dim)">
-          {daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked
-        </Text>
-      </div>
+      <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">{daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked</Text>}>
+        Portfolio Value Over Time
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: netChangeColor }}>
+          {netChange >= 0 ? "▲" : "▼"} {Math.abs(netChange).toFixed(1)}%
+        </span>
+      </PanelHeader>
       <div style={{ padding: "12px 12px 4px" }}>
         <ResponsiveContainer width="100%" height={160}>
           <AreaChart data={last90} margin={{ top: 4, right: 8, left: 0, bottom: 2 }}>
@@ -1260,14 +1247,9 @@ function PortfolioPositionsTable({
   };
 
   return (
-    <div>
-      {/* Panel header */}
-      <div className="ft-panel-header">
-        <div className="ft-panel-label">
-          <span className="accent-dot">·</span>
-          POSITIONS — LIVE MARKET DATA ({baseCurrency ?? "—"})
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+      <PanelHeader right={(
+        <>
           <input
             className="ft-filter-input"
             placeholder="Filter ticker / name…"
@@ -1307,8 +1289,10 @@ function PortfolioPositionsTable({
           >
             <Plus size={10} />ADD POSITION
           </button>
-        </div>
-      </div>
+        </>
+      )}>
+        Positions — Live Market Data ({baseCurrency ?? "—"})
+      </PanelHeader>
 
       {/* Table */}
       <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
@@ -2003,7 +1987,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   ];
 
   return (
-    <VStack gap="var(--ft-row-gap)">
+    <VStack gap={6}>
       {/* KPI Bar — replaces PageHeader on this data page */}
       <div>
         <InvKpiBar cells={kpiCells} />
@@ -2029,7 +2013,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 4, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 4, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -2157,7 +2141,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
       {/* ─── PORTFOLIO TAB ─── */}
       {defaultTab !== "markets" && activeTab === "portfolio" && (
-        <VStack gap="var(--ft-row-gap)">
+        <VStack gap={6}>
           {/* Persona quick-start for Market Terminal users */}
           {(() => { const ids = loadPersonaIds(); return ids[0] === "market"; })() && <PersonaQuickStart />}
 
@@ -2251,11 +2235,24 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
             return (
               <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
                 {/* Header */}
-                <div className="ft-panel-header">
-                  <HStack gap={12} align="center">
-                    <div className="ft-panel-label">
-                      <span className="accent-dot">·</span>PORTFOLIO vs S&P 500 — INDEXED (100 = START)
-                    </div>
+                <PanelHeader right={(
+                  <HStack gap={2}>
+                    {PERIODS.map((p) => (
+                      <button key={p} onClick={() => setHistPeriod(p)}
+                        onMouseEnter={(e) => { if (histPeriod !== p) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-muted)"; }}
+                        onMouseLeave={(e) => { if (histPeriod !== p) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }}
+                        style={{
+                          fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "2px 7px",
+                          border: "1px solid", letterSpacing: "0.06em", cursor: "pointer",
+                          borderColor: histPeriod === p ? "var(--ft-blue)" : "var(--ft-border)",
+                          background: histPeriod === p ? "rgba(96,165,250,0.15)" : "transparent",
+                          color: histPeriod === p ? "var(--ft-blue)" : "var(--ft-dim)",
+                          transition: "background 0.1s, color 0.1s, border-color 0.1s",
+                        }}>{p.toUpperCase()}</button>
+                    ))}
+                  </HStack>
+                )}>
+                  Portfolio vs S&P 500 — Indexed (100 = start)
                     {/* Return badges */}
                     {benchmarkChartData.length >= 2 && (
                       <HStack gap={8}>
@@ -2274,24 +2271,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                         )}
                       </HStack>
                     )}
-                  </HStack>
-                  {/* Period selector */}
-                  <HStack gap={2}>
-                    {PERIODS.map((p) => (
-                      <button key={p} onClick={() => setHistPeriod(p)}
-                        onMouseEnter={(e) => { if (histPeriod !== p) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-muted)"; }}
-                        onMouseLeave={(e) => { if (histPeriod !== p) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }}
-                        style={{
-                          fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "2px 7px",
-                          border: "1px solid", letterSpacing: "0.06em", cursor: "pointer",
-                          borderColor: histPeriod === p ? "var(--ft-blue)" : "var(--ft-border)",
-                          background: histPeriod === p ? "rgba(96,165,250,0.15)" : "transparent",
-                          color: histPeriod === p ? "var(--ft-blue)" : "var(--ft-dim)",
-                          transition: "background 0.1s, color 0.1s, border-color 0.1s",
-                        }}>{p.toUpperCase()}</button>
-                    ))}
-                  </HStack>
-                </div>
+                </PanelHeader>
                 {benchmarkChartData.length < 2 ? (
                   <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
                     Collecting snapshots… check back tomorrow for a chart ({portfolioHistory.length} snapshot{portfolioHistory.length !== 1 ? "s" : ""} so far)
@@ -2331,12 +2311,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
           {/* Charts */}
           {hasPositions && (
-            <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--ft-row-gap)" }}>
+            <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
               <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-                <div className="ft-panel-header">
-                  <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO ALLOCATION</div>
-                  <Text as="span" mono size={9} color="var(--ft-dim)">by position value</Text>
-                </div>
+                <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">by position value</Text>}>PORTFOLIO ALLOCATION</PanelHeader>
                 <div style={{ padding: "8px 12px 0" }}>
                 <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
@@ -2358,10 +2335,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               </div>
               </div>
               <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-                <div className="ft-panel-header">
-                  <div className="ft-panel-label"><span className="accent-dot">·</span>UNREALISED P&amp;L</div>
-                  <Text as="span" mono size={9} color="var(--ft-dim)">GBP gain / loss</Text>
-                </div>
+                <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">GBP gain / loss</Text>}>UNREALISED P&amp;L</PanelHeader>
                 <div style={{ padding: "8px 12px" }}>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={plData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
@@ -2379,10 +2353,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           {/* Heat map: positions sized by weight, colored by P&L */}
           {hasPositions && (investments?.length ?? 0) >= 2 && summary && summary.totalValueBase > 0 && (
             <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-              <div className="ft-panel-header">
-                <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO HEAT MAP</div>
-                <Text as="span" mono size={9} color="var(--ft-dim)">Size = weight · Colour = P&L</Text>
-              </div>
+              <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">Size = weight · Colour = P&L</Text>}>PORTFOLIO HEAT MAP</PanelHeader>
               <div style={{ padding: 8 }}>
                 <HStack gap={3} wrap>
                   {/* G10: heat map only tiles priced positions. An unquoted
@@ -2428,10 +2399,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           {/* Asset class allocation */}
           {hasPositions && classAllocData.length > 0 && (
             <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-              <div className="ft-panel-header">
-                <div className="ft-panel-label"><span className="accent-dot">·</span>ASSET CLASS ALLOCATION</div>
-                <Text as="span" mono size={9} color="var(--ft-dim)">By class tag · stored locally</Text>
-              </div>
+              <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">By class tag · stored locally</Text>}>ASSET CLASS ALLOCATION</PanelHeader>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center" style={{ padding: "8px 12px" }}>
                 <ResponsiveContainer width="100%" height={150}>
                   <PieChart>
@@ -2496,9 +2464,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           {/* Portfolio Analytics */}
           {hasPositions && (
             <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-              <div className="ft-panel-header">
-                <div className="ft-panel-label"><span className="accent-dot">·</span>PORTFOLIO ANALYTICS</div>
-              </div>
+              <PanelHeader>PORTFOLIO ANALYTICS</PanelHeader>
               <div className="grid grid-cols-2 sm:grid-cols-4" style={{ borderColor: "var(--ft-border)" }}>
                 <div className="px-4 py-3 border-r" style={{ borderColor: "var(--ft-border)" }}>
                   <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Portfolio Beta</div>
@@ -2566,10 +2532,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           {/* Upcoming Earnings Calendar */}
           {hasPositions && upcomingEarnings.length > 0 && (
             <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-              <div className="ft-panel-header">
-                <div className="ft-panel-label"><span className="accent-dot">·</span>UPCOMING EARNINGS</div>
-                <Text as="span" mono size={9} color="var(--ft-dim)">{upcomingEarnings.length} IN 45 DAYS</Text>
-              </div>
+              <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">{upcomingEarnings.length} IN 45 DAYS</Text>}>UPCOMING EARNINGS</PanelHeader>
               <div className="flex items-stretch overflow-x-auto" style={{ scrollbarWidth: "thin" }}>
                 {upcomingEarnings.map((e, i) => (
                   <div key={e.ticker} className="flex-shrink-0 px-4 py-3" style={{
@@ -2609,10 +2572,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
             const tickers2 = Array.from(byTicker.keys()).sort();
             return (
               <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-                <div className="ft-panel-header">
-                  <div className="ft-panel-label"><span className="accent-dot">·</span>TAX LOTS</div>
-                  <Text as="span" mono size={9} color="var(--ft-dim)">FIFO ANALYSIS</Text>
-                </div>
+                <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">FIFO ANALYSIS</Text>}>TAX LOTS</PanelHeader>
                 <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "var(--font-mono)", minWidth: 700 }}>
                     <thead>
@@ -2678,7 +2638,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
       {/* ─── REBALANCE TAB ─── */}
       {defaultTab !== "markets" && activeTab === "rebalance" && (
-        <VStack gap="var(--ft-row-gap)">
+        <VStack gap={6}>
           <RebalanceTab
             classAllocData={classAllocData}
             totalPortfolioValue={totalClassValue}
@@ -2686,12 +2646,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
           {/* ── Price Alerts Management Panel ── */}
           <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-            <div className="ft-panel-header">
-              <div className="ft-panel-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <Bell style={{ width: 10, height: 10, color: "var(--ft-amber)" }} />
-                <span className="accent-dot">·</span>PRICE ALERTS
-              </div>
-              {priceAlerts.some((a) => a.triggered) && (
+            <PanelHeader right={priceAlerts.some((a) => a.triggered) ? (
                 <button
                   onClick={() => {
                     const cleared = priceAlerts.filter((a) => !a.triggered);
@@ -2706,8 +2661,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                 >
                   CLEAR ALL TRIGGERED
                 </button>
-              )}
-            </div>
+              ) : undefined}>
+              <Bell style={{ width: 10, height: 10, color: "var(--ft-muted)" }} />
+              PRICE ALERTS
+            </PanelHeader>
 
             {priceAlerts.length === 0 ? (
               <div style={{ padding: "20px 16px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>

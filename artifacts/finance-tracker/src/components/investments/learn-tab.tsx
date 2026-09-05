@@ -557,7 +557,7 @@ function Formula({ children }: { children: React.ReactNode }) {
 
 function Takeaway({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.2)", borderLeft: "3px solid var(--ft-amber)", padding: "10px 14px", fontSize: 12, color: "var(--ft-muted)", lineHeight: 1.6, marginTop: 20 }}>
+    <div style={{ background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.2)", padding: "10px 14px", fontSize: 12, color: "var(--ft-muted)", lineHeight: 1.6, marginTop: 20 }}>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", display: "block", marginBottom: 6 }}>KEY TAKEAWAY</span>
       {children}
     </div>
@@ -570,7 +570,8 @@ function Body({ children }: { children: React.ReactNode }) {
 
 function InfoBox({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: "rgba(88,166,255,0.06)", border: "1px solid rgba(88,166,255,0.2)", borderLeft: "3px solid var(--ft-blue)", padding: "10px 14px", fontSize: 12, color: "var(--ft-muted)", lineHeight: 1.6, margin: "12px 0" }}>
+    <div style={{ background: "rgba(88,166,255,0.06)", border: "1px solid rgba(88,166,255,0.2)", padding: "10px 14px", fontSize: 12, color: "var(--ft-muted)", lineHeight: 1.6, margin: "12px 0" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-blue)", marginRight: 6 }}>■</span>
       {children}
     </div>
   );
@@ -2364,7 +2365,7 @@ function QuizView({
                 })}
               </div>
               {submitted && (
-                <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderLeft: "3px solid var(--ft-amber)", fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5 }}>
+                <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5 }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-amber)", fontWeight: 700 }}>EXPLANATION  </span>
                   {q.explanation}
                 </div>
