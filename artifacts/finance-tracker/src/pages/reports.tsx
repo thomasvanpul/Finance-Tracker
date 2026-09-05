@@ -1492,7 +1492,7 @@ export default function Reports() {
       <div style={{ borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
         <PanelHeader>Spending by Day of Week</PanelHeader>
         <div style={{ padding: "14px 20px" }}>
-          <HStack gap={8} align="end" height={80}>
+          <HStack gap={8} align="end">
             {DOW_LABELS.map((label, i) => (
               <DowBarItem
                 key={label}
