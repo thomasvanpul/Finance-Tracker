@@ -513,7 +513,7 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
           label: "Annual Saving",
           before: formatBaseMoney(Math.max(currentSurplus, 0) * 12),
           after: formatBaseMoney(Math.max(newSurplus, 0) * 12),
-          diff: `${annualSavingDelta >= 0 ? "+" : ""}${formatBaseMoney(annualSavingDelta * 12)}`,
+          diff: `${annualSavingDelta >= 0 ? "+" : ""}${formatBaseMoney(annualSavingDelta)}`,
           diffColor: annualSavingDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)",
         },
       ]} />
