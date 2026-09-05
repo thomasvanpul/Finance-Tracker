@@ -71,7 +71,7 @@ function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
         {tx.category}
       </span>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", flexShrink: 0, width: 72, textAlign: "right" }}>
-        {tx.baseEquivalent == null ? "—" : `${TYPE_PREFIX[tx.type]}${formatBaseMoney(tx.baseEquivalent)}`}
+        {tx.baseEquivalent == null ? "—" : `${TYPE_PREFIX[tx.type]}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
       </span>
     </div>
   );
@@ -112,7 +112,7 @@ function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
         </div>
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color, flexShrink: 0, whiteSpace: "nowrap" }}>
-        {TYPE_PREFIX[type]}{formatBaseMoney(total)}
+        {TYPE_PREFIX[type]}{formatBaseMoney(Math.abs(total))}
       </div>
     </div>
   );

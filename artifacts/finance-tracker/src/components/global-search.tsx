@@ -105,7 +105,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "transaction" as ResultKind,
             primary: tx.description,
             secondary: tx.category,
-            tertiary: `${formatDate(tx.date)} · ${tx.baseEquivalent == null ? "—" : (tx.type === "income" ? "+" : "-") + formatBaseMoney(tx.baseEquivalent)}`,
+            tertiary: `${formatDate(tx.date)} · ${tx.baseEquivalent == null ? "—" : (tx.type === "income" ? "+" : "-") + formatBaseMoney(Math.abs(tx.baseEquivalent))}`,
             amountColor:
               tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
             navigateTo: `/transactions?q=${encodeURIComponent(tx.description)}`,

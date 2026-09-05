@@ -253,7 +253,7 @@ export function RecentTxnsWidget({ onViewAll }: { onViewAll: () => void }) {
               <div style={{ fontSize: 11, color: "var(--ft-dim)", textTransform: "capitalize" }}>{tx.category || "Uncategorised"}</div>
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: tx.baseEquivalent == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
-              {tx.baseEquivalent == null ? "—" : `${isIncome ? "+" : "−"}${formatBaseMoney(tx.baseEquivalent)}`}
+              {tx.baseEquivalent == null ? "—" : `${isIncome ? "+" : "−"}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
             </div>
           </div>
         );

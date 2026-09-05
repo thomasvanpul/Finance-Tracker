@@ -724,7 +724,7 @@ function DayTxRow({ tx }: DayTxRowProps) {
       <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: tx.baseEquivalent == null ? "var(--ft-dim)" : tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
         {tx.baseEquivalent == null
           ? "—"
-          : `${tx.type === "income" ? "+" : "−"}${formatBaseMoney(tx.baseEquivalent)}`}
+          : `${tx.type === "income" ? "+" : "−"}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
       </span>
     </div>
   );
@@ -1914,7 +1914,7 @@ export default function CalendarPage() {
       // rather than a bare title with no figure.
       ...transactions.map((t) => ({ date: t.date, title: t.baseEquivalent == null
         ? `${formatNative(Math.abs(t.nativeAmount), t.currency)} ${t.description}`
-        : `${t.type === "income" ? "+" : "-"}${formatBaseMoney(t.baseEquivalent)} ${t.description}` })),
+        : `${t.type === "income" ? "+" : "-"}${formatBaseMoney(Math.abs(t.baseEquivalent))} ${t.description}` })),
       ...upcoming.map((u) => ({ date: u.dueDate, title: u.baseEquivalent == null
         ? `Bill: ${u.description} ${formatNative(Math.abs(u.nativeAmount), u.currency)}`
         : `Bill: ${u.description} ${formatBaseMoney(u.baseEquivalent)}` })),

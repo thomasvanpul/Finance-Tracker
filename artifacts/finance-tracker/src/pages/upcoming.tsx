@@ -270,7 +270,7 @@ function UpcomingRow({
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: item.baseEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)" }}>
             {item.baseEquivalent == null
               ? formatNative(Math.abs(item.nativeAmount), item.currency)
-              : `${item.type === "income" ? "+" : "-"}${formatBaseMoney(item.baseEquivalent)}`}
+              : `${item.type === "income" ? "+" : "-"}${formatBaseMoney(Math.abs(item.baseEquivalent))}`}
           </span>
           <HStack gap={2}>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onEdit(item.id)}>
@@ -327,7 +327,7 @@ function UpcomingRow({
       <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: item.baseEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
         {item.baseEquivalent == null
           ? <span>{formatNative(Math.abs(item.nativeAmount), item.currency)}</span>
-          : <span className="pnum">{item.type === "income" ? "+" : "-"}{formatBaseMoney(item.baseEquivalent)}</span>}
+          : <span className="pnum">{item.type === "income" ? "+" : "-"}{formatBaseMoney(Math.abs(item.baseEquivalent))}</span>}
       </div>
       <div style={{ width: 120, minWidth: 120, padding: "5px 12px", borderRight: "1px solid var(--ft-raised)" }}>
         <Select value={item.status} onValueChange={(v) => onStatusChange(item.id, v as Status)}>

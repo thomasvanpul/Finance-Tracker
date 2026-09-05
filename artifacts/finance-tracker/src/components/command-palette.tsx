@@ -229,7 +229,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
         section: "transactions" as CommandSection,
         icon: tx.type === "income" ? "↑" : "↓",
         title: tx.description,
-        shortcut: (tx.baseEquivalent == null ? "—" : (tx.type === "income" ? "+" : "-") + formatBaseMoney(tx.baseEquivalent)) + " · " + tx.date.slice(0, 10),
+        shortcut: (tx.baseEquivalent == null ? "—" : (tx.type === "income" ? "+" : "-") + formatBaseMoney(Math.abs(tx.baseEquivalent))) + " · " + tx.date.slice(0, 10),
         action: navTo("/transactions"),
       });
     }

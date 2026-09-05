@@ -2155,7 +2155,7 @@ function RecentTransactionsWidgetInline() {
                 shows its type + description on the left. */}
             {tx.baseEquivalent == null
               ? formatNative(Math.abs(tx.nativeAmount), tx.currency)
-              : `${TYPE_PREFIX[tx.type]}${formatBaseMoney(tx.baseEquivalent)}`}
+              : `${TYPE_PREFIX[tx.type]}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
           </span>
         </div>
       ))}
