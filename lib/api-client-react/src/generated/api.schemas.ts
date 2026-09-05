@@ -77,6 +77,83 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface ReconciliationAccount {
+  accountId: number;
+  name: string;
+  currency: string;
+  /** YYYY-MM-DD of the snapshot this account is measured from */
+  baselineDate: string;
+  /** Native balance stored in the baseline snapshot */
+  baselineBalance: number;
+  /** Native balance now */
+  currentBalance: number;
+  /** currentBalance − baselineBalance, native */
+  balanceChange: number;
+  /** Signed sum of transactions created on this account after the baseline was captured, native */
+  ledgerChange: number;
+  /** balanceChange − ledgerChange, native. Positive means the balance rose more than the ledger records. */
+  gap: number;
+  /** @nullable */
+  gapBase: number | null;
+  transactionsCounted: number;
+  /** Transactions created before the baseline but updated after it — their change to the balance is not recoverable, so part of the gap may be theirs */
+  editedSinceBaseline: number;
+  /** Transactions in a currency other than the account's whose conversion was unavailable and were left out of ledgerChange */
+  fxSkippedTransactions: number;
+}
+
+export type ReconciliationReportStatus = typeof ReconciliationReportStatus[keyof typeof ReconciliationReportStatus];
+
+
+export const ReconciliationReportStatus = {
+  ok: 'ok',
+  insufficient: 'insufficient',
+} as const;
+
+/**
+ * Which period rule produced periodFrom. null when insufficient.
+ * @nullable
+ */
+export type ReconciliationReportPeriodRule = typeof ReconciliationReportPeriodRule[keyof typeof ReconciliationReportPeriodRule] | null;
+
+
+export const ReconciliationReportPeriodRule = {
+  'month-to-date': 'month-to-date',
+  'since-first-snapshot': 'since-first-snapshot',
+} as const;
+
+export interface ReconciliationReport {
+  status: ReconciliationReportStatus;
+  baseCurrency: string;
+  /**
+     * Which period rule produced periodFrom. null when insufficient.
+     * @nullable
+     */
+  periodRule: ReconciliationReportPeriodRule;
+  /**
+     * Baseline date, YYYY-MM-DD. null when insufficient.
+     * @nullable
+     */
+  periodFrom: string | null;
+  /** Today, YYYY-MM-DD, server-local */
+  periodTo: string;
+  /** periodTo − periodFrom in days; 0 when insufficient */
+  days: number;
+  /**
+     * Earliest snapshot date held for any cash account, whether or not it qualifies as a baseline. null when there are no snapshots.
+     * @nullable
+     */
+  dataAvailableSince: string | null;
+  /**
+     * Sum of gapBase over convertible accounts
+     * @nullable
+     */
+  gapBase: number | null;
+  accounts: ReconciliationAccount[];
+  /** Cash accounts whose gap could not be converted to base and are missing from gapBase */
+  unconvertibleAccounts: number;
+}
+
 export type AccountCurrency = typeof AccountCurrency[keyof typeof AccountCurrency];
 
 

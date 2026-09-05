@@ -60,6 +60,7 @@ import type {
   ListTransactionsParams,
   OkResult,
   PersonaSettings,
+  ReconciliationReport,
   RecurringPattern,
   StockPrice,
   StockQuote,
@@ -398,6 +399,93 @@ export const useCreateAccount = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateAccountMutationOptions(options));
     }
+
+export const getGetAccountsReconciliationUrl = () => {
+
+
+
+
+  return `/api/accounts/reconciliation`
+}
+
+/**
+ * Per cash account, (current balance − balance at the baseline snapshot)
+minus the signed effect of every transaction created on that account
+since the baseline was captured. Non-zero means money moved that the
+ledger does not explain — a manual balance correction, an edit or a
+deletion of an older transaction. The baseline is the earliest
+snapshot date (strictly before today) on which every current cash
+account has a row; when the 1st of the current month qualifies, the
+period is month-to-date. Below that minimum the status is
+`insufficient` and no figure is supplied.
+
+ * @summary Money that moved through cash accounts without a transaction being recorded
+ */
+export const getAccountsReconciliation = async ( options?: RequestInit): Promise<ReconciliationReport> => {
+
+  return customFetch<ReconciliationReport>(getGetAccountsReconciliationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountsReconciliationQueryKey = () => {
+    return [
+    `/api/accounts/reconciliation`
+    ] as const;
+    }
+
+
+export const getGetAccountsReconciliationQueryOptions = <TData = Awaited<ReturnType<typeof getAccountsReconciliation>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountsReconciliation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountsReconciliationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountsReconciliation>>> = ({ signal }) => getAccountsReconciliation({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountsReconciliation>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountsReconciliationQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountsReconciliation>>>
+export type GetAccountsReconciliationQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Money that moved through cash accounts without a transaction being recorded
+ */
+
+export function useGetAccountsReconciliation<TData = Awaited<ReturnType<typeof getAccountsReconciliation>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountsReconciliation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountsReconciliationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getUpdateAccountUrl = (id: number,) => {
 

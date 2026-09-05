@@ -105,6 +105,47 @@ export const CreateAccountBody = zod.object({
 
 
 /**
+ * Per cash account, (current balance − balance at the baseline snapshot)
+minus the signed effect of every transaction created on that account
+since the baseline was captured. Non-zero means money moved that the
+ledger does not explain — a manual balance correction, an edit or a
+deletion of an older transaction. The baseline is the earliest
+snapshot date (strictly before today) on which every current cash
+account has a row; when the 1st of the current month qualifies, the
+period is month-to-date. Below that minimum the status is
+`insufficient` and no figure is supplied.
+
+ * @summary Money that moved through cash accounts without a transaction being recorded
+ */
+export const GetAccountsReconciliationResponse = zod.object({
+  "status": zod.enum(['ok', 'insufficient']),
+  "baseCurrency": zod.string(),
+  "periodRule": zod.union([zod.literal('month-to-date'),zod.literal('since-first-snapshot'),zod.literal(null)]).nullable().describe('Which period rule produced periodFrom. null when insufficient.'),
+  "periodFrom": zod.string().nullable().describe('Baseline date, YYYY-MM-DD. null when insufficient.'),
+  "periodTo": zod.string().describe('Today, YYYY-MM-DD, server-local'),
+  "days": zod.number().describe('periodTo − periodFrom in days; 0 when insufficient'),
+  "dataAvailableSince": zod.string().nullable().describe('Earliest snapshot date held for any cash account, whether or not it qualifies as a baseline. null when there are no snapshots.'),
+  "gapBase": zod.number().nullable().describe('Sum of gapBase over convertible accounts'),
+  "accounts": zod.array(zod.object({
+  "accountId": zod.number(),
+  "name": zod.string(),
+  "currency": zod.string(),
+  "baselineDate": zod.string().describe('YYYY-MM-DD of the snapshot this account is measured from'),
+  "baselineBalance": zod.number().describe('Native balance stored in the baseline snapshot'),
+  "currentBalance": zod.number().describe('Native balance now'),
+  "balanceChange": zod.number().describe('currentBalance − baselineBalance, native'),
+  "ledgerChange": zod.number().describe('Signed sum of transactions created on this account after the baseline was captured, native'),
+  "gap": zod.number().describe('balanceChange − ledgerChange, native. Positive means the balance rose more than the ledger records.'),
+  "gapBase": zod.number().nullable(),
+  "transactionsCounted": zod.number(),
+  "editedSinceBaseline": zod.number().describe('Transactions created before the baseline but updated after it — their change to the balance is not recoverable, so part of the gap may be theirs'),
+  "fxSkippedTransactions": zod.number().describe('Transactions in a currency other than the account\'s whose conversion was unavailable and were left out of ledgerChange')
+})),
+  "unconvertibleAccounts": zod.number().describe('Cash accounts whose gap could not be converted to base and are missing from gapBase')
+})
+
+
+/**
  * @summary Update an account
  */
 export const UpdateAccountParams = zod.object({

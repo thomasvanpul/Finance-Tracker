@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { and, eq } from "drizzle-orm";
-import { db, accountsTable } from "@workspace/db";
+import { and, eq, gt, inArray, lt, or } from "drizzle-orm";
+import { db, accountsTable, accountBalanceSnapshotsTable, transactionsTable } from "@workspace/db";
 import {
   CreateAccountBody,
   UpdateAccountParams,
@@ -8,10 +8,13 @@ import {
   DeleteAccountParams,
   ListAccountsResponse,
   UpdateAccountResponse,
+  GetAccountsReconciliationResponse,
 } from "@workspace/api-zod";
 import { getFxRates, toBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { captureAccountSnapshots } from "../lib/account-snapshots";
+import { computeReconciliation } from "../lib/reconciliation";
+import { localDateString } from "../lib/date-ranges";
 
 const router: IRouter = Router();
 
@@ -61,6 +64,65 @@ router.post("/accounts", async (req, res): Promise<void> => {
     .returning();
   const enriched = await enrichAccount(account, userId);
   res.status(201).json(UpdateAccountResponse.parse(enriched));
+});
+
+// Reconciliation gap — see lib/reconciliation.ts for the rule. Reads only;
+// the snapshot that anchors it is written lazily by the dashboard read and
+// by PATCH below. Registered before /accounts/:id so the literal segment is
+// never parsed as an id.
+router.get("/accounts/reconciliation", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const [baseCurrency, cashRows] = await Promise.all([
+    getBaseCurrency(userId),
+    db
+      .select({ id: accountsTable.id, name: accountsTable.name, currency: accountsTable.currency, balance: accountsTable.balance })
+      .from(accountsTable)
+      .where(and(eq(accountsTable.userId, userId), eq(accountsTable.type, "cash")))
+      .orderBy(accountsTable.createdAt),
+  ]);
+  const today = localDateString(new Date());
+  const ids = cashRows.map((a) => a.id);
+  const snapshotRows = ids.length === 0 ? [] : await db
+    .select({
+      accountId: accountBalanceSnapshotsTable.accountId,
+      date: accountBalanceSnapshotsTable.date,
+      balance: accountBalanceSnapshotsTable.balance,
+      capturedAt: accountBalanceSnapshotsTable.capturedAt,
+    })
+    .from(accountBalanceSnapshotsTable)
+    .where(and(
+      eq(accountBalanceSnapshotsTable.userId, userId),
+      inArray(accountBalanceSnapshotsTable.accountId, ids),
+      lt(accountBalanceSnapshotsTable.date, today),
+    ));
+  const earliestCapture = snapshotRows.reduce<Date | null>(
+    (min, s) => (min == null || s.capturedAt < min ? s.capturedAt : min), null);
+  const txRows = earliestCapture == null ? [] : await db
+    .select({
+      accountId: transactionsTable.accountId,
+      type: transactionsTable.type,
+      nativeAmount: transactionsTable.nativeAmount,
+      currency: transactionsTable.currency,
+      transferDirection: transactionsTable.transferDirection,
+      createdAt: transactionsTable.createdAt,
+      updatedAt: transactionsTable.updatedAt,
+    })
+    .from(transactionsTable)
+    .where(and(
+      eq(transactionsTable.userId, userId),
+      inArray(transactionsTable.accountId, ids),
+      or(gt(transactionsTable.createdAt, earliestCapture), gt(transactionsTable.updatedAt, earliestCapture)),
+    ));
+
+  const report = await computeReconciliation({
+    cashAccounts: cashRows.map((a) => ({ ...a, balance: parseFloat(a.balance) })),
+    snapshots: snapshotRows.map((s) => ({ ...s, balance: parseFloat(s.balance) })),
+    transactions: txRows.map((t) => ({ ...t, nativeAmount: parseFloat(t.nativeAmount) })),
+    today,
+    baseCurrency,
+    convert: toBase,
+  });
+  res.json(GetAccountsReconciliationResponse.parse(report));
 });
 
 router.patch("/accounts/:id", async (req, res): Promise<void> => {
