@@ -375,6 +375,22 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
 
   await assertRendered(page, route);
 
+  // SCREENSHOT_MEASURE='<css selector>' prints the rendered box of every
+  // match, so a tap-target or column-width claim can be a measurement
+  // rather than a reading of the source. Same precedent as the env toggles
+  // above: opt-in, no effect on the PNG.
+  const measure = process.env.SCREENSHOT_MEASURE ?? null;
+  if (measure !== null) {
+    const boxes = await page.$$eval(measure, (els) => els.map((el) => {
+      const r = el.getBoundingClientRect();
+      return { text: (el.textContent ?? "").trim().slice(0, 40), x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+    }));
+    for (const [i, b] of boxes.entries()) {
+      console.log(`[measure] ${route} ${measure}[${i}] "${b.text}" x=${b.x} y=${b.y} w=${b.w} h=${b.h}`);
+    }
+    if (boxes.length === 0) console.log(`[measure] ${route} ${measure}: no matches`);
+  }
+
   const name = explicitName ?? `${slug(route)}_${viewport}_${theme}`;
   const path = resolve(OUTPUT_DIR, `${name}.png`);
   await page.screenshot({ path, fullPage: true });
