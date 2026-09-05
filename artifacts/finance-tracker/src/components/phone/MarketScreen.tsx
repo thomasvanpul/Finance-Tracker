@@ -81,15 +81,10 @@ export function MarketScreen() {
 
       <MarketPane onOpenInvestments={() => navigate("/investments")} />
 
-      <div
-        style={{
-          marginTop: 24,
-          paddingTop: 16,
-          borderTopWidth: 1,
-          borderTopStyle: "solid",
-          borderTopColor: "var(--ft-border)",
-        }}
-      >
+      {/* News strip. MarketPane's last row already ends on a hairline and
+          NewsPane draws its own header rule, so no separator here — the
+          one that was here produced an empty ruled band on device. */}
+      <div style={{ marginTop: 16 }}>
         <NewsPane />
       </div>
     </div>
