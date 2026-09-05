@@ -101,16 +101,13 @@ function parseServerEndpoints(): Set<string> {
 // not for bugs that have been fixed.
 
 const KNOWN_SPEC_ONLY = new Set<string>([
-  // 2FA not yet implemented — the schema and spec exist as a forward-declaration
-  // for when 2FA is added to the auth flow. Until then these four endpoints
-  // return 404 if called. Tracked in BACKLOG § G-2fa.
-  "GET /settings/2fa/status",
-  "POST /settings/2fa/setup",
-  "POST /settings/2fa/confirm",
-  "POST /settings/2fa/disable",
-  // Password-change route — placeholder spec entry, not yet exposed in the UI.
-  // Tracked in BACKLOG § G-password.
-  "POST /settings/password",
+  // Empty since 2026-09-05. The five entries that lived here (2FA status/
+  // setup/confirm/disable and password change) were removed from the spec:
+  // better-auth already serves both features under /api/auth/* and the
+  // profile page uses its client (authClient.changePassword,
+  // authClient.twoFactor.enable/verifyTotp/disable). A spec-only endpoint
+  // is a promise the server does not keep — add one here only with a
+  // BACKLOG entry that says who will implement it and when.
 ]);
 
 // ─── Known drift: server-only (undocumented surface) ────────────────────────
