@@ -1655,6 +1655,15 @@ input[type="checkbox"]:checked {
   min-width: 0;
   max-width: 100%;
   white-space: nowrap;
+}
+
+/* Inline .pnum (span/strong) becomes inline-block so max-width applies and
+   the figure sits on the baseline. Block .pnum (div) and table cells keep
+   their natural display: a div.pnum value followed by a div.pnum delta used
+   to inherit inline-block here and ran together on one line (InvKpiBar,
+   cashflow KpiTile, subscriptions RENEWING, year-review milestones). */
+span.pnum,
+strong.pnum {
   display: inline-block;
   vertical-align: bottom;
 }
