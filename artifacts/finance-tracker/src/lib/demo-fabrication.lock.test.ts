@@ -193,8 +193,8 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 437, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 441, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 820, reason: "chart bar min height in px (4px)" },
-  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 526, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
-  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 527, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
+  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 512, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
+  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 513, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
 
   // Formatting / config defaults — decimal counts, period lengths.
   { path: "artifacts/finance-tracker/src/components/mobile/mobile-format.ts", line: 10, reason: "default decimals count (2) for nfmt when unspecified" },

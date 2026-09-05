@@ -51,7 +51,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 type UpType = "income" | "expense";
 type Freq = "one-time" | "weekly" | "monthly" | "quarterly" | "yearly";
@@ -243,8 +243,7 @@ function UpcomingRow({
         alignItems: "start",
         background: item.status === "skipped" ? "var(--ft-raised)" : "var(--ft-surface)",
         borderBottom: "1px solid var(--ft-border2)",
-        borderLeft: `3px solid ${accentColor}`,
-        padding: "9px 10px 9px 12px",
+        padding: "9px 10px",
         opacity: item.status === "skipped" ? 0.5 : 1,
       }}>
         <div style={{ minWidth: 0 }}>
@@ -299,34 +298,21 @@ function UpcomingRow({
       style={{
         borderColor: "rgba(33,38,45,0.5)",
         opacity: item.status === "skipped" ? 0.5 : 1,
-        borderLeft: isOverdue ? "3px solid var(--ft-red)" : undefined,
         background: hov ? "rgba(255,255,255,0.025)" : undefined,
         transition: "background 0.1s",
       }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
-      <div className="flex-shrink-0 flex items-center justify-center text-xs border-r" style={{ width: isOverdue ? 33 : 36, color: "var(--ft-dim)", borderColor: "var(--ft-border)", alignSelf: "stretch" }}>
+      <div className="flex-shrink-0 flex items-center justify-center text-xs border-r" style={{ width: 36, color: "var(--ft-dim)", borderColor: "var(--ft-border)", alignSelf: "stretch" }}>
         {index + 2}
       </div>
       <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", fontSize: 11, fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
-        <Text as="span" color="var(--ft-muted)">{formatDate(item.dueDate)}</Text>
-        {isOverdue && (
-          <span style={{
-            fontSize: 9,
-            fontWeight: 700,
-            fontFamily: "var(--font-mono)",
-            color: "var(--ft-red)",
-            background: "var(--ft-red)22",
-            padding: "1px 4px",
-            borderRadius: 2,
-            letterSpacing: "0.4px",
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}>
-            OVERDUE
-          </span>
-        )}
+        {/* The OVERDUE badge never fit the 100px date column and drew over
+            the date. The state lives on the date itself now: red and bold. */}
+        <Text as="span" weight={isOverdue ? 700 : 400} color={isOverdue ? "var(--ft-red)" : "var(--ft-muted)"}>
+          {formatDate(item.dueDate)}
+        </Text>
       </div>
       <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         <span className={item.status === "skipped" ? "line-through" : ""}>{item.description}</span>
@@ -752,7 +738,7 @@ export default function Upcoming() {
   const isNet30Pos = net30 >= 0;
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
+    <div className="space-y-1.5 animate-in fade-in duration-300">
       <PageHeader
         icon={CalendarClock}
         title="Upcoming"
@@ -787,7 +773,7 @@ export default function Upcoming() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -838,7 +824,7 @@ export default function Upcoming() {
           </DialogHeader>
           {markPaidItem && (
             <div className="space-y-4">
-              <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderRadius: 3, padding: "10px 14px" }}>
+              <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 14px" }}>
                 <div style={{ fontSize: 11, color: "var(--ft-dim)", marginBottom: 4, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.4px" }}>
                   Item details
                 </div>
@@ -899,7 +885,7 @@ export default function Upcoming() {
 
       {/* Summary bar — border-as-gap grid */}
       {summary && (
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
           <SummaryKpiCell label="30d Outgoings" accentColor="var(--ft-red)">
             <Text as="div" mono size={14} weight={700} color="var(--ft-red)" lineHeight={1}>
               <span className="pnum">-{formatBaseMoney(summary.committedOutgoings30d)}</span>
@@ -932,7 +918,7 @@ export default function Upcoming() {
       )}
 
       {/* Cash Flow Forecast Strip */}
-      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
         <button
           type="button"
           onClick={() => setForecastOpen((v) => !v)}
@@ -941,20 +927,15 @@ export default function Upcoming() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "6px 12px",
-            background: "var(--ft-muted)22",
+            minHeight: "var(--ft-panel-header-h)",
+            padding: "0 12px",
+            background: "transparent",
             border: "none",
-            borderBottom: forecastOpen ? "1px solid var(--ft-muted)44" : "none",
+            borderBottom: forecastOpen ? "1px solid var(--ft-border)" : "none",
             cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            fontWeight: 700,
-            color: "var(--ft-muted)",
-            letterSpacing: "0.4px",
-            textTransform: "uppercase",
           }}
         >
-          <span>Cash Flow Forecast — Projected Net Change from Pending Items</span>
+          <span className="ft-panel-label">Cash Flow Forecast — Projected Net Change from Pending Items</span>
           {forecastOpen
             ? <ChevronUp className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)", flexShrink: 0 }} />
             : <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)", flexShrink: 0 }} />
@@ -962,7 +943,7 @@ export default function Upcoming() {
         </button>
 
         {forecastOpen && (
-          <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
+          <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "none" }}>
             <ForecastKpiCell label="30d" net={forecast30} totalBalance={totalBalance} isLast={false} />
             <ForecastKpiCell label="60d" net={forecast60} totalBalance={totalBalance} isLast={false} />
             <ForecastKpiCell label="90d" net={forecast90} totalBalance={totalBalance} isLast={true} />
@@ -972,20 +953,8 @@ export default function Upcoming() {
 
       {/* 90-day running balance chart */}
       {cashflowChartData.length >= 2 && (
-        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginTop: 12 }}>
-          <div style={{
-            padding: "6px 12px",
-            background: "var(--ft-muted)22",
-            borderBottom: "1px solid var(--ft-muted)44",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            fontWeight: 700,
-            color: "var(--ft-muted)",
-            letterSpacing: "0.4px",
-            textTransform: "uppercase" as const,
-          }}>
-            90-Day Balance Projection — Running Total incl. Pending Items
-          </div>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader>90-Day Balance Projection — Running Total incl. Pending Items</PanelHeader>
           <div style={{ padding: "12px 4px 8px 0" }}>
             <ResponsiveContainer width="100%" height={160}>
               <AreaChart data={cashflowChartData} margin={{ top: 6, right: 16, left: 0, bottom: 0 }}>
@@ -1083,10 +1052,8 @@ export default function Upcoming() {
       )}
 
       {/* Upcoming spreadsheet table */}
-      <div className="border" style={{ borderColor: "var(--ft-border)" }}>
-        <div className="flex items-center px-3 py-1.5 text-xs font-bold border-b" style={{ background: "var(--ft-muted)22", borderColor: "var(--ft-muted)44", color: "var(--ft-muted)", overflow: "hidden", whiteSpace: "nowrap" }}>
-          ▼ UPCOMING SCHEDULE — Committed & Expected Flows
-        </div>
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <PanelHeader>Upcoming Schedule — Committed & Expected Flows</PanelHeader>
 
         <div className={isMobile ? undefined : "ft-scroll-x"}>
         <div style={isMobile ? undefined : { minWidth: 700 }}>
@@ -1140,15 +1107,10 @@ export default function Upcoming() {
 
       {/* Subscription renewals — read-only */}
       {upcomingSubs.length > 0 && (
-        <div className="border mt-4" style={{ borderColor: "var(--ft-border)" }}>
-          <div className="flex items-center justify-between px-3 py-1.5 border-b" style={{ background: "var(--ft-muted)22", borderColor: "var(--ft-muted)44", overflow: "hidden" }}>
-            <span className="text-xs font-bold" style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginRight: 8, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              ▼ SUBSCRIPTION RENEWALS — Next 90 days
-            </span>
-            <span style={{ flexShrink: 0, fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>
-              read-only
-            </span>
-          </div>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader right={<span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>read-only</span>}>
+            Subscription Renewals — Next 90 days
+          </PanelHeader>
           <div>
             <div>
             <div className="flex">
