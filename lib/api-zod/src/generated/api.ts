@@ -165,9 +165,7 @@ export const ListTransactionsResponseItem = zod.object({
   "baseEquivalent": zod.number().nullable(),
   "source": zod.enum(['manual', 'wise', 'csv']),
   "externalId": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "transferGroupId": zod.string().uuid().nullish(),
-  "transferDirection": zod.enum(['out', 'in']).nullish()
+  "createdAt": zod.string()
 })
 export const ListTransactionsResponse = zod.array(ListTransactionsResponseItem)
 
@@ -182,10 +180,7 @@ export const CreateTransactionBody = zod.object({
   "category": zod.string(),
   "accountId": zod.number(),
   "nativeAmount": zod.number(),
-  "currency": zod.string(),
-  "toAccountId": zod.number().optional(),
-  "toNativeAmount": zod.number().optional(),
-  "toCurrency": zod.string().optional()
+  "currency": zod.string()
 })
 
 
@@ -920,6 +915,24 @@ export const AddGoalFundsResponse = zod.object({
 
 
 /**
+ * @summary Detect and list recurring transaction patterns
+ */
+export const ListRecurringPatternsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "normalizedKey": zod.string(),
+  "displayName": zod.string(),
+  "intervalDays": zod.number(),
+  "expectedAmount": zod.number(),
+  "currency": zod.string(),
+  "lastOccurrence": zod.string(),
+  "nextExpected": zod.string().optional(),
+  "occurrenceCount": zod.number(),
+  "status": zod.enum(['active', 'lapsed'])
+})
+export const ListRecurringPatternsResponse = zod.array(ListRecurringPatternsResponseItem)
+
+
+/**
  * @summary List all subscriptions
  */
 export const ListSubscriptionsResponseItem = zod.object({
@@ -1078,6 +1091,22 @@ export const UpdateSettingsThemeBody = zod.object({
 
 
 /**
+ * @summary Get the current user's phone tab-slot override
+ */
+export const GetSettingsTabSlotResponse = zod.object({
+  "tabSlot": zod.union([zod.literal('spending'),zod.literal('markets'),zod.literal('upcoming'),zod.literal('owing'),zod.literal('watchlist'),zod.literal(null)]).nullable().describe('The user-chosen third position in the phone tab bar\n(HOME · WORTH · [slot] · DIRECTORY). null means no override:\nthe client shows the persona default. Server-owned so the\nchoice follows the user across devices — see\nartifacts\/finance-tracker\/src\/lib\/tab-slot.ts.\n')
+})
+
+
+/**
+ * @summary Set (or clear, with null) the current user's phone tab-slot override
+ */
+export const UpdateSettingsTabSlotBody = zod.object({
+  "tabSlot": zod.union([zod.literal('spending'),zod.literal('markets'),zod.literal('upcoming'),zod.literal('owing'),zod.literal('watchlist'),zod.literal(null)]).nullable().describe('The user-chosen third position in the phone tab bar\n(HOME · WORTH · [slot] · DIRECTORY). null means no override:\nthe client shows the persona default. Server-owned so the\nchoice follows the user across devices — see\nartifacts\/finance-tracker\/src\/lib\/tab-slot.ts.\n')
+})
+
+
+/**
  * @summary Change the app password (requires current password)
  */
 export const changePasswordBodyNewPasswordMin = 8;
@@ -1134,19 +1163,5 @@ export const Disable2faBody = zod.object({
 export const Disable2faResponse = zod.object({
   "ok": zod.boolean()
 })
-
-export const ListRecurringPatternsResponseItem = zod.object({
-  id: zod.string().uuid(),
-  normalizedKey: zod.string(),
-  displayName: zod.string(),
-  intervalDays: zod.number().int(),
-  expectedAmount: zod.number(),
-  currency: zod.string(),
-  lastOccurrence: zod.string(),
-  nextExpected: zod.string().optional(),
-  occurrenceCount: zod.number().int(),
-  status: zod.enum(["active", "lapsed"]),
-})
-export const ListRecurringPatternsResponse = zod.array(ListRecurringPatternsResponseItem)
 
 

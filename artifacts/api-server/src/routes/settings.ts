@@ -10,6 +10,10 @@ import {
   setTheme,
   VALID_THEMES,
   type ThemeId,
+  getTabSlot,
+  setTabSlot,
+  VALID_TAB_SLOTS,
+  type TabSlotId,
 } from "../lib/app-settings-db";
 
 const SUPPORTED_CURRENCIES = ["GBP", "USD", "EUR", "MYR", "CNY", "JPY", "AUD", "CAD", "SGD", "HKD", "THB", "INR"] as const;
@@ -64,6 +68,31 @@ router.put("/settings/theme", async (req, res): Promise<void> => {
     return;
   }
   await setTheme(userId, theme as ThemeId);
+  res.sendStatus(200);
+});
+
+// Phone tab slot. `null` is a valid PUT value: it clears the override
+// and returns the user to their persona default. Anything else must be
+// a known slot id.
+router.get("/settings/tab-slot", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const tabSlot = await getTabSlot(userId);
+  res.json({ tabSlot });
+});
+
+router.put("/settings/tab-slot", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const body = req.body as { tabSlot?: unknown };
+  if (!body || !("tabSlot" in body)) {
+    res.status(400).json({ error: `tabSlot is required (null or one of: ${VALID_TAB_SLOTS.join(", ")})` });
+    return;
+  }
+  const { tabSlot } = body;
+  if (tabSlot !== null && !(VALID_TAB_SLOTS as readonly string[]).includes(tabSlot as string)) {
+    res.status(400).json({ error: `tabSlot must be null or one of: ${VALID_TAB_SLOTS.join(", ")}` });
+    return;
+  }
+  await setTabSlot(userId, tabSlot as TabSlotId | null);
   res.sendStatus(200);
 });
 

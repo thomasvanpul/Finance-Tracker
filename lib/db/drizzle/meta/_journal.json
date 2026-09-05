@@ -120,6 +120,13 @@
       "when": 1788360155000,
       "tag": "0016_recurring_patterns",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788582168119,
+      "tag": "0017_tab_slot",
+      "breakpoints": true
     }
   ]
 }

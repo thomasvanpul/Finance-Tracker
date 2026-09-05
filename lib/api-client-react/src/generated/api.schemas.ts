@@ -742,6 +742,27 @@ export interface UpdateGoalBody {
   history?: GoalHistoryEntry[];
 }
 
+export type RecurringPatternStatus = typeof RecurringPatternStatus[keyof typeof RecurringPatternStatus];
+
+
+export const RecurringPatternStatus = {
+  active: 'active',
+  lapsed: 'lapsed',
+} as const;
+
+export interface RecurringPattern {
+  id: string;
+  normalizedKey: string;
+  displayName: string;
+  intervalDays: number;
+  expectedAmount: number;
+  currency: string;
+  lastOccurrence: string;
+  nextExpected?: string;
+  occurrenceCount: number;
+  status: RecurringPatternStatus;
+}
+
 export type SubscriptionFrequency = typeof SubscriptionFrequency[keyof typeof SubscriptionFrequency];
 
 
@@ -956,6 +977,39 @@ export interface ThemeSettings {
   contexts/theme-context.tsx for colour semantics.
    */
   theme: ThemeSettingsTheme;
+}
+
+/**
+ * The user-chosen third position in the phone tab bar
+(HOME · WORTH · [slot] · DIRECTORY). null means no override:
+the client shows the persona default. Server-owned so the
+choice follows the user across devices — see
+artifacts/finance-tracker/src/lib/tab-slot.ts.
+
+ * @nullable
+ */
+export type TabSlotSettingsTabSlot = typeof TabSlotSettingsTabSlot[keyof typeof TabSlotSettingsTabSlot] | null;
+
+
+export const TabSlotSettingsTabSlot = {
+  spending: 'spending',
+  markets: 'markets',
+  upcoming: 'upcoming',
+  owing: 'owing',
+  watchlist: 'watchlist',
+} as const;
+
+export interface TabSlotSettings {
+  /**
+     * The user-chosen third position in the phone tab bar
+  (HOME · WORTH · [slot] · DIRECTORY). null means no override:
+  the client shows the persona default. Server-owned so the
+  choice follows the user across devices — see
+  artifacts/finance-tracker/src/lib/tab-slot.ts.
+
+     * @nullable
+     */
+  tabSlot: TabSlotSettingsTabSlot;
 }
 
 export type DashboardSummaryAccountBreakdownItemType = typeof DashboardSummaryAccountBreakdownItemType[keyof typeof DashboardSummaryAccountBreakdownItemType];

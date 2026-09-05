@@ -67,3 +67,24 @@ export async function setTheme(userId: string, theme: ThemeId): Promise<void> {
     .set({ theme })
     .where(eq(appSettingsTable.userId, userId));
 }
+
+// Phone tab slot. NULL = no override (follow the persona default, which
+// the frontend computes). Server validates the id set only; the runtime
+// meaning and the persona→default map live in
+// artifacts/finance-tracker/src/lib/tab-slot.ts. Keep this list in sync
+// with SLOT_OPTIONS there.
+export const VALID_TAB_SLOTS = ["spending", "markets", "upcoming", "owing", "watchlist"] as const;
+export type TabSlotId = (typeof VALID_TAB_SLOTS)[number];
+
+export async function getTabSlot(userId: string): Promise<TabSlotId | null> {
+  const row = await ensureSettings(userId);
+  return (row.tabSlot as TabSlotId | null | undefined) ?? null;
+}
+
+export async function setTabSlot(userId: string, tabSlot: TabSlotId | null): Promise<void> {
+  await ensureSettings(userId);
+  await db
+    .update(appSettingsTable)
+    .set({ tabSlot })
+    .where(eq(appSettingsTable.userId, userId));
+}

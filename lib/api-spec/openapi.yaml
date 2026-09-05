@@ -1154,6 +1154,32 @@ paths:
         "200":
           description: Updated
 
+  /settings/tab-slot:
+    get:
+      operationId: getSettingsTabSlot
+      tags: [settings]
+      summary: Get the current user's phone tab-slot override
+      responses:
+        "200":
+          description: Tab slot override (null when following the persona default)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TabSlotSettings"
+    put:
+      operationId: updateSettingsTabSlot
+      tags: [settings]
+      summary: Set (or clear, with null) the current user's phone tab-slot override
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TabSlotSettings"
+      responses:
+        "200":
+          description: Updated
+
   # ── SETTINGS (password + 2FA) ───────────────────────────────────────────────
   /settings/password:
     post:
@@ -2151,6 +2177,20 @@ components:
             follows the user across devices and never leaks to a
             different user on the same browser. See
             contexts/theme-context.tsx for colour semantics.
+
+    TabSlotSettings:
+      type: object
+      required: [tabSlot]
+      properties:
+        tabSlot:
+          type: [string, "null"]
+          enum: [spending, markets, upcoming, owing, watchlist, null]
+          description: |
+            The user-chosen third position in the phone tab bar
+            (HOME · WORTH · [slot] · DIRECTORY). null means no override:
+            the client shows the persona default. Server-owned so the
+            choice follows the user across devices — see
+            artifacts/finance-tracker/src/lib/tab-slot.ts.
 
     # ── DASHBOARD ─────────────────────────────────────────────────────────────
     DashboardSummary:

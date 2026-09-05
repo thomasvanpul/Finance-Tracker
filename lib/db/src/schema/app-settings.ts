@@ -19,6 +19,15 @@ export const appSettingsTable = pgTable("app_settings", {
   baseCurrency: text("base_currency").notNull().default("GBP"),
   persona: text("persona").notNull().default("full"),
   theme: text("theme").notNull().default("void"),
+  // tabSlot: the one user-chosen position in the phone tab bar
+  // (HOME · WORTH · [slot] · DIRECTORY). NULL = no override, follow the
+  // persona default. Text, not an enum, for the same one-deploy reason
+  // as persona. Runtime values: spending | markets | upcoming | owing |
+  // watchlist — see artifacts/finance-tracker/src/lib/tab-slot.ts.
+  // Account-level on purpose: a nav choice that did not follow the user
+  // from laptop to phone would be one more stranded localStorage key
+  // (BACKLOG § G20).
+  tabSlot: text("tab_slot"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 

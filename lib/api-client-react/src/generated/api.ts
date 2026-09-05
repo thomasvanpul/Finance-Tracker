@@ -60,9 +60,11 @@ import type {
   ListTransactionsParams,
   OkResult,
   PersonaSettings,
+  RecurringPattern,
   StockPrice,
   StockQuote,
   Subscription,
+  TabSlotSettings,
   ThemeSettings,
   Transaction,
   TransactionInput,
@@ -3645,6 +3647,83 @@ export const useAddGoalFunds = <TError = ErrorType<unknown>,
       return useMutation(getAddGoalFundsMutationOptions(options));
     }
 
+export const getListRecurringPatternsUrl = () => {
+
+
+
+
+  return `/api/recurring-patterns`
+}
+
+/**
+ * @summary Detect and list recurring transaction patterns
+ */
+export const listRecurringPatterns = async ( options?: RequestInit): Promise<RecurringPattern[]> => {
+
+  return customFetch<RecurringPattern[]>(getListRecurringPatternsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRecurringPatternsQueryKey = () => {
+    return [
+    `/api/recurring-patterns`
+    ] as const;
+    }
+
+
+export const getListRecurringPatternsQueryOptions = <TData = Awaited<ReturnType<typeof listRecurringPatterns>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRecurringPatterns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRecurringPatternsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRecurringPatterns>>> = ({ signal }) => listRecurringPatterns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRecurringPatterns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRecurringPatternsQueryResult = NonNullable<Awaited<ReturnType<typeof listRecurringPatterns>>>
+export type ListRecurringPatternsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Detect and list recurring transaction patterns
+ */
+
+export function useListRecurringPatterns<TData = Awaited<ReturnType<typeof listRecurringPatterns>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRecurringPatterns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRecurringPatternsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListSubscriptionsUrl = () => {
 
 
@@ -4602,6 +4681,154 @@ export const useUpdateSettingsTheme = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateSettingsThemeMutationOptions(options));
+    }
+
+export const getGetSettingsTabSlotUrl = () => {
+
+
+
+
+  return `/api/settings/tab-slot`
+}
+
+/**
+ * @summary Get the current user's phone tab-slot override
+ */
+export const getSettingsTabSlot = async ( options?: RequestInit): Promise<TabSlotSettings> => {
+
+  return customFetch<TabSlotSettings>(getGetSettingsTabSlotUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSettingsTabSlotQueryKey = () => {
+    return [
+    `/api/settings/tab-slot`
+    ] as const;
+    }
+
+
+export const getGetSettingsTabSlotQueryOptions = <TData = Awaited<ReturnType<typeof getSettingsTabSlot>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsTabSlot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSettingsTabSlotQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSettingsTabSlot>>> = ({ signal }) => getSettingsTabSlot({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSettingsTabSlot>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSettingsTabSlotQueryResult = NonNullable<Awaited<ReturnType<typeof getSettingsTabSlot>>>
+export type GetSettingsTabSlotQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current user's phone tab-slot override
+ */
+
+export function useGetSettingsTabSlot<TData = Awaited<ReturnType<typeof getSettingsTabSlot>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSettingsTabSlot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSettingsTabSlotQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateSettingsTabSlotUrl = () => {
+
+
+
+
+  return `/api/settings/tab-slot`
+}
+
+/**
+ * @summary Set (or clear, with null) the current user's phone tab-slot override
+ */
+export const updateSettingsTabSlot = async (tabSlotSettings: TabSlotSettings, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUpdateSettingsTabSlotUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tabSlotSettings,)
+  }
+);}
+
+
+
+
+export const getUpdateSettingsTabSlotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsTabSlot>>, TError,{data: BodyType<TabSlotSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSettingsTabSlot>>, TError,{data: BodyType<TabSlotSettings>}, TContext> => {
+
+const mutationKey = ['updateSettingsTabSlot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSettingsTabSlot>>, {data: BodyType<TabSlotSettings>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateSettingsTabSlot(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSettingsTabSlotMutationResult = NonNullable<Awaited<ReturnType<typeof updateSettingsTabSlot>>>
+    export type UpdateSettingsTabSlotMutationBody = BodyType<TabSlotSettings>
+    export type UpdateSettingsTabSlotMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set (or clear, with null) the current user's phone tab-slot override
+ */
+export const useUpdateSettingsTabSlot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSettingsTabSlot>>, TError,{data: BodyType<TabSlotSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSettingsTabSlot>>,
+        TError,
+        {data: BodyType<TabSlotSettings>},
+        TContext
+      > => {
+      return useMutation(getUpdateSettingsTabSlotMutationOptions(options));
     }
 
 export const getChangePasswordUrl = () => {

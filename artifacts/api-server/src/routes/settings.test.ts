@@ -200,3 +200,71 @@ describe("PUT /settings/theme", () => {
     expect(r.status).toBe(400);
   });
 });
+
+describe("GET /settings/tab-slot", () => {
+  it("returns null by default when no row exists (follow persona default)", async () => {
+    const r = await fetch(`${baseUrl}/settings/tab-slot`);
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ tabSlot: null });
+  });
+
+  it("returns the stored slot after a PUT", async () => {
+    const put = await fetch(`${baseUrl}/settings/tab-slot`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tabSlot: "markets" }),
+    });
+    expect(put.status).toBe(200);
+    const get = await fetch(`${baseUrl}/settings/tab-slot`);
+    expect(await get.json()).toEqual({ tabSlot: "markets" });
+  });
+});
+
+describe("PUT /settings/tab-slot", () => {
+  it.each(["spending", "markets", "upcoming", "owing", "watchlist"])("accepts %s", async (s) => {
+    const r = await fetch(`${baseUrl}/settings/tab-slot`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tabSlot: s }),
+    });
+    expect(r.status).toBe(200);
+  });
+
+  it("accepts null and clears a previously stored slot", async () => {
+    await fetch(`${baseUrl}/settings/tab-slot`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tabSlot: "upcoming" }),
+    });
+    const clear = await fetch(`${baseUrl}/settings/tab-slot`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tabSlot: null }),
+    });
+    expect(clear.status).toBe(200);
+    const get = await fetch(`${baseUrl}/settings/tab-slot`);
+    expect(await get.json()).toEqual({ tabSlot: null });
+  });
+
+  it("rejects an unknown slot with 400 listing valid ids", async () => {
+    const r = await fetch(`${baseUrl}/settings/tab-slot`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tabSlot: "news" }),
+    });
+    expect(r.status).toBe(400);
+    const body = await r.json() as { error: string };
+    expect(body.error).toMatch(/must be null or one of/);
+    expect(body.error).toMatch(/markets/);
+    expect(body.error).toMatch(/watchlist/);
+  });
+
+  it("rejects a missing tabSlot field (absent is not the same as null)", async () => {
+    const r = await fetch(`${baseUrl}/settings/tab-slot`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    expect(r.status).toBe(400);
+  });
+});
