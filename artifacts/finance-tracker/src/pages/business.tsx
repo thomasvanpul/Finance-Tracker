@@ -27,7 +27,7 @@ import {
   TrendingDown,
   Receipt,
 } from "lucide-react";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -183,57 +183,6 @@ function txYear(dateStr: string): number {
 
 // ─── Section header ────────────────────────────────────────────────────────────
 
-function SectionHeader({
-  title,
-  accentColor,
-  children,
-}: {
-  title: string;
-  accentColor?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        borderBottom: "1px solid var(--ft-border)",
-        paddingBottom: 8,
-        marginBottom: 16,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div
-          style={{
-            width: 3,
-            height: 14,
-            background: accentColor ?? "var(--ft-accent)",
-            flexShrink: 0,
-          }}
-        />
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            fontWeight: 700,
-            color: "var(--ft-muted)",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-          }}
-        >
-          {title}
-        </span>
-      </div>
-      {children && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── KPI strip cell (border-as-gap pattern) ────────────────────────────────────
 
 function KpiCell({
@@ -259,6 +208,7 @@ function KpiCell({
 }) {
   return (
     <div
+      className="ft-kpi-bar-cell"
       style={{
         background: "var(--ft-surface)",
         padding: "12px 16px",
@@ -1224,15 +1174,14 @@ export default function Business() {
       />
 
       {/* ─── YTD KPI Strip (border-as-gap) ─── */}
-      <div style={{ marginBottom: 32 }}>
-        <SectionHeader title={`${yr} Year-to-Date`} accentColor="var(--ft-green)" />
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader>{`${yr} Year-to-Date`}</PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
         <div
           className="ft-kpi-bar"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(5, 1fr)",
-            gap: 1,
-            background: "var(--ft-border)",
           }}
         >
           <KpiCell
@@ -1285,15 +1234,15 @@ export default function Business() {
             accentColor="var(--ft-amber)"
           />
         </div>
+        </div>
       </div>
 
       {/* ─── P&L Section ─── */}
-      <div style={{ marginBottom: 32 }}>
-        <SectionHeader title="Profit & Loss" accentColor="var(--ft-cyan)">
-          <Text as="span" mono size={9} color="var(--ft-dim)">
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader right={<><Text as="span" mono size={9} color="var(--ft-dim)">
             All time
-          </Text>
-        </SectionHeader>
+          </Text></>}>Profit & Loss</PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
 
         {/* P&L KPI strip */}
         <div
@@ -1301,8 +1250,6 @@ export default function Business() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 1,
-            background: "var(--ft-border)",
             marginBottom: 16,
           }}
         >
@@ -1502,12 +1449,12 @@ export default function Business() {
             subtitle="Configure business categories below to start tracking operating expenses and see a full breakdown here."
           />
         )}
+        </div>
       </div>
 
       {/* ─── Invoice / Billable Tracking ─── */}
-      <div style={{ marginBottom: 32 }}>
-        <SectionHeader title="Invoice Tracker" accentColor="var(--ft-blue)">
-          <button
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader right={<><button
             onClick={() => {
               setInvoiceForm(emptyInvoiceForm());
               setInvoiceFormError(null);
@@ -1531,8 +1478,8 @@ export default function Business() {
           >
             <Plus size={11} />
             NEW INVOICE
-          </button>
-        </SectionHeader>
+          </button></>}>Invoice Tracker</PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
 
         {/* Invoice KPI strip */}
         <div
@@ -1540,8 +1487,6 @@ export default function Business() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 1,
-            background: "var(--ft-border)",
             marginBottom: 16,
           }}
         >
@@ -1581,7 +1526,6 @@ export default function Business() {
             style={{
               background: "var(--ft-surface)",
               border: "1px solid var(--ft-border2)",
-              borderLeft: "2px solid var(--ft-accent)",
               padding: 16,
               marginBottom: 12,
             }}
@@ -1837,12 +1781,12 @@ export default function Business() {
             subtitle="Create your first invoice to start tracking billable work, monitor payment status, and see outstanding amounts at a glance."
           />
         )}
+        </div>
       </div>
 
       {/* ─── VAT Tracker ─── */}
-      <div style={{ marginBottom: 32 }}>
-        <SectionHeader title="VAT Position" accentColor="var(--ft-amber)">
-          {/* Quarter selector */}
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader right={<>{/* Quarter selector */}
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setVatQuarterOpen((v) => !v)}
@@ -1889,8 +1833,8 @@ export default function Business() {
                 ))}
               </div>
             )}
-          </div>
-        </SectionHeader>
+          </div></>}>VAT Position</PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
 
         {/* VAT grid — border-as-gap */}
         <div
@@ -1904,12 +1848,11 @@ export default function Business() {
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr 1fr",
-              gap: 1,
-              background: "var(--ft-border)",
+              border: "none",
             }}
           >
             {/* VAT collected */}
-            <div style={{ background: "var(--ft-surface)", padding: "16px 20px", borderTop: "2px solid var(--ft-blue)" }}>
+            <div style={{ background: "var(--ft-surface)", padding: "16px 20px", borderRight: "1px solid var(--ft-border)" }}>
               <div style={vatLabel}>VAT Collected on Income</div>
               <div className="pnum" style={vatValue}>
                 {formatBaseMoney(vatData.vatCollected)}
@@ -1918,7 +1861,7 @@ export default function Business() {
             </div>
 
             {/* VAT reclaimable */}
-            <div style={{ background: "var(--ft-surface)", padding: "16px 20px", borderTop: "2px solid var(--ft-green)" }}>
+            <div style={{ background: "var(--ft-surface)", padding: "16px 20px", borderRight: "1px solid var(--ft-border)" }}>
               <div style={vatLabel}>VAT Reclaimable on Expenses</div>
               <div className="pnum" style={{ ...vatValue, color: "var(--ft-green)" }}>
                 {formatBaseMoney(vatData.vatReclaimable)}
@@ -1930,7 +1873,6 @@ export default function Business() {
             <div style={{
               background: "var(--ft-surface)",
               padding: "16px 20px",
-              borderTop: `2px solid ${vatData.netVat > 0 ? "var(--ft-red)" : vatData.netVat < 0 ? "var(--ft-green)" : "var(--ft-border2)"}`,
             }}>
               <div style={vatLabel}>Net VAT Position</div>
               <div
@@ -1987,11 +1929,13 @@ export default function Business() {
             {yr}). Consult a qualified accountant.
           </div>
         </div>
+        </div>
       </div>
 
       {/* ─── Business Categories ─── */}
-      <div style={{ marginBottom: 32 }}>
-        <SectionHeader title="Business Categories" accentColor="var(--ft-accent)" />
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader>Business Categories</PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
 
         <div
           style={{
@@ -2106,6 +2050,7 @@ export default function Business() {
             ADD
           </button>
         </HStack>
+        </div>
       </div>
 
       {/* ─── Data source note ─── */}

@@ -8,7 +8,7 @@ import {
 import { formatBaseMoney } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { FileText, RefreshCw, Loader2, AlertTriangle, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { oneShotInsight } from "@/lib/ai-chat-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -113,31 +113,10 @@ const PRIORITY_ICONS: Record<string, typeof AlertTriangle> = {
   high: AlertTriangle, medium: Zap, low: Shield,
 };
 
-function SectionHeader({ code, title, accentColor }: { code: string; title: string; accentColor?: string }) {
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 10,
-      paddingBottom: 9, marginBottom: 14,
-      borderBottom: "1px solid var(--ft-border)",
-      borderLeft: `3px solid ${accentColor ?? "var(--ft-accent)"}`,
-      paddingLeft: 10,
-    }}>
-      <span style={{
-        fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)",
-        letterSpacing: "0.1em", background: "rgba(79,140,255,0.08)",
-        border: "1px solid rgba(79,140,255,0.18)", padding: "1px 5px",
-        fontWeight: 700,
-      }}>{code}</span>
-      <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.14em">{title}</Text>
-      <div style={{ flex: 1, height: 1, background: "var(--ft-border2)", marginLeft: 4 }} />
-    </div>
-  );
-}
-
 function NarrativeBox({ text, icon: Icon }: { text: string; icon?: React.ElementType }) {
   return (
     <div style={{
-      background: "var(--ft-raised)", borderLeft: "2px solid var(--ft-accent)",
+      background: "var(--ft-surface)", border: "1px solid var(--ft-border)",
       padding: "12px 16px", fontFamily: "var(--font-mono)", fontSize: 12,
       color: "var(--ft-text)", lineHeight: 1.8, display: "flex", gap: 10,
     }}>
@@ -294,7 +273,6 @@ function RecommendationRow({
         display: "flex", gap: 0,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
-        borderLeft: `3px solid ${color}`,
         overflow: "hidden",
         transition: "background 0.1s",
       }}
@@ -360,9 +338,9 @@ function RiskRow({
 
 // ─── Situation metric cell ────────────────────────────────────────────────────
 
-function SituationMetricCell({ label, value, color }: { label: string; value: string; color: string }) {
+function SituationMetricCell({ label, value, color, isLast }: { label: string; value: string; color: string; isLast?: boolean }) {
   return (
-    <div style={{ textAlign: "right", background: "var(--ft-surface)", padding: "10px 16px" }}>
+    <div style={{ textAlign: "right", background: "var(--ft-surface)", padding: "10px 16px", borderRight: isLast ? "none" : "1px solid var(--ft-border)" }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color }}>
         <span className="pnum">{value}</span>
@@ -500,7 +478,7 @@ export default function Briefing() {
           background: "var(--ft-raised)",
           borderTop: "1px solid var(--ft-border)",
           borderBottom: "1px solid var(--ft-border)",
-          padding: "6px 16px", marginBottom: 16,
+          padding: "6px 16px", marginBottom: 6,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.08em">
@@ -515,7 +493,7 @@ export default function Briefing() {
           background: "var(--ft-raised)",
           borderTop: "1px solid var(--ft-border)",
           borderBottom: "1px solid var(--ft-border)",
-          padding: "5px 0", marginBottom: 24,
+          padding: "5px 0", marginBottom: 6,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           {[
@@ -537,24 +515,24 @@ export default function Briefing() {
       )}
 
       {error && (
-        <div style={{ marginBottom: 20, padding: "10px 14px", background: "rgba(230,80,80,0.06)", border: "1px solid rgba(230,80,80,0.2)", fontSize: 11, color: "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
+        <div style={{ marginBottom: 6, padding: "10px 14px", background: "rgba(230,80,80,0.06)", border: "1px solid rgba(230,80,80,0.2)", fontSize: 11, color: "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
           {error}
         </div>
       )}
 
       {/* Pre-generate: live data summary + CTA */}
       {!briefing && !generating && (
-        <VStack gap={24}>
-          {/* KPI snapshot — border-as-gap grid */}
-          <div>
-            <SectionHeader code="01" title="Current Snapshot" accentColor="var(--ft-accent)" />
-            <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 1 }}>
+        <VStack gap={6}>
+          {/* KPI snapshot — one framed strip, cells separated by borders */}
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <PanelHeader>Current Snapshot <Text as="span" mono size={10} color="var(--ft-muted)">01</Text></PanelHeader>
+            <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
               {[
-                { label: "Net Worth", value: dashboard?.netWorth != null ? formatBaseMoney(dashboard.netWorth) : "—", color: "var(--ft-text)", accentColor: "var(--ft-accent)" },
-                { label: "Liquid Assets", value: formatBaseMoney(totalLiquid), color: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-muted)", accentColor: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-border2)" },
-                { label: "Monthly Income", value: dashboard?.thisMonth?.income != null ? formatBaseMoney(dashboard.thisMonth.income) : "—", color: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-muted)", accentColor: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-border2)" },
-              ].map(({ label, value, color, accentColor }) => (
-                <div key={label} style={{ background: "var(--ft-surface)", padding: "13px 14px", borderTop: `2px solid ${accentColor}` }}>
+                { label: "Net Worth", value: dashboard?.netWorth != null ? formatBaseMoney(dashboard.netWorth) : "—", color: "var(--ft-text)" },
+                { label: "Liquid Assets", value: formatBaseMoney(totalLiquid), color: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-muted)" },
+                { label: "Monthly Income", value: dashboard?.thisMonth?.income != null ? formatBaseMoney(dashboard.thisMonth.income) : "—", color: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-muted)" },
+              ].map(({ label, value, color }, i, arr) => (
+                <div key={label} style={{ background: "var(--ft-surface)", padding: "13px 14px", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none", borderBottom: "1px solid var(--ft-border)" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>{label}</div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color }}>
                     <span className="pnum">{value}</span>
@@ -562,13 +540,13 @@ export default function Briefing() {
                 </div>
               ))}
             </div>
-            <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+            <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
               {[
-                { label: "Monthly Spend", value: dashboard?.thisMonth?.expenses != null ? formatBaseMoney(dashboard.thisMonth.expenses) : "—", color: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-muted)", accentColor: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-border2)" },
-                { label: "Savings Rate", value: dashboard?.thisMonth?.savingsRate != null ? `${(dashboard.thisMonth.savingsRate * 100).toFixed(1)}%` : "—", color: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-muted)", accentColor: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-border2)" },
-                { label: "Budgets Over Limit", value: overBudgetCount > 0 ? `${overBudgetCount} over` : "All clear", color: overBudgetCount > 0 ? "var(--ft-red)" : "var(--ft-green)", accentColor: overBudgetCount > 0 ? "var(--ft-red)" : "var(--ft-green)" },
-              ].map(({ label, value, color, accentColor }) => (
-                <div key={label} style={{ background: "var(--ft-surface)", padding: "13px 14px", borderTop: `2px solid ${accentColor}` }}>
+                { label: "Monthly Spend", value: dashboard?.thisMonth?.expenses != null ? formatBaseMoney(dashboard.thisMonth.expenses) : "—", color: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-muted)" },
+                { label: "Savings Rate", value: dashboard?.thisMonth?.savingsRate != null ? `${(dashboard.thisMonth.savingsRate * 100).toFixed(1)}%` : "—", color: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-muted)" },
+                { label: "Budgets Over Limit", value: overBudgetCount > 0 ? `${overBudgetCount} over` : "All clear", color: overBudgetCount > 0 ? "var(--ft-red)" : "var(--ft-green)" },
+              ].map(({ label, value, color }, i, arr) => (
+                <div key={label} style={{ background: "var(--ft-surface)", padding: "13px 14px", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>{label}</div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color }}>
                     <span className="pnum">{value}</span>
@@ -580,7 +558,7 @@ export default function Briefing() {
 
           {/* CTA */}
           <div style={{
-            border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-accent)",
+            border: "1px solid var(--ft-border)", background: "var(--ft-surface)",
             padding: isMobile ? "20px 16px" : "28px 24px",
             display: "flex", gap: isMobile ? 14 : 24,
             alignItems: isMobile ? "flex-start" : "center",
@@ -642,13 +620,12 @@ export default function Briefing() {
 
       {/* Generated report */}
       {briefing && !generating && (
-        <VStack gap={28}>
+        <VStack gap={6}>
 
           {/* Situation header */}
           <div style={{
-            background: "var(--ft-raised)",
+            background: "var(--ft-surface)",
             border: "1px solid var(--ft-border)",
-            borderLeft: `4px solid ${rating?.color ?? "var(--ft-accent)"}`,
             overflow: "hidden",
           }}>
             <HStack gap={12} align="center" justify="between" wrap padding="14px 18px">
@@ -663,7 +640,7 @@ export default function Briefing() {
                   </Text>
                 </HStack>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 1, background: "var(--ft-border)" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid var(--ft-border)" }}>
                 <SituationMetricCell
                   label="Net Worth"
                   value={dashboard?.netWorth != null ? formatBaseMoney(dashboard.netWorth) : "—"}
@@ -678,6 +655,7 @@ export default function Briefing() {
                   label="Savings Rate"
                   value={srValue}
                   color="var(--ft-amber)"
+                  isLast
                 />
               </div>
             </HStack>
@@ -692,15 +670,17 @@ export default function Briefing() {
           </div>
 
           {/* Executive Summary */}
-          <div>
-            <SectionHeader code="01" title="Executive Summary" accentColor="var(--ft-accent)" />
-            <NarrativeBox text={briefing.executiveSummary} icon={FileText} />
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <PanelHeader>Executive Summary <Text as="span" mono size={10} color="var(--ft-muted)">01</Text></PanelHeader>
+            <div style={{ padding: "10px 12px" }}>
+              <NarrativeBox text={briefing.executiveSummary} icon={FileText} />
+            </div>
           </div>
 
           {/* Key Findings */}
-          <div>
-            <SectionHeader code="02" title="Key Findings" accentColor="var(--ft-blue)" />
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <PanelHeader>Key Findings <Text as="span" mono size={10} color="var(--ft-muted)">02</Text></PanelHeader>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px" }}>
               {briefing.keyFindings.map((finding, i) => (
                 <KeyFindingRow key={i} finding={finding} index={i} />
               ))}
@@ -708,9 +688,9 @@ export default function Briefing() {
           </div>
 
           {/* Spending Analysis */}
-          <div>
-            <SectionHeader code="03" title="Spending Analysis" accentColor="var(--ft-red)" />
-            <VStack gap={12}>
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <PanelHeader>Spending Analysis <Text as="span" mono size={10} color="var(--ft-muted)">03</Text></PanelHeader>
+            <VStack gap={6} padding="10px 12px">
               <NarrativeBox text={briefing.spendingNarrative} icon={TrendingDown} />
               {spendingCatData && (
                 <div style={{ border: "1px solid var(--ft-border)" }}>
@@ -744,9 +724,9 @@ export default function Briefing() {
 
           {/* Budget Performance */}
           {budgetsRaw && (budgetsRaw as Budget[]).length > 0 && (
-            <div>
-              <SectionHeader code="04" title="Budget Performance" accentColor="var(--ft-amber)" />
-              <VStack gap={12}>
+            <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+              <PanelHeader>Budget Performance <Text as="span" mono size={10} color="var(--ft-muted)">04</Text></PanelHeader>
+              <VStack gap={6} padding="10px 12px">
                 <NarrativeBox text={briefing.budgetNarrative} icon={Shield} />
                 <div style={{ border: "1px solid var(--ft-border)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr auto 90px" : "1fr auto auto 120px", gap: 8, background: "var(--ft-raised)", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", alignItems: "center" }}>
@@ -771,20 +751,20 @@ export default function Briefing() {
           )}
 
           {/* Portfolio */}
-          <div>
-            <SectionHeader code="05" title="Portfolio Update" accentColor="var(--ft-cyan)" />
-            <VStack gap={12}>
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <PanelHeader>Portfolio Update <Text as="span" mono size={10} color="var(--ft-muted)">05</Text></PanelHeader>
+            <VStack gap={6} padding="10px 12px">
               <NarrativeBox text={briefing.portfolioNarrative} icon={TrendingUp} />
               {invSummary && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 1, background: "var(--ft-border)" }}>
-                  <div style={{ background: "var(--ft-surface)", padding: "14px 16px", borderTop: "2px solid var(--ft-cyan)", minWidth: isMobile ? 0 : 160, flex: isMobile ? "1 1 100%" : undefined }}>
+                <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid var(--ft-border)" }}>
+                  <div style={{ background: "var(--ft-surface)", padding: "14px 16px", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none", minWidth: isMobile ? 0 : 160, flex: isMobile ? "1 1 100%" : undefined }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Portfolio Value</div>
                     <Text as="div" mono size={18} weight={700} color="var(--ft-text)">
                       <span className="pnum">{formatBaseMoney((invSummary as { totalValueBase: number }).totalValueBase)}</span>
                     </Text>
                   </div>
                   {investmentsRaw && (investmentsRaw as Investment[]).length > 0 && (
-                    <div style={{ flex: 1, background: "var(--ft-surface)", padding: "14px 16px", borderTop: "2px solid var(--ft-border2)" }}>
+                    <div style={{ flex: 1, background: "var(--ft-surface)", padding: "14px 16px" }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Top Holdings</div>
                       <HStack gap={8} wrap>
                         {(investmentsRaw as Investment[]).slice(0, 6).map(inv => {
@@ -807,9 +787,9 @@ export default function Briefing() {
           </div>
 
           {/* Recommendations */}
-          <div>
-            <SectionHeader code="06" title="Forward Guidance" accentColor="var(--ft-green)" />
-            <VStack gap={6}>
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <PanelHeader>Forward Guidance <Text as="span" mono size={10} color="var(--ft-muted)">06</Text></PanelHeader>
+            <VStack gap={6} padding="10px 12px">
               {briefing.recommendations.map((rec, i) => (
                 <RecommendationRow key={i} rec={rec} index={i} />
               ))}
@@ -817,9 +797,9 @@ export default function Briefing() {
           </div>
 
           {/* Risk Register */}
-          <div>
-            <SectionHeader code="07" title="Risk Register" accentColor="var(--ft-red)" />
-            <div style={{ border: "1px solid var(--ft-border)" }}>
+          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+            <PanelHeader>Risk Register <Text as="span" mono size={10} color="var(--ft-muted)">07</Text></PanelHeader>
+            <div>
               <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", background: "var(--ft-raised)", padding: "5px 12px", borderBottom: "1px solid var(--ft-border)", gap: 12 }}>
                 {["Level", "Description"].map(h => (
                   <div key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" }}>{h}</div>

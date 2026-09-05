@@ -33,7 +33,7 @@ import {
   PieChart,
   Pie,
 } from "recharts";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -129,70 +129,6 @@ function roleCssVar(color: string): string {
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
-
-function SectionHeader({
-  label,
-  accentColor,
-  count,
-  action,
-}: {
-  label: string;
-  accentColor?: string;
-  count?: number;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        borderBottom: "1px solid var(--ft-border)",
-        paddingBottom: 6,
-        marginBottom: 12,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div
-          style={{
-            width: 3,
-            height: 14,
-            background: accentColor ?? "var(--ft-accent)",
-            flexShrink: 0,
-          }}
-        />
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--ft-muted)",
-          }}
-        >
-          {label}
-        </span>
-        {count !== undefined && (
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              color: "var(--ft-dim)",
-              background: "var(--ft-raised)",
-              border: "1px solid var(--ft-border)",
-              padding: "0 5px",
-              lineHeight: "16px",
-            }}
-          >
-            {count}
-          </span>
-        )}
-      </div>
-      {action}
-    </div>
-  );
-}
 
 function Btn({
   children,
@@ -446,6 +382,7 @@ function KpiCell({
 }) {
   return (
     <div
+      className="ft-kpi-bar-cell"
       style={{
         flex: 1,
         minWidth: 0,
@@ -1099,16 +1036,14 @@ function MemberCard({
           ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-surface))"
           : "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
-        borderRadius: 2,
         padding: "12px 14px",
-        borderLeft: `3px solid ${accentHex}`,
         transition: "background 0.1s",
       }}
     >
       <HStack align="start" justify="between" marginBottom={10}>
         <div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 5 }}>
-            {member.name}
+            <Text as="span" mono size={9} color={accentHex}>■</Text> {member.name}
           </div>
           <RoleBadge role={member.role} />
         </div>
@@ -1498,17 +1433,13 @@ export default function FamilyFinance() {
       />
 
       {/* ── 1. HOUSEHOLD OVERVIEW ───────────────────────────────────────────── */}
-      <section style={{ marginBottom: 28 }}>
-        <SectionHeader label="Household Overview" accentColor="var(--ft-accent)" />
+      <section style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader>Household Overview</PanelHeader>
         {/* border-as-gap KPI strip */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)",
-            gap: 1,
-            background: "var(--ft-border)",
-            border: "1px solid var(--ft-border)",
-            borderRadius: 2,
             overflow: "hidden",
           }}
         >
@@ -1609,18 +1540,12 @@ export default function FamilyFinance() {
       </section>
 
       {/* ── 2. MEMBERS PANEL ──────────────────────────────────────────────────── */}
-      <section style={{ marginBottom: 28 }}>
-        <SectionHeader
-          label="Members"
-          accentColor="var(--ft-accent)"
-          count={members.length}
-          action={
-            <Btn variant="accent" size="xs" onClick={openAddMember}>
+      <section style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader right={<Btn variant="accent" size="xs" onClick={openAddMember}>
               <Plus size={10} />
               Add Member
-            </Btn>
-          }
-        />
+            </Btn>}>Members <Text as="span" mono size={10} color="var(--ft-muted)">{members.length}</Text></PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
 
         {members.length === 0 && !showAddMember ? (
           <EmptyPanel
@@ -1763,11 +1688,13 @@ export default function FamilyFinance() {
             </HStack>
           </div>
         )}
+        </div>
       </section>
 
       {/* ── 3. INCOME ALLOCATION ─────────────────────────────────────────────── */}
-      <section style={{ marginBottom: 28 }}>
-        <SectionHeader label="Income Allocation" accentColor="var(--ft-green)" />
+      <section style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader>Income Allocation</PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
         {members.length === 0 ? (
           <div
             style={{
@@ -1784,7 +1711,6 @@ export default function FamilyFinance() {
             style={{
               background: "var(--ft-surface)",
               border: "1px solid var(--ft-border)",
-              borderRadius: 2,
               padding: "14px 16px",
             }}
           >
@@ -1877,11 +1803,13 @@ export default function FamilyFinance() {
             </div>
           </div>
         )}
+        </div>
       </section>
 
       {/* ── 4. SPENDING BY MEMBER ─────────────────────────────────────────────── */}
-      <section style={{ marginBottom: 28 }}>
-        <SectionHeader label="Spending by Member — This Month" accentColor="var(--ft-red)" />
+      <section style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader>Spending by Member — This Month</PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
         {members.length === 0 ? (
           <div
             style={{
@@ -1902,7 +1830,6 @@ export default function FamilyFinance() {
               gap: 16,
               background: "var(--ft-surface)",
               border: "1px solid var(--ft-border)",
-              borderRadius: 2,
               padding: "14px 16px",
             }}
           >
@@ -1990,21 +1917,16 @@ export default function FamilyFinance() {
             </div>
           </div>
         )}
+        </div>
       </section>
 
       {/* ── 5. HOUSEHOLD GOALS ───────────────────────────────────────────────── */}
-      <section style={{ marginBottom: 28 }}>
-        <SectionHeader
-          label="Household Goals"
-          accentColor="var(--ft-amber)"
-          count={goals.length}
-          action={
-            <Btn variant="accent" size="xs" onClick={openAddGoal}>
+      <section style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader right={<Btn variant="accent" size="xs" onClick={openAddGoal}>
               <Plus size={10} />
               Add Goal
-            </Btn>
-          }
-        />
+            </Btn>}>Household Goals <Text as="span" mono size={10} color="var(--ft-muted)">{goals.length}</Text></PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
 
         {goals.length === 0 && !showAddGoal ? (
           <EmptyPanel
@@ -2174,21 +2096,16 @@ export default function FamilyFinance() {
             </div>
           </div>
         )}
+        </div>
       </section>
 
       {/* ── 6. HOUSEHOLD BUDGET ──────────────────────────────────────────────── */}
-      <section style={{ marginBottom: 28 }}>
-        <SectionHeader
-          label="Household Budget"
-          accentColor="var(--ft-blue)"
-          count={budgets.length}
-          action={
-            <Btn variant="accent" size="xs" onClick={() => setShowAddBudget(true)}>
+      <section style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader right={<Btn variant="accent" size="xs" onClick={() => setShowAddBudget(true)}>
               <Plus size={10} />
               Add Category
-            </Btn>
-          }
-        />
+            </Btn>}>Household Budget <Text as="span" mono size={10} color="var(--ft-muted)">{budgets.length}</Text></PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
 
         {budgets.length === 0 && !showAddBudget ? (
           <EmptyPanel
@@ -2334,21 +2251,16 @@ export default function FamilyFinance() {
             </div>
           </div>
         )}
+        </div>
       </section>
 
       {/* ── 7. FAMILY TIMELINE ───────────────────────────────────────────────── */}
-      <section style={{ marginBottom: 28 }}>
-        <SectionHeader
-          label="Family Timeline"
-          accentColor="var(--ft-cyan)"
-          count={timeline.length}
-          action={
-            <Btn variant="accent" size="xs" onClick={() => setShowAddTimeline(true)}>
+      <section style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader right={<Btn variant="accent" size="xs" onClick={() => setShowAddTimeline(true)}>
               <Plus size={10} />
               Add Entry
-            </Btn>
-          }
-        />
+            </Btn>}>Family Timeline <Text as="span" mono size={10} color="var(--ft-muted)">{timeline.length}</Text></PanelHeader>
+        <div style={{ padding: "10px 12px" }}>
 
         {timeline.length === 0 && !showAddTimeline ? (
           <EmptyPanel
@@ -2470,6 +2382,7 @@ export default function FamilyFinance() {
             </div>
           </div>
         )}
+        </div>
       </section>
     </div>
   );

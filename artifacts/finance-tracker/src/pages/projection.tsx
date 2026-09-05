@@ -10,7 +10,7 @@ import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { TrendingUp } from "lucide-react";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 const MILESTONES = [10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000, 2_000_000];
 const HORIZONS = [5, 10, 20, 30] as const;
@@ -106,10 +106,13 @@ interface KpiCellProps {
   label: string;
   value: string;
   color: string;
-  accentColor?: string;
+  /** Last cell in its grid row: no right rule (the strip's frame closes it). */
+  isLastCol?: boolean;
+  /** Last grid row: no bottom rule. */
+  isLastRow?: boolean;
 }
 
-function KpiCell({ label, value, color, accentColor }: KpiCellProps) {
+function KpiCell({ label, value, color, isLastCol = false, isLastRow = true }: KpiCellProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -120,7 +123,8 @@ function KpiCell({ label, value, color, accentColor }: KpiCellProps) {
       onTouchCancel={() => setHov(false)}
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        borderLeft: accentColor ? `3px solid ${accentColor}` : "none",
+        borderRight: isLastCol ? "none" : "1px solid var(--ft-border)",
+        borderBottom: isLastRow ? "none" : "1px solid var(--ft-border)",
         padding: "10px 14px",
         transition: "background 0.1s",
       }}
@@ -361,8 +365,8 @@ export default function Projection() {
       />
 
       {/* Controls */}
-      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-green)", padding: "14px 16px" }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "14px 16px" }}>
           <HStack justify="between" marginBottom={10}>
             <span style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>BASE ANNUAL RETURN</span>
             <span style={{ ...mono, fontSize: 14, color: "var(--ft-green)", fontWeight: 700 }}>
@@ -386,7 +390,7 @@ export default function Projection() {
             </HStack>
           )}
         </div>
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-accent)", padding: "14px 16px" }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "14px 16px" }}>
           <HStack justify="between" marginBottom={10}>
             <span style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>MONTHLY SAVINGS</span>
             <span style={{ ...mono, fontSize: 14, color: "var(--ft-accent)", fontWeight: 700 }}>
@@ -422,48 +426,53 @@ export default function Projection() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
         );
       })()}
 
-      {/* Border-as-gap KPI strip */}
+      {/* KPI strip — one framed table; cells carry their own rules */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : `repeat(${kpiItems.length}, 1fr)`,
-          gap: 1,
-          background: "var(--ft-border)",
-          marginBottom: 16,
+          border: "1px solid var(--ft-border)",
+          background: "var(--ft-surface)",
+          marginBottom: 6,
         }}
       >
-        {kpiItems.map(({ label, value, color, accent }, i) => {
-          const isLastOdd = isMobile && i === kpiItems.length - 1 && kpiItems.length % 2 === 1;
+        {kpiItems.map(({ label, value, color }, i) => {
+          const n = kpiItems.length;
+          const isLastOdd = isMobile && i === n - 1 && n % 2 === 1;
+          const isLastCol = isMobile ? (i % 2 === 1 || isLastOdd) : i === n - 1;
+          const isLastRow = isMobile ? i >= n - (n % 2 === 1 ? 1 : 2) : true;
           return isLastOdd ? (
             <div key={label} style={{ gridColumn: "span 2" }}>
-              <KpiCell label={label} value={value} color={color} accentColor={accent} />
+              <KpiCell label={label} value={value} color={color} isLastCol={isLastCol} isLastRow={isLastRow} />
             </div>
           ) : (
-            <KpiCell key={label} label={label} value={value} color={color} accentColor={accent} />
+            <KpiCell key={label} label={label} value={value} color={color} isLastCol={isLastCol} isLastRow={isLastRow} />
           );
         })}
       </div>
 
       {/* Chart */}
-      <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-green)", padding: "16px", marginBottom: 16 }}>
-        <HStack align="center" justify="between" marginBottom={12}>
-          <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>
-            {horizon}-YEAR NET WORTH TRAJECTORY
-          </div>
-          <button
-            onClick={() => setShowScenarios(s => !s)}
-            style={{ ...mono, fontSize: 9, padding: "3px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-muted)", cursor: "pointer" }}
-          >
-            {showScenarios ? "Hide scenarios" : "Show scenarios"}
-          </button>
-        </HStack>
+      <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6 }}>
+        <PanelHeader
+          right={
+            <button
+              onClick={() => setShowScenarios(s => !s)}
+              style={{ ...mono, fontSize: 9, padding: "3px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-muted)", cursor: "pointer" }}
+            >
+              {showScenarios ? "Hide scenarios" : "Show scenarios"}
+            </button>
+          }
+        >
+          {horizon}-Year Net Worth Trajectory
+        </PanelHeader>
+        <div style={{ padding: 16 }}>
         <ResponsiveContainer width="100%" height={320}>
           {showScenarios ? (
             <LineChart data={chartData} margin={{ top: 10, right: 16, left: 10, bottom: 0 }}>
@@ -527,16 +536,15 @@ export default function Projection() {
             </AreaChart>
           )}
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Bottom two columns */}
-      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         {/* Milestone table */}
         {milestoneHits.length > 0 && (
           <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
-            <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-amber)", padding: "8px 14px", borderBottom: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-amber)", background: "var(--ft-raised)", fontWeight: 700 }}>
-              MILESTONE TIMELINE
-            </div>
+            <PanelHeader>Milestone Timeline</PanelHeader>
             <MilestoneHeader
               bearRate={bearRate}
               annualRate={annualRate}
@@ -559,9 +567,7 @@ export default function Projection() {
 
         {/* Compound breakdown */}
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
-          <div style={{ ...mono, fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-blue)", padding: "8px 14px", borderBottom: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-blue)", background: "var(--ft-raised)", fontWeight: 700 }}>
-            BASE SCENARIO BREAKDOWN
-          </div>
+          <PanelHeader>Base Scenario Breakdown</PanelHeader>
           <BreakdownRow label="Starting net worth" value={formatBaseMoney(startNetWorth)} color="var(--ft-text)" />
           <BreakdownRow label={`Contributions over ${horizon}y`} value={formatBaseMoney(Math.round(effectiveSavings * horizon * 12))} color="var(--ft-muted)" />
           <BreakdownRow label="Investment returns" value={formatBaseMoney(Math.round(gainBase - effectiveSavings * horizon * 12))} color="var(--ft-green)" />

@@ -18,7 +18,7 @@ import { useListTransactions, useGetDashboard } from "@workspace/api-client-reac
 import { apiFetch } from "@/lib/api-fetch";
 import { formatBaseMoney, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
@@ -317,31 +317,6 @@ function usePrintStyles() {
       document.head.appendChild(style);
     }
   }
-}
-
-// ─── chart section header ─────────────────────────────────────────────────────
-
-function SectionHeader({ title, right, accentColor = "var(--ft-accent)" }: {
-  title: string;
-  right?: React.ReactNode;
-  accentColor?: string;
-}) {
-  return (
-    <div style={{
-      padding: "8px 16px 8px 13px",
-      borderBottom: "1px solid var(--ft-border)",
-      borderLeft: `3px solid ${accentColor}`,
-      background: "var(--ft-surface)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-    }}>
-      <Text as="span" mono upper size={8} weight={700} color="var(--ft-dim)" letterSpacing="0.12em">
-        {title}
-      </Text>
-      {right && <HStack gap={6} align="center">{right}</HStack>}
-    </div>
-  );
 }
 
 // ─── income statement table ───────────────────────────────────────────────────
@@ -919,14 +894,17 @@ interface KpiTile {
 interface KpiTileProps {
   tile: KpiTile;
   isLoading: boolean;
+  isLastCol?: boolean;
+  isLastRow?: boolean;
 }
 
-function KpiTileCell({ tile, isLoading }: KpiTileProps) {
+function KpiTileCell({ tile, isLoading, isLastCol, isLastRow }: KpiTileProps) {
   return (
     <div
       style={{
         background: "var(--ft-surface)",
-        borderTop: `2px solid ${tile.color}`,
+        borderRight: isLastCol ? "none" : "1px solid var(--ft-border)",
+        borderBottom: isLastRow ? "none" : "1px solid var(--ft-border)",
         padding: "10px 14px",
         minWidth: 0,
       }}
@@ -1326,7 +1304,7 @@ export default function Reports() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 14px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -1339,17 +1317,18 @@ export default function Reports() {
           style={{
             display: "grid",
             gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)",
-            gap: 1,
-            background: "var(--ft-border)",
             flex: 1,
             minWidth: 0,
           }}
         >
           {kpiTiles.map((tile, i) => {
+            const cols = isMobile ? 2 : 5;
             const isLastOdd = isMobile && i === kpiTiles.length - 1 && kpiTiles.length % 2 === 1;
+            const isLastCol = isLastOdd || i % cols === cols - 1 || i === kpiTiles.length - 1;
+            const isLastRow = i >= Math.floor((kpiTiles.length - 1) / cols) * cols;
             return isLastOdd
-              ? <div key={tile.label} style={{ gridColumn: "span 2" }}><KpiTileCell tile={tile} isLoading={isLoading} /></div>
-              : <KpiTileCell key={tile.label} tile={tile} isLoading={isLoading} />;
+              ? <div key={tile.label} style={{ gridColumn: "span 2" }}><KpiTileCell tile={tile} isLoading={isLoading} isLastCol={isLastCol} isLastRow={isLastRow} /></div>
+              : <KpiTileCell key={tile.label} tile={tile} isLoading={isLoading} isLastCol={isLastCol} isLastRow={isLastRow} />;
           })}
         </div>
 
@@ -1378,11 +1357,11 @@ export default function Reports() {
       {reportType === "income-statement" && (
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
           <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-            <SectionHeader title="Income Statement" accentColor="var(--ft-green)" right={<Text as="span" mono size={9} color="var(--ft-dim)">monthly breakdown</Text>} />
+            <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">monthly breakdown</Text>}>Income Statement</PanelHeader>
             <IncomeStatementTable rows={monthlyHistory} />
           </div>
           <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
-            <SectionHeader title="Monthly Trend" accentColor="var(--ft-accent)" />
+            <PanelHeader>Monthly Trend</PanelHeader>
             {trendChartData.length > 0 && (
               <div style={{ padding: "10px 8px 0" }}>
                 <ResponsiveContainer width="100%" height={220}>
@@ -1420,16 +1399,16 @@ export default function Reports() {
       {reportType === "expense-report" && (
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
           <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-            <SectionHeader title="Expense Breakdown by Category" accentColor="var(--ft-red)" right={
+            <PanelHeader right={
               <button
                 onClick={() => exportCsv(txList.filter((t) => t.type === "expense") as CsvRow[], "Expense Report")}
                 style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "2px 7px", cursor: "pointer", borderRadius: 2 }}
               >↓ CSV</button>
-            } />
+            }>Expense Breakdown by Category</PanelHeader>
             <ExpenseReportTable categories={topCategories} totalExpenses={totalExpenses} />
           </div>
           <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
-            <SectionHeader title="Breakdown Chart" accentColor="var(--ft-amber)" />
+            <PanelHeader>Breakdown Chart</PanelHeader>
             <WaterfallChart income={income} expenses={expenses} categories={topCategories} />
             {/* Category sparklines */}
             <div style={{ padding: "0 16px 16px" }}>
@@ -1452,11 +1431,11 @@ export default function Reports() {
       {reportType === "net-worth" && (
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
           <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-            <SectionHeader title="Net Worth Summary" accentColor="var(--ft-cyan)" />
+            <PanelHeader>Net Worth Summary</PanelHeader>
             <NetWorthTable income={income} expenses={expenses} netSavings={netSavings} savingsRate={savingsRate} />
           </div>
           <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
-            <SectionHeader title="Savings Trend" accentColor="var(--ft-cyan)" />
+            <PanelHeader>Savings Trend</PanelHeader>
             {trendChartData.length > 0 ? (
               <div style={{ padding: "10px 8px 0" }}>
                 <ResponsiveContainer width="100%" height={220}>
@@ -1478,11 +1457,11 @@ export default function Reports() {
       {reportType === "cash-flow" && (
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
           <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-            <SectionHeader title="Cash Flow Statement" accentColor="var(--ft-blue)" />
+            <PanelHeader>Cash Flow Statement</PanelHeader>
             <CashFlowTable rows={monthlyHistory} />
           </div>
           <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
-            <SectionHeader title="Cumulative Flow" accentColor="var(--ft-cyan)" />
+            <PanelHeader>Cumulative Flow</PanelHeader>
             {trendChartData.length > 0 ? (
               <div style={{ padding: "10px 8px 0" }}>
                 <ResponsiveContainer width="100%" height={220}>
@@ -1511,7 +1490,7 @@ export default function Reports() {
 
       {/* ── Spending by day of week ── */}
       <div style={{ borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-        <SectionHeader title="Spending by Day of Week" accentColor="var(--ft-amber)" />
+        <PanelHeader>Spending by Day of Week</PanelHeader>
         <div style={{ padding: "14px 20px" }}>
           <HStack gap={8} align="end" height={80}>
             {DOW_LABELS.map((label, i) => (
@@ -1530,7 +1509,7 @@ export default function Reports() {
 
       {/* ── Biggest transactions table ── */}
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
-        <SectionHeader title="Biggest Transactions" accentColor="var(--ft-accent)" right={
+        <PanelHeader right={
           <HStack gap={6}>
             <Text as="span" mono size={9} color="var(--ft-dim)">Top 10 by GBP value</Text>
             <button
@@ -1538,7 +1517,7 @@ export default function Reports() {
               style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "1px 6px", cursor: "pointer", borderRadius: 2 }}
             >↓ CSV</button>
           </HStack>
-        } />
+        }>Biggest Transactions</PanelHeader>
         <div className="ft-scroll-x">
           <div style={{ minWidth: 580 }}>
             <HStack>
@@ -1564,7 +1543,7 @@ export default function Reports() {
 
       {/* ── Tax Year Export ── */}
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
-        <SectionHeader title="Tax Year Export" accentColor="var(--ft-amber)" />
+        <PanelHeader>Tax Year Export</PanelHeader>
         <div className="ft-filter-bar" style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, background: "var(--ft-surface)", flexWrap: "wrap" }}>
           <HStack gap={8} align="center">
             <Text as="span" mono size={10} color="var(--ft-dim)" letterSpacing="0.04em">TAX YEAR</Text>

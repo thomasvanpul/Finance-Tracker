@@ -18,7 +18,7 @@ import { useGetDashboard, useListBudgets, useListInvestments, useGetInvestmentSu
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { FlaskConical } from "lucide-react";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -89,28 +89,9 @@ function minPayment(principal: number, aprPercent: number): number {
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
-function SectionTitle({ label, accentColor = "var(--ft-accent)" }: { label: string; accentColor?: string }) {
-  return (
-    <div style={{
-      ...mono,
-      fontSize: 9,
-      letterSpacing: "0.12em",
-      textTransform: "uppercase" as const,
-      color: "var(--ft-dim)",
-      borderBottom: "1px solid var(--ft-border)",
-      borderLeft: `3px solid ${accentColor}`,
-      paddingLeft: 10,
-      paddingBottom: 6,
-      marginBottom: 14,
-    }}>
-      {label}
-    </div>
-  );
-}
-
 const formulaBlock = (children: React.ReactNode) => (
   <div style={{
-    borderLeft: "3px solid var(--ft-accent)",
+    borderLeft: "1px solid var(--ft-border)",
     paddingLeft: 12,
     marginBottom: 16,
   }}>
@@ -465,8 +446,8 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
   const targets = [100_000, 500_000, 1_000_000];
 
   return (
-    <div>
-      <SectionTitle label="Income Change Simulator" accentColor="var(--ft-green)" />
+    <div className="space-y-1.5">
+      <Panel title="Income Change Simulator" padding="12px 16px">
 
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 20 }}>
         <div>
@@ -536,10 +517,10 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
           diffColor: annualSavingDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)",
         },
       ]} />
+      </Panel>
 
       {/* Time-to-target comparison */}
-      <div style={{ marginTop: 20 }}>
-        <SectionTitle label="Time to Wealth Target at 6% Compound Growth" accentColor="var(--ft-accent)" />
+      <Panel title="Time to Wealth Target at 6% Compound Growth" padding="12px 16px">
         <div className="ft-scroll-x">
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -570,7 +551,7 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
             </tbody>
           </table>
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }
@@ -687,18 +668,16 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
 
   if (categories.length === 0) {
     return (
-      <div>
-        <SectionTitle label="Expense Cut Calculator" accentColor="var(--ft-green)" />
+      <Panel title="Expense Cut Calculator" padding="12px 16px">
         <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", padding: "20px 16px", lineHeight: 1.7, letterSpacing: "0.02em" }}>
           Add a budget or import transactions to model expense cuts. The sliders need a baseline monthly figure to work against.
         </div>
-      </div>
+      </Panel>
     );
   }
 
   return (
-    <div>
-      <SectionTitle label="Expense Cut Calculator" accentColor="var(--ft-green)" />
+    <Panel title="Expense Cut Calculator" padding="12px 16px">
 
       {/* Quick scenarios */}
       <HStack gap={8} wrap marginBottom={20}>
@@ -777,7 +756,7 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
           )}
         </div>
       </div>
-    </div>
+    </Panel>
   );
 }
 
@@ -805,8 +784,8 @@ function LumpSumTab() {
   }, [principal, annualRate, years]);
 
   return (
-    <div>
-      <SectionTitle label="Lump Sum Investment Calculator" accentColor="var(--ft-accent)" />
+    <div className="space-y-1.5">
+      <Panel title="Lump Sum Investment Calculator" padding="12px 16px">
 
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         <div>
@@ -836,10 +815,10 @@ function LumpSumTab() {
           )}
         </div>
       </div>
+      </Panel>
 
       {/* Chart */}
-      <div style={{ marginTop: 20 }}>
-        <SectionTitle label="Growth Breakdown by Year" accentColor="var(--ft-green)" />
+      <Panel title="Growth Breakdown by Year" padding="12px 16px">
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={barData} margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" vertical={false} />
@@ -854,7 +833,7 @@ function LumpSumTab() {
             <Bar dataKey="interest" stackId="a" fill="var(--ft-green)" radius={[1, 1, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
-      </div>
+      </Panel>
     </div>
   );
 }
@@ -892,8 +871,8 @@ function DebtPayoffTab() {
   const tableRows = baseSchedule.slice(0, 24);
 
   return (
-    <div>
-      <SectionTitle label="Debt Payoff Calculator" accentColor="var(--ft-red)" />
+    <div className="space-y-1.5">
+      <Panel title="Debt Payoff Calculator" padding="12px 16px">
 
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
         <div>
@@ -929,11 +908,11 @@ function DebtPayoffTab() {
           )}
         </div>
       </div>
+      </Panel>
 
       {/* Balance over time chart */}
       {lineData.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <SectionTitle label="Balance Over Time" accentColor="var(--ft-red)" />
+        <Panel title="Balance Over Time" padding="12px 16px">
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={lineData} margin={{ top: 0, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" vertical={false} />
@@ -961,13 +940,12 @@ function DebtPayoffTab() {
               </HStack>
             </div>
           )}
-        </div>
+        </Panel>
       )}
 
       {/* Amortization table */}
       {tableRows.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <SectionTitle label="Amortization Schedule (first 24 months)" accentColor="var(--ft-amber)" />
+        <Panel title="Amortization Schedule (first 24 months)" padding="12px 16px">
           <div className="ft-scroll-x">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -993,7 +971,7 @@ function DebtPayoffTab() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Panel>
       )}
     </div>
   );
@@ -1067,8 +1045,8 @@ function InflationTab() {
   const realReturn = investReturn - inflationRate;
 
   return (
-    <div>
-      <SectionTitle label="Inflation Impact Calculator" accentColor="var(--ft-amber)" />
+    <div className="space-y-1.5">
+      <Panel title="Inflation Impact Calculator" padding="12px 16px">
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
         <div>
           <SliderRow label="Lump Sum Today" value={amount} min={1000} max={500000} step={1000} onChange={setAmount} display={formatBaseMoney(amount)} />
@@ -1105,8 +1083,7 @@ function InflationTab() {
           </div>
         </div>
 
-        <div>
-          <SectionTitle label="Purchasing Power Over Time" accentColor="var(--ft-amber)" />
+        <Panel title="Purchasing Power Over Time" padding="12px 16px">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" vertical={false} />
@@ -1138,14 +1115,12 @@ function InflationTab() {
             <InflationLegendItem color="var(--ft-green)" label="Invested (nominal)" />
             <InflationLegendItem color="var(--ft-cyan)" label="Invested (real)" />
           </HStack>
-        </div>
+        </Panel>
       </div>
+      </Panel>
 
       {/* Year-by-year snapshot */}
-      <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "14px 16px", marginTop: 8 }}>
-        <div style={{ ...mono, fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 10, borderLeft: "3px solid var(--ft-amber)", paddingLeft: 8 }}>
-          Year-by-Year Snapshot
-        </div>
+      <Panel title="Year-by-Year Snapshot" padding="14px 16px">
         <div style={{ display: "grid", gridTemplateColumns: "60px 1fr 1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)", paddingBottom: 6, marginBottom: 4 }}>
           {["Year", "Cash real value", "Future equiv.", "Invested", "Invested (real)"].map((h, i) => (
             <div key={h} style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const, textAlign: i > 0 ? "right" : "left" }}>{h}</div>
@@ -1158,7 +1133,7 @@ function InflationTab() {
             <InflationYearRow key={y} y={y} row={row} amount={amount} />
           );
         })}
-      </div>
+      </Panel>
     </div>
   );
 }
@@ -1181,12 +1156,12 @@ interface PortfolioKpiTileProps {
   label: string;
   value: string;
   color: string;
-  borderColor?: string;
-  topBorderColor?: string;
+  /** Last tile in the strip: no right rule (the frame closes it). */
+  isLast?: boolean;
   sub?: string;
 }
 
-function PortfolioKpiTile({ label, value, color, borderColor, topBorderColor, sub }: PortfolioKpiTileProps) {
+function PortfolioKpiTile({ label, value, color, isLast = false, sub }: PortfolioKpiTileProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -1194,8 +1169,7 @@ function PortfolioKpiTile({ label, value, color, borderColor, topBorderColor, su
         background: hov
           ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
           : "var(--ft-surface)",
-        border: `1px solid ${borderColor ?? "var(--ft-border)"}`,
-        borderTop: topBorderColor ? `3px solid ${topBorderColor}` : undefined,
+        borderRight: isLast ? "none" : "1px solid var(--ft-border)",
         padding: 14,
         transition: "background 0.1s",
       }}
@@ -1273,11 +1247,8 @@ function PortfolioShockTab() {
   }
 
   return (
-    <div className="space-y-6">
-      <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 16 }}>
-        <div style={{ ...mono, fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12, borderLeft: "3px solid var(--ft-blue)", paddingLeft: 8 }}>
-          Current Portfolio: <span className="pnum">{formatBaseMoney(totalValue)}</span> · Select a scenario
-        </div>
+    <div className="space-y-1.5">
+      <Panel title={<>Current Portfolio: <span className="pnum">{formatBaseMoney(totalValue)}</span> · Select a scenario</>} padding={16}>
         <HStack gap={8} wrap marginBottom={12}>
           {MARKET_SCENARIOS.map((s, i) => (
             <ScenarioButton
@@ -1299,10 +1270,10 @@ function PortfolioShockTab() {
             style={{ width: 80, height: 28, fontSize: 11, ...mono, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "0 8px" }}
           />
         </HStack>
-      </div>
+      </Panel>
 
       {activeScenario && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
           <PortfolioKpiTile
             label="Portfolio Before"
             value={formatBaseMoney(totalValue)}
@@ -1312,23 +1283,20 @@ function PortfolioShockTab() {
             label={`Delta — ${activeScenario.label}`}
             value={`${activeScenario.delta >= 0 ? "+" : ""}${formatBaseMoney(activeScenario.delta)}`}
             color={activeScenario.delta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-            borderColor={activeScenario.delta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-            topBorderColor={activeScenario.delta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             sub={`${activeScenario.change >= 0 ? "+" : ""}${activeScenario.change}%`}
           />
           <PortfolioKpiTile
             label="Portfolio After"
             value={formatBaseMoney(activeScenario.after)}
             color={activeScenario.after >= totalValue ? "var(--ft-green)" : "var(--ft-red)"}
+            isLast
           />
         </div>
       )}
 
       {activeScenario && byPosition.length > 0 && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
-          <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--ft-border)", ...mono, fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.1em", borderLeft: "3px solid var(--ft-blue)" }}>
-            Impact by Position — {activeScenario.label}
-          </div>
+          <PanelHeader>Impact by Position — {activeScenario.label}</PanelHeader>
           <div className="ft-scroll-x">
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, ...mono }}>
               <thead>
@@ -1406,7 +1374,7 @@ export default function WhatIf() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>

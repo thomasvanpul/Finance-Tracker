@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatBaseMoney } from "@/lib/utils";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, Panel, PanelBox, Text, VStack } from "@/components/primitives";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -183,34 +183,6 @@ const INPUT_STYLE: React.CSSProperties = {
 };
 
 const FIELD_STYLE: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 4 };
-
-// ─── Section header with left accent bar ─────────────────────────────────────
-
-interface SectionHeaderProps {
-  children: React.ReactNode;
-  accentColor?: string;
-}
-
-function SectionHeader({ children, accentColor = "var(--ft-accent)" }: SectionHeaderProps) {
-  return (
-    <div
-      style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: 10,
-        fontWeight: 700,
-        color: accentColor,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
-        marginBottom: 10,
-        borderLeft: `3px solid ${accentColor}`,
-        paddingLeft: 8,
-        paddingBottom: 2,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
 
 // ─── Amortization helpers ────────────────────────────────────────────────────
 
@@ -391,15 +363,15 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
 
   return (
     <div style={{ marginTop: 16 }}>
-      {/* Border-as-gap KPI strip */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 14 }}>
-        <div style={{ background: "var(--ft-surface)", padding: "10px 12px" }}>
+      {/* KPI strip — one framed table; cells carry their own rules */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Repaid</div>
           <Text as="div" mono size={16} weight={700} color="var(--ft-text)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatBaseMoney(totalPaid)}</span>
           </Text>
         </div>
-        <div style={{ background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-red)", padding: "10px 12px" }}>
+        <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Interest</div>
           <Text as="div" mono size={16} weight={700} color="var(--ft-red)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatBaseMoney(totalInterest)}</span>
@@ -408,7 +380,7 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
             <span className="pnum">{interestRatio.toFixed(1)}</span>% of total repaid
           </div>
         </div>
-        <div style={{ background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-green)", padding: "10px 12px" }}>
+        <div style={{ background: "var(--ft-surface)", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Principal</div>
           <Text as="div" mono size={16} weight={700} color="var(--ft-green)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatBaseMoney(principal)}</span>
@@ -609,8 +581,7 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
   }, [standard, overpaid]);
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <SectionHeader>Overpayment Impact Calculator</SectionHeader>
+    <Panel className="mt-1.5" title="Overpayment Impact Calculator" padding="12px 16px">
 
       <div style={{ marginBottom: 12 }}>
         <div style={LABEL_STYLE}>Extra monthly payment: <span style={{ color: "var(--ft-accent)" }}><span className="pnum">{formatBaseMoney(extra)}</span></span></div>
@@ -628,20 +599,20 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
         </div>
       </div>
 
-      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
         <OverpaymentScenarioCard label="Standard" months={standard.length} interest={stdInterest} color="var(--ft-muted)" />
         <OverpaymentScenarioCard label="With Overpayment" months={overpaid.length} interest={ovInterest} color="var(--ft-accent)" />
       </div>
 
       {/* Border-as-gap savings summary */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 14 }}>
-        <div style={{ background: "var(--ft-surface)", padding: "10px 14px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 14px" }}>
           <div style={LABEL_STYLE}>Months Saved</div>
           <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: monthsSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
             {monthsSaved > 0 ? `${monthsSaved}mo` : "—"}
           </div>
         </div>
-        <div style={{ background: "var(--ft-surface)", borderLeft: "3px solid var(--ft-green)", padding: "10px 14px" }}>
+        <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 14px" }}>
           <div style={LABEL_STYLE}>Interest Saved</div>
           <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: interestSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
             <span className="pnum">{interestSaved > 0 ? formatBaseMoney(interestSaved) : "—"}</span>
@@ -669,7 +640,7 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </Panel>
   );
 }
 
@@ -719,8 +690,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
   const scenarios = [0, 0.5, 1, 2];
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <SectionHeader accentColor="var(--ft-blue)">Interest Rate Scenarios</SectionHeader>
+    <Panel className="mt-1.5" title="Interest Rate Scenarios" padding="12px 16px">
       <HStack gap={8} align="center" marginBottom={12}>
         <div style={LABEL_STYLE}>Base rate (%)</div>
         <input
@@ -744,7 +714,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
           />
         ))}
       </div>
-    </div>
+    </Panel>
   );
 }
 
@@ -755,10 +725,9 @@ interface AffordabilityKpiCardProps {
   value: string;
   color: string;
   sub?: string;
-  borderColor?: string;
 }
 
-function AffordabilityKpiCard({ label, value, color, sub, borderColor }: AffordabilityKpiCardProps) {
+function AffordabilityKpiCard({ label, value, color, sub }: AffordabilityKpiCardProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -766,7 +735,7 @@ function AffordabilityKpiCard({ label, value, color, sub, borderColor }: Afforda
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        border: `1px solid ${borderColor ?? "var(--ft-border)"}`,
+        border: "1px solid var(--ft-border)",
         padding: "10px 14px",
         transition: "background 0.1s",
       }}
@@ -813,8 +782,7 @@ function AffordabilityTab() {
   const ltvLabel = ltv < 60 ? "Excellent (best rates)" : ltv < 75 ? "Good" : ltv < 90 ? "Standard" : "High risk";
 
   return (
-    <div>
-      <SectionHeader>Affordability Calculator</SectionHeader>
+    <Panel title="Affordability Calculator" padding="12px 16px">
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
         <div style={FIELD_STYLE}>
           <div style={LABEL_STYLE}>Annual income (£)</div>
@@ -873,7 +841,6 @@ function AffordabilityTab() {
             value={`${ltv.toFixed(1)}%`}
             color={ltvColor}
             sub={ltvLabel}
-            borderColor={ltvColor}
           />
           <AffordabilityKpiCard
             label="Income Multiple"
@@ -883,7 +850,7 @@ function AffordabilityTab() {
           />
         </div>
       )}
-    </div>
+    </Panel>
   );
 }
 
@@ -922,14 +889,14 @@ function PageKpiStrip({ mortgages }: PageKpiStripProps) {
   ];
 
   return (
-    <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
-      {kpis.map(({ label, value, color, accent }) => (
+    <div className="ft-kpi-bar" style={{ gridTemplateColumns: "repeat(4, 1fr)", marginBottom: 6 }}>
+      {kpis.map(({ label, value, color }) => (
         <div
           key={label}
+          className="ft-kpi-bar-cell"
           style={{
             padding: "12px 16px",
             background: "var(--ft-surface)",
-            borderLeft: `3px solid ${accent}`,
           }}
         >
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 6 }}>{label}</div>
@@ -974,7 +941,7 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
   const termProgressPct = totalMonths > 0 ? (elapsedMonths / totalMonths) * 100 : 0;
 
   return (
-    <div style={{ border: "1px solid var(--ft-border)", borderLeft: `3px solid ${ltvColor}`, background: "var(--ft-surface)", marginBottom: 8 }}>
+    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
       <HStack gap={16} align="start" padding="14px 16px">
         <div style={{ flex: 1 }}>
           <HStack gap={8} align="center" marginBottom={12}>
@@ -1124,8 +1091,7 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
   };
 
   return (
-    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "14px 16px", marginBottom: 16 }}>
-      <SectionHeader>Add Loan / Mortgage</SectionHeader>
+    <Panel className="mb-1.5" title="Add Loan / Mortgage" padding="14px 16px">
       <form onSubmit={handleSubmit}>
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <div style={{ ...FIELD_STYLE, gridColumn: "1 / -1" }}>
@@ -1188,7 +1154,7 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
           </button>
         </HStack>
       </form>
-    </div>
+    </Panel>
   );
 }
 
@@ -1242,7 +1208,7 @@ export default function MortgagePage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 12, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>

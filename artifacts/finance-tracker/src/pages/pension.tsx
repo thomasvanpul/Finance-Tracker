@@ -16,7 +16,7 @@ import { TrendingUp, ArrowRight, Target, ShieldCheck, AlertTriangle } from "luci
 import { formatBaseMoney } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { loadPersonaIds } from "@/lib/persona";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -221,29 +221,6 @@ const numInputStyle: React.CSSProperties = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function PanelHeader({ children, color = "var(--ft-accent)" }: { children: React.ReactNode; color?: string }) {
-  return (
-    <div style={{
-      background: "var(--ft-raised)",
-      borderBottom: "1px solid var(--ft-border)",
-      borderLeft: `3px solid ${color}`,
-      padding: "0 16px 0 13px",
-      height: 34,
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      fontFamily: "var(--font-mono)",
-      fontSize: 10,
-      fontWeight: 600,
-      letterSpacing: "0.08em",
-      textTransform: "uppercase" as const,
-      color: "var(--ft-muted)",
-    }}>
-      {children}
-    </div>
-  );
-}
-
 function InputRow({ label, help, children }: {
   label: string;
   help?: string;
@@ -331,12 +308,10 @@ function KpiBar({
     <div style={{
       display: "grid",
       gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
-      gap: 1,
-      background: "var(--ft-border)",
       borderBottom: "1px solid var(--ft-border)",
     }}>
       {/* Projected pot */}
-      <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-green)" }}>
+      <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
           Projected Pot
         </div>
@@ -372,7 +347,7 @@ function KpiBar({
       </div>
 
       {/* Total contributions */}
-      <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-cyan)" }}>
+      <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
           Total Contributions
         </div>
@@ -385,7 +360,7 @@ function KpiBar({
       </div>
 
       {/* Investment growth */}
-      <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-amber)" }}>
+      <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
           Investment Growth
         </div>
@@ -398,7 +373,7 @@ function KpiBar({
       </div>
 
       {/* Health / monthly income */}
-      <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderTop: `2px solid ${trackColor}` }}>
+      <div style={{ padding: "14px 16px", background: "var(--ft-surface)" }}>
         <HStack gap={6} align="center" marginBottom={6}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
             Monthly Income
@@ -443,8 +418,8 @@ function PensionHealthBlock({
   // that was never set. Show an honest empty state instead.
   if (targetMonthlyIncome == null || targetMonthlyIncome <= 0) {
     return (
-      <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 16 }}>
-        <PanelHeader color="var(--ft-muted)">Pension Health — Target not set</PanelHeader>
+      <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 6 }}>
+        <PanelHeader>Pension Health — Target not set</PanelHeader>
         <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7, letterSpacing: "0.02em" }}>
           Enter a <strong style={{ color: "var(--ft-text)" }}>target monthly income</strong> in the form above and this panel fills in: on-track score, shortfall estimate, required extra contribution, and years-to-fix.
         </div>
@@ -482,8 +457,8 @@ function PensionHealthBlock({
   const barColor = onTrack ? "var(--ft-green)" : onTrackPct >= 75 ? "var(--ft-amber)" : "var(--ft-red)";
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 16 }}>
-      <PanelHeader color={barColor}>Pension Health — {onTrack ? "On Track" : "Needs Attention"}</PanelHeader>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 6 }}>
+      <PanelHeader>Pension Health — {onTrack ? "On Track" : "Needs Attention"}</PanelHeader>
       <div style={{ padding: 16 }}>
 
         {/* Progress toward target */}
@@ -502,8 +477,8 @@ function PensionHealthBlock({
         </div>
 
         {/* Side-by-side: projected vs target income */}
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
-          <div style={{ background: "var(--ft-raised)", padding: "10px 12px" }}>
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", border: "1px solid var(--ft-border)", marginBottom: 16 }}>
+          <div style={{ background: "var(--ft-raised)", padding: "10px 12px", borderRight: "1px solid var(--ft-border)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Projected Annual Income</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: barColor, lineHeight: 1 }}>{formatBaseMoney(Math.round(annualCurrentIncome))}</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}><span className="pnum">{formatBaseMoney(Math.round(totalMonthlyIncome))}</span>/mo</div>
@@ -528,12 +503,12 @@ function PensionHealthBlock({
                 Shortfall Analysis
               </Text>
             </HStack>
-            <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "rgba(248,81,73,0.15)" }}>
-              <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px" }}>
+            <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
+              <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px", borderRight: "1px solid var(--ft-border)" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Monthly shortfall</div>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.round(shortfallMonthly))}</div>
               </div>
-              <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px" }}>
+              <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px", borderRight: "1px solid var(--ft-border)" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Annual shortfall</div>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.round(shortfallAnnual))}</div>
               </div>
@@ -640,8 +615,8 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
   ];
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 16 }}>
-      <PanelHeader color="var(--ft-cyan)">UK State Pension</PanelHeader>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 6 }}>
+      <PanelHeader>UK State Pension</PanelHeader>
       <div style={{ padding: 16 }}>
         <HStack gap={12} align="start" justify="between" wrap marginBottom={14}>
           <div>
@@ -671,20 +646,21 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
           </button>
         </HStack>
 
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
-          {statePensionCells.map(({ label, value }) => (
-            <StatePensionCell
-              key={label}
-              label={label}
-              value={value}
-              opacity={includeStatePension ? 1 : 0.4}
-            />
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
+          {statePensionCells.map(({ label, value }, i, arr) => (
+            <div key={label} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+              <StatePensionCell
+                label={label}
+                value={value}
+                opacity={includeStatePension ? 1 : 0.4}
+              />
+            </div>
           ))}
         </div>
 
         <div style={{
           marginTop: 12, padding: "8px 12px",
-          background: "var(--ft-raised)", borderLeft: "3px solid var(--ft-border2)",
+          background: "var(--ft-raised)",
           fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.7,
         }}>
           State pension age is currently 66 for both men and women, rising to 67 between 2026–2028. Check your NI record and State Pension forecast at gov.uk/check-state-pension.
@@ -788,7 +764,7 @@ function SensitivityTable({
   };
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 16 }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 6 }}>
       <PanelHeader>Return Scenario Analysis</PanelHeader>
       <div className="ft-scroll-x">
         <table style={{ width: "100%", borderCollapse: "collapse" as const }}>
@@ -903,12 +879,14 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
   ];
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 16 }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 6 }}>
       <PanelHeader>Annual Pension Allowance — {taxYear}</PanelHeader>
       <div style={{ padding: 16 }}>
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 14 }}>
-          {allowanceCells.map(({ label, value, color }) => (
-            <AllowanceCellItem key={label} label={label} value={value} color={color} />
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", marginBottom: 14 }}>
+          {allowanceCells.map(({ label, value, color }, i, arr) => (
+            <div key={label} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+              <AllowanceCellItem label={label} value={value} color={color} />
+            </div>
           ))}
         </div>
         <div style={{ marginBottom: 14 }}>
@@ -924,9 +902,11 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 8 }}>
             Estimated Tax Relief (on your <span className="pnum">{formatBaseMoney(Math.round(annualContrib))}</span> contributions)
           </div>
-          <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
-            {taxReliefCells.map(({ band, relief, note }) => (
-              <TaxReliefCellItem key={band} band={band} relief={relief} note={note} />
+          <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
+            {taxReliefCells.map(({ band, relief, note }, i, arr) => (
+              <div key={band} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+                <TaxReliefCellItem band={band} relief={relief} note={note} />
+              </div>
             ))}
           </div>
         </div>
@@ -999,8 +979,8 @@ function IsaSection() {
   }, []);
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 24 }}>
-      <PanelHeader color="var(--ft-blue)">ISA Allowance Tracker</PanelHeader>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 6 }}>
+      <PanelHeader>ISA Allowance Tracker</PanelHeader>
       <div style={{ padding: 16 }}>
         <HStack gap={8} align="center" justify="between" wrap marginBottom={14}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>
@@ -1011,9 +991,11 @@ function IsaSection() {
           </Text>
         </HStack>
 
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 16 }}>
-          {isaCells.map(({ label, value, color }) => (
-            <IsaCellItem key={label} label={label} value={value} color={color} />
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", marginBottom: 16 }}>
+          {isaCells.map(({ label, value, color }, i, arr) => (
+            <div key={label} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+              <IsaCellItem label={label} value={value} color={color} />
+            </div>
           ))}
         </div>
 
@@ -1051,7 +1033,7 @@ function IsaSection() {
 
         <div style={{
           marginTop: 12, padding: "8px 12px",
-          background: "var(--ft-raised)", borderLeft: "3px solid var(--ft-border2)",
+          background: "var(--ft-raised)",
           fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.7,
         }}>
           UK ISA allowance resets each tax year on 6 April. Cash ISA, Stocks {"&"} Shares ISA, and LISA all count toward the £20,000 annual limit. This tracker resets automatically when a new tax year begins.
@@ -1158,8 +1140,8 @@ function PensionSection() {
   return (
     <div>
       {/* KPI Row */}
-      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 16 }}>
-        <PanelHeader color="var(--ft-green)">Pension Overview</PanelHeader>
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+        <PanelHeader>Pension Overview</PanelHeader>
         {yearsToRetirement == null || projectedPot == null || totalContributions == null || totalGrowth == null || monthlyIncomeFromPot == null ? (
           // Age unknown → projection cannot honestly run. A fabricated
           // "age 30" default fed every projected number here (and the
@@ -1194,11 +1176,11 @@ function PensionSection() {
       </div>
 
       {/* Grid: chart + inputs */}
-      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 16, alignItems: "start" }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 6, alignItems: "start" }}>
 
         {/* Left: pot growth chart */}
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
-          <PanelHeader color="var(--ft-green)">Pension Pot Growth — Year by Year</PanelHeader>
+          <PanelHeader>Pension Pot Growth — Year by Year</PanelHeader>
           <div style={{ padding: 16 }}>
             {chartData.length > 1 ? (
               <ResponsiveContainer width="100%" height={260}>
@@ -1358,7 +1340,7 @@ function PensionSection() {
           </div>
 
           {/* Summary note */}
-          <div style={{ margin: "0 16px 16px", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-green)", overflow: "hidden" }}>
+          <div style={{ margin: "0 16px 16px", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
             <div style={{ background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)", padding: "6px 14px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>Contributions / Month</div>
             </div>
@@ -1406,8 +1388,8 @@ function PensionSection() {
 
       {/* Employer vs Employee breakdown chart */}
       {contribBreakdownData.length > 1 && monthlyTotal > 0 && (
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 16 }}>
-          <PanelHeader color="var(--ft-cyan)">Contribution Breakdown — Employee / Employer / Growth</PanelHeader>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 6 }}>
+          <PanelHeader>Contribution Breakdown — Employee / Employer / Growth</PanelHeader>
           <div style={{ padding: 16 }}>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={contribBreakdownData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -1520,7 +1502,7 @@ export default function Pension() {
       />
 
       {pensionTip && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-amber)", border: "1px solid rgba(245,158,11,0.35)", background: "rgba(245,158,11,0.06)", padding: "7px 14px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-amber)", border: "1px solid rgba(245,158,11,0.35)", background: "rgba(245,158,11,0.06)", padding: "7px 14px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontWeight: 700, flexShrink: 0, letterSpacing: "0.08em" }}>TAX TIP</span>
           <Text as="span" color="var(--ft-dim)">{pensionTip}</Text>
         </div>

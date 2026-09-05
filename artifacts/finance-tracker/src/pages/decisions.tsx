@@ -24,7 +24,7 @@ import type {
 import { PageHeader } from "@/components/page-header";
 import { formatBaseMoney } from "@/lib/utils";
 import { Zap, X, ChevronRight, RefreshCw } from "lucide-react";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -387,9 +387,11 @@ interface DecisionRowProps {
   dismissed?: boolean;
   onDismiss?: () => void;
   onRestore?: () => void;
+  /** Last row in its framed list: no bottom rule (the frame closes it). */
+  isLast?: boolean;
 }
 
-function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore }: DecisionRowProps) {
+function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore, isLast = false }: DecisionRowProps) {
   const priorityColor = PRIORITY_COLOR[d.priority];
   const [hov, setHov] = useState(false);
 
@@ -402,16 +404,16 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore }: D
       onTouchCancel={() => setHov(false)}
       style={{
         display: "grid",
-        gridTemplateColumns: "3px 56px 1fr auto",
+        gridTemplateColumns: "56px 1fr auto",
         gap: 0,
         background: hov && !dismissed ? `color-mix(in srgb, ${priorityColor} 4%, var(--ft-surface))` : "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
+        borderBottom: isLast ? "none" : "1px solid var(--ft-border)",
         opacity: dismissed ? 0.45 : 1,
         transition: "background 0.1s, opacity 0.15s",
       }}
     >
-      {/* Priority stripe */}
-      <div style={{ background: dismissed ? "var(--ft-border)" : priorityColor, width: 3 }} />
+      {/* Priority colour lives on the category label below; the 3px stripe
+          column that used to sit here is gone (frame language, no stripes). */}
 
       {/* Category + priority badge */}
       <div
@@ -571,11 +573,13 @@ interface SummaryKpiCellProps {
   label: string;
   value: string;
   valueColor: string;
+  /** Last cell in the strip: no right rule (the frame closes it). */
+  isLast?: boolean;
 }
 
-function SummaryKpiCell({ label, value, valueColor }: SummaryKpiCellProps) {
+function SummaryKpiCell({ label, value, valueColor, isLast = false }: SummaryKpiCellProps) {
   return (
-    <div style={{ background: "var(--ft-surface)", padding: "12px 16px" }}>
+    <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderRight: isLast ? "none" : "1px solid var(--ft-border)" }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4, letterSpacing: "0.06em" }}>
         {label}
       </div>
@@ -684,10 +688,9 @@ export default function Decisions() {
       {activePersona && personaBoostCategories.length > 0 && (
         <div style={{
           display: "flex", alignItems: "center", gap: 8,
-          padding: "5px 12px", marginBottom: 16,
-          background: "rgba(244,162,30,0.04)",
-          border: "1px solid rgba(244,162,30,0.2)",
-          borderLeft: "3px solid var(--ft-amber)",
+          padding: "5px 12px", marginBottom: 6,
+          background: "var(--ft-surface)",
+          border: "1px solid var(--ft-border)",
           fontFamily: "var(--font-mono)", fontSize: 9,
         }}>
           <Text as="span" weight={700} color="var(--ft-amber)" letterSpacing="0.1em">
@@ -704,18 +707,14 @@ export default function Decisions() {
         </div>
       )}
 
-      {/* ── Summary bar (border-as-gap grid) ── */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-cyan)", paddingLeft: 8, marginBottom: 8 }}>
-          Overview
-        </div>
+      {/* ── Summary bar — one framed KPI strip ── */}
+      <div style={{ marginBottom: 6, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <PanelHeader>Overview</PanelHeader>
         <div
           className="ft-three-col"
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr 1fr",
-            gap: 1,
-            background: "var(--ft-border)",
           }}
         >
           <SummaryKpiCell
@@ -732,23 +731,16 @@ export default function Decisions() {
             label="CRITICAL / HIGH"
             value={`${criticalCount} / ${highCount}`}
             valueColor={criticalCount > 0 ? "var(--ft-red)" : highCount > 0 ? "var(--ft-amber)" : "var(--ft-green)"}
+            isLast
           />
         </div>
       </div>
 
       {/* ── Decision list ── */}
-      {active.length > 0 && (
-        <div style={{ marginBottom: 4 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "3px solid var(--ft-accent)", paddingLeft: 8, marginBottom: 8 }}>
-            Actions · {active.length}
-          </div>
-        </div>
-      )}
       {active.length === 0 ? (
         <div
           style={{
             border: "1px solid var(--ft-border)",
-            borderLeft: "3px solid var(--ft-green)",
             background: "var(--ft-surface)",
             padding: "40px 32px",
             fontFamily: "var(--font-mono)",
@@ -765,34 +757,21 @@ export default function Decisions() {
           </div>
         </div>
       ) : (
-        <VStack gap={1}>
-          {active.map((d) => (
-            <DecisionRow key={d.id} decision={d} onDismiss={() => dismiss(d.id)} />
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader>Actions · {active.length}</PanelHeader>
+          {active.map((d, i) => (
+            <DecisionRow key={d.id} decision={d} onDismiss={() => dismiss(d.id)} isLast={i === active.length - 1} />
           ))}
-        </VStack>
+        </div>
       )}
 
       {/* ── Dismissed ── */}
       {showDismissed && dismissedList.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              color: "var(--ft-dim)",
-              letterSpacing: "0.08em",
-              marginBottom: 8,
-              borderLeft: "3px solid var(--ft-border2)",
-              paddingLeft: 8,
-            } as React.CSSProperties}
-          >
-            DISMISSED
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {dismissedList.map((d) => (
-              <DecisionRow key={d.id} decision={d} dismissed onRestore={() => restore(d.id)} />
-            ))}
-          </div>
+        <div style={{ marginTop: 6, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader>Dismissed</PanelHeader>
+          {dismissedList.map((d, i) => (
+            <DecisionRow key={d.id} decision={d} dismissed onRestore={() => restore(d.id)} isLast={i === dismissedList.length - 1} />
+          ))}
         </div>
       )}
     </div>

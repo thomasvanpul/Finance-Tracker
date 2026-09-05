@@ -19,7 +19,7 @@ import {
   useGetInvestmentSummary,
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/page-header";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -118,31 +118,6 @@ function survivalProbability(withdrawalRate: number, years: number): number {
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-const panelHeaderStyle: React.CSSProperties = {
-  background: "var(--ft-raised)",
-  borderBottom: "1px solid var(--ft-border)",
-  padding: "0 16px",
-  height: 34,
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-  color: "var(--ft-muted)",
-};
-
-function PanelHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={panelHeaderStyle}>
-      <Text as="span" color="var(--ft-accent)">·</Text>
-      {children}
-    </div>
-  );
-}
-
 function InputRow({ label, help, children }: {
   label: string;
   help?: string;
@@ -195,24 +170,6 @@ const numInputStyle: React.CSSProperties = {
   outline: "none",
 };
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      background: "var(--ft-raised)",
-      padding: "7px 16px 5px",
-      fontFamily: "var(--font-mono)",
-      fontSize: 9,
-      letterSpacing: "0.1em",
-      textTransform: "uppercase" as const,
-      color: "var(--ft-accent)",
-      fontWeight: 700,
-      borderTop: "1px solid var(--ft-border)",
-    }}>
-      {children}
-    </div>
-  );
-}
-
 // ── KPI strip cell ─────────────────────────────────────────────────────────────
 
 interface KpiCellProps {
@@ -220,13 +177,14 @@ interface KpiCellProps {
   value: string;
   sub: string;
   color: string;
+  isLast?: boolean;
 }
 
-function KpiCell({ label, value, sub, color }: KpiCellProps) {
+function KpiCell({ label, value, sub, color, isLast }: KpiCellProps) {
   return (
     <div style={{
       background: "var(--ft-surface)",
-      borderTop: `2px solid ${color}`,
+      borderRight: isLast ? "none" : "1px solid var(--ft-border)",
       padding: "10px 14px",
     }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 4 }}>
@@ -248,11 +206,12 @@ interface GapMetricCellProps {
   label: string;
   value: string;
   color: string;
+  isLast?: boolean;
 }
 
-function GapMetricCell({ label, value, color }: GapMetricCellProps) {
+function GapMetricCell({ label, value, color, isLast }: GapMetricCellProps) {
   return (
-    <div style={{ background: "var(--ft-surface)", padding: "7px 12px" }}>
+    <div style={{ background: "var(--ft-surface)", padding: "7px 12px", borderRight: isLast ? "none" : "1px solid var(--ft-border)" }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 3 }}>
         {label}
       </div>
@@ -316,7 +275,6 @@ function SurvivalGauge({ probability, withdrawalRate }: { probability: number; w
     <div style={{
       background: "var(--ft-surface)",
       border: "1px solid var(--ft-border)",
-      borderTop: `2px solid ${color}`,
       padding: "14px 16px",
     }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "var(--ft-dim)", marginBottom: 10 }}>
@@ -363,7 +321,6 @@ function HeroResult({ label, value, color, sub, note, isMobile }: {
     <div style={{
       background: "var(--ft-surface)",
       border: "1px solid var(--ft-border)",
-      borderTop: `3px solid ${color}`,
       padding: "18px 20px",
       flex: 1,
       minWidth: 0,
@@ -421,7 +378,6 @@ function CoastCard({ coastFireNeeded, effPortfolio, coastFireGap, hasCoasted, ta
     <div style={{
       background: "var(--ft-surface)",
       border: "1px solid var(--ft-border)",
-      borderTop: `2px solid ${hasCoasted ? "var(--ft-green)" : "var(--ft-accent)"}`,
       padding: "14px 16px",
     }}>
       <HStack align="start" justify="between" marginBottom={10}>
@@ -488,7 +444,6 @@ function SensitivityRow({ r, yrs, arrYear, fireN, portfolioAtFI, monthlyNeed, is
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderLeft: isSelected ? "2px solid var(--ft-accent)" : "2px solid transparent",
         borderBottom: "1px solid var(--ft-border)",
         background: hovered
           ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
@@ -531,6 +486,7 @@ interface FireVariantCardProps {
     color: string;
     desc: string;
     coasted?: boolean;
+    isLast?: boolean;
   };
   effPortfolio: number;
 }
@@ -546,7 +502,7 @@ function FireVariantCard({ v, effPortfolio }: FireVariantCardProps) {
         background: hovered
           ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
           : "var(--ft-surface)",
-        borderTop: `2px solid ${v.color}`,
+        borderRight: v.isLast ? "none" : "1px solid var(--ft-border)",
         padding: "12px 14px",
         cursor: "default",
         transition: "background 0.1s",
@@ -753,7 +709,7 @@ export default function Fire() {
       />
 
       {/* ── KPI strip (border-as-gap) ── */}
-      <div style={{ display: "grid", gap: 1, background: "var(--ft-border)", marginBottom: 12 }}
+      <div style={{ display: "grid", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}
            className="ft-four-col">
         <KpiCell
           label="FI Number"
@@ -778,6 +734,7 @@ export default function Fire() {
           value={formatBaseMoney(Math.round(monthlyNeededForTarget))}
           sub={effMonthlyContrib > 0 ? (effMonthlyContrib >= monthlyNeededForTarget ? "on track ✓" : `${formatBaseMoney(Math.round(monthlyNeededForTarget - effMonthlyContrib))} shortfall`) : "per month"}
           color="var(--ft-cyan)"
+          isLast
         />
       </div>
 
@@ -794,7 +751,7 @@ export default function Fire() {
         const msg = pid ? msgs[pid] : null;
         if (!msg) return null;
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
             <span style={{ color: "var(--ft-amber)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>FIRE TIP</span>
             <span>{msg}</span>
           </div>
@@ -802,7 +759,7 @@ export default function Fire() {
       })()}
 
       {/* ── HERO RESULTS ROW ───────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 12, flexWrap: "wrap" as const, flexDirection: isMobile ? "column" : "row" }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" as const, flexDirection: isMobile ? "column" : "row" }}>
         <HeroResult
           label="FI Number"
           value={formatBaseMoney(fireNumber)}
@@ -834,11 +791,11 @@ export default function Fire() {
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
         padding: "18px 20px",
-        marginBottom: 12,
+        marginBottom: 6,
         position: "relative",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, flexWrap: isMobile ? "wrap" : "nowrap", gap: isMobile ? 6 : 0 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "var(--ft-dim)", borderLeft: "3px solid var(--ft-amber)", paddingLeft: 8 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "var(--ft-dim)" }}>
             {isMobile ? "FI Progress" : "Progress to Financial Independence"}
           </div>
           <HStack gap={6} align="baseline">
@@ -913,11 +870,11 @@ export default function Fire() {
 
         {/* Gap to FIRE */}
         {effPortfolio < fireNumber && fireNumber > 0 && (
-          <div style={{ display: "grid", gap: 1, background: "var(--ft-border)", marginTop: 12, marginBottom: 2 }}
+          <div style={{ display: "grid", border: "1px solid var(--ft-border)", marginTop: 12, marginBottom: 2 }}
                className="ft-three-col">
             <GapMetricCell label="Portfolio" value={formatBaseMoney(effPortfolio)} color="var(--ft-text)" />
             <GapMetricCell label="Gap to FI" value={formatBaseMoney(fireNumber - effPortfolio)} color="var(--ft-red)" />
-            <GapMetricCell label="Monthly Contrib" value={effMonthlyContrib > 0 ? formatBaseMoney(effMonthlyContrib) : "—"} color="var(--ft-cyan)" />
+            <GapMetricCell label="Monthly Contrib" value={effMonthlyContrib > 0 ? formatBaseMoney(effMonthlyContrib) : "—"} color="var(--ft-cyan)" isLast />
           </div>
         )}
 
@@ -943,13 +900,13 @@ export default function Fire() {
       </div>
 
       {/* ── MAIN TWO-COL: INPUTS LEFT / RIGHT PANEL ───────────────────────────── */}
-      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 12, alignItems: "start", marginBottom: 12 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 6, alignItems: "start", marginBottom: 6 }}>
 
         {/* Left: Input panel */}
         <PanelBox><VStack gap={0}>
           <PanelHeader>Inputs</PanelHeader>
 
-          <SectionLabel>Current State</SectionLabel>
+          <PanelHeader>Current State</PanelHeader>
           <InputRow label="Current Portfolio (£)" help="Total invested assets (ISA, pension, brokerage)">
             <input
               type="number"
@@ -961,7 +918,7 @@ export default function Fire() {
             />
           </InputRow>
 
-          <SectionLabel>Monthly Cashflow</SectionLabel>
+          <PanelHeader>Monthly Cashflow</PanelHeader>
           <InputRow label="Monthly Income (£)" help="Total take-home income">
             <input
               type="number"
@@ -1013,7 +970,7 @@ export default function Fire() {
             </div>
           )}
 
-          <SectionLabel>Assumptions</SectionLabel>
+          <PanelHeader>Assumptions</PanelHeader>
           <InputRow label="Annual Return (%)" help="Expected investment return per year">
             <input
               type="number"
@@ -1037,7 +994,7 @@ export default function Fire() {
             />
           </InputRow>
 
-          <SectionLabel>Reverse Calculator</SectionLabel>
+          <PanelHeader>Reverse Calculator</PanelHeader>
           <InputRow label="Target Years to FI" help="How many years until you want to be FI">
             <input
               type="number"
@@ -1233,7 +1190,7 @@ export default function Fire() {
       </div>
 
       {/* ── FIRE VARIANTS ──────────────────────────────────────────────────────── */}
-      <div style={{ display: "grid", gap: 1, background: "var(--ft-border)", marginBottom: 12 }}
+      <div style={{ display: "grid", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}
            className="ft-four-col">
         {[
           {
@@ -1271,23 +1228,20 @@ export default function Fire() {
               : `Need ${formatBaseMoney(Math.abs(coastFireGap))} more to coast`,
             coasted: hasCoasted,
           },
-        ].map((v) => (
-          <FireVariantCard key={v.label} v={v} effPortfolio={effPortfolio} />
+        ].map((v, i, arr) => (
+          <FireVariantCard key={v.label} v={{ ...v, isLast: i === arr.length - 1 }} effPortfolio={effPortfolio} />
         ))}
       </div>
 
       {/* ── RETURN RATE SENSITIVITY ────────────────────────────────────────────── */}
       {fireNumber > 0 && effPortfolio > 0 && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
-          <div style={{ background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)", padding: "0 16px", height: 34, display: "flex", alignItems: "center", gap: 8 }}>
-            <Text as="span" color="var(--ft-accent)">·</Text>
-            <Text as="span" mono upper size={10} weight={600} color="var(--ft-muted)" letterSpacing="0.08em">
-              Return Rate Sensitivity
-            </Text>
+          <PanelHeader>
+            Return Rate Sensitivity
             <Text as="span" mono size={9} color="var(--ft-dim)">
               — how return rate affects years to FI
             </Text>
-          </div>
+          </PanelHeader>
           <div className="ft-scroll-x">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>

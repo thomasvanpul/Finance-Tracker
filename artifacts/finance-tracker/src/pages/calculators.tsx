@@ -191,7 +191,7 @@ export default function Calculators() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${color}`, background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -199,7 +199,7 @@ export default function Calculators() {
       })()}
 
       {/* Tool grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(440px, 1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(440px, 1fr))", gap: 6 }}>
         {TOOLS.map((tool) => (
           <ToolCard key={tool.href} tool={tool} onLaunch={() => navigate(tool.href)} />
         ))}

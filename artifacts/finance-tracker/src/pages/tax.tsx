@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Children } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { loadPersonaIds } from "@/lib/persona";
 import {
@@ -19,7 +19,7 @@ import {
 import { FileText, Plus, Trash2, Download, Info, Clock, CalendarDays, ShieldCheck } from "lucide-react";
 import { FtDropdown } from "@/components/ft-dropdown";
 import type { FtDropdownOption } from "@/components/ft-dropdown";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -341,16 +341,6 @@ const TH: React.CSSProperties = {
 
 // ── Shared UI primitives ───────────────────────────────────────────────────────
 
-function SectionHeader({ label, color = "var(--ft-blue)" }: { label: string; color?: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)", borderLeft: `3px solid ${color}` }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color, whiteSpace: "nowrap" as const }}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
 function MetricTile({ label, value, color, sub }: { label: string; value: string; color: string; sub?: string }) {
   return (
     <div style={{ padding: "10px 14px", background: "var(--ft-surface)", minWidth: 0 }}>
@@ -365,9 +355,12 @@ function MetricTile({ label, value, color, sub }: { label: string; value: string
 
 function MetricTileGroup({ cols, children }: { cols: number; children: React.ReactNode }) {
   const colClass = cols === 4 ? "ft-four-col" : cols === 3 ? "ft-three-col" : "ft-two-col";
+  const items = Children.toArray(children);
   return (
-    <div className={colClass} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-      {children}
+    <div className={colClass} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, borderBottom: "1px solid var(--ft-border)" }}>
+      {items.map((child, i) => (
+        <div key={i} style={{ minWidth: 0, borderRight: i < items.length - 1 ? "1px solid var(--ft-border)" : "none" }}>{child}</div>
+      ))}
     </div>
   );
 }
@@ -537,7 +530,7 @@ interface IncomeBandRowProps {
 
 function IncomeBandRow({ b, isLast }: IncomeBandRowProps) {
   return (
-    <TaxHoverRow style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: isLast ? "none" : "1px solid var(--ft-border)", borderLeft: `3px solid ${b.color}` }}>
+    <TaxHoverRow style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: isLast ? "none" : "1px solid var(--ft-border)" }}>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: b.color, width: 52, flexShrink: 0 }}>{b.rate}</span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{b.label}</span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "right" }}>{b.range}</span>
@@ -608,18 +601,16 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
   const marginRate = grossSalary > 125_140 ? 45 : grossSalary > 50_270 ? 40 : 20;
 
   return (
-    <div style={{ border: "1px solid var(--ft-border)" }}>
-      <SectionHeader label={`UK TAX YEAR ${selectedYear} — OVERVIEW`} color="var(--ft-cyan)" />
+    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+      <PanelHeader>{`UK TAX YEAR ${selectedYear} — OVERVIEW`}</PanelHeader>
 
       {/* Top KPI bar — border-as-gap grid */}
       <div style={{
         display: "grid",
         gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
-        gap: 1,
-        background: "var(--ft-border)",
         borderBottom: "1px solid var(--ft-border)",
       }}>
-        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-amber)" }}>
+        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             Est. Income Tax
           </div>
@@ -630,7 +621,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             on <span className="pnum">{fmt(grossSalary, sym)}</span> gross
           </div>
         </div>
-        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderTop: `2px solid ${effectiveRate > 40 ? "var(--ft-red)" : effectiveRate > 25 ? "var(--ft-amber)" : "var(--ft-green)"}` }}>
+        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             Effective Rate
           </div>
@@ -641,7 +632,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             marginal: {marginRate}%
           </div>
         </div>
-        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-green)" }}>
+        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             Take-Home Pay
           </div>
@@ -652,7 +643,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             <span className="pnum">{fmt(netPay / 12, sym)}</span>/mo
           </div>
         </div>
-        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderTop: "2px solid var(--ft-blue)" }}>
+        <div style={{ padding: "12px 16px", background: "var(--ft-surface)" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             NI Contributions
           </div>
@@ -936,7 +927,7 @@ export default function Tax() {
   const divPct = rules.dividendAllowance ? Math.min(100, (estimatedDividends / rules.dividendAllowance) * 100) : 0;
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
+    <div className="space-y-1.5 animate-in fade-in duration-300">
       <PageHeader
         icon={FileText}
         title="Tax Report"
@@ -1003,8 +994,8 @@ export default function Tax() {
 
       {/* ── UK Income Tax + Year Overview ─────────────────────────────────────── */}
       {country === "uk" && (
-        <div style={{ border: "1px solid var(--ft-border)" }}>
-          <SectionHeader label="UK INCOME TAX ESTIMATOR (2024/25)" color="var(--ft-green)" />
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader>UK INCOME TAX ESTIMATOR (2024/25)</PanelHeader>
           <div style={{ padding: "12px 16px 4px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" as const }}>
             <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", whiteSpace: "nowrap" as const }}>
               Gross Annual Salary
@@ -1037,8 +1028,8 @@ export default function Tax() {
       )}
 
       {/* ── Capital Gains ─────────────────────────────────────────────────────── */}
-      <div className="border" style={{ borderColor: "var(--ft-border)" }}>
-        <SectionHeader label={`CAPITAL GAINS — ${selectedYear} · ${rules.name}`} color="var(--ft-green)" />
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <PanelHeader>{`CAPITAL GAINS — ${selectedYear} · ${rules.name}`}</PanelHeader>
 
         {rules.cgtNote && (
           <div className="flex items-start gap-2 px-4 py-2.5 border-b text-xs" style={{ borderColor: "var(--ft-border)", background: "rgba(139,148,158,0.06)" }}>
@@ -1154,8 +1145,8 @@ export default function Tax() {
       </div>
 
       {/* ── Shelter tracker ────────────────────────────────────────────────────── */}
-      <div className="border" style={{ borderColor: "var(--ft-border)" }}>
-        <SectionHeader label={`${rules.shelterName.toUpperCase()} TRACKER — ${selectedYear}`} color="var(--ft-blue)" />
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <PanelHeader>{`${rules.shelterName.toUpperCase()} TRACKER — ${selectedYear}`}</PanelHeader>
         <MetricTileGroup cols={3}>
           <MetricTile label={`Annual ${rules.shelterName} Limit`} value={rules.shelterLimit > 0 ? fmt(rules.shelterLimit, sym) : "—"} color="var(--ft-dim)" />
           <MetricTile label="Contributed This Year" value={fmt(yearShelterTotal, sym)} color="var(--ft-blue)" sub={rules.shelterLimit > 0 ? `${shelterPct.toFixed(0)}% used` : undefined} />
@@ -1216,8 +1207,8 @@ export default function Tax() {
 
       {/* ── Dividend estimate ───────────────────────────────────────────────────── */}
       {(rules.dividendAllowance !== undefined || rules.dividendNote) && (
-        <div className="border" style={{ borderColor: "var(--ft-border)" }}>
-          <SectionHeader label="DIVIDEND INCOME ESTIMATE" color="var(--ft-cyan)" />
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader>DIVIDEND INCOME ESTIMATE</PanelHeader>
           <MetricTileGroup cols={3}>
             <MetricTile label="Allowance / Exemption" value={rules.dividendAllowance ? fmt(rules.dividendAllowance, sym) : "—"} color="var(--ft-dim)" />
             <MetricTile label="Est. Annual Dividends" value={fmt(estimatedDividends, sym)} color={rules.dividendAllowance && estimatedDividends > rules.dividendAllowance ? "var(--ft-amber)" : "var(--ft-cyan)"} />
@@ -1238,8 +1229,8 @@ export default function Tax() {
 
       {/* ── Tax rates reference ─────────────────────────────────────────────────── */}
       {rules.incomeBands.length > 0 && (
-        <div className="border" style={{ borderColor: "var(--ft-border)" }}>
-          <SectionHeader label={`${rules.name.toUpperCase()} — INCOME TAX REFERENCE`} color="var(--ft-accent)" />
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          <PanelHeader>{`${rules.name.toUpperCase()} — INCOME TAX REFERENCE`}</PanelHeader>
           <div style={{ background: "var(--ft-base)" }}>
             {rules.incomeBands.map((b, i) => (
               <IncomeBandRow
