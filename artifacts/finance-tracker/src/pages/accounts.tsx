@@ -2484,11 +2484,11 @@ export default function Accounts() {
                         <VStack gap={4}>
                           <div>
                             <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>Monthly</div>
-                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatBaseMoney(totalMonthly)}</div>
+                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatBaseMoney(Math.abs(totalMonthly))}</div>
                           </div>
                           <div>
                             <Text as="div" mono size={9} color="var(--ft-dim)">Annual</Text>
-                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatBaseMoney(totalAnnual)}</div>
+                            <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatBaseMoney(Math.abs(totalAnnual))}</div>
                           </div>
                           <Text as="div" mono size={9} color="var(--ft-dim)">
                             {apyAccounts.length} account{apyAccounts.length !== 1 ? "s" : ""} with APY

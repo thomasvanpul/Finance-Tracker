@@ -417,7 +417,7 @@ function CoastCard({ coastFireNeeded, effPortfolio, coastFireGap, hasCoasted, ta
       <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
         <span className="pnum">{progressToCoast}% of coast target</span>
         <span className="pnum" style={{ color: hasCoasted ? "var(--ft-green)" : "var(--ft-red)" }}>
-          {hasCoasted ? `+${formatBaseMoney(coastFireGap)} surplus` : `${formatBaseMoney(Math.abs(coastFireGap))} gap`}
+          {hasCoasted ? `+${formatBaseMoney(Math.abs(coastFireGap))} surplus` : `${formatBaseMoney(Math.abs(coastFireGap))} gap`}
         </span>
       </div>
     </div>

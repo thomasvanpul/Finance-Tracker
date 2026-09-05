@@ -690,7 +690,7 @@ function GoalCard({
                     </HStack>
                     {interestEarned > 0 && (
                       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>
-                        +{formatBaseMoney(interestEarned)} total interest earned
+                        +{formatBaseMoney(Math.abs(interestEarned))} total interest earned
                       </div>
                     )}
                   </div>

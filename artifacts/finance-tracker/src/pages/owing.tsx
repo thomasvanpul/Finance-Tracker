@@ -1687,7 +1687,7 @@ export default function Owing() {
                         <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "var(--font-mono)", color: d.baseEquivalent == null ? "var(--ft-dim)" : amountColor }}>
                           {d.baseEquivalent == null
                             ? <span>—</span>
-                            : <span className="pnum">{isIowe ? "-" : "+"}{formatBaseMoney(d.baseEquivalent)}</span>}
+                            : <span className="pnum">{isIowe ? "-" : "+"}{formatBaseMoney(Math.abs(d.baseEquivalent))}</span>}
                         </div>
                         {d.currency !== "GBP" && (
                           <Text as="div" mono size={9} color="var(--ft-dim)">

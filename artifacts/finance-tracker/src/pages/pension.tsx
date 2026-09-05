@@ -506,11 +506,11 @@ function PensionHealthBlock({
             <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px", borderRight: "1px solid var(--ft-border)" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Monthly shortfall</div>
-                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.round(shortfallMonthly))}</div>
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.abs(Math.round(shortfallMonthly)))}</div>
               </div>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px", borderRight: "1px solid var(--ft-border)" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Annual shortfall</div>
-                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.round(shortfallAnnual))}</div>
+                <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.abs(Math.round(shortfallAnnual)))}</div>
               </div>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Required pot</div>

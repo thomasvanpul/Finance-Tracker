@@ -899,7 +899,7 @@ export default function NetWorthHistory() {
           <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: "none", borderBottom: "none", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Best Single Month</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>
-              {bestMonthIncrease > 0 ? `+${formatBaseMoney(bestMonthIncrease)}` : (allTimeLow ? formatBaseMoney(allTimeLow.netWorth) : "—")}
+              {bestMonthIncrease > 0 ? `+${formatBaseMoney(Math.abs(bestMonthIncrease))}` : (allTimeLow ? formatBaseMoney(allTimeLow.netWorth) : "—")}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
               {bestMonthIncrease > 0 ? "largest single gain" : (allTimeLow ? shortDate(allTimeLow.date) : "")}

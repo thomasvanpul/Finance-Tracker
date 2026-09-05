@@ -323,7 +323,7 @@ export default function Projection() {
 
   const kpiItems = [
     { label: "CURRENT NET WORTH", value: formatBaseMoney(startNetWorth), color: "var(--ft-text)", accent: "var(--ft-border)", show: true },
-    { label: "TOTAL GAIN (BASE)", value: `+${formatBaseMoney(gainBase)}`, color: gainBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", accent: gainBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", show: true },
+    { label: "TOTAL GAIN (BASE)", value: `${gainBase >= 0 ? "+" : ""}${formatBaseMoney(gainBase)}`, color: gainBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", accent: gainBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", show: true },
     { label: `IN ${horizon}Y — BEAR ${bearRate}%`, value: formatBaseMoney(finalBear), color: "var(--ft-red)", accent: "var(--ft-red)", show: showScenarios },
     { label: `IN ${horizon}Y — BASE ${annualRate}%`, value: formatBaseMoney(finalBase), color: "var(--ft-green)", accent: "var(--ft-green)", show: true },
     { label: `IN ${horizon}Y — BULL ${bullRate}%`, value: formatBaseMoney(finalBull), color: "var(--ft-blue)", accent: "var(--ft-blue)", show: showScenarios },

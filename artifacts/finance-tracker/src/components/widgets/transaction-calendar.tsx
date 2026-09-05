@@ -253,7 +253,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
         }}
       >
         {tx.type === "expense" ? "−" : "+"}
-        {formatBaseMoney(tx.baseEquivalent)}
+        {formatBaseMoney(Math.abs(tx.baseEquivalent))}
       </span>
     </div>
   );
@@ -341,11 +341,11 @@ export function TransactionCalendarWidget() {
             {transactions.length > 0 && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)" }}>
                 {[
-                  { label: "INCOME", value: `+${formatBaseMoney(monthIncome)}`, color: "var(--ft-green)" },
-                  { label: "SPEND",  value: `-${formatBaseMoney(monthExpenses)}`, color: "var(--ft-red)" },
+                  { label: "INCOME", value: `+${formatBaseMoney(Math.abs(monthIncome))}`, color: "var(--ft-green)" },
+                  { label: "SPEND",  value: `-${formatBaseMoney(Math.abs(monthExpenses))}`, color: "var(--ft-red)" },
                   { label: "NET",    value: `${monthNet >= 0 ? "+" : ""}${formatBaseMoney(monthNet)}`, color: monthNet >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
                   { label: "DAYS",   value: String(activeDays), color: "var(--ft-accent)" },
-                  { label: "AVG/D",  value: `-${formatBaseMoney(avgDailySpend)}`, color: "var(--ft-amber)" },
+                  { label: "AVG/D",  value: `-${formatBaseMoney(Math.abs(avgDailySpend))}`, color: "var(--ft-amber)" },
                 ].map((item, i) => (
                   <div key={item.label} style={{ padding: "6px 10px", borderRight: i < 4 ? "1px solid var(--ft-border)" : undefined }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", color: "var(--ft-dim)", marginBottom: 2 }}>
@@ -448,12 +448,12 @@ export function TransactionCalendarWidget() {
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     {selectedTotals.income > 0 && (
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>
-                        +{formatBaseMoney(selectedTotals.income)}
+                        +{formatBaseMoney(Math.abs(selectedTotals.income))}
                       </span>
                     )}
                     {selectedTotals.expense > 0 && (
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)" }}>
-                        −{formatBaseMoney(selectedTotals.expense)}
+                        −{formatBaseMoney(Math.abs(selectedTotals.expense))}
                       </span>
                     )}
                     <span

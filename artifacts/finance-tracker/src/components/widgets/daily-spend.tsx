@@ -63,7 +63,7 @@ function TodayTxRow({ description, category, baseEquivalent }: TodayTxRowProps) 
         )}
       </div>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: baseEquivalent == null ? "var(--ft-dim)" : "var(--ft-red)", flexShrink: 0 }}>
-        {baseEquivalent == null ? "—" : `−${formatBaseMoney(baseEquivalent)}`}
+        {baseEquivalent == null ? "—" : `−${formatBaseMoney(Math.abs(baseEquivalent))}`}
       </span>
     </div>
   );

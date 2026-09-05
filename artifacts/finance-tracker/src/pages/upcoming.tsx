@@ -407,7 +407,7 @@ function SubRenewalRow({ sub }: SubRenewalRowProps) {
         {sub.frequency}
       </div>
       <div style={{ width: 120, minWidth: 120, padding: "7px 12px", textAlign: "right", color: "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-        <span className="pnum">-{formatBaseMoney(sub.amount)}</span>
+        <span className="pnum">-{formatBaseMoney(Math.abs(sub.amount))}</span>
       </div>
     </div>
   );
@@ -837,7 +837,7 @@ export default function Upcoming() {
                   <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: markPaidItem.baseEquivalent == null ? "var(--ft-dim)" : markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto" }}>
                     {markPaidItem.baseEquivalent == null
                       ? <span>{formatNative(Math.abs(markPaidItem.nativeAmount), markPaidItem.currency)}</span>
-                      : <span className="pnum">{markPaidItem.type === "income" ? "+" : "-"}{formatBaseMoney(markPaidItem.baseEquivalent)}</span>}
+                      : <span className="pnum">{markPaidItem.type === "income" ? "+" : "-"}{formatBaseMoney(Math.abs(markPaidItem.baseEquivalent))}</span>}
                   </span>
                 </HStack>
                 {!markPaidItem.accountId && (
@@ -884,12 +884,12 @@ export default function Upcoming() {
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
           <SummaryKpiCell label="30d Outgoings">
             <Text as="div" mono size={14} weight={700} color="var(--ft-red)" lineHeight={1}>
-              <span className="pnum">-{formatBaseMoney(summary.committedOutgoings30d)}</span>
+              <span className="pnum">-{formatBaseMoney(Math.abs(summary.committedOutgoings30d))}</span>
             </Text>
           </SummaryKpiCell>
           <SummaryKpiCell label="30d Income">
             <Text as="div" mono size={14} weight={700} color="var(--ft-green)" lineHeight={1}>
-              <span className="pnum">+{formatBaseMoney(summary.expectedIncome30d)}</span>
+              <span className="pnum">+{formatBaseMoney(Math.abs(summary.expectedIncome30d))}</span>
             </Text>
           </SummaryKpiCell>
           <SummaryKpiCell label="30d Net">

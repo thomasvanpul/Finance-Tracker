@@ -510,12 +510,12 @@ function CashFlowPreviewPanel() {
       <HStack gap={16} minWidth0>
         <HStack gap={6} align="center" minWidth0>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>Inflows</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>+{formatBaseMoney(inflows)}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>+{formatBaseMoney(Math.abs(inflows))}</span>
         </HStack>
         <div style={{ width: 1, background: "var(--ft-border2)", flexShrink: 0 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>Outflows</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>-{formatBaseMoney(outflows)}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>-{formatBaseMoney(Math.abs(outflows))}</span>
         </div>
       </HStack>
     </div>

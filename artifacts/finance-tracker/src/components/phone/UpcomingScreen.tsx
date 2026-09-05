@@ -177,7 +177,7 @@ function UpcomingHero({ outgoings, income, loading }: HeroProps) {
             letterSpacing: "-0.01em",
           }}
         >
-          {outgoings != null ? `−${formatBaseMoney(outgoings)}` : "—"}
+          {outgoings != null ? `−${formatBaseMoney(Math.abs(outgoings))}` : "—"}
         </div>
       )}
 
@@ -193,7 +193,7 @@ function UpcomingHero({ outgoings, income, loading }: HeroProps) {
               letterSpacing: "0.06em",
             }}
           >
-            +{formatBaseMoney(income)} income
+            +{formatBaseMoney(Math.abs(income))} income
           </span>
         </div>
       )}

@@ -250,7 +250,7 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
                 color: monthly == null ? "var(--ft-dim)" : "var(--ft-cyan)",
               }}
             >
-              {monthly == null ? "—" : `−${formatBaseMoney(monthly)}`}
+              {monthly == null ? "—" : `−${formatBaseMoney(Math.abs(monthly))}`}
             </span>
             <span
               style={{
@@ -357,7 +357,7 @@ export function SubscriptionTrackerWidget() {
                   lineHeight: 1,
                 }}
               >
-                −{formatBaseMoney(monthlyTotal)}
+                −{formatBaseMoney(Math.abs(monthlyTotal))}
               </div>
               <div
                 style={{
@@ -398,7 +398,7 @@ export function SubscriptionTrackerWidget() {
                   lineHeight: 1,
                 }}
               >
-                −{formatBaseMoney(yearlyTotal)}
+                −{formatBaseMoney(Math.abs(yearlyTotal))}
               </div>
               {/* Urgency indicators */}
               <div

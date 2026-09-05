@@ -805,7 +805,7 @@ function LumpSumTab() {
               </div>
               <VStack gap={12}>
                 <BigNumber value={formatBaseMoney(Math.round(fv))} label="Future Value" color="var(--ft-accent)" size={28} />
-                <BigNumber value={`+${formatBaseMoney(Math.round(interestEarned))}`} label="Total Interest Earned" color="var(--ft-green)" size={20} />
+                <BigNumber value={`+${formatBaseMoney(Math.abs(Math.round(interestEarned)))}`} label="Total Interest Earned" color="var(--ft-green)" size={20} />
                 <BigNumber value={formatBaseMoney(Math.round(monthlyEq))} label="Monthly Equivalent" color="var(--ft-cyan)" size={16} />
               </VStack>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 6 }}>
@@ -879,7 +879,7 @@ function DebtPayoffTab() {
           <SliderRow label="Loan Amount" value={loanAmount} min={500} max={100000} step={500} onChange={setLoanAmount} display={formatBaseMoney(loanAmount)} />
           <SliderRow label="Interest Rate (APR %)" value={apr} min={0.5} max={40} step={0.5} onChange={setApr} display={`${apr}%`} />
           <SliderRow label="Monthly Payment" value={monthlyPayment} min={minPay} max={Math.max(loanAmount / 6, minPay + 500)} step={10} onChange={setMonthlyPayment} display={formatBaseMoney(effectivePayment)} />
-          <SliderRow label="Extra Payment /month" value={extraPayment} min={0} max={2000} step={10} onChange={setExtraPayment} display={extraPayment > 0 ? `+${formatBaseMoney(extraPayment)}` : "£0"} />
+          <SliderRow label="Extra Payment /month" value={extraPayment} min={0} max={2000} step={10} onChange={setExtraPayment} display={extraPayment > 0 ? `+${formatBaseMoney(Math.abs(extraPayment))}` : "£0"} />
         </div>
 
         <div>
@@ -900,7 +900,7 @@ function DebtPayoffTab() {
                   </div>
                   <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <BigNumber value={`-${monthsSaved} mo`} label="Months Saved" color="var(--ft-green)" />
-                    <BigNumber value={`-${formatBaseMoney(Math.round(interestSaved))}`} label="Interest Saved" color="var(--ft-green)" />
+                    <BigNumber value={`-${formatBaseMoney(Math.abs(Math.round(interestSaved)))}`} label="Interest Saved" color="var(--ft-green)" />
                   </div>
                 </div>
               )}
@@ -919,7 +919,7 @@ function DebtPayoffTab() {
               <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} label={{ value: "Month", position: "insideBottomRight", fill: "var(--ft-dim)", fontSize: 8, fontFamily: "var(--font-mono)" }} />
               <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)", className: "pnum" }} tickLine={false} axisLine={false} width={44} />
               <Tooltip
-                formatter={(v: number, name: string) => [formatBaseMoney(v), name === "baseBalance" ? "Min payment" : `+${formatBaseMoney(extraPayment)}/mo`]}
+                formatter={(v: number, name: string) => [formatBaseMoney(v), name === "baseBalance" ? "Min payment" : `+${formatBaseMoney(Math.abs(extraPayment))}/mo`]}
                 contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
               />
               <Line type="monotone" dataKey="baseBalance" stroke="var(--ft-red)" strokeWidth={1.5} dot={false} name="baseBalance" />

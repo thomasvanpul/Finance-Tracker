@@ -270,7 +270,7 @@ function buildProjection(
       const subsOnDay = subsByDate[dateStr] ?? [];
       for (const sub of subsOnDay) {
         balance -= sub.amount;
-        events.push(`${sub.name} (sub) -${formatBaseMoney(sub.amount)}`);
+        events.push(`${sub.name} (sub) -${formatBaseMoney(Math.abs(sub.amount))}`);
       }
     }
 
@@ -691,10 +691,10 @@ export default function CashflowPage() {
                 </span>
               </div>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
-                Avg income: <span className="pnum" style={{ color: "var(--ft-green)" }}>+{formatBaseMoney(baseDailyIncome * 30)}/mo</span>
+                Avg income: <span className="pnum" style={{ color: "var(--ft-green)" }}>+{formatBaseMoney(Math.abs(baseDailyIncome * 30))}/mo</span>
               </div>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
-                Avg expense: <span className="pnum" style={{ color: "var(--ft-red)" }}>-{formatBaseMoney(baseDailyExpense * 30)}/mo</span>
+                Avg expense: <span className="pnum" style={{ color: "var(--ft-red)" }}>-{formatBaseMoney(Math.abs(baseDailyExpense * 30))}/mo</span>
               </div>
               <button
                 onClick={() => setMultipliers(DEFAULT_MULTIPLIERS)}
@@ -725,7 +725,7 @@ export default function CashflowPage() {
         const msgs: Record<string, string> = {
           market:  isNegativeTrend
             ? `Monthly net is negative — shore up cash flow before deploying to investment positions.`
-            : `Monthly net +${formatBaseMoney(baseMonthlyNet)}: ${horizon}d forecast shows investable surplus trajectory.`,
+            : `Monthly net +${formatBaseMoney(Math.abs(baseMonthlyNet))}: ${horizon}d forecast shows investable surplus trajectory.`,
           budget:  isNegativeTrend
             ? `Spending exceeds income on trend — use the scenario toggles to model expense cuts.`
             : `On track. Use pessimistic scenario to stress-test your budget against unexpected costs.`,
@@ -807,9 +807,7 @@ export default function CashflowPage() {
             {formatBaseMoney(finalBalance)}
           </div>
           <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>
-            <span className="pnum">{finalBalance >= startingBalance
-              ? `+${formatBaseMoney(finalBalance - startingBalance)}`
-              : `${formatBaseMoney(finalBalance - startingBalance)}`}</span> vs today
+            <span className="pnum">{`${finalBalance >= startingBalance ? "+" : ""}${formatBaseMoney(finalBalance - startingBalance)}`}</span> vs today
           </div>
         </div>
 

@@ -110,7 +110,7 @@ function CategoryBarRow({ cat, amount, pct, color, rank, prevHasData, trend }: C
             </span>
           )}
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{pct.toFixed(0)}%</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color }}>−{formatBaseMoney(amount)}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color }}>−{formatBaseMoney(Math.abs(amount))}</span>
         </span>
       </div>
       <div style={{ height: 5, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
@@ -277,7 +277,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
       </button>
 
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>
-        −{formatBaseMoney(total)}
+        −{formatBaseMoney(Math.abs(total))}
       </span>
     </div>
   );

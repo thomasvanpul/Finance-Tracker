@@ -248,7 +248,7 @@ function CandidateRow({
 
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>
-            −{formatBaseMoney(candidate.avgGbpValue)}
+            −{formatBaseMoney(Math.abs(candidate.avgGbpValue))}
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", lineHeight: 1.4 }}>
             {formatBaseMoney(annualCost)}/yr

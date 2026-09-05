@@ -1340,7 +1340,7 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
                 }}
               >
                 {myBalance > 0.005
-                  ? `+${formatBaseMoney(myBalance)} net`
+                  ? `+${formatBaseMoney(Math.abs(myBalance))} net`
                   : myBalance < -0.005
                   ? `${formatBaseMoney(myBalance)} net`
                   : "settled up"}

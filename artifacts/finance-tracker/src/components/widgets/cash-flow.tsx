@@ -155,8 +155,8 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
   // it onto a fabricated zero baseline and turns "no previous month" into
   // "+∞% MoM" instead of the honest "—".
   const summaryItems = d ? [
-    { label: "Income",      value: `+${formatBaseMoney(d.thisMonth.income)}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income) },
-    { label: "Expenses",    value: `−${formatBaseMoney(d.thisMonth.expenses)}`, color: d.thisMonth.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses) },
+    { label: "Income",      value: `+${formatBaseMoney(Math.abs(d.thisMonth.income))}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income) },
+    { label: "Expenses",    value: `−${formatBaseMoney(Math.abs(d.thisMonth.expenses))}`, color: d.thisMonth.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses) },
     { label: "Net Savings", value: `${d.thisMonth.netSavings >= 0 ? "+" : ""}${formatBaseMoney(d.thisMonth.netSavings)}`, color: d.thisMonth.netSavings !== 0 ? (d.thisMonth.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", delta: null },
   ] : [];
 

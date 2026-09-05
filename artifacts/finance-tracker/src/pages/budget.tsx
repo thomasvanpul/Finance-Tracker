@@ -336,7 +336,7 @@ function ForecastAtRiskRow({ category, effectiveLimit, projectedSpend, projected
       </div>
       <span className="pnum" style={{ color: "var(--ft-dim)", minWidth: 65, fontSize: 9, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{formatBaseMoney(effectiveLimit)} limit</span>
       <span className="pnum" style={{ color: "var(--ft-amber)", fontSize: 9, fontWeight: 700, minWidth: 70, textTransform: "uppercase" as const, letterSpacing: "0.04em", flexShrink: 0 }}>→ {formatBaseMoney(projectedSpend)}</span>
-      <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, minWidth: 72, textAlign: "right" as const, fontSize: 10, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>+{formatBaseMoney(projectedOverspend)}</span>
+      <span className="pnum" style={{ color: "var(--ft-red)", fontWeight: 700, minWidth: 72, textAlign: "right" as const, fontSize: 10, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>+{formatBaseMoney(Math.abs(projectedOverspend))}</span>
     </div>
   );
 }
@@ -659,7 +659,7 @@ function BudgetTableRow({
             <Text as="span" size={12} weight={700} color={isOver ? "var(--ft-red)" : "var(--ft-text)"}>{formatBaseMoney(spent)}</Text>
             <span>/ {formatBaseMoney(effectiveLimit)}</span>
             {rolloverEnabled && rolloverAccumulated > 0 && (
-              <Text as="span" size={9} color="var(--ft-cyan)">↻+{formatBaseMoney(rolloverAccumulated)}</Text>
+              <Text as="span" size={9} color="var(--ft-cyan)">↻+{formatBaseMoney(Math.abs(rolloverAccumulated))}</Text>
             )}
           </div>
         </div>
@@ -764,7 +764,7 @@ function BudgetTableRow({
         <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
           {rolloverEnabled && rolloverAccumulated > 0 && (
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-cyan)", letterSpacing: "0.04em" }}>
-              ↻ +{formatBaseMoney(rolloverAccumulated)}
+              ↻ +{formatBaseMoney(Math.abs(rolloverAccumulated))}
             </span>
           )}
           {paceLabel && (

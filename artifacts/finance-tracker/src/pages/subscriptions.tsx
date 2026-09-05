@@ -410,7 +410,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
       {priceIncreased && (
         <div className="flex items-center gap-2 px-3 py-1.5 border-b text-xs" style={{ borderColor: "rgba(230,162,60,0.2)", background: "rgba(230,162,60,0.06)", color: "var(--ft-amber)", fontFamily: "var(--font-mono)" }}>
           <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-          <span>Price increased: <span className="pnum">{formatBaseMoney(last!.prevAmount!)}</span> → <span className="pnum">{formatBaseMoney(last!.amount)}</span> (<span className="pnum">+{pricePct.toFixed(1)}% / +{formatBaseMoney(priceDiff)}</span>)</span>
+          <span>Price increased: <span className="pnum">{formatBaseMoney(last!.prevAmount!)}</span> → <span className="pnum">{formatBaseMoney(last!.amount)}</span> (<span className="pnum">+{pricePct.toFixed(1)}% / +{formatBaseMoney(Math.abs(priceDiff))}</span>)</span>
         </div>
       )}
     </div>
@@ -628,7 +628,7 @@ function OpportunityCostCell({ label, val, deposited, gain }: OpportunityCostCel
         {formatBaseMoney(Math.round(val))}
       </div>
       <div className="pnum text-xs mt-1.5" style={{ color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>
-        +{formatBaseMoney(Math.round(gain))} growth
+        {gain >= 0 ? "+" : ""}{formatBaseMoney(Math.round(gain))} growth
       </div>
       <div className="pnum text-xs mt-0.5" style={{ color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 9 }}>
         {formatBaseMoney(Math.round(deposited))} deposited

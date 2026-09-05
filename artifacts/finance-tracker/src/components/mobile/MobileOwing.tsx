@@ -119,13 +119,13 @@ export function MobileOwing({ onBack }: { onBack?: () => void }) {
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">OWED TO ME</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
-              {toMe == null ? "—" : `+${formatMoney(toMe, getBaseCurrency())}`}
+              {toMe == null ? "—" : `+${formatMoney(Math.abs(toMe), getBaseCurrency())}`}
             </Text>
           </HStack>
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">I OWE</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
-              {byMe == null ? "—" : `−${formatMoney(byMe, getBaseCurrency())}`}
+              {byMe == null ? "—" : `−${formatMoney(Math.abs(byMe), getBaseCurrency())}`}
             </Text>
           </HStack>
         </HStack>

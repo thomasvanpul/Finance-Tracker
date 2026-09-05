@@ -110,13 +110,13 @@ export function MobileUpcomingFull({ onBack }: { onBack?: () => void }) {
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">IN</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-green)" numeric>
-              {expectedIn == null ? "—" : `+${formatMoney(expectedIn, getBaseCurrency())}`}
+              {expectedIn == null ? "—" : `+${formatMoney(Math.abs(expectedIn), getBaseCurrency())}`}
             </Text>
           </HStack>
           <HStack gap={4} align="baseline">
             <Text as="span" mono size={10} letterSpacing="0.1em" color="var(--ft-dim)">OUT</Text>
             <Text as="span" mono size={12} weight={600} color="var(--ft-red)" numeric>
-              {committedOut == null ? "—" : `−${formatMoney(committedOut, getBaseCurrency())}`}
+              {committedOut == null ? "—" : `−${formatMoney(Math.abs(committedOut), getBaseCurrency())}`}
             </Text>
           </HStack>
         </HStack>

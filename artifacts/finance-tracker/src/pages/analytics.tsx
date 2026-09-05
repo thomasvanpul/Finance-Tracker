@@ -2238,7 +2238,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
                 <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${Math.min(100, row.pct)}%`, background: row.color, opacity: 0.85 }} />
               </div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: isFirst || isLast ? 700 : 400, color: row.sign === 1 ? "var(--ft-text)" : "var(--ft-dim)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-                {row.sign === -1 ? "−" : ""}{formatBaseMoney(row.amount)}
+                {row.sign === -1 ? "−" : ""}{formatBaseMoney(Math.abs(row.amount))}
               </div>
               <div style={{ textAlign: "right" }}>
                 {mom != null && !isFirst && !isLast ? (

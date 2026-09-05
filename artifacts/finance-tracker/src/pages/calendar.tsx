@@ -900,8 +900,8 @@ function WeekDayCell({ date, dayData, feedEvs, custEvs, onAddEvent }: WeekDayCel
       {custEvs.slice(0, 3).map((ev, i) => (
         <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${ev.color} 13%, transparent)`, color: ev.color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
       ))}
-      {income > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>+{formatBaseMoney(income)}</div>}
-      {expenses > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>-{formatBaseMoney(expenses)}</div>}
+      {income > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>+{formatBaseMoney(Math.abs(income))}</div>}
+      {expenses > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>-{formatBaseMoney(Math.abs(expenses))}</div>}
       {billCount > 0 && <Text as="div" mono size={8} color="var(--ft-amber)">↑ {billCount} bill{billCount !== 1 ? "s" : ""}</Text>}
       {subCount > 0 && <Text as="div" mono size={8} color="var(--ft-cyan)">↻ {subCount} sub</Text>}
       {!hasAny && <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-border2)", marginTop: "auto" }}>—</div>}

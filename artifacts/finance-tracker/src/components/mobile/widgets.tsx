@@ -219,7 +219,7 @@ export function UpcomingWidget() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: it.baseEquivalent == null ? "var(--ft-dim)" : isIncome ? "var(--ft-green)" : "var(--ft-text)", flexShrink: 0 }}>
               {it.baseEquivalent == null
                 ? "—"
-                : `${isIncome ? "+" : "−"}${formatBaseMoney(it.baseEquivalent)}`}
+                : `${isIncome ? "+" : "−"}${formatBaseMoney(Math.abs(it.baseEquivalent))}`}
             </div>
           </div>
         );
