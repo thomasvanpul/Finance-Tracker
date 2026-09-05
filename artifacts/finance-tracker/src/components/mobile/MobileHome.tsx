@@ -9,6 +9,7 @@ import {
   useListUpcoming,
 } from "@workspace/api-client-react";
 import { MobileEmptyState } from "./mobile-ui";
+import { SectionHeader } from "@/components/phone/SectionHeader";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { MarketPane } from "./MarketPane";
 import { NewsPane } from "./NewsPane";
@@ -398,7 +399,7 @@ export function MobileHome(_props: MobileHomeProps) {
             /* Cashflow section — only when there is anything to plot */
             txns.length > 0 && (
               <div key="cashflow">
-                <SectionHeader
+                <HomeSectionHeader
                   label={`${monthName} · LIQUID`}
                   link="CASHFLOW ›"
                   onLink={() => navigate("/cashflow")}
@@ -430,7 +431,7 @@ export function MobileHome(_props: MobileHomeProps) {
         )}
 
         {/* Coming section */}
-        <SectionHeader
+        <HomeSectionHeader
           label="COMING · KNOWN WITH CERTAINTY"
           link="MONTH ›"
           onLink={() => navigate("/upcoming")}
@@ -462,7 +463,9 @@ export function MobileHome(_props: MobileHomeProps) {
 }
 
 // ── Section header (label + link) ────────────────────────────────────────────
-function SectionHeader({
+// The shared phone SectionHeader is the titlebar; this only supplies the
+// right-slot link and the gap that separates one home section from the last.
+function HomeSectionHeader({
   label,
   link,
   onLink,
@@ -472,39 +475,30 @@ function SectionHeader({
   onLink: () => void;
 }) {
   return (
-    // Border-top + margin are one-off surface (section divider). Inline
-    // stays — no divider primitive.
-    <div
-      style={{
-        marginTop: 24,
-        padding: "16px 18px 0",
-        borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-      }}
-    >
-      <HStack align="baseline" justify="between">
-        <MonoLabel as="span" size={11} letterSpacing="0.16em">
-          {label}
-        </MonoLabel>
-        <a
-          onClick={(e) => {
-            e.preventDefault();
-            onLink();
-          }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            minHeight: 44,
-            margin: "-15px 0",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--ft-dim)",
-            textDecoration: "none",
-            cursor: "pointer",
-          }}
-        >
-          {link}
-        </a>
-      </HStack>
+    <div style={{ marginTop: 24 }}>
+      <SectionHeader
+        label={label}
+        right={
+          <a
+            onClick={(e) => {
+              e.preventDefault();
+              onLink();
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              minHeight: 44,
+              margin: "-5px 0",
+              fontWeight: 400,
+              color: "var(--ft-dim)",
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
+          >
+            {link}
+          </a>
+        }
+      />
     </div>
   );
 }
