@@ -332,7 +332,7 @@ const TH: React.CSSProperties = {
   fontWeight: 600,
   color: "var(--ft-dim)",
   background: "var(--ft-surface)",
-  borderBottom: "2px solid var(--ft-border2)",
+  borderBottom: "1px solid var(--ft-border2)",
   borderRight: "1px solid var(--ft-border)",
   textTransform: "uppercase",
   letterSpacing: "0.4px",

@@ -91,7 +91,7 @@ const EMPTY_FORM: SubForm = {
 
 const TH: React.CSSProperties = {
   padding: "5px 10px", fontSize: 9, fontWeight: 600, color: "var(--ft-dim)",
-  background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)",
+  background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border2)",
   borderRight: "1px solid var(--ft-border)", textTransform: "uppercase" as const,
   letterSpacing: "0.06em", whiteSpace: "nowrap" as const, fontFamily: "var(--font-mono)",
 };

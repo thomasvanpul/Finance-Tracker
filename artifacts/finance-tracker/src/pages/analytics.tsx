@@ -960,7 +960,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
           </ResponsiveContainer>
 
           {/* ── Annotation panel ── */}
-          <div style={{ margin: "8px 12px 4px", borderTop: "2px solid var(--ft-border2)", paddingTop: 10 }}>
+          <div style={{ margin: "8px 12px 4px", borderTop: "1px solid var(--ft-border2)", paddingTop: 10 }}>
             <HStack align="center" justify="between" marginBottom={6}>
               <HStack gap={6} align="center">
                 <div style={{ width: 10, height: 10, background: "var(--ft-amber)", opacity: 0.85, flexShrink: 0 }} />

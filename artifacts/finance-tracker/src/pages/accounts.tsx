@@ -107,7 +107,7 @@ const TH: React.CSSProperties = {
   fontWeight: 600,
   color: "var(--ft-dim)",
   background: "var(--ft-surface)",
-  borderBottom: "2px solid var(--ft-border2)",
+  borderBottom: "1px solid var(--ft-border2)",
   borderRight: "1px solid var(--ft-raised)",
   textTransform: "uppercase" as const,
   letterSpacing: "0.4px",
@@ -1953,7 +1953,7 @@ export default function Accounts() {
             <FtSkeleton width={280} height={10} />
           </div>
           {/* Column headers */}
-          <div style={{ display: "flex", gap: 12, padding: "6px 12px", background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)" }}>
+          <div style={{ display: "flex", gap: 12, padding: "6px 12px", background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border2)" }}>
             {[160, 80, 70, 130, 110, 160, 100, 70].map((w, i) => (
               <FtSkeleton key={i} width={w} height={9} />
             ))}

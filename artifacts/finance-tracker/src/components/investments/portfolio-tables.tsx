@@ -21,7 +21,7 @@ interface QuoteData {
 
 const TH: React.CSSProperties = {
   padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
-  background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)",
+  background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border2)",
   borderRight: "1px solid var(--ft-border)", textTransform: "uppercase" as const,
   letterSpacing: "0.4px", whiteSpace: "nowrap" as const,
 };
@@ -160,7 +160,7 @@ export function DividendTracker({ investments, quoteMap }: DividendTrackerProps)
               })}
             </tbody>
             <tfoot>
-              <tr style={{ borderTop: "2px solid var(--ft-border2)", background: "rgba(63,185,80,0.04)" }}>
+              <tr style={{ borderTop: "1px solid var(--ft-border2)", background: "rgba(63,185,80,0.04)" }}>
                 <td colSpan={5} style={{ padding: "6px 12px", color: "var(--ft-dim)", fontSize: 11, fontWeight: 700 }}>ESTIMATED TOTAL ANNUAL DIVIDEND INCOME</td>
                 <td colSpan={2} style={{ padding: "6px 12px", textAlign: "right", color: "var(--ft-green)", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums", fontFamily: "monospace" }}>
                   {formatBaseMoney(totalAnnual)}

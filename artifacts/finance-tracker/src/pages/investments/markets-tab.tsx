@@ -608,7 +608,7 @@ export function MarketsTab() {
 
   const MH: React.CSSProperties = {
     padding: "6px 10px", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)",
-    background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)",
+    background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border2)",
     borderRight: "1px solid var(--ft-border)", textTransform: "uppercase",
     letterSpacing: "0.4px", whiteSpace: "nowrap",
   };
@@ -1786,7 +1786,7 @@ export function MarketsTab() {
         {isMobile ? (
           // Mobile compact list — no horizontal scroll needed
           <div style={{ border: "1px solid var(--ft-border)" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 0, background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: 0, background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border2)" }}>
               <div style={{ ...MH, borderRight: "none" }}>Ticker</div>
               <div style={{ ...MH, textAlign: "right" }}>Price</div>
               <div style={{ ...MH, textAlign: "right", minWidth: 68 }}>Chg %</div>

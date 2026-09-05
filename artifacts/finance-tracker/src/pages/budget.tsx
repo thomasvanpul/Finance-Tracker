@@ -1986,7 +1986,7 @@ export default function Budget() {
                 display: "grid",
                 gridTemplateColumns: "1fr 100px 120px 70px 80px 90px 100px 120px 80px",
                 background: "var(--ft-raised)",
-                borderBottom: "2px solid var(--ft-border2)",
+                borderBottom: "1px solid var(--ft-border2)",
                 minWidth: 800,
               }}
             >

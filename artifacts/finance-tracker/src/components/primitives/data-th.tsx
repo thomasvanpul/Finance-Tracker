@@ -15,7 +15,7 @@ export function DataTH({ children, style, className, noRightBorder, align, ...re
         fontWeight: 600,
         color: "var(--ft-dim)",
         background: "var(--ft-surface)",
-        borderBottom: "2px solid var(--ft-border2)",
+        borderBottom: "1px solid var(--ft-border2)",
         borderRight: noRightBorder ? "none" : "1px solid var(--ft-border)",
         textTransform: "uppercase" as const,
         letterSpacing: "0.05em",

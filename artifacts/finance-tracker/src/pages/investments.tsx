@@ -111,7 +111,7 @@ import { MarketsTab, alertTriggered } from "./investments/markets-tab";
 
 const TH: React.CSSProperties = {
   padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
-  background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)",
+  background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border2)",
   borderRight: "1px solid var(--ft-border)", textTransform: "uppercase" as const,
   letterSpacing: "0.4px", whiteSpace: "nowrap" as const,
 };
@@ -613,7 +613,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
 
   const RTBH: React.CSSProperties = {
     padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
-    background: "var(--ft-surface)", borderBottom: "2px solid var(--ft-border2)",
+    background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border2)",
     borderRight: "1px solid var(--ft-border)", textTransform: "uppercase" as const,
     letterSpacing: "0.4px", whiteSpace: "nowrap" as const,
   };
@@ -758,7 +758,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
           })}
 
           {/* Totals row */}
-          <div style={{ display: "flex", alignItems: "center", borderTop: "2px solid var(--ft-border2)", background: "rgba(163,113,247,0.04)" }}>
+          <div style={{ display: "flex", alignItems: "center", borderTop: "1px solid var(--ft-border2)", background: "rgba(163,113,247,0.04)" }}>
             <div style={{ ...RTBD, flex: 1, color: "var(--ft-dim)", fontWeight: 700, fontSize: 10, letterSpacing: "0.4px", textTransform: "uppercase" }}>
               TOTAL
             </div>
@@ -1226,7 +1226,7 @@ function PortfolioPositionsTable({
     fontWeight: 600,
     color: "var(--ft-muted)",
     background: "var(--ft-surface)",
-    borderBottom: "2px solid var(--ft-border2)",
+    borderBottom: "1px solid var(--ft-border2)",
     borderRight: "1px solid var(--ft-border)",
     textTransform: "uppercase",
     letterSpacing: "0.04em",
@@ -1466,7 +1466,7 @@ function PortfolioPositionsTable({
           {/* Totals row */}
           {summary && investments.length > 0 && (
             <tfoot>
-              <tr style={{ background: "color-mix(in srgb, var(--ft-raised) 40%, transparent)", borderTop: "2px solid var(--ft-border2)" }}>
+              <tr style={{ background: "color-mix(in srgb, var(--ft-raised) 40%, transparent)", borderTop: "1px solid var(--ft-border2)" }}>
                 <td colSpan={2} style={{ ...TD, fontWeight: 700, color: "var(--ft-dim)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", borderBottom: "none" }}>TOTAL</td>
                 <td style={{ ...TD, borderBottom: "none" }} />
                 <td style={{ ...TD, borderBottom: "none" }} />
@@ -2595,7 +2595,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                           const daysHeld = Math.floor((today2.getTime() - acqDate.getTime()) / (24 * 3600 * 1000));
                           const isLT = daysHeld >= 365;
                           return (
-                            <tr key={lot.id} style={{ borderBottom: li === lots.length - 1 ? "2px solid var(--ft-border2)" : "1px solid var(--ft-border)", background: li % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
+                            <tr key={lot.id} style={{ borderBottom: li === lots.length - 1 ? "1px solid var(--ft-border2)" : "1px solid var(--ft-border)", background: li % 2 === 0 ? "transparent" : "var(--ft-raised)" }}>
                               <td style={{ padding: "5px 10px", fontWeight: li === 0 ? 700 : 400, color: li === 0 ? "var(--ft-text)" : "var(--ft-muted)" }}>{li === 0 ? ticker : ""}</td>
                               <td style={{ padding: "5px 10px", color: "var(--ft-dim)" }}>{new Date(lot.buyDate).toLocaleDateString("en", { year: "2-digit", month: "short", day: "numeric" })}</td>
                               <td style={{ padding: "5px 10px", textAlign: "right" }}>{lot.shares.toFixed(lot.shares % 1 === 0 ? 0 : 4)}</td>

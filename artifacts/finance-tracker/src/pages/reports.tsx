@@ -139,7 +139,7 @@ const TH: React.CSSProperties = {
   fontWeight: 600,
   color: "var(--ft-dim)",
   background: "var(--ft-surface)",
-  borderBottom: "2px solid var(--ft-border2)",
+  borderBottom: "1px solid var(--ft-border2)",
   textTransform: "uppercase" as const,
   letterSpacing: "0.4px",
   whiteSpace: "nowrap" as const,
@@ -160,7 +160,7 @@ const TD_TOTAL: React.CSSProperties = {
   ...TD,
   fontWeight: 700,
   background: "var(--ft-raised)",
-  borderTop: "2px solid var(--ft-border2)",
+  borderTop: "1px solid var(--ft-border2)",
   borderBottom: "none",
 };
 

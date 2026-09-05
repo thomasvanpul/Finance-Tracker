@@ -2131,7 +2131,7 @@ export default function FamilyFinance() {
                 display: "grid",
                 gridTemplateColumns: "1fr 100px 120px 90px 200px",
                 gap: 0,
-                borderBottom: "2px solid var(--ft-border2)",
+                borderBottom: "1px solid var(--ft-border2)",
                 background: "var(--ft-raised)",
                 minWidth: 560,
               }}
