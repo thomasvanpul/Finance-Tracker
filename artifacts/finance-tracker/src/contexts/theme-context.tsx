@@ -8,6 +8,7 @@ import {
   saveThemeToServer,
   fetchThemeFromServer,
 } from "@/lib/theme-sync";
+import { clearSlotCache } from "@/lib/tab-slot";
 
 export type FintrackTheme = "void" | "phosphor" | "arctic" | "parchment" | "slate" | "linen" | "amber" | "midnight" | "matrix" | "synthwave" | "deep-space" | "mario" | "gilded" | "bloodline";
 
@@ -115,6 +116,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // clearing an already-empty cache is cheap and idempotent.
       setThemeState(DEFAULT_THEME);
       clearCachedTheme();
+      // Same reasoning for the phone tab-slot cache (lib/tab-slot.ts):
+      // this effect is the one place that observes sign-out.
+      clearSlotCache();
       hydratedForUserId.current = null;
       return;
     }

@@ -15,6 +15,7 @@ import { CategoryProvider } from "@/contexts/category-context";
 import { Onboarding } from "@/components/onboarding";
 import { isOnboardingComplete, LS_ONBOARDING_FOLLOWUP_KEY } from "@/lib/persona";
 import { hydratePersonaFromServer } from "@/lib/persona-sync";
+import { hydrateTabSlotFromServer } from "@/lib/tab-slot";
 import NotFound from "@/pages/not-found";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PhoneShell } from "@/components/phone/PhoneShell";
@@ -260,8 +261,13 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
   // Hydrate persona from server once per mount. If the user finished
   // onboarding on another device, this mirrors that choice locally so
   // every synchronous loadPersonaIds() reader sees the truth.
+  // The phone tab-slot override hydrates alongside it: the slot's
+  // default depends on the persona, and both are server-owned so they
+  // follow the user across devices.
   useEffect(() => {
-    if (done) void hydratePersonaFromServer();
+    if (!done) return;
+    void hydratePersonaFromServer();
+    void hydrateTabSlotFromServer();
   }, [done]);
   if (!done) {
     return <Onboarding onComplete={() => setDone(true)} />;

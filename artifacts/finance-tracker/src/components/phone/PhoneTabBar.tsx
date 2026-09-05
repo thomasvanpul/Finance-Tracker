@@ -2,10 +2,13 @@ import { useSyncExternalStore } from "react";
 import { Link, useLocation } from "wouter";
 import { useActivePersona } from "@/lib/persona-hook";
 import {
+  FIXED_TABS_AFTER,
+  FIXED_TABS_BEFORE,
   loadSlotId,
   slotIdForPersona,
   slotOptionById,
   SLOT_UPDATE_EVENT,
+  type FixedTab,
   type SlotOption,
 } from "@/lib/tab-slot";
 
@@ -18,7 +21,9 @@ import {
 // Settings › Terminal Profile.
 //
 // The slot is reactive: changing the persona or pinning a different slot
-// in settings updates the tab bar immediately without a page reload.
+// in settings updates the tab bar immediately without a page reload. The
+// pin itself is an account-level preference (app_settings.tab_slot) with
+// localStorage as a first-paint cache — see lib/tab-slot.ts.
 //
 // NOT the MobileNav customiser deleted at f05fcab (2026-08-27). That
 // version let users build the entire bar from eleven options, producing
@@ -35,13 +40,10 @@ type Tab = {
   aliases: readonly string[];
 };
 
-const FIXED_BEFORE: readonly Tab[] = [
-  { key: "home",  href: "/",      label: "HOME",  aliases: [] },
-  { key: "worth", href: "/worth", label: "WORTH", aliases: ["/accounts", "/net-worth", "/portfolio", "/investments"] },
-];
-const FIXED_AFTER: readonly Tab[] = [
-  { key: "directory", href: "/directory", label: "DIRECTORY", aliases: [] },
-];
+// The fixed positions live in lib/tab-slot.ts next to the slot options so
+// Lock #18 can assert tab-URL purity against one definition.
+const FIXED_BEFORE: readonly Tab[] = FIXED_TABS_BEFORE.map((t: FixedTab) => ({ ...t }));
+const FIXED_AFTER: readonly Tab[] = FIXED_TABS_AFTER.map((t: FixedTab) => ({ ...t }));
 
 // URLs that make the DIRECTORY tab appear active. Kept in sync manually
 // with PhoneShell's wrapped and desktop-only routes.

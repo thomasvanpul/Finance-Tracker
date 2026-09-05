@@ -6,7 +6,9 @@
 // default and overrideable in Settings › Terminal Profile.
 //
 // The tab bar controls emphasis, not access. Hiding a slot never deletes
-// a feature; all content remains reachable from DIRECTORY or by URL.
+// a feature; all content remains reachable from DIRECTORY or by URL, and
+// /spending stays permanently out of WRAPPED_ROUTES so a markets user
+// following a link still gets the full screen.
 //
 // NOT the MobileNav customiser deleted at f05fcab (2026-08-27). That
 // version let users build the entire bar from eleven options, producing
@@ -14,9 +16,15 @@
 // One slot from four positions stays predictable while making the app
 // fit a person rather than a category.
 //
-// Storage: localStorage "nr-tab-slot". Migrates to user_preferences via
-// G20/B when that lands — same pattern as "nr-dismissed-insights".
+// Storage: the server column app_settings.tab_slot is the source of
+// truth, so the choice follows the user from laptop to phone (a
+// localStorage-only nav choice would be one more stranded key of the
+// kind BACKLOG § G20 logs). localStorage "nr-tab-slot" is a read cache so
+// the bar paints the right slot on first frame instead of after a round
+// trip — same shape as theme-sync.ts. Server wins on hydrate, including
+// a server null, which clears a stale local pin.
 
+import { getSettingsTabSlot, updateSettingsTabSlot } from "@workspace/api-client-react";
 import type { PersonaId } from "./persona";
 
 export type SlotId = "spending" | "markets" | "upcoming" | "owing" | "watchlist";
@@ -68,6 +76,35 @@ export const SLOT_OPTIONS: readonly SlotOption[] = [
   },
 ];
 
+// The three fixed positions. Exported so Lock #18 asserts tab-URL purity
+// against the real definitions rather than a hand-copied list.
+export interface FixedTab {
+  key: "home" | "worth" | "directory";
+  href: string;
+  label: string;
+  aliases: readonly string[];
+}
+
+export const FIXED_TABS_BEFORE: readonly FixedTab[] = [
+  { key: "home",  href: "/",      label: "HOME",  aliases: [] },
+  { key: "worth", href: "/worth", label: "WORTH", aliases: ["/accounts", "/net-worth", "/portfolio", "/investments"] },
+];
+export const FIXED_TABS_AFTER: readonly FixedTab[] = [
+  { key: "directory", href: "/directory", label: "DIRECTORY", aliases: [] },
+];
+
+// Every URL a tab owns across every set a user can pick: the fixed tabs,
+// every *available* slot option, and all their aliases. The union over
+// all sets is the right thing to assert disjointness on, because any
+// user can pick any available slot — a URL that is tab-owned in one set
+// is tab-owned in the app.
+export function tabOwnedUrls(): readonly string[] {
+  const out: string[] = [];
+  for (const t of [...FIXED_TABS_BEFORE, ...FIXED_TABS_AFTER]) out.push(t.href, ...t.aliases);
+  for (const o of SLOT_OPTIONS) if (o.available) out.push(o.href, ...o.aliases);
+  return out;
+}
+
 // Persona defaults. When the user has no saved override, this is the slot
 // they see. The choice reflects each persona's primary financial context.
 const DEFAULT_SLOT: Record<PersonaId, SlotId> = {
@@ -89,27 +126,87 @@ export function slotIdForPersona(persona: PersonaId): SlotId {
   return DEFAULT_SLOT[persona];
 }
 
-// The user's saved override, or null if they have none (following persona default).
-export function loadSlotId(): SlotId | null {
-  if (typeof localStorage === "undefined") return null;
-  const raw = localStorage.getItem(LS_SLOT_KEY);
-  if (!raw) return null;
-  const opt = SLOT_OPTIONS.find((o) => o.id === raw && o.available);
-  return opt ? (raw as SlotId) : null;
+function isAvailableSlotId(x: unknown): x is SlotId {
+  return typeof x === "string" && SLOT_OPTIONS.some((o) => o.id === x && o.available);
 }
 
-// Pin a slot choice and notify subscribers immediately.
+function notify(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(SLOT_UPDATE_EVENT));
+}
+
+// ── cache (localStorage) ─────────────────────────────────────────────────
+
+// The user's cached override, or null if they have none (following persona default).
+export function loadSlotId(): SlotId | null {
+  try {
+    const raw = localStorage.getItem(LS_SLOT_KEY);
+    return isAvailableSlotId(raw) ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(id: SlotId | null): void {
+  try {
+    if (id === null) localStorage.removeItem(LS_SLOT_KEY);
+    else localStorage.setItem(LS_SLOT_KEY, id);
+  } catch {
+    // ignore — the server still has it; the next hydrate repaints
+  }
+}
+
+// Sign-out: drop the cache so the next person at this browser does not
+// see the previous user's slot for one frame before their own hydrate.
+export function clearSlotCache(): void {
+  writeCache(null);
+  notify();
+}
+
+// ── server ───────────────────────────────────────────────────────────────
+
+// Best-effort write. The local cache is already applied and subscribers
+// already notified; a failure here leaves the server stale until the
+// next change. Never throws. (Offline durability is G20/A's job.)
+async function saveSlotToServer(id: SlotId | null): Promise<void> {
+  try {
+    await updateSettingsTabSlot({ tabSlot: id });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn("[tab-slot] failed to save tab slot to server:", err);
+  }
+}
+
+// Boot-time hydrate, called once the user is signed in and onboarded.
+// The server value wins outright — including null, which clears a local
+// pin the user removed on another device. Returns silently when the
+// request fails (offline, 401) so the cache keeps painting.
+export async function hydrateTabSlotFromServer(): Promise<void> {
+  let server: SlotId | null;
+  try {
+    const { tabSlot } = await getSettingsTabSlot();
+    server = isAvailableSlotId(tabSlot) ? tabSlot : null;
+  } catch {
+    return;
+  }
+  if (server === loadSlotId()) return;
+  writeCache(server);
+  notify();
+}
+
+// ── user actions ─────────────────────────────────────────────────────────
+
+// Pin a slot choice: cache, notify subscribers immediately, then write through.
 export function saveSlotId(id: SlotId): void {
-  if (typeof localStorage === "undefined") return;
-  localStorage.setItem(LS_SLOT_KEY, id);
-  window.dispatchEvent(new Event(SLOT_UPDATE_EVENT));
+  writeCache(id);
+  notify();
+  void saveSlotToServer(id);
 }
 
 // Remove the user's override, returning the slot to the persona default.
 export function clearSlotId(): void {
-  if (typeof localStorage === "undefined") return;
-  localStorage.removeItem(LS_SLOT_KEY);
-  window.dispatchEvent(new Event(SLOT_UPDATE_EVENT));
+  writeCache(null);
+  notify();
+  void saveSlotToServer(null);
 }
 
 // The slot the tab bar actually shows: saved override if any, persona default otherwise.
