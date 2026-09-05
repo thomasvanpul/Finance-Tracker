@@ -21,18 +21,25 @@
 //                           phone-hostile enough to require the
 //                           explainer — that's a diff a reviewer sees.
 //
-//   Tab URLs (and their aliases) — the five tabs plus the legacy URLs
-//                           that resolve to a tab stub. Not tracked by
-//                           name here; asserted disjoint from the two
-//                           listed sets. If a legacy URL appears in
-//                           WRAPPED_ROUTES OR DESKTOP_ONLY_ROUTES the
-//                           lock fires — those URLs are tab-owned.
+//   Tab-owned URLs        — the four tab positions (HOME · WORTH · [slot]
+//                           · DIRECTORY) plus the legacy URLs that alias
+//                           to a tab screen. Since the slot is user-
+//                           chosen there is no single tab set any more:
+//                           there is one set per available slot option.
+//                           The lock asserts against the UNION of those
+//                           sets (lib/tab-slot.ts · tabOwnedUrls()),
+//                           because any user can pick any available
+//                           slot, so a URL that is a tab in one set is
+//                           tab-owned in the app. Not tracked by name
+//                           here; derived from the tab definitions.
 //
 // Invariants asserted:
 //   1. WRAPPED_ROUTES ↔ every wrappedRoute() call (equality both ways).
 //   2. DESKTOP_ONLY_ROUTES ↔ every desktopOnlyRoute() call (equality
 //      both ways).
 //   3. WRAPPED_ROUTES ∩ DESKTOP_ONLY_ROUTES = ∅.
+//   4. tabOwnedUrls() ∩ WRAPPED_ROUTES = ∅.
+//   5. tabOwnedUrls() ∩ DESKTOP_ONLY_ROUTES = ∅.
 //
 // The fabricated-zero-lock pattern this reuses (allowlist that only
 // shrinks) demonstrably worked for demo-fabrication: baseline shrank by
@@ -44,7 +51,7 @@ import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import { SLOT_OPTIONS } from "@/lib/tab-slot";
+import { tabOwnedUrls } from "@/lib/tab-slot";
 
 const __filename = fileURLToPath(import.meta.url);
 const REPO_ROOT = join(dirname(__filename), "..", "..", "..", "..", "..");
@@ -312,20 +319,20 @@ ${desktopOnlyCalls.map((c) => `{${c}}`).join("\n")}
 
     // ── Invariants 4–5: tab-URL purity ───────────────────────────────────────
     // The phone has four tab positions: HOME · WORTH · [slot] · DIRECTORY.
-    // The slot cycles through available SlotOptions (currently SPENDING,
-    // MARKETS, UPCOMING). All tab-owned URLs must be absent from both
-    // WRAPPED_ROUTES and DESKTOP_ONLY_ROUTES — wrapping a tab URL would mean
+    // The slot is user-chosen from the available SlotOptions (currently
+    // SPENDING, MARKETS, UPCOMING), so there is one tab set per option.
+    // tabOwnedUrls() is the union of all of them — fixed tabs, available
+    // slots, and every alias — and all of it must be absent from both
+    // WRAPPED_ROUTES and DESKTOP_ONLY_ROUTES. Wrapping a tab URL would mean
     // the route is both a tab and a drill-in, which produces two conflicting
     // animations and breaks the tab bar active-indicator logic.
     //
     // OWING is intentionally excluded: it is a slot option but available:false,
-    // so it is still in WRAPPED_ROUTES until OwingScreen ships. The filter on
-    // SLOT_OPTIONS.available enforces this — the lock only fires once the slot
-    // is promoted to phone-native.
+    // so it is still in WRAPPED_ROUTES until OwingScreen ships. The available
+    // filter inside tabOwnedUrls() enforces this — the lock only fires once
+    // the slot is promoted to phone-native.
 
-    const FIXED_TAB_URLS = ["/", "/worth", "/directory"] as const;
-    const AVAILABLE_SLOT_URLS = SLOT_OPTIONS.filter((o) => o.available).map((o) => o.href);
-    const TAB_OWNED_URLS = [...FIXED_TAB_URLS, ...AVAILABLE_SLOT_URLS];
+    const TAB_OWNED_URLS = tabOwnedUrls();
 
     it(
       "tab-owned URLs are not in WRAPPED_ROUTES (tab purity)",
