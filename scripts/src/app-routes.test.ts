@@ -86,3 +86,11 @@ test("route args are read the way screenshot.ts reads them", () => {
   // route than the one that gets screenshotted.
   assert.deepEqual(routeArgsFrom([]), { routes: ["/"], viewport: "mobile" });
 });
+
+test("a query string is not part of the route for the pre-flight check", () => {
+  // screenshot.ts compares the landed pathname with the query stripped;
+  // the pre-flight must agree or `/settings?panel=terminal-profile` is
+  // rejected before any server starts while `/settings` is accepted.
+  assert.doesNotThrow(() => assertRoutesKnown(["/settings?panel=terminal-profile"], "mobile"));
+  assert.throws(() => assertRoutesKnown(["/settingz?panel=terminal-profile"], "mobile"), /unknown route/);
+});

@@ -314,7 +314,7 @@ export async function assertRendered(page: Page, route: string): Promise<void> {
   }
 }
 
-async function captureOne(context: BrowserContext, route: string, theme: string, viewport: Viewport, explicitName: string | null): Promise<string> {
+async function captureOne(context: BrowserContext, route: string, theme: string, viewport: Viewport, explicitName: string | null, persona: string | undefined): Promise<string> {
   const page = await context.newPage();
   // Inject the theme before any script runs, matching ThemeProvider's storage key.
   // SCREENSHOT_AI_INSIGHTS='["one insight"]' primes the dashboard's AI
@@ -329,8 +329,17 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
       ts: Date.now(),
     }));`;
 
+  // With --persona the server already holds it (applyAccountPrefs), so
+  // mirror it into the ft-persona cache the way a device that has
+  // round-tripped once would have it. Without this the boot hydrate sees
+  // a mismatch, fires nr-persona-update, and the "default landing page"
+  // handler yanks / to the persona's default page (/portfolio for
+  // market) — assertRendered then correctly refuses the PNG.
+  const personaSeed = persona === undefined ? "" : `
+    window.localStorage.setItem("ft-persona", ${JSON.stringify(JSON.stringify([persona]))});`;
+
   await page.addInitScript(`try {
-    window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});
+    window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});${personaSeed}
     window.localStorage.setItem("ft-onboarding-complete", "1");
     window.localStorage.setItem("nr-onboarding-complete", "1");${aiSeed}
   } catch (e) {}`);
@@ -379,7 +388,7 @@ async function main(): Promise<void> {
     for (const route of args.routes) {
       for (const theme of args.themes) {
         const explicit = args.routes.length === 1 && args.themes.length === 1 ? args.name : null;
-        const outPath = await captureOne(context, route, theme, args.viewport, explicit);
+        const outPath = await captureOne(context, route, theme, args.viewport, explicit, args.persona);
         console.log(`[screenshot] ${route} · ${args.viewport} · ${theme} → ${outPath}`);
       }
     }

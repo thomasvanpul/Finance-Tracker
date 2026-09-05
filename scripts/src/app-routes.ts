@@ -149,7 +149,10 @@ export function nearest(route: string, candidates: readonly string[], take = 3):
 // closest real routes. Called before any server starts.
 export function assertRoutesKnown(routes: readonly string[], viewport: Viewport): void {
   const known = knownRoutes(viewport);
-  const unknown = routes.filter((r) => !known.some((k) => matches(k, r)));
+  // A query string is not part of the route (`/settings?panel=x` is
+  // /settings) — screenshot.ts already compares the landed path the same
+  // way, so the pre-flight check must agree with it.
+  const unknown = routes.filter((r) => !known.some((k) => matches(k, r.split("?")[0])));
   if (unknown.length === 0) return;
   const shell = viewport === "mobile" ? "PhoneShell.tsx" : "App.tsx";
   const detail = unknown
