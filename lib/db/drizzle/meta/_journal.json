@@ -127,6 +127,13 @@
       "when": 1788582168119,
       "tag": "0017_tab_slot",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1788618765761,
+      "tag": "0018_user_preferences",
+      "breakpoints": true
     }
   ]
 }

@@ -96,6 +96,7 @@ describe("verifySchemaAtBoot", () => {
       sharedExpenseSettlementsTable, subscriptionsTable, transactionsTable,
       upcomingTable, userTable, sessionTable, accountTable,
       verificationTable, passkeyTable, totpTable, twoFactorTable,
+      userPreferencesTable,
     } = await import("@workspace/db");
     const all = {
       accounts: accountsTable,
@@ -114,6 +115,7 @@ describe("verifySchemaAtBoot", () => {
       subscriptions: subscriptionsTable,
       transactions: transactionsTable,
       upcoming: upcomingTable,
+      user_preferences: userPreferencesTable,
       user: userTable,
       session: sessionTable,
       account: accountTable,

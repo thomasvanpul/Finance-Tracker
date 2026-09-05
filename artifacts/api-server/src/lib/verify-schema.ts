@@ -75,6 +75,7 @@ import {
   passkeyTable,
   totpTable,
   twoFactorTable,
+  userPreferencesTable,
 } from "@workspace/db";
 import { logger } from "./logger";
 
@@ -97,6 +98,7 @@ const TABLES: Record<string, PgTable<any>> = {
   subscriptions: subscriptionsTable,
   transactions: transactionsTable,
   upcoming: upcomingTable,
+  user_preferences: userPreferencesTable,
   // Auth tables — Better Auth manages these but they're still
   // schema-drift risk if a Better Auth version bump adds a column
   // and the app hasn't migrated yet.

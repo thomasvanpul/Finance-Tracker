@@ -14,3 +14,4 @@ export * from "./subscriptions";
 export * from "./connections";
 export * from "./request-metrics";
 export * from "./recurring-patterns";
+export * from "./user-preferences";
