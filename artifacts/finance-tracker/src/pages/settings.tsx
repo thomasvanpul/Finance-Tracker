@@ -262,10 +262,10 @@ function getFtLocalStorageEntries(): Record<string, string> {
 }
 
 // ── Shared primitives extracted to settings-atoms.tsx ─────────────────────
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import {
-  PANEL_STYLE, HEADER_STYLE, ROW,
-  RowLabel, Toggle, SectionHeader, ActionBtn,
+  PANEL_STYLE, ROW,
+  RowLabel, Toggle, ActionBtn,
   SettingsActionRow, SettingsInputRow, SettingsInfoRow, SettingsDataResetRow,
   SettingsToggleRow, SettingsSelectRow, SettingsNavItemRow, SettingsWidgetRow,
   SettingsThemeEffectRow, StorageKpiStrip,
@@ -344,7 +344,7 @@ function TransactionDefaultsPanel() {
 
   return (
     <div style={PANEL_STYLE}>
-      <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Transaction Defaults</div>
+      <PanelHeader>Transaction Defaults</PanelHeader>
       <div style={ROW}>
         <RowLabel title="Default type" sub='Pre-selects the transaction type in Quick Add (N)' />
         <HStack gap={4} wrap shrink={false}>
@@ -479,7 +479,7 @@ function TerminalProfilePanel() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Terminal Profile</div>
+        <PanelHeader>Terminal Profile</PanelHeader>
         <div style={{ padding: "16px" }}>
 
           {/* Intro */}
@@ -725,7 +725,7 @@ function TerminalProfilePanel() {
       </div>
 
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Re-run Setup</div>
+        <PanelHeader>Re-run Setup</PanelHeader>
         <SettingsActionRow title="Reconfigure terminal" sub="Clears your profile and re-runs the initialization screen on next page load.">
           <ActionBtn label="Reset & Reconfigure" variant="danger" onClick={handleResetAndReconfigure} />
         </SettingsActionRow>
@@ -802,9 +802,9 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
   };
 
   return (
-    <VStack gap={12}>
+    <VStack gap={6}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Theme</div>
+        <PanelHeader>Theme</PanelHeader>
         <div style={{ background: "var(--ft-surface)" }}>
           {groupedSwatches.map((group, idx) =>
             group.items.length === 0 ? null : (
@@ -857,7 +857,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
       </div>
 
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Display Density</div>
+        <PanelHeader>Display Density</PanelHeader>
         <div style={{ background: "var(--ft-surface)", padding: "12px 16px", display: "flex", gap: 8, flexWrap: "wrap" }}>
           {(["compact","normal","comfortable"] as const).map(d => {
             const labels: Record<Density,string> = { compact: "Compact", normal: "Normal", comfortable: "Comfortable" };
@@ -873,7 +873,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
 
       {/* Custom accent override */}
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Custom Accent Colour</div>
+        <PanelHeader>Custom Accent Colour</PanelHeader>
         <div style={{ padding: "14px 16px", background: "var(--ft-surface)" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 12, lineHeight: 1.6 }}>
             Override the accent colour for any theme. Persists across sessions.
@@ -967,10 +967,10 @@ function DisplayAndMotionPanel() {
   const setCents = (v: boolean) => { setShowCents(v); lsSet("nr-show-cents", String(v)); };
 
   return (
-    <VStack gap={12}>
+    <VStack gap={6}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Date &amp; Time</div>
-        <SectionHeader label="Date format" accent="var(--ft-blue)" />
+        <PanelHeader>Date &amp; Time</PanelHeader>
+        <PanelHeader>Date format</PanelHeader>
         {(["DD/MM/YYYY","MM/DD/YYYY","YYYY-MM-DD","D MMM YYYY"] as const).map(fmt => (
           <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
             <HStack gap={10} align="center">
@@ -980,7 +980,7 @@ function DisplayAndMotionPanel() {
             <Text as="span" mono size={11} color="var(--ft-muted)">{datePreviewMap[fmt]}</Text>
           </label>
         ))}
-        <SectionHeader label="Time format" accent="var(--ft-cyan)" />
+        <PanelHeader>Time format</PanelHeader>
         <div style={ROW}>
           <RowLabel title="Clock display" sub="Affects timestamps throughout the app" />
           <HStack gap={6} wrap shrink={false}>
@@ -989,7 +989,7 @@ function DisplayAndMotionPanel() {
             ))}
           </HStack>
         </div>
-        <SectionHeader label="Calendar" accent="var(--ft-green)" />
+        <PanelHeader>Calendar</PanelHeader>
         <div style={ROW}>
           <RowLabel title="First day of week" sub="Affects calendar and weekly views" />
           <HStack gap={6} wrap shrink={false}>
@@ -1001,8 +1001,8 @@ function DisplayAndMotionPanel() {
       </div>
 
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Numbers &amp; Currency</div>
-        <SectionHeader label="Number format" accent="var(--ft-blue)" />
+        <PanelHeader>Numbers &amp; Currency</PanelHeader>
+        <PanelHeader>Number format</PanelHeader>
         {(["1,234.56","1.234,56","1 234.56"] as const).map(fmt => (
           <label key={fmt} style={{ ...ROW, cursor: "pointer" }}>
             <HStack gap={10} align="center">
@@ -1022,8 +1022,8 @@ function DisplayAndMotionPanel() {
       </div>
 
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Typography</div>
-        <SectionHeader label="Font scale" accent="var(--ft-blue)" />
+        <PanelHeader>Typography</PanelHeader>
+        <PanelHeader>Font scale</PanelHeader>
         <div style={{ padding: "12px 14px" }}>
           <HStack gap={10} align="center">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 28 }}>85%</span>
@@ -1036,17 +1036,17 @@ function DisplayAndMotionPanel() {
       </div>
 
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Motion &amp; Effects</div>
+        <PanelHeader>Motion &amp; Effects</PanelHeader>
         <SettingsToggleRow title="Theme effects" sub="Master switch — disables all ambient background animations" on={masterOn} onChange={setMaster} />
         {masterOn && (
           <>
-            <SectionHeader label="Per-theme effects" accent="var(--ft-cyan)" />
+            <PanelHeader>Per-theme effects</PanelHeader>
             {SWATCH_DATA.map(s => (
               <SettingsThemeEffectRow key={s.id} label={s.label} accent={s.accent} on={perTheme[s.id] ?? true} onChange={v => setPerT(s.id, v)} />
             ))}
           </>
         )}
-        <SectionHeader label="Intensity" accent="var(--ft-blue)" />
+        <PanelHeader>Intensity</PanelHeader>
         <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
           <HStack gap={10} align="center">
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 46 }}>Minimal</span>
@@ -1093,9 +1093,9 @@ function PrivacyPanel() {
   };
 
   return (
-    <VStack gap={12}>
+    <VStack gap={6}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Amount Privacy</div>
+        <PanelHeader>Amount Privacy</PanelHeader>
         <SettingsToggleRow title="Blur sensitive amounts" sub='Amounts show as "£ ••••" until hovered. Useful in public places.' on={blurAmounts} onChange={setBlur} />
         {blurAmounts && (
           <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
@@ -1109,7 +1109,7 @@ function PrivacyPanel() {
         )}
       </div>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Data Masking</div>
+        <PanelHeader>Data Masking</PanelHeader>
         <SettingsSelectRow title="Transaction description masking" sub="Controls how merchant names and descriptions appear" value={maskMode} onChange={setMask}>
           <option value="none">None — show full text</option>
           <option value="partial">Partial — show last 4 chars</option>
@@ -1157,9 +1157,9 @@ function DashboardPanel() {
   }, []);
 
   return (
-    <VStack gap={12}>
+    <VStack gap={6}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Dashboard</div>
+        <PanelHeader>Dashboard</PanelHeader>
         <SettingsSelectRow title="Default landing page" sub="Navigate here when opening the app" value={defaultPage} onChange={setPage}>
           {pages.map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
         </SettingsSelectRow>
@@ -1167,13 +1167,13 @@ function DashboardPanel() {
         <SettingsToggleRow title="Show net worth in sidebar" sub="Display net worth strip in the sidebar footer" on={showNwStrip} onChange={setNwStrip} />
       </div>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Navigation Visibility</div>
+        <PanelHeader>Navigation Visibility</PanelHeader>
         <div style={{ padding: "8px 14px 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderBottom: "1px solid var(--ft-border)" }}>
           Toggle which pages appear in the sidebar. Hidden pages are still accessible via keyboard shortcuts and the command palette.
         </div>
         {navBySection.map(section => (
           <div key={section.label}>
-            <SectionHeader label={section.label} accent="var(--ft-blue)" />
+            <PanelHeader>{section.label}</PanelHeader>
             {section.items.map(item => (
               <SettingsNavItemRow key={item.href} label={item.label} visible={item.visible} onChange={v => toggleNavItem(item.href, v)} />
             ))}
@@ -1209,7 +1209,7 @@ function CustomCategoriesPanel() {
 
   return (
     <div style={PANEL_STYLE}>
-      <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Custom Categories</div>
+      <PanelHeader>Custom Categories</PanelHeader>
       <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderBottom: "1px solid var(--ft-border)" }}>
         Add your own categories. They appear alongside built-in categories in Quick Add and auto-cat rules.
       </div>
@@ -1266,14 +1266,14 @@ function AdvancedPanel({ toast }: { toast: ReturnType<typeof useToast>["toast"] 
   const usage = getStorageUsage();
 
   return (
-    <VStack gap={12}>
+    <VStack gap={6}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Feature Flags</div>
+        <PanelHeader>Feature Flags</PanelHeader>
         <SettingsToggleRow title="Beta features" sub='Shows a "BETA" badge on experimental pages' on={beta} onChange={setBetaVal} />
         <SettingsToggleRow title="Developer mode" sub="Shows raw data inspector panels (future use)" on={devMode} onChange={setDev} />
       </div>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Maintenance</div>
+        <PanelHeader>Maintenance</PanelHeader>
         <SettingsActionRow title="Clear app cache" sub="Removes all nr-* preference keys. Does not affect transactions or account data.">
           <ActionBtn label="Clear App Cache" variant="danger" onClick={handleClearCache} />
         </SettingsActionRow>
@@ -1282,7 +1282,7 @@ function AdvancedPanel({ toast }: { toast: ReturnType<typeof useToast>["toast"] 
         </SettingsActionRow>
       </div>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Storage Usage</div>
+        <PanelHeader>Storage Usage</PanelHeader>
         <StorageKpiStrip keyCount={usage.keyCount} sizeKb={usage.sizeKb} nrKeyCount={usage.nrKeyCount} />
       </div>
     </VStack>
@@ -1345,9 +1345,9 @@ function WardrobePanel() {
   const RARITY_COLOR_MAP: Record<string, string> = { COMMON: "var(--ft-dim)", EPIC: "#a855f7", LEGENDARY: "var(--ft-amber, #f59e0b)" };
 
   return (
-    <VStack gap={12}>
+    <VStack gap={6}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Bot Skin</div>
+        <PanelHeader>Bot Skin</PanelHeader>
         <style>{`
           @keyframes wand-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
           @keyframes wand-sit-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
@@ -1405,7 +1405,7 @@ function WardrobePanel() {
             const isActive = skinId === skin.id;
             const rarityCol = RARITY_COLOR_MAP[skin.rarity] ?? "var(--ft-dim)";
             return (
-              <div key={skin.id} onClick={() => pickSkin(skin.id)} style={{ ...ROW, cursor: "pointer", background: isActive ? "var(--ft-raised)" : "transparent", borderLeft: isActive ? `2px solid ${rarityCol}` : "2px solid transparent", paddingLeft: 12, transition: "background 0.1s", alignItems: "flex-start", paddingTop: 10, paddingBottom: 10 }}>
+              <div key={skin.id} onClick={() => pickSkin(skin.id)} style={{ ...ROW, cursor: "pointer", background: isActive ? "var(--ft-raised)" : "transparent", transition: "background 0.1s", alignItems: "flex-start", paddingTop: 10, paddingBottom: 10 }}>
                 <div style={{ flex: 1 }}>
                   <HStack gap={6} align="center" marginBottom={3}>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
@@ -1444,7 +1444,7 @@ function AiSettingsPanel() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Assistant Style</div>
+        <PanelHeader>Assistant Style</PanelHeader>
         <div style={{ padding: "4px 0" }}>
           {AI_STYLES.map((s) => (
             <div
@@ -1454,8 +1454,6 @@ function AiSettingsPanel() {
                 ...ROW,
                 cursor: "pointer",
                 background: selected === s.id ? "var(--ft-raised)" : "transparent",
-                borderLeft: selected === s.id ? `2px solid var(--ft-accent)` : "2px solid transparent",
-                paddingLeft: 12,
                 transition: "background 0.1s",
               }}
             >
@@ -1494,7 +1492,7 @@ function AiSettingsPanel() {
       )}
 
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><span style={{ color: "var(--ft-accent)" }}>·</span> Contextual Awareness</div>
+        <PanelHeader>Contextual Awareness</PanelHeader>
         <div style={{ padding: "12px 14px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7 }}>
             The AI automatically knows which page you're on and tailors its responses accordingly.
@@ -1559,9 +1557,9 @@ function WiseSyncKpiStrip({ synced, added, updated }: { synced: number; added: n
     { value: <span className="pnum">{updated}</span>, label: "Updated" },
   ];
   return (
-    <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
-      {cells.map(c => (
-        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "12px 14px" }}>
+    <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+      {cells.map((c, i) => (
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "12px 14px", borderRight: i < cells.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
           <div
             style={{
               fontFamily: "var(--font-mono)",
@@ -1612,12 +1610,10 @@ function WiseIntegrationPanel() {
   const lastSyncResult = syncMutation.data;
 
   return (
-    <VStack gap={12}>
+    <VStack gap={6}>
       {/* Status panel */}
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}>
-          <Text as="span" color="var(--ft-accent)">·</Text> Wise Integration
-        </div>
+        <PanelHeader>Wise Integration</PanelHeader>
 
         {/* Status row */}
         <div style={{ ...ROW, flexWrap: "wrap", gap: 10 }}>
@@ -1715,9 +1711,7 @@ function WiseIntegrationPanel() {
       {/* Linked accounts */}
       {isConfigured && isConnected && (
         <div style={PANEL_STYLE}>
-          <div style={HEADER_STYLE}>
-            <Text as="span" color="var(--ft-accent)">·</Text> Linked Accounts
-          </div>
+          <PanelHeader>Linked Accounts</PanelHeader>
           {wiseAccounts.length === 0 ? (
             <div style={{ padding: "14px 16px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", fontStyle: "italic" }}>
               No Wise accounts synced yet — click Sync Now to import
@@ -1771,7 +1765,7 @@ function DigestPanel() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Weekly Email Digest</div>
+        <PanelHeader>Weekly Email Digest</PanelHeader>
         <div style={{ padding: "12px 14px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7, marginBottom: 12 }}>
             Receive a weekly summary of your income, expenses, and top spending categories by email every Monday morning.
@@ -1795,7 +1789,7 @@ function DigestPanel() {
         </div>
       </div>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> What's included</div>
+        <PanelHeader>What's included</PanelHeader>
         <div style={{ padding: "8px 0" }}>
           {[
             ["Weekly income", "Total income received in the past 7 days"],
@@ -2007,54 +2001,57 @@ function CryptoWalletsPanel() {
   const hasAnyPricedValue = wallets.some(w => w.balance != null && (w.chain === "ETH" ? prices.ETH : prices.BTC) != null);
 
   return (
-    <VStack gap={12}>
+    <VStack gap={6}>
 
       {/* Header panel with wallet list and Sync All */}
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}>
-          <Text as="span" color="var(--ft-accent)">·</Text> Crypto Wallets
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-            {hasSynced && hasAnyPricedValue && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
-                Total ≈ £<span className="pnum">{totalValueBase.toLocaleString("en-GB", { maximumFractionDigits: 2 })}</span>
-                {unpricedCount > 0 && (
-                  <span style={{ color: "var(--ft-dim)", marginLeft: 6 }}>· {unpricedCount} unpriced</span>
-                )}
-              </span>
-            )}
-            {hasSynced && !hasAnyPricedValue && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
-                Total — set a price below to value your wallets
-              </span>
-            )}
-            <button
-              onClick={handleSyncAll}
-              disabled={syncingAll || wallets.length === 0}
-              style={{
-                fontFamily: "var(--font-mono)", fontSize: 10,
-                color: syncingAll || wallets.length === 0 ? "var(--ft-muted)" : "var(--ft-accent)",
-                background: "transparent",
-                border: `1px solid ${syncingAll || wallets.length === 0 ? "var(--ft-border2)" : "var(--ft-accent)"}`,
-                padding: "3px 10px", cursor: syncingAll || wallets.length === 0 ? "not-allowed" : "pointer",
-                opacity: syncingAll || wallets.length === 0 ? 0.5 : 1,
-                letterSpacing: "0.04em",
-              }}
-            >
-              {syncingAll ? "SYNCING..." : "↻ SYNC ALL"}
-            </button>
-            <button
-              onClick={() => setShowForm(v => !v)}
-              style={{
-                fontFamily: "var(--font-mono)", fontSize: 10,
-                color: "var(--ft-accent)", background: "transparent",
-                border: "1px solid var(--ft-accent)", padding: "3px 10px",
-                cursor: "pointer", letterSpacing: "0.04em",
-              }}
-            >
-              {showForm ? "✕ CANCEL" : "+ ADD WALLET"}
-            </button>
-          </div>
-        </div>
+        <PanelHeader
+          right={
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {hasSynced && hasAnyPricedValue && (
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+                  Total ≈ £<span className="pnum">{totalValueBase.toLocaleString("en-GB", { maximumFractionDigits: 2 })}</span>
+                  {unpricedCount > 0 && (
+                    <span style={{ color: "var(--ft-dim)", marginLeft: 6 }}>· {unpricedCount} unpriced</span>
+                  )}
+                </span>
+              )}
+              {hasSynced && !hasAnyPricedValue && (
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                  Total — set a price below to value your wallets
+                </span>
+              )}
+              <button
+                onClick={handleSyncAll}
+                disabled={syncingAll || wallets.length === 0}
+                style={{
+                  fontFamily: "var(--font-mono)", fontSize: 10,
+                  color: syncingAll || wallets.length === 0 ? "var(--ft-muted)" : "var(--ft-accent)",
+                  background: "transparent",
+                  border: `1px solid ${syncingAll || wallets.length === 0 ? "var(--ft-border2)" : "var(--ft-accent)"}`,
+                  padding: "3px 10px", cursor: syncingAll || wallets.length === 0 ? "not-allowed" : "pointer",
+                  opacity: syncingAll || wallets.length === 0 ? 0.5 : 1,
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {syncingAll ? "SYNCING..." : "↻ SYNC ALL"}
+              </button>
+              <button
+                onClick={() => setShowForm(v => !v)}
+                style={{
+                  fontFamily: "var(--font-mono)", fontSize: 10,
+                  color: "var(--ft-accent)", background: "transparent",
+                  border: "1px solid var(--ft-accent)", padding: "3px 10px",
+                  cursor: "pointer", letterSpacing: "0.04em",
+                }}
+              >
+                {showForm ? "✕ CANCEL" : "+ ADD WALLET"}
+              </button>
+            </div>
+          }
+        >
+          Crypto Wallets
+        </PanelHeader>
 
         {/* Add wallet form */}
         {showForm && (
@@ -2213,9 +2210,7 @@ function CryptoWalletsPanel() {
 
       {/* Price rate overrides */}
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}>
-          <Text as="span" color="var(--ft-accent)">·</Text> Price Rates (GBP)
-        </div>
+        <PanelHeader>Price Rates (GBP)</PanelHeader>
         <VStack gap={10} padding="12px 14px">
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
             Override the approximate GBP rate used to calculate fiat values. Stored in localStorage.
@@ -2302,9 +2297,9 @@ function CategoriesPanel() {
   const COMMON_COLORS = ["#00ff88","#f59e0b","#3b82f6","#ef4444","#8b5cf6","#ec4899","#10b981","#06b6d4","#f97316","#6b7280"];
 
   return (
-    <VStack gap={12}>
+    <VStack gap={6}>
       <div style={PANEL_STYLE}>
-        <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Category Colours &amp; Icons</div>
+        <PanelHeader>Category Colours &amp; Icons</PanelHeader>
         <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
           Customise the colour and emoji for each spending category. Changes apply across the app.
         </div>
@@ -2381,15 +2376,15 @@ function CategoriesPanel() {
 
 // ── Currency KPI Strip ────────────────────────────────────────────────────────
 function CurrencyKpiStrip({ baseCurrency, pairCount }: { baseCurrency: string; pairCount: number }) {
-  const cells: { value: React.ReactNode; label: string; color: string }[] = [
-    { value: <span className="pnum" style={{ fontSize: 20 }}>{baseCurrency}</span>, label: "Base currency", color: "var(--ft-accent)" },
-    { value: <span className="pnum">{SUPPORTED_CURRENCIES.length}</span>, label: "Supported currencies", color: "var(--ft-blue)" },
-    { value: <span className="pnum">{pairCount}</span>, label: "FX overrides active", color: pairCount > 0 ? "var(--ft-amber)" : "var(--ft-dim)" },
+  const cells: { value: React.ReactNode; label: string }[] = [
+    { value: <span className="pnum" style={{ fontSize: 20 }}>{baseCurrency}</span>, label: "Base currency" },
+    { value: <span className="pnum">{SUPPORTED_CURRENCIES.length}</span>, label: "Supported currencies" },
+    { value: <span className="pnum">{pairCount}</span>, label: "FX overrides active" },
   ];
   return (
-    <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
-      {cells.map(c => (
-        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", borderTop: `2px solid ${c.color}` }}>
+    <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+      {cells.map((c, i) => (
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", borderRight: i < cells.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
           <Text as="div" mono size={22} weight={700} color="var(--ft-text)" lineHeight={1}>{c.value}</Text>
           <Text as="div" mono upper size={9} color="var(--ft-dim)" letterSpacing="0.08em" mt={4}>{c.label}</Text>
         </div>
@@ -2662,7 +2657,6 @@ export default function Settings() {
                         padding: "7px 14px 7px 16px",
                         fontFamily: "var(--font-mono)", fontSize: 12,
                         background: "transparent",
-                        borderLeft: "2px solid transparent",
                         color: "var(--ft-dim)",
                         cursor: "not-allowed",
                       }}
@@ -2683,7 +2677,6 @@ export default function Settings() {
                       padding: "7px 14px 7px 16px",
                       fontFamily: "var(--font-mono)", fontSize: 12,
                       background: isActive ? "var(--ft-raised)" : "transparent",
-                      borderLeft: isActive ? "2px solid var(--ft-accent)" : "2px solid transparent",
                       borderTop: "none", borderRight: "none", borderBottom: "none",
                       color: isActive ? "var(--ft-text)" : "var(--ft-muted)",
                       cursor: "pointer",
@@ -2709,9 +2702,9 @@ export default function Settings() {
         {activePanel === "display" && <DisplayAndMotionPanel />}
 
         {activePanel === "currency" && (
-          <VStack gap={12}>
+          <VStack gap={6}>
             <div style={PANEL_STYLE}>
-              <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Base Currency</div>
+              <PanelHeader>Base Currency</PanelHeader>
               <CurrencyKpiStrip baseCurrency={baseCur} pairCount={Object.keys(fxOverrides).filter(k => fxOverrides[k] !== "").length} />
               <div style={{ padding: "14px 16px", background: "var(--ft-surface)", display: "flex", flexDirection: "column", gap: 10 }}>
                 <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>All amounts will be converted to this currency for display.</p>
@@ -2725,7 +2718,7 @@ export default function Settings() {
               </div>
             </div>
             <div style={PANEL_STYLE}>
-              <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Manual FX Rate Overrides</div>
+              <PanelHeader>Manual FX Rate Overrides</PanelHeader>
               <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
                 <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 12 }}>Override live FX rates for multi-currency transaction conversion. Leave blank to use live rates.</p>
                 <div className="ft-scroll-x" style={{ marginBottom: 12 }}>
@@ -2761,9 +2754,9 @@ export default function Settings() {
 
         {activePanel === "alerts" && (
           <div style={PANEL_STYLE}>
-            <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Alert Rules</div>
+            <PanelHeader>Alert Rules</PanelHeader>
             <SettingsToggleRow title="Enable smart alerts" sub="Threshold-based notifications on the dashboard" on={alertRules.enabled} onChange={v => setAlertRules(p => ({ ...p, enabled: v }))} />
-            <SectionHeader label="Transaction Alerts" accent="var(--ft-amber)" />
+            <PanelHeader>Transaction Alerts</PanelHeader>
             <SettingsInputRow title="Large transaction threshold" sub="Alert when a single transaction exceeds this amount">
               <HStack gap={6} align="center">
                 <Text as="span" mono size={11} color="var(--ft-muted)">£</Text>
@@ -2776,7 +2769,7 @@ export default function Settings() {
                 <Text as="span" mono size={11} color="var(--ft-muted)">% above last month</Text>
               </HStack>
             </SettingsInputRow>
-            <SectionHeader label="Budget Alerts" accent="var(--ft-red)" />
+            <PanelHeader>Budget Alerts</PanelHeader>
             <SettingsInputRow title="Budget warning threshold" sub="Show warning when budget used above this %">
               <HStack gap={6} align="center">
                 <Input type="number" min={1} max={100} value={alertRules.budgetWarningPct} onChange={e => setAlertRules(p => ({ ...p, budgetWarningPct: Math.min(100, Math.max(1, Number(e.target.value))) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
@@ -2784,21 +2777,21 @@ export default function Settings() {
               </HStack>
             </SettingsInputRow>
             <SettingsToggleRow title="Overspend warning" sub="Warn when you've exceeded a budget category" on={alertRules.budgetHardStop} onChange={v => setAlertRules(p => ({ ...p, budgetHardStop: v }))} />
-            <SectionHeader label="Goal Alerts" accent="var(--ft-green)" />
+            <PanelHeader>Goal Alerts</PanelHeader>
             <SettingsInputRow title="Months behind alert" sub="Alert when X months behind on a savings goal">
               <HStack gap={6} align="center">
                 <Input type="number" min={1} max={24} value={alertRules.goalBehindMonths} onChange={e => setAlertRules(p => ({ ...p, goalBehindMonths: Math.max(1, Number(e.target.value)) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <Text as="span" mono size={11} color="var(--ft-muted)">months</Text>
               </HStack>
             </SettingsInputRow>
-            <SectionHeader label="Bill Reminders" accent="var(--ft-cyan)" />
+            <PanelHeader>Bill Reminders</PanelHeader>
             <SettingsInputRow title="Bill reminder days" sub="Remind X days before a bill is due">
               <HStack gap={6} align="center">
                 <Input type="number" min={0} max={30} value={alertRules.billReminderDays} onChange={e => setAlertRules(p => ({ ...p, billReminderDays: Math.max(0, Number(e.target.value)) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
                 <Text as="span" mono size={11} color="var(--ft-muted)">days before</Text>
               </HStack>
             </SettingsInputRow>
-            <SectionHeader label="Goals" accent="var(--ft-blue)" />
+            <PanelHeader>Goals</PanelHeader>
             <SettingsInputRow title="Savings Rate Target" sub="Your monthly income % goal to save/invest">
               <SavingsRateTargetInput />
             </SettingsInputRow>
@@ -2809,9 +2802,9 @@ export default function Settings() {
         )}
 
         {activePanel === "rules" && (
-          <VStack gap={12}>
+          <VStack gap={6}>
           <div style={PANEL_STYLE}>
-            <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Auto-Categorization Rules</div>
+            <PanelHeader>Auto-Categorization Rules</PanelHeader>
             <div style={{ padding: "12px 14px" }}>
               <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 14 }}>When a transaction description contains the keyword, the category is auto-filled.</p>
               {catRules.length > 0 ? (
@@ -2867,7 +2860,7 @@ export default function Settings() {
 
         {activePanel === "widgets" && (
           <div style={PANEL_STYLE}>
-            <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Dashboard Widgets</div>
+            <PanelHeader>Dashboard Widgets</PanelHeader>
             <div style={{ padding: "0" }}>
               {(() => {
                 // Item 13: persona-varied catalogue ordering. Nothing is
@@ -2902,9 +2895,9 @@ export default function Settings() {
         )}
 
         {activePanel === "data" && (
-          <VStack gap={12}>
+          <VStack gap={6}>
             <div style={PANEL_STYLE}>
-              <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Export</div>
+              <PanelHeader>Export</PanelHeader>
               <div style={{ padding: "12px 14px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 10 }}>Download all app data as a JSON file. Includes all local state stored by this app.</div>
                 <HStack gap={8} wrap>
@@ -2914,7 +2907,7 @@ export default function Settings() {
               </div>
             </div>
             <div style={PANEL_STYLE}>
-              <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Reset</div>
+              <PanelHeader>Reset</PanelHeader>
               <div style={{ padding: "4px 0" }}>
                 {([
                   { label: "Clear Net Worth History", description: "Removes all saved net worth snapshots", key: "ft-nw-history", confirm: "Clear all net worth history? This cannot be undone.", storage: "local" as const },
@@ -2948,7 +2941,7 @@ export default function Settings() {
 
         {activePanel === "shortcuts" && (
           <div style={PANEL_STYLE}>
-            <div style={HEADER_STYLE}><Text as="span" color="var(--ft-accent)">·</Text> Keyboard Shortcuts</div>
+            <PanelHeader>Keyboard Shortcuts</PanelHeader>
             <div className="ft-scroll-x" style={{ background: "var(--ft-surface)" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>

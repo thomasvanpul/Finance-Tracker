@@ -108,8 +108,6 @@ function EmptyState({ message, action, accent }: { message?: string; action?: { 
         color: "var(--ft-dim)",
         letterSpacing: "0.12em",
         textTransform: "uppercase",
-        borderLeft: `2px solid ${accent ?? "var(--ft-border2)"}`,
-        paddingLeft: 8,
       }}>
         {message ?? "NO DATA"}
       </div>
@@ -121,7 +119,6 @@ function EmptyState({ message, action, accent }: { message?: string; action?: { 
             color: accent ?? "var(--ft-accent)",
             letterSpacing: "0.06em",
             cursor: "pointer",
-            paddingLeft: 10,
           }}>
             {action.label} →
           </span>

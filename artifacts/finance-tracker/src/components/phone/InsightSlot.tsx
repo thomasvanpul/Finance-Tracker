@@ -35,7 +35,6 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
         padding: "14px 14px 12px 16px",
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
-        borderLeft: "3px solid var(--ft-accent)",
         borderRadius: 16,
         display: "flex",
         gap: 12,

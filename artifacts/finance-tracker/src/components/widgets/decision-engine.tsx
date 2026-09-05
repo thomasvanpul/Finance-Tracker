@@ -41,6 +41,7 @@ interface MiniDecision {
 // actionable, an alert is descriptive; a market user gets both
 // portfolio decisions AND balance alerts, not one or the other.
 import type { PersonaId } from "@/lib/persona";
+import { PanelHeader } from "@/components/primitives";
 export function decisionKindsForPersona(persona: PersonaId): Set<DecisionKind> {
   switch (persona) {
     case "market": return new Set(["cash", "portfolio"]);
@@ -179,11 +180,10 @@ function PriorityCountChip({ count, color, label }: PriorityCountChipProps) {
 type StatsKpiCellProps = {
   label: string;
   value: React.ReactNode;
-  accentColor: string;
   hasBorderRight?: boolean;
 };
 
-function StatsKpiCell({ label, value, accentColor, hasBorderRight }: StatsKpiCellProps) {
+function StatsKpiCell({ label, value, hasBorderRight }: StatsKpiCellProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -191,7 +191,6 @@ function StatsKpiCell({ label, value, accentColor, hasBorderRight }: StatsKpiCel
       onMouseLeave={() => setHov(false)}
       style={{
         padding: "7px 12px",
-        borderTop: `2px solid ${accentColor}`,
         borderRight: hasBorderRight ? "1px solid var(--ft-border)" : undefined,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
@@ -286,39 +285,37 @@ export function DecisionEngineWidget() {
   const headerAccent = critCount > 0 ? "var(--ft-red)" : highCount > 0 ? "var(--ft-amber)" : "var(--ft-blue)";
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: `2px solid ${headerAccent}`, display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", height: 34, background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Zap size={11} style={{ color: headerAccent, flexShrink: 0 }} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-muted)", letterSpacing: "0.08em" }}>
-            Decision Engine
-          </span>
-          {decisions.length > 0 && (
-            <div style={{ display: "flex", gap: 3 }}>
-              {critCount > 0 && <PriorityCountChip count={critCount} color="var(--ft-red)" label="CRIT" />}
-              {highCount > 0 && <PriorityCountChip count={highCount} color="var(--ft-amber)" label="HIGH" />}
-            </div>
-          )}
-        </div>
-        <Link href="/decisions" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-blue)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2, letterSpacing: "0.04em" }}>
-          ALL <ChevronRight size={9} />
-        </Link>
-      </div>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", display: "flex", flexDirection: "column" }}>
+      {/* Header — priority colour rides on the leading glyph, not a stripe. */}
+      <PanelHeader
+        right={
+          <Link href="/decisions" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-blue)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2, letterSpacing: "0.04em" }}>
+            ALL <ChevronRight size={9} />
+          </Link>
+        }
+      >
+        <Zap size={11} style={{ color: headerAccent, flexShrink: 0 }} />
+        Decision Engine
+        {decisions.length > 0 && (
+          <div style={{ display: "flex", gap: 3 }}>
+            {critCount > 0 && <PriorityCountChip count={critCount} color="var(--ft-red)" label="CRIT" />}
+            {highCount > 0 && <PriorityCountChip count={highCount} color="var(--ft-amber)" label="HIGH" />}
+          </div>
+        )}
+      </PanelHeader>
 
       {/* Stats strip — border-as-gap KPI pattern */}
       {decisions.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: totalAnnualCost > 0 ? "1fr 1fr" : "1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: totalAnnualCost > 0 ? "1fr 1fr" : "1fr", borderBottom: "1px solid var(--ft-border)" }}>
           <StatsKpiCell
             label="Actions pending"
-            accentColor={headerAccent}
-            hasBorderRight={false}
+            hasBorderRight={totalAnnualCost > 0}
             value={<div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: headerAccent, lineHeight: 1 }}>{decisions.length}</div>}
           />
           {totalAnnualCost > 0 && (
             <StatsKpiCell
               label="Opp. cost / yr"
-              accentColor="var(--ft-amber)"
+              hasBorderRight={false}
               value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>{formatBaseMoney(totalAnnualCost)}</div>}
             />
           )}

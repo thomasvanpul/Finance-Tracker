@@ -233,8 +233,6 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
               textTransform: "uppercase",
               color: "var(--ft-dim)",
               marginBottom: 12,
-              borderLeft: "3px solid var(--ft-accent)",
-              paddingLeft: 8,
             }}>
               Transaction Summary
             </div>

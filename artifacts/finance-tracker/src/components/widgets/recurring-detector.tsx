@@ -163,9 +163,10 @@ const ACCENT = "var(--ft-cyan)";
 type StatsKpiCellProps = {
   label: string;
   value: React.ReactNode;
+  isLast?: boolean;
 };
 
-function StatsKpiCell({ label, value }: StatsKpiCellProps) {
+function StatsKpiCell({ label, value, isLast }: StatsKpiCellProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -175,7 +176,7 @@ function StatsKpiCell({ label, value }: StatsKpiCellProps) {
         padding: "8px 12px",
         background: hov ? "color-mix(in srgb, var(--ft-cyan) 4%, var(--ft-raised))" : "var(--ft-raised)",
         transition: "background 0.1s",
-        borderTop: `2px solid ${ACCENT}`,
+        borderRight: isLast ? undefined : "1px solid var(--ft-border)",
       }}
     >
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3 }}>{label}</div>
@@ -347,7 +348,7 @@ export function RecurringDetectorWidget() {
           ) : (
             <>
               {/* Border-as-gap KPI strip */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
                 <StatsKpiCell
                   label="Found"
                   value={<div style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: ACCENT, lineHeight: 1 }}>{candidates.length}</div>}
@@ -358,6 +359,7 @@ export function RecurringDetectorWidget() {
                 />
                 <StatsKpiCell
                   label="Annual"
+                  isLast
                   value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>{formatBaseMoney(totalMonthly * 12)}</div>}
                 />
               </div>

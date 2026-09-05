@@ -237,7 +237,7 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
 
       {/* Owing strip — border-as-gap pattern */}
       {d && (
-        <div style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+        <div style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
           {owingItems.map((item, i) => (
             <OwingCell
               key={item.label}

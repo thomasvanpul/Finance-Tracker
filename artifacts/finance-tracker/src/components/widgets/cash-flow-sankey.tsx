@@ -108,13 +108,13 @@ export function CashFlowSankeyWidget() {
             <button onClick={() => setOffset(o => Math.min(o + 1, 0))} disabled={offset >= 0} style={{ background: "none", border: "none", color: offset >= 0 ? "var(--ft-border2)" : "var(--ft-dim)", cursor: offset >= 0 ? "default" : "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "0 4px", lineHeight: 1 }}>›</button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
             {[
               { label: "Income", value: totalIncome, color: "var(--ft-green)" },
               { label: "Expenses", value: totalExpense, color: "var(--ft-red)" },
               { label: savings >= 0 ? "Saved" : "Deficit", value: Math.abs(savings), color: savings >= 0 ? "var(--ft-accent)" : "var(--ft-red)" },
-            ].map((item) => (
-              <div key={item.label} style={{ padding: "8px 12px", background: "var(--ft-surface)", borderTop: `2px solid ${item.color}`, overflow: "hidden", minWidth: 0 }}>
+            ].map((item, i) => (
+              <div key={item.label} style={{ padding: "8px 12px", background: "var(--ft-surface)", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined, overflow: "hidden", minWidth: 0 }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
                   {item.label}
                 </div>

@@ -8,9 +8,9 @@ import { HoverRow } from "./HoverRow";
 // pages/split.tsx, pages/investments/markets-tab.tsx today.
 //
 // Square by design — Amendment :55 keeps aligned metric columns square.
-// Grid gap is achieved by a 1px --ft-border background bleeding through
-// a `gap: 1` grid — no CSS gap on the cells themselves so hover-tints
-// don't leave gaps between them.
+// Hairlines between cells are per-cell borderRight / borderBottom (last
+// column and last row carry none) inside one 1px frame — no CSS gap, so
+// hover-tints don't leave gaps between cells.
 //
 // Amendment lines followed:
 //   :55  aligned metric columns stay square (no border-radius)
@@ -32,12 +32,16 @@ interface StatGridProps {
   columns?: 1 | 2 | 3 | 4;
 }
 
-function StatCell({ label, value, sub, accent, icon, isFinancial }: StatGridItem) {
+type StatCellProps = StatGridItem & { isLastCol: boolean; isLastRow: boolean };
+
+function StatCell({ label, value, sub, accent, icon, isFinancial, isLastCol, isLastRow }: StatCellProps) {
   return (
     <HoverRow
       style={{
         background: "var(--ft-surface)",
         padding: "10px 12px",
+        borderRight: isLastCol ? undefined : "1px solid var(--ft-border)",
+        borderBottom: isLastRow ? undefined : "1px solid var(--ft-border)",
         display: "flex",
         flexDirection: "column",
         gap: 4,
@@ -91,18 +95,22 @@ function StatCell({ label, value, sub, accent, icon, isFinancial }: StatGridItem
 }
 
 export function StatGrid({ items, columns = 2 }: StatGridProps) {
+  const rowCount = Math.ceil(items.length / columns);
   return (
     <div
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        gap: 1,
-        background: "var(--ft-border)",
         border: "1px solid var(--ft-border)",
       }}
     >
-      {items.map((item) => (
-        <StatCell key={item.label} {...item} />
+      {items.map((item, i) => (
+        <StatCell
+          key={item.label}
+          {...item}
+          isLastCol={(i + 1) % columns === 0 || i === items.length - 1}
+          isLastRow={i >= (rowCount - 1) * columns}
+        />
       ))}
     </div>
   );

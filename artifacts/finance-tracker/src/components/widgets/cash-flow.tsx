@@ -98,15 +98,16 @@ type SummaryItemProps = {
   value: string;
   color: string;
   delta: { label: string; color: string } | null;
+  isLast?: boolean;
 };
 
-function SummaryItem({ label, value, color, delta }: SummaryItemProps) {
+function SummaryItem({ label, value, color, delta, isLast }: SummaryItemProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
       style={{
         padding: "10px 12px",
-        borderTop: `2px solid ${color}`,
+        borderRight: isLast ? undefined : "1px solid var(--ft-border)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
       }}
@@ -161,14 +162,15 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   // Border-as-gap KPI strip: 1px gap background = border, each cell bg = surface
   const summaryStrip = d && (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-      {summaryItems.map((item) => (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
+      {summaryItems.map((item, i) => (
         <SummaryItem
           key={item.label}
           label={item.label}
           value={item.value}
           color={item.color}
           delta={item.delta}
+          isLast={i === summaryItems.length - 1}
         />
       ))}
     </div>

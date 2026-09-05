@@ -49,17 +49,6 @@ export function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) =
   );
 }
 
-export function SectionHeader({ label, accent = "var(--ft-accent)" }: { label: string; accent?: string }) {
-  return (
-    <div style={{
-      padding: "8px 14px 4px", fontFamily: "var(--font-mono)", fontSize: 9,
-      letterSpacing: "0.1em", textTransform: "uppercase", color: accent,
-      fontWeight: 700, background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)",
-      borderLeft: `3px solid ${accent}`,
-    }}>{label}</div>
-  );
-}
-
 export function ActionBtn({ label, variant = "accent", onClick, disabled }: { label: string; variant?: "accent" | "muted" | "danger"; onClick: () => void; disabled?: boolean }) {
   const [hov, setHov] = useState(false);
   const color = variant === "danger" ? "var(--ft-red)" : variant === "muted" ? "var(--ft-muted)" : "var(--ft-accent)";
@@ -315,15 +304,15 @@ export function SettingsThemeEffectRow({ label, accent, on, onChange }: { label:
 // ── Storage KPI strip ─────────────────────────────────────────────────────────
 
 export function StorageKpiStrip({ keyCount, sizeKb, nrKeyCount }: { keyCount: number; sizeKb: number; nrKeyCount: number }) {
-  const cells: { value: React.ReactNode; label: string; color: string }[] = [
-    { value: <span className="pnum">{keyCount}</span>, label: "Keys (ft- + nr-)", color: "var(--ft-accent)" },
-    { value: <><span className="pnum">{sizeKb}</span><span style={{ fontSize: 11, color: "var(--ft-muted)", fontWeight: 400, marginLeft: 3 }}>KB</span></>, label: "Estimated size", color: "var(--ft-cyan)" },
-    { value: <span className="pnum">{nrKeyCount}</span>, label: "App prefs (nr-)", color: "var(--ft-blue)" },
+  const cells: { value: React.ReactNode; label: string }[] = [
+    { value: <span className="pnum">{keyCount}</span>, label: "Keys (ft- + nr-)" },
+    { value: <><span className="pnum">{sizeKb}</span><span style={{ fontSize: 11, color: "var(--ft-muted)", fontWeight: 400, marginLeft: 3 }}>KB</span></>, label: "Estimated size" },
+    { value: <span className="pnum">{nrKeyCount}</span>, label: "App prefs (nr-)" },
   ];
   return (
-    <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "var(--ft-border)" }}>
-      {cells.map(c => (
-        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", borderTop: `2px solid ${c.color}` }}>
+    <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+      {cells.map((c, i) => (
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", borderRight: i < cells.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{c.value}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>{c.label}</div>
         </div>

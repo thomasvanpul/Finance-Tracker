@@ -422,9 +422,8 @@ function AlertRow({ alert, onDismiss }: AlertRowProps) {
         alignItems: "flex-start",
         gap: 10,
         background: hov ? `color-mix(in srgb, ${color} 6%, var(--ft-raised))` : "var(--ft-raised)",
-        borderLeft: `3px solid ${color}`,
         borderBottom: "1px solid var(--ft-border)",
-        padding: "8px 12px 8px 10px",
+        padding: "8px 12px",
         fontFamily: "var(--font-mono)",
         fontSize: 11,
         lineHeight: "1.4",
@@ -432,6 +431,8 @@ function AlertRow({ alert, onDismiss }: AlertRowProps) {
         transition: "background 0.1s",
       }}
     >
+      {/* Level colour lives on a leading glyph, not a stripe. */}
+      <span aria-hidden="true" style={{ color, fontSize: 9, lineHeight: "1.3", flexShrink: 0, marginTop: 2 }}>■</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ color: "var(--ft-text)", fontWeight: 600, marginBottom: 2, lineHeight: "1.3" }}>
           {alert.title}
@@ -685,10 +686,9 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
             <div
               style={{
                 margin: "0 0 8px",
-                borderLeft: `3px solid ${PERSONA_COLORS[primaryPersona.id]}`,
                 borderBottom: "1px solid var(--ft-border)",
                 background: `${PERSONA_COLORS[primaryPersona.id]}08`,
-                padding: "6px 12px 6px 10px",
+                padding: "6px 12px",
                 display: "flex",
                 flexDirection: "column",
                 gap: 3,

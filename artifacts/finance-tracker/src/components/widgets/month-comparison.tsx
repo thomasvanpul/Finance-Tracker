@@ -31,9 +31,10 @@ type TotalsKpiCellProps = {
   income: number | null;
   badge?: React.ReactNode;
   incomeDeltaLabel?: React.ReactNode;
+  isLast?: boolean;
 };
 
-function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incomeDeltaLabel }: TotalsKpiCellProps) {
+function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incomeDeltaLabel, isLast }: TotalsKpiCellProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -41,7 +42,7 @@ function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incom
       onMouseLeave={() => setHov(false)}
       style={{
         padding: "10px 12px",
-        borderTop: "2px solid var(--ft-cyan)",
+        borderRight: isLast ? undefined : "1px solid var(--ft-border)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
       }}
@@ -244,7 +245,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
 
   // Border-as-gap KPI strip for totals header
   const totalsHeader = hasData && (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
       <TotalsKpiCell
         label={`${lastMonthLabel} SPEND`}
         amount={lastExpenses}
@@ -258,6 +259,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
         color="var(--ft-cyan)"
         savingsRate={thisSavingsRate}
         income={null}
+        isLast
         badge={
           lastExpenses > 0 ? (
             <span style={{
@@ -309,8 +311,6 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
               textTransform: "uppercase",
               color: "var(--ft-dim)",
               marginBottom: 8,
-              borderLeft: "3px solid var(--ft-green)",
-              paddingLeft: 8,
             }}>
               Income
             </div>
@@ -346,8 +346,6 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
             textTransform: "uppercase",
             color: "var(--ft-dim)",
             marginBottom: 8,
-            borderLeft: "3px solid var(--ft-red)",
-            paddingLeft: 8,
           }}>
             Expenses by Category
           </div>

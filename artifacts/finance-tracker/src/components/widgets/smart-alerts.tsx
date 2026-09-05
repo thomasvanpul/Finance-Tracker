@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useGetDashboard, useListTransactions, useListUpcoming, useListDebts, useListGoals, useListBudgets } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
+import { PanelHeader } from "@/components/primitives";
 
 interface Alert {
   id: string;
@@ -108,9 +109,8 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) 
         background: hov
           ? `color-mix(in srgb, ${color} 8%, var(--ft-raised))`
           : `color-mix(in srgb, ${color} 4%, var(--ft-raised))`,
-        borderLeft: `3px solid ${color}`,
         borderBottom: "1px solid var(--ft-border)",
-        padding: "8px 10px 8px 12px",
+        padding: "8px 10px",
         fontFamily: "var(--font-mono)",
         transition: "background 0.1s",
       }}
@@ -320,63 +320,38 @@ export function SmartAlertsWidget() {
     setDismissed((prev) => [...prev, ...visible.map(a => a.id)]);
   }
 
-  const borderAccent = critCount > 0 ? "var(--ft-red)" : warnCount > 0 ? "var(--ft-amber)" : "var(--ft-green)";
-
   return (
     <div style={{
       background: "var(--ft-surface)",
       border: "1px solid var(--ft-border)",
-      borderLeft: `2px solid ${borderAccent}`,
     }}>
-      {/* Header */}
-      <div style={{
-        background: "var(--ft-raised)",
-        borderBottom: "1px solid var(--ft-border)",
-        padding: "0 12px",
-        height: 34,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 8,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "var(--ft-muted)",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}>
-            <span style={{ color: borderAccent, fontSize: 12 }}>▪</span>
-            Smart Alerts
-          </span>
-          <div style={{ display: "flex", gap: 3 }}>
-            {critCount > 0 && <AlertCountChip count={critCount} level="critical" label="CRIT" />}
-            {warnCount > 0 && <AlertCountChip count={warnCount} level="warn" label="WARN" />}
-            {infoCount > 0 && <AlertCountChip count={infoCount} level="info" label="INFO" />}
-            {successCount > 0 && <AlertCountChip count={successCount} level="success" label="OK" />}
-          </div>
+      <PanelHeader
+        right={
+          <button
+            onClick={dismissAll}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 8,
+              letterSpacing: "0.06em",
+              padding: "2px 6px",
+              background: "transparent",
+              color: "var(--ft-dim)",
+              border: "1px solid var(--ft-border2)",
+              cursor: "pointer",
+            }}
+          >
+            DISMISS ALL
+          </button>
+        }
+      >
+        Smart Alerts
+        <div style={{ display: "flex", gap: 3 }}>
+          {critCount > 0 && <AlertCountChip count={critCount} level="critical" label="CRIT" />}
+          {warnCount > 0 && <AlertCountChip count={warnCount} level="warn" label="WARN" />}
+          {infoCount > 0 && <AlertCountChip count={infoCount} level="info" label="INFO" />}
+          {successCount > 0 && <AlertCountChip count={successCount} level="success" label="OK" />}
         </div>
-        <button
-          onClick={dismissAll}
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 8,
-            letterSpacing: "0.06em",
-            padding: "2px 6px",
-            background: "transparent",
-            color: "var(--ft-dim)",
-            border: "1px solid var(--ft-border2)",
-            cursor: "pointer",
-          }}
-        >
-          DISMISS ALL
-        </button>
-      </div>
+      </PanelHeader>
 
       {/* Alert rows */}
       {shown.map((alert) => (

@@ -633,8 +633,6 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                   textTransform: "uppercase",
                   color: "var(--ft-dim)",
                   marginBottom: 8,
-                  borderLeft: "3px solid var(--ft-amber)",
-                  paddingLeft: 8,
                 }}
               >
                 Category Forecast

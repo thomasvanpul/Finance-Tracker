@@ -214,7 +214,7 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
 
   return (
     <div style={panelStyle}>
-      <div style={{ ...headerStyle, borderLeft: "3px solid var(--ft-green)", paddingLeft: 10 }}>
+      <div style={headerStyle}>
         <Shield size={10} style={{ color: "var(--ft-green)" }} />
         <span>Sign-in Methods</span>
       </div>

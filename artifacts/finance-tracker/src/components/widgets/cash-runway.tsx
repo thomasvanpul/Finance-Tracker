@@ -133,13 +133,13 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
         )}
 
         {/* Stats row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: "var(--ft-border)", marginTop: 4 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", marginTop: 4 }}>
           {([
             ["CASH", formatBaseMoney(totalCash), "var(--ft-blue)"],
             ["AVG BURN", `${formatBaseMoney(avgBurn)}/mo`, "var(--ft-red)"],
             ["DAILY", `${formatBaseMoney(dailyBurn)}/d`, "var(--ft-dim)"],
-          ] as [string, string, string][]).map(([lbl, val, col]) => (
-            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px" }}>
+          ] as [string, string, string][]).map(([lbl, val, col], i) => (
+            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{val}</div>
             </div>

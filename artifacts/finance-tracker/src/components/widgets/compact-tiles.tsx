@@ -47,7 +47,6 @@ function Tile({ label, accent, href, primary, primaryColor, secondary, secondary
         style={{
           background: "var(--ft-surface)",
           border: "1px solid var(--ft-border)",
-          borderTop: `3px solid ${accent}`,
           padding: "10px 12px 8px",
           display: "flex",
           flexDirection: "column",
@@ -105,7 +104,7 @@ function Tile({ label, accent, href, primary, primaryColor, secondary, secondary
 
 function LoadingTile({ label, accent }: { label: string; accent: string }) {
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `3px solid ${accent}`, height: TILE_H, display: "flex", flexDirection: "column", justifyContent: "center", padding: "10px 12px", boxSizing: "border-box" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", height: TILE_H, display: "flex", flexDirection: "column", justifyContent: "center", padding: "10px 12px", boxSizing: "border-box" }}>
       <span style={{ ...LABEL, opacity: 0.5 }}>{label}</span>
       <div style={{ height: 3, background: "var(--ft-raised)", marginTop: 8, borderRadius: 1 }}>
         <div style={{ height: "100%", width: "40%", background: `${accent}44`, borderRadius: 1 }} />
@@ -126,7 +125,7 @@ interface SectionCardProps {
 
 function SectionCard({ label, accent, href, linkLabel = "VIEW ALL →", children }: SectionCardProps) {
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: `3px solid ${accent}`, overflow: "hidden" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34, flexShrink: 0 }}>
         <span style={{ ...LABEL, color: "var(--ft-muted)" }}>{label}</span>
@@ -350,7 +349,7 @@ export function CompactNetWorth() {
   const monthLabel = now.toLocaleString("en-GB", { month: "long", year: "numeric" });
 
   if (isLoading || nw === null) return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "3px solid var(--ft-accent)", padding: "20px 14px" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "20px 14px" }}>
       <span style={{ ...LABEL, opacity: 0.5 }}>NET WORTH</span>
       <div style={{ ...MONO, fontSize: 34, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "-0.04em", lineHeight: 1, marginTop: 8 }}>
         {isLoading ? "…" : "—"}
@@ -365,7 +364,7 @@ export function CompactNetWorth() {
   return (
     <Link href="/net-worth" style={{ display: "block" }}>
       <div
-        style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "3px solid var(--ft-accent)", cursor: "pointer", WebkitTapHighlightColor: "transparent" }}
+        style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", cursor: "pointer", WebkitTapHighlightColor: "transparent" }}
         onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
         onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
         onTouchCancel={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-surface)"; }}
@@ -417,7 +416,7 @@ export function CompactAccountsSummary() {
   const total = useMemo(() => accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0), [accounts]);
   const sorted = useMemo(() => [...accounts].sort((a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity)).slice(0, 5), [accounts]);
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-cyan)", overflow: "hidden" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34 }}>
         <span style={{ ...MONO, fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.13em", textTransform: "uppercase" as const }}>ACCOUNTS</span>
         <Link href="/accounts" style={{ textDecoration: "none" }}>
@@ -461,7 +460,7 @@ export function CompactRecentTransactions() {
   const { data: txs = [] } = useListTransactions({ dateFrom: monthStart, limit: 7 } as Parameters<typeof useListTransactions>[0]);
   const rows = txs.slice(0, 7);
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-blue)", overflow: "hidden" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34, flexShrink: 0 }}>
         <span style={{ ...MONO, fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.13em", textTransform: "uppercase" as const }}>RECENT TRANSACTIONS</span>
         <Link href="/transactions" style={{ textDecoration: "none" }}>
@@ -527,7 +526,7 @@ export function CompactCashFlow() {
   const incomeColor = income > 0 ? "var(--ft-green)" : "var(--ft-muted)";
   const expensesColor = expenses == null ? "var(--ft-dim)" : expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)";
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderLeft: "3px solid var(--ft-green)" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 12, height: 34 }}>
         <span style={{ ...LABEL, color: "var(--ft-muted)" }}>CASH FLOW</span>
         <span style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>THIS MONTH</span>

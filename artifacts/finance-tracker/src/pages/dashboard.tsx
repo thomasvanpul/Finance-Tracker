@@ -60,7 +60,7 @@ import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { oneShotInsight } from "@/lib/ai-chat-client";
 import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
 
@@ -640,7 +640,6 @@ function InsightRow({ label, text }: { label: string; text: string }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         background: hovered ? "var(--ft-raised)" : "var(--ft-surface)",
-        borderLeft: "2px solid color-mix(in srgb, var(--ft-accent) 40%, transparent)",
         padding: "10px 12px",
         fontFamily: "var(--font-mono)",
         fontSize: 10,
@@ -880,7 +879,6 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                 style={{
                   background: "var(--ft-raised)",
                   border: "1px solid var(--ft-border)",
-                  borderLeft: "2px solid var(--ft-accent)",
                   padding: "8px 10px",
                   minHeight: 52,
                 }}
@@ -892,7 +890,6 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                 style={{
                   background: "var(--ft-raised)",
                   border: "1px solid var(--ft-border)",
-                  borderLeft: "2px solid var(--ft-accent)",
                   padding: "8px 10px",
                   display: "flex",
                   gap: 6,
@@ -1888,8 +1885,8 @@ function DashboardKpiBar({
     <div style={{
       display: "grid",
       gridTemplateColumns: `auto auto repeat(${cells.length}, 1fr)`,
-      gap: 1,
-      background: "var(--ft-border)",
+      border: "1px solid var(--ft-border)",
+      background: "var(--ft-surface)",
       marginBottom: 6,
       overflowX: "auto",
       scrollbarWidth: "none",
@@ -1900,6 +1897,7 @@ function DashboardKpiBar({
         style={{
           background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 10%, transparent)" : "var(--ft-surface)",
           border: "none",
+          borderRight: "1px solid var(--ft-border)",
           borderTop: isCustomizing ? "2px solid var(--ft-accent)" : "2px solid transparent",
           color: isCustomizing ? "var(--ft-accent)" : "var(--ft-dim)",
           fontFamily: "var(--font-mono)",
@@ -1926,6 +1924,7 @@ function DashboardKpiBar({
         padding: "0 14px",
         background: "var(--ft-surface)",
         borderTop: "2px solid transparent",
+        borderRight: "1px solid var(--ft-border)",
         flexShrink: 0,
         minWidth: 110,
         gap: 5,
@@ -1937,7 +1936,7 @@ function DashboardKpiBar({
       </div>
 
       {/* KPI cells */}
-      {cells.map((cell) => (
+      {cells.map((cell, i) => (
         <div
           key={cell.label}
           style={{
@@ -1946,6 +1945,7 @@ function DashboardKpiBar({
             justifyContent: "center",
             padding: "var(--ft-metric-py) 14px",
             background: "var(--ft-surface)",
+            borderRight: i < cells.length - 1 ? "1px solid var(--ft-border)" : undefined,
             flexShrink: 0,
             minWidth: 100, // widened from 90 so a 6-digit figure at 18px
                            // does not need to shrink; column widths on
@@ -2010,24 +2010,6 @@ function DashboardKpiBar({
   );
 }
 
-// ── Terminal Section Header ───────────────────────────────────────────────────
-
-function SectionHeader({ label, right }: { label: string; right?: React.ReactNode }) {
-  return (
-    <div style={{
-      borderBottom: "1px solid var(--ft-border)",
-      padding: "0 12px",
-      height: "var(--ft-panel-header-h)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-    }}>
-      <span className="ft-panel-label">{label}</span>
-      {right}
-    </div>
-  );
-}
-
 // ── Terminal Three-Zone Default Layout ────────────────────────────────────────
 
 interface TerminalLayoutProps {
@@ -2050,14 +2032,15 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
 
         {/* Recent Transactions — 40%: custom compact inline table */}
         <div className="ft-widget-frame" style={{ flex: "2 1 0", minWidth: 0, overflow: "hidden" }}>
-          <SectionHeader
-            label="RECENT TRANSACTIONS"
+          <PanelHeader
             right={
               <a href="/transactions" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", textDecoration: "none", letterSpacing: "0.04em" }}>
                 → ALL
               </a>
             }
-          />
+          >
+            RECENT TRANSACTIONS
+          </PanelHeader>
           <RecentTransactionsWidgetInline />
         </div>
       </div>
@@ -2075,7 +2058,7 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
 
         {/* Smart Alerts panel — SmartAlertsWidget renders flat rows, wrap in panel */}
         <div className="ft-widget-frame" style={{ overflow: "hidden" }}>
-          <SectionHeader label="ALERTS" />
+          <PanelHeader>ALERTS</PanelHeader>
           <div style={{ padding: "6px 0", minHeight: 42 }}>
             <SmartAlertsWidget />
           </div>
@@ -2235,7 +2218,7 @@ function DashboardOverview() {
       {/* ── Hero: Net Worth ── */}
       <Link href="/net-worth">
         <div
-          style={{ ...OV_SURFACE, padding: "14px 16px", borderLeft: "3px solid var(--ft-accent)", cursor: "pointer" }}
+          style={{ ...OV_SURFACE, padding: "14px 16px", cursor: "pointer" }}
           onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
           onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
@@ -2280,7 +2263,7 @@ function DashboardOverview() {
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
 
         {/* Accounts */}
-        <div style={{ ...OV_SURFACE, overflow: "hidden", borderLeft: "3px solid var(--ft-cyan)" }}>
+        <div style={{ ...OV_SURFACE, overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: isMobile ? 12 : 14, paddingRight: 4, height: 34 }}>
             <span style={{ ...OV_LABEL }}>ACCOUNTS</span>
             <Link href="/accounts" style={{ textDecoration: "none" }}>
@@ -2312,7 +2295,7 @@ function DashboardOverview() {
         </div>
 
         {/* Recent Transactions */}
-        <div style={{ ...OV_SURFACE, overflow: "hidden", borderLeft: "3px solid var(--ft-blue)" }}>
+        <div style={{ ...OV_SURFACE, overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: isMobile ? 12 : 14, paddingRight: 4, height: 34 }}>
             <span style={{ ...OV_LABEL }}>RECENT TRANSACTIONS</span>
             <Link href="/transactions" style={{ textDecoration: "none" }}>
@@ -3000,7 +2983,7 @@ export default function Dashboard() {
           ) : (
             /* Desktop: drag-and-drop two-column grid */
             <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
-              <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+              <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
                 {/* Left column */}
                 <VStack gap={16} grow>
                   <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
@@ -3092,7 +3075,7 @@ export default function Dashboard() {
                   }
                 }}
               >
-                <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
                   <VStack gap={16} grow>
                     <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
                       {leftIds.map(id => (

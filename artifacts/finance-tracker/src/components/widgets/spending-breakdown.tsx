@@ -319,8 +319,6 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
         textTransform: "uppercase",
         color: "var(--ft-dim)",
         marginBottom: 8,
-        borderLeft: "3px solid var(--ft-amber)",
-        paddingLeft: 8,
       }}>
         Distribution
       </div>
@@ -369,8 +367,6 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
         textTransform: "uppercase",
         color: "var(--ft-dim)",
         marginBottom: 10,
-        borderLeft: "3px solid var(--ft-cyan)",
-        paddingLeft: 8,
       }}>
         vs Last Month
       </div>

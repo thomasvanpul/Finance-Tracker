@@ -9,7 +9,6 @@ export function ErrorState({ message }: ErrorStateProps) {
         padding: "32px 24px",
         textAlign: "center",
         border: "1px solid rgba(248,81,73,0.35)",
-        borderLeft: "3px solid var(--ft-red)",
         background: "rgba(248,81,73,0.04)",
         fontFamily: "var(--font-mono)",
       }}

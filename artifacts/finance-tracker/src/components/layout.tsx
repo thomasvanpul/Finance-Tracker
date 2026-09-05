@@ -1503,7 +1503,6 @@ export function Layout({ children }: LayoutProps) {
                 style={{
                   padding: "5px 14px 5px",
                   borderBottom: "1px solid var(--ft-border)",
-                  borderLeft: `2px solid ${color}`,
                   display: "flex",
                   alignItems: "center",
                   gap: 7,
