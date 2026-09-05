@@ -48,6 +48,10 @@ interface Args {
   themes: string[];
   viewport: Viewport;
   name: string | null;
+  // Account-level preferences to apply to the seed user for this run
+  // (see applyAccountPrefs). Undefined = leave as is.
+  persona: string | undefined;
+  tabSlot: string | null | undefined;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -61,6 +65,9 @@ function parseArgs(argv: string[]): Args {
   const themes = get("--themes");
   const viewportRaw = (get("--viewport") ?? "mobile") as Viewport;
   const name = get("--name") ?? null;
+  const persona = get("--persona");
+  const tabSlotRaw = get("--tab-slot");
+  const tabSlot = tabSlotRaw === undefined ? undefined : tabSlotRaw === "null" ? null : tabSlotRaw;
 
   if (!(viewportRaw in VIEWPORTS)) {
     throw new Error(`--viewport must be one of ${Object.keys(VIEWPORTS).join("|")}`);
@@ -78,7 +85,7 @@ function parseArgs(argv: string[]): Args {
   // run directly, and because the cost is one file read.
   assertRoutesKnown(routeList, viewportRaw);
 
-  return { routes: routeList, themes: themeList, viewport: viewportRaw, name };
+  return { routes: routeList, themes: themeList, viewport: viewportRaw, name, persona, tabSlot };
 }
 
 // ── Login ────────────────────────────────────────────────────────────────────
@@ -95,7 +102,10 @@ function parseArgs(argv: string[]): Args {
 // and better-auth reads a valid session.
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 
-async function signIn(context: BrowserContext): Promise<void> {
+// Returns the raw Cookie header the api-server expects (the __Secure-
+// names, before the rewrite below), so direct API calls from this script
+// can authenticate without going through Vite.
+async function signIn(context: BrowserContext): Promise<string> {
   const res = await context.request.post(`${API_BASE}/api/auth/sign-in/email`, {
     headers: { "Content-Type": "application/json", "Origin": FRONTEND },
     data: { email: SEED_EMAIL, password: SEED_PASSWORD },
@@ -104,6 +114,7 @@ async function signIn(context: BrowserContext): Promise<void> {
     throw new Error(`sign-in failed: ${res.status()} ${await res.text()}`);
   }
   const cookies = await context.cookies();
+  const apiCookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
   await context.clearCookies();
   await context.addCookies(cookies.map((c) => ({
     ...c,
@@ -111,6 +122,48 @@ async function signIn(context: BrowserContext): Promise<void> {
     secure: false,
     sameSite: "Lax" as const,
   })));
+  return apiCookieHeader;
+}
+
+// ── Per-run account preferences ──────────────────────────────────────────────
+// --persona <id> and --tab-slot <id|null> set the seed user's server-side
+// preferences before capture and restore them afterwards, so one run can
+// show the phone tab bar in a given set (persona default or a pinned slot)
+// and HOME/WORTH in that persona's section order. Both are account-level
+// (app_settings.persona / .tab_slot) and the app hydrates from the server
+// on boot, so injecting localStorage would be overwritten — the API is the
+// only honest way to put the app in that state.
+type Restore = () => Promise<void>;
+
+async function applyAccountPrefs(context: BrowserContext, cookie: string, args: Args): Promise<Restore> {
+  const headers = { "Content-Type": "application/json", "Origin": FRONTEND, Cookie: cookie };
+  const restores: Restore[] = [];
+
+  async function put(path: string, body: unknown): Promise<void> {
+    const r = await context.request.put(`${API_BASE}${path}`, { headers, data: body });
+    if (!r.ok()) throw new Error(`PUT ${path} failed: ${r.status()} ${await r.text()}`);
+  }
+  async function get<T>(path: string): Promise<T> {
+    const r = await context.request.get(`${API_BASE}${path}`, { headers });
+    if (!r.ok()) throw new Error(`GET ${path} failed: ${r.status()} ${await r.text()}`);
+    return (await r.json()) as T;
+  }
+
+  if (args.persona !== undefined) {
+    const before = await get<{ persona: string }>("/api/settings/persona");
+    await put("/api/settings/persona", { persona: args.persona });
+    console.log(`[screenshot] persona ${before.persona} → ${args.persona} (restored after run)`);
+    restores.push(() => put("/api/settings/persona", { persona: before.persona }));
+  }
+  if (args.tabSlot !== undefined) {
+    const before = await get<{ tabSlot: string | null }>("/api/settings/tab-slot");
+    await put("/api/settings/tab-slot", { tabSlot: args.tabSlot });
+    console.log(`[screenshot] tab-slot ${before.tabSlot} → ${args.tabSlot} (restored after run)`);
+    restores.push(() => put("/api/settings/tab-slot", { tabSlot: before.tabSlot }));
+  }
+  return async () => {
+    for (const r of restores.reverse()) await r();
+  };
 }
 
 // Intercept /api/* on the frontend origin and forward directly to the api-server
@@ -319,17 +372,21 @@ async function main(): Promise<void> {
   });
 
   await interceptApiRequests(context);
-  await signIn(context);
+  const apiCookie = await signIn(context);
+  const restore = await applyAccountPrefs(context, apiCookie, args);
 
-  for (const route of args.routes) {
-    for (const theme of args.themes) {
-      const explicit = args.routes.length === 1 && args.themes.length === 1 ? args.name : null;
-      const outPath = await captureOne(context, route, theme, args.viewport, explicit);
-      console.log(`[screenshot] ${route} · ${args.viewport} · ${theme} → ${outPath}`);
+  try {
+    for (const route of args.routes) {
+      for (const theme of args.themes) {
+        const explicit = args.routes.length === 1 && args.themes.length === 1 ? args.name : null;
+        const outPath = await captureOne(context, route, theme, args.viewport, explicit);
+        console.log(`[screenshot] ${route} · ${args.viewport} · ${theme} → ${outPath}`);
+      }
     }
+  } finally {
+    await restore();
+    await browser.close();
   }
-
-  await browser.close();
 }
 
 // Only run when this file IS the command. assertRendered is exported so the
