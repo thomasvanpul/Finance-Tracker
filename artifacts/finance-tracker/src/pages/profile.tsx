@@ -4,6 +4,7 @@ import { authClient } from "@/lib/auth-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api-fetch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -12,6 +13,7 @@ import {
   useListDebts,
   useGetDashboard,
   useListGoals,
+  useDeleteUserAccount,
 } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
@@ -406,6 +408,9 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleteProviders, setDeleteProviders] = useState<string[] | null>(null);
+  const deleteAccount = useDeleteUserAccount();
   const [activeTab, setActiveTab] = useState<"account" | "security" | "privacy">("account");
 
   // Security tab state
@@ -590,6 +595,59 @@ export default function Profile() {
     if (best === null || best.baseEquivalent == null) return t;
     return Math.abs(t.baseEquivalent) > Math.abs(best.baseEquivalent) ? t : best;
   }, null);
+
+  // Account deletion. The server checks the typed email against the
+  // session; the disabled state here is a convenience, not the bar. On
+  // success the session rows are already gone (they cascade), so signOut
+  // only clears the cookie and the native token; everything the app
+  // stored on this device goes with it.
+  const accountEmail = session?.user?.email ?? "";
+  const deleteEmailMatches = deleteEmail.trim().toLowerCase() === accountEmail.toLowerCase() && accountEmail !== "";
+  useEffect(() => {
+    if (!confirmDelete) return;
+    let cancelled = false;
+    apiFetch("/api/connections")
+      .then(async (r) => (r.ok ? ((await r.json()) as { provider?: string }[]) : []))
+      .then((rows) => { if (!cancelled) setDeleteProviders(rows.map((c) => c.provider ?? "").filter(Boolean)); })
+      .catch(() => { if (!cancelled) setDeleteProviders([]); });
+    return () => { cancelled = true; };
+  }, [confirmDelete]);
+
+  async function handleExportBackupBeforeDelete() {
+    try {
+      const res = await apiFetch("/api/export/backup");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `numeris-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Backup downloaded" });
+    } catch {
+      toast({ title: "Export failed", description: "Could not download the backup", variant: "destructive" });
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!deleteEmailMatches || deleteAccount.isPending) return;
+    try {
+      const result = await deleteAccount.mutateAsync({ data: { email: deleteEmail.trim() } });
+      for (const key of Object.keys(localStorage)) {
+        if (/^(ft-|nr-|numeris|ix-companion)/.test(key)) localStorage.removeItem(key);
+      }
+      queryClient.clear();
+      toast({ title: "Account deleted", description: `${result.deletedRows} records removed.` });
+      const { clearNativeAuthToken } = await import("@/lib/native-auth");
+      await clearNativeAuthToken();
+      await authClient.signOut().catch(() => undefined);
+      navigate("/");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : undefined;
+      toast({ title: "Could not delete account", description: message, variant: "destructive" });
+    }
+  }
 
   function handleSignOut() {
     authClient.signOut().then(async () => {
@@ -1384,7 +1442,7 @@ export default function Profile() {
         </p>
         {!confirmDelete ? (
           <button
-            onClick={() => setConfirmDelete(true)}
+            onClick={() => { setDeleteEmail(""); setConfirmDelete(true); }}
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
@@ -1402,10 +1460,35 @@ export default function Profile() {
             Delete Account
           </button>
         ) : (
-          <VStack gap={8}>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-red)" }}>
-              This will permanently delete all your data. Are you sure?
-            </p>
+          <VStack gap={10}>
+            <Text as="p" mono size={10} color="var(--ft-muted)" lineHeight={1.6}>
+              Everything you own is removed at once and cannot be recovered: accounts, transactions, upcoming items,
+              debts, budgets, goals, investments, connections and their stored credentials, balance history, sessions on
+              every device, passkeys and two-factor settings. Records other people keep about money shared with you stay
+              in their accounts, with the link to you removed.
+            </Text>
+            <Text as="p" mono size={10} color="var(--ft-muted)" lineHeight={1.6}>
+              {deleteProviders && deleteProviders.length > 0
+                ? `Your ${deleteProviders.join(", ")} credential${deleteProviders.length === 1 ? " is" : "s are"} destroyed here but not revoked at the provider. Revoke ${deleteProviders.length === 1 ? "it" : "them"} in the provider's own settings.`
+                : "A provider token you pasted in (Wise, Alpaca, Kraken) or a Google or GitHub sign-in grant is destroyed here but not revoked at the provider."}
+            </Text>
+            <button
+              type="button"
+              onClick={handleExportBackupBeforeDelete}
+              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-border)", padding: "5px 14px", cursor: "pointer", alignSelf: "flex-start" }}
+            >
+              Download a backup first
+            </button>
+            <VStack gap={4}>
+              <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Type your account email to confirm</Label>
+              <Input
+                type="email"
+                autoComplete="off"
+                placeholder={accountEmail}
+                value={deleteEmail}
+                onChange={e => setDeleteEmail(e.target.value)}
+              />
+            </VStack>
             <HStack gap={8} wrap>
               <button
                 onClick={() => setConfirmDelete(false)}
@@ -1423,6 +1506,8 @@ export default function Profile() {
                 Cancel
               </button>
               <button
+                onClick={handleDeleteAccount}
+                disabled={!deleteEmailMatches || deleteAccount.isPending}
                 style={{
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
@@ -1430,11 +1515,12 @@ export default function Profile() {
                   background: "var(--ft-red)",
                   border: "1px solid var(--ft-red)",
                   padding: "5px 14px",
-                  cursor: "pointer",
+                  cursor: deleteEmailMatches && !deleteAccount.isPending ? "pointer" : "not-allowed",
+                  opacity: deleteEmailMatches && !deleteAccount.isPending ? 1 : 0.45,
                   flex: "1 1 auto",
                 }}
               >
-                Confirm Delete
+                {deleteAccount.isPending ? "Deleting…" : "Delete my account"}
               </button>
             </HStack>
           </VStack>
