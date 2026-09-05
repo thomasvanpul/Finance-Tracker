@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TransactionSource } from './transactionSource';
+import type { TransactionTransferDirection } from './transactionTransferDirection';
 import type { TransactionType } from './transactionType';
 
 export interface Transaction {
@@ -24,4 +25,8 @@ export interface Transaction {
   /** @nullable */
   externalId?: string | null;
   createdAt: string;
+  /** @nullable */
+  transferGroupId?: string | null;
+  /** @nullable */
+  transferDirection?: TransactionTransferDirection;
 }

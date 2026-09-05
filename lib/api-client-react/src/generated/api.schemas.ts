@@ -214,6 +214,17 @@ export const TransactionSource = {
   csv: 'csv',
 } as const;
 
+/**
+ * @nullable
+ */
+export type TransactionTransferDirection = typeof TransactionTransferDirection[keyof typeof TransactionTransferDirection] | null;
+
+
+export const TransactionTransferDirection = {
+  out: 'out',
+  in: 'in',
+} as const;
+
 export interface Transaction {
   id: number;
   date: string;
@@ -230,6 +241,10 @@ export interface Transaction {
   /** @nullable */
   externalId?: string | null;
   createdAt: string;
+  /** @nullable */
+  transferGroupId?: string | null;
+  /** @nullable */
+  transferDirection?: TransactionTransferDirection;
 }
 
 export type TransactionInputType = typeof TransactionInputType[keyof typeof TransactionInputType];
@@ -249,6 +264,9 @@ export interface TransactionInput {
   accountId: number;
   nativeAmount: number;
   currency: string;
+  toAccountId?: number;
+  toNativeAmount?: number;
+  toCurrency?: string;
 }
 
 export type TransactionUpdateType = typeof TransactionUpdateType[keyof typeof TransactionUpdateType];

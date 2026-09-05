@@ -15,4 +15,7 @@ export interface TransactionInput {
   accountId: number;
   nativeAmount: number;
   currency: string;
+  toAccountId?: number;
+  toNativeAmount?: number;
+  toCurrency?: string;
 }

@@ -95,6 +95,7 @@ export * from './transactionInput';
 export * from './transactionInputType';
 export * from './transactionSource';
 export * from './transactionSummary';
+export * from './transactionTransferDirection';
 export * from './transactionType';
 export * from './transactionUpdate';
 export * from './transactionUpdateType';

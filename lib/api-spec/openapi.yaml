@@ -1450,6 +1450,14 @@ components:
           type: ["string", "null"]
         createdAt:
           type: string
+        # Transfer link (see TransactionInput). Null/absent on any row that
+        # is not one leg of a linked transfer.
+        transferGroupId:
+          type: ["string", "null"]
+          format: uuid
+        transferDirection:
+          type: ["string", "null"]
+          enum: [out, in, null]
 
     TransactionInput:
       type: object
@@ -1469,6 +1477,18 @@ components:
         nativeAmount:
           type: number
         currency:
+          type: string
+        # Transfer leg (type=transfer only). When present the server writes
+        # a linked pair — an "out" row on accountId and an "in" row on
+        # toAccountId — sharing one transferGroupId. Added to the spec on
+        # 5 Sep 2026: 84f4dff had hand-edited these into the generated zod
+        # without declaring them here, so the next codegen silently
+        # dropped them and broke the api-server typecheck.
+        toAccountId:
+          type: integer
+        toNativeAmount:
+          type: number
+        toCurrency:
           type: string
 
     TransactionUpdate:
