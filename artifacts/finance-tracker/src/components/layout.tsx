@@ -376,7 +376,7 @@ function ClockDisplay({ clock }: { clock: string; }) {
               onClick={() => setEditing((e) => !e)}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
-              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 8, color: editing ? "var(--ft-amber)" : "var(--ft-dim)", padding: "0 2px", letterSpacing: "0.06em", transition: "opacity 0.1s" }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 9, color: editing ? "var(--ft-amber)" : "var(--ft-dim)", padding: "0 2px", transition: "opacity 0.1s" }}
             >{editing ? "DONE" : "EDIT"}</button>
           </div>
 
@@ -399,12 +399,12 @@ function ClockDisplay({ clock }: { clock: string; }) {
                   <CountryMark code={city.country} size={11} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: "var(--ft-text)" }}>{city.label}</div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>{city.exchange}</div>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "var(--ft-text)" }}>{city.label}</div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>{city.exchange}</div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", letterSpacing: "0.04em" }}>{t}</span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, padding: "1px 6px", background: badgeBg, color: badgeColor, border: `1px solid ${badgeBdr}` }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", letterSpacing: "0.04em" }}>{t}</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, padding: "1px 6px", background: badgeBg, color: badgeColor, border: `1px solid ${badgeBdr}` }}>
                     {status}
                   </span>
                 </div>
@@ -418,7 +418,7 @@ function ClockDisplay({ clock }: { clock: string; }) {
               <select
                 value={addPreset}
                 onChange={(e) => setAddPreset(e.target.value)}
-                style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "4px 6px", outline: "none", minWidth: 120 }}
+                style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "4px 6px", outline: "none", minWidth: 120 }}
               >
                 {TZ_PRESETS.filter((p) => !cities.find((c) => c.tz === p.tz)).map((p) => (
                   // Native <option> cannot carry SVG; strip the mark
@@ -427,12 +427,12 @@ function ClockDisplay({ clock }: { clock: string; }) {
                   <option key={p.tz} value={p.tz}>{p.country}  {p.label}</option>
                 ))}
               </select>
-              <button onClick={addCity} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "4px 10px", cursor: "pointer", fontWeight: 700 }}>+ ADD</button>
-              <button onClick={resetToDefault} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-text)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "4px 10px", cursor: "pointer", transition: "color 0.1s" }}>RESET</button>
+              <button onClick={addCity} style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "4px 10px", cursor: "pointer", fontWeight: 700 }}>+ ADD</button>
+              <button onClick={resetToDefault} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-text)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }} style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "4px 10px", cursor: "pointer", transition: "color 0.1s" }}>RESET</button>
             </div>
           )}
 
-          {!editing && <div style={{ padding: "5px 12px", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>Market hours exclude public holidays · Hover EDIT to customise</div>}
+          {!editing && <div style={{ padding: "5px 12px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>Market hours exclude public holidays · Hover EDIT to customise</div>}
         </div>,
         document.body,
       )}
@@ -643,12 +643,12 @@ function LiveTickerBar() {
         <div style={{ padding: "7px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.04em" }}>{tipTicker.ticker}</div>
-            {tipQ.displayName && <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>{tipQ.displayName}</div>}
+            {tipQ.displayName && <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 1 }}>{tipQ.displayName}</div>}
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)" }}>{formatTickerPrice(tipTicker.ticker, tipQ.price)}</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)" }}>{formatTickerPrice(tipTicker.ticker, tipQ.price)}</div>
             {tipChg != null && (
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: tipChg >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600 }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: tipChg >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600 }}>
                 {tipChg >= 0 ? "▲" : "▼"} {Math.abs(tipChg).toFixed(2)}%
               </div>
             )}
@@ -910,9 +910,9 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
             borderRadius: 4,
             cursor: "pointer",
             color: "var(--ft-base)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 8,
-            fontWeight: 700,
+            fontFamily: "var(--font-sans)",
+            fontSize: 9,
+            fontWeight: 600,
           }}
         >OK</button>
       </div>
@@ -958,10 +958,10 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
         }}>CONFIGURE NAV</div>
         <div style={{
           fontSize: 9,
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           color: "var(--ft-dim)",
           marginTop: 2,
-          letterSpacing: "0.04em",
+
         }}>toggle visibility · ★ star to pin to top</div>
       </div>
 
@@ -976,9 +976,9 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
       }}>
         <span style={{
           fontSize: 9,
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           color: "var(--ft-muted)",
-          letterSpacing: "0.06em",
+
         }}>★ STARRED ITEMS FIRST</span>
         <button
           onClick={() => onChange({ ...config, pinnedFirst: !config.pinnedFirst })}
@@ -1088,13 +1088,13 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
                   {/* Label */}
                   <span style={{
                     fontSize: 11,
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     color: c.visible ? "var(--ft-text)" : "var(--ft-dim)",
                     flex: 1,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
-                    letterSpacing: "0.02em",
+
                   }}>{item.label}</span>
 
                   {/* Star (pin) toggle */}
@@ -1140,10 +1140,10 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
             border: "1px solid var(--ft-border)",
             color: "var(--ft-dim)",
             cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontFamily: "var(--font-sans)",
+            fontSize: 11,
             padding: "4px 0",
-            letterSpacing: "0.06em",
+
             transition: "all 0.1s",
           }}
           onMouseEnter={(e) => {
@@ -1163,11 +1163,11 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
             border: "none",
             color: "var(--ft-base)",
             cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontFamily: "var(--font-sans)",
+            fontSize: 11,
             fontWeight: 700,
             padding: "4px 0",
-            letterSpacing: "0.06em",
+
             transition: "opacity 0.1s",
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.85"; }}
@@ -1695,9 +1695,9 @@ export function Layout({ children }: LayoutProps) {
                         borderRadius: 4,
                         cursor: "pointer",
                         color: moreOpen ? "var(--ft-muted)" : "var(--ft-dim)",
-                        fontFamily: "var(--font-mono)",
+                        fontFamily: "var(--font-sans)",
                         fontSize: effectiveCollapsed ? 8 : 9,
-                        letterSpacing: "0.08em",
+
                         padding: effectiveCollapsed ? "4px 0" : "3px 8px",
                         display: "flex",
                         alignItems: "center",
@@ -1776,11 +1776,11 @@ export function Layout({ children }: LayoutProps) {
               <div style={{ margin: "0 8px 6px", padding: "8px 10px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", cursor: "pointer", transition: "border-color 0.15s" }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ft-border2)"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ft-border)"; }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.06em", marginBottom: 2, display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: "var(--ft-accent)", marginBottom: 2, display: "flex", alignItems: "center", gap: 5 }}>
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M5 1v4M5 1L2.5 3.5M5 1L7.5 3.5M1 7.5h8" /><path d="M2 7.5c0 1.1.9 2 2 2h2a2 2 0 002-2" opacity=".5"/></svg>
                   {year} YEAR IN REVIEW
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)", lineHeight: 1.4 }}>Your annual financial recap is ready</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.4 }}>Your annual financial recap is ready</div>
               </div>
             </Link>
           );
@@ -2074,11 +2074,11 @@ export function Layout({ children }: LayoutProps) {
                 border: "1px solid var(--ft-border)",
                 color: "var(--ft-muted)",
                 cursor: "pointer",
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
+                fontFamily: "var(--font-sans)",
+                fontSize: 11,
                 padding: "4px 10px",
                 borderRadius: 4,
-                letterSpacing: "0.06em",
+
                 marginRight: 10,
                 transition: "all 0.1s",
               }}
@@ -2125,11 +2125,11 @@ export function Layout({ children }: LayoutProps) {
                 border: "1px solid var(--ft-border)",
                 color: "var(--ft-muted)",
                 cursor: "pointer",
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
+                fontFamily: "var(--font-sans)",
+                fontSize: 11,
                 padding: "4px 10px",
                 borderRadius: 4,
-                letterSpacing: "0.08em",
+
                 transition: "all 0.1s",
               }}
               onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-red)"; e.currentTarget.style.borderColor = "var(--ft-red)"; }}
@@ -2148,10 +2148,10 @@ export function Layout({ children }: LayoutProps) {
             style={{
               background: "var(--ft-red)",
               color: "#fff",
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: "0.1em",
+              fontFamily: "var(--font-sans)",
+              fontSize: 11,
+              fontWeight: 600,
+
               textTransform: "uppercase",
               textAlign: "center",
               padding: "6px 12px",
@@ -2216,10 +2216,10 @@ export function Layout({ children }: LayoutProps) {
             >
               <span
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
-                  fontWeight: 700,
-                  letterSpacing: "0.1em",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 10,
+                  fontWeight: 600,
+
                   color: pullY >= 60 || isRefreshing ? "var(--ft-accent)" : "var(--ft-dim)",
                   textTransform: "uppercase",
                 }}

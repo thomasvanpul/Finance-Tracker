@@ -70,12 +70,11 @@ export function WidgetShell({
           {href && (
             <Link href={href}>
               <span style={{
-                fontSize: 9,
-                fontFamily: "var(--font-mono)",
+                fontSize: 11,
+                fontFamily: "var(--font-sans)",
                 color: hovered ? accentColor : "var(--ft-dim)",
                 cursor: "pointer",
-                letterSpacing: "0.04em",
-                fontWeight: 400,
+                fontWeight: 500,
                 textTransform: "none",
                 transition: "color 0.1s",
                 whiteSpace: "nowrap",
@@ -103,21 +102,19 @@ function EmptyState({ message, action, accent }: { message?: string; action?: { 
   return (
     <div style={{ padding: "24px 14px", display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}>
       <div style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: 9,
+        fontFamily: "var(--font-sans)",
+        fontSize: 12,
         color: "var(--ft-dim)",
-        letterSpacing: "0.12em",
-        textTransform: "uppercase",
       }}>
-        {message ?? "NO DATA"}
+        {message ?? "No data"}
       </div>
       {action && (
         <Link href={action.href}>
           <span style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontFamily: "var(--font-sans)",
+            fontSize: 11,
+            fontWeight: 500,
             color: accent ?? "var(--ft-accent)",
-            letterSpacing: "0.06em",
             cursor: "pointer",
           }}>
             {action.label} →

@@ -131,9 +131,8 @@ export function PersonaQuickStart() {
                 {isDone ? "✓" : (i + 1)}
               </div>
               <span style={{
-                fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+                fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
                 color: isDone ? "var(--ft-dim)" : "var(--ft-text)",
-                letterSpacing: "0.02em",
                 textDecoration: isDone ? "line-through" : "none",
                 flex: 1, minWidth: 0,
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -144,8 +143,8 @@ export function PersonaQuickStart() {
                 <button
                   onClick={() => completeStep(step.id, step.href)}
                   style={{
-                    fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700,
-                    letterSpacing: "0.1em", color: "var(--ft-amber)",
+                    fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 600,
+                    letterSpacing: "0.06em", color: "var(--ft-amber)",
                     background: "transparent", border: "1px solid rgba(244,162,30,0.4)",
                     padding: "3px 10px", cursor: "pointer", flexShrink: 0,
                   }}
@@ -180,17 +179,16 @@ export function PersonaQuickStart() {
                   {isDone ? "✓" : (i + 1)}
                 </div>
                 <span style={{
-                  fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+                  fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600,
                   color: isDone ? "var(--ft-dim)" : "var(--ft-text)",
-                  letterSpacing: "0.02em",
                   textDecoration: isDone ? "line-through" : "none",
                 }}>
                   {step.label}
                 </span>
               </div>
               <p style={{
-                fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)",
-                letterSpacing: "0.02em", lineHeight: 1.5, margin: "0 0 6px",
+                fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)",
+                lineHeight: 1.45, margin: "0 0 6px",
               }}>
                 {step.desc}
               </p>
@@ -198,8 +196,8 @@ export function PersonaQuickStart() {
                 <button
                   onClick={() => completeStep(step.id, step.href)}
                   style={{
-                    fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700,
-                    letterSpacing: "0.1em", color: "var(--ft-amber)",
+                    fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 600,
+                    letterSpacing: "0.06em", color: "var(--ft-amber)",
                     background: "transparent", border: "1px solid rgba(244,162,30,0.4)",
                     padding: "3px 10px", cursor: "pointer", alignSelf: "flex-start",
                     transition: "background 0.1s",
@@ -219,8 +217,8 @@ export function PersonaQuickStart() {
           <a
             href="/settings?panel=terminal-profile"
             style={{
-              fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)",
-              letterSpacing: "0.06em", opacity: 0.65, textDecoration: "none",
+              fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)",
+              opacity: 0.65, textDecoration: "none",
             }}
             onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "1"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "0.65"; }}

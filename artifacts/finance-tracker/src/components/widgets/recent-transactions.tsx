@@ -59,15 +59,15 @@ function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", flexShrink: 0, width: 68 }}>
         {formatDate(tx.date)}
       </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {tx.description}
       </span>
       {isExpanded && (
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", flexShrink: 0, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", flexShrink: 0, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {tx.accountName}
         </span>
       )}
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: categoryColor(tx.category), flexShrink: 0, maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", color: categoryColor(tx.category), flexShrink: 0, maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {tx.category}
       </span>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", flexShrink: 0, width: 72, textAlign: "right" }}>
@@ -107,8 +107,8 @@ function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {type}
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {count} transaction{count !== 1 ? "s" : ""}
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)" }}>{count}</span> transaction{count !== 1 ? "s" : ""}
         </div>
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color, flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -157,8 +157,8 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
             background: "var(--ft-base)",
             border: "1px solid var(--ft-border2)",
             color: "var(--ft-text)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontFamily: "var(--font-sans)",
+            fontSize: 11,
             height: 24,
             paddingLeft: 22,
             paddingRight: search ? 22 : 6,
@@ -184,8 +184,9 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
               key={t}
               onClick={() => setTypeFilter(t)}
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 8,
+                fontFamily: "var(--font-sans)",
+                fontSize: 9,
+                fontWeight: 600,
                 letterSpacing: "0.05em",
                 textTransform: "uppercase",
                 padding: "2px 5px",
@@ -206,7 +207,7 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
   const txRows = (
     <div>
       {filtered.length === 0 && !isLoading && (
-        <div style={{ padding: "16px 12px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
+        <div style={{ padding: "16px 12px", fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)", textAlign: "center" }}>
           {search || typeFilter !== "all" ? "No matching transactions" : "No transactions yet"}
         </div>
       )}
@@ -244,8 +245,8 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
                 );
               })}
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", color: "var(--ft-dim)", marginBottom: 6, textTransform: "uppercase" }}>
-              Showing {filtered.length} of {allTransactions.length} total
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", marginBottom: 6 }}>
+              Showing <span className="pnum" style={{ fontFamily: "var(--font-mono)" }}>{filtered.length}</span> of <span className="pnum" style={{ fontFamily: "var(--font-mono)" }}>{allTransactions.length}</span> total
             </div>
           </div>
         </div>

@@ -48,8 +48,8 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
       <td style={{ padding: "0 10px" }}>
         <div style={{ paddingTop: 6, paddingBottom: 2 }}>
           <div style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
             color: "var(--ft-text)",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -199,7 +199,7 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
         <tbody>
           {sorted.length === 0 ? (
             <tr>
-              <td colSpan={5} style={{ padding: "20px 10px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+              <td colSpan={5} style={{ padding: "20px 10px", textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)" }}>
                 No accounts — add via Accounts
               </td>
             </tr>
