@@ -993,7 +993,7 @@ export default function NetWorthHistory() {
               </div>
             </div>
             <HStack gap={8}>
-              <button onClick={handleAddMilestone} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}>
+              <button onClick={handleAddMilestone} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}>
                 Add
               </button>
               <button onClick={() => setShowMilestoneForm(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}>

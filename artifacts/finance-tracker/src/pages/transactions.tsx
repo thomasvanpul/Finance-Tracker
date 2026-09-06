@@ -1696,7 +1696,7 @@ export default function Transactions() {
             type="checkbox"
             checked={selectedIds.has(tx.id)}
             onChange={() => toggleSelect(tx.id)}
-            style={{ cursor: "pointer", accentColor: "var(--ft-blue)" }}
+            style={{ cursor: "pointer", accentColor: "var(--ft-accent)" }}
             aria-label={`Select transaction ${tx.description}`}
           />
         </div>
@@ -2904,7 +2904,7 @@ export default function Transactions() {
                 type="checkbox"
                 checked={isAllSelected}
                 onChange={toggleSelectAll}
-                style={{ cursor: "pointer", accentColor: "var(--ft-blue)" }}
+                style={{ cursor: "pointer", accentColor: "var(--ft-accent)" }}
                 aria-label="Select all"
               />
             </div>

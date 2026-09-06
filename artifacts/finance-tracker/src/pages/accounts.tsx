@@ -444,7 +444,7 @@ function TransferModal({
             <Button
               type="submit"
               disabled={submitting || !form.fromAccountId || !form.toAccountId || !form.amount}
-              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", borderRadius: 2 }}
+              style={{ background: "var(--ft-accent)", color: "var(--ft-base)", borderRadius: 2 }}
             >
               <ArrowLeftRight className="w-3.5 h-3.5 mr-1.5" />
               {submitting ? "Processing…" : "Transfer"}
@@ -2046,7 +2046,7 @@ export default function Accounts() {
               size="sm"
               onClick={openAdd}
               style={{
-                background: "var(--ft-blue)",
+                background: "var(--ft-accent)",
                 color: "var(--ft-base)",
                 border: "none",
                 borderRadius: 2,
@@ -2112,7 +2112,7 @@ export default function Accounts() {
               size="sm"
               onClick={openAdd}
               style={{
-                background: "var(--ft-blue)",
+                background: "var(--ft-accent)",
                 color: "var(--ft-base)",
                 border: "none",
                 borderRadius: 2,

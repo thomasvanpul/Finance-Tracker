@@ -2051,7 +2051,7 @@ export default function Owing() {
               size="sm"
               onClick={handleAdd}
               disabled={createDebt.isPending}
-              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", fontSize: 12 }}
+              style={{ background: "var(--ft-accent)", color: "var(--ft-base)", fontSize: 12 }}
             >
               {createDebt.isPending ? "Adding…" : "Add IOU"}
             </Button>
@@ -2277,7 +2277,7 @@ export default function Owing() {
               size="sm"
               onClick={handleSplitSubmit}
               disabled={splitSubmitting}
-              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", fontSize: 12 }}
+              style={{ background: "var(--ft-accent)", color: "var(--ft-base)", fontSize: 12 }}
             >
               {splitSubmitting ? "Creating…" : `Create ${validPeople.filter((p) => p.name.toLowerCase() !== "me").length} IOU${validPeople.filter((p) => p.name.toLowerCase() !== "me").length !== 1 ? "s" : ""}`}
             </Button>

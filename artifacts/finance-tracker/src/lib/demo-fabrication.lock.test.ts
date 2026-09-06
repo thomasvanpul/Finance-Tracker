@@ -155,7 +155,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1580, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 431, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 236, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 753, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 756, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
   { path: "artifacts/finance-tracker/src/pages/year-review.tsx", line: 1264, reason: "chart max denominator: empty topCats → 1 to avoid /0" },
 
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the

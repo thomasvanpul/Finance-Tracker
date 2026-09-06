@@ -1507,7 +1507,7 @@ function StrategyBuilder({ quoteMap }: { quoteMap: Map<string, QuoteData> }) {
             </span>
           )}
         </div>
-        <Button onClick={addLeg} size="sm" style={{ height: 26, fontSize: 11, background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", borderRadius: 2, padding: "0 8px" }}>
+        <Button onClick={addLeg} size="sm" style={{ height: 26, fontSize: 11, background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", borderRadius: 2, padding: "0 8px" }}>
           <Plus style={{ width: 10, height: 10, marginRight: 4 }} />Add Leg
         </Button>
       </div>

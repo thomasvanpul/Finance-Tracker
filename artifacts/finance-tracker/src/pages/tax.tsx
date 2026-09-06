@@ -1218,7 +1218,7 @@ export default function Tax() {
           </div>
         )}
         <div className="px-3 py-2.5 flex items-center gap-3 flex-wrap" style={{ background: "var(--ft-surface)" }}>
-          <Button size="sm" onClick={() => { setShelterForm({ taxYear: selectedYear, amount: "", provider: "" }); setAddShelterOpen(true); }} style={{ background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 11 }}>
+          <Button size="sm" onClick={() => { setShelterForm({ taxYear: selectedYear, amount: "", provider: "" }); setAddShelterOpen(true); }} style={{ background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 11 }}>
             <Plus className="w-3 h-3 mr-1.5" />Add Contribution
           </Button>
           {rules.shelterNote && <span className="text-xs" style={{ color: "var(--ft-dim)" }}>{rules.shelterNote}</span>}
@@ -1348,7 +1348,7 @@ export default function Tax() {
             </div>
             <DialogFooter className="mt-6">
               <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-              <Button type="submit" style={{ background: "var(--ft-blue)", color: "var(--ft-base)", border: "none" }}>Add Contribution</Button>
+              <Button type="submit" style={{ background: "var(--ft-accent)", color: "var(--ft-base)", border: "none" }}>Add Contribution</Button>
             </DialogFooter>
           </form>
         </DialogContent>

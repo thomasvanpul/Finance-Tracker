@@ -2227,7 +2227,7 @@ function MyNameBar({ myName, onChange, groupMembers }: MyNameBarProps) {
             style={{
               padding: "2px 8px",
               fontSize: 10,
-              background: "var(--ft-blue)",
+              background: "var(--ft-accent)",
               color: "var(--ft-base)",
               border: "none",
               borderRadius: 2,
@@ -2676,7 +2676,7 @@ export default function SplitPage() {
                 alignItems: "center",
                 gap: 4,
                 padding: "4px 10px",
-                background: "var(--ft-blue)",
+                background: "var(--ft-accent)",
                 border: "none",
                 color: "var(--ft-base)",
                 borderRadius: 2,

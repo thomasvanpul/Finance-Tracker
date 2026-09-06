@@ -708,9 +708,12 @@ function SensitivityRow({
     >
       <td style={{ ...tdStyle, textAlign: "left" }}>
         <HStack gap={6} align="center">
-          {isSelected && <span style={{ width: 3, height: 14, background: "var(--ft-blue)", flexShrink: 0, display: "inline-block" }} />}
+          {/* No coloured bar down the side of the selected row: DESIGN.md §4
+              bans a coloured edge and §12 names the 3px accent bar as the
+              single most cited AI-design tell. Weight and the accent-coloured
+              marker carry the state instead. */}
           <span style={{ color: accentColor, fontWeight: isSelected ? 700 : 500 }}>{rate}%</span>
-          {isSelected && <Text as="span" size={8} color="var(--ft-blue)" letterSpacing="0.06em">← selected</Text>}
+          {isSelected && <Text as="span" size={8} color="var(--ft-accent)" letterSpacing="0.06em">← selected</Text>}
         </HStack>
       </td>
       <td className="pnum" style={{ ...tdStyle, color: isSelected ? "var(--ft-text)" : "var(--ft-muted)", fontWeight: isSelected ? 700 : 400, fontSize: isSelected ? 12 : 11 }}>
@@ -1296,7 +1299,7 @@ function PensionSection() {
                 step={1}
                 value={inputs.retirementAge}
                 onChange={e => set("retirementAge", Number(e.target.value))}
-                style={{ width: "100%", accentColor: "var(--ft-blue)", cursor: "pointer" }}
+                style={{ width: "100%", accentColor: "var(--ft-accent)", cursor: "pointer" }}
               />
               <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
                 <span>50</span>

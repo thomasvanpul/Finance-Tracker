@@ -1120,7 +1120,7 @@ export default function Subscriptions() {
             <Button
               onClick={() => { setForm(EMPTY_FORM); setAddOpen(true); }}
               size="sm"
-              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 12 }}
+              style={{ background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 12 }}
             >
               <Plus className="w-3.5 h-3.5 mr-1.5" />Add Subscription
             </Button>
@@ -1139,7 +1139,7 @@ export default function Subscriptions() {
             <Button
               onClick={() => { setForm(EMPTY_FORM); setAddOpen(true); }}
               size="sm"
-              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 11 }}
+              style={{ background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 11 }}
             >
               <Plus className="w-3 h-3 mr-1" />+ Add
             </Button>
@@ -1403,7 +1403,7 @@ export default function Subscriptions() {
               </div>
               <button
                 onClick={() => { setForm(EMPTY_FORM); setAddOpen(true); }}
-                style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-blue)", color: "var(--ft-base)", border: "none", padding: "8px 24px", cursor: "pointer" }}
+                style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px 24px", cursor: "pointer" }}
               >
                 + Add First Subscription
               </button>
@@ -1538,7 +1538,7 @@ export default function Subscriptions() {
             {FormFields}
             <DialogFooter className="mt-6">
               <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-              <Button type="submit" style={{ background: "var(--ft-blue)", color: "var(--ft-base)", border: "none" }}>Add</Button>
+              <Button type="submit" style={{ background: "var(--ft-accent)", color: "var(--ft-base)", border: "none" }}>Add</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -1551,7 +1551,7 @@ export default function Subscriptions() {
             {FormFields}
             <DialogFooter className="mt-6">
               <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-              <Button type="submit" style={{ background: "var(--ft-blue)", color: "var(--ft-base)", border: "none" }}>Save</Button>
+              <Button type="submit" style={{ background: "var(--ft-accent)", color: "var(--ft-base)", border: "none" }}>Save</Button>
             </DialogFooter>
           </form>
         </DialogContent>
