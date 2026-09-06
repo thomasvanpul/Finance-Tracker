@@ -2280,7 +2280,7 @@ function CryptoWalletsPanel() {
 
 // ── Categories panel ──────────────────────────────────────────────────────────
 function CategoriesPanel() {
-  const { meta, setCategoryMeta, removeCategoryMeta, getEmoji, getColor } = useCategoryMeta();
+  const { meta, setCategoryMeta, removeCategoryMeta, getColor } = useCategoryMeta();
   const { data: allTxs } = useListTransactions({});
 
   const categories = useMemo(() => {
@@ -2292,18 +2292,16 @@ function CategoriesPanel() {
   }, [allTxs]);
 
   const [editingCat, setEditingCat] = useState<string | null>(null);
-  const [emojiInput, setEmojiInput] = useState("");
   const [colorInput, setColorInput] = useState("#ffffff");
 
   const openEdit = (cat: string) => {
     setEditingCat(cat);
-    setEmojiInput(getEmoji(cat));
     setColorInput(getColor(cat).startsWith("#") ? getColor(cat) : "#aaaaaa");
   };
 
   const saveEdit = () => {
     if (!editingCat) return;
-    setCategoryMeta(editingCat, { emoji: emojiInput, color: colorInput });
+    setCategoryMeta(editingCat, { color: colorInput });
     setEditingCat(null);
   };
 
@@ -2312,9 +2310,9 @@ function CategoriesPanel() {
   return (
     <VStack gap={6}>
       <div style={PANEL_STYLE}>
-        <PanelHeader>Category Colours &amp; Icons</PanelHeader>
+        <PanelHeader>Category Colours</PanelHeader>
         <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>
-          Customise the colour and emoji for each spending category. Changes apply across the app.
+          Set the colour for each spending category. Stored on this device.
         </div>
         <div style={{ padding: "4px 0" }}>
           {categories.length === 0 && (
@@ -2324,7 +2322,6 @@ function CategoriesPanel() {
           )}
           {categories.map(cat => (
             <div key={cat} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-              <span style={{ fontSize: 14, width: 22, textAlign: "center" }}>{getEmoji(cat)}</span>
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: getColor(cat), flexShrink: 0 }} />
               <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{cat}</span>
               {meta[cat.toLowerCase()] && (
@@ -2353,16 +2350,6 @@ function CategoriesPanel() {
         >
           <div onClick={e => e.stopPropagation()} className="ft-float" style={{ padding: 20, width: 300, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: "var(--ft-dim)" }}>EDIT: {editingCat.toUpperCase()}</div>
-
-            <div>
-              <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.08em" mb={6}>EMOJI</Text>
-              <input
-                value={emojiInput}
-                onChange={e => setEmojiInput(e.target.value)}
-                placeholder="e.g. X"
-                style={{ fontFamily: "var(--font-mono)", fontSize: 18, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "6px 10px", width: "100%", outline: "none", boxSizing: "border-box" }}
-              />
-            </div>
 
             <div>
               <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.08em" mb={6}>COLOUR</Text>

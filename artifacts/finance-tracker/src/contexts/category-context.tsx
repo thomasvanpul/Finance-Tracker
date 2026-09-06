@@ -1,7 +1,14 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
+// Colour only. The emoji field is gone: nothing in the app ever
+// rendered a category emoji — DEFAULT_EMOJIS was emptied by the
+// no-emoji lock and the only reader was the settings row that set it —
+// so the control was writing a value the product never displayed while
+// its copy promised the change applied everywhere. Emoji strings in
+// existing localStorage records are orphaned; they are read as excess
+// properties and dropped on the next write, which is safe precisely
+// because nothing displayed them.
 export interface CategoryMeta {
-  emoji: string;
   color: string; // CSS color string e.g. "#00ff88" or "var(--ft-green)"
 }
 
@@ -22,7 +29,6 @@ interface CategoryCtx {
   meta: Record<string, CategoryMeta>;
   setCategoryMeta: (category: string, m: CategoryMeta) => void;
   removeCategoryMeta: (category: string) => void;
-  getEmoji: (category: string) => string;
   getColor: (category: string) => string;
 }
 
@@ -43,12 +49,9 @@ const DEFAULT_COLORS: Record<string, string> = {
   transfer: "#94a3b8",
 };
 
-// DEFAULT_EMOJIS map removed per the no-emoji lock. Users can still
-// set a single character as a category glyph via the categories
-// settings panel (that field is user content, not a shipped default).
-// A future icon set can replace this with themeable SVG per category,
-// same shape as components/currency-mark.tsx.
-const DEFAULT_EMOJIS: Record<string, string> = {};
+// A future icon set replaces category glyphs with themeable SVG, same
+// shape as components/currency-mark.tsx. Until then a category has a
+// colour and nothing else — see the note on CategoryMeta.
 
 export function CategoryProvider({ children }: { children: ReactNode }) {
   const [meta, setMeta] = useState<Record<string, CategoryMeta>>(() => load());
@@ -70,21 +73,13 @@ export function CategoryProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const getEmoji = useCallback((category: string): string => {
-    // User-set glyph OR empty. No fallback emoji — CLAUDE.md
-    // forbids shipping emoji as decoration; if the user sets one
-    // themselves via the categories panel, we surface it.
-    const key = category.toLowerCase();
-    return meta[key]?.emoji ?? DEFAULT_EMOJIS[key] ?? "";
-  }, [meta]);
-
   const getColor = useCallback((category: string): string => {
     const key = category.toLowerCase();
     return meta[key]?.color ?? DEFAULT_COLORS[key] ?? "var(--ft-muted)";
   }, [meta]);
 
   return (
-    <CategoryContext.Provider value={{ meta, setCategoryMeta, removeCategoryMeta, getEmoji, getColor }}>
+    <CategoryContext.Provider value={{ meta, setCategoryMeta, removeCategoryMeta, getColor }}>
       {children}
     </CategoryContext.Provider>
   );
