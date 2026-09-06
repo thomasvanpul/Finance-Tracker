@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "NODE_ENV=development pnpm run build && NODE_ENV=development node --env-file-if-exists=.env --enable-source-maps ./dist/index.mjs",
     "build": "node ./build.mjs",
-    "start": "NODE_ENV=production node --enable-source-maps ./dist/index.mjs",
+    "start": "NODE_ENV=production node ./dist/index.mjs",
     "test": "vitest run",
     "typecheck": "tsc --build ../.. && tsc -p tsconfig.json --noEmit",
     "gen:service-facts": "tsx ./src/lib/service-facts-doc.ts"
