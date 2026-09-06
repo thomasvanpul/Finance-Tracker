@@ -50,33 +50,43 @@ export function PWAInstallButton() {
 
   if (!canInstall || dismissed) return null;
 
+  // Ephemeral surface (DESIGN.md §6): it floats above the page and leaves
+  // on install or dismiss, so it takes .ft-float rather than sitting in the
+  // header chrome drawn like a permanent control. Bottom-centre keeps it
+  // clear of the toast viewport (bottom-right) and the status bar.
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      padding: "5px 10px",
-      background: "rgba(244,162,30,0.1)",
-      border: "1px solid rgba(244,162,30,0.3)",
-      marginLeft: 8,
-    }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.06em" }}>
-        INSTALL APP
-      </span>
+    <div
+      className="ft-float"
+      role="status"
+      style={{
+        position: "fixed",
+        left: "50%",
+        transform: "translateX(-50%)",
+        bottom: 44,
+        zIndex: 90,
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "8px 10px 8px 14px",
+      }}
+    >
+      <span className="ft-float-title">Install Numeris</span>
+      <span className="ft-float-body">Runs as an app, offline-ready.</span>
       <button
         onClick={install}
         style={{
-          fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700,
-          background: "var(--ft-accent)", color: "#000", border: "none",
-          padding: "2px 8px", cursor: "pointer", letterSpacing: "0.06em",
+          fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+          background: "var(--ft-accent)", color: "var(--ft-base)", border: "none",
+          padding: "4px 10px", cursor: "pointer", letterSpacing: "0.06em",
         }}
       >
-        ↓ INSTALL
+        INSTALL
       </button>
       <button
         onClick={() => { setDismissed(true); try { localStorage.setItem("nr-pwa-dismissed", "1"); } catch {} }}
+        aria-label="Dismiss install prompt"
         style={{
-          fontFamily: "var(--font-mono)", fontSize: 11, background: "none", border: "none",
+          fontFamily: "var(--font-mono)", fontSize: 13, background: "none", border: "none",
           color: "var(--ft-dim)", cursor: "pointer", lineHeight: 1, padding: "0 2px",
         }}
       >
