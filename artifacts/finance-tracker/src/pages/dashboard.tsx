@@ -2473,6 +2473,69 @@ function ViewRow({ view, onLoad, onDelete }: {
   );
 }
 
+// ── CUSTOMIZE discovery tile ───────────────────────────────────────────────
+//
+// A persona now starts with five widgets instead of twenty-three
+// (lib/persona.ts). The rest are not gone — they are one CUSTOMIZE
+// session away — but CUSTOMIZE is a header button nothing on the
+// dashboard mentions, and a tester reported he never found it.
+//
+// This tile is the honest counterpart to shipping five: the last cell
+// in the starting grid says how many more there are and takes the user
+// into customize mode when clicked. It teaches the concept by using
+// it, and it does not come back once the user has been there, because
+// after that it would be telling them something they know.
+//
+// The count is computed, never written down. "22 more widgets" over a
+// grid with 18 available would be exactly the fabricated figure this
+// project has spent weeks removing.
+
+const CUSTOMIZE_DISCOVERED_KEY = "nr-customize-discovered";
+
+function CustomizeDiscoveryTile({ remaining, onEnter, fullWidth }: {
+  remaining: number;
+  onEnter: () => void;
+  fullWidth?: boolean;
+}) {
+  const [dismissed, setDismissed] = useState(
+    () => localStorage.getItem(CUSTOMIZE_DISCOVERED_KEY) === "1"
+  );
+  if (dismissed || remaining <= 0) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        try { localStorage.setItem(CUSTOMIZE_DISCOVERED_KEY, "1"); } catch { /* private mode */ }
+        setDismissed(true);
+        onEnter();
+      }}
+      style={{
+        gridColumn: fullWidth ? "1 / -1" : undefined,
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 6,
+        background: "transparent",
+        border: "1px dashed var(--ft-border2)",
+        color: "var(--ft-text)",
+        padding: "18px 16px",
+        cursor: "pointer",
+        textAlign: "left",
+        minHeight: 88,
+        justifyContent: "center",
+      }}
+    >
+      <MonoLabel as="span" size={9} color="var(--ft-accent)" letterSpacing="0.14em">
+        + {remaining} MORE {remaining === 1 ? "WIDGET" : "WIDGETS"}
+      </MonoLabel>
+      <Text as="span" size={12} color="var(--ft-dim)">
+        Press CUSTOMIZE to add them, rearrange this page, or take anything off it.
+      </Text>
+    </button>
+  );
+}
+
 // ── Dashboard page ─────────────────────────────────────────────────────────────
 
 const PERSONA_DASHBOARD_LABEL: Record<string, string> = {
@@ -3092,6 +3155,11 @@ export default function Dashboard() {
                     <ViewModeWidget id={id} onExpand={() => setExpandedWidgetId(id)} />
                   </div>
                 ))}
+                <CustomizeDiscoveryTile
+                  remaining={disabledIds.length}
+                  onEnter={handleCustomizeToggle}
+                  fullWidth
+                />
               </div>
               <AiInsightsStrip />
             </>
@@ -3128,6 +3196,12 @@ export default function Dashboard() {
                       ))}
                     </SortableContext>
                   </VStack>
+                </div>
+                <div style={{ marginTop: 16 }}>
+                  <CustomizeDiscoveryTile
+                    remaining={disabledIds.length}
+                    onEnter={handleCustomizeToggle}
+                  />
                 </div>
                 <DragOverlay dropAnimation={{ duration: 150, easing: "ease" }}>
                   {activeId ? (

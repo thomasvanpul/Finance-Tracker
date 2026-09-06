@@ -89,6 +89,9 @@ export const LOCAL_CACHE_KEYS: readonly string[] = [
 export const ONBOARDING_KEYS: readonly string[] = [
   "nr-onboarding-complete", "ft-onboarding-complete", "ft-onboarding-dismissed",
   "ft-acct-onboarding-dismissed", "nr-onboarding-followup",
+  // whether the user has been shown the CUSTOMIZE discovery tile on
+  // the dashboard and taken it up. One-way, per device.
+  "nr-customize-discovered",
 ];
 
 // Keys built at runtime from a prefix. Classified by prefix.

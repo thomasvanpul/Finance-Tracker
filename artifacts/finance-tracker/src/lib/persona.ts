@@ -20,9 +20,28 @@ interface WidgetConfig {
   spans: Partial<Record<WidgetId, WidgetSpan>>;
 }
 
+// The four widgets every persona starts with, plus one signature
+// widget per persona below. Five, not twenty-three.
+//
+// Chosen for legibility-when-empty rather than for feature ranking:
+// a new account lands on this dashboard with no data, and each of
+// these four says something true in that state — accounts-summary is
+// the "add your first account" surface, net-worth is one honest zero,
+// recent-transactions is the second action and the shape of the app,
+// spending-breakdown is why most people opened a finance app at all.
+//
+// `order` below is deliberately left at its full length. Nothing is
+// removed from the persona, only from what it turns on; every other
+// widget is one CUSTOMIZE session away, in the order the persona
+// already ranks it. `CustomizeDiscoveryTile` on the dashboard is what
+// tells the user that.
+const FIRST_RUN_CORE_WIDGETS: WidgetId[] = [
+  "accounts-summary", "net-worth", "recent-transactions", "spending-breakdown",
+];
+
 const PERSONA_WIDGETS: Record<PersonaId, WidgetConfig> = {
   market: {
-    enabled: ["market-snapshot", "net-worth", "decision-engine", "financial-health", "accounts-summary"],
+    enabled: FIRST_RUN_CORE_WIDGETS.concat(["market-snapshot"]),
     order: ["market-snapshot", "net-worth", "decision-engine", "financial-health", "accounts-summary",
       "recent-transactions", "spending-breakdown", "cash-flow", "budget-tracker", "savings-goals",
       "subscription-tracker", "recurring-detector", "transaction-calendar", "cash-flow-sankey",
@@ -31,9 +50,7 @@ const PERSONA_WIDGETS: Record<PersonaId, WidgetConfig> = {
     spans: { "market-snapshot": "full" },
   },
   budget: {
-    enabled: ["spending-breakdown", "budget-tracker", "recent-transactions", "cash-flow",
-      "accounts-summary", "cash-flow-preview", "spending-velocity", "savings-rate",
-      "emergency-fund", "daily-spend", "savings-goals", "decision-engine"],
+    enabled: FIRST_RUN_CORE_WIDGETS.concat(["budget-tracker"]),
     order: ["spending-breakdown", "budget-tracker", "recent-transactions", "cash-flow",
       "accounts-summary", "cash-flow-preview", "savings-rate", "daily-spend",
       "spending-velocity", "emergency-fund", "savings-goals", "decision-engine",
@@ -43,8 +60,7 @@ const PERSONA_WIDGETS: Record<PersonaId, WidgetConfig> = {
     spans: { "budget-tracker": "full" },
   },
   wealth: {
-    enabled: ["net-worth", "nw-milestones", "savings-goals", "savings-rate", "emergency-fund",
-      "financial-health", "market-snapshot", "cash-flow", "accounts-summary", "decision-engine"],
+    enabled: FIRST_RUN_CORE_WIDGETS.concat(["nw-milestones"]),
     order: ["net-worth", "nw-milestones", "savings-rate", "emergency-fund", "financial-health",
       "savings-goals", "market-snapshot", "cash-flow", "accounts-summary", "decision-engine",
       "recent-transactions", "spending-breakdown", "budget-tracker", "subscription-tracker",
@@ -54,7 +70,7 @@ const PERSONA_WIDGETS: Record<PersonaId, WidgetConfig> = {
     spans: { "net-worth": "full", "nw-milestones": "full" },
   },
   social: {
-    enabled: ["accounts-summary", "recent-transactions", "spending-breakdown", "cash-flow-preview", "decision-engine"],
+    enabled: FIRST_RUN_CORE_WIDGETS.concat(["cash-flow-preview"]),
     order: ["accounts-summary", "recent-transactions", "spending-breakdown", "cash-flow-preview",
       "decision-engine", "cash-flow", "budget-tracker", "savings-goals", "subscription-tracker",
       "market-snapshot", "net-worth", "recurring-detector", "financial-health",
@@ -64,7 +80,7 @@ const PERSONA_WIDGETS: Record<PersonaId, WidgetConfig> = {
     spans: {},
   },
   full: {
-    enabled: [...ALL_WIDGET_IDS],
+    enabled: FIRST_RUN_CORE_WIDGETS.concat(["financial-health"]),
     order: [...ALL_WIDGET_IDS],
     spans: { "net-worth": "full", "market-snapshot": "full", "budget-tracker": "full" },
   },
