@@ -198,7 +198,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
                   borderRadius: 2,
                   color: "var(--ft-text)",
                   fontSize: 12,
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   padding: "5px 8px",
                   outline: "none",
                   width: "100%",
@@ -237,7 +237,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
                   borderRadius: 2,
                   color: "var(--ft-text)",
                   fontSize: 12,
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   padding: "5px 8px",
                   outline: "none",
                   width: "100%",
@@ -277,7 +277,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
               borderRadius: 2,
               color: "var(--ft-muted)",
               fontSize: 11,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               cursor: "pointer",
               padding: "5px 0",
               width: "100%",
@@ -301,20 +301,20 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
             border: `1px solid ${Math.abs(remaining) <= 0.005 ? "var(--ft-green)" : remaining < 0 ? "var(--ft-red)" : "var(--ft-border)"}`,
             borderRadius: 2,
             marginBottom: 12,
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
           }}>
             <span style={{ color: "var(--ft-muted)" }}>
-              Allocated: <span style={{ color: "var(--ft-text)", fontWeight: 700 }}>£{allocatedSum.toFixed(2)}</span>
+              Allocated: <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>£{allocatedSum.toFixed(2)}</span>
               {" "}of{" "}
-              <Text as="span" color="var(--ft-text)">£{total.toFixed(2)}</Text>
+              <Text as="span" color="var(--ft-text)" numeric>£{total.toFixed(2)}</Text>
             </span>
             <Text as="span" weight={700} color={Math.abs(remaining) <= 0.005 ? "var(--ft-green)" : remaining < 0 ? "var(--ft-red)" : "var(--ft-amber)"}>
               {Math.abs(remaining) <= 0.005
                 ? "✓ Balanced"
                 : remaining > 0
-                ? `Remaining: £${remaining.toFixed(2)}`
-                : `Over by: £${Math.abs(remaining).toFixed(2)}`}
+                ? <>Remaining: <span className="pnum">£{remaining.toFixed(2)}</span></>
+                : <>Over by: <span className="pnum">£{Math.abs(remaining).toFixed(2)}</span></>}
             </Text>
           </div>
 
@@ -330,7 +330,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
                 borderRadius: 2,
                 color: "var(--ft-muted)",
                 cursor: "pointer",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
               }}
             >
               Clear Split
@@ -347,7 +347,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
                   borderRadius: 2,
                   color: "var(--ft-dim)",
                   cursor: "pointer",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                 }}
               >
                 Cancel
@@ -365,7 +365,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
                   borderRadius: 2,
                   color: Math.abs(remaining) <= 0.005 ? "#000" : "var(--ft-dim)",
                   cursor: Math.abs(remaining) > 0.005 ? "not-allowed" : "pointer",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontWeight: 700,
                   letterSpacing: "0.04em",
                 }}
@@ -1362,8 +1362,8 @@ export default function Transactions() {
   };
 
   const ERR_STYLE: React.CSSProperties = {
-    fontFamily: "var(--font-mono)",
-    fontSize: 9,
+    fontFamily: "var(--font-sans)",
+    fontSize: 10,
     color: "var(--ft-red)",
     marginTop: 2,
   };
@@ -1392,7 +1392,7 @@ export default function Transactions() {
                     borderRadius: "2px 0 0 2px",
                     color: "var(--ft-muted)",
                     cursor: "pointer",
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                   }}
                 >
                   {t.name}
@@ -1590,8 +1590,8 @@ export default function Transactions() {
     border: "1px solid color-mix(in srgb, var(--ft-amber) 30%, transparent)",
     borderRadius: 2,
     padding: "0 4px",
-    fontSize: 9,
-    fontFamily: "var(--font-mono)",
+    fontSize: 10,
+    fontFamily: "var(--font-sans)",
     whiteSpace: "nowrap" as const,
     lineHeight: "16px",
     display: "inline-flex",
@@ -1664,9 +1664,9 @@ export default function Transactions() {
                 <PrivDesc>{tx.description}</PrivDesc>
               </div>
               <div style={{ display: "flex", gap: 5, alignItems: "center", overflow: "hidden" }}>
-                {tx.category && <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>{tx.category}</span>}
+                {tx.category && <span style={{ fontSize: 11, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>{tx.category}</span>}
                 {tx.category && tx.accountName && <span style={{ fontSize: 11, color: "var(--ft-border2)", flexShrink: 0 }}>·</span>}
-                {tx.accountName && <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{tx.accountName}</span>}
+                {tx.accountName && <span style={{ fontSize: 11, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{tx.accountName}</span>}
                 {hasNote && <span title="Has note" style={{ fontSize: 10, color: "var(--ft-amber)", flexShrink: 0 }}>✎</span>}
                 {hasTags && <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-amber)", flexShrink: 0 }}>+{txTags.length}</span>}
               </div>
@@ -1709,13 +1709,13 @@ export default function Transactions() {
                 <span key={t} style={TAG_CHIP_STYLE}>{t}</span>
               ))}
               {hiddenTagCount > 0 && (
-                <span style={{ ...TAG_CHIP_STYLE, background: "color-mix(in srgb, var(--ft-amber) 8%, transparent)" }}>+{hiddenTagCount}</span>
+                <span style={{ ...TAG_CHIP_STYLE, fontFamily: "var(--font-mono)", background: "color-mix(in srgb, var(--ft-amber) 8%, transparent)" }}>+{hiddenTagCount}</span>
               )}
             </HStack>
           )}
         </div>
         <div style={{ width: 120, minWidth: 120, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
-          <span style={{ fontSize: 9, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", letterSpacing: "0.05em", fontWeight: 700, whiteSpace: "nowrap" as const, lineHeight: "14px", flexShrink: 0, maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", letterSpacing: "0.02em", fontWeight: 600, whiteSpace: "nowrap" as const, lineHeight: "14px", flexShrink: 0, maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }}>
             {tx.category}
           </span>
           {splits[String(tx.id)] && (
@@ -1735,7 +1735,7 @@ export default function Transactions() {
             </span>
           )}
         </div>
-        <div className="ft-hide-mobile" style={{ width: 150, minWidth: 150, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontSize: 10, fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div className="ft-hide-mobile" style={{ width: 150, minWidth: 150, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontSize: 10, fontFamily: "var(--font-sans)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {tx.accountName}
         </div>
         <div className="ft-hide-mobile" style={{ width: 90, minWidth: 90, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center" }}>
@@ -1832,8 +1832,8 @@ export default function Transactions() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
-              NOTE — <Text as="span" color="var(--ft-muted)">{tx.description}</Text>
+            <div style={{ fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", fontFamily: "var(--font-sans)" }}>
+              <Text as="span" mono size={9} upper letterSpacing="0.06em">NOTE</Text> — <Text as="span" color="var(--ft-muted)" truncate>{tx.description}</Text>
             </div>
             <span style={{ fontSize: 8, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.04em", background: "var(--ft-raised)" }} title="Notes are saved locally on this device only and will not sync across browsers or devices">
               device-local
@@ -1852,7 +1852,7 @@ export default function Transactions() {
               borderRadius: 2,
               color: "var(--ft-text)",
               fontSize: 12,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               padding: "6px 8px",
               resize: "vertical",
               outline: "none",
@@ -1893,8 +1893,8 @@ export default function Transactions() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
-              TAGS — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
+            <div style={{ fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", fontFamily: "var(--font-sans)" }}>
+              <Text as="span" mono size={9} upper letterSpacing="0.06em">TAGS</Text> — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
             </div>
             <span style={{ fontSize: 8, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.04em", background: "var(--ft-raised)" }} title="Tags are saved locally on this device only and will not sync across browsers or devices">
               device-local
@@ -1936,7 +1936,7 @@ export default function Transactions() {
                 borderRadius: 2,
                 color: "var(--ft-text)",
                 fontSize: 12,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 padding: "5px 8px",
                 outline: "none",
                 boxSizing: "border-box",
@@ -1974,7 +1974,7 @@ export default function Transactions() {
           {/* Existing tag suggestions (not typing) */}
           {!tagInput && tagSuggestionsFiltered.length > 0 && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", marginBottom: 4, letterSpacing: "0.06em", textTransform: "uppercase" }}>Suggestions</div>
+              <div style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-sans)", marginBottom: 4, letterSpacing: "0.04em", textTransform: "uppercase" }}>Suggestions</div>
               <HStack gap={4} wrap>
                 {tagSuggestionsFiltered.slice(0, 10).map((s) => (
                   <span
@@ -2179,7 +2179,7 @@ export default function Transactions() {
                 Use AI to suggest categories for all of them?
               </p>
             )}
-            <div style={{ marginTop: 12, fontSize: 11, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+            <div style={{ marginTop: 12, fontSize: 11, color: "var(--ft-dim)", fontFamily: "var(--font-sans)" }}>
               Categories: Food & Drink, Transport, Shopping, Entertainment, Bills & Utilities, Health, Travel, Income, Savings, Other
             </div>
           </div>
@@ -2222,7 +2222,7 @@ export default function Transactions() {
               {formatBaseMoney(kpiIncome)}
             </div>
             {kpiUnconvertible > 0
-              ? <Text as="div" mono size={9} color="var(--ft-amber)" letterSpacing="0.04em">income · {kpiUnconvertible} tx no FX</Text>
+              ? <Text as="div" size={10} color="var(--ft-amber)" letterSpacing="0.04em">income · <span className="pnum">{kpiUnconvertible}</span> tx no FX</Text>
               : <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">income</Text>}
           </div>
           {/* TOTAL OUT */}
@@ -2231,7 +2231,7 @@ export default function Transactions() {
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", lineHeight: 1 }}>
               {formatBaseMoney(kpiExpenses)}
             </div>
-            <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">expenses</Text>
+            <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.04em">expenses</Text>
           </div>
           {/* NET */}
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
@@ -2239,7 +2239,7 @@ export default function Transactions() {
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", lineHeight: 1 }}>
               {kpiNet >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(kpiNet))}
             </div>
-            <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", letterSpacing: "0.04em" }}>
+            <div style={{ fontSize: 10, fontFamily: "var(--font-sans)", color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", letterSpacing: "0.04em" }}>
               {kpiNet > 0 ? "▲ surplus" : kpiNet < 0 ? "▼ deficit" : "net"}
             </div>
           </div>
@@ -2249,7 +2249,7 @@ export default function Transactions() {
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--ft-text)", lineHeight: 1 }}>
               {kpiAvg == null ? "—" : formatBaseMoney(kpiAvg)}
             </div>
-            <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">per transaction</Text>
+            <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.04em">per transaction</Text>
           </div>
           {/* DATE RANGE + ACTIONS */}
           <VStack gap={3} padding="10px 14px">
@@ -2312,7 +2312,7 @@ export default function Transactions() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -2370,7 +2370,7 @@ export default function Transactions() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="ft-filter-input"
-                style={{ flex: 1, background: "none", border: "none", outline: "none", color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 13 }}
+                style={{ flex: 1, background: "none", border: "none", outline: "none", color: "var(--ft-text)", fontFamily: "var(--font-sans)", fontSize: 13 }}
               />
               {search && (
                 <button type="button" onClick={() => setSearch("")} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
@@ -2387,11 +2387,11 @@ export default function Transactions() {
                 border: `1px solid ${activeFilterCount > 0 ? "var(--ft-accent)" : "var(--ft-border2)"}`,
                 borderRadius: 2, cursor: "pointer", flexShrink: 0,
                 color: activeFilterCount > 0 ? "var(--ft-accent)" : "var(--ft-muted)",
-                fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.04em", fontWeight: 600,
+                fontFamily: "var(--font-sans)", fontSize: 11, letterSpacing: "0.04em", fontWeight: 600,
               }}
             >
               <SlidersHorizontal style={{ width: 11, height: 11 }} />
-              {activeFilterCount > 0 ? `·${activeFilterCount}` : "FILTER"}
+              {activeFilterCount > 0 ? <>·<span className="pnum">{activeFilterCount}</span></> : "FILTER"}
             </button>
             <select
               value={sortBy}
@@ -2408,8 +2408,8 @@ export default function Transactions() {
           {activeFilterCount > 0 && (
             <div style={{ display: "flex", gap: 6, padding: "5px 10px", flexWrap: "wrap" as const, border: "1px solid var(--ft-border)", background: "var(--ft-surface)", alignItems: "center" }}>
               {filterType !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-blue) 15%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-blue) 40%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-blue)" }}>{filterType}</span>}
-              {filterCategory !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-accent) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-accent)" }}>{filterCategory}</span>}
-              {filterAccount !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-green) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-green) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>{filterAccount}</span>}
+              {filterCategory !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-accent) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-accent)" }}>{filterCategory}</span>}
+              {filterAccount !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-green) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-green) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-green)" }}>{filterAccount}</span>}
               {(filterDateFrom || filterDateTo) && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-amber) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-amber)" }}>{filterDateFrom || "…"} → {filterDateTo || "…"}</span>}
               <button type="button" onClick={() => { setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setFilterTag(""); }} style={{ marginLeft: "auto", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear</button>
             </div>
@@ -2429,7 +2429,7 @@ export default function Transactions() {
           >
             <VStack gap={22}>
               <div>
-                <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Type</div>
+                <div style={{ fontSize: 10, fontFamily: "var(--font-sans)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Type</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
                   {(["all", "income", "expense", "transfer"] as const).map(t => (
                     <button key={t} type="button" onClick={() => setFilterType(t)} style={{ padding: "9px 4px", fontSize: 11, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", borderRadius: 3, cursor: "pointer", background: filterType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${filterType === t ? "var(--ft-accent)" : "var(--ft-border2)"}`, color: filterType === t ? "var(--ft-base)" : "var(--ft-muted)", fontWeight: filterType === t ? 700 : 400, textTransform: "capitalize" as const }}>
@@ -2467,11 +2467,11 @@ export default function Transactions() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 4 }}>FROM</div>
+                    <div style={{ fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", marginBottom: 4 }}>FROM</div>
                     <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
                   </div>
                   <div>
-                    <Text as="div" mono size={10} color="var(--ft-dim)" mb={4}>TO</Text>
+                    <Text as="div" size={10} color="var(--ft-dim)" mb={4}>TO</Text>
                     <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
                   </div>
                 </div>
@@ -2480,18 +2480,18 @@ export default function Transactions() {
                 <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Amount Range</MonoLabel>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 4 }}>MIN</div>
+                    <div style={{ fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", marginBottom: 4 }}>MIN</div>
                     <input type="number" placeholder="0.00" value={amountMin} min="0" step="0.01" onChange={(e) => setAmountMin(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
                   </div>
                   <div>
-                    <Text as="div" mono size={10} color="var(--ft-dim)" mb={4}>MAX</Text>
+                    <Text as="div" size={10} color="var(--ft-dim)" mb={4}>MAX</Text>
                     <input type="number" placeholder="∞" value={amountMax} min="0" step="0.01" onChange={(e) => setAmountMax(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
                   </div>
                 </div>
               </div>
               <div>
-                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Tag</MonoLabel>
-                <input type="text" placeholder="Filter by tag…" value={filterTag} onChange={(e) => setFilterTag(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
+                <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.04em" mb={8}>Tag</Text>
+                <input type="text" placeholder="Filter by tag…" value={filterTag} onChange={(e) => setFilterTag(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-sans)", boxSizing: "border-box" as const }} />
               </div>
             </VStack>
           </MobileSheet>
@@ -2584,9 +2584,9 @@ export default function Transactions() {
             style={{
               height: 26,
               padding: "0 10px",
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.08em",
+              fontFamily: "var(--font-sans)",
+              fontSize: 10,
+              letterSpacing: "0.04em",
               cursor: "pointer",
               border: "1px solid",
               borderColor: filterPanelOpen ? "var(--ft-accent)" : "var(--ft-border2)",
@@ -2648,35 +2648,35 @@ export default function Transactions() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1.5fr 1fr", gap: 12, padding: "8px 0 10px", borderTop: "1px solid var(--ft-border2)" }}>
             {/* Category */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>CATEGORY</span>
-              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>CATEGORY</span>
+              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 10, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
                 <option value="all">all</option>
                 {(allCategories as string[]).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             {/* Account */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>ACCOUNT</span>
-              <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>ACCOUNT</span>
+              <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 10, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
                 <option value="all">all</option>
                 {(allAccounts as string[]).map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
             {/* Tag */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>TAG</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>TAG</span>
               <input
                 type="text"
                 value={filterTag}
                 onChange={(e) => setFilterTag(e.target.value)}
                 placeholder="#tag"
                 className="ft-filter-input"
-                style={{ height: 26, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 10, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }}
+                style={{ height: 26, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 10, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }}
               />
             </div>
             {/* Date range */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>DATE RANGE</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>DATE RANGE</span>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                 <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }} />
                 <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>–</span>
@@ -2689,7 +2689,7 @@ export default function Transactions() {
             </div>
             {/* Amount */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>AMOUNT</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>AMOUNT</span>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                 <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} placeholder="min" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
                 <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>–</span>
@@ -2717,13 +2717,13 @@ export default function Transactions() {
             flexWrap: "wrap",
             gap: 8,
             padding: "10px 14px",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             maxWidth: "calc(100vw - 32px)",
             overflowX: "auto",
           }}
         >
           <span style={{ fontSize: 12, color: "var(--ft-blue)", fontWeight: 700, minWidth: 70 }}>
-            {selectedIds.size} selected
+            <span className="pnum">{selectedIds.size}</span> selected
           </span>
           <div style={{ width: 1, height: 18, background: "var(--ft-border2)" }} />
           {/* Category dropdown */}
@@ -2740,7 +2740,7 @@ export default function Transactions() {
                 borderRadius: 2,
                 color: bulkFormCat ? "var(--ft-text)" : "var(--ft-dim)",
                 cursor: "pointer",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 minWidth: 130,
               }}
             >
@@ -2766,7 +2766,7 @@ export default function Transactions() {
               borderRadius: 2,
               color: bulkFormType ? "var(--ft-text)" : "var(--ft-dim)",
               cursor: "pointer",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               minWidth: 110,
             }}
           >
@@ -2788,7 +2788,7 @@ export default function Transactions() {
               borderRadius: 2,
               color: bulkSubmitting || (!bulkFormCat && !bulkFormType) ? "var(--ft-dim)" : "#000",
               cursor: bulkSubmitting || (!bulkFormCat && !bulkFormType) ? "not-allowed" : "pointer",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontWeight: 700,
             }}
           >
@@ -2825,9 +2825,9 @@ export default function Transactions() {
               style={{
                 height: 22,
                 padding: "0 8px",
-                fontSize: 9,
-                fontFamily: "var(--font-mono)",
-                letterSpacing: "0.06em",
+                fontSize: 10,
+                fontFamily: "var(--font-sans)",
+                letterSpacing: "0.04em",
                 background: groupByDay ? "color-mix(in srgb, var(--ft-blue) 10%, transparent)" : "transparent",
                 border: `1px solid ${groupByDay ? "var(--ft-blue)" : "var(--ft-border2)"}`,
                 borderRadius: 2,
@@ -2844,9 +2844,9 @@ export default function Transactions() {
               style={{
                 height: 22,
                 padding: "0 8px",
-                fontSize: 9,
-                fontFamily: "var(--font-mono)",
-                letterSpacing: "0.06em",
+                fontSize: 10,
+                fontFamily: "var(--font-sans)",
+                letterSpacing: "0.04em",
                 background: groupByMerchant ? "color-mix(in srgb, var(--ft-blue) 10%, transparent)" : "transparent",
                 border: `1px solid ${groupByMerchant ? "var(--ft-blue)" : "var(--ft-border2)"}`,
                 borderRadius: 2,
@@ -2977,7 +2977,7 @@ export default function Transactions() {
                           <Text as="span" mono size={isMobile ? 12 : 9} weight={700} color={isMobile && (isToday || isYesterday) ? "var(--ft-accent)" : "var(--ft-dim)"} letterSpacing={isMobile ? "0.02em" : "0.1em"}>
                             {isMobile ? mobileLabel : desktopLabel}
                           </Text>
-                          <Text as="span" mono size={isMobile ? 11 : 9} color="var(--ft-dim)" letterSpacing="0.06em">{group.txs.length} tx</Text>
+                          <Text as="span" size={isMobile ? 12 : 10} color="var(--ft-dim)" letterSpacing="0.04em"><span className="pnum">{group.txs.length}</span> tx</Text>
                           <span className="pnum" style={{ fontSize: isMobile ? 12 : 9, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: group.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto", letterSpacing: "0.04em" }}>
                             {group.net >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(group.net))}
                           </span>
@@ -3033,12 +3033,12 @@ export default function Transactions() {
                         {group.expanded ? "▼" : "▶"}
                       </div>
                       <div style={{ width: 90, minWidth: 90, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)" }} />
-                      <div style={{ flex: 1, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 11, fontWeight: 600, fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ flex: 1, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 11, fontWeight: 600, fontFamily: "var(--font-sans)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         <PrivDesc>{group.description}</PrivDesc>
                       </div>
                       <div style={{ width: 120, minWidth: 120, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }}>
-                        <span style={{ fontSize: 9, padding: "0 5px", borderRadius: 2, border: "1px solid var(--ft-border2)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", lineHeight: "16px" }}>
-                          {group.count} tx
+                        <span style={{ fontSize: 10, padding: "0 5px", borderRadius: 2, border: "1px solid var(--ft-border2)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", lineHeight: "16px" }}>
+                          <span className="pnum">{group.count}</span> tx
                         </span>
                       </div>
                       <div className="ft-hide-mobile" style={{ width: 150, minWidth: 150, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
