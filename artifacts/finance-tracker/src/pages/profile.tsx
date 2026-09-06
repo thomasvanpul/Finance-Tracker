@@ -58,6 +58,18 @@ const MONO_VAL: React.CSSProperties = {
   marginTop: 2,
 };
 
+// MONO_LABEL is a legend: it sits above a figure. A label that sits above a
+// control or a sentence is language, so it takes the sans family (DESIGN.md
+// §10). Sans at 9px with mono's tracking reads smaller than the mono it
+// replaces, hence 10px/0.04em.
+const SANS_LABEL: React.CSSProperties = {
+  fontFamily: "var(--font-sans)",
+  fontSize: 10,
+  color: "var(--ft-dim)",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+};
+
 // ── KPI Cell ──────────────────────────────────────────────────────────────────
 
 // KPI grid cell with hover state
@@ -156,10 +168,10 @@ function TabButton({
     <button
       onClick={onClick}
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         fontWeight: 700,
-        letterSpacing: "0.1em",
+        letterSpacing: "0.06em",
         padding: "8px 16px",
         background: isActive ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))" : "transparent",
         border: "none",
@@ -202,7 +214,7 @@ function UsageStorageRow({
         borderBottom: isLast ? undefined : "1px solid var(--ft-border)",
       }}
     >
-      <Text as="span" mono size={10} color="var(--ft-muted)">{label}</Text>
+      <Text as="span" size={10} color="var(--ft-muted)">{label}</Text>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: note ? "var(--ft-dim)" : "var(--ft-text)", fontWeight: 700 }}>
         {note ?? value}
       </span>
@@ -240,7 +252,7 @@ function AuthProviderRow({
             ...(provider.active ? { animation: "ft-pulse 2s ease-in-out infinite" } : {}),
           }}
         />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)" }}>
           {provider.label}
         </span>
       </HStack>
@@ -291,7 +303,7 @@ function LoginHistoryRow({
           ...(isCurrent ? { animation: "ft-pulse 2s ease-in-out infinite" } : {}),
         }} />
         <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: isCurrent ? 600 : 400 }}>{entry.device}</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: isCurrent ? 600 : 400 }}>{entry.device}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>
             {new Date(entry.ts).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
           </div>
@@ -332,9 +344,9 @@ function PersonaRow({
       <div style={{ flex: 1, minWidth: 0 }}>
         <HStack gap={6} align="center" marginBottom={1}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color, letterSpacing: "0.1em", border: `1px solid ${color}55`, padding: "1px 4px" }}>{persona.code}</span>
-          <Text as="span" mono size={10} weight={700} color="var(--ft-text)">{persona.label}</Text>
+          <Text as="span" size={10} weight={700} color="var(--ft-text)">{persona.label}</Text>
         </HStack>
-        <Text as="div" mono size={9} color="var(--ft-dim)">{persona.tagline}</Text>
+        <Text as="div" size={10} color="var(--ft-dim)">{persona.tagline}</Text>
       </div>
     </HoverRow>
   );
@@ -967,7 +979,7 @@ export default function Profile() {
                 onChange={e => { setNameInput(e.target.value); setNameError(""); }}
                 onKeyDown={e => { if (e.key === "Enter") handleSaveName(); if (e.key === "Escape") setEditingName(false); }}
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 13,
                   fontWeight: 700,
                   background: "var(--ft-raised)",
@@ -984,8 +996,8 @@ export default function Profile() {
                 onClick={handleSaveName}
                 disabled={nameSaving}
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 10,
                   background: "var(--ft-accent)",
                   color: "var(--ft-base)",
                   border: "none",
@@ -999,8 +1011,8 @@ export default function Profile() {
               <button
                 onClick={() => setEditingName(false)}
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 10,
                   background: "transparent",
                   color: "var(--ft-muted)",
                   border: "1px solid var(--ft-border)",
@@ -1015,7 +1027,7 @@ export default function Profile() {
             </HStack>
           ) : (
             <HStack gap={7} align="center" marginBottom={2}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.02em" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.02em" }}>
                 {user?.name ?? "—"}
               </div>
               <button
@@ -1038,7 +1050,7 @@ export default function Profile() {
             </HStack>
           )}
           {nameError && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", marginBottom: 4 }}>{nameError}</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-red)", marginBottom: 4 }}>{nameError}</div>
           )}
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 2 }}>
             {user?.email ?? "—"}
@@ -1053,7 +1065,7 @@ export default function Profile() {
       {editingImage && (
         <div style={{ margin: "0 14px 14px", padding: "12px 14px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
           <HStack align="center" justify="between" marginBottom={10}>
-            <div style={MONO_LABEL}>Profile Photo</div>
+            <div style={SANS_LABEL}>Profile Photo</div>
             <button
               onClick={() => { setEditingImage(false); setImageUploadError(""); }}
               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", display: "flex", alignItems: "center" }}
@@ -1094,16 +1106,16 @@ export default function Profile() {
                 <Pencil size={14} color="var(--ft-dim)" />
               </div>
             )}
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
               Click or drag &amp; drop · max 5 MB
             </span>
           </div>
 
           {imageUploadError && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", marginBottom: 8 }}>{imageUploadError}</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-red)", marginBottom: 8 }}>{imageUploadError}</div>
           )}
 
-          <div style={{ ...MONO_LABEL, marginBottom: 5 }}>Or paste a URL</div>
+          <div style={{ ...SANS_LABEL, marginBottom: 5 }}>Or paste a URL</div>
           <HStack gap={6}>
             <input
               value={imageInput.startsWith("data:") ? "" : imageInput}
@@ -1125,8 +1137,8 @@ export default function Profile() {
               onClick={handleSaveImage}
               disabled={imageSaving}
               style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
+                fontFamily: "var(--font-sans)",
+                fontSize: 10,
                 background: "var(--ft-accent)",
                 color: "var(--ft-base)",
                 border: "none",
@@ -1138,7 +1150,7 @@ export default function Profile() {
               {imageSaving ? "…" : "SAVE"}
             </button>
           </HStack>
-          <div style={{ ...MONO_LABEL, marginTop: 5 }}>Leave URL blank to remove photo</div>
+          <div style={{ ...SANS_LABEL, marginTop: 5 }}>Leave URL blank to remove photo</div>
         </div>
       )}
 
@@ -1202,10 +1214,10 @@ export default function Profile() {
         {timelineItems.length === 0 ? (
           <VStack gap={8} align="center" padding="24px 16px">
             <Clock size={20} color="var(--ft-border2)" />
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center" }}>
               No activity recorded yet
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", opacity: 0.6, textAlign: "center" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", opacity: 0.6, textAlign: "center" }}>
               Events appear as you use the app
             </div>
           </VStack>
@@ -1245,7 +1257,7 @@ export default function Profile() {
                     zIndex: 1,
                   }} />
                   <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", flex: 1, minWidth: 0 }}>
                       {item.label}
                     </div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", flexShrink: 0 }}>
@@ -1253,7 +1265,7 @@ export default function Profile() {
                     </div>
                   </div>
                   {item.sub && (
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {item.sub}
                     </div>
                   )}
@@ -1271,10 +1283,10 @@ export default function Profile() {
       <PanelHeader>Session</PanelHeader>
       <div style={{ background: "var(--ft-surface)", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
-            Signed in as <Text as="span" color="var(--ft-text)">{user?.email ?? "—"}</Text>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)" }}>
+            Signed in as <Text as="span" mono color="var(--ft-text)">{user?.email ?? "—"}</Text>
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 2 }}>
             Sign out on this device only. Other sessions remain active.
           </div>
         </div>
@@ -1308,12 +1320,12 @@ export default function Profile() {
         <HoverRow style={{ padding: "9px 14px", borderBottom: "1px solid var(--ft-border)" }}>
           <HStack gap={8} align="center" justify="between">
             <div>
-              <div style={MONO_LABEL}>Base Currency</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>Managed in Settings → Currency</div>
+              <div style={SANS_LABEL}>Base Currency</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>Managed in Settings → Currency</div>
             </div>
             <a
               href="/settings"
-              style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", textDecoration: "none", border: "1px solid var(--ft-accent)", padding: "2px 8px", opacity: 0.8, flexShrink: 0, letterSpacing: "0.06em" }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-accent)", textDecoration: "none", border: "1px solid var(--ft-accent)", padding: "2px 8px", opacity: 0.8, flexShrink: 0, letterSpacing: "0.04em" }}
             >
               → Settings
             </a>
@@ -1322,14 +1334,14 @@ export default function Profile() {
 
         {/* Amount display */}
         <div style={{ padding: "9px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-          <div style={{ ...MONO_LABEL, marginBottom: 6 }}>Show Amounts As</div>
+          <div style={{ ...SANS_LABEL, marginBottom: 6 }}>Show Amounts As</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
             {(["GBP", "Native", "Both"] as const).map((opt, i, arr) => (
               <button
                 key={opt}
                 onClick={() => setAmountDisplay(opt)}
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 10,
                   color: amountDisplay === opt ? "var(--ft-accent)" : "var(--ft-muted)",
                   background: amountDisplay === opt ? "color-mix(in srgb, var(--ft-accent) 10%, var(--ft-surface))" : "var(--ft-surface)",
@@ -1349,7 +1361,7 @@ export default function Profile() {
 
         {/* Date format */}
         <div style={{ padding: "9px 14px" }}>
-          <div style={{ ...MONO_LABEL, marginBottom: 6 }}>Date Format</div>
+          <div style={{ ...SANS_LABEL, marginBottom: 6 }}>Date Format</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", border: "1px solid var(--ft-border)" }}>
             {(["DD/MM/YYYY", "MM/DD/YYYY"] as const).map((opt, i, arr) => (
               <button
@@ -1422,7 +1434,7 @@ export default function Profile() {
           ))}
           <a
             href="/settings?panel=terminal-profile"
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: primaryColor, letterSpacing: "0.06em", textDecoration: "none", padding: "6px 12px", display: "block", borderTop: "1px solid var(--ft-border)", opacity: 0.8 }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: primaryColor, letterSpacing: "0.04em", textDecoration: "none", padding: "6px 12px", display: "block", borderTop: "1px solid var(--ft-border)", opacity: 0.8 }}
             onMouseEnter={e => { e.currentTarget.style.opacity = "1"; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = "0.8"; }}
           >
@@ -1441,14 +1453,14 @@ export default function Profile() {
         <Text as="span" mono color="var(--ft-red)">■</Text> Danger Zone
       </PanelHeader>
       <div style={{ background: "color-mix(in srgb, var(--ft-red) 3%, var(--ft-surface))", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+        <p style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)" }}>
           Permanent and irreversible. Proceed with care.
         </p>
         {!confirmDelete ? (
           <button
             onClick={() => { setDeleteEmail(""); setConfirmDelete(true); }}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               color: "var(--ft-red)",
               background: "transparent",
@@ -1465,13 +1477,13 @@ export default function Profile() {
           </button>
         ) : (
           <VStack gap={10}>
-            <Text as="p" mono size={10} color="var(--ft-muted)" lineHeight={1.6}>
+            <Text as="p" size={10} color="var(--ft-muted)" lineHeight={1.6}>
               Everything you own is removed at once and cannot be recovered: accounts, transactions, upcoming items,
               debts, budgets, goals, investments, connections and their stored credentials, balance history, sessions on
               every device, passkeys and two-factor settings. Records other people keep about money shared with you stay
               in their accounts, with the link to you removed.
             </Text>
-            <Text as="p" mono size={10} color="var(--ft-muted)" lineHeight={1.6}>
+            <Text as="p" size={10} color="var(--ft-muted)" lineHeight={1.6}>
               {deleteProviders && deleteProviders.length > 0
                 ? `Your ${deleteProviders.join(", ")} credential${deleteProviders.length === 1 ? " is" : "s are"} destroyed here but not revoked at the provider. Revoke ${deleteProviders.length === 1 ? "it" : "them"} in the provider's own settings.`
                 : "A provider token you pasted in (Wise, Alpaca, Kraken) or a Google or GitHub sign-in grant is destroyed here but not revoked at the provider."}
@@ -1479,7 +1491,7 @@ export default function Profile() {
             <button
               type="button"
               onClick={handleExportBackupBeforeDelete}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-border)", padding: "5px 14px", cursor: "pointer", alignSelf: "flex-start" }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-border)", padding: "5px 14px", cursor: "pointer", alignSelf: "flex-start" }}
             >
               Download a backup first
             </button>
@@ -1497,7 +1509,7 @@ export default function Profile() {
               <button
                 onClick={() => setConfirmDelete(false)}
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 10,
                   color: "var(--ft-muted)",
                   background: "transparent",
@@ -1513,7 +1525,7 @@ export default function Profile() {
                 onClick={handleDeleteAccount}
                 disabled={!deleteEmailMatches || deleteAccount.isPending}
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 10,
                   color: "var(--ft-base)",
                   background: "var(--ft-red)",
@@ -1562,7 +1574,7 @@ export default function Profile() {
           <button
             type="submit"
             disabled={pwdSubmitting}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "7px 18px", cursor: pwdSubmitting ? "not-allowed" : "pointer", opacity: pwdSubmitting ? 0.5 : 1, alignSelf: "flex-start" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "7px 18px", cursor: pwdSubmitting ? "not-allowed" : "pointer", opacity: pwdSubmitting ? 0.5 : 1, alignSelf: "flex-start" }}
           >
             {pwdSubmitting ? "Changing…" : "> Change Password"}
           </button>
@@ -1581,21 +1593,21 @@ export default function Profile() {
         <div style={{ padding: "14px 16px", background: "var(--ft-surface)" }}>
           {!twoFaEnabled && twoFaStep === "idle" && (
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 12 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 12 }}>
                 Adds a second layer of security. You'll need an authenticator app (Google Authenticator, Authy, etc.) after enabling.
               </div>
-              <button onClick={() => setTwoFaStep("password")} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "6px 16px", cursor: "pointer" }}>
+              <button onClick={() => setTwoFaStep("password")} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "6px 16px", cursor: "pointer" }}>
                 &gt; Enable 2FA
               </button>
             </div>
           )}
           {!twoFaEnabled && twoFaStep === "password" && (
             <VStack gap={10}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>Confirm your password to begin setup:</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)" }}>Confirm your password to begin setup:</div>
               <Input type="password" placeholder="Current password" value={twoFaPassword} onChange={e => setTwoFaPassword(e.target.value)} />
               <HStack gap={8}>
-                <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); }} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
-                <button onClick={handle2FaEnable} disabled={twoFaLoading || !twoFaPassword} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "6px 14px", cursor: twoFaLoading || !twoFaPassword ? "not-allowed" : "pointer", opacity: twoFaLoading || !twoFaPassword ? 0.5 : 1 }}>
+                <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); }} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
+                <button onClick={handle2FaEnable} disabled={twoFaLoading || !twoFaPassword} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "6px 14px", cursor: twoFaLoading || !twoFaPassword ? "not-allowed" : "pointer", opacity: twoFaLoading || !twoFaPassword ? 0.5 : 1 }}>
                   {twoFaLoading ? "…" : "&gt; Continue"}
                 </button>
               </HStack>
@@ -1603,7 +1615,7 @@ export default function Profile() {
           )}
           {!twoFaEnabled && twoFaStep === "qr" && (
             <VStack gap={12}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)" }}>
                 Open your authenticator app and add a new account manually using the key below, or paste the full URI:
               </div>
               {twoFaKey && (
@@ -1618,7 +1630,7 @@ export default function Profile() {
                   </button>
                 </div>
               )}
-              <Text as="div" mono size={10} color="var(--ft-dim)">Then enter the 6-digit code from your app to verify:</Text>
+              <Text as="div" size={10} color="var(--ft-dim)">Then enter the 6-digit code from your app to verify:</Text>
               <Input
                 placeholder="000000"
                 maxLength={6}
@@ -1627,8 +1639,8 @@ export default function Profile() {
                 style={{ fontFamily: "var(--font-mono)", fontSize: 16, letterSpacing: "0.3em", textAlign: "center", maxWidth: 160 }}
               />
               <HStack gap={8}>
-                <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); setTwoFaUri(""); setTwoFaCode(""); }} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
-                <button onClick={handle2FaVerify} disabled={twoFaLoading || twoFaCode.length < 6} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "6px 14px", cursor: twoFaLoading || twoFaCode.length < 6 ? "not-allowed" : "pointer", opacity: twoFaLoading || twoFaCode.length < 6 ? 0.5 : 1 }}>
+                <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); setTwoFaUri(""); setTwoFaCode(""); }} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
+                <button onClick={handle2FaVerify} disabled={twoFaLoading || twoFaCode.length < 6} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "6px 14px", cursor: twoFaLoading || twoFaCode.length < 6 ? "not-allowed" : "pointer", opacity: twoFaLoading || twoFaCode.length < 6 ? 0.5 : 1 }}>
                   {twoFaLoading ? "Verifying…" : "&gt; Verify &amp; Activate"}
                 </button>
               </HStack>
@@ -1636,19 +1648,19 @@ export default function Profile() {
           )}
           {twoFaEnabled && twoFaStep === "idle" && (
             <HStack gap={10} align="center" justify="between" wrap>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>Your account is protected with TOTP two-factor authentication.</div>
-              <button onClick={() => setTwoFaStep("verify-disable")} style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "6px 14px", cursor: "pointer" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)" }}>Your account is protected with TOTP two-factor authentication.</div>
+              <button onClick={() => setTwoFaStep("verify-disable")} style={{ flexShrink: 0, fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "6px 14px", cursor: "pointer" }}>
                 Disable
               </button>
             </HStack>
           )}
           {twoFaEnabled && twoFaStep === "verify-disable" && (
             <VStack gap={10}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>Confirm your password to disable 2FA:</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)" }}>Confirm your password to disable 2FA:</div>
               <Input type="password" placeholder="Current password" value={twoFaPassword} onChange={e => setTwoFaPassword(e.target.value)} />
               <HStack gap={8}>
-                <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); }} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
-                <button onClick={handle2FaDisable} disabled={twoFaLoading || !twoFaPassword} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "6px 14px", cursor: twoFaLoading || !twoFaPassword ? "not-allowed" : "pointer", opacity: twoFaLoading || !twoFaPassword ? 0.5 : 1 }}>
+                <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); }} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
+                <button onClick={handle2FaDisable} disabled={twoFaLoading || !twoFaPassword} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "6px 14px", cursor: twoFaLoading || !twoFaPassword ? "not-allowed" : "pointer", opacity: twoFaLoading || !twoFaPassword ? 0.5 : 1 }}>
                   {twoFaLoading ? "Disabling…" : "&gt; Disable 2FA"}
                 </button>
               </HStack>
@@ -1662,14 +1674,14 @@ export default function Profile() {
         <PanelHeader>Sessions</PanelHeader>
         <div style={{ padding: "12px 14px", background: "var(--ft-surface)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>Current device</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>Current device</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>
               <Text as="span" color="var(--ft-green)">●</Text> Active now · {/Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop"}
             </div>
           </div>
           <button
             onClick={handleRevokeOtherSessions}
-            style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-amber)", background: "transparent", border: "1px solid var(--ft-amber)", padding: "5px 12px", cursor: "pointer", opacity: 0.85 }}
+            style={{ flexShrink: 0, fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-amber)", background: "transparent", border: "1px solid var(--ft-amber)", padding: "5px 12px", cursor: "pointer", opacity: 0.85 }}
           >
             Sign out other devices
           </button>
@@ -1690,10 +1702,10 @@ export default function Profile() {
           {loginHistory.length === 0 ? (
             <VStack gap={6} align="center" padding="20px 16px">
               <Clock size={18} color="var(--ft-border2)" />
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center" }}>
                 No activity recorded yet
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", opacity: 0.6, textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", opacity: 0.6, textAlign: "center" }}>
                 Activity is logged when you visit this page
               </div>
             </VStack>
@@ -1721,8 +1733,8 @@ export default function Profile() {
         <HoverRow style={{ padding: "10px 14px", borderBottom: blurAmounts ? "1px solid var(--ft-border)" : undefined }}>
           <HStack gap={12} align="center" justify="between">
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Blur sensitive amounts</div>
-              <Text as="div" mono size={9} color="var(--ft-muted)">Amounts show as "£ ••••" until hovered. Useful in public places.</Text>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Blur sensitive amounts</div>
+              <Text as="div" size={10} color="var(--ft-muted)">Amounts show as "£ ••••" until hovered. Useful in public places.</Text>
             </div>
             <button
               onClick={() => handleBlurAmounts(!blurAmounts)}
@@ -1735,8 +1747,8 @@ export default function Profile() {
         </HoverRow>
         {blurAmounts && (
           <div style={{ padding: "10px 14px", background: "var(--ft-raised)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", marginBottom: 8 }}>
-              Auto-blur delay after hover: <span style={{ color: "var(--ft-accent)" }}>{autoBlurDelay === 0 ? "Immediate" : `${autoBlurDelay}s`}</span>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 8 }}>
+              Auto-blur delay after hover: <span style={{ color: "var(--ft-accent)" }}>{autoBlurDelay === 0 ? "Immediate" : <span className="pnum">{autoBlurDelay}s</span>}</span>
             </div>
             <HStack gap={10} align="center">
               <Text as="span" mono size={9} color="var(--ft-dim)">0s</Text>
@@ -1753,13 +1765,13 @@ export default function Profile() {
         <HoverRow style={{ padding: "10px 14px", borderBottom: "1px solid var(--ft-border)" }}>
           <HStack gap={12} align="center" justify="between">
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Transaction descriptions</div>
-              <Text as="div" mono size={9} color="var(--ft-muted)">Controls how merchant names and descriptions appear</Text>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Transaction descriptions</div>
+              <Text as="div" size={10} color="var(--ft-muted)">Controls how merchant names and descriptions appear</Text>
             </div>
             <select
               value={maskMode}
               onChange={e => handleMaskMode(e.target.value)}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", flexShrink: 0, cursor: "pointer" }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", flexShrink: 0, cursor: "pointer" }}
             >
               <option value="none">None — full text</option>
               <option value="partial">Partial — last 4</option>
@@ -1770,8 +1782,8 @@ export default function Profile() {
         <HoverRow style={{ padding: "10px 14px" }}>
           <HStack gap={12} align="center" justify="between">
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Hide amounts when printing</div>
-              <Text as="div" mono size={9} color="var(--ft-muted)">Blurs all financial figures in print / PDF export</Text>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 2 }}>Hide amounts when printing</div>
+              <Text as="div" size={10} color="var(--ft-muted)">Blurs all financial figures in print / PDF export</Text>
             </div>
             <button
               onClick={() => handleHideFromPrint(!hideFromPrint)}
@@ -1782,7 +1794,7 @@ export default function Profile() {
             </button>
           </HStack>
         </HoverRow>
-        <div style={{ padding: "6px 14px", background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+        <div style={{ padding: "6px 14px", background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
           All privacy settings apply instantly across the app.
         </div>
       </div>
@@ -1797,20 +1809,20 @@ export default function Profile() {
               <DataExportCell key={label} label={label} value={value} isLast={i === exportCells.length - 1} />
             ))}
           </div>
-          <Text as="div" mono size={10} color="var(--ft-muted)">
+          <Text as="div" size={10} color="var(--ft-muted)">
             Downloads profile, account stats, and locally stored preferences as JSON.
           </Text>
           <HStack gap={10}>
             <button
               onClick={handleExport}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", background: "transparent", border: "1px solid var(--ft-cyan)", padding: "5px 14px", cursor: "pointer", opacity: 0.9 }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-cyan)", background: "transparent", border: "1px solid var(--ft-cyan)", padding: "5px 14px", cursor: "pointer", opacity: 0.9 }}
               onMouseEnter={e => { e.currentTarget.style.background = "color-mix(in srgb, var(--ft-cyan) 10%, transparent)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
             >
               ↓ Export as JSON
             </button>
           </HStack>
-          <Text as="div" mono size={9} color="var(--ft-dim)">
+          <Text as="div" size={10} color="var(--ft-dim)">
             Server-side data (transactions, investments) requires a separate server export and is not included.
           </Text>
         </div>
