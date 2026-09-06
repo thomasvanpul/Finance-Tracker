@@ -279,6 +279,8 @@ function ProgressBar({
   color,
   height = 4,
 }: {
+  // Geometry only — callers coalesce an unknown percentage to 0 so the bar
+  // renders empty. The figure beside it is what must em-dash.
   pct: number;
   color: string;
   height?: number;
@@ -446,7 +448,7 @@ function IncomeLegendItem({
 }: {
   name: string;
   gbp: number | null;
-  pct: number;
+  pct: number | null;
   color: string;
 }) {
   return (
@@ -477,7 +479,7 @@ function IncomeLegendItem({
           fontVariantNumeric: "tabular-nums",
         }}
       >
-        {gbp == null ? "—" : formatBaseMoney(gbp)} ({pct}%)
+        {gbp == null ? "—" : formatBaseMoney(gbp)} ({pct == null ? "—" : `${pct}%`})
       </span>
     </div>
   );
@@ -491,14 +493,14 @@ function StackedBarSegment({
   color,
 }: {
   name: string;
-  pct: number;
+  pct: number | null;
   color: string;
 }) {
   return (
     <div
-      title={`${name}: ${pct}%`}
+      title={`${name}: ${pct == null ? "—" : `${pct}%`}`}
       style={{
-        width: `${pct}%`,
+        width: `${pct ?? 0}%`,
         background: roleCssVar(color),
         transition: "width 0.1s",
       }}
@@ -801,7 +803,7 @@ function BudgetRow({
   idx: number;
   budgetsLength: number;
   actual: number;
-  pct: number;
+  pct: number | null;
   barCol: string;
   members: FamilyMember[];
   onDelete: () => void;
@@ -832,15 +834,15 @@ function BudgetRow({
       <div style={{ padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center" }}>
         <span className="pnum">{formatBaseMoney(b.monthlyLimit)}</span>
       </div>
-      <div style={{ padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 12, color: pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-text)", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center" }}>
+      <div style={{ padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 12, color: pct == null ? "var(--ft-dim)" : pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-text)", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center" }}>
         <span className="pnum">{formatBaseMoney(actual)}</span>
       </div>
       <HStack align="center" padding="8px 12px">
         <div style={{ width: "100%" }}>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-muted)", marginBottom: 3, fontVariantNumeric: "tabular-nums" }}>
-            {Math.round(pct * 100)}%
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: pct == null ? "var(--ft-dim)" : pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-muted)", marginBottom: 3, fontVariantNumeric: "tabular-nums" }}>
+            {pct == null ? "—" : `${Math.round(pct * 100)}%`}
           </div>
-          <ProgressBar pct={pct} color={barCol} height={3} />
+          <ProgressBar pct={pct ?? 0} color={barCol} height={3} />
         </div>
       </HStack>
       <HStack align="center" padding="6px 12px">
@@ -863,7 +865,7 @@ function GoalRow({
   onToggle, onSave, onCancel, onDelete,
 }: {
   g: FamilyGoal;
-  pct: number;
+  pct: number | null;
   isExpanded: boolean;
   assignedColor: string;
   daysLeft: number | null;
@@ -931,21 +933,21 @@ function GoalRow({
                 {daysLeft < 0 ? "OVERDUE" : daysLeft === 0 ? "Due today" : `${daysLeft}d left`}
               </Text>
             )}
-            {pct >= 1 && (
+            {pct != null && pct >= 1 && (
               <Text as="span" mono size={9} weight={700} color="var(--ft-green)">
                 COMPLETE
               </Text>
             )}
           </HStack>
-          <ProgressBar pct={pct} color={roleCssVar(assignedColor)} height={4} />
+          <ProgressBar pct={pct ?? 0} color={roleCssVar(assignedColor)} height={4} />
         </div>
 
         <div style={{ textAlign: "right", flexShrink: 0, minWidth: 130 }}>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: pct >= 1 ? "var(--ft-green)" : "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: pct != null && pct >= 1 ? "var(--ft-green)" : "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>
             {formatBaseMoney(g.currentAmount)} / {formatBaseMoney(g.targetAmount)}
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
-            {Math.round(pct * 100)}% funded
+            {pct == null ? "—" : `${Math.round(pct * 100)}%`} funded
           </div>
         </div>
 
@@ -1153,10 +1155,12 @@ export default function FamilyFinance() {
   // fabricated £0 slice.
   const incomeChartData = useMemo(() => {
     if (members.length === 0) return [];
-    const total = members.reduce((s, m) => s + m.incomeShare, 0) || 1;
+    // `|| 1` turned "no shares set on any member" into a confident 0% for
+    // everyone. With no shares recorded the split is unknown, not zero.
+    const total = members.reduce((s, m) => s + m.incomeShare, 0);
     return members.map((m) => ({
       name: m.name,
-      pct: Math.round((m.incomeShare / total) * 100),
+      pct: total > 0 ? Math.round((m.incomeShare / total) * 100) : null,
       gbp: monthlyIncome != null ? (m.incomeShare / 100) * monthlyIncome : null,
       color: m.color,
     }));
@@ -1948,7 +1952,8 @@ export default function FamilyFinance() {
             }}
           >
             {goals.map((g, gIdx) => {
-              const pct = g.targetAmount > 0 ? g.currentAmount / g.targetAmount : 0;
+              // A goal with no target has no funded percentage.
+              const pct: number | null = g.targetAmount > 0 ? g.currentAmount / g.targetAmount : null;
               const isExpanded = expandedGoalId === g.id;
               const assignedColor = g.assignedTo === "shared" ? "var(--ft-dim)" : memberColor(g.assignedTo);
               const daysLeft = g.deadline
@@ -2144,8 +2149,9 @@ export default function FamilyFinance() {
             {budgets.map((b, idx) => {
               const catKey = b.category.toLowerCase();
               const actual = actualSpendByCategory[catKey] ?? 0;
-              const pct = b.monthlyLimit > 0 ? actual / b.monthlyLimit : 0;
-              const barCol = pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-green)";
+              // A budget with no monthly limit has no "% used".
+              const pct: number | null = b.monthlyLimit > 0 ? actual / b.monthlyLimit : null;
+              const barCol = pct == null ? "var(--ft-border2)" : pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-green)";
               return (
                 <BudgetRow
                   key={b.id}

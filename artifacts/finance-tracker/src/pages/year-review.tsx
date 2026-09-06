@@ -86,7 +86,9 @@ function KpiStrip({ income, expenses, txCount, year, prevIncome, prevExpenses }:
   prevExpenses?: number;
 }) {
   const net = income - expenses;
-  const savingsRate = income > 0 ? (net / income) * 100 : 0;
+  // No income in the year → no denominator. The quarterly breakdown at
+  // :250 already nulls this; the headline figures must agree with it.
+  const savingsRate: number | null = income > 0 ? (net / income) * 100 : null;
   const prevNet = prevIncome !== undefined && prevExpenses !== undefined ? prevIncome - prevExpenses : undefined;
 
   function yoyDelta(curr: number, prev?: number): string | null {
@@ -119,10 +121,10 @@ function KpiStrip({ income, expenses, txCount, year, prevIncome, prevExpenses }:
     },
     {
       label: "Savings Rate",
-      value: `${savingsRate.toFixed(1)}%`,
-      color: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)",
-      sub: savingsRate >= 20 ? "on target" : savingsRate >= 10 ? "below 20%" : "below 10%",
-      subColor: savingsRate >= 20 ? "var(--ft-green)" : "var(--ft-amber)",
+      value: savingsRate == null ? "—" : `${savingsRate.toFixed(1)}%`,
+      color: savingsRate == null ? "var(--ft-dim)" : savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)",
+      sub: savingsRate == null ? "no income recorded" : savingsRate >= 20 ? "on target" : savingsRate >= 10 ? "below 20%" : "below 10%",
+      subColor: savingsRate == null ? "var(--ft-dim)" : savingsRate >= 20 ? "var(--ft-green)" : "var(--ft-amber)",
     },
     {
       label: "Transactions",
@@ -959,7 +961,7 @@ function ShareableCard({ income, expenses, txCount, year }: {
   year: number;
 }) {
   const net = income - expenses;
-  const savingsRate = income > 0 ? (net / income) * 100 : 0;
+  const savingsRate: number | null = income > 0 ? (net / income) * 100 : null;
 
   const tiles = [
     { text: "Earned", value: formatBaseMoney(income), color: "var(--ft-green)" },
@@ -986,8 +988,8 @@ function ShareableCard({ income, expenses, txCount, year }: {
         </div>
         <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", textAlign: "right" }}>
           <div>{txCount} transactions tracked</div>
-          <div className="pnum" style={{ marginTop: 4, color: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)", fontWeight: 600 }}>
-            {savingsRate.toFixed(1)}% savings rate
+          <div className="pnum" style={{ marginTop: 4, color: savingsRate == null ? "var(--ft-dim)" : savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)", fontWeight: 600 }}>
+            {savingsRate == null ? "—" : `${savingsRate.toFixed(1)}%`} savings rate
           </div>
         </div>
       </HStack>
@@ -999,15 +1001,17 @@ function ShareableCard({ income, expenses, txCount, year }: {
       <div style={{ height: 4, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", overflow: "hidden", marginBottom: 6 }}>
         <div style={{
           height: "100%",
-          width: `${Math.min(100, Math.max(0, savingsRate))}%`,
-          background: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)",
+          width: `${Math.min(100, Math.max(0, savingsRate ?? 0))}%`,
+          background: savingsRate == null ? "var(--ft-border2)" : savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)",
         }} />
       </div>
       <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
-        Savings rate: <span className="pnum" style={{ color: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)", fontWeight: 600 }}>{savingsRate.toFixed(1)}%</span>
-        <span style={{ marginLeft: 12 }}>
-          {savingsRate >= 20 ? "· on target (≥20%)" : savingsRate >= 10 ? "· below target — aim for 20%" : "· below 10% — review spending"}
-        </span>
+        Savings rate: <span className="pnum" style={{ color: savingsRate == null ? "var(--ft-dim)" : savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)", fontWeight: 600 }}>{savingsRate == null ? "—" : `${savingsRate.toFixed(1)}%`}</span>
+        {savingsRate != null && (
+          <span style={{ marginLeft: 12 }}>
+            {savingsRate >= 20 ? "· on target (≥20%)" : savingsRate >= 10 ? "· below target — aim for 20%" : "· below 10% — review spending"}
+          </span>
+        )}
       </div>
       </div>
     </div>
@@ -1088,7 +1092,7 @@ export default function YearReviewPage() {
   const wrappedData = useMemo(() => {
     const expenses = yearTxs.filter(t => t.type === "expense");
     const incomes = yearTxs.filter(t => t.type === "income");
-    const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0;
+    const savingsRate: number | null = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : null;
 
     const catMap: Record<string, number> = {};
     for (const t of expenses) catMap[t.category || "Other"] = (catMap[t.category || "Other"] ?? 0) + t.baseEquivalent;
@@ -1236,18 +1240,18 @@ export default function YearReviewPage() {
                   {formatBaseMoney(Math.abs(net))}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--ft-muted)", marginBottom: 20 }}>
-                  Savings rate: {wrappedData.savingsRate.toFixed(1)}%
+                  Savings rate: {wrappedData.savingsRate == null ? "—" : `${wrappedData.savingsRate.toFixed(1)}%`}
                 </div>
                 <div style={{ width: "100%", maxWidth: 320, height: 8, background: "var(--ft-border2)", overflow: "hidden" }}>
                   <div style={{
                     height: "100%",
-                    width: `${Math.min(100, Math.max(0, wrappedData.savingsRate))}%`,
-                    background: wrappedData.savingsRate >= 20 ? "var(--ft-green)" : wrappedData.savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)",
+                    width: `${Math.min(100, Math.max(0, wrappedData.savingsRate ?? 0))}%`,
+                    background: wrappedData.savingsRate == null ? "var(--ft-border2)" : wrappedData.savingsRate >= 20 ? "var(--ft-green)" : wrappedData.savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)",
                     transition: "width 0.25s ease",
                   }} />
                 </div>
                 <div style={{ fontSize: 11, color: "var(--ft-dim)", marginTop: 10 }}>
-                  {wrappedData.savingsRate >= 20 ? "Excellent! You're saving over 20% of income." : wrappedData.savingsRate >= 10 ? "Good — you're above the 10% savings benchmark." : "Room to grow — aim for 10%+ savings rate."}
+                  {wrappedData.savingsRate == null ? "No income recorded this year, so there is no savings rate to report." : wrappedData.savingsRate >= 20 ? "Excellent! You're saving over 20% of income." : wrappedData.savingsRate >= 10 ? "Good — you're above the 10% savings benchmark." : "Room to grow — aim for 10%+ savings rate."}
                 </div>
               </>
             )}
@@ -1322,7 +1326,7 @@ export default function YearReviewPage() {
                     { label: "Earned", value: formatBaseMoney(totalIncome), color: "var(--ft-green)" },
                     { label: "Spent", value: formatBaseMoney(totalExpenses), color: "var(--ft-red)" },
                     { label: "Saved", value: (net >= 0 ? "+" : "") + formatBaseMoney(net), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
-                    { label: "Savings Rate", value: `${wrappedData.savingsRate.toFixed(1)}%`, color: "var(--ft-amber)" },
+                    { label: "Savings Rate", value: wrappedData.savingsRate == null ? "—" : `${wrappedData.savingsRate.toFixed(1)}%`, color: "var(--ft-amber)" },
                     { label: "Transactions", value: String(yearTxs.length), color: "var(--ft-text)" },
                     { label: "Top Category", value: wrappedData.topCatEntry?.[0] ?? "—", color: "var(--ft-accent)" },
                   ].map(item => (

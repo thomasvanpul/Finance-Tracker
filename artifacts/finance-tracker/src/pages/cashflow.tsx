@@ -771,15 +771,18 @@ export default function CashflowPage() {
           color={baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
           sub={`${baseDailyIncome > 0 ? `in ${formatBaseMoney(baseDailyIncome * 30)}/mo` : "no income"} · out ${formatBaseMoney(baseDailyExpense * 30)}/mo`}
         />
+        {/* An empty projection has no lowest or highest point. Rendering
+            £0.00 made "no projection" indistinguishable from a real zero
+            balance — the worst confusion a money figure can cause. */}
         <KpiTile
           label="Lowest Point"
-          value={formatBaseMoney(lowestPoint === Infinity ? 0 : lowestPoint)}
+          value={lowestPoint === Infinity ? "—" : formatBaseMoney(lowestPoint)}
           color={lowestPoint < 0 ? "var(--ft-red)" : "var(--ft-muted)"}
           sub={lowestPoint < 0 ? "dips below zero" : null}
         />
         <KpiTile
           label="Highest Point"
-          value={formatBaseMoney(highestPoint === -Infinity ? 0 : highestPoint)}
+          value={highestPoint === -Infinity ? "—" : formatBaseMoney(highestPoint)}
           color="var(--ft-green)"
         />
       </div>

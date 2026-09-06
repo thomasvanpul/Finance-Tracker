@@ -753,14 +753,23 @@ export default function HealthScore() {
 
     function insightDebt(): string {
       if (totalPendingDebt === 0) return "No pending debts — excellent position.";
-      const ratio = monthlyIncome > 0 ? totalPendingDebt / monthlyIncome : 0;
+      // With no income recorded there is nothing to express the debt as a
+      // multiple of. "Debt 0.0x monthly income — manageable." was a verdict
+      // built on a denominator the API never supplied.
+      if (monthlyIncome <= 0) {
+        return `${formatBaseMoney(totalPendingDebt)} pending — no income recorded to measure it against.`;
+      }
+      const ratio = totalPendingDebt / monthlyIncome;
       if (ratio <= 1) return `Debt ${ratio.toFixed(1)}x monthly income — manageable.`;
       if (ratio <= 3) return `Debt ${ratio.toFixed(1)}x income — consider paying down faster.`;
       return `Debt ${ratio.toFixed(1)}x income is high — prioritise reduction.`;
     }
     function actionDebt(): { action: string; gain: number } | null {
       if (totalPendingDebt === 0) return null;
-      const ratio = monthlyIncome > 0 ? totalPendingDebt / monthlyIncome : 0;
+      // No income means the "reduce to under 1x income" action cannot be
+      // sized, so no action is offered rather than one sized off a zero.
+      if (monthlyIncome <= 0) return null;
+      const ratio = totalPendingDebt / monthlyIncome;
       if (ratio <= 1) return null;
       const atOneX = calcDebtLoadScore(monthlyIncome, monthlyIncome) ?? 0;
       const gain = Math.round((atOneX - (debtScore ?? 0)) * 0.2);
@@ -801,14 +810,20 @@ export default function HealthScore() {
     function insightEF(): string {
       const fund = savingsGoals.find((g) => g.name.toLowerCase().includes("emergency"));
       if (!fund) return "No Emergency Fund goal found — create one in Goals.";
-      const pct = fund.target > 0 ? (fund.current / fund.target) * 100 : 0;
+      // A goal with no target has no funded percentage. "0% funded" reads
+      // as no progress when the truth is there is nothing to fund towards.
+      if (fund.target <= 0) {
+        return `${formatBaseMoney(fund.current)} saved — set a target on the goal to track funding.`;
+      }
+      const pct = (fund.current / fund.target) * 100;
       if (pct >= 100) return `Fully funded at ${formatBaseMoney(fund.current)} — excellent!`;
       return `${pct.toFixed(0)}% funded — ${formatBaseMoney(fund.current)} of ${formatBaseMoney(fund.target)}.`;
     }
     function actionEF(): { action: string; gain: number } | null {
       const fund = savingsGoals.find((g) => g.name.toLowerCase().includes("emergency"));
       if (!fund) return { action: "Create an Emergency Fund goal in Goals", gain: 15 };
-      const pct = fund.target > 0 ? fund.current / fund.target : 0;
+      if (fund.target <= 0) return { action: "Set a target on your Emergency Fund goal", gain: 15 };
+      const pct = fund.current / fund.target;
       if (pct >= 0.5) return null;
       return { action: `Grow Emergency Fund to 50%`, gain: Math.round((50 - pct * 100) * 0.15) };
     }
@@ -886,10 +901,14 @@ export default function HealthScore() {
       list.push({ id: "emergency", text: "Create an Emergency Fund goal in Goals — worth up to +15 pts when fully funded.", impact: 15, color: "var(--ft-amber)", priority: "high" });
     } else {
       const fund = savingsGoals.find((g) => g.name.toLowerCase().includes("emergency"))!;
-      const pct = fund.target > 0 ? fund.current / fund.target : 0;
-      if (pct < 0.5) {
-        const impact = Math.round((50 - pct * 100) * 0.15);
-        list.push({ id: "emergency-grow", text: `Emergency Fund is at ${(pct * 100).toFixed(0)}%. Grow to 50% for ~+${impact} pts.`, impact, color: "var(--ft-blue)", priority: "medium" });
+      if (fund.target <= 0) {
+        list.push({ id: "emergency-target", text: "Your Emergency Fund goal has no target — set one to track funding, worth up to +15 pts.", impact: 15, color: "var(--ft-amber)", priority: "high" });
+      } else {
+        const pct = fund.current / fund.target;
+        if (pct < 0.5) {
+          const impact = Math.round((50 - pct * 100) * 0.15);
+          list.push({ id: "emergency-grow", text: `Emergency Fund is at ${(pct * 100).toFixed(0)}%. Grow to 50% for ~+${impact} pts.`, impact, color: "var(--ft-blue)", priority: "medium" });
+        }
       }
     }
 

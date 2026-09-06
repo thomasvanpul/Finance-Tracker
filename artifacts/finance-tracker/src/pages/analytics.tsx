@@ -382,7 +382,9 @@ const PIE_COLORS_LIST = [
 
 function IncomeSourceRow({ cat, total, grandTotal, colorIndex, isLast }: IncomeSourceRowProps) {
   const [hov, setHov] = React.useState(false);
-  const pct = grandTotal > 0 ? total / grandTotal : 0;
+  // No income recorded at all → this row's share of it is undefined, not
+  // 0%. The bar keeps ?? 0; it is geometry, not a figure.
+  const pct: number | null = grandTotal > 0 ? total / grandTotal : null;
   const color = PIE_COLORS_LIST[colorIndex % PIE_COLORS_LIST.length];
   return (
     <div
@@ -404,9 +406,9 @@ function IncomeSourceRow({ cat, total, grandTotal, colorIndex, isLast }: IncomeS
         {cat}
       </div>
       <div style={{ height: 3, background: "var(--ft-border)" }}>
-        <div style={{ height: "100%", width: `${Math.round(pct * 100)}%`, background: color }} />
+        <div style={{ height: "100%", width: `${Math.round((pct ?? 0) * 100)}%`, background: color }} />
       </div>
-      <div className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", textAlign: "right" as const }}>{Math.round(pct * 100)}%</div>
+      <div className="pnum" style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", textAlign: "right" as const }}>{pct == null ? "—" : `${Math.round(pct * 100)}%`}</div>
       <div className="pnum" style={{ ...mono, fontSize: 11, fontWeight: 600, color, textAlign: "right" as const }}>{formatBaseMoney(total)}</div>
     </div>
   );
@@ -909,7 +911,11 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
   const thisM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const curIncome = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.baseEquivalent, 0);
   const curExpense = allTxs.filter(t => t.type === "expense" && getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.baseEquivalent, 0);
-  const savingsPct = curIncome > 0 ? Math.round(((curIncome - curExpense) / curIncome) * 100) : 0;
+  // No income this month → no denominator. A green "0%" in the middle of
+  // the donut asserts the user saved nothing, which is not what an absent
+  // income figure means.
+  const savingsPct: number | null =
+    curIncome > 0 ? Math.round(((curIncome - curExpense) / curIncome) * 100) : null;
   const pieData = [
     { name: "Income", value: Math.max(curIncome, 0) },
     { name: "Expense", value: Math.max(curExpense, 0) },
@@ -1046,7 +1052,7 @@ function IncomeExpenseSplit({ allTxs, annotations, onAnnotationsChange }: Income
               </Pie>
             </PieChart>
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", textAlign: "center" }}>
-              <div className="pnum" style={{ ...mono, fontSize: 18, fontWeight: 700, color: savingsPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>{savingsPct}%</div>
+              <div className="pnum" style={{ ...mono, fontSize: 18, fontWeight: 700, color: savingsPct == null ? "var(--ft-dim)" : savingsPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>{savingsPct == null ? "—" : `${savingsPct}%`}</div>
               <div style={{ ...ftLabel, fontSize: 8, marginTop: 2 }}>saved</div>
             </div>
           </div>
@@ -1610,19 +1616,22 @@ function RecurringVsOneOff({ expenses }: { expenses: Tx[] }) {
     return { recurring: rec, oneOff: one, recurringList: recList.sort((a, b) => b.total - a.total).slice(0, 12) };
   }, [expenses]);
 
-  const total = recurring + oneOff || 1;
-  const recPct = Math.round((recurring / total) * 100);
+  // `|| 1` made an empty split read "Recurring 0% · One-off 100%" — a
+  // confident claim about spend that does not exist. With no spend at all
+  // the split is unknown; the bar collapses to nothing.
+  const total = recurring + oneOff;
+  const recPct: number | null = total > 0 ? Math.round((recurring / total) * 100) : null;
 
   return (
     <div style={{ ...panelStyle, marginBottom: 0 }}>
       <PanelHeader>Recurring vs One-Off</PanelHeader>
       <div style={{ padding: "10px 12px" }}>
         <HStack justify="between" marginBottom={5}>
-          <span style={{ ...mono, fontSize: 11, color: "var(--ft-amber)" }}>Recurring <span className="pnum">{formatBaseMoney(recurring)}</span> (<span className="pnum">{recPct}%</span>)</span>
-          <span style={{ ...mono, fontSize: 11, color: "var(--ft-muted)" }}>One-off <span className="pnum">{formatBaseMoney(oneOff)}</span> (<span className="pnum">{100 - recPct}%</span>)</span>
+          <span style={{ ...mono, fontSize: 11, color: "var(--ft-amber)" }}>Recurring <span className="pnum">{formatBaseMoney(recurring)}</span> (<span className="pnum">{recPct == null ? "—" : `${recPct}%`}</span>)</span>
+          <span style={{ ...mono, fontSize: 11, color: "var(--ft-muted)" }}>One-off <span className="pnum">{formatBaseMoney(oneOff)}</span> (<span className="pnum">{recPct == null ? "—" : `${100 - recPct}%`}</span>)</span>
         </HStack>
         <div style={{ height: 16, background: "var(--ft-border)", overflow: "hidden", display: "flex" }}>
-          <div style={{ width: `${recPct}%`, background: "var(--ft-amber)", opacity: 0.85 }} />
+          <div style={{ width: `${recPct ?? 0}%`, background: "var(--ft-amber)", opacity: 0.85 }} />
           <div style={{ flex: 1, background: "var(--ft-surface)" }} />
         </div>
       </div>
@@ -1722,7 +1731,10 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
   }, [allTxs]);
 
   const validRates = data.filter(d => d.rate !== null).map(d => d.rate as number);
-  const avgRate = validRates.length > 0 ? Math.round(validRates.reduce((a, b) => a + b, 0) / validRates.length) : 0;
+  // No month has income → there is no average savings rate to draw. The
+  // reference line is omitted rather than pinned to a fabricated "avg 0%".
+  const avgRate: number | null =
+    validRates.length > 0 ? Math.round(validRates.reduce((a, b) => a + b, 0) / validRates.length) : null;
   const latestRate = validRates[validRates.length - 1] ?? null;
 
   return (
@@ -1777,7 +1789,9 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
               }}
             />
             <ReferenceLine y={20} stroke="var(--ft-accent)" strokeDasharray="4 3" strokeWidth={1} label={{ value: "20%", position: "right", fill: "var(--ft-accent)", fontSize: 8, fontFamily: "var(--font-mono)", className: "pnum" }} />
-            <ReferenceLine y={avgRate} stroke="var(--ft-blue)" strokeDasharray="3 3" strokeWidth={1} label={{ value: `avg ${avgRate}%`, position: "right", fill: "var(--ft-blue)", fontSize: 8, fontFamily: "var(--font-mono)", className: "pnum" }} />
+            {avgRate != null && (
+              <ReferenceLine y={avgRate} stroke="var(--ft-blue)" strokeDasharray="3 3" strokeWidth={1} label={{ value: `avg ${avgRate}%`, position: "right", fill: "var(--ft-blue)", fontSize: 8, fontFamily: "var(--font-mono)", className: "pnum" }} />
+            )}
             <ReferenceLine y={0} stroke="var(--ft-border2)" strokeWidth={1} />
             <Area type="monotone" dataKey="rate" name="Savings Rate" stroke="var(--ft-green)" strokeWidth={2} fill="url(#savingsGrad)" dot={(props: { cx?: number; cy?: number; payload?: { rate: number | null } }) => {
               const { cx, cy, payload } = props;
@@ -2759,8 +2773,11 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
   }, [expenses]);
 
   const maxVal = Math.max(...weeks.map(w => w.total), 1);
-  const wowChange = lastWeek > 0 ? ((thisWeek - lastWeek) / lastWeek) * 100 : 0;
-  const vsAvg = avgWeek > 0 ? ((thisWeek - avgWeek) / avgWeek) * 100 : 0;
+  // A week with no prior week, or no 8-week average, has no baseline to
+  // change against. The delta rows below already skip a null, so nulling
+  // here removes the row instead of printing "0.0% vs prior wk".
+  const wowChange: number | null = lastWeek > 0 ? ((thisWeek - lastWeek) / lastWeek) * 100 : null;
+  const vsAvg: number | null = avgWeek > 0 ? ((thisWeek - avgWeek) / avgWeek) * 100 : null;
 
   return (
     <div style={panelStyle}>
@@ -2960,7 +2977,9 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
     const netSavings = Math.max(0, totalIncome - totalExpenses);
     const monthCount = Math.max(1, new Set(allTxs.map(t => getYYYYMM(t.date))).size);
     const monthlyIncome = totalIncome / monthCount;
-    const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - recentBurn) / monthlyIncome) * 100 : 0;
+    // No income across the window → the save rate has no denominator.
+    const savingsRate: number | null =
+      monthlyIncome > 0 ? ((monthlyIncome - recentBurn) / monthlyIncome) * 100 : null;
     return {
       monthlyBurn: recentBurn,
       netSavings,
@@ -3008,7 +3027,7 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
             </div>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Save Rate</div>
-              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)" }}>{savingsRate.toFixed(1)}%</div>
+              <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: savingsRate == null ? "var(--ft-dim)" : savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)" }}>{savingsRate == null ? "—" : `${savingsRate.toFixed(1)}%`}</div>
             </div>
             <div>
               <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Mo. Income</div>

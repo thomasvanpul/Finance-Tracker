@@ -257,7 +257,9 @@ interface HealthSummaryChipProps {
   category: string;
   spent: number;
   effectiveLimit: number;
-  pct: number;
+  // null = no limit set, so no percentage of it exists. Colour and bar
+  // width fall back to 0 (geometry); the printed figure never does.
+  pct: number | null;
   health: HealthInfo;
   isOver: boolean;
   title: string;
@@ -265,6 +267,7 @@ interface HealthSummaryChipProps {
 
 function HealthSummaryChip({ category, spent: _spent, effectiveLimit: _eff, pct, health, isOver, title }: HealthSummaryChipProps) {
   const [hov, setHov] = React.useState(false);
+  const pctBar = pct ?? 0;
   return (
     <div
       style={{
@@ -292,10 +295,10 @@ function HealthSummaryChip({ category, spent: _spent, effectiveLimit: _eff, pct,
         {category}
       </Text>
       <div style={{ width: 32, height: 3, background: "var(--ft-border)", borderRadius: 0, overflow: "hidden", flexShrink: 0 }}>
-        <div style={{ height: "100%", width: `${Math.min(pct * 100, 100)}%`, background: health.color, borderRadius: 0 }} />
+        <div style={{ height: "100%", width: `${Math.min(pctBar * 100, 100)}%`, background: health.color, borderRadius: 0 }} />
       </div>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: health.color, fontWeight: 600, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" as const }}>
-        {Math.round(pct * 100)}%
+        {pct == null ? "—" : `${Math.round(pct * 100)}%`}
       </span>
     </div>
   );
@@ -590,7 +593,8 @@ interface BudgetTableRowProps {
   rolloverEnabled: boolean;
   rolloverAccumulated: number;
   effectiveLimit: number;
-  pct: number;
+  // null = no limit set. See HealthSummaryChipProps.pct.
+  pct: number | null;
   rem: number;
   isOver: boolean;
   isEditing: boolean;
@@ -616,9 +620,10 @@ function BudgetTableRow({
   onEditLimitChange, onStartEdit, onCommitEdit, onCancelEdit,
   onToggleRollover, onResetRollover, onDeleteClick,
 }: BudgetTableRowProps) {
-  const fillColor = progressFill(pct);
+  const pctBar = pct ?? 0;
+  const fillColor = progressFill(pctBar);
   const delta = spent - lastSpent;
-  const health = getBudgetHealth(pct, spent);
+  const health = getBudgetHealth(pctBar, spent);
 
   if (isMobile) {
     const rowBgM = isOver
@@ -653,7 +658,7 @@ function BudgetTableRow({
           </HStack>
           {/* Progress bar */}
           <div style={{ height: 4, background: "var(--ft-border)", overflow: "hidden", marginBottom: 5 }}>
-            <div style={{ height: "100%", width: `${Math.min(pct * 100, 100)}%`, background: isOver ? "var(--ft-red)" : fillColor, transition: "width 0.1s ease" }} />
+            <div style={{ height: "100%", width: `${Math.min(pctBar * 100, 100)}%`, background: isOver ? "var(--ft-red)" : fillColor, transition: "width 0.1s ease" }} />
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", display: "flex", gap: 6, alignItems: "baseline" }}>
             <Text as="span" size={12} weight={700} color={isOver ? "var(--ft-red)" : "var(--ft-text)"}>{formatBaseMoney(spent)}</Text>
@@ -666,7 +671,7 @@ function BudgetTableRow({
         {/* Right: % used + remaining + edit */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, paddingLeft: 10, flexShrink: 0 }}>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: isOver ? "var(--ft-red)" : fillColor }}>
-            {Math.round(pct * 100)}%
+            {pct == null ? "—" : `${Math.round(pct * 100)}%`}
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isOver ? "var(--ft-red)" : "var(--ft-green)", fontWeight: 600 }}>
             {isOver ? `+${formatBaseMoney(Math.abs(rem))}` : formatBaseMoney(rem)} {isOver ? "over" : "left"}
@@ -831,7 +836,7 @@ function BudgetTableRow({
           padding: "6px 14px 6px 0",
           textAlign: "right" as const,
           fontVariantNumeric: "tabular-nums",
-          ...heatCellStyle(pct),
+          ...heatCellStyle(pctBar),
         }}
       >
         <Text as="div" mono size={13} weight={700} color={isOver ? "var(--ft-red)" : "var(--ft-text)"}>
@@ -895,7 +900,7 @@ function BudgetTableRow({
               ))}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", marginTop: 2, letterSpacing: "0.06em", fontWeight: 700 }}>
-              OVER {Math.round((pct - 1) * 100)}%
+              OVER {pct == null ? "—" : `${Math.round((pct - 1) * 100)}%`}
             </div>
           </div>
         ) : (
@@ -904,14 +909,14 @@ function BudgetTableRow({
               <div
                 style={{
                   height: "100%",
-                  width: `${Math.min(pct * 100, 100)}%`,
+                  width: `${Math.min(pctBar * 100, 100)}%`,
                   background: fillColor,
                   borderRadius: 0,
                   transition: "width 0.1s ease",
                 }}
               />
             </div>
-            {pct >= 0.8 && !isOver && (
+            {pct != null && pct >= 0.8 && !isOver && (
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-amber)", marginTop: 2, letterSpacing: "0.04em" }}>
                 {Math.round(pct * 100)}% used
               </div>
@@ -931,10 +936,10 @@ function BudgetTableRow({
           fontWeight: 700,
           color: isOver ? "var(--ft-red)" : fillColor,
           fontVariantNumeric: "tabular-nums",
-          ...heatCellStyle(pct),
+          ...heatCellStyle(pctBar),
         }}
       >
-        {Math.round(pct * 100)}%
+        {pct == null ? "—" : `${Math.round(pct * 100)}%`}
       </div>
 
       {/* Remaining */}
@@ -1229,7 +1234,9 @@ export default function Budget() {
     [budgets, spentByCategory, rolloverMap]
   );
 
-  const overallPct = totalBudgeted > 0 ? totalSpent / totalBudgeted : 0;
+  // Nothing budgeted → there is no budget to be a percentage of. A green
+  // "0%" beside an under-budget bar claims discipline that was never set.
+  const overallPct: number | null = totalBudgeted > 0 ? totalSpent / totalBudgeted : null;
   const remaining = totalBudgeted - totalSpent;
 
   const healthScore = useMemo(
@@ -1673,11 +1680,11 @@ export default function Budget() {
         />
         <BudgetKpiCell
           label="% Used"
-          value={<Text as="span" color={overallPct >= 1 ? "var(--ft-red)" : overallPct >= 0.8 ? "var(--ft-amber)" : "var(--ft-green)"}>{Math.round(overallPct * 100)}%</Text>}
+          value={<Text as="span" color={overallPct == null ? "var(--ft-dim)" : overallPct >= 1 ? "var(--ft-red)" : overallPct >= 0.8 ? "var(--ft-amber)" : "var(--ft-green)"}>{overallPct == null ? "—" : `${Math.round(overallPct * 100)}%`}</Text>}
           sub={overBudgetCount > 0 ? `${overBudgetCount} over limit` : "all within limits"}
           extra={
             <div style={{ marginTop: 5, height: 3, background: "var(--ft-border)", borderRadius: 0, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${Math.min(overallPct * 100, 100)}%`, background: overallPct >= 1 ? "var(--ft-red)" : overallPct >= 0.8 ? "var(--ft-amber)" : "var(--ft-green)", transition: "width 0.12s ease", borderRadius: 0 }} />
+              <div style={{ height: "100%", width: `${Math.min((overallPct ?? 0) * 100, 100)}%`, background: overallPct == null ? "var(--ft-border2)" : overallPct >= 1 ? "var(--ft-red)" : overallPct >= 0.8 ? "var(--ft-amber)" : "var(--ft-green)", transition: "width 0.12s ease", borderRadius: 0 }} />
             </div>
           }
         />
@@ -1769,8 +1776,8 @@ export default function Budget() {
                     const sp = spentByCategory[b.category.toLowerCase()] ?? 0;
                     const re = rolloverMap[b.category];
                     const eff = b.limit + (re?.enabled ? (re.accumulated ?? 0) : 0);
-                    const p = eff > 0 ? sp / eff : 0;
-                    return getBudgetHealth(p, sp).status === s;
+                    const p: number | null = eff > 0 ? sp / eff : null;
+                    return getBudgetHealth(p ?? 0, sp).status === s;
                   }).length;
                   if (count === 0) return null;
                   return (
@@ -1789,7 +1796,7 @@ export default function Budget() {
               const re = rolloverMap[b.category];
               const eff = b.limit + (re?.enabled ? (re.accumulated ?? 0) : 0);
               const p = eff > 0 ? sp / eff : 0;
-              const h = getBudgetHealth(p, sp);
+              const h = getBudgetHealth(p ?? 0, sp);
               const isOv = sp >= eff;
               return (
                 <HealthSummaryChip
@@ -2022,7 +2029,8 @@ export default function Budget() {
               const rolloverEnabled = rolloverEntry?.enabled ?? false;
               const rolloverAccumulated = rolloverEntry?.accumulated ?? 0;
               const effectiveLimit = budget.limit + (rolloverEnabled ? rolloverAccumulated : 0);
-              const pct = effectiveLimit > 0 ? spent / effectiveLimit : 0;
+              // A budget with no limit set has no "% used".
+              const pct: number | null = effectiveLimit > 0 ? spent / effectiveLimit : null;
               const rem = effectiveLimit - spent;
               const isOver = spent >= effectiveLimit;
               const isEditing = editingCategory === budget.category;

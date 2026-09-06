@@ -925,8 +925,10 @@ export default function Business() {
   );
 
   const grossProfit = businessIncome - businessExpenses;
-  const profitMargin =
-    businessIncome > 0 ? (grossProfit / businessIncome) * 100 : 0;
+  // No business income → the margin has no denominator. "0.0%" beside an
+  // "At risk" subtitle is a verdict on revenue that was never recorded.
+  const profitMargin: number | null =
+    businessIncome > 0 ? (grossProfit / businessIncome) * 100 : null;
 
   // ─── Derived: YTD figures ─────────────────────────────────────────────────────
   const yr = currentYear();
@@ -956,8 +958,8 @@ export default function Business() {
   );
 
   const ytdProfit = ytdIncome - ytdExpenses;
-  const ytdMargin =
-    ytdIncome > 0 ? (ytdProfit / ytdIncome) * 100 : 0;
+  const ytdMargin: number | null =
+    ytdIncome > 0 ? (ytdProfit / ytdIncome) * 100 : null;
   const taxEstimate = ytdProfit > 0 ? ytdProfit * 0.2 : 0;
 
   // ─── Derived: operating expense breakdown ─────────────────────────────────────
@@ -1202,24 +1204,28 @@ export default function Business() {
           <KpiCell
             label="Net Profit"
             value={formatBaseMoney(ytdProfit)}
-            sub={ytdMargin > 0 ? `${ytdMargin.toFixed(1)}% margin` : undefined}
+            sub={ytdMargin != null && ytdMargin > 0 ? `${ytdMargin.toFixed(1)}% margin` : undefined}
             valueColor={ytdProfit >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             accentColor={ytdProfit >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             trend={ytdProfit >= 0 ? "up" : "down"}
           />
           <KpiCell
             label="Profit Margin"
-            value={`${ytdMargin.toFixed(1)}%`}
-            sub={ytdMargin >= 20 ? "Healthy" : ytdMargin >= 5 ? "Below target" : "At risk"}
+            value={ytdMargin == null ? "—" : `${ytdMargin.toFixed(1)}%`}
+            sub={ytdMargin == null ? "no income recorded" : ytdMargin >= 20 ? "Healthy" : ytdMargin >= 5 ? "Below target" : "At risk"}
             valueColor={
-              ytdMargin >= 20
+              ytdMargin == null
+                ? "var(--ft-dim)"
+                : ytdMargin >= 20
                 ? "var(--ft-green)"
                 : ytdMargin >= 5
                 ? "var(--ft-amber)"
                 : "var(--ft-red)"
             }
             accentColor={
-              ytdMargin >= 20
+              ytdMargin == null
+                ? "var(--ft-dim)"
+                : ytdMargin >= 20
                 ? "var(--ft-green)"
                 : ytdMargin >= 5
                 ? "var(--ft-amber)"
@@ -1274,16 +1280,20 @@ export default function Business() {
           />
           <KpiCell
             label="Net Margin"
-            value={`${profitMargin.toFixed(1)}%`}
+            value={profitMargin == null ? "—" : `${profitMargin.toFixed(1)}%`}
             valueColor={
-              profitMargin >= 20
+              profitMargin == null
+                ? "var(--ft-dim)"
+                : profitMargin >= 20
                 ? "var(--ft-green)"
                 : profitMargin >= 5
                 ? "var(--ft-amber)"
                 : "var(--ft-red)"
             }
             accentColor={
-              profitMargin >= 20
+              profitMargin == null
+                ? "var(--ft-dim)"
+                : profitMargin >= 20
                 ? "var(--ft-green)"
                 : profitMargin >= 5
                 ? "var(--ft-amber)"
