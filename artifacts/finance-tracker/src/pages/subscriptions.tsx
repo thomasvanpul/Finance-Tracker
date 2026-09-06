@@ -979,7 +979,7 @@ export default function Subscriptions() {
             <SelectTrigger id="sub-cat" style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)" }}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
+            <SelectContent>
               {SUB_CATEGORIES.map(c => <SelectItem key={c} value={c} style={{ color: "var(--ft-text)", fontSize: 12 }}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -996,7 +996,7 @@ export default function Subscriptions() {
             <SelectTrigger id="sub-cur" style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)" }}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
+            <SelectContent>
               {["GBP", "USD", "EUR"].map(c => <SelectItem key={c} value={c} style={{ color: "var(--ft-text)", fontSize: 12 }}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -1007,7 +1007,7 @@ export default function Subscriptions() {
             <SelectTrigger id="sub-freq" style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)" }}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
+            <SelectContent>
               {(["weekly", "monthly", "quarterly", "annual"] as SubFrequency[]).map(f => (
                 <SelectItem key={f} value={f} style={{ color: "var(--ft-text)", fontSize: 12 }}>{FREQ_LABELS[f]}</SelectItem>
               ))}
@@ -1513,7 +1513,7 @@ export default function Subscriptions() {
 
       {/* ── Add / Edit dialogs ─────────────────────────────────────────────── */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border)" }}>
+        <DialogContent>
           <DialogHeader><DialogTitle style={{ color: "var(--ft-text)" }}>Add Subscription</DialogTitle></DialogHeader>
           <form onSubmit={handleAdd}>
             {FormFields}
@@ -1526,7 +1526,7 @@ export default function Subscriptions() {
       </Dialog>
 
       <Dialog open={editId !== null} onOpenChange={open => !open && setEditId(null)}>
-        <DialogContent style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border)" }}>
+        <DialogContent>
           <DialogHeader><DialogTitle style={{ color: "var(--ft-text)" }}>Edit Subscription</DialogTitle></DialogHeader>
           <form onSubmit={handleEdit}>
             {FormFields}

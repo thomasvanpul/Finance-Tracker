@@ -1249,7 +1249,7 @@ export default function Tax() {
 
       {/* ── Add Disposal Dialog ─────────────────────────────────────────────────── */}
       <Dialog open={addDisposalOpen} onOpenChange={setAddDisposalOpen}>
-        <DialogContent style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border)" }}>
+        <DialogContent>
           <DialogHeader><DialogTitle style={{ color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em" }}>Record Capital Disposal</DialogTitle></DialogHeader>
           <form onSubmit={handleAddDisposal}>
             <div className="space-y-3">
@@ -1302,7 +1302,7 @@ export default function Tax() {
 
       {/* ── Add Shelter Dialog ──────────────────────────────────────────────────── */}
       <Dialog open={addShelterOpen} onOpenChange={setAddShelterOpen}>
-        <DialogContent style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border)" }}>
+        <DialogContent>
           <DialogHeader><DialogTitle style={{ color: "var(--ft-text)" }}>Add {rules.shelterName} Contribution</DialogTitle></DialogHeader>
           <form onSubmit={e => { e.preventDefault(); persistShelter([...shelterContribs, { taxYear: shelterForm.taxYear, amount: parseFloat(shelterForm.amount), provider: shelterForm.provider || undefined }]); setAddShelterOpen(false); setShelterForm({ taxYear: selectedYear, amount: "", provider: "" }); }}>
             <div className="space-y-4">

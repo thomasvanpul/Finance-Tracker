@@ -78,7 +78,7 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
   if (tx.baseEquivalent == null) {
     return (
       <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border)" }}>
+        <DialogContent>
           <DialogHeader><DialogTitle>Split unavailable</DialogTitle></DialogHeader>
           <div style={{ padding: "12px 0", fontSize: 13, color: "var(--ft-muted)" }}>
             This transaction's FX conversion is not currently available, so

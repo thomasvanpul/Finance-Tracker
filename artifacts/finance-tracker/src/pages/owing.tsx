@@ -1846,7 +1846,7 @@ export default function Owing() {
 
       {/* ── Add IOU Dialog ── */}
       <Dialog open={open} onOpenChange={(o) => { if (!o) { setLinkStatus("idle"); setLinkedUser(null); } setOpen(o); }}>
-        <DialogContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", maxWidth: 500 }}>
+        <DialogContent style={{ maxWidth: 500 }}>
           <DialogHeader>
             <DialogTitle style={{ color: "var(--ft-text)", fontSize: 14 }}>Add IOU</DialogTitle>
           </DialogHeader>
@@ -1933,7 +1933,7 @@ export default function Owing() {
                   <SelectTrigger style={INPUT_STYLE}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
+                  <SelectContent>
                     {CURRENCIES.map((c) => (
                       <SelectItem key={c} value={c} style={{ color: "var(--ft-text)", fontSize: 12 }}>{c}</SelectItem>
                     ))}
@@ -2028,7 +2028,7 @@ export default function Owing() {
                 <SelectTrigger style={INPUT_STYLE}>
                   <SelectValue placeholder="No account linked" />
                 </SelectTrigger>
-                <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
+                <SelectContent>
                   <SelectItem value="__none__" style={{ color: "var(--ft-dim)", fontSize: 12 }}>No account</SelectItem>
                   {accounts?.map((a) => (
                     <SelectItem key={a.id} value={String(a.id)} style={{ color: "var(--ft-text)", fontSize: 12 }}>
@@ -2058,7 +2058,7 @@ export default function Owing() {
 
       {/* ── Split Bill Dialog ── */}
       <Dialog open={splitOpen} onOpenChange={(o) => { if (!o) setSplitForm(EMPTY_SPLIT_FORM); setSplitOpen(o); }}>
-        <DialogContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", maxWidth: 540 }}>
+        <DialogContent style={{ maxWidth: 540 }}>
           <DialogHeader>
             <DialogTitle style={{ color: "var(--ft-text)", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
               <SplitSquareHorizontal className="w-4 h-4" style={{ color: "var(--ft-blue)" }} />
@@ -2084,7 +2084,7 @@ export default function Owing() {
                   <SelectTrigger style={INPUT_STYLE}>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
+                  <SelectContent>
                     {CURRENCIES.map((c) => (
                       <SelectItem key={c} value={c} style={{ color: "var(--ft-text)", fontSize: 12 }}>{c}</SelectItem>
                     ))}

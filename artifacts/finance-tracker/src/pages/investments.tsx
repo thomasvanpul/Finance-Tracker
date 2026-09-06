@@ -176,7 +176,7 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
 
   return (
     <Dialog open={invId !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border)", maxWidth: 680, maxHeight: "90vh", overflowY: "auto" }}>
+      <DialogContent style={{ maxWidth: 680, maxHeight: "90vh", overflowY: "auto" }}>
         <DialogHeader style={{ borderBottom: "1px solid var(--ft-border)", paddingBottom: 12 }}>
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -198,7 +198,7 @@ function PositionDetailModal({ invId, onClose, investments, quoteMap, classMap, 
               <div className="text-xs" style={{ color: "var(--ft-dim)" }}>Asset Class</div>
               <Select value={classMap[inv.id] ?? "Other"} onValueChange={(v) => onClassChange(inv.id, v as AssetClass)}>
                 <SelectTrigger style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", height: 28, fontSize: 11, minWidth: 120 }}><SelectValue /></SelectTrigger>
-                <SelectContent style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)" }}>
+                <SelectContent>
                   {ASSET_CLASSES.map((cls) => <SelectItem key={cls} value={cls} style={{ color: "var(--ft-text)", fontSize: 12 }}>{cls}</SelectItem>)}
                 </SelectContent>
               </Select>
