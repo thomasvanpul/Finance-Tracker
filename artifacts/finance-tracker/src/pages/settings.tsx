@@ -318,7 +318,7 @@ function SavingsRateTargetInput() {
         />
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>%</span>
       </HStack>
-      <Text as="div" mono size={9} color="var(--ft-dim)">
+      <Text as="div" size={10} color="var(--ft-dim)">
         Saved automatically · used on the dashboard KPI
       </Text>
     </VStack>
@@ -483,7 +483,7 @@ function TerminalProfilePanel() {
         <div style={{ padding: "16px" }}>
 
           {/* Intro */}
-          <p style={{ ...mono, fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7, marginBottom: 20 }}>
+          <p style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.7, marginBottom: 20 }}>
             Your profile configures the sidebar navigation, default landing page, and dashboard widgets.
             Select one or more profiles that match how you use Finance Tracker — or choose <strong style={{ color: "var(--ft-text)" }}>Full Analyst</strong> for everything.
           </p>
@@ -531,13 +531,13 @@ function TerminalProfilePanel() {
                   {/* Glyph + name */}
                   <HStack gap={7} align="center" marginBottom={6}>
                     <span style={{ fontSize: 16, color, lineHeight: 1, flexShrink: 0 }}>{glyph}</span>
-                    <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: isSelected ? color : "var(--ft-text)", letterSpacing: "0.02em", lineHeight: 1.2 }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 700, color: isSelected ? color : "var(--ft-text)", letterSpacing: "0.02em", lineHeight: 1.2 }}>
                       {persona.label}
                     </span>
                   </HStack>
 
                   {/* Tagline */}
-                  <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.5, marginBottom: 12 }}>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.5, marginBottom: 12 }}>
                     {persona.tagline}
                   </div>
 
@@ -546,14 +546,14 @@ function TerminalProfilePanel() {
                     {persona.highlights.map((h) => (
                       <div key={h} style={{ display: "flex", alignItems: "flex-start", gap: 5 }}>
                         <span style={{ ...mono, fontSize: 9, color, flexShrink: 0, lineHeight: 1.5 }}>·</span>
-                        <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5 }}>{h}</span>
+                        <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5 }}>{h}</span>
                       </div>
                     ))}
                   </VStack>
 
                   {/* Footer stats */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 10, borderTop: `1px solid ${isSelected ? color + "44" : "var(--ft-border)"}` }}>
-                    <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
                       <span className="pnum">{pageCount}</span> pages
                     </span>
                     <span style={{ ...mono, fontSize: 8, color: isSelected ? color : "var(--ft-dim)", letterSpacing: "0.06em" }}>
@@ -808,7 +808,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
           {isActive && <div style={{ position: "absolute", top: 3, right: 4, color: s.accent, lineHeight: 1 }}><Check size={9} /></div>}
         </div>
         <Text as="div" align="center">
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: isActive ? s.accent : "var(--ft-muted)", display: "block" }}>{s.label}</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: isActive ? s.accent : "var(--ft-muted)", display: "block" }}>{s.label}</span>
         </Text>
       </button>
     );
@@ -838,9 +838,9 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
         {/* Live preview box — shows hovered swatch on hover, active theme otherwise */}
         <div style={{ padding: "12px 16px", borderTop: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
           <HStack gap={8} align="baseline" marginBottom={8}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Preview</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Preview</div>
             {hoveredTheme && hoveredTheme !== theme && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: previewSwatch.accent, letterSpacing: "0.06em" }}>{previewSwatch.label}</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: previewSwatch.accent, letterSpacing: "0.06em" }}>{previewSwatch.label}</span>
             )}
           </HStack>
           {(() => {
@@ -911,7 +911,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
                 setAccentOverride("");
                 localStorage.removeItem("nr-accent-override");
                 document.documentElement.style.removeProperty("--ft-accent");
-              }} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "1px solid var(--ft-border)", padding: "3px 10px", cursor: "pointer" }}>
+              }} style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "1px solid var(--ft-border)", padding: "3px 10px", cursor: "pointer" }}>
                 Reset
               </button>
             )}
@@ -1044,7 +1044,7 @@ function DisplayAndMotionPanel() {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 32 }}>115%</span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 36, textAlign: "right" }}>{fontScale}%</span>
           </HStack>
-          <Text as="div" mono size={9} color="var(--ft-dim)" mt={6}>Scales all app text. Larger = more readable, smaller = denser layout.</Text>
+          <Text as="div" size={10} color="var(--ft-dim)" mt={6}>Scales all app text. Larger = more readable, smaller = denser layout.</Text>
         </div>
       </div>
 
@@ -1067,7 +1067,7 @@ function DisplayAndMotionPanel() {
             <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", width: 30, textAlign: "right" }}>Rich</span>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 32, textAlign: "right" }}>{intensity}</span>
           </HStack>
-          <Text as="div" mono size={9} color="var(--ft-dim)" mt={6}>Affects particle density and opacity. Some effects require a page refresh.</Text>
+          <Text as="div" size={10} color="var(--ft-dim)" mt={6}>Affects particle density and opacity. Some effects require a page refresh.</Text>
         </div>
         <SettingsSelectRow title="Theme transition" sub="Animation style when switching themes" value={transition} onChange={setTransitionVal}>
           <option value="instant">Instant</option>
@@ -1181,7 +1181,7 @@ function DashboardPanel() {
       </div>
       <div style={PANEL_STYLE}>
         <PanelHeader>Navigation Visibility</PanelHeader>
-        <div style={{ padding: "8px 14px 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderBottom: "1px solid var(--ft-border)" }}>
+        <div style={{ padding: "8px 14px 4px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", borderBottom: "1px solid var(--ft-border)" }}>
           Toggle which pages appear in the sidebar. Hidden pages are still accessible via keyboard shortcuts and the command palette.
         </div>
         {navBySection.map(section => (
@@ -1223,14 +1223,14 @@ function CustomCategoriesPanel() {
   return (
     <div style={PANEL_STYLE}>
       <PanelHeader>Custom Categories</PanelHeader>
-      <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderBottom: "1px solid var(--ft-border)" }}>
+      <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", borderBottom: "1px solid var(--ft-border)" }}>
         Add your own categories. They appear alongside built-in categories in Quick Add and auto-cat rules.
       </div>
       {customCats.length > 0 ? (
         <div style={{ padding: "8px 14px" }}>
           {customCats.map(cat => (
             <div key={cat} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid var(--ft-border)" }}>
-              <Text as="span" mono size={11} color="var(--ft-text)">{cat}</Text>
+              <Text as="span" size={11} color="var(--ft-text)">{cat}</Text>
               <button onClick={() => handleRemove(cat)} style={{ background: "none", border: "none", color: "var(--ft-red)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "2px 4px" }} aria-label={`Remove ${cat}`}>×</button>
             </div>
           ))}
@@ -1384,13 +1384,13 @@ function WardrobePanel() {
           <div style={{ flex: 1 }}>
             <HStack align="center" justify="between" marginBottom={6}>
               <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.12em">PHASE</Text>
-              <button onClick={() => setAutoPlay(a => !a)} style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.06em", color: autoPlay ? "var(--ft-accent)" : "var(--ft-dim)", background: autoPlay ? "var(--ft-accent)15" : "transparent", border: `1px solid ${autoPlay ? "var(--ft-accent)44" : "var(--ft-border)"}`, padding: "2px 6px", cursor: "pointer" }}>
+              <button onClick={() => setAutoPlay(a => !a)} style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", color: autoPlay ? "var(--ft-accent)" : "var(--ft-dim)", background: autoPlay ? "var(--ft-accent)15" : "transparent", border: `1px solid ${autoPlay ? "var(--ft-accent)44" : "var(--ft-border)"}`, padding: "2px 6px", cursor: "pointer" }}>
                 {autoPlay ? "AUTO ●" : "AUTO ○"}
               </button>
             </HStack>
             <HStack gap={3} wrap>
               {WARDROBE_PHASES.map(p => (
-                <button key={p} onClick={() => { setAutoPlay(false); setPreviewPhase(p); }} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em", padding: "2px 5px", border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`, background: previewPhase === p ? "var(--ft-accent)15" : "transparent", color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" }}>
+                <button key={p} onClick={() => { setAutoPlay(false); setPreviewPhase(p); }} style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.05em", padding: "2px 5px", border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`, background: previewPhase === p ? "var(--ft-accent)15" : "transparent", color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" }}>
                   {p}
                 </button>
               ))}
@@ -1424,10 +1424,10 @@ function WardrobePanel() {
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: isActive ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>{skin.rarity}</span>
                   </HStack>
-                  <Text as="div" mono size={10} color="var(--ft-muted)" lineHeight={1.5} mb={skin.perks.length > 0 ? 5 : 0}>{skin.desc}</Text>
+                  <Text as="div" size={11} color="var(--ft-muted)" lineHeight={1.5} mb={skin.perks.length > 0 ? 5 : 0}>{skin.desc}</Text>
                   {skin.perks.length > 0 && (
                     <HStack gap="3px 6px" wrap>
-                      {skin.perks.map((perk) => (<span key={perk} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>))}
+                      {skin.perks.map((perk) => (<span key={perk} style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>))}
                     </HStack>
                   )}
                 </div>
@@ -1471,10 +1471,10 @@ function AiSettingsPanel() {
               }}
             >
               <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: selected === s.id ? "var(--ft-accent)" : "var(--ft-text)", marginBottom: 3 }}>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: selected === s.id ? "var(--ft-accent)" : "var(--ft-text)", marginBottom: 3 }}>
                   {s.label}
                 </div>
-                <Text as="div" mono size={10} color="var(--ft-muted)" lineHeight={1.5}>{s.desc}</Text>
+                <Text as="div" size={11} color="var(--ft-muted)" lineHeight={1.5}>{s.desc}</Text>
                 <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.05em" mt={4}>{s.preview}</Text>
               </div>
               <div style={{
@@ -1495,7 +1495,7 @@ function AiSettingsPanel() {
 
       {selected === "wanderer" && (
         <div style={{ ...PANEL_STYLE, padding: "10px 14px" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)" }}>
             Bot skin can be customised in{" "}
             <span style={{ color: "var(--ft-accent)", cursor: "pointer", textDecoration: "underline" }} onClick={() => window.dispatchEvent(new CustomEvent("numeris-settings-nav", { detail: "wardrobe" }))}>
               Personalise → Wardrobe
@@ -1507,7 +1507,7 @@ function AiSettingsPanel() {
       <div style={PANEL_STYLE}>
         <PanelHeader>Contextual Awareness</PanelHeader>
         <div style={{ padding: "12px 14px" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.7 }}>
             The AI automatically knows which page you're on and tailors its responses accordingly.
             On the Accounts page it knows you're managing balances; on Investments it focuses on portfolios, etc.
           </div>
@@ -1540,9 +1540,9 @@ function WiseAccountRow({ account }: { account: { id: number; name: string; curr
         <Text as="div" mono size={12} weight={500} color="var(--ft-text)">
           {account.name}
         </Text>
-        <Text as="div" mono size={10} color="var(--ft-muted)" mt={2}>
+        <Text as="div" size={10} color="var(--ft-muted)" mt={2}>
           {account.lastSyncedAt
-            ? `Last synced ${new Date(account.lastSyncedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`
+            ? <>Last synced <span className="pnum">{new Date(account.lastSyncedAt).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span></>
             : "Never synced"}
         </Text>
       </div>
@@ -2030,7 +2030,7 @@ function CryptoWalletsPanel() {
                 </span>
               )}
               {hasSynced && !hasAnyPricedValue && (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>
                   Total — set a price below to value your wallets
                 </span>
               )}
@@ -2038,7 +2038,7 @@ function CryptoWalletsPanel() {
                 onClick={handleSyncAll}
                 disabled={syncingAll || wallets.length === 0}
                 style={{
-                  fontFamily: "var(--font-mono)", fontSize: 10,
+                  fontFamily: "var(--font-sans)", fontSize: 10,
                   color: syncingAll || wallets.length === 0 ? "var(--ft-muted)" : "var(--ft-accent)",
                   background: "transparent",
                   border: `1px solid ${syncingAll || wallets.length === 0 ? "var(--ft-border2)" : "var(--ft-accent)"}`,
@@ -2052,7 +2052,7 @@ function CryptoWalletsPanel() {
               <button
                 onClick={() => setShowForm(v => !v)}
                 style={{
-                  fontFamily: "var(--font-mono)", fontSize: 10,
+                  fontFamily: "var(--font-sans)", fontSize: 10,
                   color: "var(--ft-accent)", background: "transparent",
                   border: "1px solid var(--ft-accent)", padding: "3px 10px",
                   cursor: "pointer", letterSpacing: "0.04em",
@@ -2069,12 +2069,12 @@ function CryptoWalletsPanel() {
         {/* Add wallet form */}
         {showForm && (
           <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", display: "flex", flexDirection: "column", gap: 10 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 2 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 2 }}>
               New Wallet
             </div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr auto", gap: 8, alignItems: "end" }}>
               <VStack gap={4}>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>LABEL</label>
+                <label style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>LABEL</label>
                 <input
                   type="text"
                   value={formLabel}
@@ -2084,7 +2084,7 @@ function CryptoWalletsPanel() {
                 />
               </VStack>
               <VStack gap={4}>
-                <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>CHAIN</label>
+                <label style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>CHAIN</label>
                 <select
                   value={formChain}
                   onChange={e => setFormChain(e.target.value as "ETH" | "BTC")}
@@ -2097,7 +2097,7 @@ function CryptoWalletsPanel() {
               <button
                 onClick={handleAddWallet}
                 style={{
-                  fontFamily: "var(--font-mono)", fontSize: 11,
+                  fontFamily: "var(--font-sans)", fontSize: 11,
                   color: "var(--ft-base)", background: "var(--ft-accent)",
                   border: "none", padding: "6px 16px", cursor: "pointer",
                   whiteSpace: "nowrap",
@@ -2108,7 +2108,7 @@ function CryptoWalletsPanel() {
               </button>
             </div>
             <VStack gap={4}>
-              <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.06em" }}>ADDRESS</label>
+              <label style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>ADDRESS</label>
               <input
                 type="text"
                 value={formAddress}
@@ -2119,7 +2119,7 @@ function CryptoWalletsPanel() {
               />
             </VStack>
             {formError && (
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-red)", padding: "4px 0" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-red)", padding: "4px 0" }}>
                 ⚠ {formError}
               </div>
             )}
@@ -2128,7 +2128,7 @@ function CryptoWalletsPanel() {
 
         {/* Wallet list */}
         {wallets.length === 0 ? (
-          <div style={{ padding: "14px 16px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", fontStyle: "italic" }}>
+          <div style={{ padding: "14px 16px", fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)", fontStyle: "italic" }}>
             No wallets saved — click + ADD WALLET to start tracking
           </div>
         ) : (
@@ -2174,7 +2174,7 @@ function CryptoWalletsPanel() {
                           ≈ £{valueBase.toLocaleString("en-GB", { maximumFractionDigits: 2 })}
                         </span>
                       ) : (
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>
                           ≈ £— · set {wallet.chain} price below
                         </span>
                       )}
@@ -2191,7 +2191,7 @@ function CryptoWalletsPanel() {
                     onClick={() => { void handleSync(wallet.id); }}
                     disabled={isSyncing || syncingAll}
                     style={{
-                      fontFamily: "var(--font-mono)", fontSize: 10,
+                      fontFamily: "var(--font-sans)", fontSize: 10,
                       color: isSyncing ? "var(--ft-muted)" : "var(--ft-accent)",
                       background: "transparent",
                       border: `1px solid ${isSyncing ? "var(--ft-border2)" : "var(--ft-accent)"}`,
@@ -2205,7 +2205,7 @@ function CryptoWalletsPanel() {
                     onClick={() => handleDeleteWallet(wallet.id)}
                     disabled={isSyncing || syncingAll}
                     style={{
-                      fontFamily: "var(--font-mono)", fontSize: 10,
+                      fontFamily: "var(--font-sans)", fontSize: 10,
                       color: "var(--ft-red)", background: "transparent",
                       border: "1px solid var(--ft-red)44", padding: "4px 10px",
                       cursor: isSyncing ? "not-allowed" : "pointer",
@@ -2225,7 +2225,7 @@ function CryptoWalletsPanel() {
       <div style={PANEL_STYLE}>
         <PanelHeader>Price Rates (GBP)</PanelHeader>
         <VStack gap={10} padding="12px 14px">
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
             Override the approximate GBP rate used to calculate fiat values. Stored in localStorage.
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto 1fr auto", gap: 8, alignItems: "center" }}>
@@ -2252,7 +2252,7 @@ function CryptoWalletsPanel() {
             <button
               onClick={handleSavePrices}
               style={{
-                fontFamily: "var(--font-mono)", fontSize: 10,
+                fontFamily: "var(--font-sans)", fontSize: 10,
                 color: "var(--ft-base)", background: "var(--ft-accent)",
                 border: "none", padding: "6px 14px", cursor: "pointer",
                 whiteSpace: "nowrap",
@@ -2269,7 +2269,7 @@ function CryptoWalletsPanel() {
         padding: "8px 14px",
         background: "var(--ft-raised)",
         border: "1px solid var(--ft-border)",
-        fontFamily: "var(--font-mono)", fontSize: 9,
+        fontFamily: "var(--font-sans)", fontSize: 10,
         color: "var(--ft-dim)", letterSpacing: "0.04em", lineHeight: 1.6,
       }}>
         ETH balances via Etherscan public API · BTC balances via Blockstream · No API key required · All requests are client-side
@@ -2313,12 +2313,12 @@ function CategoriesPanel() {
     <VStack gap={6}>
       <div style={PANEL_STYLE}>
         <PanelHeader>Category Colours &amp; Icons</PanelHeader>
-        <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+        <div style={{ padding: "10px 14px 6px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>
           Customise the colour and emoji for each spending category. Changes apply across the app.
         </div>
         <div style={{ padding: "4px 0" }}>
           {categories.length === 0 && (
-            <div style={{ padding: "16px 14px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+            <div style={{ padding: "16px 14px", fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)" }}>
               No categories yet — add some transactions first.
             </div>
           )}
@@ -2326,18 +2326,18 @@ function CategoriesPanel() {
             <div key={cat} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 14px", borderBottom: "1px solid var(--ft-border)" }}>
               <span style={{ fontSize: 14, width: 22, textAlign: "center" }}>{getEmoji(cat)}</span>
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: getColor(cat), flexShrink: 0 }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{cat}</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{cat}</span>
               {meta[cat.toLowerCase()] && (
                 <button
                   onClick={() => removeCategoryMeta(cat)}
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
+                  style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", letterSpacing: "0.05em" }}
                 >
                   RESET
                 </button>
               )}
               <button
                 onClick={() => openEdit(cat)}
-                style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-border)", padding: "2px 8px", cursor: "pointer" }}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-border)", padding: "2px 8px", cursor: "pointer" }}
               >
                 Edit
               </button>
@@ -2352,10 +2352,10 @@ function CategoriesPanel() {
           onClick={() => setEditingCat(null)}
         >
           <div onClick={e => e.stopPropagation()} className="ft-float" style={{ padding: 20, width: 300, display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>EDIT: {editingCat.toUpperCase()}</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: "var(--ft-dim)" }}>EDIT: {editingCat.toUpperCase()}</div>
 
             <div>
-              <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.08em" mb={6}>EMOJI</Text>
+              <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.08em" mb={6}>EMOJI</Text>
               <input
                 value={emojiInput}
                 onChange={e => setEmojiInput(e.target.value)}
@@ -2377,8 +2377,8 @@ function CategoriesPanel() {
             </div>
 
             <HStack gap={8}>
-              <button onClick={saveEdit} style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px", cursor: "pointer", letterSpacing: "0.06em" }}>SAVE</button>
-              <button onClick={() => setEditingCat(null)} style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 10, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "8px", cursor: "pointer" }}>CANCEL</button>
+              <button onClick={saveEdit} style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px", cursor: "pointer", letterSpacing: "0.06em" }}>SAVE</button>
+              <button onClick={() => setEditingCat(null)} style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 10, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "8px", cursor: "pointer" }}>CANCEL</button>
             </HStack>
           </div>
         </div>
@@ -2588,8 +2588,8 @@ export default function Settings() {
         /* ── Mobile nav: two-level chip nav ── */
         <div style={{ background: "var(--ft-surface)", borderBottom: "1px solid var(--ft-border)", flexShrink: 0 }}>
           {/* Breadcrumb */}
-          <div style={{ padding: "8px 14px 0", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.14em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 5 }}>
-            <span>◈ SYSTEM CONFIG</span>
+          <div style={{ padding: "8px 14px 0", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.06em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 5 }}>
+            <span><Text as="span" mono>◈</Text> SYSTEM CONFIG</span>
             <Text as="span" color="var(--ft-border2)">›</Text>
             <Text as="span" color="var(--ft-dim)">{activeLabel.toUpperCase()}</Text>
           </div>
