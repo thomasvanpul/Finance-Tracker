@@ -53,7 +53,7 @@ import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useLocation } from "wouter";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
-import { Zap, RefreshCw } from "lucide-react";
+import { Zap, RefreshCw, X } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, memo } from "react";
 import type { ComponentType } from "react";
 import { createPortal } from "react-dom";
@@ -730,7 +730,7 @@ function AiInsightsStrip() {
   return (
     <div style={{ marginTop: 10 }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
-        <Text as="span" color="var(--ft-accent)">·</Text> Insights
+        Insights
       </div>
       <div className="ft-dashboard-insights">
         {insightRows.map(({ label, text }) => (
@@ -745,6 +745,7 @@ function AiInsightsStrip() {
 
 const AI_INSIGHTS_CACHE_KEY = "ft-dashboard-ai-insights";
 const AI_INSIGHTS_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const AI_INSIGHTS_DISMISSED_KEY = "ft-dashboard-ai-insights-dismissed";
 
 interface AiInsightsCacheEntry {
   insights: string[];
@@ -783,6 +784,11 @@ interface AiInsightsPanelProps {
 function AiInsightsPanel(_props: AiInsightsPanelProps) {
   const [insights, setInsights] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
+  // Ephemeral (DESIGN.md §6): the card pops in and can be sent away for the
+  // session. A reload brings it back, which is what "temporary" means here.
+  const [dismissed, setDismissed] = useState<boolean>(() => {
+    try { return sessionStorage.getItem(AI_INSIGHTS_DISMISSED_KEY) === "1"; } catch { return false; }
+  });
   const fetchedRef = useRef(false);
 
   const fetchInsights = async () => {
@@ -830,22 +836,29 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
   };
 
   // Don't render anything until we know the result (avoids layout shift)
+  if (dismissed) return null;
   if (!loading && insights === null) return null;
 
   return (
-    <div className="ft-widget-frame" style={{
+    <div className="ft-float" style={{
       marginBottom: 6,
     }}>
-      {/* Terminal panel header */}
+      {/* Float header: prose title, not a panel label — this surface is
+          not part of the page and must not be drawn like one. */}
       <div style={{
         borderBottom: "1px solid var(--ft-border)",
-        padding: "0 12px",
+        padding: "0 8px 0 12px",
         height: "var(--ft-panel-header-h)",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        gap: 6,
       }}>
-        <span className="ft-panel-label">AI INSIGHTS</span>
+        <span className="ft-float-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Zap size={11} style={{ color: "var(--ft-accent)" }} />
+          AI insights
+        </span>
+        <span style={{ flex: 1 }} />
         <button
           onClick={handleRefresh}
           title="Refresh AI insights"
@@ -865,6 +878,16 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
           onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
         >
           <RefreshCw size={10} />
+        </button>
+        <button
+          onClick={() => { setDismissed(true); try { sessionStorage.setItem(AI_INSIGHTS_DISMISSED_KEY, "1"); } catch {} }}
+          title="Dismiss for this session"
+          aria-label="Dismiss AI insights"
+          style={{ background: "none", border: "none", padding: "2px 4px", cursor: "pointer", color: "var(--ft-dim)", display: "flex", alignItems: "center" }}
+          onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; }}
+          onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+        >
+          <X size={11} />
         </button>
       </div>
 
@@ -1802,7 +1825,7 @@ function DashboardKpiBar({
             textTransform: "uppercase",
             color: "var(--ft-muted)",
           }}>
-            <span style={{ color: "var(--ft-accent)", marginRight: 5 }}>·</span>{dashboardLabel}
+            {dashboardLabel}
           </span>
           <button
             onClick={onCustomize}
@@ -1927,7 +1950,6 @@ function DashboardKpiBar({
         minWidth: 110,
         gap: 5,
       }}>
-        <Text as="span" mono size={12} color="var(--ft-accent)" lineHeight={1}>·</Text>
         <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.12em" nowrap>
           {dashboardLabel}
         </Text>
