@@ -106,8 +106,10 @@ export const RARITY_COLOR: Record<ThemeRarity, string> = {
 
 // ── XP accounting ─────────────────────────────────────────────────────────────
 
-// Mirrors the xp field from each TopicCard in learn-tab.tsx.
-// Update here whenever a topic's XP value changes there.
+// Topic XP values. These mirrored the TopicCard xp field in
+// components/investments/learn-tab.tsx, which was unreachable dead code and
+// was removed on 2026-09-06. This table is now the only definition; the lock
+// tests in f5-refusals.test.ts read it directly.
 const TOPIC_XP: Record<string, number> = {
   "compound-interest":    60,
   "diversification":      50,
