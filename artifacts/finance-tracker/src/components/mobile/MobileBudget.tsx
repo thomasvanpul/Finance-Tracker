@@ -56,11 +56,13 @@ export function MobileBudget() {
     spendByCat.set(k, (spendByCat.get(k) ?? 0) + Math.abs(t.baseEquivalent));
   }
 
-  type Row = { id: number | string; category: string; spent: number; limit: number; pct: number; over: boolean };
+  type Row = { id: number | string; category: string; spent: number; limit: number; pct: number | null; over: boolean };
   const rows: Row[] = budgets.map((b, i) => {
     const spent = spendByCat.get((b.category ?? "").toLowerCase()) ?? 0;
     const limit = parseFloat(String(b.monthlyLimit ?? 0)) || 0;
-    const pct = limit > 0 ? (spent / limit) * 100 : 0;
+    // No monthly limit set → nothing to be a percentage of. Null, not 0:
+    // "0%" reads as "you have spent none of your budget".
+    const pct = limit > 0 ? (spent / limit) * 100 : null;
     return { id: b.id ?? i, category: b.category, spent, limit, pct, over: spent > limit && limit > 0 };
   });
 
@@ -141,9 +143,9 @@ export function MobileBudget() {
       </div>
 
       {rows.map((r) => {
-        const displayPct = Math.min(100, r.pct);
+        const displayPct = r.pct == null ? 0 : Math.min(100, r.pct);
         const isZero = r.spent === 0;
-        const fillColor = r.over ? "var(--ft-red)" : r.pct > 80 ? "var(--ft-amber)" : "var(--ft-accent)";
+        const fillColor = r.over ? "var(--ft-red)" : (r.pct ?? 0) > 80 ? "var(--ft-amber)" : "var(--ft-accent)";
         return (
           <div
             key={r.id}
@@ -197,7 +199,7 @@ export function MobileBudget() {
                 <>
                   <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
                   <div style={{ position: "absolute", inset: 0, width: `${displayPct}%`, background: fillColor }} />
-                  {!r.over && r.pct < 100 && (
+                  {!r.over && r.pct != null && r.pct < 100 && (
                     <div
                       style={{
                         position: "absolute",
@@ -214,7 +216,7 @@ export function MobileBudget() {
             </div>
             <HStack justify="between" align="baseline" marginTop={4}>
               <Text as="span" mono size={9} letterSpacing="0.1em" color="var(--ft-dim)">
-                {txLoading ? "…" : `${Math.round(r.pct)}%`}
+                {txLoading ? "…" : r.pct == null ? "—" : `${Math.round(r.pct)}%`}
               </Text>
               {r.over && (
                 <Text as="span" mono size={9} letterSpacing="0.1em" color="var(--ft-red)">

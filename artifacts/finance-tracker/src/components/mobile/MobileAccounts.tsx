@@ -191,8 +191,11 @@ function CurrencyBlocks({
         // Rule (CLAUDE.md): a financial figure — including a percentage —
         // is shown in full or not at all. figureFits/labelFits is the shared
         // guard used by BlockField; do not reimplement.
-        const pctText = `${total > 0 ? Math.round((c.gbpSum / total) * 100) : 0}%`;
-        const showPct = figureFits(pctText, c.pxWidth, 15, 14);
+        // A share of a zero or negative total has no denominator, so there
+        // is no percentage to show. The tile shows its currency label alone
+        // rather than a fabricated "0%".
+        const pctText = total > 0 ? `${Math.round((c.gbpSum / total) * 100)}%` : null;
+        const showPct = pctText != null && figureFits(pctText, c.pxWidth, 15, 14);
         const showLabel = labelFits(c.currency, c.pxWidth, 11, 14);
         return (
         <div

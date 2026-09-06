@@ -190,7 +190,8 @@ function Section({ title, rows, total, accent }: SectionProps) {
         <MonoLabel as="span" size={9}>SHARE · £</MonoLabel>
       </div>
       {rows.map((r) => {
-        const pct = total > 0 ? (r.amount / total) * 100 : 0;
+        // Share of a zero total is undefined, not 0% — render an em-dash.
+        const pct = total > 0 ? (r.amount / total) * 100 : null;
         return (
           <div
             key={r.cat}
@@ -203,7 +204,7 @@ function Section({ title, rows, total, accent }: SectionProps) {
               <Text as="span" size={14}>{r.cat}</Text>
               <HStack gap={10} align="baseline">
                 <Text as="span" mono size={10} letterSpacing="0.06em" color="var(--ft-dim)" numeric>
-                  {nfmt(pct, { decimals: 0 })}%
+                  {pct == null ? "—" : `${nfmt(pct, { decimals: 0 })}%`}
                 </Text>
                 <div style={{ width: AMOUNT_COL_W, textAlign: "right" }}>
                   <Text as="span" mono size={13} weight={600} numeric>
@@ -214,7 +215,7 @@ function Section({ title, rows, total, accent }: SectionProps) {
             </HStack>
             <div style={{ marginTop: 6, position: "relative", height: 2 }}>
               <div style={{ position: "absolute", inset: 0, background: "var(--ft-border)" }} />
-              <div style={{ position: "absolute", inset: 0, width: `${Math.min(100, pct)}%`, background: accent }} />
+              <div style={{ position: "absolute", inset: 0, width: `${Math.min(100, pct ?? 0)}%`, background: accent }} />
             </div>
           </div>
         );

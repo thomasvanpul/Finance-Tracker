@@ -46,7 +46,7 @@ export function MobileGoals() {
     name: string;
     current: number;
     target: number;
-    pct: number;
+    pct: number | null;
     complete: boolean;
     deadline?: string | null;
     monthly?: number | null;
@@ -54,7 +54,9 @@ export function MobileGoals() {
   const rows: Row[] = goals.map((g, i) => {
     const current = parseFloat(String(g.current ?? 0)) || 0;
     const target = parseFloat(String(g.target ?? 0)) || 0;
-    const pct = target > 0 ? (current / target) * 100 : 0;
+    // No target set → no denominator, so progress is undefined rather
+    // than 0%. "0%" reads as "you have saved nothing toward this".
+    const pct = target > 0 ? (current / target) * 100 : null;
     const monthly = g.monthlyContribution != null ? parseFloat(String(g.monthlyContribution)) : null;
     return {
       id: g.id ?? i,
@@ -130,7 +132,7 @@ export function MobileGoals() {
 
       {rows.map((r) => {
         const isZero = r.current === 0;
-        const displayPct = Math.min(100, r.pct);
+        const displayPct = r.pct == null ? 0 : Math.min(100, r.pct);
         const days = r.deadline ? daysUntil(r.deadline) : null;
         return (
           <div
@@ -200,7 +202,7 @@ export function MobileGoals() {
                       background: r.complete ? "var(--ft-green)" : "var(--ft-accent)",
                     }}
                   />
-                  {!r.complete && r.pct < 100 && (
+                  {!r.complete && r.pct != null && r.pct < 100 && (
                     <div
                       style={{
                         position: "absolute",
@@ -218,7 +220,7 @@ export function MobileGoals() {
             <HStack justify="between" align="baseline" marginTop={4} gap={10}>
               <HStack gap={10} align="baseline">
                 <Text as="span" mono size={9} letterSpacing="0.1em" color="var(--ft-dim)">
-                  {Math.round(r.pct)}%
+                  {r.pct == null ? "—" : `${Math.round(r.pct)}%`}
                 </Text>
                 {typeof r.monthly === "number" && (
                   <Text as="span" mono size={9} letterSpacing="0.08em" color="var(--ft-dim)">

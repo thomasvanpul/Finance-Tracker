@@ -17,22 +17,25 @@ function daysUntil(dateStr: string): number {
 
 const CARD_COLORS = ["#3B82F6", "#F97316", "#4ADE80", "#10B981", "#F59E0B", "#EF4444", "#06B6D4"];
 
-function ProgressRing({ pct, size = 48, stroke = 5 }: { pct: number; size?: number; stroke?: number }) {
+function ProgressRing({ pct, size = 48, stroke = 5 }: { pct: number | null; size?: number; stroke?: number }) {
   const r = (size - stroke * 2) / 2;
   const circ = 2 * Math.PI * r;
-  const color = pct >= 100 ? "var(--ft-green)" : pct >= 70 ? "var(--ft-accent)" : "var(--ft-accent)";
+  // A null pct (no target) draws an empty ring and an em-dash rather
+  // than a full-looking 0% — there is no progress to report, which is
+  // a different statement from "no progress made".
+  const color = (pct ?? 0) >= 100 ? "var(--ft-green)" : "var(--ft-accent)";
   return (
     <svg width={size} height={size} style={{ flexShrink: 0 }}>
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--ft-raised)" strokeWidth={stroke} />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-        strokeDasharray={circ} strokeDashoffset={circ * (1 - Math.min(pct / 100, 1))}
+        strokeDasharray={circ} strokeDashoffset={circ * (1 - Math.min((pct ?? 0) / 100, 1))}
         strokeLinecap="round" transform={`rotate(-90 ${size / 2} ${size / 2})`}
         style={{ transition: "stroke-dashoffset 0.1s ease" }}
       />
       <text x={size / 2} y={size / 2 + 4} textAnchor="middle"
         style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, fill: "var(--ft-text)" }}>
-        {Math.round(pct)}%
+        {pct == null ? "—" : `${Math.round(pct)}%`}
       </text>
     </svg>
   );
@@ -168,7 +171,7 @@ export function GoalsWidget() {
       </div>
       <div style={{ display: "flex", overflowX: "auto", gap: 10, padding: "0 16px 16px", scrollbarWidth: "none" }}>
         {goals.map(goal => {
-          const pct = goal.target > 0 ? (goal.current / goal.target) * 100 : 0;
+          const pct = goal.target > 0 ? (goal.current / goal.target) * 100 : null;
           return (
             <div key={goal.id} style={{ minWidth: 100, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
               <ProgressRing pct={pct} />
@@ -286,17 +289,17 @@ export function BudgetWidget() {
       <div style={{ padding: "12px 16px 4px", fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)" }}>Budget</div>
       {budgets.slice(0, 5).map((b, i) => {
         const spent = spendByCategory[b.category.toLowerCase()] ?? 0;
-        const pct = b.limit > 0 ? (spent / b.limit) * 100 : 0;
-        const color = pct >= 100 ? "var(--ft-red)" : pct >= 80 ? "var(--ft-amber)" : "var(--ft-green)";
+        const pct = b.limit > 0 ? (spent / b.limit) * 100 : null;
+        const color = pct == null ? "var(--ft-muted)" : pct >= 100 ? "var(--ft-red)" : pct >= 80 ? "var(--ft-amber)" : "var(--ft-green)";
         const isLast = i === Math.min(budgets.length, 5) - 1;
         return (
           <div key={b.id} style={{ padding: "10px 16px", borderBottom: isLast ? "none" : "1px solid var(--ft-border)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ fontSize: 12, color: "var(--ft-text)", textTransform: "capitalize" }}>{b.category}</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color }}>{Math.round(pct)}%</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color }}>{pct == null ? "—" : `${Math.round(pct)}%`}</span>
             </div>
             <div style={{ height: 3, background: "var(--ft-raised)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", borderRadius: 2, width: `${Math.min(pct, 100)}%`, background: color }} />
+              <div style={{ height: "100%", borderRadius: 2, width: `${Math.min(pct ?? 0, 100)}%`, background: color }} />
             </div>
           </div>
         );

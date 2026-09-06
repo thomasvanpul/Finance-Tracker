@@ -126,7 +126,9 @@ export function BlockField({ holdings }: { holdings: Holdings }) {
 }
 
 function HeroTile({ height, value, total }: { height: number; value: number; total: number }) {
-  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  // Share of a zero total has no denominator. CLAUDE.md: render the
+  // label alone rather than a fabricated figure beside it.
+  const pct = total > 0 ? Math.round((value / total) * 100) : null;
   return (
     <div
       style={{
@@ -141,7 +143,7 @@ function HeroTile({ height, value, total }: { height: number; value: number; tot
       }}
     >
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em" }}>
-        PROPERTY · {pct}%
+        {pct == null ? "PROPERTY" : `PROPERTY · ${pct}%`}
       </span>
       <span className="pnum" style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-0.03em" }}>
         {nfmt(value, { symbol: "£", decimals: 0 })}
