@@ -1265,7 +1265,8 @@ export const UpdateSettingsCurrencyBody = zod.object({
  * @summary Get the current user's persona
  */
 export const GetSettingsPersonaResponse = zod.object({
-  "persona": zod.enum(['market', 'budget', 'wealth', 'social', 'full']).describe('Which product face the user sees. See lib\/persona.ts on the\nfrontend for what each id enables\/disables.\n')
+  "persona": zod.enum(['market', 'budget', 'wealth', 'social', 'full']).describe('Which product face the user sees. See lib\/persona.ts on the\nfrontend for what each id enables\/disables.\n'),
+  "onboarded": zod.boolean().describe('Whether this persona was ever actually chosen. Read-only, and\nseparate from `persona` because the persona string cannot\ncarry it: the column defaults to \"full\", so a user who has\nnever answered the onboarding questions and one who\ndeliberately picked \"full\" read back the same string. The\nclient uses this to decide whether to ask.\n\nNot part of PersonaSettings (the PUT body) — a client cannot\nset it. It is derived from app_settings.onboarded_at, which\nsetPersona stamps on the first write.\n')
 })
 
 

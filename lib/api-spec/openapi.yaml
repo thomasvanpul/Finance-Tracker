@@ -1217,7 +1217,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PersonaSettings"
+                $ref: "#/components/schemas/PersonaState"
     put:
       operationId: updateSettingsPersona
       tags: [settings]
@@ -2573,6 +2573,30 @@ components:
           description: |
             Which product face the user sees. See lib/persona.ts on the
             frontend for what each id enables/disables.
+
+    PersonaState:
+      type: object
+      required: [persona, onboarded]
+      properties:
+        persona:
+          type: string
+          enum: [market, budget, wealth, social, full]
+          description: |
+            Which product face the user sees. See lib/persona.ts on the
+            frontend for what each id enables/disables.
+        onboarded:
+          type: boolean
+          description: |
+            Whether this persona was ever actually chosen. Read-only, and
+            separate from `persona` because the persona string cannot
+            carry it: the column defaults to "full", so a user who has
+            never answered the onboarding questions and one who
+            deliberately picked "full" read back the same string. The
+            client uses this to decide whether to ask.
+
+            Not part of PersonaSettings (the PUT body) — a client cannot
+            set it. It is derived from app_settings.onboarded_at, which
+            setPersona stamps on the first write.
 
     ThemeSettings:
       type: object

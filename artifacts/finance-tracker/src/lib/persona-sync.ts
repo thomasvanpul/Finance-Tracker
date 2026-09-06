@@ -38,30 +38,35 @@ export async function savePersonaToServer(persona: PersonaId): Promise<void> {
 // doesn't reflect it, apply the server one locally so every
 // synchronous loadPersonaIds() reader sees the truth.
 //
-// "full" from the server is NOT treated as an answer, on any device.
+// The persona string alone is not enough to act on.
 // app_settings.persona is `notNull().default("full")` and the row is
 // created lazily by ensureSettings() on the first GET, so a user who
-// has never onboarded and a user who deliberately chose "full" are
-// indistinguishable over the wire — both read back "full". Applying it
-// would be inventing a choice the user has not made, and because
-// applyPersonas() sets the onboarding-complete flag as a side effect,
-// it would skip a brand-new user straight past onboarding into an
-// empty 23-widget dashboard.
+// has never onboarded and a user who deliberately chose "full" read
+// back the same string. This module previously refused every server
+// "full" for that reason, which protected the brand-new user — applying
+// it would have skipped them past onboarding into an empty dashboard,
+// because applyPersonas() sets the onboarding-complete flag as a side
+// effect — at the cost of asking anyone who genuinely chose "full"
+// (including via Skip) all over again on a second device.
 //
-// The cost of that caution is that someone who genuinely chose "full"
-// (including via Skip) is asked again on a second device. Closing that
-// last case needs the server to record that a choice was made — see
-// the note in .review/report.md; it is a schema change, not a client
-// one.
+// `onboarded` closes that gap: it is the presence of
+// app_settings.onboarded_at, which setPersona stamps on the first
+// write, so the wire now distinguishes the two cases outright. A
+// "full" with onboarded true is a real answer and is applied; anything
+// with onboarded false is the default nobody picked and is ignored,
+// whatever the string says.
 export async function hydratePersonaFromServer(): Promise<void> {
   let serverPersona: PersonaId | null = null;
   try {
-    const { persona } = await getSettingsPersona();
+    const { persona, onboarded } = await getSettingsPersona();
+    // No recorded choice — the persona is the column default, not an
+    // answer. Ignore it regardless of its value and let the gate ask.
+    if (!onboarded) return;
     if (isValidPersona(persona)) serverPersona = persona;
   } catch {
     return; // offline or 401; nothing to hydrate
   }
-  if (!serverPersona || serverPersona === "full") return;
+  if (!serverPersona) return;
   const local = loadPersonaIds();
   if (local.length === 0) {
     // Fresh device / cleared storage — mirror the server. This is the

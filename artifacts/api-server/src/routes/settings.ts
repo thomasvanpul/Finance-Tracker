@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import {
   getBaseCurrency,
   setBaseCurrency,
-  getPersona,
+  getPersonaState,
   setPersona,
   VALID_PERSONAS,
   type PersonaId,
@@ -39,8 +39,11 @@ router.put("/settings/currency", async (req, res): Promise<void> => {
 
 router.get("/settings/persona", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
-  const persona = await getPersona(userId);
-  res.json({ persona });
+  // `onboarded` rides along because the persona string cannot carry it:
+  // "full" is the column default, so it is also what a user who has
+  // never answered reads back. See getPersonaState.
+  const state = await getPersonaState(userId);
+  res.json(state);
 });
 
 router.put("/settings/persona", async (req, res): Promise<void> => {

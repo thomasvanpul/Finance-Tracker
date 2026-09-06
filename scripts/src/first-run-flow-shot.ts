@@ -8,6 +8,9 @@
 //   4. landing            (five widgets + the CUSTOMIZE discovery tile)
 //   5. second device      (same user, clean localStorage — must NOT re-ask)
 //   6. skip path          (another fresh user, skips both steps)
+//   7. skipper's 2nd device (the skip path user again, clean storage —
+//                            must NOT re-ask; this is the case the
+//                            persona string alone could not carry)
 //
 // Run with the dev API on :3001 and Vite on :4321.
 import { chromium, type BrowserContext } from 'playwright';
@@ -198,8 +201,9 @@ const emailA = freshEmail('a');
 }
 
 // ── 6: skip path — fresh user, top-bar skip ────────────────────────────────
+const emailB = freshEmail('b');
 {
-  const ctx = await authed(freshEmail('b'), 'sign-up');
+  const ctx = await authed(emailB, 'sign-up');
   const page = await ctx.newPage();
   await page.addInitScript(clean);
   await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
@@ -212,6 +216,28 @@ const emailA = freshEmail('a');
   await page.waitForTimeout(2500);
   await page.screenshot({ path: `${OUT}/firstrun_8_skip_landing.png`, fullPage: true });
   await report(page, '8 skip landing');
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+  await ctx.close();
+}
+
+// ── 6b: the skipper's second device ────────────────────────────────────────
+//
+// Skip writes persona "full" — the same string as the column default
+// handed to someone who has never onboarded. Before app_settings.
+// onboarded_at existed the client could not tell those apart, so it
+// refused every server "full" and this user was asked the questions all
+// over again on their laptop. `onboarded` distinguishes them, so this
+// must land on the dashboard with the questionnaire never shown.
+{
+  const ctx = await authed(emailB, 'sign-in');
+  const page = await ctx.newPage();
+  await page.addInitScript(clean);
+  await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: `${OUT}/firstrun_8b_skipper_second_device.png`, fullPage: true });
+  await report(page, "8b skipper's second device (must NOT be the questionnaire)");
+  console.log('\n--- persona over the wire ---\n' + await page.evaluate(`
+    fetch('/api/settings/persona').then(function(r){ return r.text(); })`));
   await page.unrouteAll({ behavior: 'ignoreErrors' });
   await ctx.close();
 }

@@ -3,13 +3,23 @@
 // connections.test.ts. Focus: validation rejects bad ids, valid ids
 // round-trip through GET/PUT, missing row defaults to the schema
 // default ("full" for persona, "void" for theme).
+//
+// GET /settings/persona also carries `onboarded`, derived from
+// app_settings.onboarded_at. The stub models that column because the
+// distinction it draws — a lazily-created row with persona "full" and
+// nothing chosen, versus a user who picked "full" — is not visible in
+// the persona string, and getting it wrong sends a brand-new user past
+// onboarding into an empty dashboard.
 
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from "vitest";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 
 // In-memory settings store keyed by userId.
-const store = new Map<string, { persona: string; baseCurrency: string; theme: string }>();
+const store = new Map<
+  string,
+  { persona: string; baseCurrency: string; theme: string; onboardedAt: Date | null }
+>();
 
 function reset(): void { store.clear(); }
 
@@ -43,7 +53,10 @@ vi.mock("@workspace/db", () => {
       returning() {
         if (kind === "insert" && payload?.userId) {
           if (!store.has(payload.userId)) {
-            store.set(payload.userId, { persona: "full", baseCurrency: "GBP", theme: "void", ...payload });
+            // onboardedAt NULL on a lazily-created row is the whole
+            // point of the column: the row exists, persona reads back
+            // "full", and nobody has chosen anything.
+            store.set(payload.userId, { persona: "full", baseCurrency: "GBP", theme: "void", onboardedAt: null, ...payload });
           }
           const row = store.get(payload.userId)!;
           return Promise.resolve([{ userId: payload.userId, ...row }]);
@@ -94,10 +107,10 @@ afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 beforeEach(() => reset());
 
 describe("GET /settings/persona", () => {
-  it("returns full by default when no row exists", async () => {
+  it("returns full, not onboarded, when no row exists", async () => {
     const r = await fetch(`${baseUrl}/settings/persona`);
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ persona: "full" });
+    expect(await r.json()).toEqual({ persona: "full", onboarded: false });
   });
 
   it("returns the stored persona after a PUT", async () => {
@@ -108,7 +121,24 @@ describe("GET /settings/persona", () => {
     });
     expect(put.status).toBe(200);
     const get = await fetch(`${baseUrl}/settings/persona`);
-    expect(await get.json()).toEqual({ persona: "market" });
+    expect(await get.json()).toEqual({ persona: "market", onboarded: true });
+  });
+
+  it("distinguishes a chosen 'full' from the default 'full'", async () => {
+    // Same string on the wire, opposite meanings. Before onboarded_at
+    // these two responses were byte-identical, so a user who picked
+    // "full" on their phone was asked the questions again on a laptop.
+    const before = await (await fetch(`${baseUrl}/settings/persona`)).json();
+    expect(before).toEqual({ persona: "full", onboarded: false });
+
+    await fetch(`${baseUrl}/settings/persona`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ persona: "full" }),
+    });
+
+    const after = await (await fetch(`${baseUrl}/settings/persona`)).json();
+    expect(after).toEqual({ persona: "full", onboarded: true });
   });
 });
 

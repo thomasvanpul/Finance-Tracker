@@ -30,16 +30,39 @@ export async function setBaseCurrency(userId: string, currency: string): Promise
 export const VALID_PERSONAS = ["market", "budget", "wealth", "social", "full"] as const;
 export type PersonaId = (typeof VALID_PERSONAS)[number];
 
-export async function getPersona(userId: string): Promise<PersonaId> {
+// The persona plus whether it was ever actually chosen. `persona` alone
+// cannot answer that — the column is notNull().default("full") and the
+// row is created lazily by ensureSettings() below, so a user who has
+// never onboarded and one who deliberately picked "full" read back the
+// same string. `onboarded` is the presence of onboarded_at, surfaced as
+// a boolean because the client only needs "was a choice made"; the
+// instant itself stays server-side (and for rows backfilled by
+// migration 0020 it is an approximation — see the schema comment).
+export async function getPersonaState(
+  userId: string,
+): Promise<{ persona: PersonaId; onboarded: boolean }> {
   const row = await ensureSettings(userId);
-  return (row.persona as PersonaId) ?? "full";
+  return {
+    persona: (row.persona as PersonaId) ?? "full",
+    // != null, not !== null: a column absent from the row object is as
+    // much "no recorded choice" as an explicit NULL, and === would
+    // report undefined as onboarded.
+    onboarded: row.onboardedAt != null,
+  };
 }
 
 export async function setPersona(userId: string, persona: PersonaId): Promise<void> {
-  await ensureSettings(userId);
+  const row = await ensureSettings(userId);
+  // Stamp the FIRST choice only. Changing persona later from settings is
+  // not a second onboarding, and overwriting would lose the only record
+  // of when the user actually answered. ensureSettings has already read
+  // the row, so this costs no extra query; two concurrent writes could
+  // both see null and race to near-identical timestamps, which is
+  // harmless for a per-user settings row.
+  const onboardedAt = row.onboardedAt ?? new Date();
   await db
     .update(appSettingsTable)
-    .set({ persona })
+    .set({ persona, onboardedAt })
     .where(eq(appSettingsTable.userId, userId));
 }
 

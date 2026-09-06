@@ -64,6 +64,7 @@ import type {
   ListTransactionsParams,
   OkResult,
   PersonaSettings,
+  PersonaState,
   ReconciliationReport,
   RecurringPattern,
   StockPrice,
@@ -4722,9 +4723,9 @@ export const getGetSettingsPersonaUrl = () => {
 /**
  * @summary Get the current user's persona
  */
-export const getSettingsPersona = async ( options?: RequestInit): Promise<PersonaSettings> => {
+export const getSettingsPersona = async ( options?: RequestInit): Promise<PersonaState> => {
 
-  return customFetch<PersonaSettings>(getGetSettingsPersonaUrl(),
+  return customFetch<PersonaState>(getGetSettingsPersonaUrl(),
   {
     ...options,
     method: 'GET'

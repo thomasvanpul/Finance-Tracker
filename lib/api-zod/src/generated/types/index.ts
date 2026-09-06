@@ -110,6 +110,8 @@ export * from './listTransactionsType';
 export * from './okResult';
 export * from './personaSettings';
 export * from './personaSettingsPersona';
+export * from './personaState';
+export * from './personaStatePersona';
 export * from './reconciliationAccount';
 export * from './reconciliationReport';
 export * from './reconciliationReportPeriodRule';

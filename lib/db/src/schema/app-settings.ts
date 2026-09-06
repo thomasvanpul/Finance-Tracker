@@ -28,6 +28,30 @@ export const appSettingsTable = pgTable("app_settings", {
   // from laptop to phone would be one more stranded localStorage key
   // (BACKLOG § G20).
   tabSlot: text("tab_slot"),
+  // onboardedAt: when the user first answered the onboarding questions,
+  // NULL if they never have. It exists because `persona` cannot answer
+  // that question: the column is notNull().default("full") and the row
+  // is created lazily by ensureSettings() on the first GET, so "never
+  // chose" and "deliberately chose full" are the same string over the
+  // wire. A brand-new user was being skipped past onboarding onto an
+  // empty dashboard as a result.
+  //
+  // A NULL timestamp says "unknown" in the type system rather than in a
+  // convention someone has to remember — the alternative considered was
+  // an empty-string persona default, which puts a value outside the
+  // OpenAPI enum on the wire and encodes "no answer" as a magic value.
+  //
+  // Rows that predate migration 0020 were backfilled there to their
+  // then-current updated_at, so post-migration NULL means exactly one
+  // thing: no choice has been recorded. For those backfilled rows the
+  // instant is an approximation of "some time before the migration" —
+  // only the non-NULL-ness is load-bearing, and the wire surface is a
+  // boolean (PersonaState.onboarded), so the approximate instant is
+  // never shown to anyone.
+  //
+  // Set by setPersona() via COALESCE, so it records the FIRST choice and
+  // a later persona change in settings does not overwrite it.
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
