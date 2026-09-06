@@ -1140,6 +1140,7 @@ interface HealthBadgesProps {
 
 function HealthBadges({ accountName: _accountName, balance, stats, lowBalanceThreshold }: HealthBadgesProps) {
   const isOverdraft = balance < 0;
+  const status = { fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.06em" } as const;
   const isLowBalance = lowBalanceThreshold != null && balance >= 0 && balance < lowBalanceThreshold;
 
   return (
@@ -1149,11 +1150,7 @@ function HealthBadges({ accountName: _accountName, balance, stats, lowBalanceThr
         <span
           style={{
             fontSize: 9,
-            padding: "1px 5px",
-            borderRadius: 2,
-            background: "var(--ft-red)33",
             color: "var(--ft-red)",
-            border: "1px solid var(--ft-red)66",
             fontWeight: 700,
             letterSpacing: "0.04em",
           }}
@@ -1167,11 +1164,7 @@ function HealthBadges({ accountName: _accountName, balance, stats, lowBalanceThr
         <span
           style={{
             fontSize: 9,
-            padding: "1px 5px",
-            borderRadius: 2,
-            background: "var(--ft-amber)22",
             color: "var(--ft-amber)",
-            border: "1px solid var(--ft-amber)55",
             fontWeight: 700,
             letterSpacing: "0.04em",
           }}
@@ -1185,11 +1178,7 @@ function HealthBadges({ accountName: _accountName, balance, stats, lowBalanceThr
         <span
           style={{
             fontSize: 9,
-            padding: "1px 5px",
-            borderRadius: 2,
-            background: "var(--ft-amber)22",
             color: "var(--ft-amber)",
-            border: "1px solid var(--ft-amber)44",
             letterSpacing: "0.04em",
           }}
         >
@@ -1199,11 +1188,7 @@ function HealthBadges({ accountName: _accountName, balance, stats, lowBalanceThr
         <span
           style={{
             fontSize: 9,
-            padding: "1px 5px",
-            borderRadius: 2,
-            background: "var(--ft-green)22",
             color: "var(--ft-green)",
-            border: "1px solid var(--ft-green)44",
             letterSpacing: "0.04em",
           }}
         >
@@ -1438,9 +1423,7 @@ function AccountTableRow({
                 {account.name}
               </span>
               {account.isWiseLinked && (
-                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, flexShrink: 0 }}>
-                  WISE
-                </span>
+                <Text as="span" mono size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.06em">WISE</Text>
               )}
             </div>
           )}
@@ -1451,9 +1434,7 @@ function AccountTableRow({
           className="ft-hide-mobile"
           style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const }}
         >
-          <span style={{ padding: "1px 5px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-dim)" }}>
-            {account.isWiseLinked ? "WISE-LINKED" : "MANUAL"}
-          </span>
+          {account.isWiseLinked ? "WISE-LINKED" : "MANUAL"}
         </div>
 
         {/* Currency */}
@@ -1472,21 +1453,6 @@ function AccountTableRow({
           <div style={{ color: account.balance < 0 ? "var(--ft-red)" : "var(--ft-text)", fontSize: 13, fontWeight: 700, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", ...privacyStyle }}>
             {formatNative(account.balance, account.currency)}
           </div>
-          {sparkBars && (
-            <HStack gap={1} align="end" justify="end" marginTop={3} height={14}>
-              {sparkBars.bars.map((v, bi) => {
-                const h = Math.max(2, (Math.abs(v) / sparkBars.maxAbs) * 12);
-                return (
-                  <div key={bi} title={`${v >= 0 ? "+" : ""}${formatBaseMoney(v)}`} style={{ width: 4, height: h, background: v >= 0 ? "var(--ft-green)" : "var(--ft-red)", opacity: 0.75 }} />
-                );
-              })}
-            </HStack>
-          )}
-          {stats.daysSinceLast !== null && (
-            <div style={{ fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>
-              {stats.daysSinceLast === 0 ? "txn today" : `${stats.daysSinceLast}d ago`}
-            </div>
-          )}
         </div>
 
         {/* Base currency balance — "—" (not £0) when FX is missing.
@@ -1505,12 +1471,27 @@ function AccountTableRow({
           style={{ width: 200, minWidth: 200, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}
           onClick={(e) => e.stopPropagation()}
         >
-          <HealthBadges
-            accountName={account.name}
-            balance={account.balance}
-            stats={stats}
-            lowBalanceThreshold={accountMeta[account.name]?.lowBalanceThreshold ?? null}
-          />
+          <HStack gap={10} align="center">
+            <HealthBadges
+              accountName={account.name}
+              balance={account.balance}
+              stats={stats}
+              lowBalanceThreshold={accountMeta[account.name]?.lowBalanceThreshold ?? null}
+            />
+            {/* 4-month net flow, length-encoded. Lived under the native
+                balance until 2026-09-06; a bar chart stacked inside a
+                right-aligned numeric cell is what made the column unreadable. */}
+            {sparkBars && (
+              <HStack gap={1} align="end" height={14} shrink={false}>
+                {sparkBars.bars.map((v, bi) => {
+                  const h = Math.max(2, (Math.abs(v) / sparkBars.maxAbs) * 12);
+                  return (
+                    <div key={bi} title={`${v >= 0 ? "+" : ""}${formatBaseMoney(v)}`} style={{ width: 4, height: h, background: v >= 0 ? "var(--ft-green)" : "var(--ft-red)", opacity: 0.75 }} />
+                  );
+                })}
+              </HStack>
+            )}
+          </HStack>
         </div>
 
         {/* Last sync */}
@@ -2586,7 +2567,7 @@ export default function Accounts() {
       {/* Accounts spreadsheet table */}
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
         {/* Section title — no controls */}
-        <PanelHeader>CASH ACCOUNTS — Multi-Currency ({baseCurrency} Base)</PanelHeader>
+        <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">{baseCurrency} base</Text>}>CASH ACCOUNTS</PanelHeader>
         {/* Filter bar — separate row, wraps fine */}
         <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", flexWrap: "wrap" }}>
           <input
