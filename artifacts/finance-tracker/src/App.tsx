@@ -262,17 +262,42 @@ function Router() {
 
 function OnboardingGate({ children }: { children: React.ReactNode }) {
   const [done, setDone] = useState(() => isOnboardingComplete());
-  // Hydrate persona from server once per mount. If the user finished
-  // onboarding on another device, this mirrors that choice locally so
-  // every synchronous loadPersonaIds() reader sees the truth.
+  // Hydrate BEFORE deciding whether to ask, not after.
+  //
+  // This gate used to return early on `!done`, so the server answer was
+  // never consulted for the one user who needs it most: someone who
+  // onboarded on their phone and is now signing in on a laptop. They
+  // got the questionnaire again, and answering it a second time
+  // overwrote the choice they had already made. `hydratePersonaFromServer`
+  // applies the server persona locally, and `applyPersonas` sets the
+  // onboarding-complete flag as a side effect — so a user with a
+  // server-side persona comes back from this effect already done.
+  //
   // The phone tab-slot override hydrates alongside it: the slot's
   // default depends on the persona, and both are server-owned so they
   // follow the user across devices.
+  //
+  // `checking` only blocks the first paint for a user who looks NOT
+  // done locally. An established user renders immediately and hydrates
+  // in the background, as before.
+  const [checking, setChecking] = useState(() => !isOnboardingComplete());
   useEffect(() => {
-    if (!done) return;
-    void hydratePersonaFromServer();
-    void hydrateTabSlotFromServer();
-  }, [done]);
+    let cancelled = false;
+    void (async () => {
+      await hydratePersonaFromServer();
+      void hydrateTabSlotFromServer();
+      if (cancelled) return;
+      if (isOnboardingComplete()) setDone(true);
+      setChecking(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  if (checking) {
+    // Deliberately empty. The questionnaire is a full-screen takeover;
+    // flashing it for the duration of one GET and then replacing it is
+    // worse than a blank frame.
+    return <div data-nr-route-state="onboarding-check" />;
+  }
   if (!done) {
     return <Onboarding onComplete={() => setDone(true)} />;
   }

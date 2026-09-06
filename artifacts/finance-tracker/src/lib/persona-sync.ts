@@ -32,12 +32,27 @@ export async function savePersonaToServer(persona: PersonaId): Promise<void> {
   }
 }
 
-// Boot-time hydrate. Called from a top-level effect. If the server
-// has a persona and localStorage doesn't reflect it, apply the server
-// one locally so every synchronous loadPersonaIds() reader sees the
-// truth. If the server has "full" (the default) and localStorage
-// already has a non-full persona, we do NOT overwrite — that would
-// clobber a fresh onboarding that has not yet round-tripped.
+// Boot-time hydrate, and the gate that decides whether a signed-in
+// user is asked the onboarding questions at all (App.tsx ·
+// OnboardingGate). If the server has a persona and localStorage
+// doesn't reflect it, apply the server one locally so every
+// synchronous loadPersonaIds() reader sees the truth.
+//
+// "full" from the server is NOT treated as an answer, on any device.
+// app_settings.persona is `notNull().default("full")` and the row is
+// created lazily by ensureSettings() on the first GET, so a user who
+// has never onboarded and a user who deliberately chose "full" are
+// indistinguishable over the wire — both read back "full". Applying it
+// would be inventing a choice the user has not made, and because
+// applyPersonas() sets the onboarding-complete flag as a side effect,
+// it would skip a brand-new user straight past onboarding into an
+// empty 23-widget dashboard.
+//
+// The cost of that caution is that someone who genuinely chose "full"
+// (including via Skip) is asked again on a second device. Closing that
+// last case needs the server to record that a choice was made — see
+// the note in .review/report.md; it is a schema change, not a client
+// one.
 export async function hydratePersonaFromServer(): Promise<void> {
   let serverPersona: PersonaId | null = null;
   try {
@@ -46,17 +61,15 @@ export async function hydratePersonaFromServer(): Promise<void> {
   } catch {
     return; // offline or 401; nothing to hydrate
   }
-  if (!serverPersona) return;
+  if (!serverPersona || serverPersona === "full") return;
   const local = loadPersonaIds();
   if (local.length === 0) {
-    // Fresh device / cleared storage — mirror the server.
+    // Fresh device / cleared storage — mirror the server. This is the
+    // second-device path: it also marks onboarding complete, so the
+    // user is not asked the questions a second time.
     applyPersonas([serverPersona]);
     return;
   }
-  // If localStorage already matches OR is different from a stored
-  // non-default server value, prefer the server. Skip when server is
-  // full and local isn't — treat "full" as "no explicit choice yet".
-  if (serverPersona === "full" && local[0] !== "full") return;
   if (local[0] !== serverPersona) {
     applyPersonas([serverPersona]);
   }
