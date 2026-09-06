@@ -153,9 +153,9 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 545, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1501, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1570, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
-  { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 427, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 431, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 236, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 749, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 753, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
   { path: "artifacts/finance-tracker/src/pages/year-review.tsx", line: 1260, reason: "chart max denominator: empty topCats → 1 to avoid /0" },
 
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the
@@ -189,7 +189,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/widgets/cash-flow.tsx", line: 142, reason: "chart height in px (220 expanded or 150 collapsed)" },
   { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 131, reason: "row cap: 30 expanded or 15 collapsed" },
   { path: "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx", line: 131, reason: "row cap: 8 expanded or 5 collapsed" },
-  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1542, reason: "border thickness (2px hi-value, 4px normal)" },
+  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1546, reason: "border thickness (2px hi-value, 4px normal)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1240, reason: "chart bar width in px (38 mobile / 44 desktop)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1241, reason: "chart bar height in px (34 mobile / 40 desktop)" },
   { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 437, reason: "popup position fallback: no anchor rect → 100px default" },
