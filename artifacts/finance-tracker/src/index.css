@@ -38,6 +38,13 @@
    ✓  font-variant-numeric: tabular-nums on all financial numbers
    ✓  status bar always visible at bottom — never hidden or collapsible
    ✓  data density first: if you can show 12 numbers, show 12, not 6
+
+   EPHEMERAL AMENDMENT — docs/DESIGN.md §6. The two bans above on radius and
+   box-shadow are about surfaces that ARE the page. A surface that floats
+   above the page and will leave — toast, undo banner, install prompt, AI
+   insight card, popover — takes `.ft-float` (raised, 6px radius, elevation)
+   so a reader can tell what survives a reload. A panel adopting .ft-float
+   to look important is a violation of the bans, not an exception.
    ══════════════════════════════════════════════════════════════════════════════
 
    MOBILE AMENDMENT — applies below 768px only
@@ -280,6 +287,11 @@
   --ft-cell-py: 7px;
   --ft-cell-px: 12px;
   --ft-panel-header-h: 34px;
+  /* Ephemeral surfaces (DESIGN.md §6): the one radius and the one shadow in
+     the product. Black at 35% reads as depth on every theme; on arctic and
+     parchment it is a soft grey, on void it is a darker void. */
+  --ft-float-radius: 6px;
+  --ft-float-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
   --ft-metric-py: 10px;
   --ft-row-gap: 8px;
 }
@@ -790,6 +802,23 @@ input[type="checkbox"]:checked {
   border: 1px solid var(--ft-border);
   background: var(--ft-surface);
 }
+
+/* An ephemeral surface — one that floats above the page and will leave
+   (DESIGN.md §6). The only radius and elevation a desktop surface may carry.
+   Permanent surfaces (.ft-panel, .ft-widget-frame, PanelBox) stay square. */
+.ft-float {
+  background: var(--ft-raised);
+  border: 1px solid var(--ft-border2);
+  border-radius: var(--ft-float-radius);
+  box-shadow: var(--ft-float-shadow);
+}
+.ft-float.ft-float-destructive { border-color: var(--ft-red); }
+/* Message typography inside a float: prose in the head face, not a figure
+   and not a panel label. A float that looked like a panel header was the
+   defect (DESIGN.md §6). */
+.ft-float-title { font-family: var(--font-head); font-size: 13px; font-weight: 600; color: var(--ft-text); line-height: 1.3; }
+.ft-float-destructive .ft-float-title { color: var(--ft-red); }
+.ft-float-body  { font-family: var(--font-head); font-size: 12px; color: var(--ft-muted); line-height: 1.45; }
 
 /* ── Terminal layout primitives ── */
 .ft-panel {
