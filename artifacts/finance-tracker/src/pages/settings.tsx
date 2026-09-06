@@ -2338,7 +2338,7 @@ function CategoriesPanel() {
           style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setEditingCat(null)}
         >
-          <div onClick={e => e.stopPropagation()} style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 20, width: 300, display: "flex", flexDirection: "column", gap: 14 }}>
+          <div onClick={e => e.stopPropagation()} className="ft-float" style={{ padding: 20, width: 300, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: "var(--ft-dim)" }}>EDIT: {editingCat.toUpperCase()}</div>
 
             <div>

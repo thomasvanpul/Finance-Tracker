@@ -510,7 +510,7 @@ function TargetRateRow({ r, yrs, nw10, nw20, isCagr, currentNW, targetNw, arriva
     <tr
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ borderLeft: isCagr ? "2px solid var(--ft-accent)" : "2px solid transparent", background: rowBg, transition: "background 0.1s" }}
+      style={{ background: rowBg, transition: "background 0.1s" }}
     >
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isCagr ? "var(--ft-accent)" : "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{r}%{isCagr ? " ←" : ""}</td>
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)" }}>{yrs !== null ? `${yrs.toFixed(1)} yrs` : currentNW >= targetNw ? "Already reached" : "—"}</td>
@@ -927,18 +927,8 @@ export default function NetWorthHistory() {
       {/* ── Snapshot form ── */}
       {showForm && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
-          <div style={{
-            borderBottom: "1px solid var(--ft-border)",
-            padding: "0 12px",
-            minHeight: "var(--ft-panel-header-h)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}>
-            <span className="ft-panel-label">
-              Record Today&apos;s Net Worth
-            </span>
-            {liveAssets > 0 && (
+          <PanelHeader
+            right={liveAssets > 0 && (
               <button
                 onClick={autoFillFromLiveData}
                 style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "3px 10px", border: "1px solid color-mix(in srgb, var(--ft-blue) 40%, transparent)", background: "color-mix(in srgb, var(--ft-blue) 8%, transparent)", color: "var(--ft-blue)", cursor: "pointer" }}
@@ -947,7 +937,9 @@ export default function NetWorthHistory() {
                 ↻ Auto-fill ({formatBaseMoney(liveAssets - liveLiabilities)} net)
               </button>
             )}
-          </div>
+          >
+            Record Today&apos;s Net Worth
+          </PanelHeader>
           <div style={{ padding: "16px 20px" }}>
             <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div>
@@ -1018,18 +1010,10 @@ export default function NetWorthHistory() {
       {/* ── Main chart ── */}
       {history.length > 0 && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
-          <div style={{
-            borderBottom: "1px solid var(--ft-border)",
-            padding: "0 12px",
-            minHeight: "var(--ft-panel-header-h)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}>
-            <HStack gap={16} align="center">
-              <span className="ft-panel-label">
-                Net Worth Timeline
-              </span>
+          <PanelHeader
+            right={<>
+              {/* Meta belongs in the right slot, not welded onto the title
+                  (DESIGN.md §2 — the title is the title). */}
               {projectedIn12Months !== null && (
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                   Projected 12m:{" "}
@@ -1040,8 +1024,7 @@ export default function NetWorthHistory() {
                   <Text as="span" size={8} color="var(--ft-dim)">(linear trend)</Text>
                 </span>
               )}
-            </HStack>
-            {/* Period selector */}
+              {/* Period selector */}
             <div style={{ display: "flex", gap: 0, border: "1px solid var(--ft-border)", flexShrink: 0 }}>
               {PERIODS.map((p) => (
                 <button
@@ -1064,7 +1047,10 @@ export default function NetWorthHistory() {
                 </button>
               ))}
             </div>
-          </div>
+            </>}
+          >
+            Net Worth Timeline
+          </PanelHeader>
           <div style={{ padding: "16px 20px 12px" }}>
 
           <ResponsiveContainer width="100%" height={300}>
@@ -1245,21 +1231,13 @@ export default function NetWorthHistory() {
       {/* ── Monthly stats table ── */}
       {monthlyStats.length > 0 && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
-          <div style={{
-            borderBottom: "1px solid var(--ft-border)",
-            padding: "0 12px",
-            minHeight: "var(--ft-panel-header-h)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}>
-            <span className="ft-panel-label">
-              Monthly Breakdown
-            </span>
-            <Text as="span" mono size={9} color="var(--ft-dim)">
+          <PanelHeader
+            right={<Text as="span" mono size={9} color="var(--ft-dim)">
               End-of-month · last {monthlyStats.length} months
-            </Text>
-          </div>
+            </Text>}
+          >
+            Monthly Breakdown
+          </PanelHeader>
           {isMobile ? (
             <div>
               {monthlyStats.map((row, idx) => {
@@ -1478,7 +1456,7 @@ export default function NetWorthHistory() {
       {/* ── Snapshot log ── */}
       {history.length > 0 && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
-          <PanelHeader>Snapshot Log — {history.length} entries</PanelHeader>
+          <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">{history.length} entries</Text>}>Snapshot Log</PanelHeader>
           {isMobile ? (
             <div>
               {[...history].reverse().map((e, idx, arr) => {

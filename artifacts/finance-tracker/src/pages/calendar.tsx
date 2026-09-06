@@ -1390,7 +1390,9 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
                 minHeight: 48,
                 borderRight: "1px solid var(--ft-border)",
                 borderBottom: "1px solid var(--ft-border)",
-                borderTop: isToday ? "2px solid var(--ft-accent)" : "1px solid var(--ft-border)",
+                // Today reads from the tinted background below, not from a
+                // coloured top rule (DESIGN.md §4).
+                borderTop: "1px solid var(--ft-border)",
                 padding: "3px 4px",
                 cursor: hasActivity ? "pointer" : "default",
                 background: isSelected

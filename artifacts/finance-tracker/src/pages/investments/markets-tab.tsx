@@ -734,7 +734,7 @@ export function MarketsTab() {
       <>
       {/* ── Portal tooltip — renders over sidebar via document.body ── */}
       {tipInfo && createPortal(
-        <div style={{ position: "fixed", left: tipInfo.x, top: tipInfo.y - 8, transform: "translate(-50%, -100%)", zIndex: 9999, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", padding: "8px 10px", width: 240, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5, boxShadow: "0 4px 20px rgba(0,0,0,0.7)", pointerEvents: "none" }}>
+        <div className="ft-float" style={{ position: "fixed", left: tipInfo.x, top: tipInfo.y - 8, transform: "translate(-50%, -100%)", zIndex: 9999, padding: "8px 10px", width: 240, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5, pointerEvents: "none" }}>
           <div style={{ fontWeight: 700, color: "var(--ft-text)", marginBottom: 4, fontSize: 9 }}>{tipInfo.label}</div>
           {tipInfo.text}
         </div>,

@@ -1003,9 +1003,8 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
       onClick={onClose}
     >
       <div
+        className="ft-float"
         style={{
-          background: "var(--ft-surface)",
-          border: "1px solid var(--ft-border2)",
           width: "min(95vw, 1400px)",
           height: "min(90vh, 900px)",
           display: "flex",

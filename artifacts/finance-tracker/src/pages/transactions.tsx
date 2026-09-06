@@ -149,10 +149,8 @@ function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) 
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
+        className="ft-float"
         style={{
-          background: "var(--ft-surface)",
-          border: "1px solid var(--ft-border)",
-          borderRadius: 2,
           width: "min(540px, 95vw)",
           maxHeight: "85vh",
           display: "flex",
@@ -2710,6 +2708,8 @@ export default function Transactions() {
       {/* ── Floating bulk action bar (bottom-center) ── */}
       {selectedIds.size > 0 && (
         <div
+          // Appears with a selection and leaves with it: ephemeral (DESIGN.md §6).
+          className="ft-float"
           style={{
             position: "fixed",
             bottom: 24,
@@ -2721,9 +2721,6 @@ export default function Transactions() {
             flexWrap: "wrap",
             gap: 8,
             padding: "10px 14px",
-            background: "var(--ft-base)",
-            border: "1px solid var(--ft-blue)",
-            borderRadius: 2,
             fontFamily: "var(--font-mono)",
             maxWidth: "calc(100vw - 32px)",
             overflowX: "auto",

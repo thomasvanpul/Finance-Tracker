@@ -530,9 +530,8 @@ function ReceiptViewerModal({
         {/* Scan data panel */}
         {scanData && (
           <div
+            className="ft-float"
             style={{
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border)",
               padding: "12px 14px",
               minWidth: 220,
               maxWidth: 300,

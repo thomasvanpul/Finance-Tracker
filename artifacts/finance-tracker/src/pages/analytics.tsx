@@ -497,6 +497,10 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
         />
       )}
       <div
+        // A slide-over floats above the page and leaves, so it is an
+        // ephemeral surface and takes .ft-float (DESIGN.md §6). It was
+        // drawn as a permanent panel.
+        className="ft-float"
         style={{
           position: "fixed",
           right: 0,
@@ -504,8 +508,6 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
           bottom: 0,
           width: "min(400px, 100vw)",
           zIndex: 200,
-          background: "var(--ft-surface)",
-          borderLeft: "1px solid var(--ft-border)",
           display: "flex",
           flexDirection: "column",
           transform: isOpen ? "translateX(0)" : "translateX(100%)",
@@ -1297,7 +1299,9 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
                         width: CELL_W,
                         height: CELL_H,
                         ...bgStyle,
-                        border: isToday ? "1px solid var(--ft-accent)" : "1px solid var(--ft-border)",
+                        // Today is marked on the day number, not on the frame
+                        // (DESIGN.md §4 — no coloured border on any side).
+                        border: "1px solid var(--ft-border)",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
@@ -1306,7 +1310,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
                         gap: 1,
                       }}
                     >
-                      <span style={{ ...mono, fontSize: 9, color: isHighSpend ? "var(--ft-text)" : "var(--ft-muted)", lineHeight: 1 }}>
+                      <span style={{ ...mono, fontSize: 9, fontWeight: isToday ? 700 : undefined, color: isToday ? "var(--ft-accent)" : isHighSpend ? "var(--ft-text)" : "var(--ft-muted)", lineHeight: 1 }}>
                         {cell.day}
                       </span>
                       {cell.total > 0 && (

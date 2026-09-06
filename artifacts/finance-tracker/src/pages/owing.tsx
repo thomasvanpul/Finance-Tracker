@@ -1738,8 +1738,11 @@ export default function Owing() {
                     {isSettling && settleForm && (
                       <div style={{
                         padding: "10px 14px",
-                        background: "rgba(63,185,80,0.05)",
-                        borderTop: "1px solid rgba(63,185,80,0.15)",
+                        // A one-off action surface, permitted by §4 as an
+                        // inline exception — but tokenised, so it follows the
+                        // theme instead of inverting on the light ones.
+                        background: "color-mix(in srgb, var(--ft-green) 5%, transparent)",
+                        borderTop: "1px solid color-mix(in srgb, var(--ft-green) 15%, transparent)",
                         display: "flex",
                         alignItems: "center",
                         gap: 8,

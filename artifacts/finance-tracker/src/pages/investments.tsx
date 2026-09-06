@@ -424,14 +424,14 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
       {open && createPortal(
         <div
           ref={popoverRef}
+          // Ephemeral: .ft-float carries the raised ground, the border, the
+          // 6px radius and the one shadow in the product (DESIGN.md §6).
+          className="ft-float"
           style={{
             position: "fixed",
             zIndex: 9999,
-            background: "var(--ft-surface)",
-            border: "1px solid var(--ft-border2)",
             padding: "14px 16px",
             width: 240,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
             top: (() => {
               const rect = buttonRef.current?.getBoundingClientRect();
               return rect ? rect.bottom + 6 : 100;
