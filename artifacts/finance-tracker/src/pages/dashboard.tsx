@@ -366,7 +366,7 @@ export function NetWorthMilestonesWidget() {
           </>
         )}
         {!next && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)", display: "flex", alignItems: "center", gap: 5 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-green)", display: "flex", alignItems: "center", gap: 5 }}>
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2 1h7v5a3.5 3.5 0 01-7 0V1z"/><path d="M2 3H.5a1 1 0 000 2H2M9 3h1.5a1 1 0 010 2H9M5.5 9.5v1M3.5 10.5h4"/></svg>
             All milestones reached!
           </div>
@@ -501,9 +501,9 @@ function CashFlowPreviewPanel() {
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: netColor, lineHeight: 1, whiteSpace: "nowrap" }}>
             <AnimatedNet value={net} />
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>projected net</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 3 }}>projected net</div>
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
           from <span className="pnum">{formatBaseMoney(startingBalance)}</span>
         </div>
       </HStack>
@@ -580,7 +580,7 @@ function SpendingVelocityPanel() {
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, whiteSpace: "nowrap" }}>
             <AnimatedSpendRate value={avgDailyThis} /><Text as="span" size={11} weight={400} color="var(--ft-dim)">/day</Text>
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             vs <span className="pnum">{formatBaseMoney(avgDailyPrev)}</span>/day last month
           </div>
         </div>
@@ -622,7 +622,7 @@ function SpendingVelocityPanel() {
           );
         })}
       </HStack>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 3, textAlign: "right" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3, textAlign: "right" }}>
         last 14 days
       </div>
     </div>
@@ -640,14 +640,14 @@ function InsightRow({ label, text }: { label: string; text: string }) {
       style={{
         background: hovered ? "var(--ft-raised)" : "var(--ft-surface)",
         padding: "10px 12px",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         color: "var(--ft-muted)",
         lineHeight: 1.6,
         transition: "background 0.1s",
       }}
     >
-      <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 4 }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 4 }}>
         {label}
       </div>
       {text}
@@ -1056,8 +1056,8 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
           </Text>
           {def?.description && (
             <span style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontFamily: "var(--font-sans)",
+              fontSize: 10,
               color: "var(--ft-dim)",
               flex: 1,
               overflow: "hidden",
@@ -1108,7 +1108,7 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
                   href={link.href}
                   onClick={onClose}
                   style={{
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     fontSize: 10,
                     color: "var(--ft-dim)",
                     padding: "8px 14px",
@@ -1563,7 +1563,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
             background: "none",
             border: "1px dashed var(--ft-border2)",
             color: open ? "var(--ft-accent)" : "var(--ft-dim)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
@@ -1614,10 +1614,10 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
                       {isFull ? "FULL" : "HALF"}
                     </span>
                   </HStack>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
                     {def?.description ?? ""}
                   </span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.04em", marginTop: 2 }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.04em", marginTop: 2 }}>
                     ＋ Add
                   </span>
                 </button>
@@ -1637,7 +1637,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
           background: "none",
           border: "1px dashed var(--ft-border2)",
           color: open ? "var(--ft-accent)" : "var(--ft-dim)",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 10,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
@@ -1695,7 +1695,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
               {previewId && (
                 <button
                   onClick={() => { onAdd(previewId); setOpen(false); }}
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "2px 8px", cursor: "pointer" }}
+                  style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "2px 8px", cursor: "pointer" }}
                 >
                   + Add
                 </button>
@@ -1703,7 +1703,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
             </div>
             <div style={{ overflow: "auto", maxHeight: 400, padding: 12 }}>
               {PreviewComponent ? <PreviewComponent /> : (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", padding: "20px 0", textAlign: "center" }}>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", padding: "20px 0", textAlign: "center" }}>
                   Hover a widget to preview it
                 </div>
               )}
@@ -1778,7 +1778,7 @@ function DashboardEmptyState() {
           type="button"
           onClick={() => navigate(ctaHref)}
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
             color: "var(--ft-accent)",
             background: "transparent",
@@ -1859,7 +1859,7 @@ function DashboardKpiBar({
               border: "none",
               borderLeft: "1px solid var(--ft-border)",
               color: isCustomizing ? "var(--ft-accent)" : "var(--ft-dim)",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 8,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
@@ -1946,7 +1946,7 @@ function DashboardKpiBar({
           borderRight: "1px solid var(--ft-border)",
           borderTop: isCustomizing ? "2px solid var(--ft-accent)" : "2px solid transparent",
           color: isCustomizing ? "var(--ft-accent)" : "var(--ft-dim)",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 9,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
@@ -2079,8 +2079,8 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
         <div className="ft-widget-frame" style={{ flex: "2 1 0", minWidth: 0, overflow: "hidden" }}>
           <PanelHeader
             right={
-              <a href="/transactions" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", textDecoration: "none", letterSpacing: "0.04em" }}>
-                → ALL
+              <a href="/transactions" style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-accent)", textDecoration: "none", letterSpacing: "0.04em" }}>
+                → All
               </a>
             }
           >
@@ -2194,7 +2194,7 @@ function RecentTransactionsWidgetInline() {
           <Text as="span" mono size={9} color="var(--ft-dim)">
             {tx.date.slice(5).replace("-", "/")}
           </Text>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {tx.description}
           </span>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
@@ -2446,7 +2446,7 @@ function ViewRow({ view, onLoad, onDelete }: {
       <button
         onClick={() => onLoad(view)}
         style={{
-          fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em",
+          fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.05em",
           color: hovered ? "var(--ft-text)" : "var(--ft-accent)",
           background: hovered ? "var(--ft-raised)" : "transparent",
           border: `1px solid ${hovered ? "var(--ft-accent)" : "var(--ft-border)"}`,
@@ -2925,11 +2925,14 @@ export default function Dashboard() {
             alignItems: "center",
             justifyContent: "space-between",
           }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
               <span style={{ color: "var(--ft-accent)" }}>·</span> CUSTOMIZE MODE — drag widgets to rearrange · hover for controls · click [EXIT CUSTOMIZE] when done
             </span>
-            <Text as="span" mono size={9} color="var(--ft-dim)">
-              {enabledIds.length} widget{enabledIds.length !== 1 ? "s" : ""} active
+            {/* A sentence carrying a figure: the sentence is sans, the
+                figure inside it is mono (§10). */}
+            <Text as="span" size={10} color="var(--ft-dim)">
+              <Text as="span" numeric size={10}>{enabledIds.length}</Text>{" "}
+              widget{enabledIds.length !== 1 ? "s" : ""} active
             </Text>
           </div>
 
@@ -2951,19 +2954,19 @@ export default function Dashboard() {
                   placeholder="View name…"
                   autoFocus
                   style={{
-                    fontFamily: "var(--font-mono)", fontSize: 10,
+                    fontFamily: "var(--font-sans)", fontSize: 10,
                     background: "var(--ft-raised)", border: "1px solid var(--ft-accent)",
                     color: "var(--ft-text)", padding: "3px 8px", outline: "none", width: 120,
                   }}
                 />
-                <button onClick={handleSaveView} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "3px 9px", cursor: "pointer" }}>Save</button>
-                <button onClick={() => setShowViewSave(false)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "transparent", border: "1px solid var(--ft-border)", padding: "3px 9px", cursor: "pointer" }}>Cancel</button>
+                <button onClick={handleSaveView} style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "3px 9px", cursor: "pointer" }}>Save</button>
+                <button onClick={() => setShowViewSave(false)} style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", background: "transparent", border: "1px solid var(--ft-border)", padding: "3px 9px", cursor: "pointer" }}>Cancel</button>
               </HStack>
             ) : (
               <button
                 onClick={() => setShowViewSave(true)}
                 style={{
-                  fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.05em",
+                  fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.05em",
                   color: "var(--ft-dim)", background: "transparent",
                   border: "1px dashed var(--ft-border)", padding: "3px 9px", cursor: "pointer",
                 }}
@@ -2978,7 +2981,7 @@ export default function Dashboard() {
 
           {enabledIds.length === 0 ? (
             <VStack gap={12} align="center" justify="center" padding="60px 0">
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-muted)" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-muted)" }}>
                 No widgets enabled — add one below
               </div>
             </VStack>
