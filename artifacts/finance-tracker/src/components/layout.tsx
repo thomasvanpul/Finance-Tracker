@@ -1749,9 +1749,9 @@ export function Layout({ children }: LayoutProps) {
           const year = m === 11 ? new Date().getFullYear() : new Date().getFullYear() - 1;
           return (
             <Link href="/year-review">
-              <div style={{ margin: "0 8px 6px", padding: "8px 10px", background: "var(--ft-surface)", border: "1px solid rgba(163,113,247,0.3)", borderTop: "2px solid var(--ft-accent)", cursor: "pointer", transition: "border-color 0.15s" }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(163,113,247,0.6)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(163,113,247,0.3)"; }}>
+              <div style={{ margin: "0 8px 6px", padding: "8px 10px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", cursor: "pointer", transition: "border-color 0.15s" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ft-border2)"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ft-border)"; }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.06em", marginBottom: 2, display: "flex", alignItems: "center", gap: 5 }}>
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M5 1v4M5 1L2.5 3.5M5 1L7.5 3.5M1 7.5h8" /><path d="M2 7.5c0 1.1.9 2 2 2h2a2 2 0 002-2" opacity=".5"/></svg>
                   {year} YEAR IN REVIEW

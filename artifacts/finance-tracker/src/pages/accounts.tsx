@@ -2624,7 +2624,7 @@ export default function Accounts() {
           <div style={{
             display: "flex", gap: 6, alignItems: "center", padding: "6px 10px",
             borderBottom: "1px solid var(--ft-border)", background: "var(--ft-accent)06",
-            borderTop: "1px solid var(--ft-accent)33", flexWrap: "wrap",
+            borderTop: "1px solid var(--ft-border)", flexWrap: "wrap",
           }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
               + Quick Add

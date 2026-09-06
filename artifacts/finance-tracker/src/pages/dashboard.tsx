@@ -2382,7 +2382,7 @@ function DashboardOverview() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(upcomingBills.length, isMobile ? 2 : 4)}, 1fr)`, gap: 8 }}>
               {upcomingBills.map((bill, i) => (
-                <div key={bill.id ?? i} style={{ padding: "9px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-amber)" }}>
+                <div key={bill.id ?? i} style={{ padding: "9px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)" }}>
                   <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 8, ...C("var(--ft-dim)"), marginBottom: 4 }}>{bill.description}</div>
                   <div className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, ...C("var(--ft-text)"), marginBottom: 3 }}>
                     {formatBaseMoney(bill.baseEquivalent)}
