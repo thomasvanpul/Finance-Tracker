@@ -324,9 +324,9 @@ function UpcomingRow({
           {item.type.toUpperCase()}
         </span>
       </div>
-      <div style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: item.baseEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ width: "var(--upc-amount-w)", minWidth: "var(--upc-amount-w)", flexShrink: 0, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", textAlign: "right", color: item.baseEquivalent == null ? "var(--ft-dim)" : item.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
         {item.baseEquivalent == null
-          ? <span>{formatNative(Math.abs(item.nativeAmount), item.currency)}</span>
+          ? <span className="pnum">{formatNative(Math.abs(item.nativeAmount), item.currency)}</span>
           : <span className="pnum">{item.type === "income" ? "+" : "-"}{formatBaseMoney(Math.abs(item.baseEquivalent))}</span>}
       </div>
       <div style={{ width: 120, minWidth: 120, padding: "5px 12px", borderRight: "1px solid var(--ft-raised)" }}>
@@ -406,7 +406,7 @@ function SubRenewalRow({ sub }: SubRenewalRowProps) {
       <div className="ft-hide-mobile" style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, textTransform: "capitalize" }}>
         {sub.frequency}
       </div>
-      <div style={{ width: 120, minWidth: 120, padding: "7px 12px", textAlign: "right", color: "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+      <div style={{ width: "var(--upc-sub-amount-w)", minWidth: "var(--upc-sub-amount-w)", flexShrink: 0, padding: "7px 12px", textAlign: "right", color: "var(--ft-red)", fontSize: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
         <span className="pnum">-{formatBaseMoney(Math.abs(sub.amount))}</span>
       </div>
     </div>
@@ -520,6 +520,31 @@ export default function Upcoming() {
       return true;
     });
   }, [sortedItems, searchText, filterType, filterStatus]);
+
+  // Numeric column widths reserve room for the widest figure the table is
+  // about to show, so a 7-figure amount or a currency-code-prefixed native
+  // fallback widens the slot instead of colliding with the next cell
+  // (DESIGN.md §8: the slot gives, the digits do not). 7.3px is JetBrains
+  // Mono's advance at 12px; +1 for the sign glyph; 24 for the cell padding.
+  // The floors are the pre-2026-09-06 fixed widths.
+  const amountColW = useMemo(() => {
+    let widest = 0;
+    for (const item of filteredItems) {
+      const text = item.baseEquivalent == null
+        ? formatNative(Math.abs(item.nativeAmount), item.currency)
+        : formatBaseMoney(Math.abs(item.baseEquivalent));
+      widest = Math.max(widest, text.length);
+    }
+    return `${Math.max(120, Math.ceil((widest + 1) * 7.3) + 24)}px`;
+  }, [filteredItems]);
+
+  const subAmountColW = useMemo(() => {
+    let widest = 0;
+    for (const sub of upcomingSubs) {
+      widest = Math.max(widest, formatBaseMoney(Math.abs(sub.amount)).length);
+    }
+    return `${Math.max(120, Math.ceil((widest + 1) * 7.3) + 24)}px`;
+  }, [upcomingSubs]);
 
   const hasFilters = searchText !== "" || filterType !== "all" || filterStatus !== "all";
 
@@ -1048,14 +1073,14 @@ export default function Upcoming() {
       )}
 
       {/* Upcoming spreadsheet table */}
-      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", "--upc-amount-w": amountColW } as React.CSSProperties}>
         <PanelHeader>Upcoming Schedule — Committed & Expected Flows</PanelHeader>
 
         <div className={isMobile ? undefined : "ft-scroll-x"}>
         <div style={isMobile ? undefined : { minWidth: 700 }}>
         {/* Column headers — desktop only */}
         {!isMobile && <div className="flex" style={{ marginLeft: 36 }}>
-          {[["DUE DATE", "100px"], ["DESCRIPTION", "1"], ["CATEGORY", "110px"], ["FREQUENCY", "100px"], ["TYPE", "90px"], ["AMOUNT (GBP)", "120px"], ["STATUS", "120px"], ["ACTIONS", "80px"]].map(([h, w]) => (
+          {[["DUE DATE", "100px"], ["DESCRIPTION", "1"], ["CATEGORY", "110px"], ["FREQUENCY", "100px"], ["TYPE", "90px"], ["AMOUNT (GBP)", "var(--upc-amount-w)"], ["STATUS", "120px"], ["ACTIONS", "80px"]].map(([h, w]) => (
             <div key={h as string} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, textAlign: ["AMOUNT (GBP)"].includes(h as string) ? "right" : "left" }}>
               {h}
             </div>
@@ -1103,14 +1128,14 @@ export default function Upcoming() {
 
       {/* Subscription renewals — read-only */}
       {upcomingSubs.length > 0 && (
-        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", "--upc-sub-amount-w": subAmountColW } as React.CSSProperties}>
           <PanelHeader right={<span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>read-only</span>}>
             Subscription Renewals — Next 90 days
           </PanelHeader>
           <div>
             <div>
             <div className="flex">
-              {[["DUE DATE", "100px"], ["NAME", "1"], ["CATEGORY", "110px"], ["FREQUENCY", "100px"], ["AMOUNT", "120px"]].map(([h, w]) => (
+              {[["DUE DATE", "100px"], ["NAME", "1"], ["CATEGORY", "110px"], ["FREQUENCY", "100px"], ["AMOUNT", "var(--upc-sub-amount-w)"]].map(([h, w]) => (
                 <div key={h as string} className={["CATEGORY", "FREQUENCY"].includes(h as string) ? "ft-hide-mobile" : undefined} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", textAlign: ["AMOUNT"].includes(h as string) ? "right" : "left", flex: w === "1" ? 1 : undefined, width: w !== "1" ? w as string : undefined, minWidth: w !== "1" ? w as string : undefined, padding: "4px 12px", borderBottom: "1px solid var(--ft-raised)", fontWeight: 400 }}>
                   {h}
                 </div>

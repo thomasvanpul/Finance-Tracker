@@ -357,10 +357,10 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
           {sub.notes && <span style={{ marginLeft: 6, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>· {sub.notes}</span>}
         </div>
         <div style={{ width: 110, minWidth: 110, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{sub.category}</div>
-        <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-dim)", fontSize: 10 }}>
+        <div style={{ width: "var(--sub-native-w)", minWidth: "var(--sub-native-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-dim)", fontSize: 10 }}>
           <span className="pnum">{sub.currency !== "GBP" ? `${sub.currency} ` : ""}{sub.amount.toFixed(2)}</span>
         </div>
-        <div style={{ width: 95, minWidth: 95, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
+        <div style={{ width: "var(--sub-monthly-w)", minWidth: "var(--sub-monthly-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
           <span className="pnum">{formatBaseMoney(toMonthly(sub.amount, sub.frequency))}</span>
         </div>
         <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)" }}>
@@ -1048,6 +1048,25 @@ export default function Subscriptions() {
     return result;
   }, [subs, searchText, filterCategory, filterStatus, sortSubs]);
 
+  // Numeric column widths reserve room for the widest figure the table is
+  // about to show (DESIGN.md §8: the slot gives, the digits do not). AMOUNT
+  // carries a currency-code prefix and /MONTH a converted figure, and the
+  // old fixed 100/95 were checked against neither a 5-character code nor a
+  // 7-figure amount. 6.0px is JetBrains Mono's advance at 10px, 7.8px at
+  // 13px; +1 for the sign glyph; 20px for the cell padding.
+  const { nativeColW, monthlyColW } = useMemo(() => {
+    let native = 0, monthly = 0;
+    for (const sub of filteredSubs) {
+      const nativeText = `${sub.currency !== "GBP" ? `${sub.currency} ` : ""}${sub.amount.toFixed(2)}`;
+      native = Math.max(native, nativeText.length);
+      monthly = Math.max(monthly, formatBaseMoney(toMonthly(sub.amount, sub.frequency)).length);
+    }
+    return {
+      nativeColW: `${Math.max(100, Math.ceil(native * 6.0) + 20)}px`,
+      monthlyColW: `${Math.max(95, Math.ceil((monthly + 1) * 7.8) + 20)}px`,
+    };
+  }, [filteredSubs]);
+
   const hasListFilters = searchText.trim() !== "" || filterCategory !== "all" || filterStatus !== "all" || sortSubs !== "next-due";
 
   function exportSubsCSV() {
@@ -1352,11 +1371,11 @@ export default function Subscriptions() {
           )}
         </div>
 
-        <div className={isMobile ? undefined : "overflow-x-auto"}>
+        <div className={isMobile ? undefined : "overflow-x-auto"} style={{ "--sub-native-w": nativeColW, "--sub-monthly-w": monthlyColW } as React.CSSProperties}>
           {/* Header */}
           {!isMobile && <div className="flex" style={{ marginLeft: 0 }}>
             {[
-              ["NAME", "1"], ["CATEGORY", "110px"], ["AMOUNT", "100px"], ["/MONTH", "95px"],
+              ["NAME", "1"], ["CATEGORY", "110px"], ["AMOUNT", nativeColW], ["/MONTH", monthlyColW],
               ["FREQUENCY", "100px"], ["LAST CHARGE", "110px"], ["NEXT DUE", "130px"],
               ["STATUS", "90px"], ["ACTIONS", "90px"],
             ].map(([h, w]) => (

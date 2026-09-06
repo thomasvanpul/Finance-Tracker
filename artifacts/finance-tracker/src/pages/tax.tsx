@@ -482,9 +482,9 @@ function DisposalRow({ d, sym: disposalSym, deleteConfirmId, onDelete, holdingLa
       <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{d.acquiredDate}</div>
       <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{d.disposedDate}</div>
       <div style={{ width: 70, minWidth: 70, padding: "6px 8px", borderRight: "1px solid var(--ft-border)", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, color: hl.color, textAlign: "center" }}>{hl.text}</div>
-      <div className="pnum" style={{ width: 120, minWidth: 120, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.proceeds, disposalSym)}</div>
-      <div className="pnum" style={{ width: 110, minWidth: 110, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-muted)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.costBasis, disposalSym)}</div>
-      <div className="pnum" style={{ width: 120, minWidth: 120, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 13, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, color: d.gainLoss > 0 ? "var(--ft-green)" : d.gainLoss < 0 ? "var(--ft-red)" : "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}>{d.gainLoss > 0 ? "+" : ""}{d.gainLoss !== 0 ? fmt(d.gainLoss, disposalSym) : fmt(0, disposalSym)}</div>
+      <div className="pnum" style={{ width: "var(--tax-proceeds-w)", minWidth: "var(--tax-proceeds-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.proceeds, disposalSym)}</div>
+      <div className="pnum" style={{ width: "var(--tax-cost-w)", minWidth: "var(--tax-cost-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-muted)", fontVariantNumeric: "tabular-nums" }}>{fmt(d.costBasis, disposalSym)}</div>
+      <div className="pnum" style={{ width: "var(--tax-gain-w)", minWidth: "var(--tax-gain-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 13, textAlign: "right", fontFamily: "var(--font-mono)", fontWeight: 700, color: d.gainLoss > 0 ? "var(--ft-green)" : d.gainLoss < 0 ? "var(--ft-red)" : "var(--ft-dim)", fontVariantNumeric: "tabular-nums" }}>{d.gainLoss > 0 ? "+" : ""}{d.gainLoss !== 0 ? fmt(d.gainLoss, disposalSym) : fmt(0, disposalSym)}</div>
       <div style={{ width: 56, minWidth: 56, padding: "4px 6px", display: "flex", justifyContent: "center" }}>
         <Button
           variant="ghost" size="icon" className="h-7 w-7"
@@ -838,6 +838,26 @@ export default function Tax() {
     [disposals, selectedYear, rules.yearFmt],
   );
 
+  // Numeric column widths reserve room for the widest figure the table is
+  // about to show (DESIGN.md §8: the slot gives, the digits do not). The
+  // currency symbol can be a multi-character code, and a disposal can be
+  // seven figures; the old fixed 120/110/120 were checked against neither.
+  // 7.2px is JetBrains Mono's advance at 12px, 7.8px at 13px; +1 for the
+  // sign glyph; 20px for the cell padding. Floored at the old widths.
+  const { proceedsColW, costColW, gainColW } = useMemo(() => {
+    let proceeds = 0, cost = 0, gain = 0;
+    for (const d of yearDisposals) {
+      proceeds = Math.max(proceeds, fmt(d.proceeds, rules.sym).length);
+      cost = Math.max(cost, fmt(d.costBasis, rules.sym).length);
+      gain = Math.max(gain, fmt(d.gainLoss, rules.sym).length);
+    }
+    return {
+      proceedsColW: `${Math.max(120, Math.ceil(proceeds * 7.2) + 20)}px`,
+      costColW: `${Math.max(110, Math.ceil(cost * 7.2) + 20)}px`,
+      gainColW: `${Math.max(120, Math.ceil((gain + 1) * 7.8) + 20)}px`,
+    };
+  }, [yearDisposals, rules.sym]);
+
   const totalGains = useMemo(() => yearDisposals.filter(d => d.gainLoss > 0).reduce((s, d) => s + d.gainLoss, 0), [yearDisposals]);
   const totalLosses = useMemo(() => yearDisposals.filter(d => d.gainLoss < 0).reduce((s, d) => s + Math.abs(d.gainLoss), 0), [yearDisposals]);
   const netGains = Math.max(0, totalGains - totalLosses);
@@ -1101,9 +1121,9 @@ export default function Tax() {
         )}
 
         {/* Disposals table */}
-        <div className="ft-scroll-x overflow-x-auto">
+        <div className="ft-scroll-x overflow-x-auto" style={{ "--tax-proceeds-w": proceedsColW, "--tax-cost-w": costColW, "--tax-gain-w": gainColW } as React.CSSProperties}>
           <div className="flex">
-            {[["ASSET", "1"], ["TICKER", "80px"], ["ACQUIRED", "100px"], ["DISPOSED", "100px"], ["HELD", "70px"], [`PROCEEDS (${sym})`, "120px"], [`COST (${sym})`, "110px"], [`GAIN/LOSS`, "120px"], ["", "56px"]].map(([h, w]) => (
+            {[["ASSET", "1"], ["TICKER", "80px"], ["ACQUIRED", "100px"], ["DISPOSED", "100px"], ["HELD", "70px"], [`PROCEEDS (${sym})`, proceedsColW], [`COST (${sym})`, costColW], [`GAIN/LOSS`, gainColW], ["", "56px"]].map(([h, w]) => (
               <div key={h} style={{ ...TH, flex: w === "1" ? 1 : undefined, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, textAlign: ["PROCEEDS", "COST", "GAIN/LOSS"].some(x => (h as string).startsWith(x)) ? "right" : "left" }}>{h}</div>
             ))}
           </div>
