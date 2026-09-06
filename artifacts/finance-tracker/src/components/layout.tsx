@@ -532,6 +532,13 @@ function SectionDivider({
   label: string; collapsed: boolean;
   onClick?: () => void; isCollapsed?: boolean;
 }) {
+  // One hover per pressable thing. This used to be a 1px frame that
+  // appeared around the WHOLE section — so hovering PLAN drew a box
+  // around four rows while the row under the cursor drew its own
+  // band, two hover indications at once for two different targets.
+  // The thing you can press is the legend, so the legend is what
+  // lights up.
+  const [hovered, setHovered] = useState(false);
   if (collapsed) {
     return (
       <div style={{
@@ -544,12 +551,22 @@ function SectionDivider({
   return (
     <div
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       title={onClick ? (isCollapsed ? `Expand ${label}` : `Collapse ${label}`) : undefined}
       style={{
         display: "flex",
         alignItems: "center",
+        background: onClick && hovered ? "var(--ft-hover)" : "transparent",
+        transition: "background 0.1s",
         gap: 8,
-        padding: "10px 12px 3px 14px",
+        // DESIGN.md §3: 16 between groups, 6 within. The 10px top
+        // padding here used to be the whole between-section gap, which
+        // made the rhythm nearly uniform — legend-to-row and
+        // section-to-section were within a few px of each other. The
+        // gap is now an explicit margin on the section (below); this
+        // padding only holds the legend off the row beneath it.
+        padding: "0 12px 6px 14px",
         cursor: onClick ? "pointer" : "default",
       }}
     >
@@ -1222,7 +1239,6 @@ export function Layout({ children }: LayoutProps) {
   const [moreOpen, setMoreOpen] = useState(() => {
     try { return localStorage.getItem("nr-sidebar-more") === "1"; } catch { return false; }
   });
-  const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
     try {
       const r = localStorage.getItem("nr-sidebar-collapsed-sections");
@@ -1626,7 +1642,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                       )}
                       {effectiveCollapsed && <div style={{ height: 4 }} />}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         {pinnedItems.map((item) => (
                           <NavRow
                             key={item.href + "-pinned"}
@@ -1639,7 +1655,7 @@ export function Layout({ children }: LayoutProps) {
                           />
                         ))}
                       </div>
-                      <div style={{ margin: "6px 12px 2px", height: 1, background: "var(--ft-accent-edge)" }} />
+                      <div style={{ margin: "8px 12px 0", height: 1, background: "var(--ft-accent-edge)" }} />
                     </div>
                   )}
 
@@ -1650,14 +1666,12 @@ export function Layout({ children }: LayoutProps) {
                     return (
                     <div
                       key={`${section.label}-${i}`}
-                      onMouseEnter={() => setHoveredSection(section.label)}
-                      onMouseLeave={() => setHoveredSection(null)}
                       style={{
-                        border: !effectiveCollapsed && hoveredSection === section.label
-                          ? "1px solid var(--ft-border2)"
-                          : "1px solid transparent",
-                        borderRadius: 2,
-                        transition: "border-color 0.1s",
+                        // §3: the gap between groups is the structure.
+                        // 16 here against 2 inside the group. The first
+                        // section needs none — the brand rule or the
+                        // pinned divider is already above it.
+                        marginTop: i === 0 && pinnedItems.length === 0 ? 0 : 16,
                       }}
                     >
                       <SectionDivider
@@ -1667,7 +1681,7 @@ export function Layout({ children }: LayoutProps) {
                         isCollapsed={isSectionCollapsed}
                       />
                       {!isSectionCollapsed && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           {section.items.map((item) => (
                             <NavRow
                               key={item.href}
@@ -1793,7 +1807,7 @@ export function Layout({ children }: LayoutProps) {
 
         {/* Bottom: settings / profile */}
         <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 6, flexShrink: 0 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {BOTTOM_ITEMS.map(item => (
               <NavRow
                 key={item.href}
