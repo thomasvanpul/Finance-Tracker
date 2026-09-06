@@ -871,7 +871,7 @@ export default function Profile() {
   const usageStorageRows = [
     { label: "Auto-Cat Rules", value: String(catRulesCount), note: catRulesCount === 0 ? "none" : undefined },
     { label: "TX Templates", value: String(templatesCount), note: templatesCount === 0 ? "none" : undefined },
-    { label: "NW History", value: `${nwHistoryCount} entries` },
+    { label: "NW History", value: `${nwHistoryCount} ${nwHistoryCount === 1 ? "entry" : "entries"}` },
     { label: "Savings Goals", value: String(goalsFromApi.length) },
     { label: "Settings Keys", value: String(ftKeyCount) },
   ];

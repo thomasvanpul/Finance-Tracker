@@ -1559,31 +1559,6 @@ export default function Transactions() {
     </div>
   );
 
-  const quickRangeBtn = (label: string, key: string) => (
-    <button
-      key={key}
-      type="button"
-      onClick={() => applyQuickRange(key)}
-      onMouseEnter={(e) => { if (activeQuickRange !== key) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-muted)"; }}
-      onMouseLeave={(e) => { if (activeQuickRange !== key) (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; }}
-      style={{
-        height: 22,
-        padding: "0 7px",
-        fontSize: 10,
-        fontFamily: "var(--font-mono)",
-        background: activeQuickRange === key ? "color-mix(in srgb, var(--ft-amber) 12%, transparent)" : "var(--ft-surface)",
-        border: `1px solid ${activeQuickRange === key ? "var(--ft-amber)" : "var(--ft-border2)"}`,
-        borderRadius: 2,
-        color: activeQuickRange === key ? "var(--ft-amber)" : "var(--ft-dim)",
-        cursor: "pointer",
-        whiteSpace: "nowrap" as const,
-        transition: "background 0.1s, color 0.1s, border-color 0.1s",
-      }}
-    >
-      {label}
-    </button>
-  );
-
   const TAG_CHIP_STYLE: React.CSSProperties = {
     background: "color-mix(in srgb, var(--ft-amber) 15%, transparent)",
     color: "var(--ft-amber)",

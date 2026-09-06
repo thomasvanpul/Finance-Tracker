@@ -248,7 +248,7 @@ export function MobileHome(_props: MobileHomeProps) {
         {/* Top bar (44px, JetBrains Mono, dim) */}
         <HStack justify="end" align="center" height={44} paddingX={18}>
           <Text as="span" mono size={11} color="var(--ft-dim)">
-            LIVE · {activeAccounts.length} ACCOUNTS
+            LIVE · {activeAccounts.length} {activeAccounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
           </Text>
         </HStack>
 
