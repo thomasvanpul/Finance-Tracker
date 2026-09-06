@@ -2276,7 +2276,7 @@ export function Layout({ children }: LayoutProps) {
               <span style={{ color: "var(--ft-green)" }}>CONNECTED</span>
             </span>
             <span style={{ color: "var(--ft-border2)" }}>│</span>
-            <span>RAILWAY · TLS 1.3</span>
+            <span>RENDER · TLS 1.3</span>
             <span style={{ color: "var(--ft-border2)" }}>│</span>
             <span>{userEmail}</span>
           </div>
