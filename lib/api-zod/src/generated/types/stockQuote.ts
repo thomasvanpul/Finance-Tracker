@@ -12,6 +12,8 @@ export interface StockQuote {
   currency: string;
   updatedAt: string;
   /** @nullable */
+  provider?: string | null;
+  /** @nullable */
   changePercent?: number | null;
   /** @nullable */
   previousClose?: number | null;

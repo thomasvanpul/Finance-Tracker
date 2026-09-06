@@ -14,6 +14,7 @@ import { authClient } from "@/lib/auth-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetMarketQuotes, useGetDashboard } from "@workspace/api-client-react";
 import { useTickers } from "@/contexts/tickers-context";
+import { FixingTag } from "@/components/FixingMark";
 import { usePrivacy, PrivNum } from "@/contexts/privacy-context";
 import { CommandPalette, useCommandPalette } from "@/components/command-palette";
 import { QuickAddTransaction, useQuickAdd } from "@/components/quick-add-transaction";
@@ -698,6 +699,13 @@ function LiveTickerBar() {
                       }}>
                         {(q as any).changePercent >= 0 ? "+" : ""}{((q as any).changePercent as number).toFixed(2)}%
                       </span>
+                    )}
+                    {/* A slot served by the Frankfurter forex lane is an
+                        ECB daily reference fixing. Unmarked here it sits
+                        beside FTSE and SPX reading as the same kind of
+                        number, which is the claim it cannot make. */}
+                    {(q as any).provider === "frankfurter" && (q as any).updatedAt != null && (
+                      <FixingTag updatedAt={(q as any).updatedAt as string} />
                     )}
                   </>
                 ) : (

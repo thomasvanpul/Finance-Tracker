@@ -10,6 +10,7 @@ import {
 } from "@workspace/api-client-react";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { StaleAsOf } from "@/components/StaleAsOf";
+import { FixingMark } from "@/components/FixingMark";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
 import { formatMoney } from "@/lib/utils";
 import { getBaseCurrency } from "@/lib/currency-store";
@@ -135,8 +136,12 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
   // screen contradicted itself. See defect #1 note (26 Aug session).
   //
   // Change % still comes from useGetMarketQuotes when the quote is
-  // available — Frankfurter can't compute a day-change (no
-  // previousClose). "—" when the quote is missing is honest.
+  // available. As of 2026-09-06 the quote side has its own Frankfurter
+  // lane, so a =X quote can now arrive with a REAL day-change derived
+  // from two consecutive ECB fixings rather than no change at all. That
+  // delta is fixing-over-fixing, not a live intraday move, so the row
+  // marks it (FixingMark) rather than presenting it as a live tick.
+  // "—" when the quote is missing entirely is still the honest answer.
   const { data: fxRates } = useGetFxRates();
 
   const quoteMap = useMemo(() => {
@@ -233,6 +238,11 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
           const rate = fxRates?.rates[f.ccy];
           const rateSafe = typeof rate === "number" && Number.isFinite(rate) && rate > 0 ? rate : null;
           const chg = q?.changePercent ?? null;
+          // Only mark when the change ITSELF came from a fixing. The
+          // rate above it comes from the FX endpoint, which has had a
+          // Frankfurter fallback for weeks; marking on that would put
+          // the label on rows whose delta is a live Yahoo number.
+          const fixingAt = q?.provider === "frankfurter" && chg != null ? q.updatedAt : null;
           return (
             <FxRow
               key={`fx-${f.ccy}`}
@@ -240,6 +250,7 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
               nativeSum={f.nativeSum}
               rate={rateSafe}
               chg={chg}
+              fixingAt={fixingAt}
               isFirst={isFirst}
               isLast={isLast}
             />
@@ -323,11 +334,15 @@ interface FxRowProps {
   nativeSum: number;
   rate: number | null;
   chg: number | null;
+  // ISO fixing instant when `chg` came from the Frankfurter/ECB lane;
+  // null when the change is a live quote (or absent). Presence of this
+  // value is what puts the FixingMark on the row.
+  fixingAt: string | null;
   isFirst: boolean;
   isLast: boolean;
 }
 
-function FxRow({ ccy, nativeSum, rate, chg, isFirst, isLast }: FxRowProps) {
+function FxRow({ ccy, nativeSum, rate, chg, fixingAt, isFirst, isLast }: FxRowProps) {
   const baseEquivalent = rate != null && rate > 0 ? nativeSum / rate : null;
   const sym = CURRENCY_SYMBOLS[ccy] ?? `${ccy} `;
   return (
@@ -365,6 +380,12 @@ function FxRow({ ccy, nativeSum, rate, chg, isFirst, isLast }: FxRowProps) {
           {baseEquivalent != null ? ` ≈ ${formatMoney(baseEquivalent, getBaseCurrency())}` : ""}
         </Text>
       </div>
+      {/* Row 3 — provenance, only when the change came from a fixing. */}
+      {fixingAt != null && (
+        <div style={{ gridColumn: "1 / -1" }}>
+          <FixingMark updatedAt={fixingAt} />
+        </div>
+      )}
     </div>
   );
 }

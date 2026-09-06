@@ -38,6 +38,7 @@ import {
   newsScore, timeAgo, fmtCap, fmtNum,
 } from "@/components/investments/markets-data";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { FixingMark } from "@/components/FixingMark";
 import {
   CandlestickLayer, OHLCTooltip, RangeBar, RecBar, RatingBar,
 } from "@/components/investments/markets-widgets";
@@ -1518,7 +1519,15 @@ export function MarketsTab() {
         // Only tickers with a real live price AND changePercent scroll.
         // A fabricated "0.00%" on the marquee would be the loudest kind
         // of lie we could tell (moving, coloured, front-and-centre).
-        const items = STRIP_TICKERS.map(t => ({ ticker: t, q: qMap.get(t) })).filter(x => x.q != null && x.q.changePercent != null);
+        //
+        // Frankfurter rows are excluded on the same premise rather than
+        // marked. Their number is real, but it is an ECB daily reference
+        // fixing — a scrolling, coloured, ▲/▼ marquee asserts live-ness
+        // by its motion, and a fixing cannot honestly make that claim.
+        // The pair still appears, labelled, in the Forex tiles below.
+        const items = STRIP_TICKERS
+          .map(t => ({ ticker: t, q: qMap.get(t) }))
+          .filter(x => x.q != null && x.q.changePercent != null && x.q.provider !== "frankfurter");
         if (items.length === 0) return null;
         const doubled = [...items, ...items];
         return (
@@ -1986,6 +1995,14 @@ export function MarketsTab() {
                     <Text as="span" color="var(--ft-red)">{q.dayLow.toFixed(4)}</Text> — <Text as="span" color="var(--ft-green)">{q.dayHigh.toFixed(4)}</Text>
                   </Text>
                 )}
+                {/* Provenance. When the forex lane fell through to
+                    Frankfurter the number is the ECB daily reference
+                    fixing, not a live rate — and on a weekend it is
+                    Friday's. Saying so is the difference between a
+                    stale number and a lie. The delta beside it is a
+                    fixing-over-fixing move, or "—" when only one
+                    fixing was available. */}
+                {q?.provider === "frankfurter" && q.updatedAt != null && <FixingMark updatedAt={q.updatedAt} />}
               </button>
             );
           })}

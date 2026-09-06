@@ -65,7 +65,7 @@ export function __setYahooForTesting(stub: any): void {
 export type { FxRatesData, StockPriceData, StockQuoteData } from "./market-types";
 import type { FxRatesData, StockPriceData, StockQuoteData } from "./market-types";
 import { classifyTicker, providersFor, orphanReason, type ProviderName } from "./market-classifier";
-import { alpacaFetchPrices, polygonFetchPrices, twelveDataFetchPrices, priceToQuote } from "./market-adapters";
+import { alpacaFetchPrices, polygonFetchPrices, twelveDataFetchPrices, frankfurterFetchPrices, priceToQuote } from "./market-adapters";
 
 // Cache entries
 let fxCache: { data: FxRatesData; ts: number } | null = null;
@@ -558,7 +558,11 @@ async function chainFetchPrices(tickers: string[]): Promise<Map<string, StockPri
 
   // Provider order matches PROVIDER_COVERAGE. Walk the union of coverable
   // providers in preferred order.
-  const providerOrder: ProviderName[] = ["yahoo", "alpaca", "polygon", "twelvedata"];
+  // frankfurter sits at the end: it only covers forex, and what it
+  // returns is an ECB daily reference fixing rather than a live quote,
+  // so it is the last resort under that lane rather than a peer of the
+  // live providers. See PROVIDER_COVERAGE.forex in market-classifier.ts.
+  const providerOrder: ProviderName[] = ["yahoo", "alpaca", "polygon", "twelvedata", "frankfurter"];
   for (const provider of providerOrder) {
     if (remaining.size === 0) break;
     // Which of the remaining tickers this provider CAN attempt.
@@ -602,6 +606,15 @@ async function chainFetchPrices(tickers: string[]): Promise<Map<string, StockPri
         const results = await twelveDataFetchPrices(eligible);
         for (const [k, v] of results) {
           out.set(k, { ...v, provider: "twelvedata" });
+          remaining.delete(k);
+        }
+      } else if (provider === "frankfurter") {
+        const results = await frankfurterFetchPrices(eligible);
+        for (const [k, v] of results) {
+          // updatedAt is NOT re-stamped here — the adapter already set it
+          // to the ECB fixing instant, and overwriting it with `now` is
+          // exactly how a day-old number starts reading as live.
+          out.set(k, { ...v, provider: "frankfurter" });
           remaining.delete(k);
         }
       }

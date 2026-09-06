@@ -39,6 +39,14 @@ export interface QuoteData {
   ticker: string;
   price: number;
   currency: string;
+  // ISO instant the value was produced. For the Frankfurter forex lane
+  // this is the ECB fixing instant, NOT the fetch time — see
+  // ecbFixingInstant in the api-server's market-adapters.ts.
+  updatedAt?: string;
+  // Which provider served the row. "frankfurter" means an ECB daily
+  // reference fixing rather than a live quote, and the UI must mark it
+  // as such (FixingMark) rather than render it beside live tiles.
+  provider?: string | null;
   changePercent?: number;
   pe?: number | null;
   forwardPe?: number | null;

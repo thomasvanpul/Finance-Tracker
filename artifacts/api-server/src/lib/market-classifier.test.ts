@@ -58,8 +58,26 @@ describe("providersFor · coverage matrix", () => {
     expect(providersFor("BTC-USD")).toEqual(["yahoo", "alpaca", "polygon", "twelvedata"]);
   });
 
-  it("forex has two providers (yahoo + twelvedata); Alpaca/Polygon don't cover forex on free", () => {
-    expect(providersFor("GBPUSD=X")).toEqual(["yahoo", "twelvedata"]);
+  // Changed 2026-09-06: was ["yahoo", "twelvedata"]. Frankfurter was a
+  // declared ProviderName that appeared in no coverage list, so the forex
+  // lane had two entries and both breakers open — every =X ticker
+  // orphaned. Frankfurter is appended, not inserted: it serves the ECB
+  // daily reference fixing, so it is the floor under the lane rather than
+  // a peer of the live providers, and the order encodes that.
+  it("forex has three providers; frankfurter is LAST because it is a daily fixing, not a live quote", () => {
+    expect(providersFor("GBPUSD=X")).toEqual(["yahoo", "twelvedata", "frankfurter"]);
+    // Alpaca and Polygon still do not cover forex on free.
+    expect(providersFor("GBPUSD=X")).not.toContain("alpaca");
+    expect(providersFor("GBPUSD=X")).not.toContain("polygon");
+  });
+
+  // The equities/indices/futures lanes are deliberately untouched by the
+  // Frankfurter work — Frankfurter publishes currencies and nothing else,
+  // and a "—" is the correct rendering of a figure we do not have.
+  it("frankfurter covers forex ONLY", () => {
+    for (const t of ["AAPL", "SPY", "BTC-USD", "GC=F", "^FTSE", "VOD.L"]) {
+      expect(providersFor(t)).not.toContain("frankfurter");
+    }
   });
 
   it("non-US equities have two providers (yahoo + twelvedata); the twelvedata leg is best-effort trial-symbol on free", () => {

@@ -2204,6 +2204,15 @@ components:
           type: string
         updatedAt:
           type: string
+        # Which provider actually served this row. Added 2026-09-06 with
+        # the Frankfurter forex lane. That lane returns the ECB daily
+        # reference fixing, not a live quote — without provenance on the
+        # wire the UI cannot tell yesterday's fixing from a live Yahoo
+        # tick and would render them identically. The server sets it; no
+        # consumer should key behaviour off a specific value beyond
+        # labelling.
+        provider:
+          type: ["string", "null"]
         # Change percent vs. the previous close. The server has always
         # returned this from regularMarketChangePercent, but the schema
         # omitted it — zod .parse() then stripped it on the way out,

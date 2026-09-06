@@ -619,6 +619,15 @@ export function CompactSubscriptionTracker() {
 // market-snapshot: FULL WIDTH
 const MARKET_TICKERS_STR = "^FTSE,^GSPC,BTC-GBP,GBP=X";
 
+// "ECB 4 SEPT" — the compact form of the FixingMark disclosure, for the
+// one-line row this card uses. Kept local because it folds into the row's
+// existing name string rather than rendering an element.
+function fixingLabel(updatedAt: string): string {
+  const d = new Date(updatedAt);
+  if (Number.isNaN(d.getTime())) return "ECB";
+  return `ECB ${d.getDate()} ${d.toLocaleString("en-GB", { month: "short" }).toUpperCase()}`;
+}
+
 const TICKER_LABELS: Record<string, { sym: string; name: string }> = {
   "^FTSE":   { sym: "FTSE", name: "FTSE 100" },
   "^GSPC":   { sym: "S&P",  name: "S&P 500"  },
@@ -636,17 +645,30 @@ export function CompactMarketSnapshot() {
     const col = isUp === true ? "var(--ft-green)" : isUp === false ? "var(--ft-red)" : "var(--ft-dim)";
     const dir = isUp === true ? "▲" : isUp === false ? "▼" : "";
     const meta = TICKER_LABELS[q.ticker ?? ""] ?? { sym: (q.ticker ?? "").replace(/^\^/, "").slice(0, 5), name: q.displayName ?? q.ticker ?? "" };
+    // A row served by the Frankfurter forex lane is an ECB daily
+    // reference fixing, not a live quote. The name slot is the only
+    // place on this 36px row with space for the disclosure, and an
+    // unmarked fixing under a "● LIVE" chip is the claim this card
+    // must not make.
+    const fixingAt = (q as { provider?: string | null }).provider === "frankfurter"
+      ? (q as { updatedAt?: string }).updatedAt ?? null
+      : null;
+    const name = fixingAt != null ? `${meta.name} · ${fixingLabel(fixingAt)}` : meta.name;
     const price = q.price != null
       ? q.price > 10000 ? formatBaseMoney(q.price)
       : q.price > 100   ? q.price.toFixed(0)
       : q.price > 1     ? q.price.toFixed(2)
       : q.price.toFixed(4)
       : "—";
-    return { sym: meta.sym, name: meta.name, price, pctStr, col, dir, isUp };
+    return { sym: meta.sym, name, price, pctStr, col, dir, isUp, isFixing: fixingAt != null };
   });
   const isLive = quotes.length > 0;
+  // "● LIVE" over a card that contains Friday's ECB fixing is exactly
+  // the kind of chip that makes a stale number read as a live one.
+  const anyFixing = rows.some(r => r.isFixing);
+  const chip = !isLive ? "NO DATA" : anyFixing ? "MIXED SOURCES" : "● LIVE";
   return (
-    <SectionCard label="MARKETS" accent="var(--ft-cyan)" href="/portfolio" linkLabel={isLive ? "● LIVE" : "NO DATA"}>
+    <SectionCard label="MARKETS" accent="var(--ft-cyan)" href="/portfolio" linkLabel={chip}>
       {rows.length === 0 ? (
         <div style={{ ...MONO, fontSize: 10, color: "var(--ft-muted)" }}>Loading market data…</div>
       ) : (

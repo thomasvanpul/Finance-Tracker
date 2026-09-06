@@ -160,7 +160,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
 
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the
   // "already at cap" branch. Non-money literal (percentage points).
-  { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", line: 963, reason: "milestone progress cap: no next milestone → 100% (all reached)" },
+  { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", line: 985, reason: "milestone progress cap: no next milestone → 100% (all reached)" },
   { path: "artifacts/finance-tracker/src/lib/learn-xp.ts", line: 28, reason: "XP progress cap: no next tier → 100% (at cap)" },
   { path: "artifacts/finance-tracker/src/pages/analytics-helpers.ts", line: 36, reason: "pct-change fallback: curr === 0 branch returns 0; else 100 (∞ growth from 0 baseline)" },
   { path: "artifacts/finance-tracker/src/pages/fire.tsx", line: 375, reason: "coast-FIRE progress cap: coastNeeded <= 0 → 100% (already coasted)" },
@@ -177,7 +177,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // values in JSX-style variable initializers. Non-currency.
   { path: "artifacts/finance-tracker/src/components/ai-wanderer.tsx", line: 1003, reason: "sidebar-width fallback: 212px, matches the default rail width in layout.tsx" },
   { path: "artifacts/finance-tracker/src/components/currency-mark.tsx", line: 41, reason: "SVG font-size in px based on character count (18 or 22)" },
-  { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1239, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
+  { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1247, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
   { path: "artifacts/finance-tracker/src/components/matrix-rain.tsx", line: 91, reason: "matrix-rain glyph scale (1.4 or 1) — animation randomisation, not currency" },
   { path: "artifacts/finance-tracker/src/components/page-transition.tsx", line: 59, reason: "CSS opacity for fade transition (0 or 1)" },
   { path: "artifacts/finance-tracker/src/components/primitives/block-field.tsx", line: 163, reason: "grid-column count for hero/no-hero layout" },

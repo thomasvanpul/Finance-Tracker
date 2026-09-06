@@ -426,5 +426,205 @@ export function priceToQuote(p: StockPriceData): StockQuoteData {
     nextEarningsDate: null, marketState: null,
     postMarketPrice: null, postMarketChangePercent: null,
     preMarketPrice: null, preMarketChangePercent: null,
+    // Carry provenance through. Without this the Frankfurter forex lane
+    // would arrive at the UI indistinguishable from a live Yahoo quote,
+    // which is the one thing an ECB daily fixing must not look like.
+    stale: p.stale,
+    provider: p.provider,
   };
+}
+
+// ── Frankfurter (forex only) ────────────────────────────────────────────────
+//
+// The honest floor under the forex quote lane. Free, unauthenticated, no
+// key, no credit budget, and — verified from Render's egress on
+// 2026-09-06 — not subject to the shared-IP 429 that is currently
+// closing the Yahoo crumb handshake.
+//
+// WHAT IT IS NOT. This is the ECB euro foreign exchange reference rate:
+// one fixing per TARGET working day, published around 16:00 Europe/
+// Brussels, based on a concertation procedure at 14:15 CET. It is not a
+// tick, not a mid, not a tradeable price, and on a Saturday it is
+// Friday's number. Every value this adapter returns is stamped with the
+// fixing instant (not `now`) and tagged provider:"frankfurter" so the UI
+// can label it rather than rendering it beside a live Yahoo quote as
+// though the two were the same kind of thing.
+//
+// THE DELTA. Frankfurter's /latest carries no previous close, and a
+// fabricated 0.00% would be exactly the defect class this repo spent a
+// week removing. So we do not call /latest at all: we call the
+// timeseries endpoint over a trailing window and take the last two
+// distinct fixing dates. `previousClose` is then a real prior fixing and
+// priceToQuote's changePercent is a real fixing-over-fixing move. If the
+// window yields only one date (a long holiday run), previousClose stays
+// null and the change renders "—".
+//
+// SYMBOL SHAPE. Yahoo forex notation, two forms:
+//   GBPUSD=X  → base GBP, quote USD   (6 letters)
+//   GBP=X     → base USD, quote GBP   (3 letters; Yahoo's USD-implied form)
+// One HTTP call per distinct base currency; the batch is small (the
+// overview set has 6 pairs across 3 bases) and the endpoint is free, so
+// no cross-rate arithmetic is invented to save a request.
+
+// ECB reference currencies, from https://api.frankfurter.dev/v1/currencies
+// (checked 2026-09-06). A pair naming anything outside this set cannot be
+// served and is left for orphanReason to explain — never approximated.
+const ECB_CURRENCIES = new Set([
+  "AUD", "BGN", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "EUR", "GBP",
+  "HKD", "HUF", "IDR", "ILS", "INR", "ISK", "JPY", "KRW", "MXN", "MYR",
+  "NOK", "NZD", "PHP", "PLN", "RON", "SEK", "SGD", "THB", "TRY", "USD",
+  "ZAR",
+]);
+
+// Trailing window for the timeseries call. Long enough to clear a
+// Christmas/Easter TARGET closure and still return two fixings.
+const FRANKFURTER_LOOKBACK_DAYS = 12;
+
+export interface FrankfurterPair {
+  base: string;
+  quote: string;
+}
+
+// Parse a Yahoo forex ticker into an ECB-serviceable base/quote pair, or
+// null when it is not one. `null` is a routing answer, not an error — the
+// chain simply leaves the ticker for the orphan log.
+export function frankfurterPair(ticker: string): FrankfurterPair | null {
+  const t = ticker.trim().toUpperCase();
+  if (!t.endsWith("=X")) return null;
+  const body = t.slice(0, -2);
+  let base: string;
+  let quote: string;
+  if (body.length === 6) {
+    base = body.slice(0, 3);
+    quote = body.slice(3);
+  } else if (body.length === 3) {
+    // Yahoo's `GBP=X` means USD → GBP.
+    base = "USD";
+    quote = body;
+  } else {
+    return null;
+  }
+  if (base === quote) return null;
+  if (!ECB_CURRENCIES.has(base) || !ECB_CURRENCIES.has(quote)) return null;
+  return { base, quote };
+}
+
+// The ECB publishes the daily reference fixing at about 16:00 Europe/
+// Brussels. Stamping the row with that instant rather than `now` is the
+// whole honesty mechanism: a Sunday reader sees Friday's timestamp.
+// Brussels is UTC+1 in winter and UTC+2 in summer, so the offset is read
+// off the zone rather than hardcoded.
+export function ecbFixingInstant(isoDate: string): string {
+  const probe = new Date(`${isoDate}T12:00:00Z`);
+  const wallHour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Brussels",
+      hour: "2-digit",
+      hour12: false,
+    }).format(probe),
+  );
+  // wallHour - 12 is the zone's UTC offset in hours on that date.
+  const offsetHours = Number.isFinite(wallHour) ? wallHour - 12 : 1;
+  const utcHour = 16 - offsetHours;
+  return `${isoDate}T${String(utcHour).padStart(2, "0")}:00:00.000Z`;
+}
+
+interface FrankfurterTimeseriesResponse {
+  amount?: number;
+  base?: string;
+  start_date?: string;
+  end_date?: string;
+  rates?: Record<string, Record<string, number> | undefined>;
+}
+
+// One timeseries call for one base currency, covering every quote
+// currency requested against it.
+async function frankfurterFetchBase(
+  base: string,
+  entries: { ticker: string; quote: string }[],
+): Promise<Map<string, StockPriceData>> {
+  const start = new Date(Date.now() - FRANKFURTER_LOOKBACK_DAYS * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  const symbols = [...new Set(entries.map((e) => e.quote))].join(",");
+  const url = `https://api.frankfurter.dev/v1/${start}..?base=${base}&symbols=${symbols}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+  if (!res.ok) throw new Error(`Frankfurter HTTP ${res.status} for base ${base}`);
+  const body = (await res.json()) as FrankfurterTimeseriesResponse;
+
+  // Dates are ISO yyyy-mm-dd, so lexical sort is chronological.
+  const dates = Object.keys(body.rates ?? {}).sort();
+  const out = new Map<string, StockPriceData>();
+  if (dates.length === 0) return out;
+
+  const latestDate = dates[dates.length - 1]!;
+  const latestRow = body.rates?.[latestDate] ?? {};
+  const updatedAt = ecbFixingInstant(latestDate);
+
+  for (const { ticker, quote } of entries) {
+    const price = latestRow[quote];
+    if (typeof price !== "number" || !Number.isFinite(price) || price <= 0) continue;
+    // Walk backwards for the most recent EARLIER date that actually
+    // carries this quote currency. A currency can be absent from one
+    // fixing (rare, but the ECB does suspend a currency); taking
+    // dates[len-2] blindly would then produce a null-vs-number compare.
+    let previousClose: number | null = null;
+    for (let i = dates.length - 2; i >= 0; i -= 1) {
+      const candidate = body.rates?.[dates[i]!]?.[quote];
+      if (typeof candidate === "number" && Number.isFinite(candidate) && candidate > 0) {
+        previousClose = candidate;
+        break;
+      }
+    }
+    out.set(ticker, {
+      ticker,
+      price,
+      // The pair's price is expressed in the QUOTE currency: GBPUSD=X is
+      // 1.353 USD per GBP.
+      currency: quote,
+      previousClose,
+      updatedAt,
+      provider: "frankfurter",
+    });
+  }
+  return out;
+}
+
+// Batch entry point, matching the shape of the other adapters. Throws on
+// whole-batch failure so withProvider trips the breaker; a partial result
+// counts as success and the caller leaves the rest to the orphan log.
+export async function frankfurterFetchPrices(tickers: string[]): Promise<Map<string, StockPriceData>> {
+  return withProvider("frankfurter", async () => {
+    if (tickers.length === 0) throw new Error("frankfurter called with empty ticker list");
+    // Group by base currency — one HTTP call each.
+    const byBase = new Map<string, { ticker: string; quote: string }[]>();
+    for (const ticker of tickers) {
+      const pair = frankfurterPair(ticker);
+      if (!pair) {
+        logger.info({ ticker }, "frankfurter cannot serve ticker (not an ECB pair)");
+        continue;
+      }
+      const list = byBase.get(pair.base) ?? [];
+      list.push({ ticker, quote: pair.quote });
+      byBase.set(pair.base, list);
+    }
+    if (byBase.size === 0) {
+      throw new Error(`Frankfurter had no ECB-serviceable pair among ${tickers.length} tickers`);
+    }
+    const settled = await Promise.allSettled(
+      [...byBase.entries()].map(([base, entries]) => frankfurterFetchBase(base, entries)),
+    );
+    const out = new Map<string, StockPriceData>();
+    for (const r of settled) {
+      if (r.status === "fulfilled") {
+        for (const [k, v] of r.value) out.set(k, v);
+      } else {
+        logger.warn({ err: r.reason instanceof Error ? r.reason.message : r.reason }, "frankfurter base call failed");
+      }
+    }
+    if (out.size === 0) {
+      throw new Error(`Frankfurter returned no usable rates for ${tickers.length} tickers`);
+    }
+    return out;
+  });
 }

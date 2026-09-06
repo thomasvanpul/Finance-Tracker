@@ -19,10 +19,20 @@
 // The pricing page lists 3 markets on Basic and "trial symbols" for
 // premium exchanges. We list non-US equities as coverable by twelvedata
 // because SOME symbols work on trial. The adapter attempts and logs a
-// clear failure per symbol if the endpoint returns 401/403. Upgrading to
-// Grow ($29/mo) would unlock 20+ markets and make LSE/HKEX/Xetra fully
-// coverable — the coverage table would not need to change, only the
-// runtime success rate.
+// clear failure per symbol if the endpoint returns 401/403.
+//
+// What an upgrade would actually buy (checked 2026-09-06 against
+// twelvedata.com/pricing and twelvedata.com/exchanges?level=grow):
+//   • Grow  $29/mo — "20+ markets". The exchange directory lists London
+//     Stock Exchange (XLON) at minimum plan Grow, delivery EOD. So Grow
+//     buys END-OF-DAY LSE, not a live quote.
+//   • Pro   $99/mo — "70+ markets, Real-time EU market data". Real-time
+//     LSE is a Pro feature, not a Grow one.
+// This comment previously said Grow would make "LSE/HKEX/Xetra fully
+// coverable", which would have bought the wrong tier for a live-quote
+// requirement: Grow's LSE is EOD. HKEX and Xetra are not asserted here —
+// check each in the exchange directory before spending, because delivery
+// type varies per exchange independently of the plan.
 //
 // Futures and global indices are marked YAHOO-ONLY: Twelve Data indices
 // and commodities on free tier are also trial-only, but the symbol
@@ -68,7 +78,13 @@ export const PROVIDER_COVERAGE: Record<TickerKind, ProviderName[]> = {
   us_equity:     ["yahoo", "alpaca", "polygon", "twelvedata"],
   us_etf:        ["yahoo", "alpaca", "polygon", "twelvedata"],
   crypto:        ["yahoo", "alpaca", "polygon", "twelvedata"],
-  forex:         ["yahoo", "twelvedata"],
+  // frankfurter is LAST deliberately: it is an ECB daily reference
+  // fixing, not a live quote. It is the honest floor under the forex
+  // lane when Yahoo (throttled) and Twelve Data (breaker open) both
+  // fail, not a peer of either. The adapter stamps updatedAt with the
+  // actual fixing instant and tags provider:"frankfurter" so the UI can
+  // say so rather than passing yesterday's fixing off as a live rate.
+  forex:         ["yahoo", "twelvedata", "frankfurter"],
   futures:       ["yahoo"], // no free-tier alternative
   index:         ["yahoo"], // no free-tier alternative
   non_us_equity: ["yahoo", "twelvedata"], // twelvedata is "trial symbols" on free — best effort
@@ -100,9 +116,9 @@ export function orphanReason(ticker: string): string {
     case "index":
       return `no free-tier provider covers global indices (${ticker}) — needs paid data`;
     case "non_us_equity":
-      return `no reliable free-tier provider covers ${ticker.match(/\.([A-Z]{1,3})$/)?.[1] ?? "this exchange"} quotes — needs Twelve Data Grow or Finnhub All-in-one`;
+      return `no reliable free-tier provider covers ${ticker.match(/\.([A-Z]{1,3})$/)?.[1] ?? "this exchange"} quotes — needs Twelve Data Pro for real-time (Grow is end-of-day) or Finnhub All-in-one`;
     case "forex":
-      return `${ticker}: Yahoo throttled and Twelve Data unavailable`;
+      return `${ticker}: Yahoo throttled, Twelve Data unavailable, and the pair is outside the ECB reference set Frankfurter publishes`;
     default:
       return `${ticker}: all quote providers failed`;
   }

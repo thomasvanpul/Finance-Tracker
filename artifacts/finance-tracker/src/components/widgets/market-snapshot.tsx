@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGetMarketQuotes, useGetMarketHistory } from "@workspace/api-client-react";
 import { WidgetShell } from "./widget-shell";
+import { FixingMark } from "../FixingMark";
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 
 const DEFAULT_TICKERS = "^GSPC,^FTSE,BTC-USD,GBPUSD=X,ETH-USD,^DJI";
@@ -82,6 +83,10 @@ interface Quote {
   high52w?: number | null;
   low52w?: number | null;
   currency?: string;
+  // "frankfurter" means the row is the ECB daily reference fixing, not a
+  // live quote — the FX row marks it rather than letting it sit
+  // unlabelled next to live equity rows.
+  provider?: string | null;
 }
 
 function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
@@ -201,6 +206,15 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
         ) : (
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>
             {meta?.group === "fx" ? "RATE" : q.currency ?? ""}
+          </div>
+        )}
+        {/* An ECB fixing carries a real fixing-over-fixing delta, so the
+            block above renders a ▲/▼ exactly as a live row does. Without
+            this mark the two are indistinguishable, which is the whole
+            problem. Mark it. */}
+        {q.provider === "frankfurter" && (
+          <div style={{ marginTop: 1 }}>
+            <FixingMark updatedAt={q.updatedAt} />
           </div>
         )}
       </div>

@@ -667,6 +667,7 @@ export const GetMarketQuotesResponseItem = zod.object({
   "price": zod.number(),
   "currency": zod.string(),
   "updatedAt": zod.string(),
+  "provider": zod.string().nullish(),
   "changePercent": zod.number().nullish(),
   "previousClose": zod.number().nullish(),
   "dayHigh": zod.number().nullish(),
