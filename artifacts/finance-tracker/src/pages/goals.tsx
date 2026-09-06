@@ -139,7 +139,7 @@ function KpiCell({ label, children, sub }: KpiCellProps) {
       </div>
       {children}
       {sub && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
           {sub}
         </div>
       )}
@@ -175,7 +175,7 @@ function InsightCard({ label, name, value, accentColor }: InsightCardProps) {
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.07em", textTransform: "uppercase" as const, marginBottom: 6 }}>
         {label}
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
         <span style={{ color: accentColor, marginRight: 6 }}>■</span>{name}
       </div>
       <Text as="div" mono size={10} weight={600}>
@@ -381,7 +381,7 @@ function GoalCard({
       {/* Delete button */}
       <button
         onClick={() => onDeleteClick(goal.id)}
-        style={{ position: "absolute", top: 8, right: 8, background: deleteConfirmId === goal.id ? "var(--ft-red)" : "none", border: "none", color: deleteConfirmId === goal.id ? "#fff" : "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: deleteConfirmId === goal.id ? 8 : 14, lineHeight: 1, padding: deleteConfirmId === goal.id ? "6px 8px" : "6px 6px", letterSpacing: "0.06em", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
+        style={{ position: "absolute", top: 8, right: 8, background: deleteConfirmId === goal.id ? "var(--ft-red)" : "none", border: "none", color: deleteConfirmId === goal.id ? "#fff" : "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: deleteConfirmId === goal.id ? 9 : 14, lineHeight: 1, padding: deleteConfirmId === goal.id ? "6px 8px" : "6px 6px", letterSpacing: "0.06em", minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
         onMouseEnter={(e) => { if (deleteConfirmId !== goal.id) e.currentTarget.style.color = "var(--ft-red)"; }}
         onMouseLeave={(e) => { if (deleteConfirmId !== goal.id) e.currentTarget.style.color = "var(--ft-dim)"; }}
         title={deleteConfirmId === goal.id ? "Click again to confirm delete" : "Delete goal"}
@@ -423,7 +423,7 @@ function GoalCard({
         </VStack>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)", paddingRight: 28, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)", paddingRight: 28, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
             {goal.name}
           </div>
           <HStack gap={6} align="center" wrap marginTop={5}>
@@ -450,7 +450,7 @@ function GoalCard({
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: done ? "var(--ft-green)" : pct >= 75 ? "var(--ft-green)" : pct >= 40 ? "#e3b341" : "var(--ft-red)" }}>
               {pct.toFixed(0)}%
             </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 4 }}>funded</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginLeft: 4 }}>funded</span>
           </div>
           <div style={{ textAlign: "right" }}>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: done ? "var(--ft-green)" : "var(--ft-text)" }}>
@@ -499,7 +499,7 @@ function GoalCard({
           />
           <button
             onClick={() => onAddFunds(goal.id)}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", background: color, color: "var(--ft-base)", border: "none", padding: "6px 14px", cursor: "pointer", flexShrink: 0, fontWeight: 700 }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", background: color, color: "var(--ft-base)", border: "none", padding: "6px 14px", cursor: "pointer", flexShrink: 0, fontWeight: 700 }}
           >
             Add
           </button>
@@ -519,9 +519,9 @@ function GoalCard({
               border: "none",
               padding: 0,
               cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              letterSpacing: "0.08em",
+              fontFamily: "var(--font-sans)",
+              fontSize: 10,
+              letterSpacing: "0.04em",
               textTransform: "uppercase",
               color: isAnalyticsOpen ? "var(--ft-accent)" : "var(--ft-dim)",
             }}
@@ -546,8 +546,8 @@ function GoalCard({
                   <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
                     {projectedMonths < Infinity ? projectedMonths : "—"}
                   </div>
-                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
-                    at {formatBaseMoney(goalMonthlyRate)}/mo
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+                    at <span className="pnum">{formatBaseMoney(goalMonthlyRate)}</span>/mo
                   </div>
                 </div>
 
@@ -557,7 +557,7 @@ function GoalCard({
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
                       {formatBaseMoney(requiredMonthly)}
                     </div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
                       to hit deadline
                     </div>
                   </div>
@@ -569,7 +569,7 @@ function GoalCard({
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color }}>
                       {formatMonthYear(projectedDate)}
                     </div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
                       at current rate
                     </div>
                   </div>
@@ -579,21 +579,21 @@ function GoalCard({
                   <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Deadline Status</div>
                     {deadlineFeasibility === "achievable" && (
-                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-green)", display: "flex", alignItems: "center", gap: 4 }}><Check size={10} /> Achievable</div>
+                      <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 700, color: "var(--ft-green)", display: "flex", alignItems: "center", gap: 4 }}><Check size={10} /> Achievable</div>
                     )}
                     {deadlineFeasibility === "stretch" && (
                       <div>
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle size={10} /> Stretch</div>
-                        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-amber)", marginTop: 2 }}>
-                          need {formatBaseMoney(requiredMonthly - surplusForGoal)}/mo more
+                        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", display: "flex", alignItems: "center", gap: 4 }}><AlertTriangle size={10} /> Stretch</div>
+                        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-amber)", marginTop: 2 }}>
+                          need <span className="pnum">{formatBaseMoney(requiredMonthly - surplusForGoal)}</span>/mo more
                         </div>
                       </div>
                     )}
                     {deadlineFeasibility === "notfeasible" && (
                       <div>
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-red)", display: "flex", alignItems: "center", gap: 4 }}><XIcon size={10} /> Not feasible</div>
-                        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", marginTop: 2 }}>
-                          need {formatBaseMoney(requiredMonthly - surplusForGoal)}/mo more
+                        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-red)", display: "flex", alignItems: "center", gap: 4 }}><XIcon size={10} /> Not feasible</div>
+                        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-red)", marginTop: 2 }}>
+                          need <span className="pnum">{formatBaseMoney(requiredMonthly - surplusForGoal)}</span>/mo more
                         </div>
                       </div>
                     )}
@@ -604,15 +604,15 @@ function GoalCard({
               {/* Suggest Deadline */}
               {!goal.deadline && projectedDate && (
                 <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "8px 10px", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-                    At current rate: done ~{formatMonthYear(projectedDate)}
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
+                    At current rate: done ~<Text as="span" mono>{formatMonthYear(projectedDate)}</Text>
                   </div>
                   <button
                     onClick={() => onSetDeadline(goal.id, projectedDate.toISOString().slice(0, 10))}
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 8,
-                      letterSpacing: "0.05em",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: 9,
+                      letterSpacing: "0.04em",
                       textTransform: "uppercase",
                       background: "transparent",
                       color: "var(--ft-accent)",
@@ -630,7 +630,7 @@ function GoalCard({
               {/* Compound Growth toggle */}
               <div style={{ marginBottom: 10 }}>
                 <HStack gap={8} align="center" justify="between" wrap marginBottom={useCompound ? 8 : 0}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.05em" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>
                     <input
                       type="checkbox"
                       checked={useCompound}
@@ -667,21 +667,21 @@ function GoalCard({
                   <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
                     <HStack gap={12} marginBottom={6}>
                       <div>
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>Without returns</div>
+                        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>Without returns</div>
                         <Text as="div" mono size={10} weight={600} color="var(--ft-muted)">
                           {projectedDate ? formatMonthYear(projectedDate) : "—"}
                         </Text>
                       </div>
                       <div style={{ color: "var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10, alignSelf: "flex-end" }}>→</div>
                       <div>
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>With {(annualRate * 100).toFixed(0)}% returns</div>
+                        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>With <span className="pnum">{(annualRate * 100).toFixed(0)}%</span> returns</div>
                         <Text as="div" mono size={10} weight={700} color="var(--ft-green)">
                           {compoundDate ? formatMonthYear(compoundDate) : "—"}
                         </Text>
                       </div>
                       {compoundMonths < Infinity && projectedMonths < Infinity && compoundMonths < projectedMonths && (
                         <div style={{ alignSelf: "flex-end" }}>
-                          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 2 }}>Time saved</div>
+                          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>Time saved</div>
                           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-green)" }}>
                             {projectedMonths - compoundMonths}mo
                           </div>
@@ -689,8 +689,8 @@ function GoalCard({
                       )}
                     </HStack>
                     {interestEarned > 0 && (
-                      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>
-                        +{formatBaseMoney(Math.abs(interestEarned))} total interest earned
+                      <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-green)" }}>
+                        +<span className="pnum">{formatBaseMoney(Math.abs(interestEarned))}</span> total interest earned
                       </div>
                     )}
                   </div>
@@ -700,7 +700,7 @@ function GoalCard({
               {/* What-if calculator */}
               {!done && (
                 <div style={{ marginBottom: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 6 }}>
                     What if I contributed…
                   </div>
                   <HStack gap={6} align="center">
@@ -728,17 +728,17 @@ function GoalCard({
                       </span>
                     )}
                     {!isNaN(whatIfVal) && whatIfVal > 0 && whatIfMonthsNeeded === Infinity && (
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", marginLeft: 8 }}>
+                      <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-red)", marginLeft: 8 }}>
                         insufficient
                       </span>
                     )}
                   </HStack>
                   {whatIfDate && whatIfMonthsNeeded !== null && projectedMonths < Infinity && (
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
                       {whatIfMonthsNeeded < projectedMonths
-                        ? `${projectedMonths - whatIfMonthsNeeded}mo faster than current rate`
+                        ? <><span className="pnum">{projectedMonths - whatIfMonthsNeeded}mo</span> faster than current rate</>
                         : whatIfMonthsNeeded > projectedMonths
-                        ? `${whatIfMonthsNeeded - projectedMonths}mo slower`
+                        ? <><span className="pnum">{whatIfMonthsNeeded - projectedMonths}mo</span> slower</>
                         : "same as current rate"}
                     </div>
                   )}
@@ -814,7 +814,7 @@ function AiCoachCard({ text, loading }: AiCoachCardProps) {
       {loading || text === null ? (
         <div style={{ height: 28, background: "var(--ft-raised)", borderRadius: 2, opacity: 0.5 }} />
       ) : (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.6 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.6 }}>
           {text}
         </div>
       )}
@@ -1147,11 +1147,15 @@ export default function Goals() {
     boxSizing: "border-box",
   };
 
+  // The goal name is free text; the amount and date fields above keep
+  // inputStyle's mono because they hold figures (DESIGN.md §10).
+  const textInputStyle: React.CSSProperties = { ...inputStyle, fontFamily: "var(--font-sans)", fontSize: 12 };
+
   const labelStyle: React.CSSProperties = {
-    fontFamily: "var(--font-mono)",
-    fontSize: 9,
+    fontFamily: "var(--font-sans)",
+    fontSize: 10,
     color: "var(--ft-dim)",
-    letterSpacing: "0.06em",
+    letterSpacing: "0.04em",
     textTransform: "uppercase" as const,
     display: "block",
     marginBottom: 4,
@@ -1214,9 +1218,9 @@ export default function Goals() {
           <button
             onClick={() => setShowForm((s) => !s)}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
-              letterSpacing: "0.06em",
+              letterSpacing: "0.04em",
               textTransform: "uppercase",
               background: showForm ? "var(--ft-raised)" : "var(--ft-accent)",
               color: showForm ? "var(--ft-text)" : "var(--ft-base)",
@@ -1245,7 +1249,7 @@ export default function Goals() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -1260,7 +1264,7 @@ export default function Goals() {
           <div className="ft-kpi-bar" style={{ gridTemplateColumns: "repeat(6, 1fr)", border: "none" }}>
             <KpiCell
               label="Total Goals"
-              sub={<><Text as="span" color="var(--ft-green)">{achievedGoals.length}</Text> done · <Text as="span" color="var(--ft-accent)">{unachievedGoals.length}</Text> active</>}
+              sub={<><Text as="span" mono color="var(--ft-green)">{achievedGoals.length}</Text> done · <Text as="span" mono color="var(--ft-accent)">{unachievedGoals.length}</Text> active</>}
             >
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{goals.length}</div>
             </KpiCell>
@@ -1288,7 +1292,7 @@ export default function Goals() {
               ) : (
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: monthlySurplus >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
                   {formatBaseMoney(Math.abs(monthlySurplus))}
-                  {monthlySurplus < 0 && <span style={{ fontSize: 9, marginLeft: 4, color: "var(--ft-red)" }}>deficit</span>}
+                  {monthlySurplus < 0 && <span style={{ fontSize: 10, marginLeft: 4, color: "var(--ft-red)", fontFamily: "var(--font-sans)" }}>deficit</span>}
                 </div>
               )}
             </KpiCell>
@@ -1305,7 +1309,7 @@ export default function Goals() {
               ) : (
                 <div>
                   <Text as="div" mono size={11} weight={700} color="var(--ft-red)" letterSpacing="0.04em">SHORTFALL</Text>
-                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-red)", marginTop: 2 }}>{formatBaseMoney(shortfall)}/mo short</div>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-red)", marginTop: 2 }}><span className="pnum">{formatBaseMoney(shortfall)}</span>/mo short</div>
                 </div>
               )}
             </KpiCell>
@@ -1379,7 +1383,7 @@ export default function Goals() {
           <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <div>
               <label style={labelStyle}>Goal Name</label>
-              <input type="text" placeholder="e.g. Holiday Fund" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} style={inputStyle} />
+              <input type="text" placeholder="e.g. Holiday Fund" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} style={textInputStyle} />
             </div>
             <div>
               <label style={labelStyle}>Target Amount (£)</label>
@@ -1424,13 +1428,13 @@ export default function Goals() {
                   {form.image ? (
                     <img src={form.image} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textAlign: "center", lineHeight: 1.4, padding: "0 4px" }}>CLICK<br />DROP</span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textAlign: "center", lineHeight: 1.4, padding: "0 4px" }}>CLICK<br />DROP</span>
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>Displayed in the goal ring · max 5 MB</div>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 4 }}>Displayed in the goal ring · max 5 MB</div>
                   {form.image && (
-                    <button onClick={() => setForm((f) => ({ ...f, image: "" }))} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", background: "none", border: "1px solid var(--ft-red)", padding: "2px 8px", cursor: "pointer", letterSpacing: "0.04em" }}>
+                    <button onClick={() => setForm((f) => ({ ...f, image: "" }))} style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-red)", background: "none", border: "1px solid var(--ft-red)", padding: "2px 8px", cursor: "pointer", letterSpacing: "0.04em" }}>
                       Remove
                     </button>
                   )}
@@ -1439,10 +1443,10 @@ export default function Goals() {
             </div>
           </div>
           <HStack gap={8}>
-            <button onClick={handleSave} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", background: "var(--ft-green)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}>
+            <button onClick={handleSave} style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", background: "var(--ft-green)", color: "var(--ft-base)", border: "none", padding: "7px 20px", cursor: "pointer" }}>
               Save Goal
             </button>
-            <button onClick={() => { setShowForm(false); setForm({ ...EMPTY_FORM }); }} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}>
+            <button onClick={() => { setShowForm(false); setForm({ ...EMPTY_FORM }); }} style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "7px 16px", cursor: "pointer" }}>
               Cancel
             </button>
           </HStack>
@@ -1452,13 +1456,13 @@ export default function Goals() {
       {/* ── Empty State ── */}
       {goals.length === 0 && !showForm && (
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "40px 32px", minHeight: "calc(100vh - 260px)", display: "flex", flexDirection: "column" as const, justifyContent: "center" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
             NO GOALS DEFINED
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 4 }}>
             Define a financial target to track.
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 20, lineHeight: 1.7, maxWidth: 440 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 20, lineHeight: 1.7, maxWidth: 440 }}>
             Set a goal for a holiday fund, emergency buffer, or investment milestone. The engine will track your progress, project your completion date, and surface warnings when you're behind schedule.
           </div>
           {(() => {
@@ -1474,7 +1478,7 @@ export default function Goals() {
                       setForm((f) => ({ ...f, name: t.name, target: String(t.target), emoji: t.emoji }));
                       setShowForm(true);
                     }}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", border: "1px solid var(--ft-border)", background: "var(--ft-raised)", color: "var(--ft-dim)", padding: "4px 12px", cursor: "pointer", whiteSpace: "nowrap" }}
+                    style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", border: "1px solid var(--ft-border)", background: "var(--ft-raised)", color: "var(--ft-dim)", padding: "4px 12px", cursor: "pointer", whiteSpace: "nowrap" }}
                   >
                     {t.name}
                   </button>
@@ -1482,7 +1486,7 @@ export default function Goals() {
               </HStack>
             );
           })()}
-          <Text as="div" mono size={10} color="var(--ft-dim)" letterSpacing="0.06em">
+          <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.04em">
             Use <Text as="span" color="var(--ft-accent)">+ Add Goal</Text> above to get started, or select a template.
           </Text>
         </div>
@@ -1531,7 +1535,7 @@ export default function Goals() {
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
               Portfolio Summary
             </div>
-            <Text as="div" mono size={11} color="var(--ft-muted)">
+            <Text as="div" size={11} color="var(--ft-muted)">
               <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700, fontSize: 18 }}>{formatBaseMoney(totalSaved)}</span>
               <Text as="span" color="var(--ft-dim)"> saved towards </Text>
               <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700, fontSize: 18 }}>{formatBaseMoney(totalTarget)}</span>
@@ -1540,8 +1544,8 @@ export default function Goals() {
             <div style={{ height: 3, background: "var(--ft-border)", marginTop: 8, width: "min(240px, 100%)", overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${totalPct ?? 0}%`, background: "var(--ft-green)" }} />
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-              <span className="pnum">{totalPct == null ? "—" : `${totalPct.toFixed(1)}%`}</span> overall · {achievedGoals.length} of {goals.length} goals complete
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>
+              <span className="pnum">{totalPct == null ? "—" : `${totalPct.toFixed(1)}%`}</span> overall · <span className="pnum">{achievedGoals.length}</span> of <span className="pnum">{goals.length}</span> goals complete
             </div>
           </div>
 
@@ -1551,14 +1555,14 @@ export default function Goals() {
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-accent)" }}>
                 {summaryMonthlyNeeded > 0 ? formatBaseMoney(summaryMonthlyNeeded) : "—"}
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>across all active goals</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>across all active goals</div>
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>Still Needed</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)" }}>
                 {formatBaseMoney(totalGoalsNeeded)}
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>{unachievedGoals.length} goal{unachievedGoals.length !== 1 ? "s" : ""} in progress</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}><span className="pnum">{unachievedGoals.length}</span> goal{unachievedGoals.length !== 1 ? "s" : ""} in progress</div>
             </div>
           </HStack>
         </HStack></PanelBox>
