@@ -5,7 +5,7 @@ import pinoHttp from "pino-http";
 import path from "path";
 import { existsSync } from "fs";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
 import router from "./routes";
 import healthRouter from "./routes/health";
@@ -135,7 +135,12 @@ export const aiLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "AI rate limit exceeded. Please wait before sending more messages." },
   skip: () => IS_DEV,
-  keyGenerator: (req: Request) => (req as unknown as { userId?: string }).userId ?? req.ip ?? "unknown",
+  // express-rate-limit v8 rejects a bare req.ip here: a single IPv6 client is
+  // handed a /64 and can present a different full address per request, so
+  // keying on the address is no limit at all. ipKeyGenerator normalises to the
+  // subnet. Without it the library throws ERR_ERL_KEY_GEN_IPV6 at module init.
+  keyGenerator: (req: Request) =>
+    (req as unknown as { userId?: string }).userId ?? ipKeyGenerator(req.ip ?? "unknown"),
 });
 
 // General API limiter — guard all other financial endpoints
