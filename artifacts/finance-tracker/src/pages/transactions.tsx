@@ -2223,7 +2223,7 @@ export default function Transactions() {
             </div>
             {kpiUnconvertible > 0
               ? <Text as="div" size={10} color="var(--ft-amber)" letterSpacing="0.04em">income · <span className="pnum">{kpiUnconvertible}</span> tx no FX</Text>
-              : <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">income</Text>}
+              : <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.04em">income</Text>}
           </div>
           {/* TOTAL OUT */}
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>

@@ -217,7 +217,7 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
                               ${q.price.toFixed(2)} <span style={{ color: pctColor(chg) }}>{pctLabel(chg)}</span>
                             </span>
                           ) : (
-                            <Text as="span" mono size={9} color="var(--ft-dim)">click to load</Text>
+                            <Text as="span" size={10} color="var(--ft-dim)">click to load</Text>
                           )}
                         </button>
                         <button onClick={() => removeTicker(activeList.id, ticker)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: "2px", flexShrink: 0 }}>
@@ -427,13 +427,13 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
           </button>
         </HStack>
         {/* Metric help text */}
-        <Text as="div" mono size={9} color="var(--ft-dim)" lineHeight={1.5}>
+        <Text as="div" size={10} color="var(--ft-dim)" lineHeight={1.5}>
           {metric === "price" && "Triggers when the live price crosses your target."}
           {metric === "pct_change" && "Triggers when today's % change (vs yesterday's close) crosses your threshold."}
           {metric === "pe" && "Triggers when the trailing P/E ratio crosses your threshold. Requires live quote data."}
         </Text>
         {tickerAlerts.length === 0 ? (
-          <Text as="div" mono size={10} color="var(--ft-dim)">No alerts set for {ticker}</Text>
+          <Text as="div" size={10} color="var(--ft-dim)">No alerts set for <Text as="span" mono>{ticker}</Text></Text>
         ) : (
           <VStack gap={4}>
             {tickerAlerts.map((a) => {
@@ -866,7 +866,7 @@ export function MarketsTab() {
               )}
             </HStack>
             <HStack gap={10} align="center" marginTop={3}>
-              {detail?.sector && <Text as="span" mono size={10} color="var(--ft-muted)">{detail.sector} · {detail.industry}</Text>}
+              {detail?.sector && <Text as="span" size={10} color="var(--ft-muted)">{detail.sector} · {detail.industry}</Text>}
               {lastQuoteTime && (
                 <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", background: "rgba(255,255,255,0.04)", border: "1px solid var(--ft-border)", padding: "1px 6px" }}>
                   as of <span className="pnum">{lastQuoteTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
@@ -1278,7 +1278,7 @@ export function MarketsTab() {
                   <Text as="span" mono upper size={13} weight={700} color={detail.recommendationKey === "buy" || detail.recommendationKey === "strong_buy" ? "var(--ft-green)" : detail.recommendationKey === "hold" ? "var(--ft-amber)" : "var(--ft-red)"} letterSpacing="0.04em">
                     {detail.recommendationKey.replace("_", " ")}
                   </Text>
-                  {detail.analystCount && <Text as="span" mono size={9} color="var(--ft-dim)">({detail.analystCount} analysts)</Text>}
+                  {detail.analystCount && <Text as="span" size={10} color="var(--ft-dim)">(<span className="pnum">{detail.analystCount}</span> analysts)</Text>}
                 </HStack>
               )}
               {detail?.recommendationTrend?.length ? (
@@ -1308,7 +1308,7 @@ export function MarketsTab() {
                   )}
                 </>
               ) : (
-                <Text as="div" mono size={11} color="var(--ft-dim)">No recommendation data</Text>
+                <Text as="div" size={11} color="var(--ft-dim)">No recommendation data</Text>
               )}
             </VStack>
           </div>

@@ -1400,7 +1400,7 @@ function WardrobePanel() {
               if (!skin) return null;
               return (
                 <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
-                  <Text as="span" mono size={10} weight={700} color="var(--ft-text)">{skin.label}</Text>
+                  <Text as="span" size={10} weight={700} color="var(--ft-text)">{skin.label}</Text>
                   {" "}
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: RARITY_COLOR_MAP[skin.rarity] }}>{skin.rarity}</span>
                 </div>
@@ -1537,7 +1537,7 @@ function WiseAccountRow({ account }: { account: { id: number; name: string; curr
       }}
     >
       <div>
-        <Text as="div" mono size={12} weight={500} color="var(--ft-text)">
+        <Text as="div" size={12} weight={500} color="var(--ft-text)">
           {account.name}
         </Text>
         <Text as="div" size={10} color="var(--ft-muted)" mt={2}>
@@ -1812,8 +1812,8 @@ function DigestPanel() {
             ["Transaction count", "Number of transactions processed"],
           ].map(([label, desc]) => (
             <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)" }}>{label}</div>
-              <Text as="div" mono size={10} color="var(--ft-dim)">{desc}</Text>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)" }}>{label}</div>
+              <Text as="div" size={10} color="var(--ft-dim)">{desc}</Text>
             </div>
           ))}
         </div>
@@ -2153,7 +2153,7 @@ function CryptoWalletsPanel() {
                     }}>
                       {wallet.chain}
                     </span>
-                    <Text as="span" mono size={12} weight={600} color="var(--ft-text)">
+                    <Text as="span" size={12} weight={600} color="var(--ft-text)">
                       {wallet.label}
                     </Text>
                   </HStack>
@@ -2161,7 +2161,7 @@ function CryptoWalletsPanel() {
                     {wallet.address}
                   </div>
                   {wallet.error ? (
-                    <Text as="div" mono size={10} color="var(--ft-red)" mt={2}>
+                    <Text as="div" size={10} color="var(--ft-red)" mt={2}>
                       ⚠ {wallet.error}
                     </Text>
                   ) : wallet.balance != null ? (
@@ -2181,8 +2181,8 @@ function CryptoWalletsPanel() {
                     </HStack>
                   ) : null}
                   {wallet.lastSynced && (
-                    <Text as="div" mono size={9} color="var(--ft-dim)" mt={2}>
-                      Synced {new Date(wallet.lastSynced).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    <Text as="div" size={10} color="var(--ft-dim)" mt={2}>
+                      Synced <span className="pnum">{new Date(wallet.lastSynced).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                     </Text>
                   )}
                 </div>
@@ -2779,7 +2779,7 @@ export default function Settings() {
             <SettingsInputRow title="Category spike alert" sub="Alert when a category is X% above last month">
               <HStack gap={6} align="center">
                 <Input type="number" min={1} max={500} value={alertRules.categorySpikeAlertPct} onChange={e => setAlertRules(p => ({ ...p, categorySpikeAlertPct: Number(e.target.value) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
-                <Text as="span" mono size={11} color="var(--ft-muted)">% above last month</Text>
+                <Text as="span" size={11} color="var(--ft-muted)">% above last month</Text>
               </HStack>
             </SettingsInputRow>
             <PanelHeader>Budget Alerts</PanelHeader>
@@ -2801,7 +2801,7 @@ export default function Settings() {
             <SettingsInputRow title="Bill reminder days" sub="Remind X days before a bill is due">
               <HStack gap={6} align="center">
                 <Input type="number" min={0} max={30} value={alertRules.billReminderDays} onChange={e => setAlertRules(p => ({ ...p, billReminderDays: Math.max(0, Number(e.target.value)) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
-                <Text as="span" mono size={11} color="var(--ft-muted)">days before</Text>
+                <Text as="span" size={11} color="var(--ft-muted)">days before</Text>
               </HStack>
             </SettingsInputRow>
             <PanelHeader>Goals</PanelHeader>

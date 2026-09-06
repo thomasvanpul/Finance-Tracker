@@ -1109,12 +1109,12 @@ export default function NetWorthHistory() {
           <div style={{ display: "flex", gap: 16, marginTop: 8, paddingLeft: 52 }}>
             <HStack gap={5} align="center">
               <div style={{ width: 16, height: 2, background: trendColor }} />
-              <Text as="span" mono size={8} color="var(--ft-dim)">Net Worth</Text>
+              <Text as="span" size={9} color="var(--ft-dim)">Net Worth</Text>
             </HStack>
             {projectionPoints.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 16, height: 1, background: "var(--ft-cyan)", borderTop: "1px dashed var(--ft-cyan)" }} />
-                <Text as="span" mono size={8} color="var(--ft-dim)">Projected</Text>
+                <Text as="span" size={9} color="var(--ft-dim)">Projected</Text>
               </div>
             )}
           </div>
@@ -1153,11 +1153,11 @@ export default function NetWorthHistory() {
           <div style={{ display: "flex", gap: 16, marginTop: 8, paddingLeft: 52 }}>
             <HStack gap={5} align="center">
               <div style={{ width: 12, height: 2, background: "var(--ft-green)" }} />
-              <Text as="span" mono size={8} color="var(--ft-dim)">Assets</Text>
+              <Text as="span" size={9} color="var(--ft-dim)">Assets</Text>
             </HStack>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 12, height: 2, background: "var(--ft-red)" }} />
-              <Text as="span" mono size={8} color="var(--ft-dim)">Liabilities</Text>
+              <Text as="span" size={9} color="var(--ft-dim)">Liabilities</Text>
             </div>
           </div>
           </div>
@@ -1236,8 +1236,8 @@ export default function NetWorthHistory() {
       {monthlyStats.length > 0 && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
           <PanelHeader
-            right={<Text as="span" mono size={9} color="var(--ft-dim)">
-              End-of-month · last {monthlyStats.length} months
+            right={<Text as="span" size={10} color="var(--ft-dim)">
+              End-of-month · last <span className="pnum">{monthlyStats.length}</span> months
             </Text>}
           >
             Monthly Breakdown
@@ -1325,8 +1325,8 @@ export default function NetWorthHistory() {
                 Target Net Worth
               </span>
               {targetNw > 0 && currentNW > 0 && (
-                <Text as="span" mono size={9} color="var(--ft-dim)">
-                  — {Math.min(100, (currentNW / targetNw) * 100).toFixed(1)}% reached
+                <Text as="span" size={10} color="var(--ft-dim)">
+                  — <span className="pnum">{Math.min(100, (currentNW / targetNw) * 100).toFixed(1)}%</span> reached
                 </Text>
               )}
             </HStack>
