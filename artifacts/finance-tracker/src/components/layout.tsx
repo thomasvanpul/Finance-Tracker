@@ -1912,29 +1912,30 @@ export function Layout({ children }: LayoutProps) {
             )}
           </div>
 
-          {/* Net worth strip */}
-          {dashboardData && showNwStrip && (
+          {/* Net worth strip — expanded sidebar only.
+              The collapsed rail is a fixed 54px (sidebarW above) and a
+              9px mono six-figure sum needs about 59, so this rendered
+              "£215,329.7": a cropped figure that reads as a different,
+              plausible number. CLAUDE.md's hard constraint is that a
+              financial figure is shown in full or not at all, and that
+              below a width threshold you render the label alone or the
+              value alone — never a half-visible one. No width in a
+              54px rail fits, so it is not at all. The expanded sidebar
+              and the dashboard both carry the figure. */}
+          {dashboardData && showNwStrip && !effectiveCollapsed && (
             <div style={{
               borderTop: "1px solid var(--ft-border)",
-              padding: effectiveCollapsed ? "5px 0" : "5px 12px",
+              padding: "5px 12px",
               display: "flex",
               alignItems: "center",
-              justifyContent: effectiveCollapsed ? "center" : "space-between",
+              justifyContent: "space-between",
               gap: 4,
               fontFamily: "var(--font-mono)",
             }}>
-              {effectiveCollapsed ? (
-                <PrivNum style={{ fontSize: 9, color: "var(--ft-accent)", fontWeight: 700, letterSpacing: "0.02em" }}>
-                  {formatBaseMoney(dashboardData.netWorth)}
-                </PrivNum>
-              ) : (
-                <>
-                  <span style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>NET WORTH</span>
-                  <PrivNum style={{ fontSize: 10, color: "var(--ft-text)", fontWeight: 700 }}>
-                    {formatBaseMoney(dashboardData.netWorth)}
-                  </PrivNum>
-                </>
-              )}
+              <span style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>NET WORTH</span>
+              <PrivNum style={{ fontSize: 10, color: "var(--ft-text)", fontWeight: 700 }}>
+                {formatBaseMoney(dashboardData.netWorth)}
+              </PrivNum>
             </div>
           )}
 
