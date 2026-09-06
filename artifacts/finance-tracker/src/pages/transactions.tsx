@@ -633,6 +633,24 @@ export default function Transactions() {
     return base; // date-desc is server default
   }, [transactions, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, search, filterTag, tags, sortBy]);
 
+  // Numeric column widths reserve room for the widest figure the ledger is
+  // about to show, so a 7-figure balance widens the slot instead of running
+  // into the next cell (DESIGN.md §8: the slot gives, the digits do not).
+  // 7.3px is JetBrains Mono's advance at 12px; +1 for the sign glyph; 20 for
+  // the cell padding. The floors are the pre-2026-09-06 fixed widths.
+  const { amountColW, gbpColW } = useMemo(() => {
+    let nativeMax = 0;
+    let baseMax = 0;
+    for (const tx of filtered) {
+      nativeMax = Math.max(nativeMax, formatNative(Math.abs(tx.nativeAmount), tx.currency).length);
+      if (tx.baseEquivalent != null) baseMax = Math.max(baseMax, formatBaseMoney(Math.abs(tx.baseEquivalent)).length);
+    }
+    return {
+      amountColW: `${Math.max(130, Math.ceil((nativeMax + 1) * 7.3) + 20)}px`,
+      gbpColW: `${Math.max(110, Math.ceil((baseMax + 1) * 7.3) + 20)}px`,
+    };
+  }, [filtered]);
+
   // Filtered average: skips unconvertible rows; the denominator drops
   // to match, so this is a true average of what could be converted
   // rather than one padded with fabricated zeros.
@@ -1727,17 +1745,17 @@ export default function Transactions() {
           {tx.accountName}
         </div>
         <div className="ft-hide-mobile" style={{ width: 90, minWidth: 90, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center" }}>
-          <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, border: `1px solid ${TX_TYPE_COLOR[tx.type as TxType]}`, background: "transparent", color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase" as const, letterSpacing: "0.06em", fontFamily: "var(--font-mono)", fontWeight: 700, lineHeight: "14px" }}>
+          <span style={{ fontSize: 9, color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase" as const, letterSpacing: "0.06em", fontFamily: "var(--font-mono)", fontWeight: 700, lineHeight: "14px" }}>
             {tx.type}
           </span>
         </div>
-        <div style={{ width: 130, minWidth: 130, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-blue)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+        <div style={{ width: "var(--tx-amount-w)", minWidth: "var(--tx-amount-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-blue)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
           {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
           {formatNative(Math.abs(tx.nativeAmount), tx.currency)}
         </div>
         {/* GBP column: "—" when FX unavailable; the native column above
             still carries the honest amount. */}
-        <div className="pnum" style={{ width: 110, minWidth: 110, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: displayGbp == null ? "var(--ft-dim)" : tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-blue)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+        <div className="pnum" style={{ width: "var(--tx-gbp-w)", minWidth: "var(--tx-gbp-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: displayGbp == null ? "var(--ft-dim)" : tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-blue)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
           {displayGbp == null
             ? "—"
             : (<>
@@ -2873,7 +2891,7 @@ export default function Transactions() {
           ref={tableContainerRef}
           tabIndex={0}
           onKeyDown={handleTableKeyDown}
-          style={{ outline: "none" }}
+          style={{ outline: "none", "--tx-amount-w": amountColW, "--tx-gbp-w": gbpColW } as React.CSSProperties}
           aria-label="Transaction table — use ↑↓ or j/k to navigate, Enter to open note, Escape to clear"
         >
           {/* Column headers — desktop only */}
@@ -2893,8 +2911,8 @@ export default function Transactions() {
               ["CATEGORY",    "120px", "left",    ""],
               ["ACCOUNT",     "150px", "left",    "ft-hide-mobile"],
               ["TYPE",        "90px",  "left",    "ft-hide-mobile"],
-              ["AMOUNT",      "130px", "right",   ""],
-              ["GBP",         "110px", "right",   ""],
+              ["AMOUNT",      "var(--tx-amount-w)", "right",   ""],
+              ["GBP",         "var(--tx-gbp-w)",    "right",   ""],
               ["",            "36px",  "center",  ""],
               ["",            "36px",  "center",  ""],
               ["",            "128px", "right",   ""],
@@ -3026,8 +3044,8 @@ export default function Transactions() {
                       </div>
                       <div className="ft-hide-mobile" style={{ width: 150, minWidth: 150, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
                       <div className="ft-hide-mobile" style={{ width: 90, minWidth: 90, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
-                      <div style={{ width: 130, minWidth: 130, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
-                      <div className="pnum" style={{ width: 110, minWidth: 110, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: group.total >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
+                      <div style={{ width: "var(--tx-amount-w)", minWidth: "var(--tx-amount-w)", padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
+                      <div className="pnum" style={{ width: "var(--tx-gbp-w)", minWidth: "var(--tx-gbp-w)", padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: group.total >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
                         {group.total >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(group.total))}
                       </div>
                       <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)" }} />
