@@ -170,10 +170,10 @@ const INPUT_S: React.CSSProperties = {
 };
 
 const LABEL_S: React.CSSProperties = {
-  fontSize: 9,
-  fontFamily: "var(--font-mono)",
+  fontSize: 10,
+  fontFamily: "var(--font-sans)",
   textTransform: "uppercase" as const,
-  letterSpacing: "0.08em",
+  letterSpacing: "0.04em",
   color: "var(--ft-dim)",
   marginBottom: 4,
   display: "block",
@@ -274,16 +274,16 @@ function ReceiptUploadZone({
           title="Click to view full receipt"
         />
         <VStack gap={5}>
-          <Text as="span" mono size={9} color="var(--ft-green)">✓ Receipt attached</Text>
+          <Text as="span" size={10} color="var(--ft-green)">✓ Receipt attached</Text>
           <button
             onClick={onClear}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.05em", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", cursor: "pointer" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", cursor: "pointer" }}
           >
             Remove
           </button>
           <button
             onClick={() => inputRef.current?.click()}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.05em", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", cursor: "pointer" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", cursor: "pointer" }}
           >
             Replace
           </button>
@@ -310,10 +310,10 @@ function ReceiptUploadZone({
         transition: "border-color 0.15s, background 0.15s",
       }}
     >
-      <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.05em">
+      <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.04em">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 5 }}><path d="M1 3.5A1.5 1.5 0 012.5 2h.5l.75-1h3.5L8 2h.5A1.5 1.5 0 0110 3.5v5A1.5 1.5 0 018.5 10h-5A1.5 1.5 0 012 8.5v-5z"/><circle cx="6" cy="6" r="1.5"/></svg>Drop receipt photo here or click to upload
       </Text>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-raised)", marginTop: 4 }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-raised)", marginTop: 4 }}>
         JPEG · PNG · WEBP
       </div>
       <input ref={inputRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
@@ -368,8 +368,8 @@ function ReceiptAnalysisPanel({
         onClick={analyze}
         style={{
           display: "flex", alignItems: "center", gap: 6,
-          padding: "5px 12px", fontFamily: "var(--font-mono)", fontSize: 10,
-          letterSpacing: "0.06em", textTransform: "uppercase",
+          padding: "5px 12px", fontFamily: "var(--font-sans)", fontSize: 10,
+          letterSpacing: "0.04em", textTransform: "uppercase",
           background: "rgba(167,139,250,0.10)", border: "1px solid rgba(167,139,250,0.3)",
           color: "var(--ft-id-6)", cursor: "pointer", borderRadius: 2,
         }}
@@ -381,7 +381,7 @@ function ReceiptAnalysisPanel({
 
   if (status === "loading") {
     return (
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "6px 0" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", padding: "6px 0" }}>
         Analysing receipt…
       </div>
     );
@@ -390,10 +390,10 @@ function ReceiptAnalysisPanel({
   if (status === "error") {
     return (
       <HStack gap={8} align="center">
-        <Text as="span" mono size={9} color="var(--ft-red)">
+        <Text as="span" size={10} color="var(--ft-red)">
           Error: {error}
         </Text>
-        <button onClick={analyze} style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", cursor: "pointer" }}>
+        <button onClick={analyze} style={{ fontFamily: "var(--font-sans)", fontSize: 10, padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", color: "var(--ft-dim)", cursor: "pointer" }}>
           Retry
         </button>
       </HStack>
@@ -414,7 +414,7 @@ function ReceiptAnalysisPanel({
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Items found</div>
           <VStack gap={2}>
             {analysis.items.map((item, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)" }}>
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-sans)" }}>
                 <Text as="span" color="var(--ft-muted)">{item.name}</Text>
                 <span className="pnum" style={{ color: "var(--ft-text)" }}>£{item.price.toFixed(2)}</span>
               </div>
@@ -422,18 +422,18 @@ function ReceiptAnalysisPanel({
             {(analysis.tax > 0 || analysis.tip > 0) && (
               <>
                 {analysis.tax > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: "var(--font-sans)", color: "var(--ft-dim)" }}>
                     <span>Tax</span><span className="pnum">£{analysis.tax.toFixed(2)}</span>
                   </div>
                 )}
                 {analysis.tip > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: "var(--font-sans)", color: "var(--ft-dim)" }}>
                     <span>Tip / Service</span><span className="pnum">£{analysis.tip.toFixed(2)}</span>
                   </div>
                 )}
               </>
             )}
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-sans)", fontWeight: 700, borderTop: "1px solid var(--ft-border)", paddingTop: 4, marginTop: 2 }}>
               <Text as="span" color="var(--ft-text)">Total</Text>
               <span className="pnum" style={{ color: "var(--ft-text)" }}>£{analysis.total.toFixed(2)}</span>
             </div>
@@ -454,17 +454,17 @@ function ReceiptAnalysisPanel({
           }}>
             <HStack align="center" justify="between" marginBottom={4}>
               <div>
-                <Text as="span" mono size={10} weight={700} color={appliedIdx === i ? "var(--ft-id-6)" : "var(--ft-text)"}>
+                <Text as="span" size={10} weight={700} color={appliedIdx === i ? "var(--ft-id-6)" : "var(--ft-text)"}>
                   {sug.label}
                 </Text>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginLeft: 6 }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6 }}>
                   {sug.description}
                 </span>
               </div>
               <button
                 onClick={() => { onApply(analysis.total, sug.shares, "custom", analysis); setAppliedIdx(i); }}
                 style={{
-                  fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.05em",
+                  fontFamily: "var(--font-sans)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em",
                   padding: "2px 9px", background: appliedIdx === i ? "rgba(167,139,250,0.2)" : "var(--ft-raised)",
                   border: `1px solid ${appliedIdx === i ? "rgba(167,139,250,0.4)" : "var(--ft-border2)"}`,
                   color: appliedIdx === i ? "var(--ft-id-6)" : "var(--ft-muted)", cursor: "pointer", borderRadius: 2,
@@ -478,7 +478,7 @@ function ReceiptAnalysisPanel({
                 const mi = memberIndex(members, member);
                 const col = memberColor(mi >= 0 ? mi : 0);
                 return (
-                  <div key={member} style={{ display: "flex", alignItems: "center", gap: 3, padding: "2px 6px", background: col.bg, borderRadius: 2, fontSize: 9, fontFamily: "var(--font-mono)" }}>
+                  <div key={member} style={{ display: "flex", alignItems: "center", gap: 3, padding: "2px 6px", background: col.bg, borderRadius: 2, fontSize: 9, fontFamily: "var(--font-sans)" }}>
                     <span style={{ color: col.color, fontWeight: 700 }}>{member}</span>
                     <span className="pnum" style={{ color: col.color }}>£{(share ?? 0).toFixed(2)}</span>
                   </div>
@@ -547,23 +547,23 @@ function ReceiptViewerModal({
             {scanData.items.length > 0 && (
               <VStack gap={4} marginBottom={10}>
                 {scanData.items.map((item, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, fontFamily: "var(--font-mono)" }}>
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, fontFamily: "var(--font-sans)" }}>
                     <span style={{ color: "var(--ft-muted)", flex: 1 }}>{item.name}</span>
                     <span className="pnum" style={{ color: "var(--ft-text)", flexShrink: 0 }}>£{item.price.toFixed(2)}</span>
                   </div>
                 ))}
                 <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 5, marginTop: 3 }}>
                   {scanData.tax > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 2 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", marginBottom: 2 }}>
                       <span>Tax</span><span className="pnum">£{scanData.tax.toFixed(2)}</span>
                     </div>
                   )}
                   {scanData.tip > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginBottom: 2 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", marginBottom: 2 }}>
                       <span>Tip / Service</span><span className="pnum">£{scanData.tip.toFixed(2)}</span>
                     </div>
                   )}
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ft-text)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, fontFamily: "var(--font-sans)", fontWeight: 700, color: "var(--ft-text)" }}>
                     <span>Total</span><span className="pnum">£{scanData.total.toFixed(2)}</span>
                   </div>
                 </div>
@@ -575,10 +575,10 @@ function ReceiptViewerModal({
             </div>
             {scanData.suggestions.map((sug, i) => (
               <div key={i} style={{ marginBottom: 8 }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)", marginBottom: 3 }}>{sug.label}</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-text)", marginBottom: 3 }}>{sug.label}</div>
                 <VStack gap={2}>
                   {Object.entries(sug.shares).map(([member, share]) => (
-                    <div key={member} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-mono)" }}>
+                    <div key={member} style={{ display: "flex", justifyContent: "space-between", fontSize: 10, fontFamily: "var(--font-sans)" }}>
                       <Text as="span" color="var(--ft-muted)">{member}</Text>
                       <span className="pnum" style={{ color: "var(--ft-text)" }}>£{(share ?? 0).toFixed(2)}</span>
                     </div>
@@ -806,7 +806,7 @@ function AddGroupPanel({ onAdd, onCancel }: AddGroupPanelProps) {
           style={{
             fontSize: 10,
             color: "var(--ft-dim)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             marginBottom: 10,
           }}
         >
@@ -1033,9 +1033,9 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
               style={{
                 padding: "3px 10px",
                 fontSize: 10,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 textTransform: "uppercase",
-                letterSpacing: "0.05em",
+                letterSpacing: "0.04em",
                 borderRadius: 2,
                 border: `1px solid ${splitType === t ? "rgba(96,165,250,0.5)" : "var(--ft-border2)"}`,
                 background: splitType === t ? "rgba(96,165,250,0.12)" : "var(--ft-base)",
@@ -1146,7 +1146,7 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
               marginTop: 8,
               padding: "5px 10px",
               fontSize: 10,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               borderRadius: 2,
               background: isBalanced
                 ? "rgba(74,222,128,0.06)"
@@ -1156,8 +1156,8 @@ function AddExpenseForm({ group, onAdd, onCancel }: AddExpenseFormProps) {
             }}
           >
             {isBalanced
-              ? `✓ Balanced — £${sharesSum.toFixed(2)} of £${amount.toFixed(2)}`
-              : `Remaining: £${(amount - sharesSum).toFixed(2)}`}
+              ? <>✓ Balanced — <span className="pnum">£{sharesSum.toFixed(2)}</span> of <span className="pnum">£{amount.toFixed(2)}</span></>
+              : <>Remaining: <span className="pnum">£{(amount - sharesSum).toFixed(2)}</span></>}
           </div>
         )}
       </div>
@@ -1315,16 +1315,16 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
                 </div>
               ))}
             </div>
-            <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
-              {group.members.length} members
+            <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
+              <span className="pnum">{group.members.length}</span> members
             </span>
           </div>
           <HStack gap={8} align="center">
             <span className="pnum" style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>
               {formatBaseMoney(total)}
             </span>
-            <Text as="span" mono size={9} color="var(--ft-dim)">
-              {groupExpenses.length} expense{groupExpenses.length !== 1 ? "s" : ""}
+            <Text as="span" size={10} color="var(--ft-dim)">
+              <span className="pnum">{groupExpenses.length}</span> expense{groupExpenses.length !== 1 ? "s" : ""}
             </Text>
           </HStack>
           {myBalance !== null && (
@@ -1333,15 +1333,15 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
                 className="pnum"
                 style={{
                   fontSize: 10,
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontWeight: 700,
                   color: myBalance > 0.005 ? "var(--ft-green)" : myBalance < -0.005 ? "var(--ft-red)" : "var(--ft-dim)",
                 }}
               >
                 {myBalance > 0.005
-                  ? `+${formatBaseMoney(Math.abs(myBalance))} net`
+                  ? <><span className="pnum">+{formatBaseMoney(Math.abs(myBalance))}</span> net</>
                   : myBalance < -0.005
-                  ? `${formatBaseMoney(myBalance)} net`
+                  ? <><span className="pnum">{formatBaseMoney(myBalance)}</span> net</>
                   : "settled up"}
               </span>
             </div>
@@ -1380,8 +1380,8 @@ function GroupCard({ group, expenses, myName, isActive, onClick, onDelete }: Gro
               display: "flex",
               alignItems: "center",
               borderRadius: 2,
-              fontSize: deleteConfirm ? 8 : undefined,
-              fontFamily: deleteConfirm ? "var(--font-mono)" : undefined,
+              fontSize: deleteConfirm ? 9 : undefined,
+              fontFamily: deleteConfirm ? "var(--font-sans)" : undefined,
               fontWeight: deleteConfirm ? 700 : undefined,
               opacity: deleteConfirm ? 1 : 0.6,
             }}
@@ -1453,8 +1453,8 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
             </span>
             <span
               style={{
-                fontSize: 8,
-                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                fontFamily: "var(--font-sans)",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 padding: "1px 5px",
@@ -1491,7 +1491,7 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
             </span>
             <HStack gap={4} align="center">
               <MemberAvatar name={expense.paidBy} members={members} size={14} />
-              <span style={{ fontSize: 9, color: paidByCol.color, fontFamily: "var(--font-mono)" }}>
+              <span style={{ fontSize: 10, color: paidByCol.color, fontFamily: "var(--font-sans)" }}>
                 paid by {expense.paidBy}
               </span>
             </HStack>
@@ -1511,8 +1511,8 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
             {formatBaseMoney(expense.amount)}
           </div>
           {myShare !== undefined && (
-            <div className="pnum" style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
-              your share {formatBaseMoney(myShare)}
+            <div style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-sans)" }}>
+              your share <span className="pnum">{formatBaseMoney(myShare)}</span>
             </div>
           )}
         </div>
@@ -1533,9 +1533,9 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
               style={{
                 padding: "2px 7px",
                 fontSize: 9,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 textTransform: "uppercase",
-                letterSpacing: "0.05em",
+                letterSpacing: "0.04em",
                 borderRadius: 2,
                 border: expense.addedToMyTransactions
                   ? "1px solid rgba(74,222,128,0.3)"
@@ -1576,8 +1576,8 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
               display: "flex",
               alignItems: "center",
               borderRadius: 2,
-              fontSize: deleteConfirm ? 8 : undefined,
-              fontFamily: deleteConfirm ? "var(--font-mono)" : undefined,
+              fontSize: deleteConfirm ? 9 : undefined,
+              fontFamily: deleteConfirm ? "var(--font-sans)" : undefined,
               fontWeight: deleteConfirm ? 700 : undefined,
               opacity: deleteConfirm ? 1 : 0.6,
             }}
@@ -1739,7 +1739,7 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
           Settle Up
         </span>
         {transfers.length === 0 && (
-          <span style={{ fontSize: 10, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>
+          <span style={{ fontSize: 10, color: "var(--ft-green)", fontFamily: "var(--font-sans)" }}>
             ✓ All settled
           </span>
         )}
@@ -1797,7 +1797,7 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
                 {bal > 0.005 ? "+" : ""}
                 {formatBaseMoney(bal)}
               </span>
-              <Text as="span" mono size={9} color="var(--ft-dim)">
+              <Text as="span" size={10} color="var(--ft-dim)">
                 {bal > 0.005 ? "is owed" : bal < -0.005 ? "owes" : "even"}
               </Text>
             </div>
@@ -1907,9 +1907,9 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
                       style={{
                         padding: "2px 8px",
                         fontSize: 9,
-                        fontFamily: "var(--font-mono)",
+                        fontFamily: "var(--font-sans)",
                         textTransform: "uppercase",
-                        letterSpacing: "0.05em",
+                        letterSpacing: "0.04em",
                         borderRadius: 2,
                         border: pushed ? "1px solid rgba(34,211,238,0.3)" : "1px solid rgba(34,211,238,0.5)",
                         background: pushed ? "rgba(34,211,238,0.08)" : "transparent",
@@ -1930,9 +1930,9 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
                     style={{
                       padding: "2px 8px",
                       fontSize: 9,
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                       textTransform: "uppercase",
-                      letterSpacing: "0.05em",
+                      letterSpacing: "0.04em",
                       borderRadius: 2,
                       border: done
                         ? "1px solid rgba(74,222,128,0.3)"
@@ -1993,7 +1993,7 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
             textAlign: "center",
             fontSize: 11,
             color: "var(--ft-green)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
           }}
         >
           ✓ This group is settled
@@ -2081,7 +2081,7 @@ function CategoryLegendItem({ cat, amt, total }: CategoryLegendItemProps) {
   return (
     <HStack gap={4} align="center">
       <div style={{ width: 7, height: 7, borderRadius: 1, background: SUMMARY_CATEGORY_COLORS[cat] ?? "var(--ft-dim)", flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
         {cat} <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{((amt / total) * 100).toFixed(0)}%</span>
       </span>
     </HStack>
@@ -2266,9 +2266,9 @@ function MyNameBar({ myName, onChange, groupMembers }: MyNameBarProps) {
             style={{
               padding: "2px 7px",
               fontSize: 9,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               textTransform: "uppercase",
-              letterSpacing: "0.05em",
+              letterSpacing: "0.04em",
               background: "transparent",
               color: "var(--ft-dim)",
               border: "1px solid var(--ft-border2)",
@@ -2535,7 +2535,7 @@ export default function SplitPage() {
             borderRadius: 2,
             fontSize: 10,
             cursor: "pointer",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
           }}
         >
           <Plus style={{ width: 10, height: 10 }} /> New
@@ -2556,10 +2556,10 @@ export default function SplitPage() {
               padding: "28px 12px 24px",
               textAlign: "center",
               color: "var(--ft-dim)",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
             }}
           >
-            <pre style={{ fontSize: 9, lineHeight: 1.4, color: "var(--ft-raised)", margin: "0 auto 12px", display: "inline-block", textAlign: "left" }}>{
+            <pre style={{ fontFamily: "var(--font-mono)", fontSize: 9, lineHeight: 1.4, color: "var(--ft-raised)", margin: "0 auto 12px", display: "inline-block", textAlign: "left" }}>{
 `  ┌───┐ ┌───┐
   │ A │ │ B │
   └─┬─┘ └─┬─┘
@@ -2602,9 +2602,9 @@ export default function SplitPage() {
                 cursor: "pointer",
                 color: "var(--ft-dim)",
                 fontSize: 10,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 textTransform: "uppercase",
-                letterSpacing: "0.07em",
+                letterSpacing: "0.04em",
                 width: "100%",
               }}
             >
@@ -2662,7 +2662,7 @@ export default function SplitPage() {
                 <MemberAvatar key={m} name={m} members={selectedGroup.members} size={18} />
               ))}
             </HStack>
-            <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+            <span style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-sans)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
               {selectedGroup.members.join(" · ")}
             </span>
           </HStack>
@@ -2744,9 +2744,9 @@ export default function SplitPage() {
             <button
               onClick={() => exportGroupCSV(selectedGroup, groupExpenses)}
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 9,
-                letterSpacing: "0.06em",
+                letterSpacing: "0.04em",
                 textTransform: "uppercase",
                 padding: "3px 8px",
                 border: "1px solid rgba(34,211,238,0.35)",
@@ -2774,7 +2774,7 @@ export default function SplitPage() {
                 background: "var(--ft-raised)",
                 border: "1px solid var(--ft-border)",
                 color: "var(--ft-text)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 10,
                 padding: "4px 8px",
                 outline: "none",
@@ -2788,7 +2788,7 @@ export default function SplitPage() {
                 background: "var(--ft-raised)",
                 border: "1px solid var(--ft-border)",
                 color: expenseFilterPayer !== "all" ? "var(--ft-text)" : "var(--ft-dim)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 10,
                 padding: "4px 6px",
                 cursor: "pointer",
@@ -2808,7 +2808,7 @@ export default function SplitPage() {
                   background: "var(--ft-raised)",
                   border: "1px solid var(--ft-border)",
                   color: expenseFilterCategory !== "all" ? "var(--ft-text)" : "var(--ft-dim)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 10,
                   padding: "4px 6px",
                   cursor: "pointer",
@@ -2827,11 +2827,11 @@ export default function SplitPage() {
                   background: "none",
                   border: "1px solid var(--ft-border)",
                   color: "var(--ft-dim)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 10,
                   padding: "4px 7px",
                   cursor: "pointer",
-                  letterSpacing: "0.05em",
+                  letterSpacing: "0.04em",
                   textTransform: "uppercase",
                 }}
                 title="Clear filters"
@@ -2850,10 +2850,10 @@ export default function SplitPage() {
               background: "var(--ft-surface)",
               border: "1px dashed var(--ft-border2)",
               borderRadius: 2,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
             }}
           >
-            <pre style={{ fontSize: 9, lineHeight: 1.4, color: "var(--ft-raised)", margin: "0 auto 10px", display: "inline-block", textAlign: "left" }}>{
+            <pre style={{ fontFamily: "var(--font-mono)", fontSize: 9, lineHeight: 1.4, color: "var(--ft-raised)", margin: "0 auto 10px", display: "inline-block", textAlign: "left" }}>{
 `  DATE   ITEM        PAID BY  AMOUNT
   ─────  ──────────  ───────  ──────
   ???    ???         ???      £?.??`
@@ -2910,14 +2910,14 @@ export default function SplitPage() {
         justifyContent: "center",
         height: 340,
         color: "var(--ft-dim)",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         gap: 12,
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
         borderRadius: 2,
       }}
     >
-      <pre style={{ fontSize: 9, lineHeight: 1.5, color: "var(--ft-raised)", textAlign: "center" }}>{
+      <pre style={{ fontFamily: "var(--font-mono)", fontSize: 9, lineHeight: 1.5, color: "var(--ft-raised)", textAlign: "center" }}>{
 `  A ──pays──▶ shared
   B ──pays──▶ ledger
   C ──pays──▶ settle`
@@ -2945,20 +2945,20 @@ export default function SplitPage() {
         subtitle="Split bills, track shared costs, settle up with minimum transfers"
         actions={
           <HStack gap={6} align="center">
-            <a href="/owing" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent", whiteSpace: "nowrap" }}>
+            <a href="/owing" style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent", whiteSpace: "nowrap" }}>
               → Debts
             </a>
             {data.groups.length > 0 && (
               <span
                 style={{
-                  fontSize: 9,
-                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  fontFamily: "var(--font-sans)",
                   color: "var(--ft-dim)",
                   textTransform: "uppercase",
-                  letterSpacing: "0.07em",
+                  letterSpacing: "0.04em",
                 }}
               >
-                {activeGroups.length} active
+                <span className="pnum">{activeGroups.length}</span> active
               </span>
             )}
           </HStack>
@@ -3020,7 +3020,7 @@ export default function SplitPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 14px 7px 10px", marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
