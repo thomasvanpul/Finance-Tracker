@@ -456,13 +456,13 @@ input[type="checkbox"]:checked {
   --ft-border:  #1C2530;
   --ft-border2: #243040;
   --ft-text:    #E8EDF2;
-  --ft-muted:   #6A8098;
-  --ft-dim:     #506070;
+  --ft-muted:   #71869D;
+  --ft-dim:     #556677;
   --ft-accent:  #E8C14A;
   --ft-amber:   #FFB300;
   --ft-green:   #00E5A0;
   --ft-red:     #FF4757;
-  --ft-blue:    #4A9EFF;
+  --ft-blue:    #73A1D6;
   --ft-cyan:    #00D4FF;
   /* Identity ramp: 12 slots kept mutually distinguishable per theme.
      Consumers (split members 1..8, calendar feeds 1..12, SMA lines
@@ -499,7 +499,7 @@ input[type="checkbox"]:checked {
   --ft-amber:   #FF8C00;
   --ft-green:   #00FF88;
   --ft-red:     #FF4444;
-  --ft-blue:    #00FFCC;
+  --ft-blue:    #34B39A;
   --ft-cyan:    #AAFFAA;
 }
 
@@ -534,7 +534,7 @@ input[type="checkbox"]:checked {
   --ft-amber:   #B45309;
   --ft-green:   #006644;
   --ft-red:     #CC0000;
-  --ft-blue:    #0065FF;
+  --ft-blue:    #3971C6;
   --ft-cyan:    #0052CC;
   /* Identity ramp darkened for light-surface contrast. Each slot
      clears WCAG AA for normal text on #FFFFFF and stays visually
@@ -572,7 +572,7 @@ input[type="checkbox"]:checked {
   --ft-amber:   #94430A;
   --ft-green:   #155C34;
   --ft-red:     #A82020;
-  --ft-blue:    #173C6E;
+  --ft-blue:    #1E3D67;
   --ft-cyan:    #1E5266;
   --ft-id-1:    #173C6E;
   --ft-id-2:    #155C34;
@@ -606,7 +606,7 @@ input[type="checkbox"]:checked {
   --ft-amber:   #8F4A00;
   --ft-green:   #155C34;
   --ft-red:     #932530;
-  --ft-blue:    #164478;
+  --ft-blue:    #20456E;
   --ft-cyan:    #0E5766;
   --ft-id-1:    #164478;
   --ft-id-2:    #155C34;
@@ -639,7 +639,7 @@ input[type="checkbox"]:checked {
   --ft-amber:   #8A3F0A;
   --ft-green:   #33500F;
   --ft-red:     #8F1F1F;
-  --ft-blue:    #173E68;
+  --ft-blue:    #1D3E62;
   --ft-cyan:    #1E4E56;
   --ft-id-1:    #173E68;
   --ft-id-2:    #33500F;
@@ -668,7 +668,7 @@ input[type="checkbox"]:checked {
   --ft-amber:   #FFA500;
   --ft-green:   #AAFF44;
   --ft-red:     #FF4400;
-  --ft-blue:    #44AAFF;
+  --ft-blue:    #6EA6D5;
   --ft-cyan:    #FFEE88;
 }
 
@@ -685,7 +685,7 @@ input[type="checkbox"]:checked {
   --ft-amber:   #FF9500;
   --ft-green:   #2EFF9F;
   --ft-red:     #FF4466;
-  --ft-blue:    #80BFFF;
+  --ft-blue:    #6A9ED4;
   --ft-cyan:    #00DDFF;
 }
 
@@ -702,7 +702,7 @@ input[type="checkbox"]:checked {
   --ft-green:   #00FF41;
   --ft-red:     #FF3300;
   --ft-amber:   #FFAA00;
-  --ft-blue:    #00FFCC;
+  --ft-blue:    #33AE96;
   --ft-cyan:    #AAFFAA;
 }
 
@@ -719,7 +719,7 @@ input[type="checkbox"]:checked {
   --ft-amber:   #FF6B00;
   --ft-green:   #39FF4E;
   --ft-red:     #FF1133;
-  --ft-blue:    #00C8FF;
+  --ft-blue:    #2F8AA3;
   --ft-cyan:    #CC88FF;
 }
 
@@ -736,10 +736,20 @@ input[type="checkbox"]:checked {
   --ft-amber:   #FFD166;
   --ft-green:   #2ECC71;
   --ft-red:     #FF4455;
-  --ft-blue:    #4466FF;
+  --ft-blue:    #6478D2;
   --ft-cyan:    #00DDEE;
 }
 
+/* Mario is the one theme the 2026-09-06 recessive-blue pass could not fix,
+   and the reason is arithmetic rather than taste. Its surface #3A70DC has a
+   relative luminance of 0.177, which sits almost exactly at the point where
+   neither direction has headroom: pure white on it reaches 4.63:1 and pure
+   black 4.53:1. Those are the two extremes — every other colour in the gamut
+   scores lower. So --ft-blue here can only clear WCAG AA by being white or
+   black, and neither is blue.
+   Nine of mario's pairs fail, blue among them; the token is not the defect,
+   the saturated mid-blue surface is. Fixing it means restyling the theme, not
+   editing a hex, so blue is left at #1830A0 and the whole theme is flagged. */
 [data-theme="mario"] {
   --ft-base:    #5C94FC;
   --ft-surface: #3A70DC;
