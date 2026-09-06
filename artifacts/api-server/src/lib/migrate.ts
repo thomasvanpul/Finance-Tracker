@@ -18,7 +18,15 @@
 // the compiled SQL folder (copied into `dist/drizzle` by build.mjs)
 // and applies pending migrations idempotently using the same
 // `__drizzle_migrations` state table drizzle-kit does. If already
-// applied, it's a no-op that adds ~50ms to boot.
+// applied, it's a no-op — but not a cheap one. It costs roughly 2-3
+// seconds of boot, not the ~50ms this comment used to claim: the
+// migrator still opens a connection, reads __drizzle_migrations and
+// compares the folder, and the round trips dominate. Three no-op boots
+// against the Neon dev branch (eu-west-2) on 2026-09-07 measured 2.114s,
+// 2.277s and 2.390s; the API diagnosis measured 2.15-3.00s over a wider
+// sample. That is a real share of a cold start on Render's free tier,
+// where the instance sleeps at 15 min idle — worth knowing before
+// blaming the app for a slow first request.
 //
 // ── Failure behaviour ────────────────────────────────────────────────────
 // A migration error THROWS. The caller (index.ts) catches, logs at
