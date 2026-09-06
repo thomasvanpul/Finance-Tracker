@@ -401,14 +401,14 @@ function TxLedgerEmpty({ openAdd }: { openAdd: () => void }) {
         gap: 14,
         padding: "60px 24px",
         minHeight: "calc(100vh - 260px)",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         textAlign: "center",
       }}
     >
-      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-        — NO TRANSACTIONS —
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ft-muted)" }}>
+        No transactions
       </div>
-      <div style={{ fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", maxWidth: 340, lineHeight: 1.7 }}>
+      <div style={{ fontSize: 12, color: "var(--ft-dim)", maxWidth: 380, lineHeight: 1.55 }}>
         Your transaction feed will appear here. Import a bank CSV for instant history, or add manually. Rows show once you have data.
       </div>
       <HStack gap={10}>
@@ -416,16 +416,14 @@ function TxLedgerEmpty({ openAdd }: { openAdd: () => void }) {
           type="button"
           onClick={openAdd}
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
             background: "var(--ft-accent)",
             color: "var(--ft-base)",
             border: "none",
             padding: "10px 20px",
             cursor: "pointer",
-            fontWeight: 700,
+            fontWeight: 600,
           }}
         >
           + Add transaction
@@ -433,10 +431,8 @@ function TxLedgerEmpty({ openAdd }: { openAdd: () => void }) {
         <a
           href="/import"
           style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
+            fontFamily: "var(--font-sans)",
+            fontSize: 12,
             background: "none",
             color: "var(--ft-accent)",
             border: "1px solid var(--ft-border2)",
@@ -444,7 +440,7 @@ function TxLedgerEmpty({ openAdd }: { openAdd: () => void }) {
             cursor: "pointer",
             textDecoration: "none",
             display: "inline-block",
-            fontWeight: 700,
+            fontWeight: 600,
           }}
         >
           Import CSV
@@ -894,7 +890,7 @@ export default function Transactions() {
             setPendingDeleteIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
             dismiss();
           }}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 12, padding: 0, fontWeight: 700 }}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-accent)", fontFamily: "var(--font-sans)", fontSize: 12, padding: 0, fontWeight: 700 }}
         >
           Undo
         </button>
@@ -945,7 +941,7 @@ export default function Transactions() {
             setPendingDeleteIds((prev) => { const next = new Set(prev); ids.forEach((id) => next.delete(id)); return next; });
             dismiss();
           }}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 12, padding: 0, fontWeight: 700 }}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-accent)", fontFamily: "var(--font-sans)", fontSize: 12, padding: 0, fontWeight: 700 }}
         >
           Undo
         </button>
@@ -1867,14 +1863,14 @@ export default function Transactions() {
             <button
               type="button"
               onClick={() => { clearNote(tx.id); setOpenNoteId(null); }}
-              style={{ fontSize: 11, padding: "3px 10px", background: "none", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
+              style={{ fontSize: 11, padding: "3px 10px", background: "none", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
             >
               Clear
             </button>
             <button
               type="button"
               onClick={() => { saveNote(tx.id, noteDraft); setOpenNoteId(null); }}
-              style={{ fontSize: 11, padding: "3px 10px", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "var(--ft-base)", cursor: "pointer", fontFamily: "var(--font-mono)", fontWeight: 600 }}
+              style={{ fontSize: 11, padding: "3px 10px", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "var(--ft-base)", cursor: "pointer", fontFamily: "var(--font-sans)", fontWeight: 600 }}
             >
               Save
             </button>
@@ -1965,7 +1961,7 @@ export default function Transactions() {
                   <div
                     key={s}
                     onClick={() => { addTag(tx.id, s); setTagInput(""); }}
-                    style={{ padding: "5px 8px", fontSize: 11, color: "var(--ft-muted)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
+                    style={{ padding: "5px 8px", fontSize: 11, color: "var(--ft-muted)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
                     onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
                   >
@@ -1996,7 +1992,7 @@ export default function Transactions() {
             <button
               type="button"
               onClick={() => setOpenTagId(null)}
-              style={{ fontSize: 11, padding: "3px 10px", background: "none", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
+              style={{ fontSize: 11, padding: "3px 10px", background: "none", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
             >
               Done
             </button>
@@ -2270,21 +2266,21 @@ export default function Transactions() {
               <button
                 type="button"
                 onClick={openAdd}
-                style={{ height: 20, padding: "0 8px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "var(--ft-base)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}
+                style={{ height: 20, padding: "0 8px", fontSize: 10, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "var(--ft-base)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" as const }}
               >
                 + ADD
               </button>
               <button
                 type="button"
                 onClick={() => exportCsv(filtered)}
-                style={{ height: 20, padding: "0 7px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-muted)", cursor: "pointer", whiteSpace: "nowrap" as const }}
+                style={{ height: 20, padding: "0 7px", fontSize: 10, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-muted)", cursor: "pointer", whiteSpace: "nowrap" as const }}
               >
                 ↓ CSV
               </button>
               <button
                 type="button"
                 onClick={() => setCsvOpen(true)}
-                style={{ height: 20, padding: "0 7px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-muted)", cursor: "pointer", whiteSpace: "nowrap" as const }}
+                style={{ height: 20, padding: "0 7px", fontSize: 10, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-muted)", cursor: "pointer", whiteSpace: "nowrap" as const }}
               >
                 ↑ CSV
               </button>
@@ -2292,7 +2288,7 @@ export default function Transactions() {
                 type="button"
                 onClick={() => setAiCatConfirmOpen(true)}
                 disabled={aiCatRunning}
-                style={{ height: 20, padding: "0 7px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: `1px solid ${aiCatRunning ? "var(--ft-border)" : "var(--ft-amber)"}`, borderRadius: 2, color: aiCatRunning ? "var(--ft-dim)" : "var(--ft-amber)", cursor: aiCatRunning ? "not-allowed" : "pointer", whiteSpace: "nowrap" as const }}
+                style={{ height: 20, padding: "0 7px", fontSize: 10, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", background: "transparent", border: `1px solid ${aiCatRunning ? "var(--ft-border)" : "var(--ft-amber)"}`, borderRadius: 2, color: aiCatRunning ? "var(--ft-dim)" : "var(--ft-amber)", cursor: aiCatRunning ? "not-allowed" : "pointer", whiteSpace: "nowrap" as const }}
               >
                 {aiCatRunning ? "AI…" : "AI CAT"}
               </button>
@@ -2401,7 +2397,7 @@ export default function Transactions() {
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               className="ft-filter-input"
-              style={{ height: 32, padding: "0 6px", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, outline: "none", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", cursor: "pointer", flexShrink: 0 }}
+              style={{ height: 32, padding: "0 6px", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, outline: "none", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", cursor: "pointer", flexShrink: 0 }}
             >
               <option value="date-desc">↓ Date</option>
               <option value="date-asc">↑ Date</option>
@@ -2415,7 +2411,7 @@ export default function Transactions() {
               {filterCategory !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-accent) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-accent)" }}>{filterCategory}</span>}
               {filterAccount !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-green) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-green) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-green)" }}>{filterAccount}</span>}
               {(filterDateFrom || filterDateTo) && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-amber) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-amber)" }}>{filterDateFrom || "…"} → {filterDateTo || "…"}</span>}
-              <button type="button" onClick={() => { setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setFilterTag(""); }} style={{ marginLeft: "auto", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear</button>
+              <button type="button" onClick={() => { setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setFilterTag(""); }} style={{ marginLeft: "auto", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear</button>
             </div>
           )}
           <MobileSheet
@@ -2425,9 +2421,9 @@ export default function Transactions() {
             footer={
               <HStack gap={8}>
                 {(hasFilters) && (
-                  <button type="button" onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); setFilterSheetOpen(false); }} style={{ flex: 1, padding: "11px", fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 3, color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear all</button>
+                  <button type="button" onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); setFilterSheetOpen(false); }} style={{ flex: 1, padding: "11px", fontSize: 12, fontFamily: "var(--font-sans)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 3, color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear all</button>
                 )}
-                <button type="button" onClick={() => setFilterSheetOpen(false)} style={{ flex: 2, padding: "11px", fontSize: 13, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 3, color: "var(--ft-base)", fontWeight: 700, cursor: "pointer" }}>Show {filtered.length} results</button>
+                <button type="button" onClick={() => setFilterSheetOpen(false)} style={{ flex: 2, padding: "11px", fontSize: 13, fontFamily: "var(--font-sans)", letterSpacing: "0.06em", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 3, color: "var(--ft-base)", fontWeight: 700, cursor: "pointer" }}>Show {filtered.length} results</button>
               </HStack>
             }
           >
@@ -2436,7 +2432,7 @@ export default function Transactions() {
                 <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Type</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
                   {(["all", "income", "expense", "transfer"] as const).map(t => (
-                    <button key={t} type="button" onClick={() => setFilterType(t)} style={{ padding: "9px 4px", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.04em", borderRadius: 3, cursor: "pointer", background: filterType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${filterType === t ? "var(--ft-accent)" : "var(--ft-border2)"}`, color: filterType === t ? "var(--ft-base)" : "var(--ft-muted)", fontWeight: filterType === t ? 700 : 400, textTransform: "capitalize" as const }}>
+                    <button key={t} type="button" onClick={() => setFilterType(t)} style={{ padding: "9px 4px", fontSize: 11, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", borderRadius: 3, cursor: "pointer", background: filterType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${filterType === t ? "var(--ft-accent)" : "var(--ft-border2)"}`, color: filterType === t ? "var(--ft-base)" : "var(--ft-muted)", fontWeight: filterType === t ? 700 : 400, textTransform: "capitalize" as const }}>
                       {t === "all" ? "All" : t}
                     </button>
                   ))}
@@ -2444,14 +2440,14 @@ export default function Transactions() {
               </div>
               <div>
                 <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Category</MonoLabel>
-                <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-mono)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
+                <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
                   <option value="all">All categories</option>
                   {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Account</MonoLabel>
-                <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-mono)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
+                <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
                   <option value="all">All accounts</option>
                   {allAccounts.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
@@ -2463,7 +2459,7 @@ export default function Transactions() {
                     const keys = ["today", "week", "month", "lastmonth", "3m", "all"] as const;
                     const k = keys[i];
                     return (
-                      <button key={k} type="button" onClick={() => applyQuickRange(k)} style={{ padding: "9px 4px", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.04em", borderRadius: 3, cursor: "pointer", background: activeQuickRange === k ? "color-mix(in srgb, var(--ft-accent) 15%, transparent)" : "transparent", border: `1px solid ${activeQuickRange === k ? "var(--ft-accent)" : "var(--ft-border2)"}`, color: activeQuickRange === k ? "var(--ft-accent)" : "var(--ft-muted)", textTransform: "uppercase" as const }}>
+                      <button key={k} type="button" onClick={() => applyQuickRange(k)} style={{ padding: "9px 4px", fontSize: 11, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", borderRadius: 3, cursor: "pointer", background: activeQuickRange === k ? "color-mix(in srgb, var(--ft-accent) 15%, transparent)" : "transparent", border: `1px solid ${activeQuickRange === k ? "var(--ft-accent)" : "var(--ft-border2)"}`, color: activeQuickRange === k ? "var(--ft-accent)" : "var(--ft-muted)", textTransform: "uppercase" as const }}>
                         {label}
                       </button>
                     );
@@ -2516,7 +2512,7 @@ export default function Transactions() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="ft-filter-input"
-              style={{ width: "100%", paddingLeft: 26, paddingRight: 8, height: 26, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", boxSizing: "border-box" as const }}
+              style={{ width: "100%", paddingLeft: 26, paddingRight: 8, height: 26, fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", boxSizing: "border-box" as const }}
             />
           </div>
           {/* Type buttons */}
@@ -2528,9 +2524,9 @@ export default function Transactions() {
               style={{
                 height: 26,
                 padding: "0 9px",
-                fontFamily: "var(--font-mono)",
-                fontSize: 9,
-                letterSpacing: "0.08em",
+                fontFamily: "var(--font-sans)",
+                fontSize: 11,
+                fontWeight: 500,
                 cursor: "pointer",
                 border: "1px solid",
                 borderColor: filterType === t ? "var(--ft-accent)" : "var(--ft-border2)",
@@ -2554,9 +2550,9 @@ export default function Transactions() {
                 style={{
                   height: 26,
                   padding: "0 8px",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
-                  letterSpacing: "0.08em",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 11,
+                  fontWeight: 500,
                   cursor: "pointer",
                   border: "1px solid",
                   borderColor: isActive ? "var(--ft-accent)" : "var(--ft-border2)",
@@ -2574,7 +2570,7 @@ export default function Transactions() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", cursor: "pointer" }}
+            style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", cursor: "pointer" }}
           >
             <option value="date-desc">DATE ↓</option>
             <option value="date-asc">DATE ↑</option>
@@ -2610,7 +2606,7 @@ export default function Transactions() {
             <button
               type="button"
               onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); }}
-              style={{ height: 26, padding: "0 10px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", cursor: "pointer", border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-red)" }}
+              style={{ height: 26, padding: "0 10px", fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.08em", cursor: "pointer", border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-red)" }}
               aria-label="Clear all filters"
             >
               CLR
@@ -2621,27 +2617,27 @@ export default function Transactions() {
         {!filterPanelOpen && activeFilterCount > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, paddingBottom: 6 }}>
             {filterCategory !== "all" && (
-              <button type="button" onClick={() => setFilterCategory("all")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <button type="button" onClick={() => setFilterCategory("all")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 CAT: {filterCategory} ×
               </button>
             )}
             {filterAccount !== "all" && (
-              <button type="button" onClick={() => setFilterAccount("all")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <button type="button" onClick={() => setFilterAccount("all")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 ACCT: {filterAccount} ×
               </button>
             )}
             {(filterDateFrom || filterDateTo) && (
-              <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); applyQuickRange("all"); }} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); applyQuickRange("all"); }} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 {filterDateFrom || "…"}–{filterDateTo || "…"} ×
               </button>
             )}
             {filterTag && (
-              <button type="button" onClick={() => setFilterTag("")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <button type="button" onClick={() => setFilterTag("")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 #{filterTag} ×
               </button>
             )}
             {(amountMin || amountMax) && (
-              <button type="button" onClick={() => { setAmountMin(""); setAmountMax(""); }} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <button type="button" onClick={() => { setAmountMin(""); setAmountMax(""); }} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 {amountMin || "0"}–{amountMax || "∞"} ×
               </button>
             )}
@@ -2687,8 +2683,8 @@ export default function Transactions() {
                 <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }} />
               </div>
               <div style={{ display: "flex", gap: 4 }}>
-                <button type="button" onClick={() => applyQuickRange("lastmonth")} style={{ height: 20, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" as const }}>LAST MO</button>
-                <button type="button" onClick={() => applyQuickRange("3m")} style={{ height: 20, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" as const }}>3M</button>
+                <button type="button" onClick={() => applyQuickRange("lastmonth")} style={{ height: 20, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" as const }}>LAST MO</button>
+                <button type="button" onClick={() => applyQuickRange("3m")} style={{ height: 20, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" as const }}>3M</button>
               </div>
             </div>
             {/* Amount */}
@@ -2804,7 +2800,7 @@ export default function Transactions() {
             type="button"
             onClick={handleBulkDelete}
             disabled={bulkSubmitting}
-            style={{ fontSize: 11, padding: "4px 10px", background: "var(--ft-red)22", border: "1px solid var(--ft-red)", borderRadius: 2, color: "var(--ft-red)", cursor: "pointer", fontFamily: "var(--font-mono)" }}
+            style={{ fontSize: 11, padding: "4px 10px", background: "var(--ft-red)22", border: "1px solid var(--ft-red)", borderRadius: 2, color: "var(--ft-red)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
           >
             Delete
           </button>
@@ -2864,14 +2860,14 @@ export default function Transactions() {
             <button
               type="button"
               onClick={() => exportJson(filtered)}
-              style={{ height: 22, padding: "0 8px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", whiteSpace: "nowrap" as const }}
+              style={{ height: 22, padding: "0 8px", fontSize: 10, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", whiteSpace: "nowrap" as const }}
             >
               ↓ JSON
             </button>
             <button
               type="button"
               onClick={() => window.print()}
-              style={{ height: 22, padding: "0 8px", fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", whiteSpace: "nowrap" as const }}
+              style={{ height: 22, padding: "0 8px", fontSize: 10, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", whiteSpace: "nowrap" as const }}
             >
               PDF
             </button>
@@ -2882,10 +2878,10 @@ export default function Transactions() {
             {hasFilters ? `${filtered.length} of ${transactions?.length ?? 0}` : `${filtered.length} entries`}
           </Text>
           {groupByMerchant && (
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY MERCHANT</span>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY MERCHANT</span>
           )}
           {groupByDay && !groupByMerchant && (
-            <span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY DAY</span>
+            <span style={{ fontSize: 9, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY DAY</span>
           )}
         </PanelHeader>
 
@@ -2953,7 +2949,7 @@ export default function Transactions() {
                   <button
                     type="button"
                     onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "3px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, borderRadius: 2 }}
+                    style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "3px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, borderRadius: 2 }}
                   >
                     LOAD MORE · {visibleCount} of {filtered.length}
                   </button>
@@ -3006,7 +3002,7 @@ export default function Transactions() {
                   <button
                     type="button"
                     onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
-                    style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "3px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, borderRadius: 2 }}
+                    style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-border2)", padding: "3px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" as const, borderRadius: 2 }}
                   >
                     LOAD MORE · {Math.min(visibleCount, filtered.length)} of {filtered.length}
                   </button>
