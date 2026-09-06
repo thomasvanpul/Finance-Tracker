@@ -46,7 +46,6 @@ import { SmartAlertsWidget } from "@/components/widgets/smart-alerts";
 import { DecisionEngineWidget } from "@/components/widgets/decision-engine";
 import { CashRunwayWidget } from "@/components/widgets/cash-runway";
 import { COMPACT_WIDGET_COMPONENTS, COMPACT_WIDGET_FULL_WIDTH } from "@/components/widgets/compact-tiles";
-import { OnboardingWizard } from "@/components/onboarding-wizard";
 import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { formatBaseMoney, formatNative } from "@/lib/utils";
@@ -2498,11 +2497,6 @@ export default function Dashboard() {
   const [views, setViews] = useState<DashboardView[]>(() => loadViews());
   const [viewNameInput, setViewNameInput] = useState("");
   const [showViewSave, setShowViewSave] = useState(false);
-  const [onboardingDismissed, setOnboardingDismissed] = useState(
-    () =>
-      localStorage.getItem("nr-onboarding-complete") === "1" ||
-      localStorage.getItem("ft-onboarding-dismissed") === "1"
-  );
   // Bump-on-persona-change: useActivePersona re-renders this
   // component whenever the persona flips (see persona-hook.ts). The
   // downstream useMemo below reads loadPersonaIds() and needs a fresh
@@ -2526,10 +2520,6 @@ export default function Dashboard() {
     return PERSONA_DASHBOARD_LABEL[ids[0]] ?? "PORTFOLIO OVERVIEW";
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePersonaId]);
-
-  // Show the wizard whenever the user hasn't completed/dismissed it, regardless of account count.
-  // This ensures returning users who reset onboarding also see it.
-  const showOnboarding = !onboardingDismissed;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -2882,14 +2872,14 @@ export default function Dashboard() {
 
       {/* Smart alerts — renders nothing when no active alerts (shown inside terminal layout) */}
 
-      {/* First-run onboarding wizard */}
-      <OnboardingWizard
-        open={showOnboarding}
-        onClose={() => {
-          localStorage.setItem("nr-onboarding-complete", "1");
-          setOnboardingDismissed(true);
-        }}
-      />
+      {/* The 879-line OnboardingWizard that used to live here was
+          deleted. It was a five-step illustrated tour that instructed
+          rather than acted ("go to Accounts in the sidebar and
+          click…"), never mentioned widgets, CUSTOMIZE, the persona or
+          the tab set, and a tester reported it did not teach him how
+          the dashboard works. The first-run surface is now
+          components/onboarding.tsx, which asks two questions and then
+          hands over the real account form. */}
 
       {/* Persona-aware empty state — desktop counterpart to
           MobileHome's "NO HOLDINGS / NO ACCOUNTS" card. Renders when
