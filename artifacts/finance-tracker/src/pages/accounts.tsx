@@ -321,7 +321,7 @@ function TransferModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle
-            style={{ fontFamily: "var(--font-mono)", fontSize: 13, letterSpacing: "0.04em" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 13, letterSpacing: "0.04em" }}
           >
             Transfer Between Accounts
           </DialogTitle>
@@ -995,7 +995,7 @@ function MonthSpendingRow({ category, total, maxSpend }: MonthSpendingRowProps) 
       onMouseLeave={() => setHov(false)}
     >
       <HStack justify="between" marginBottom={2}>
-        <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{category}</span>
+        <span style={{ fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{category}</span>
         <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", flexShrink: 0, whiteSpace: "nowrap", marginLeft: 4 }}>{formatBaseMoney(total)}</span>
       </HStack>
       <div style={{ height: 3, background: "var(--ft-raised)", borderRadius: 1 }}>
@@ -1086,7 +1086,7 @@ function AccountAllocationRow({ name, pct, colorIndex }: AccountAllocationRowPro
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ width: 6, height: 6, borderRadius: 1, background: color, flexShrink: 0 }} />
-      <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", maxWidth: 120 }}>
+      <span style={{ fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", whiteSpace: "nowrap", maxWidth: 120 }}>
         {name}
       </span>
       <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", marginLeft: "auto" }}>
@@ -1121,11 +1121,11 @@ function OnboardingStep({ step, title, desc, action, onClick, color }: Onboardin
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color, fontWeight: 700, marginBottom: 6, letterSpacing: "0.1em" }}>STEP {step}</div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)", marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ft-text)", fontFamily: "var(--font-sans)", marginBottom: 6 }}>{title}</div>
       <div style={{ fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5, marginBottom: 14 }}>{desc}</div>
       <button
         onClick={onClick}
-        style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "4px 10px", border: `1px solid ${color}66`, background: `${color}22`, color, cursor: "pointer", borderRadius: 2, fontWeight: 600 }}
+        style={{ fontSize: 11, fontFamily: "var(--font-sans)", padding: "4px 10px", border: `1px solid ${color}66`, background: `${color}22`, color, cursor: "pointer", borderRadius: 2, fontWeight: 600 }}
       >
         {action} →
       </button>
@@ -1275,7 +1275,7 @@ function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false
       >
         {value}
       </div>
-      <div style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{sub}</div>
+      <div style={{ fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", whiteSpace: "nowrap" }}>{sub}</div>
     </div>
   );
 }
@@ -1501,7 +1501,7 @@ function AccountTableRow({
         {/* Last sync */}
         <div
           className="ft-hide-mobile"
-          style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 8, fontFamily: "var(--font-mono)" }}
+          style={{ width: 120, minWidth: 120, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 10, fontFamily: "var(--font-sans)" }}
         >
           {syncLabel ?? <Text as="span" color="var(--ft-dim)">manual</Text>}
         </div>
@@ -2583,7 +2583,7 @@ export default function Accounts() {
             onChange={(e) => setAccountSearch(e.target.value)}
             className="ft-filter-input"
             style={{
-              fontSize: 10, fontFamily: "var(--font-mono)", padding: "3px 8px",
+              fontSize: 11, fontFamily: "var(--font-sans)", padding: "3px 8px",
               background: "var(--ft-base)", border: "1px solid var(--ft-border2)",
               color: "var(--ft-text)", outline: "none", width: 130, borderRadius: 2,
             }}
@@ -2593,7 +2593,7 @@ export default function Accounts() {
             onChange={(e) => setAccountSort(e.target.value as typeof accountSort)}
             className="ft-filter-input"
             style={{
-              fontSize: 10, fontFamily: "var(--font-mono)", padding: "3px 6px",
+              fontSize: 11, fontFamily: "var(--font-sans)", padding: "3px 6px",
               background: "var(--ft-base)", border: "1px solid var(--ft-border2)",
               color: "var(--ft-dim)", outline: "none", cursor: "pointer", borderRadius: 2,
             }}
@@ -2640,7 +2640,7 @@ export default function Accounts() {
               value={qaForm.name}
               onChange={(e) => setQaForm(f => ({ ...f, name: e.target.value }))}
               placeholder="Account name"
-              style={{ flex: 2, minWidth: 120, fontSize: 11, fontFamily: "var(--font-mono)", padding: "4px 8px", background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", outline: "none" }}
+              style={{ flex: 2, minWidth: 120, fontSize: 12, fontFamily: "var(--font-sans)", padding: "4px 8px", background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", outline: "none" }}
             />
             <select
               value={qaForm.currency}
@@ -2663,13 +2663,13 @@ export default function Accounts() {
             <button
               onClick={() => void handleQuickAdd()}
               disabled={!qaForm.name.trim() || !qaForm.balance || qaSubmitting}
-              style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, textTransform: "uppercase", padding: "4px 10px", background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", cursor: "pointer", opacity: (!qaForm.name.trim() || !qaForm.balance) ? 0.5 : 1 }}
+              style={{ fontSize: 10, fontFamily: "var(--font-sans)", fontWeight: 600, textTransform: "uppercase", padding: "4px 10px", background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", cursor: "pointer", opacity: (!qaForm.name.trim() || !qaForm.balance) ? 0.5 : 1 }}
             >
               {qaSubmitting ? "Adding…" : "Add"}
             </button>
             <button
               onClick={() => setQaOpen(false)}
-              style={{ fontSize: 9, fontFamily: "var(--font-mono)", padding: "4px 8px", background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}
+              style={{ fontSize: 10, fontFamily: "var(--font-sans)", padding: "4px 8px", background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}
             >
               Cancel
             </button>
@@ -2678,7 +2678,7 @@ export default function Accounts() {
           <div style={{ borderBottom: "1px solid var(--ft-border)", padding: "4px 10px" }}>
             <button
               onClick={() => setQaOpen(true)}
-              style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", padding: "3px 10px", background: "var(--ft-accent)18", border: "1px solid var(--ft-accent)44", color: "var(--ft-accent)", cursor: "pointer" }}
+              style={{ fontSize: 10, fontFamily: "var(--font-sans)", fontWeight: 600, textTransform: "uppercase", padding: "3px 10px", background: "var(--ft-accent)18", border: "1px solid var(--ft-accent)44", color: "var(--ft-accent)", cursor: "pointer" }}
             >
               + Quick Add Account
             </button>
@@ -2772,7 +2772,7 @@ export default function Accounts() {
           )}
 
           {accounts && accounts.length > 0 && filteredAccounts.length === 0 && (
-            <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 11, fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
+            <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 12, fontFamily: "var(--font-sans)", letterSpacing: "0.04em" }}>
               NO {accountFilter.toUpperCase()} ACCOUNTS MATCH — <Text as="span" color="var(--ft-accent)">clear filter to show all</Text>
             </div>
           )}
@@ -2948,7 +2948,7 @@ export default function Accounts() {
         <div style={{ borderRight: "1px solid var(--ft-border)", minWidth: 0 }}>
           <PanelHeader>MONTHLY CASH FLOW — Last 6 Months</PanelHeader>
           {monthlyFlow.length === 0 ? (
-            <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+            <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 11, fontFamily: "var(--font-sans)", textTransform: "uppercase" as const }}>
               NO TRANSACTION HISTORY — <Text as="span" size={10} color="var(--ft-accent)">import or add transactions to begin</Text>
             </div>
           ) : (
@@ -3013,7 +3013,7 @@ export default function Accounts() {
               )}
             </VStack>
           ) : (
-            <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+            <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--ft-dim)", fontSize: 11, fontFamily: "var(--font-sans)", textTransform: "uppercase" as const }}>
               NO DATA FOR THIS MONTH — <Text as="span" size={10} color="var(--ft-accent)">transactions will appear here when recorded</Text>
             </div>
           )}

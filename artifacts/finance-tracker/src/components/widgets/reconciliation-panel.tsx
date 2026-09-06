@@ -36,6 +36,9 @@ const head: CSSProperties = {
   fontWeight: 600,
 };
 const num: CSSProperties = { ...cell, textAlign: "right" };
+// The account name and the "N tx · notes" cell are language (§10); the three
+// figure columns beside them stay mono. Same row, two families, by design.
+const name: CSSProperties = { ...cell, fontFamily: "var(--font-sans)", fontSize: 11 };
 
 function gapColour(gap: number): string {
   if (Math.abs(gap) < ZERO_TOLERANCE) return "var(--ft-dim)";
@@ -49,7 +52,7 @@ function Row({ a, baseCurrency }: { a: ReconciliationAccount; baseCurrency: stri
   if (a.fxSkippedTransactions > 0) notes.push(`${a.fxSkippedTransactions} tx not converted`);
   return (
     <tr>
-      <td style={cell}>{a.name}</td>
+      <td style={name}>{a.name}</td>
       <td className="pnum" style={num}>{formatMoney(a.balanceChange, a.currency)}</td>
       <td className="pnum" style={num}>{formatMoney(a.ledgerChange, a.currency)}</td>
       <td className="pnum" style={{ ...num, fontWeight: 700, color: gapColour(a.gap) }}>
@@ -60,7 +63,7 @@ function Row({ a, baseCurrency }: { a: ReconciliationAccount; baseCurrency: stri
           </span>
         )}
       </td>
-      <td style={{ ...cell, color: "var(--ft-dim)", fontSize: 9 }}>
+      <td style={{ ...name, color: "var(--ft-dim)", fontSize: 10 }}>
         {a.transactionsCounted} tx{notes.length > 0 ? ` · ${notes.join(" · ")}` : ""}
       </td>
     </tr>
@@ -90,7 +93,7 @@ export function ReconciliationPanel() {
 
       {report.status !== "ok" ? (
         <div style={{ padding: "12px 10px" }}>
-          <Text as="div" mono size={10} color="var(--ft-muted)">
+          <Text as="div" size={11} color="var(--ft-muted)">
             Not enough history yet.
             {report.dataAvailableSince == null
               ? " No balance snapshot has been taken; the first is written the next time the dashboard loads."
@@ -99,7 +102,7 @@ export function ReconciliationPanel() {
         </div>
       ) : report.gapBase != null && Math.abs(report.gapBase) < ZERO_TOLERANCE && report.unconvertibleAccounts === 0 ? (
         <div style={{ padding: "12px 10px" }}>
-          <Text as="div" mono size={10} color="var(--ft-muted)">
+          <Text as="div" size={11} color="var(--ft-muted)">
             Balances match the ledger {period}. {report.accounts.length} cash account{report.accounts.length === 1 ? "" : "s"} checked.
           </Text>
         </div>
@@ -120,11 +123,11 @@ export function ReconciliationPanel() {
             </tbody>
             <tfoot>
               <tr>
-                <td style={{ ...cell, borderBottom: "none", fontWeight: 700 }} colSpan={3}>Total, {report.baseCurrency}</td>
+                <td style={{ ...name, borderBottom: "none", fontWeight: 600 }} colSpan={3}>Total, {report.baseCurrency}</td>
                 <td className="pnum" style={{ ...num, borderBottom: "none", fontWeight: 700, color: report.gapBase == null ? "var(--ft-dim)" : gapColour(report.gapBase) }}>
                   {report.gapBase == null ? "—" : formatMoney(report.gapBase, report.baseCurrency)}
                 </td>
-                <td style={{ ...cell, borderBottom: "none", color: "var(--ft-dim)", fontSize: 9 }}>
+                <td style={{ ...name, borderBottom: "none", color: "var(--ft-dim)", fontSize: 10 }}>
                   {report.unconvertibleAccounts > 0 ? `${report.unconvertibleAccounts} account${report.unconvertibleAccounts === 1 ? "" : "s"} not in total` : ""}
                 </td>
               </tr>
@@ -134,7 +137,7 @@ export function ReconciliationPanel() {
       )}
 
       <div style={{ padding: "6px 10px 8px", borderTop: "1px solid var(--ft-border)" }}>
-        <Text as="div" mono size={9} color="var(--ft-dim)" lineHeight={1.5}>
+        <Text as="div" size={11} color="var(--ft-dim)" lineHeight={1.45}>
           Balance movement minus transactions recorded since the baseline snapshot, cash accounts only; a manual balance
           correction, or an edit or deletion of an older transaction, lands here. {rule}
         </Text>
