@@ -164,6 +164,12 @@ Never point local development at production.
 
 ## Design rules
 
+**`docs/DESIGN.md` is the normative spec.** Panels, section headers, rhythm,
+edges, tables, ephemeral vs permanent surfaces, numbers, overflow — with the
+reasoning attached. Read it before touching any screen; do not re-derive the
+design language from commit messages or task files. It states which of it
+and the Mobile Amendment wins at which width.
+
 `artifacts/finance-tracker/src/index.css` opens with the Anti-Vibe Constitution
 (desktop) and the Mobile Amendment (below 768px). Both are binding. Check output
 against the banned list before shipping; two design rounds were rejected for
@@ -252,6 +258,7 @@ could not supply — that inventory is more valuable than the feature.
 | --- | --- |
 | `docs/BACKLOG.md` | deciding what to do next — the running task list |
 | `docs/TARGET-PRODUCT.md` | the product being built toward, incl. the payments regulatory position |
+| `docs/DESIGN.md` | any UI work — the normative design spec, desktop and phone |
 | `docs/MOBILE-CONCEPT.md` | any mobile design or UI work |
 | `docs/AI-DESIGN-TELLS.md` | before producing any design |
 | `docs/STYLE-INVENTORY.md` | touching styling — 11,715 inline style objects, measured |
