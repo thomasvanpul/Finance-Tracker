@@ -1702,7 +1702,7 @@ export function MarketsTab() {
         return (
           <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
             <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "var(--ft-dim)" }}>
-              <Text as="span" color="var(--ft-accent)">·</Text> Market Movers
+              Market Movers
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
               <div style={{ borderRight: "1px solid var(--ft-border)" }}>
@@ -1720,7 +1720,7 @@ export function MarketsTab() {
 
       {/* US ETF strip */}
       <div>
-        <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}><Text as="span" color="var(--ft-green)">·</Text> US Market ETFs</MonoLabel>
+        <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}>US Market ETFs</MonoLabel>
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {INDEX_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
@@ -1756,7 +1756,7 @@ export function MarketsTab() {
 
       {/* Sector performance */}
       <div>
-        <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}><Text as="span" color="var(--ft-amber)">·</Text> US Sector Performance (SPDR ETFs)</MonoLabel>
+        <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}>US Sector Performance (SPDR ETFs)</MonoLabel>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 4 }}>
           {SECTOR_TICKERS.split(",").map((ticker) => {
             const q = qMap.get(ticker);
@@ -1782,7 +1782,7 @@ export function MarketsTab() {
 
       {/* Popular stocks */}
       <div>
-        <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}><Text as="span" color="var(--ft-blue)">·</Text> Popular Stocks — tap for full analysis</MonoLabel>
+        <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}>Popular Stocks — tap for full analysis</MonoLabel>
         {isMobile ? (
           // Mobile compact list — no horizontal scroll needed
           <div style={{ border: "1px solid var(--ft-border)" }}>
@@ -1866,7 +1866,7 @@ export function MarketsTab() {
         return (
           <div>
             <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}>
-              <Text as="span" color="var(--ft-cyan)">·</Text> Top Movers Today
+              Top Movers Today
             </MonoLabel>
             <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <div>
@@ -1921,7 +1921,7 @@ export function MarketsTab() {
       {/* Crypto */}
       <div>
         <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}>
-          <Text as="span" color="var(--ft-amber)">·</Text> Crypto Markets
+          Crypto Markets
         </MonoLabel>
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {CRYPTO_MARKET_TICKERS.split(",").map((ticker) => {
@@ -1958,7 +1958,7 @@ export function MarketsTab() {
       {/* Forex */}
       <div>
         <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}>
-          <Text as="span" color="var(--ft-blue)">·</Text> Forex — Major Pairs
+          Forex — Major Pairs
         </MonoLabel>
         <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
           {FOREX_TICKERS_STR.split(",").map((ticker) => {
@@ -1995,7 +1995,7 @@ export function MarketsTab() {
       {/* Commodities */}
       <div>
         <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}>
-          <Text as="span" color="var(--ft-green)">·</Text> Commodities
+          Commodities
         </MonoLabel>
         <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
           {COMMODITY_TICKERS_STR.split(",").map((ticker) => {
@@ -2023,7 +2023,7 @@ export function MarketsTab() {
       {/* Global Indices */}
       <div>
         <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}>
-          <Text as="span" color="var(--ft-cyan)">·</Text> Global Indices
+          Global Indices
         </MonoLabel>
         <div className="ft-five-col" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
           {GLOBAL_INDEX_TICKERS.split(",").map((ticker) => {
