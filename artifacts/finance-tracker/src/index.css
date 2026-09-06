@@ -1826,3 +1826,16 @@ strong.pnum {
   overflow-wrap: anywhere;
 }
 
+
+/* Number inputs on the first-run account form. The native spinner
+   renders as a white block on every dark theme, is not themeable, and
+   nudging a balance by 1 is not an interaction this app wants. */
+.nr-no-spinner::-webkit-outer-spin-button,
+.nr-no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.nr-no-spinner {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
