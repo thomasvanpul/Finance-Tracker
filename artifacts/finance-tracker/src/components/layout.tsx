@@ -457,39 +457,44 @@ function NavRow({
           width: "100%",
           padding: collapsed ? "3px 8px" : "3px 10px 3px 12px",
           justifyContent: collapsed ? "center" : "flex-start",
-          border: "none",
+          // DESIGN.md §12: the ACTIVE ITEM is --ft-accent-tint with an
+          // --ft-accent-edge border. It used to be the icon chip that
+          // carried this and the row that stayed transparent, which is
+          // not what the spec says and is not where a reader looks.
+          // The border is always present and transparent when inactive
+          // so the row does not shift by 1px on navigation.
+          border: active ? "1px solid var(--ft-accent-edge)" : "1px solid transparent",
           borderRadius: 0,
-          background: hovered && !active ? "var(--ft-hover)" : "transparent",
+          background: active
+            ? "var(--ft-accent-tint)"
+            : hovered ? "var(--ft-hover)" : "transparent",
           cursor: "pointer",
-          transition: "background 0.1s",
+          transition: "background 0.1s, border-color 0.1s",
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Icon chip — shows icon if available, falls back to keyboard code */}
+        {/* The icon, not a chip around the icon. Sixteen identical
+            rounded bordered boxes down the rail was AI-DESIGN-TELLS
+            tell 2 (uniform radius, uniform card heights) and a second
+            frame inside the sidebar's own frame (§1) that grouped
+            nothing. The fixed width is kept: it holds the label column
+            steady and centres the glyph in the collapsed rail. */}
         <span style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           width: 28,
           height: 26,
-          borderRadius: 5,
           flexShrink: 0,
           fontFamily: "var(--font-mono)",
           fontSize: 10,
           fontWeight: 700,
           letterSpacing: "0.05em",
-          background: active
-            ? "var(--ft-accent-tint)"
-            : "var(--ft-hover)",
-          color: active ? "var(--ft-accent)" : "var(--ft-dim)",
-          border: active
-            ? "1px solid var(--ft-accent-edge)"
-            : "1px solid var(--ft-border)",
-          boxShadow: "none",
-          transition: "all 0.12s",
+          color: active ? "var(--ft-accent)" : hovered ? "var(--ft-muted)" : "var(--ft-dim)",
+          transition: "color 0.12s",
         }}>
-          {Icon ? <Icon size={13} strokeWidth={active ? 2.5 : 1.75} /> : code}
+          {Icon ? <Icon size={14} strokeWidth={active ? 2.25 : 1.75} /> : code}
         </span>
 
         {/* Label */}
