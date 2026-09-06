@@ -536,8 +536,12 @@ export default function AiCoach() {
     if (goals) {
       for (const g of goals as Array<{ name: string; target: number; current: number; deadline?: string }>) {
         if (!g.deadline) continue;
+        // No target means there is no progress to measure, so there is no
+        // "at risk" judgement to make — the insight is skipped rather than
+        // asserting "0% funded", which reads as "you have saved nothing".
+        if (g.target <= 0) continue;
         const daysLeft = Math.ceil((new Date(g.deadline).getTime() - Date.now()) / (24 * 3600 * 1000));
-        const progress = g.target > 0 ? g.current / g.target : 0;
+        const progress = g.current / g.target;
         if (daysLeft > 0 && daysLeft < 90 && progress < 0.8) {
           items.push({
             icon: Target, color: "var(--ft-amber)",

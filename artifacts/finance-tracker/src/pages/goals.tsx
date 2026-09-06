@@ -1097,7 +1097,10 @@ export default function Goals() {
 
   const totalTarget = goals.reduce((s, g) => s + g.target, 0);
   const totalSaved = goals.reduce((s, g) => s + g.current, 0);
-  const totalPct = totalTarget > 0 ? Math.min((totalSaved / totalTarget) * 100, 100) : 0;
+  // Goals with no targets between them give no denominator: "0.0% overall"
+  // reads as no progress, when the truth is there is nothing to progress
+  // against. Bar widths below keep ?? 0 — geometry, not a figure.
+  const totalPct: number | null = totalTarget > 0 ? Math.min((totalSaved / totalTarget) * 100, 100) : null;
 
   const summaryMonthlyNeeded = useMemo(() => {
     return unachievedGoals.reduce((s, g) => {
@@ -1268,11 +1271,11 @@ export default function Goals() {
 
             <KpiCell
               label="Current Saved"
-              sub={<><span className="pnum">{totalPct.toFixed(1)}%</span> overall</>}
+              sub={<><span className="pnum">{totalPct == null ? "—" : `${totalPct.toFixed(1)}%`}</span> overall</>}
             >
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-green)", lineHeight: 1 }}>{formatBaseMoney(totalSaved)}</div>
               <div style={{ marginTop: 5, height: 3, background: "var(--ft-border)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${totalPct}%`, background: "var(--ft-green)" }} />
+                <div style={{ height: "100%", width: `${totalPct ?? 0}%`, background: "var(--ft-green)" }} />
               </div>
             </KpiCell>
 
@@ -1535,10 +1538,10 @@ export default function Goals() {
               <Text as="span" color="var(--ft-dim)"> total</Text>
             </Text>
             <div style={{ height: 3, background: "var(--ft-border)", marginTop: 8, width: "min(240px, 100%)", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${totalPct}%`, background: "var(--ft-green)" }} />
+              <div style={{ height: "100%", width: `${totalPct ?? 0}%`, background: "var(--ft-green)" }} />
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-              <span className="pnum">{totalPct.toFixed(1)}%</span> overall · {achievedGoals.length} of {goals.length} goals complete
+              <span className="pnum">{totalPct == null ? "—" : `${totalPct.toFixed(1)}%`}</span> overall · {achievedGoals.length} of {goals.length} goals complete
             </div>
           </div>
 

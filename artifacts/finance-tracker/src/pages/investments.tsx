@@ -1330,7 +1330,8 @@ function PortfolioPositionsTable({
               const plPct = inv.plPercent ?? 0;
               const plColor = priced && plPct >= 0 ? "var(--ft-green)" : "var(--ft-red)";
               const plSign = plPct >= 0 ? "▲" : "▼";
-              const weight = priced && inv.baseEquivalent != null && totalValue > 0 ? (inv.baseEquivalent / totalValue) * 100 : 0;
+              const weight: number | null =
+                priced && inv.baseEquivalent != null && totalValue > 0 ? (inv.baseEquivalent / totalValue) * 100 : null;
               const rowBg = i % 2 === 0 ? "var(--ft-base)" : `color-mix(in srgb, var(--ft-raised) 30%, transparent)`;
 
               return (
@@ -1426,10 +1427,10 @@ function PortfolioPositionsTable({
                   <td style={{ ...TD, textAlign: "right" }}>
                     <HStack gap={5} align="center" justify="end">
                       <div style={{ width: 32, height: 3, background: "var(--ft-raised)", flexShrink: 0 }}>
-                        <div style={{ width: `${Math.min(100, weight)}%`, height: "100%", background: "var(--ft-accent)", opacity: 0.7 }} />
+                        <div style={{ width: `${Math.min(100, weight ?? 0)}%`, height: "100%", background: "var(--ft-accent)", opacity: 0.7 }} />
                       </div>
                       <span style={{ color: "var(--ft-muted)", fontSize: 10, minWidth: 32, textAlign: "right" }}>
-                        {weight.toFixed(1)}%
+                        {weight == null ? "—" : `${weight.toFixed(1)}%`}
                       </span>
                     </HStack>
                   </td>

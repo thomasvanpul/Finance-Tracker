@@ -20,7 +20,7 @@ function formatNative(amount: number, currency: string): string {
 type AccountRowProps = {
   acct: { id: number | string; name: string; currency: string; balance: number; baseEquivalent: number | null };
   maxGbp: number;
-  share: number;
+  share: number | null;
   totalCash: number;
   isExpanded: boolean;
   isEven: boolean;
@@ -84,10 +84,10 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
       </td>
       {isExpanded && (
         <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-          <span className="pnum">{share.toFixed(1)}%</span>
+          <span className="pnum">{share == null ? "—" : `${share.toFixed(1)}%`}</span>
           {/* inline share mini-bar */}
           <div style={{ marginTop: 3, height: 2, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${Math.min(Math.abs(share), 100)}%`, background: "var(--ft-accent)", opacity: 0.6 }} />
+            <div style={{ height: "100%", width: `${Math.min(Math.abs(share ?? 0), 100)}%`, background: "var(--ft-accent)", opacity: 0.6 }} />
           </div>
         </td>
       )}
@@ -206,7 +206,11 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
           ) : (
             sorted.map((acct, i) => {
               // Share % needs a GBP figure to compute against the base total.
-              const share = d!.totalCash > 0 && acct.baseEquivalent != null ? (acct.baseEquivalent / d!.totalCash) * 100 : 0;
+              // Without one — an unconvertible account, or no cash at all —
+              // the share is unknown, not 0.0%. The GBP cell already
+              // em-dashes; the share column must agree with it.
+              const share: number | null =
+                d!.totalCash > 0 && acct.baseEquivalent != null ? (acct.baseEquivalent / d!.totalCash) * 100 : null;
               return (
                 <AccountRow
                   key={acct.id}

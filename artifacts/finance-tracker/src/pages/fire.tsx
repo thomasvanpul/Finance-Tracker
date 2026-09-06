@@ -1255,7 +1255,11 @@ export default function Fire() {
               </thead>
               <tbody>
                 {[4, 5, 6, 7, 8, 10, 12].map((r) => {
-                  const fireN = withdrawalRate > 0 ? Math.round((effMonthlyExpenses * 12) / (withdrawalRate / 100)) : 0;
+                  // This whole panel is gated on fireNumber > 0 above, and
+                  // fireNumber is this same expression — recomputing it per
+                  // row with its own guard duplicated the formula and implied
+                  // a zero case that cannot reach here.
+                  const fireN = fireNumber;
                   const m = monthsToFire(effPortfolio, effMonthlyContrib, r / 100, fireN);
                   const yrs = isFinite(m) ? m / 12 : null;
                   const arrYear = yrs !== null ? new Date().getFullYear() + Math.ceil(yrs) : null;

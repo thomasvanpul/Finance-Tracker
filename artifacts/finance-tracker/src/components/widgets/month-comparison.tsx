@@ -27,7 +27,7 @@ type TotalsKpiCellProps = {
   label: string;
   amount: number;
   color: string;
-  savingsRate: number;
+  savingsRate: number | null;
   income: number | null;
   badge?: React.ReactNode;
   incomeDeltaLabel?: React.ReactNode;
@@ -57,7 +57,7 @@ function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incom
         {formatBaseMoney(amount)}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
-        <span className="pnum">{savingsRate.toFixed(0)}%</span> saved
+        <span className="pnum">{savingsRate == null ? "—" : `${savingsRate.toFixed(0)}%`}</span> saved
         {income !== null && income > 0 && <span className="pnum"> · {formatBaseMoney(income)} income</span>}
         {incomeDeltaLabel}
       </div>
@@ -232,8 +232,11 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
   const lastExpenses = Object.values(lastCats).reduce((s, v) => s + v, 0);
   const thisSavings = thisIncome - thisExpenses;
   const lastSavings = lastIncome - lastExpenses;
-  const thisSavingsRate = thisIncome > 0 ? (thisSavings / thisIncome) * 100 : 0;
-  const lastSavingsRate = lastIncome > 0 ? (lastSavings / lastIncome) * 100 : 0;
+  // A month with no recorded income has no denominator: the savings rate
+  // is unknown, not 0%. "0% saved" tells a user who simply logged no
+  // income that they saved nothing — a different and worse claim.
+  const thisSavingsRate: number | null = thisIncome > 0 ? (thisSavings / thisIncome) * 100 : null;
+  const lastSavingsRate: number | null = lastIncome > 0 ? (lastSavings / lastIncome) * 100 : null;
   const expenseDelta = thisExpenses - lastExpenses;
   const incomeDelta = thisIncome - lastIncome;
 

@@ -2016,7 +2016,13 @@ export default function Transactions() {
   const kpiExpenses = filtered.reduce((acc, tx) => acc + (tx.type === "expense" && tx.baseEquivalent != null ? Math.abs(tx.baseEquivalent) : 0), 0);
   const kpiNet = kpiIncome - kpiExpenses;
   const filteredWithGbp = filtered.filter((tx): tx is typeof tx & { baseEquivalent: number } => tx.baseEquivalent != null);
-  const kpiAvg = filteredWithGbp.length > 0 ? filteredWithGbp.reduce((acc, tx) => acc + Math.abs(tx.baseEquivalent), 0) / filteredWithGbp.length : 0;
+  // The average is over the convertible rows only, so its render must be
+  // gated on those — gating on filtered.length let an all-unconvertible
+  // filter print a £0.00 average over a set it never measured.
+  const kpiAvg: number | null =
+    filteredWithGbp.length > 0
+      ? filteredWithGbp.reduce((acc, tx) => acc + Math.abs(tx.baseEquivalent), 0) / filteredWithGbp.length
+      : null;
   const kpiUnconvertible = filtered.length - filteredWithGbp.length;
   const kpiDateFrom = filtered.length > 0 ? filtered.reduce((a, b) => a.date < b.date ? a : b).date : null;
   const kpiDateTo = filtered.length > 0 ? filtered.reduce((a, b) => a.date > b.date ? a : b).date : null;
@@ -2247,7 +2253,7 @@ export default function Transactions() {
           <div style={{ padding: "10px 14px", borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", gap: 3 }}>
             <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.10em", textTransform: "uppercase", color: "var(--ft-dim)" }}>AVG / TX</div>
             <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--ft-text)", lineHeight: 1 }}>
-              {filtered.length > 0 ? formatBaseMoney(kpiAvg) : "—"}
+              {kpiAvg == null ? "—" : formatBaseMoney(kpiAvg)}
             </div>
             <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">per transaction</Text>
           </div>

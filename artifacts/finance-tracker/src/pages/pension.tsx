@@ -301,7 +301,11 @@ function KpiBar({
   const fmtBig = (v: number) =>
     v >= 1_000_000 ? `£${(v / 1_000_000).toFixed(2)}M` : `£${(v / 1000).toFixed(0)}k`;
 
-  const returnPct = totalContributions > 0 ? ((projectedPot - totalContributions) / totalContributions) * 100 : 0;
+  // Return on contributions needs contributions to divide by. With none
+  // recorded the figure is unknown, not "+0%". The sign lives inside the
+  // formatted string so a negative return cannot render as "+-12%".
+  const returnPct: number | null =
+    totalContributions > 0 ? ((projectedPot - totalContributions) / totalContributions) * 100 : null;
 
   const isMobile = useIsMobile();
   return (
@@ -368,7 +372,7 @@ function KpiBar({
           {fmtBig(Math.round(totalGrowth))}
         </div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
-          +<span className="pnum">{returnPct.toFixed(0)}%</span> return on contributions
+          <span className="pnum">{returnPct == null ? "—" : `${returnPct >= 0 ? "+" : ""}${returnPct.toFixed(0)}%`}</span> return on contributions
         </div>
       </div>
 

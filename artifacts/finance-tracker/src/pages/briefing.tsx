@@ -161,7 +161,9 @@ function SpendingCatRow({
   cat: string; amt: number; index: number; total: number; maxAmt: number; sortedLength: number; isMobile?: boolean;
 }) {
   const [hov, setHov] = useState(false);
-  const share = total > 0 ? (amt / total) * 100 : 0;
+  // Share of a zero spend total is undefined, not 0%. The bar width below
+  // keeps ?? 0 — that is geometry, not a figure the user reads.
+  const share: number | null = total > 0 ? (amt / total) * 100 : null;
   const barWidth = maxAmt > 0 ? (amt / maxAmt) * 100 : 0;
   const barColor = index === 0 ? "var(--ft-red)" : index === 1 ? "var(--ft-amber)" : "var(--ft-dim)";
   return (
@@ -192,7 +194,7 @@ function SpendingCatRow({
         <span className="pnum">{formatBaseMoney(amt)}</span>
       </span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "right" }}>
-        <span className="pnum">{share.toFixed(0)}%</span>
+        <span className="pnum">{share == null ? "—" : `${share.toFixed(0)}%`}</span>
       </span>
     </div>
   );
@@ -207,9 +209,11 @@ function BudgetPerfRow({
 }) {
   void budgetSpendMap;
   const [hov, setHov] = useState(false);
-  const pct = budget.monthlyLimit > 0 ? (spent / budget.monthlyLimit) * 100 : 0;
-  const over = pct > 100;
-  const warn = pct >= 80 && !over;
+  // A budget with no limit set has no denominator — "0% used" reads as
+  // "you have spent nothing", which is not what an absent limit means.
+  const pct: number | null = budget.monthlyLimit > 0 ? (spent / budget.monthlyLimit) * 100 : null;
+  const over = pct != null && pct > 100;
+  const warn = pct != null && pct >= 80 && !over;
   const barColor = over ? "var(--ft-red)" : warn ? "var(--ft-amber)" : "var(--ft-green)";
   return (
     <div
@@ -245,10 +249,10 @@ function BudgetPerfRow({
       )}
       <HStack gap={6} align="center">
         <div style={{ flex: 1, height: 5, background: "var(--ft-border2)", borderRadius: 1, overflow: "hidden" }}>
-          <div style={{ width: `${Math.min(pct, 100)}%`, height: "100%", background: barColor, borderRadius: 1, transition: "width 0.12s ease" }} />
+          <div style={{ width: `${Math.min(pct ?? 0, 100)}%`, height: "100%", background: barColor, borderRadius: 1, transition: "width 0.12s ease" }} />
         </div>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: barColor, minWidth: 32, textAlign: "right", fontWeight: over || warn ? 700 : 400 }}>
-          <span className="pnum">{pct.toFixed(0)}%</span>
+          <span className="pnum">{pct == null ? "—" : `${pct.toFixed(0)}%`}</span>
         </span>
       </HStack>
     </div>
@@ -772,12 +776,12 @@ export default function Briefing() {
                       <HStack gap={8} wrap>
                         {(investmentsRaw as Investment[]).slice(0, 6).map(inv => {
                           const totalVal = (invSummary as { totalValueBase: number }).totalValueBase;
-                          const pct = totalVal > 0 ? ((inv.baseEquivalent / totalVal) * 100).toFixed(1) : "—";
+                          const pct = totalVal > 0 ? `${((inv.baseEquivalent / totalVal) * 100).toFixed(1)}%` : "—";
                           return (
                             <div key={inv.ticker} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "4px 8px", display: "flex", gap: 6, alignItems: "baseline" }}>
                               <span style={{ color: "var(--ft-cyan)", fontWeight: 700 }}>{inv.ticker}</span>
                               <span className="pnum">{formatBaseMoney(inv.baseEquivalent)}</span>
-                              <span className="pnum" style={{ color: "var(--ft-dim)", fontSize: 9 }}>{pct}%</span>
+                              <span className="pnum" style={{ color: "var(--ft-dim)", fontSize: 9 }}>{pct}</span>
                             </div>
                           );
                         })}

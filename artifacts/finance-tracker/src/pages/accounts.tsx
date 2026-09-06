@@ -1020,7 +1020,11 @@ const ACCT_EXPOSURE_COLORS = ACCT_COLORS;
 
 function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex }: CurrencyExposureRowProps) {
   const [hov, setHov] = React.useState(false);
-  const pct = total != null && totalCash > 0 ? (total / totalCash) * 100 : 0;
+  // A share needs a positive base total to divide by. totalCash can be
+  // zero or negative (overdrafts), and then the exposure share is unknown
+  // rather than 0% — the currency total beside it already em-dashes when
+  // it has no FX, and the two must not disagree.
+  const pct: number | null = total != null && totalCash > 0 ? (total / totalCash) * 100 : null;
   const color = ACCT_EXPOSURE_COLORS[colorIndex % ACCT_EXPOSURE_COLORS.length];
   return (
     <div
@@ -1049,7 +1053,7 @@ function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex
         {total == null ? "—" : formatBaseMoney(total)}
       </span>
       <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", marginLeft: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>
-        {total == null ? `no FX · ${acctCount}a` : `${pct.toFixed(0)}% · ${acctCount}a`}
+        {total == null ? `no FX · ${acctCount}a` : pct == null ? `— · ${acctCount}a` : `${pct.toFixed(0)}% · ${acctCount}a`}
       </span>
     </div>
   );
@@ -1059,7 +1063,7 @@ function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex
 
 interface AccountAllocationRowProps {
   name: string;
-  pct: number;
+  pct: number | null;
   colorIndex: number;
 }
 
@@ -1086,7 +1090,7 @@ function AccountAllocationRow({ name, pct, colorIndex }: AccountAllocationRowPro
         {name}
       </span>
       <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", marginLeft: "auto" }}>
-        {pct.toFixed(0)}%
+        {pct == null ? "—" : `${pct.toFixed(0)}%`}
       </span>
     </div>
   );
@@ -2414,9 +2418,11 @@ export default function Accounts() {
                         .filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null)
                         .sort((a, b) => b.baseEquivalent - a.baseEquivalent)
                         .map((a, i) => {
-                          const pct = totalCash > 0 ? (a.baseEquivalent / totalCash) * 100 : 0;
+                          // Allocation share is undefined when there is no
+                          // positive cash base to take a share of.
+                          const pct: number | null = totalCash > 0 ? (a.baseEquivalent / totalCash) * 100 : null;
                           return (
-                            <div key={a.id} style={{ width: `${pct}%`, background: ACCT_ALLOC_COLORS[i % ACCT_ALLOC_COLORS.length], minWidth: pct > 0.5 ? 2 : 0 }} title={`${a.name}: ${pct.toFixed(1)}%`} />
+                            <div key={a.id} style={{ width: `${pct ?? 0}%`, background: ACCT_ALLOC_COLORS[i % ACCT_ALLOC_COLORS.length], minWidth: (pct ?? 0) > 0.5 ? 2 : 0 }} title={`${a.name}: ${pct == null ? "—" : `${pct.toFixed(1)}%`}`} />
                           );
                         })}
                     </div>
@@ -2426,7 +2432,7 @@ export default function Accounts() {
                         .sort((a, b) => b.baseEquivalent - a.baseEquivalent)
                         .slice(0, 5)
                         .map((a, i) => {
-                          const pct = totalCash > 0 ? (a.baseEquivalent / totalCash) * 100 : 0;
+                          const pct: number | null = totalCash > 0 ? (a.baseEquivalent / totalCash) * 100 : null;
                           return (
                             <AccountAllocationRow
                               key={a.id}
