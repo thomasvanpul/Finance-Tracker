@@ -933,9 +933,18 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                     is not. */}
                 <Text as="span" size={10} color="var(--ft-muted)" lineHeight={1.6}>
                   {figure !== null && (
-                    <Text as="span" numeric size={11} weight={700} color="var(--ft-text)">
-                      {figure}{" "}
-                    </Text>
+                    <>
+                      {/* The separating space lives OUTSIDE the .pnum span.
+                          span.pnum is display:inline-block (index.css:1711),
+                          and a trailing space inside an inline-block collapses
+                          at its edge — the figure and the clause ran together
+                          as "£412/mosubscriptions" on every insight the model
+                          returned in the shape the prompt asks for. */}
+                      <Text as="span" numeric size={11} weight={700} color="var(--ft-text)">
+                        {figure}
+                      </Text>
+                      {" "}
+                    </>
                   )}
                   {clause}
                 </Text>
