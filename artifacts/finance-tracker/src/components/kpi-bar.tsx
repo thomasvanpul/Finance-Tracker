@@ -55,13 +55,15 @@ export function KpiBar() {
         return [
           { label: "This Month", raw: data.thisMonth.expenses, color: "var(--ft-red)", fmt },
           { label: "Saved", raw: data.thisMonth.netSavings, color: data.thisMonth.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt },
-          { label: "Savings Rate", raw: data.thisMonth.savingsRate, color: data.thisMonth.savingsRate >= 0.15 ? "var(--ft-green)" : "var(--ft-amber)", fmt: fmtPct },
+          // savingsRate is a percentage (15 means 15%), so the threshold is
+          // 15, not 0.15. Null keeps its own colour and KpiValue renders "—".
+          { label: "Savings Rate", raw: data.thisMonth.savingsRate, color: (data.thisMonth.savingsRate ?? 0) >= 15 ? "var(--ft-green)" : "var(--ft-amber)", fmt: fmtPct },
           { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt },
         ];
       case "wealth":
         return [
           { label: "Net Worth", raw: data.netWorth, color: "var(--ft-blue)", fmt },
-          { label: "Savings Rate", raw: data.thisMonth.savingsRate, color: data.thisMonth.savingsRate >= 0.2 ? "var(--ft-green)" : "var(--ft-amber)", fmt: fmtPct },
+          { label: "Savings Rate", raw: data.thisMonth.savingsRate, color: (data.thisMonth.savingsRate ?? 0) >= 20 ? "var(--ft-green)" : "var(--ft-amber)", fmt: fmtPct },
           { label: "Portfolio", raw: data.portfolio.totalValueBase, color: "var(--ft-text)", fmt },
           { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt },
         ];

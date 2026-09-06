@@ -11,5 +11,6 @@ export interface TransactionSummary {
   totalIncome: number;
   totalExpenses: number;
   netSavings: number;
-  savingsRate: number;
+  /** @nullable */
+  savingsRate: number | null;
 }

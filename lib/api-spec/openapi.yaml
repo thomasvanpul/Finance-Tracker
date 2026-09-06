@@ -1607,8 +1607,12 @@ components:
           type: number
         netSavings:
           type: number
+        # Null when there is no income in the period. A savings rate is
+        # undefined without a denominator, not zero — a fabricated "0.0%"
+        # reads as "you saved nothing" to a user who simply had no income
+        # recorded. Clients render an em-dash.
         savingsRate:
-          type: number
+          type: ["number", "null"]
 
     # ── UPCOMING ─────────────────────────────────────────────────────────────
     UpcomingItem:
@@ -2413,8 +2417,9 @@ components:
               type: number
             netSavings:
               type: number
+            # Null when monthly income is zero — see TransactionSummary.
             savingsRate:
-              type: number
+              type: ["number", "null"]
         owing:
           type: object
           required: [totalOwedToMe, totalIOwe, netBase, pendingCount]

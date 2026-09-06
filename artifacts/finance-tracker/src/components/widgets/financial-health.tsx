@@ -20,12 +20,20 @@ type ScoreResult = {
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 
 function computeScore(d: {
-  thisMonth: { savingsRate: number; expenses: number };
+  thisMonth: { savingsRate: number | null; expenses: number };
   netLiquidity: number;
   portfolio: { totalPlBase: number; totalValueBase: number };
   totalCash: number;
 }): ScoreResult {
-  const savingsRate = Math.min(30, d.thisMonth.savingsRate * 1.5);
+  // OPEN QUESTION (raised 2026-09-06, not decided here): savingsRate is now
+  // null when the month has no income, and a null scores 0 of 30 points —
+  // so a user with no income recorded reads as "scored zero on saving"
+  // rather than "not scorable yet". The honest alternatives are to drop
+  // both the component and its 30-point max (scoring out of 70, which
+  // changes what the band means) or to withhold the score entirely.
+  // Both change the product, so the pre-existing behaviour is preserved
+  // until that call is made.
+  const savingsRate = Math.min(30, (d.thisMonth.savingsRate ?? 0) * 1.5);
 
   const rawLiquidity = d.netLiquidity;
   const netLiquidity =

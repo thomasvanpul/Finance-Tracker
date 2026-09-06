@@ -370,7 +370,8 @@ export interface TransactionSummary {
   totalIncome: number;
   totalExpenses: number;
   netSavings: number;
-  savingsRate: number;
+  /** @nullable */
+  savingsRate: number | null;
 }
 
 export type UpcomingItemType = typeof UpcomingItemType[keyof typeof UpcomingItemType];
@@ -1177,7 +1178,8 @@ export type DashboardSummaryThisMonth = {
   income: number;
   expenses: number;
   netSavings: number;
-  savingsRate: number;
+  /** @nullable */
+  savingsRate: number | null;
 };
 
 export type DashboardSummaryOwingTopPendingItemDirection = typeof DashboardSummaryOwingTopPendingItemDirection[keyof typeof DashboardSummaryOwingTopPendingItemDirection];

@@ -501,11 +501,14 @@ export default function AiCoach() {
 
     const sr = (dashData as { thisMonth?: { savingsRate?: number } } | undefined)?.thisMonth?.savingsRate;
     const srIncome = (dashData as { thisMonth?: { income?: number } } | undefined)?.thisMonth?.income;
-    if (sr != null && sr < 0.1 && srIncome != null && srIncome > 0) {
+    // sr arrives already in percent from /dashboard, so the threshold is
+    // 10, not 0.1. Read as a fraction, this test only fired below 0.1%
+    // and then rendered the figure 100x too large.
+    if (sr != null && sr < 10 && srIncome != null && srIncome > 0) {
       items.push({
         icon: TrendingDown, color: "var(--ft-red)",
         title: "Low savings rate this month",
-        body: `${(sr * 100).toFixed(0)}% savings rate — most experts recommend 20%+`,
+        body: `${sr.toFixed(0)}% savings rate — most experts recommend 20%+`,
         prompt: "My savings rate is below 10% this month. What are the most effective ways to increase it based on my spending patterns?",
       });
     }
@@ -553,7 +556,9 @@ export default function AiCoach() {
   const userMsgCount = messages.filter(m => m.role === "user").length;
 
   // Compute savings rate color for KPI cell
-  const srPct = dashboard?.thisMonth?.savingsRate != null ? dashboard.thisMonth.savingsRate! * 100 : null;
+  // Already a percentage on the wire — the `* 100` here made every
+  // non-trivial rate clear the ">= 20 = on track" threshold.
+  const srPct = dashboard?.thisMonth?.savingsRate ?? null;
   const srHasIncome = (dashboard?.thisMonth?.income ?? 0) > 0;
   const srColor = srPct == null ? "var(--ft-text)" : !srHasIncome ? "var(--ft-muted)" : srPct >= 20 ? "var(--ft-blue)" : srPct >= 10 ? "var(--ft-amber)" : "var(--ft-red)";
   const srAccent = srColor;

@@ -209,7 +209,10 @@ router.get("/transactions/summary", async (req, res): Promise<void> => {
   }
 
   const netSavings = totalIncome - totalExpenses;
-  const savingsRate = totalIncome > 0 ? (netSavings / totalIncome) * 100 : 0;
+  // No income in the month → no denominator, so the rate is undefined
+  // rather than zero. Null travels to the client, which renders an
+  // em-dash instead of a fabricated "0.0%".
+  const savingsRate: number | null = totalIncome > 0 ? (netSavings / totalIncome) * 100 : null;
 
   res.json(
     GetTransactionSummaryResponse.parse({
@@ -217,7 +220,7 @@ router.get("/transactions/summary", async (req, res): Promise<void> => {
       totalIncome: Math.round(totalIncome * 100) / 100,
       totalExpenses: Math.round(totalExpenses * 100) / 100,
       netSavings: Math.round(netSavings * 100) / 100,
-      savingsRate: Math.round(savingsRate * 100) / 100,
+      savingsRate: savingsRate == null ? null : Math.round(savingsRate * 100) / 100,
     })
   );
 });

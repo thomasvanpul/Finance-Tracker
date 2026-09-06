@@ -2988,7 +2988,7 @@ export default function Accounts() {
                 <MonthlySummaryCell label="INCOME" value={formatBaseMoney(monthlySummary.totalIncome)} color="var(--ft-green)" />
                 <MonthlySummaryCell label="EXPENSES" value={formatBaseMoney(monthlySummary.totalExpenses)} color="var(--ft-red)" />
                 <MonthlySummaryCell label="NET SAVINGS" value={formatBaseMoney(monthlySummary.netSavings)} color={monthlySummary.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)"} />
-                <MonthlySummaryCell label="SAVINGS RATE" value={`${monthlySummary.savingsRate.toFixed(1)}%`} color={monthlySummary.savingsRate >= 20 ? "var(--ft-green)" : monthlySummary.savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)"} />
+                <MonthlySummaryCell label="SAVINGS RATE" value={monthlySummary.savingsRate == null ? "—" : `${monthlySummary.savingsRate.toFixed(1)}%`} color={monthlySummary.savingsRate == null ? "var(--ft-muted)" : monthlySummary.savingsRate >= 20 ? "var(--ft-green)" : monthlySummary.savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)"} />
               </div>
               {monthSpending.length > 0 && (
                 <div>

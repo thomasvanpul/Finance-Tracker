@@ -352,7 +352,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   const monthStats = d ? [
     { label: "Income",       value: `+${formatBaseMoney(Math.abs(d.thisMonth.income))}`,   color: "var(--ft-green)" },
     { label: "Expenses",     value: `-${formatBaseMoney(Math.abs(d.thisMonth.expenses))}`, color: "var(--ft-red)" },
-    { label: "Savings Rate", value: formatPercent(d.thisMonth.savingsRate), color: d.thisMonth.savingsRate >= 20 ? "var(--ft-green)" : "var(--ft-amber)" },
+    { label: "Savings Rate", value: d.thisMonth.savingsRate == null ? "—" : formatPercent(d.thisMonth.savingsRate), color: (d.thisMonth.savingsRate ?? 0) >= 20 ? "var(--ft-green)" : "var(--ft-amber)" },
   ] : [];
 
   const breakdownItems = d ? [

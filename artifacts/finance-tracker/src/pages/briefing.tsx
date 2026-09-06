@@ -433,8 +433,11 @@ export default function Briefing() {
     ? formatBaseMoney(dashboard.thisMonth.income - dashboard.thisMonth.expenses)
     : "—";
   const plColor = (dashboard?.thisMonth?.income ?? 0) >= (dashboard?.thisMonth?.expenses ?? 0) ? "var(--ft-green)" : "var(--ft-red)";
+  // savingsRate arrives from /dashboard already expressed in percent
+  // (the server does `(monthNet / monthIncome) * 100`), so it is
+  // formatted directly. Multiplying by 100 here overstated it 100x.
   const srValue = dashboard?.thisMonth?.savingsRate != null
-    ? `${(dashboard.thisMonth.savingsRate * 100).toFixed(1)}%`
+    ? `${dashboard.thisMonth.savingsRate.toFixed(1)}%`
     : "—";
 
   return (
@@ -543,7 +546,7 @@ export default function Briefing() {
             <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
               {[
                 { label: "Monthly Spend", value: dashboard?.thisMonth?.expenses != null ? formatBaseMoney(dashboard.thisMonth.expenses) : "—", color: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-muted)" },
-                { label: "Savings Rate", value: dashboard?.thisMonth?.savingsRate != null ? `${(dashboard.thisMonth.savingsRate * 100).toFixed(1)}%` : "—", color: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-muted)" },
+                { label: "Savings Rate", value: srValue, color: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-muted)" },
                 { label: "Budgets Over Limit", value: overBudgetCount > 0 ? `${overBudgetCount} over` : "All clear", color: overBudgetCount > 0 ? "var(--ft-red)" : "var(--ft-green)" },
               ].map(({ label, value, color }, i, arr) => (
                 <div key={label} style={{ background: "var(--ft-surface)", padding: "13px 14px", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>

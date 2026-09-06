@@ -10,5 +10,6 @@ export type DashboardSummaryThisMonth = {
   income: number;
   expenses: number;
   netSavings: number;
-  savingsRate: number;
+  /** @nullable */
+  savingsRate: number | null;
 };

@@ -580,7 +580,11 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     });
 
   const monthNet = monthIncome - monthExpenses;
-  const savingsRate = monthIncome > 0 ? (monthNet / monthIncome) * 100 : 0;
+  // No income this month → the savings rate has no denominator and is
+  // undefined, not zero. Same reasoning as portfolioPlPercent below: a
+  // "0.0%" render tells a user who simply has no income recorded that
+  // they saved nothing, which is a different and worse claim.
+  const savingsRate: number | null = monthIncome > 0 ? (monthNet / monthIncome) * 100 : null;
   const netLiquidity = totalCash - committedOut + expectedIn;
   const netWorth = totalCash + portfolioValueBase;
   const portfolioPlBase = portfolioValueBase - portfolioCostBase;
@@ -612,7 +616,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         income: Math.round(monthIncome * 100) / 100,
         expenses: Math.round(monthExpenses * 100) / 100,
         netSavings: Math.round(monthNet * 100) / 100,
-        savingsRate: Math.round(savingsRate * 100) / 100,
+        savingsRate: savingsRate == null ? null : Math.round(savingsRate * 100) / 100,
       },
       owing: {
         totalOwedToMe: Math.round(totalOwedToMe * 100) / 100,

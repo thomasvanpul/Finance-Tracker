@@ -44,7 +44,7 @@ export const GetDashboardResponse = zod.object({
   "income": zod.number(),
   "expenses": zod.number(),
   "netSavings": zod.number(),
-  "savingsRate": zod.number()
+  "savingsRate": zod.number().nullable()
 }),
   "owing": zod.object({
   "totalOwedToMe": zod.number(),
@@ -242,7 +242,7 @@ export const GetTransactionSummaryResponse = zod.object({
   "totalIncome": zod.number(),
   "totalExpenses": zod.number(),
   "netSavings": zod.number(),
-  "savingsRate": zod.number()
+  "savingsRate": zod.number().nullable()
 })
 
 
