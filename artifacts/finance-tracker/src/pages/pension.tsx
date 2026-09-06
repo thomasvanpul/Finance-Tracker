@@ -246,11 +246,11 @@ function InputRow({ label, help, children }: {
       }}
     >
       <div>
-        <Text as="div" mono size={11} weight={500} color="var(--ft-text)">
+        <Text as="div" size={11} weight={500} color="var(--ft-text)">
           {label}
         </Text>
         {help && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 2 }}>
             {help}
           </div>
         )}
@@ -322,8 +322,8 @@ function KpiBar({
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--ft-green)", lineHeight: 1 }}>
           {fmtBig(Math.round(projectedPot))}
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
-          at age {retirementAge} · in {yearsToRetirement}yr ·{" "}
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 5 }}>
+          at age <span className="pnum">{retirementAge}</span> · in <span className="pnum">{yearsToRetirement}yr</span> ·{" "}
           {/* Disclosure of the growth-rate assumption at the point the
               projection reads. Clickable — scrolls to and focuses the
               growth-rate input so "change it" is one interaction away
@@ -338,8 +338,8 @@ function KpiBar({
               padding: 0,
               margin: 0,
               cursor: "pointer",
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontFamily: "var(--font-sans)",
+              fontSize: 10,
               color: "var(--ft-accent)",
               textDecoration: "underline",
               textUnderlineOffset: 2,
@@ -358,7 +358,7 @@ function KpiBar({
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-cyan)", lineHeight: 1 }}>
           {fmtBig(Math.round(totalContributions))}
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 5 }}>
           current pot: <span className="pnum">{fmtBig(currentPot)}</span>
         </div>
       </div>
@@ -371,7 +371,7 @@ function KpiBar({
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>
           {fmtBig(Math.round(totalGrowth))}
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 5 }}>
           <span className="pnum">{returnPct == null ? "—" : `${returnPct >= 0 ? "+" : ""}${returnPct.toFixed(0)}%`}</span> return on contributions
         </div>
       </div>
@@ -394,8 +394,8 @@ function KpiBar({
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: trackColor, lineHeight: 1 }}>
           {formatBaseMoney(Math.round(totalMonthlyIncome))}
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
-          {includeStatePension ? `incl. £${Math.round(monthlyStatePension)}/mo state` : "excl. state pension"} · target: <span className="pnum">{hasTarget ? formatBaseMoney(targetMonthlyIncome) : "—"}</span>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 5 }}>
+          {includeStatePension ? <>incl. <span className="pnum">£{Math.round(monthlyStatePension)}</span>/mo state</> : "excl. state pension"} · target: <span className="pnum">{hasTarget ? formatBaseMoney(targetMonthlyIncome) : "—"}</span>
         </div>
       </div>
     </div>
@@ -424,7 +424,7 @@ function PensionHealthBlock({
     return (
       <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 6 }}>
         <PanelHeader>Pension Health — Target not set</PanelHeader>
-        <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7, letterSpacing: "0.02em" }}>
+        <div style={{ padding: "20px 16px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7, letterSpacing: "0.02em" }}>
           Enter a <strong style={{ color: "var(--ft-text)" }}>target monthly income</strong> in the form above and this panel fills in: on-track score, shortfall estimate, required extra contribution, and years-to-fix.
         </div>
       </div>
@@ -467,15 +467,15 @@ function PensionHealthBlock({
 
         {/* Progress toward target */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 6, letterSpacing: "0.06em" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 6, letterSpacing: "0.04em" }}>
             <span>Progress toward income target</span>
             <span className="pnum" style={{ color: barColor, fontWeight: 700 }}>{onTrackPct.toFixed(0)}%</span>
           </div>
           <div style={{ height: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${barPct}%`, background: barColor, transition: "none" }} />
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
-            <span>£0/mo</span>
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+            <span className="pnum">£0/mo</span>
             <span>Target: <span className="pnum">{formatBaseMoney(targetMonthlyIncome)}/mo</span></span>
           </div>
         </div>
@@ -509,15 +509,15 @@ function PensionHealthBlock({
             </HStack>
             <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px", borderRight: "1px solid var(--ft-border)" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Monthly shortfall</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Monthly shortfall</div>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.abs(Math.round(shortfallMonthly)))}</div>
               </div>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px", borderRight: "1px solid var(--ft-border)" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Annual shortfall</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Annual shortfall</div>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.abs(Math.round(shortfallAnnual)))}</div>
               </div>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginBottom: 3 }}>Required pot</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Required pot</div>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-amber)" }}>
                   {requiredPot >= 1_000_000 ? `£${(requiredPot / 1_000_000).toFixed(2)}M` : `£${(requiredPot / 1000).toFixed(0)}k`}
                 </div>
@@ -539,20 +539,20 @@ function PensionHealthBlock({
                 Contribution Optimiser
               </Text>
             </HStack>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.8 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.8 }}>
               <HStack gap={8} align="center" wrap>
                 <Text as="span" color="var(--ft-dim)">Contribute</Text>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-blue)" }}>
-                  {formatBaseMoney(Math.round(extraMonthlyNeeded))}/mo more
+                  {formatBaseMoney(Math.round(extraMonthlyNeeded))}/mo<span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 400, color: "var(--ft-dim)" }}> more</span>
                 </span>
                 <ArrowRight style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
                 <Text as="span" color="var(--ft-dim)">to hit</Text>
                 <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-green)" }}>
-                  {formatBaseMoney(targetMonthlyIncome)}/mo target
+                  {formatBaseMoney(targetMonthlyIncome)}/mo<span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 400, color: "var(--ft-dim)" }}> target</span>
                 </span>
               </HStack>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-                Total monthly: <span className="pnum">{formatBaseMoney(Math.round(monthlyTotal + extraMonthlyNeeded))}</span> · Annual: <span className="pnum">{formatBaseMoney(Math.round((monthlyTotal + extraMonthlyNeeded) * 12))}</span> · {yearsToRetirement}yr horizon
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>
+                Total monthly: <span className="pnum">{formatBaseMoney(Math.round(monthlyTotal + extraMonthlyNeeded))}</span> · Annual: <span className="pnum">{formatBaseMoney(Math.round((monthlyTotal + extraMonthlyNeeded) * 12))}</span> · <span className="pnum">{yearsToRetirement}yr</span> horizon
               </div>
             </div>
           </div>
@@ -568,14 +568,14 @@ function PensionHealthBlock({
             gap: 8,
           }}>
             <ShieldCheck style={{ width: 14, height: 14, color: "var(--ft-green)", flexShrink: 0 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-green)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-green)" }}>
               Projected income exceeds your target by <span className="pnum">{formatBaseMoney(Math.round(totalMonthlyIncome - targetMonthlyIncome))}/mo</span>. You are on track for a comfortable retirement.
             </span>
           </div>
         )}
 
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 10, lineHeight: 1.6 }}>
-          Income = pot ÷ 240 months{includeStatePension ? ` + £${Math.round(STATE_PENSION_ANNUAL / 12)}/mo state pension` : ""} · Assumes {growthRate}%/yr growth to retirement
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 10, lineHeight: 1.6 }}>
+          Income = pot ÷ 240 months{includeStatePension ? <> + <span className="pnum">£{Math.round(STATE_PENSION_ANNUAL / 12)}</span>/mo state pension</> : ""} · Assumes {growthRate}%/yr growth to retirement
         </div>
       </div>
     </div>
@@ -624,12 +624,12 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
       <div style={{ padding: 16 }}>
         <HStack gap={12} align="start" justify="between" wrap marginBottom={14}>
           <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 4 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 4 }}>
               Full New State Pension (2024/25)
             </div>
             <Text as="div" mono size={9} color="var(--ft-dim)" lineHeight={1.6}>
               £221.20/wk · £11,502/yr · £958/mo (estimate)<br />
-              Requires 35 qualifying NI years for full amount · Check via NI record at gov.uk
+              <span style={{ fontFamily: "var(--font-sans)" }}>Requires 35 qualifying NI years for full amount · Check via NI record at gov.uk</span>
             </Text>
           </div>
           <button
@@ -665,7 +665,7 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
         <div style={{
           marginTop: 12, padding: "8px 12px",
           background: "var(--ft-raised)",
-          fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.7,
+          fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.7,
         }}>
           State pension age is currently 66 for both men and women, rising to 67 between 2026–2028. Check your NI record and State Pension forecast at gov.uk/check-state-pension.
         </div>
@@ -809,9 +809,9 @@ function SensitivityTable({
       </div>
       <div style={{
         padding: "8px 12px", background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border)",
-        fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", lineHeight: 1.7,
+        fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.7,
       }}>
-        Monthly income = pot ÷ 240 months{includeStatePension ? ` + £${Math.round(STATE_PENSION_ANNUAL / 12)}/mo state pension` : ""} · Real = nominal minus 2.5% CPI · Assumes constant contributions to retirement
+        Monthly income = pot ÷ 240 months{includeStatePension ? <> + <span className="pnum">£{Math.round(STATE_PENSION_ANNUAL / 12)}</span>/mo state pension</> : ""} · Real = nominal minus <span className="pnum">2.5%</span> CPI · Assumes constant contributions to retirement
       </div>
     </div>
   );
@@ -857,9 +857,9 @@ function TaxReliefCellItem({ band, relief, note }: { band: string; relief: numbe
         transition: "background 0.1s",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>{band}</div>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 3 }}>{band}</div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(Math.round(relief))}</div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>{note}</div>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>{note}</div>
     </div>
   );
 }
@@ -897,7 +897,7 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
           ))}
         </div>
         <div style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", marginBottom: 6 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 6 }}>
             <span>Annual allowance used</span>
             <span className="pnum" style={{ color: barColor, fontWeight: 700 }}>{pct.toFixed(0)}%</span>
           </div>
@@ -906,7 +906,7 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
           </div>
         </div>
         <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 12 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 8 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", textTransform: "uppercase" as const, marginBottom: 8 }}>
             Estimated Tax Relief (on your <span className="pnum">{formatBaseMoney(Math.round(annualContrib))}</span> contributions)
           </div>
           <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
@@ -917,8 +917,8 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
             ))}
           </div>
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 10, lineHeight: 1.6 }}>
-          £60,000 annual allowance (2024/25) · includes employer contributions · unused allowance can be carried forward 3 years
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 10, lineHeight: 1.6 }}>
+          <span className="pnum">£60,000</span> annual allowance (2024/25) · includes employer contributions · unused allowance can be carried forward 3 years
         </div>
       </div>
     </div>
@@ -993,8 +993,8 @@ function IsaSection() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", letterSpacing: "0.04em" }}>
             {formatTaxYearLabel(taxYear)}
           </div>
-          <Text as="div" mono size={9} color={daysLeft <= 30 ? "var(--ft-red)" : daysLeft <= 90 ? "var(--ft-amber)" : "var(--ft-dim)"} letterSpacing="0.06em">
-            {daysLeft === 0 ? "TAX YEAR ENDS TODAY" : `${daysLeft} days remaining`}
+          <Text as="div" size={10} color={daysLeft <= 30 ? "var(--ft-red)" : daysLeft <= 90 ? "var(--ft-amber)" : "var(--ft-dim)"} letterSpacing="0.06em">
+            {daysLeft === 0 ? "TAX YEAR ENDS TODAY" : <><span className="pnum">{daysLeft}</span> days remaining</>}
           </Text>
         </HStack>
 
@@ -1007,7 +1007,7 @@ function IsaSection() {
         </div>
 
         <div style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", marginBottom: 6 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", marginBottom: 6 }}>
             <Text as="span" color="var(--ft-dim)">ISA allowance used</Text>
             <span className="pnum" style={{ color: barColor, fontWeight: 700 }}>
               {pct.toFixed(1)}%{pct >= 100 ? " MAXED" : ""}
@@ -1016,14 +1016,14 @@ function IsaSection() {
           <div style={{ height: 12, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "none" }} />
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
-            <span>£0</span>
+          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+            <span className="pnum">£0</span>
             <span className="pnum">£{ISA_ANNUAL_ALLOWANCE.toLocaleString()}</span>
           </div>
         </div>
 
         <HStack gap={12} align="center">
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", flex: 1 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", flex: 1 }}>
             ISA contributions this tax year (£)
           </div>
           <input
@@ -1041,7 +1041,7 @@ function IsaSection() {
         <div style={{
           marginTop: 12, padding: "8px 12px",
           background: "var(--ft-raised)",
-          fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.7,
+          fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.7,
         }}>
           UK ISA allowance resets each tax year on 6 April. Cash ISA, Stocks {"&"} Shares ISA, and LISA all count toward the £20,000 annual limit. This tracker resets automatically when a new tax year begins.
         </div>
@@ -1056,7 +1056,7 @@ function ChartLegendDot({ color, label }: { color: string; label: string }) {
   return (
     <HStack gap={5} align="center">
       <div style={{ width: 16, height: 2, background: color }} />
-      <Text as="span" mono size={8} color="var(--ft-dim)">{label}</Text>
+      <Text as="span" size={9} color="var(--ft-dim)">{label}</Text>
     </HStack>
   );
 }
@@ -1067,7 +1067,7 @@ function ContribLegendDot({ color, label }: { color: string; label: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
       <div style={{ width: 10, height: 10, background: color, flexShrink: 0 }} />
-      <Text as="span" mono size={8} color="var(--ft-dim)">{label}</Text>
+      <Text as="span" size={9} color="var(--ft-dim)">{label}</Text>
     </div>
   );
 }
@@ -1154,7 +1154,7 @@ function PensionSection() {
           // "age 30" default fed every projected number here (and the
           // "in 37yr" caption) with no user input. Empty state until
           // they enter it.
-          <div style={{ padding: "24px 20px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7, letterSpacing: "0.02em" }}>
+          <div style={{ padding: "24px 20px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7, letterSpacing: "0.02em" }}>
             Enter your <strong style={{ color: "var(--ft-text)" }}>current age</strong> in the form on the right and this row fills in: projected pot at retirement, total contributions, investment growth, and monthly retirement income.
           </div>
         ) : (
@@ -1227,7 +1227,7 @@ function PensionSection() {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+              <div style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
                 Enter your age and retirement age to see projection
               </div>
             )}
@@ -1237,7 +1237,7 @@ function PensionSection() {
               dashed ? (
                 <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
                   <div style={{ width: 16, height: 0, borderTop: "2px dashed var(--ft-cyan)" }} />
-                  <Text as="span" mono size={8} color="var(--ft-dim)">{label}</Text>
+                  <Text as="span" size={9} color="var(--ft-dim)">{label}</Text>
                 </div>
               ) : (
                 <ChartLegendDot key={label} color={color} label={label} />
@@ -1279,12 +1279,12 @@ function PensionSection() {
           <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--ft-border)" }}>
             <HStack gap={12} align="center" justify="between">
               <div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 500 }}>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: 500 }}>
                   Retirement Age
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 2 }}>
                   {yearsToRetirement != null
-                    ? <>{yearsToRetirement}yr to go · retire {new Date().getFullYear() + yearsToRetirement}</>
+                    ? <><span className="pnum">{yearsToRetirement}yr</span> to go · retire <span className="pnum">{new Date().getFullYear() + yearsToRetirement}</span></>
                     : <>enter current age to see years-to-retirement</>}
                 </div>
               </div>
@@ -1334,8 +1334,8 @@ function PensionSection() {
           {/* State pension toggle */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: "1px solid var(--ft-border)" }}>
             <div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 500 }}>Include State Pension</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>+£{STATE_PENSION_ANNUAL.toLocaleString()}/yr at retirement</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: 500 }}>Include State Pension</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 2 }}><span className="pnum">+£{STATE_PENSION_ANNUAL.toLocaleString()}</span>/yr at retirement</div>
             </div>
             <button
               onClick={() => set("includeStatePension", !inputs.includeStatePension)}
@@ -1352,7 +1352,7 @@ function PensionSection() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>Contributions / Month</div>
             </div>
             <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
                 <HStack justify="between">
                   <span style={{ color: "var(--ft-muted)" }}>Your contribution</span>
                   <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{formatBaseMoney(inputs.employeeContrib)}</span>
@@ -1371,7 +1371,7 @@ function PensionSection() {
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>Retirement income breakdown</div>
             </div>
             <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
                 <HStack justify="between">
                   <Text as="span" color="var(--ft-muted)">From pension pot</Text>
                   <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 700 }}>{monthlyIncomeFromPot != null ? formatBaseMoney(Math.round(monthlyIncomeFromPot)) : "—"}</span>
@@ -1387,7 +1387,7 @@ function PensionSection() {
                   <span className="pnum" style={{ color: "var(--ft-amber)", fontWeight: 700 }}>{totalMonthlyIncome != null ? formatBaseMoney(Math.round(totalMonthlyIncome)) : "—"}</span>
                 </div>
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 8 }}>Assumes 20-yr drawdown · pot / 240 months</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 8 }}>Assumes 20-yr drawdown · pot / 240 months</div>
             </div>
           </div>
         </div>
@@ -1434,7 +1434,7 @@ function PensionSection() {
                 without an age; the projected-pot tail is only shown when
                 we can actually project it (age known). */}
             {monthlyTotal > 0 && (
-              <div style={{ marginTop: 10, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+              <div style={{ marginTop: 10, fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
                 Employee <span className="pnum">{inputs.employeeContrib > 0 ? ((inputs.employeeContrib / monthlyTotal) * 100).toFixed(0) : 0}%</span> ·
                 Employer <span className="pnum">{inputs.employerContrib > 0 ? ((inputs.employerContrib / monthlyTotal) * 100).toFixed(0) : 0}%</span> of total contributions
                 {projectedPot != null && (
@@ -1509,8 +1509,8 @@ export default function Pension() {
       />
 
       {pensionTip && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-amber)", border: "1px solid rgba(245,158,11,0.35)", background: "rgba(245,158,11,0.06)", padding: "7px 14px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontWeight: 700, flexShrink: 0, letterSpacing: "0.08em" }}>TAX TIP</span>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-amber)", border: "1px solid rgba(245,158,11,0.35)", background: "rgba(245,158,11,0.06)", padding: "7px 14px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, flexShrink: 0, letterSpacing: "0.08em" }}>TAX TIP</span>
           <Text as="span" color="var(--ft-dim)">{pensionTip}</Text>
         </div>
       )}
