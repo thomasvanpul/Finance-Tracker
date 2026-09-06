@@ -75,15 +75,17 @@ export function PersonaQuickStart() {
   const doneCount = steps.filter(s => done.has(s.id)).length;
 
   return (
-    <div style={{
-      border: "1px solid rgba(244,162,30,0.3)",
-      background: "rgba(244,162,30,0.04)",
+    // Ephemeral (DESIGN.md §6): dismissable, gone once the steps are done.
+    // The amber-tinted edge it carried until 2026-09-06 was a coloured
+    // border standing in for "this is different" — the float treatment
+    // says the same thing without a coloured edge (§4).
+    <div className="ft-float" style={{
       marginBottom: 14,
     }}>
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "6px 14px 5px",
-        borderBottom: "1px solid rgba(244,162,30,0.15)",
+        borderBottom: "1px solid var(--ft-border)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.12em" }}>
