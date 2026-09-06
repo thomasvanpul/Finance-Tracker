@@ -36,7 +36,7 @@ vi.mock("./logger", () => ({
   logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },
 }));
 
-const { requestMetricsMiddleware } = await import("./request-metrics");
+const { requestMetricsMiddleware, classifyClient } = await import("./request-metrics");
 
 // Minimal Express-like req/res doubles. We only need originalUrl,
 // method, res.statusCode, res.on('finish') and (optionally)
@@ -193,5 +193,49 @@ describe("requestMetricsMiddleware · what it records", () => {
     expect(typeof durationMs).toBe("number");
     expect(durationMs).toBeGreaterThanOrEqual(0);
     expect(Number.isInteger(durationMs)).toBe(true);
+  });
+});
+
+// ── classifyClient ──────────────────────────────────────────────────────────
+// The phone/desktop split on the admin hub is only as honest as this function.
+// The rule it must never break: anything it cannot place returns null and is
+// reported as unclassified. Folding an unknown agent into "desktop" would
+// quietly overstate desktop share, which is the kind of confidently-wrong
+// number this codebase has a standing rule against.
+describe("classifyClient", () => {
+  it("returns null when there is no User-Agent at all", () => {
+    expect(classifyClient(undefined)).toBeNull();
+    expect(classifyClient("")).toBeNull();
+  });
+
+  it("classifies real phone agents as phone", () => {
+    expect(classifyClient(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    )).toBe("phone");
+    expect(classifyClient(
+      "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+    )).toBe("phone");
+  });
+
+  it("classifies desktop browsers as desktop", () => {
+    expect(classifyClient(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    )).toBe("desktop");
+  });
+
+  it("treats an Android tablet as desktop, not phone", () => {
+    // Android tablets omit "Mobile". The SPA picks PhoneShell on viewport
+    // width, not UA, so this bucket only has to be consistent — and calling a
+    // tablet a phone would misdescribe the shell the user actually saw.
+    expect(classifyClient(
+      "Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    )).toBe("desktop");
+  });
+
+  it("returns null for bots and non-browser callers rather than guessing", () => {
+    // The cron-job.org pinger and curl are not a person on either device.
+    expect(classifyClient("curl/8.4.0")).toBeNull();
+    expect(classifyClient("cron-job.org")).toBeNull();
+    expect(classifyClient("python-requests/2.31.0")).toBeNull();
   });
 });

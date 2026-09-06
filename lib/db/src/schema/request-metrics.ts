@@ -75,6 +75,18 @@ export const requestMetricsTable = pgTable(
     // Nullable on purpose — public endpoints have no user. See header
     // for why this is not a foreign key.
     userId: text("user_id"),
+    // "phone" | "desktop", coarse-classified from the User-Agent at write
+    // time by classifyClient() in the api-server's request-metrics lib.
+    //
+    // Nullable, and every row written before 2026-09-06 is null — the column
+    // was added when the admin hub needed the split, and there is no way to
+    // backfill it. Any breakdown built on this MUST report the unclassified
+    // share rather than dividing over the classified rows only, or the split
+    // silently describes the last few days as though it described the table.
+    //
+    // Deliberately NOT the raw User-Agent: that is a fingerprinting surface,
+    // and these rows are retained 30 days against a userId.
+    client: text("client"),
   },
   (t) => [
     // Retention DELETE scans by ts and needs this. Also the natural

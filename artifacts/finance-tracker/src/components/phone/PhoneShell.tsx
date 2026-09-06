@@ -67,6 +67,7 @@ export const DESKTOP_ONLY_ROUTES: readonly string[] = [
   "/business", "/family", "/trading",
   "/health-score", "/year-review",
   "/shared", "/ai-coach",
+  "/admin",
 ];
 
 // Shape-matching skeleton for lazy-loaded directory items. Sizes to
@@ -306,6 +307,7 @@ export function PhoneShell() {
           {desktopOnlyRoute("/health-score", "Health Score", "The health-score breakdown is denser than a phone can render honestly. Open Numeris on your Mac or iPad to see it.")}
           {desktopOnlyRoute("/year-review", "Year Review", "The annual retrospective is a dense read that's easier on a larger screen. Open Numeris on your Mac or iPad.")}
           {desktopOnlyRoute("/shared", "Shared expenses", "Joint-account sharing lives on desktop right now. Open Numeris on your Mac or iPad to use it.")}
+          {desktopOnlyRoute("/admin", "Admin", "The operations console reads service ceilings, deploy state and traffic side by side. It needs a wide grid to be legible. Open Numeris on your Mac or iPad.")}
           {desktopOnlyRoute("/ai-coach", "AI Coach", "On phone the AI Coach lives in the floating assistant — tap the AI button at the bottom-right of any screen to chat.")}
 
           <Route component={PhoneNotFound} />

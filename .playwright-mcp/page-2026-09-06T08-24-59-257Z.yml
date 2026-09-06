@@ -1,0 +1,339 @@
+- generic [ref=f57e2]:
+  - banner [ref=f57e3]:
+    - generic [ref=f57e5]:
+      - generic:
+        - generic:
+          - button "Skip navigation"
+      - navigation [ref=f57e6]:
+        - list [ref=f57e7]:
+          - listitem [ref=f57e8]:
+            - link "LSEG" [ref=f57e9] [cursor=pointer]:
+              - /url: https://www.lseg.com/en
+          - listitem [ref=f57e10]:
+            - link "Data & Analytics" [ref=f57e11] [cursor=pointer]:
+              - /url: https://www.lseg.com/en/data-analytics
+          - listitem [ref=f57e12]:
+            - link "FTSE Russell" [ref=f57e13] [cursor=pointer]:
+              - /url: https://www.lseg.com/en/ftse-russell
+          - listitem [ref=f57e14]:
+            - link "London Stock Exchange" [ref=f57e15] [cursor=pointer]:
+              - /url: https://www.londonstockexchange.com
+          - listitem [ref=f57e16]:
+            - link "FX" [ref=f57e17] [cursor=pointer]:
+              - /url: https://www.lseg.com/en/fx
+          - listitem [ref=f57e18]:
+            - link "Post Trade" [ref=f57e19] [cursor=pointer]:
+              - /url: https://www.lseg.com/en/post-trade
+          - listitem [ref=f57e20]:
+            - link "Risk Intelligence" [ref=f57e21] [cursor=pointer]:
+              - /url: https://www.lseg.com/en/risk-intelligence
+    - banner [ref=f57e24]:
+      - navigation [ref=f57e25]:
+        - link [ref=f57e26] [cursor=pointer]:
+          - /url: https://www.lseg.com/en/ftse-russell
+          - img "FTSE Russell home page" [ref=f57e28]
+        - generic [ref=f57e29]:
+          - button "Search" [ref=f57e30] [cursor=pointer]
+          - button "Menu" [ref=f57e33]
+  - main [ref=f57e36]:
+    - navigation [ref=f57e38]:
+      - list [ref=f57e39]:
+        - listitem [ref=f57e40]: FTSE Russell
+    - generic [ref=f57e56]:
+      - heading "FTSE Russell" [level=1] [ref=f57e57]
+      - list [ref=f57e60]:
+        - listitem [ref=f57e61]:
+          - 'link "PODCAST: The 2026 energy shock" [ref=f57e62] [cursor=pointer]':
+            - /url: https://ftse-russell-index-idea.castos.com/episodes/the-2026-energy-shock
+            - generic [ref=f57e63]: "PODCAST:"
+            - generic [ref=f57e64]: The 2026 energy shock
+        - listitem [ref=f57e65]:
+          - 'link "INDEX IDEAS: Exploring climate scenarios" [ref=f57e66] [cursor=pointer]':
+            - /url: /content/lseg/en_us/ftse-russell/index-ideas/exploring-climate-scenarios
+            - generic [ref=f57e67]: "INDEX IDEAS:"
+            - generic [ref=f57e68]: Exploring climate scenarios
+        - listitem [ref=f57e69]:
+          - 'link "REPORT: Performance Insights - August 2026" [ref=f57e70] [cursor=pointer]':
+            - /url: /content/lseg/en_us/ftse-russell/market-insights/performance/august-2026
+            - generic [ref=f57e71]: "REPORT:"
+            - generic [ref=f57e72]: Performance Insights - August 2026
+        - listitem [ref=f57e73]:
+          - 'link "REPORT: Russell US Chartbook - July 2026" [ref=f57e74] [cursor=pointer]':
+            - /url: /content/lseg/en_us/ftse-russell/research/russell-2000-index-quarterly-chartbook
+            - generic [ref=f57e75]: "REPORT:"
+            - generic [ref=f57e76]: Russell US Chartbook - July 2026
+    - generic [ref=f57e77]:
+      - generic [ref=f57e79]:
+        - generic [ref=f57e81]:
+          - heading "Your index partner for a changing world" [level=2] [ref=f57e83]
+          - paragraph [ref=f57e85]: We provide category defining indices across asset classes and investment objectives to create new possibilities for the global investment community.
+        - generic [ref=f57e88]:
+          - link "Benchmark and Index Finder Search for a Benchmark or Index Search now" [ref=f57e93] [cursor=pointer]:
+            - /url: /en/ftse-russell/indices
+            - generic [ref=f57e100]:
+              - paragraph [ref=f57e102]: Benchmark and Index Finder
+              - heading [level=3] [ref=f57e105]:
+                - strong [ref=f57e106]: Search for a Benchmark or Index
+              - generic [ref=f57e108]:
+                - generic [ref=f57e109]: Search now
+                - generic [aria-hidden] [ref=f57e110]: Search now
+          - link "Insights Research Insights Discover the latest research and insights to keep you informed in a changing world." [ref=f57e116] [cursor=pointer]:
+            - /url: /en/insights/ftse-russell
+            - generic [ref=f57e122]:
+              - paragraph [ref=f57e124]: Insights
+              - generic [ref=f57e125]:
+                - heading "Research Insights" [level=3] [ref=f57e127]
+                - generic [ref=f57e128]: Discover the latest research and insights to keep you informed in a changing world.
+        - generic [ref=f57e132]:
+          - link "FTSE Russell Your index partner In times like these we understand that you want more from your index provider. You want a trusted partner across asset classes, who can help you to make better informed investment decisions, manage risk, and capitalise on new investment opportunities." [ref=f57e137] [cursor=pointer]:
+            - /url: /en/ftse-russell/your-index-partner
+            - generic [ref=f57e143]:
+              - paragraph [ref=f57e145]: FTSE Russell
+              - generic [ref=f57e146]:
+                - heading "Your index partner" [level=3] [ref=f57e148]
+                - generic [ref=f57e149]: In times like these we understand that you want more from your index provider. You want a trusted partner across asset classes, who can help you to make better informed investment decisions, manage risk, and capitalise on new investment opportunities.
+          - link "Global Investment Research Market Insights Timely macroeconomic analysis and market performance insights across asset classes, regions, industries, and styles." [ref=f57e155] [cursor=pointer]:
+            - /url: /en/ftse-russell/market-insights
+            - generic [ref=f57e161]:
+              - paragraph [ref=f57e163]: Global Investment Research
+              - generic [ref=f57e164]:
+                - heading "Market Insights" [level=3] [ref=f57e166]
+                - generic [ref=f57e167]: Timely macroeconomic analysis and market performance insights across asset classes, regions, industries, and styles.
+          - link "Latest updates What's new? Discover the latest news, newly launched indices, and product enhancements from FTSE Russell." [ref=f57e173] [cursor=pointer]:
+            - /url: /en/ftse-russell/latest-updates
+            - generic [ref=f57e179]:
+              - paragraph [ref=f57e181]: Latest updates
+              - generic [ref=f57e182]:
+                - heading "What's new?" [level=3] [ref=f57e184]
+                - generic [ref=f57e185]: Discover the latest news, newly launched indices, and product enhancements from FTSE Russell.
+      - generic [ref=f57e188]:
+        - heading "Our solutions" [level=2] [ref=f57e192]
+        - list [ref=f57e196]:
+          - listitem [ref=f57e197]:
+            - link "Wealth management" [ref=f57e198] [cursor=pointer]:
+              - /url: /en/ftse-russell/wealth-managers
+          - listitem [ref=f57e206]:
+            - link "Asset management" [ref=f57e207] [cursor=pointer]:
+              - /url: /en/ftse-russell/asset-management
+          - listitem [ref=f57e215]:
+            - link "Asset owners" [ref=f57e216] [cursor=pointer]:
+              - /url: /en/ftse-russell/asset-owners
+          - listitem [ref=f57e224]:
+            - link "Banks and institutions" [ref=f57e225] [cursor=pointer]:
+              - /url: /en/ftse-russell/banks
+          - listitem [ref=f57e233]:
+            - link "Hedge funds" [ref=f57e234] [cursor=pointer]:
+              - /url: /en/ftse-russell/hedge-funds
+          - listitem [ref=f57e242]:
+            - link "Custom index solutions" [ref=f57e243] [cursor=pointer]:
+              - /url: /en/ftse-russell/custom-indexing-solutions
+          - listitem [ref=f57e251]:
+            - link "Direct indexing solutions" [ref=f57e252] [cursor=pointer]:
+              - /url: /en/ftse-russell/direct-indexing-solutions
+          - listitem [ref=f57e260]:
+            - link "Sustainable investing solutions" [ref=f57e261] [cursor=pointer]:
+              - /url: /en/ftse-russell/sustainable-investing-solutions
+          - listitem [ref=f57e269]:
+            - link "Academic solutions" [ref=f57e270] [cursor=pointer]:
+              - /url: /en/ftse-russell/academic-solutions
+      - generic [ref=f57e279]:
+        - generic [ref=f57e280]:
+          - heading "Research and Insights" [level=2] [ref=f57e283]
+          - link "Explore research and insights" [ref=f57e286] [cursor=pointer]:
+            - /url: /en/insights/ftse-russell
+        - generic [ref=f57e291]:
+          - link "Research Growing corporate engagement and ESG progress in Japan Insights into Japan’s ESG market, covering governance reform, FTSE JPX Blossom index evolution and Q2 2026 performance context, including SGX Futures. September 03, 2026" [ref=f57e296] [cursor=pointer]:
+            - /url: https://www.lseg.com/en/ftse-russell/research/growing-corporate-engagement-and-esg-progress-in-japan
+            - generic [ref=f57e302]:
+              - paragraph [ref=f57e304]: Research
+              - generic [ref=f57e305]:
+                - heading "Growing corporate engagement and ESG progress in Japan" [level=3] [ref=f57e307]
+                - generic [ref=f57e308]: Insights into Japan’s ESG market, covering governance reform, FTSE JPX Blossom index evolution and Q2 2026 performance context, including SGX Futures.
+              - time [ref=f57e313]: September 03, 2026
+          - link "Research Emerging Asia (ex China) government bonds monthly Explore monthly insights on key developments across India, Indonesia, Malaysia, the Philippines and Thailand government bond markets. Read the report. September 03, 2026 • Robin Marshall" [ref=f57e318] [cursor=pointer]:
+            - /url: https://www.lseg.com/en/ftse-russell/research/emerging-asia-ex-china-government-bonds-monthly
+            - generic [ref=f57e324]:
+              - paragraph [ref=f57e326]: Research
+              - generic [ref=f57e327]:
+                - heading "Emerging Asia (ex China) government bonds monthly" [level=3] [ref=f57e329]
+                - generic [ref=f57e330]: Explore monthly insights on key developments across India, Indonesia, Malaysia, the Philippines and Thailand government bond markets. Read the report.
+              - generic [ref=f57e334]:
+                - time [ref=f57e335]: September 03, 2026
+                - text: • Robin Marshall
+          - link "Article Time to tilt one’s hat towards carry? Analysis of sovereign bonds since 2000 shows carry and roll-down consistently outperform duration, strengthening the case for carry-tilted indices. August 25, 2026 • Robin Marshall & Joshua Gorelik • 11 min" [ref=f57e340] [cursor=pointer]:
+            - /url: https://www.lseg.com/en/insights/ftse-russell/time-to-tilt-ones-hat-towards-carry
+            - generic [ref=f57e346]:
+              - paragraph [ref=f57e348]: Article
+              - generic [ref=f57e349]:
+                - heading "Time to tilt one’s hat towards carry?" [level=3] [ref=f57e351]
+                - generic [ref=f57e352]: Analysis of sovereign bonds since 2000 shows carry and roll-down consistently outperform duration, strengthening the case for carry-tilted indices.
+              - generic [ref=f57e354]:
+                - generic [ref=f57e356]:
+                  - time [ref=f57e357]: August 25, 2026
+                  - text: • Robin Marshall & Joshua Gorelik
+                - generic [ref=f57e358]: • 11 min
+      - generic [ref=f57e368]:
+        - heading "Request details" [level=2] [ref=f57e372]
+        - generic [ref=f57e375]:
+          - generic [ref=f57e377]:
+            - paragraph [ref=f57e378]: Submit your details and one of our Sales experts will be in touch to start the conversation.
+            - paragraph [ref=f57e379]:
+              - text: If you are an existing client and have a query about your service,
+              - link "contact a Client Service representative" [ref=f57e380] [cursor=pointer]:
+                - /url: /en/ftse-russell/client-service-portal#contact-us
+              - text: at our Help Desk
+          - generic [ref=f57e384]:
+            - generic [ref=f57e386]:
+              - generic [ref=f57e389]:
+                - generic [ref=f57e393]:
+                  - textbox "First name" [ref=f57e394]
+                  - paragraph [ref=f57e395]: First name
+                - generic [ref=f57e399]:
+                  - textbox "Last name" [ref=f57e400]
+                  - paragraph [ref=f57e401]: Last name
+              - generic [ref=f57e404]:
+                - generic [ref=f57e408]:
+                  - textbox "Email address" [ref=f57e409]
+                  - paragraph [ref=f57e410]: Email address
+                - generic [ref=f57e414]:
+                  - textbox "Phone number (numerals only; no dashes)" [ref=f57e415]
+                  - paragraph [ref=f57e416]: Phone number (numerals only; no dashes)
+              - generic [ref=f57e419]:
+                - generic [ref=f57e423]:
+                  - textbox [ref=f57e424]
+                  - 'combobox "Country/territory: Country/territory" [ref=f57e425] [cursor=pointer]':
+                    - paragraph [ref=f57e426]: Country/territory
+                - generic [ref=f57e430]:
+                  - textbox "City(optional)" [ref=f57e431]:
+                    - /placeholder: City
+                  - paragraph [ref=f57e432]: City(optional)
+              - generic [ref=f57e435]:
+                - generic [ref=f57e439]:
+                  - textbox "Company" [ref=f57e440]
+                  - paragraph [ref=f57e441]: Company
+                - generic [ref=f57e445]:
+                  - textbox "Job title" [ref=f57e446]
+                  - paragraph [ref=f57e447]: Job title
+              - generic [ref=f57e450]:
+                - 'textbox "Area of interest: Help us connect you to the right expert(optional)" [ref=f57e451]':
+                  - /placeholder: "Area of interest: Help us connect you to the right expert"
+                - paragraph [ref=f57e452]: "Area of interest: Help us connect you to the right expert(optional)"
+              - generic [ref=f57e453]: By submitting this form, you agree to your personal data being shared within the London Stock Exchange Group of companies (LSEG) for the purpose of receiving communications via post, phone and electronic means from LSEG about event, resources, products, and/or services.
+            - paragraph [ref=f57e459]:
+              - text: For more information on how LSEG uses your data, see our
+              - link "privacy statement Opens a new tab" [ref=f57e460] [cursor=pointer]:
+                - /url: /en/policies/privacy-statement
+                - text: privacy statement
+              - text: . You can adjust your preferences at any time through the preference link in any electronic communication that you receive from us.
+            - group [ref=f57e462]:
+              - button "Submit" [ref=f57e465] [cursor=pointer]
+  - contentinfo [ref=f57e468]:
+    - generic [ref=f57e472]:
+      - search [ref=f57e473]:
+        - generic [ref=f57e475]:
+          - generic [ref=f57e476]: Search
+          - generic [ref=f57e477]:
+            - combobox "Search Input" [ref=f57e478]
+            - button "Search" [ref=f57e480]
+      - generic [ref=f57e484]:
+        - link "FTSE Russell home page":
+          - /url: https://www.lseg.com/en/ftse-russell
+          - generic:
+            - img "FTSE Russell home page"
+        - navigation [ref=f57e485]:
+          - list [ref=f57e486]:
+            - listitem [ref=f57e487]:
+              - heading "FTSE Russell" [level=2] [ref=f57e488]
+              - region "FTSE Russell" [ref=f57e489]:
+                - list [ref=f57e490]:
+                  - listitem [ref=f57e491]:
+                    - link "Discover FTSE Russell" [ref=f57e492] [cursor=pointer]:
+                      - /url: /en/ftse-russell
+                  - listitem [ref=f57e493]:
+                    - link "Contact sales" [ref=f57e494] [cursor=pointer]:
+                      - /url: /en/ftse-russell/contact-sales
+                  - listitem [ref=f57e495]:
+                    - link "Client Service Portal" [ref=f57e496] [cursor=pointer]:
+                      - /url: /en/ftse-russell/client-service-portal
+                  - listitem [ref=f57e497]:
+                    - link "DDS for Clients" [ref=f57e498] [cursor=pointer]:
+                      - /url: https://data.ftse.com/
+            - listitem [ref=f57e499]:
+              - heading "CONNECT WITH US" [level=2] [ref=f57e500]
+              - region "CONNECT WITH US" [ref=f57e501]:
+                - list [ref=f57e502]:
+                  - listitem [ref=f57e503]:
+                    - link "LinkedIn" [ref=f57e504] [cursor=pointer]:
+                      - /url: https://uk.linkedin.com/company/ftse
+                  - listitem [ref=f57e506]:
+                    - link "X" [ref=f57e507] [cursor=pointer]:
+                      - /url: https://twitter.com/FTSERussell
+            - listitem [ref=f57e509]:
+              - heading "Languages" [level=2] [ref=f57e510]
+              - region "Languages" [ref=f57e511]:
+                - list [ref=f57e512]:
+                  - listitem [ref=f57e513]:
+                    - link "English" [ref=f57e514] [cursor=pointer]:
+                      - /url: /en/ftse-russell
+                  - listitem [ref=f57e515]:
+                    - link "日本語 – 日本" [ref=f57e516] [cursor=pointer]:
+                      - /url: /ja/ftse-russell
+                  - listitem [ref=f57e517]:
+                    - link "简体中文 – 中国" [ref=f57e518] [cursor=pointer]:
+                      - /url: https://www.lseg.com.cn/zh/ftse-russell
+            - listitem [ref=f57e519]:
+              - heading "Corporate" [level=2] [ref=f57e520]
+              - region "Corporate" [ref=f57e521]:
+                - list [ref=f57e522]:
+                  - listitem [ref=f57e523]:
+                    - link "Who we are" [ref=f57e524] [cursor=pointer]:
+                      - /url: /en/about-us
+                  - listitem [ref=f57e525]:
+                    - link "Careers" [ref=f57e526] [cursor=pointer]:
+                      - /url: /en/careers
+                  - listitem [ref=f57e527]:
+                    - link "Media Centre" [ref=f57e528] [cursor=pointer]:
+                      - /url: /en/media-centre
+                  - listitem [ref=f57e529]:
+                    - link "Investor Relations" [ref=f57e530] [cursor=pointer]:
+                      - /url: /en/investor-relations
+                  - listitem [ref=f57e531]:
+                    - link "Office locations" [ref=f57e532] [cursor=pointer]:
+                      - /url: /en/locations
+                  - listitem [ref=f57e533]:
+                    - link "Security Centre" [ref=f57e534] [cursor=pointer]:
+                      - /url: /en/security-centre
+    - generic [ref=f57e538]:
+      - link [ref=f57e540] [cursor=pointer]:
+        - /url: https://www.lseg.com/en
+        - generic [ref=f57e541]:
+          - img "LSEG home page"
+      - navigation [ref=f57e542]:
+        - list [ref=f57e543]:
+          - listitem [ref=f57e544]:
+            - link "Privacy Statement" [ref=f57e545] [cursor=pointer]:
+              - /url: /en/policies/privacy-statement
+          - listitem [ref=f57e546]:
+            - link "Cookie Statement" [ref=f57e547] [cursor=pointer]:
+              - /url: /en/policies/cookie-statement
+          - listitem [ref=f57e548]:
+            - link "Cookie Settings" [ref=f57e549] [cursor=pointer]:
+              - /url: javascript:void(0)
+          - listitem [ref=f57e550]:
+            - link "Sitemap" [ref=f57e551] [cursor=pointer]:
+              - /url: /en/sitemap
+          - listitem [ref=f57e552]:
+            - link "Terms of Use" [ref=f57e553] [cursor=pointer]:
+              - /url: /en/policies/website-terms-of-use
+          - listitem [ref=f57e554]:
+            - link "Accessibility" [ref=f57e555] [cursor=pointer]:
+              - /url: /en/policies/accessibility-statement
+          - listitem [ref=f57e556]:
+            - link "Whistleblowing" [ref=f57e557] [cursor=pointer]:
+              - /url: /en/policies/whistleblowing
+          - listitem [ref=f57e558]:
+            - link "UK Bribery Act" [ref=f57e559] [cursor=pointer]:
+              - /url: /en/policies/lseg-commitment-to-combat-bribery-fraud-and-tax-evasion
+          - listitem [ref=f57e560]:
+            - link "Modern Slavery Act" [ref=f57e561] [cursor=pointer]:
+              - /url: /en/policies/modern-slavery-act-statement

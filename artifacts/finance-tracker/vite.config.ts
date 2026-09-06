@@ -14,11 +14,26 @@ if (Number.isNaN(port) || port <= 0) {
 
 const basePath = process.env.BASE_PATH ?? "/";
 
+// The commit this bundle is built from, so the admin hub can tell whether
+// what is deployed is what is on origin/main. Vercel sets
+// VERCEL_GIT_COMMIT_SHA at BUILD time only — it does not exist at runtime —
+// so it has to be baked in here or the question is unanswerable from the
+// browser. Empty string in a local build; the hub reports "unknown" rather
+// than treating an absent value as a match.
+const buildCommit =
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.RENDER_GIT_COMMIT ??
+  process.env.GIT_COMMIT ??
+  "";
+
 export default defineConfig(async ({ mode }) => {
 const env = loadEnv(mode, process.cwd(), "");
 const apiUrl = env.VITE_API_URL ?? "";
 return {
   base: basePath,
+  define: {
+    __BUILD_COMMIT__: JSON.stringify(buildCommit),
+  },
   plugins: [
     react(),
     tailwindcss(),

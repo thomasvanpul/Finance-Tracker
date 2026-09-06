@@ -349,7 +349,7 @@ function TransactionDefaultsPanel() {
         <RowLabel title="Default type" sub='Pre-selects the transaction type in Quick Add (N)' />
         <HStack gap={4} wrap shrink={false}>
           {(["expense","income","transfer"] as const).map(t => (
-            <button key={t} onClick={() => setType(t)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "4px 10px", background: defType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${defType === t ? "var(--ft-accent)" : "var(--ft-border)"}`, color: defType === t ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer", transition: "background 0.1s" }}>
+            <button key={t} onClick={() => setType(t)} style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase" as const, padding: "4px 10px", background: defType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${defType === t ? "var(--ft-accent)" : "var(--ft-border)"}`, color: defType === t ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer", transition: "background 0.1s" }}>
               {t}
             </button>
           ))}
@@ -363,12 +363,12 @@ function TransactionDefaultsPanel() {
       </div>
       <div style={ROW}>
         <RowLabel title="Default category" sub='Pre-fills the category field (leave blank to skip)' />
-        <select value={defCategory} onChange={e => setCat(e.target.value)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", flexShrink: 0, maxWidth: "100%" }}>
+        <select value={defCategory} onChange={e => setCat(e.target.value)} style={{ fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", flexShrink: 0, maxWidth: "100%" }}>
           <option value="">— none —</option>
           {allCats.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
-      <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+      <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
         Defaults apply when you press <kbd style={{ color: "var(--ft-accent)", border: "1px solid var(--ft-border)", padding: "0px 4px" }}>N</kbd> to quick-add a transaction.
       </div>
     </div>
@@ -753,6 +753,19 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
   // see and can never use" defect class.
   const visibleSwatches = SWATCH_DATA;
 
+  // The colour input needs a concrete hex, so with no override it must show
+  // the accent the active theme actually resolves to. It used to be hardcoded
+  // to #F4A21E — a previous accent that matches no current theme, so the
+  // control that sets the accent misreported it (blue-accented arctic showed
+  // an orange chip). Read from the same element the theme attribute sits on,
+  // re-read whenever the theme changes.
+  const [resolvedAccent, setResolvedAccent] = useState("#000000");
+  useEffect(() => {
+    const v = getComputedStyle(document.documentElement)
+      .getPropertyValue("--ft-accent").trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) setResolvedAccent(v);
+  }, [theme]);
+
   // Dark first, Light second: the product's default is dark and most
   // users pick from there. Within each group: alphabetical, so the
   // order stays stable as themes are added and there's no implicit
@@ -863,7 +876,7 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
             const labels: Record<Density,string> = { compact: "Compact", normal: "Normal", comfortable: "Comfortable" };
             const isActive = density === d;
             return (
-              <button key={d} onClick={() => setDensity(d)} aria-pressed={isActive} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", padding: "6px 14px", background: isActive ? "var(--ft-accent)" : "transparent", border: `1px solid ${isActive ? "var(--ft-accent)" : "var(--ft-border)"}`, color: isActive ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer", transition: "background 0.12s, color 0.12s" }}>
+              <button key={d} onClick={() => setDensity(d)} aria-pressed={isActive} style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", padding: "6px 14px", background: isActive ? "var(--ft-accent)" : "transparent", border: `1px solid ${isActive ? "var(--ft-accent)" : "var(--ft-border)"}`, color: isActive ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer", transition: "background 0.12s, color 0.12s" }}>
                 {labels[d]}
               </button>
             );
@@ -875,13 +888,13 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
       <div style={PANEL_STYLE}>
         <PanelHeader>Custom Accent Colour</PanelHeader>
         <div style={{ padding: "14px 16px", background: "var(--ft-surface)" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 12, lineHeight: 1.6 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 12, lineHeight: 1.6 }}>
             Override the accent colour for any theme. Persists across sessions.
           </div>
           <HStack gap={8} align="center" marginBottom={14}>
             <input
               type="color"
-              value={accentOverride || "#F4A21E"}
+              value={accentOverride || resolvedAccent}
               onChange={e => {
                 const c = e.target.value;
                 setAccentOverride(c);
@@ -890,9 +903,9 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
               }}
               style={{ width: 36, height: 28, padding: 2, border: "1px solid var(--ft-border2)", background: "var(--ft-raised)", cursor: "pointer" }}
             />
-            <Text as="span" mono size={11} color={accentOverride ? "var(--ft-text)" : "var(--ft-dim)"}>
-              {accentOverride || "Theme default"}
-            </Text>
+            {accentOverride
+              ? <Text as="span" mono size={11} color="var(--ft-text)">{accentOverride}</Text>
+              : <Text as="span" size={11} color="var(--ft-dim)">Theme default</Text>}
             {accentOverride && (
               <button onClick={() => {
                 setAccentOverride("");
@@ -985,7 +998,7 @@ function DisplayAndMotionPanel() {
           <RowLabel title="Clock display" sub="Affects timestamps throughout the app" />
           <HStack gap={6} wrap shrink={false}>
             {[["24h","24h"],["12h","12h (AM/PM)"]].map(([val, lbl]) => (
-              <button key={val} onClick={() => setTime(val)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 12px", background: timeFormat === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${timeFormat === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: timeFormat === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
+              <button key={val} onClick={() => setTime(val)} style={{ fontFamily: "var(--font-sans)", fontSize: 10, padding: "4px 12px", background: timeFormat === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${timeFormat === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: timeFormat === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
             ))}
           </HStack>
         </div>
@@ -994,7 +1007,7 @@ function DisplayAndMotionPanel() {
           <RowLabel title="First day of week" sub="Affects calendar and weekly views" />
           <HStack gap={6} wrap shrink={false}>
             {[["mon","Mon"],["sun","Sun"]].map(([val, lbl]) => (
-              <button key={val} onClick={() => setWeek(val)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, padding: "4px 12px", background: weekStart === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${weekStart === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: weekStart === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
+              <button key={val} onClick={() => setWeek(val)} style={{ fontFamily: "var(--font-sans)", fontSize: 10, padding: "4px 12px", background: weekStart === val ? "var(--ft-accent)" : "transparent", border: `1px solid ${weekStart === val ? "var(--ft-accent)" : "var(--ft-border)"}`, color: weekStart === val ? "var(--ft-base)" : "var(--ft-muted)", cursor: "pointer" }}>{lbl}</button>
             ))}
           </HStack>
         </div>
@@ -1014,7 +1027,7 @@ function DisplayAndMotionPanel() {
         ))}
         <SettingsToggleRow title="Compact large numbers" sub='Show £1.2K and £3.4M instead of full values' on={compactNums} onChange={setCompact} />
         <SettingsToggleRow title="Show pence / cents" sub='Display £12.50 instead of £12' on={showCents} onChange={setCents} />
-        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
           Preview: <span className="pnum" style={{ color: "var(--ft-text)" }}>
             {compactNums ? "£1.2K" : showCents ? "£1,234.56" : "£1,234"}
           </span>
@@ -1049,9 +1062,9 @@ function DisplayAndMotionPanel() {
         <PanelHeader>Intensity</PanelHeader>
         <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
           <HStack gap={10} align="center">
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 46 }}>Minimal</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", width: 46 }}>Minimal</span>
             <input type="range" min={0} max={100} value={intensity} onChange={e => setIntensityVal(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 30, textAlign: "right" }}>Rich</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", width: 30, textAlign: "right" }}>Rich</span>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 32, textAlign: "right" }}>{intensity}</span>
           </HStack>
           <Text as="div" mono size={9} color="var(--ft-dim)" mt={6}>Affects particle density and opacity. Some effects require a page refresh.</Text>
@@ -1099,7 +1112,7 @@ function PrivacyPanel() {
         <SettingsToggleRow title="Blur sensitive amounts" sub='Amounts show as "£ ••••" until hovered. Useful in public places.' on={blurAmounts} onChange={setBlur} />
         {blurAmounts && (
           <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 8 }}>Auto-blur delay after hover: <Text as="span" color="var(--ft-accent)">{autoBlurDelay === 0 ? "Immediate" : `${autoBlurDelay}s`}</Text></div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 8 }}>Auto-blur delay after hover: <Text as="span" color="var(--ft-accent)">{autoBlurDelay === 0 ? "Immediate" : `${autoBlurDelay}s`}</Text></div>
             <HStack gap={10} align="center">
               <Text as="span" mono size={9} color="var(--ft-dim)">0s</Text>
               <input type="range" min={0} max={30} value={autoBlurDelay} onChange={e => setDelay(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
@@ -1116,7 +1129,7 @@ function PrivacyPanel() {
           <option value="full">Full blur — hover to reveal</option>
         </SettingsSelectRow>
         <SettingsToggleRow title="Hide amounts when printing" sub="Blurs all financial figures in print / PDF export" on={hideFromPrint} onChange={setPrint} />
-        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
           All privacy settings apply instantly across the app.
         </div>
       </div>
@@ -1179,7 +1192,7 @@ function DashboardPanel() {
             ))}
           </div>
         ))}
-        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
           Changes apply immediately. Use the sidebar ⚙ icon to reorder and pin items.
         </div>
       </div>
@@ -1223,16 +1236,16 @@ function CustomCategoriesPanel() {
           ))}
         </div>
       ) : (
-        <div style={{ padding: "12px 14px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", fontStyle: "italic" }}>No custom categories yet.</div>
+        <div style={{ padding: "12px 14px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", fontStyle: "italic" }}>No custom categories yet.</div>
       )}
       <div style={{ padding: "10px 14px", display: "flex", gap: 8, alignItems: "center", borderTop: "1px solid var(--ft-border)" }}>
         <input
           type="text" value={newCat} placeholder="New category name"
           onChange={e => setNewCat(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
-          style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 10px", outline: "none" }}
+          style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 10px", outline: "none" }}
         />
-        <button onClick={handleAdd} disabled={!newCat.trim()} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: newCat.trim() ? "var(--ft-accent)" : "var(--ft-dim)", background: "transparent", border: `1px solid ${newCat.trim() ? "var(--ft-accent)" : "var(--ft-border2)"}`, padding: "5px 14px", cursor: newCat.trim() ? "pointer" : "not-allowed", whiteSpace: "nowrap" }}>
+        <button onClick={handleAdd} disabled={!newCat.trim()} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: newCat.trim() ? "var(--ft-accent)" : "var(--ft-dim)", background: "transparent", border: `1px solid ${newCat.trim() ? "var(--ft-accent)" : "var(--ft-border2)"}`, padding: "5px 14px", cursor: newCat.trim() ? "pointer" : "not-allowed", whiteSpace: "nowrap" }}>
           + Add
         </button>
       </div>
@@ -1408,7 +1421,7 @@ function WardrobePanel() {
               <div key={skin.id} onClick={() => pickSkin(skin.id)} style={{ ...ROW, cursor: "pointer", background: isActive ? "var(--ft-raised)" : "transparent", transition: "background 0.1s", alignItems: "flex-start", paddingTop: 10, paddingBottom: 10 }}>
                 <div style={{ flex: 1 }}>
                   <HStack gap={6} align="center" marginBottom={3}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: isActive ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: isActive ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>{skin.rarity}</span>
                   </HStack>
                   <Text as="div" mono size={10} color="var(--ft-muted)" lineHeight={1.5} mb={skin.perks.length > 0 ? 5 : 0}>{skin.desc}</Text>
@@ -1475,7 +1488,7 @@ function AiSettingsPanel() {
             </div>
           ))}
         </div>
-        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
+        <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
           Hotkey: <kbd style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-accent)", padding: "1px 5px", fontSize: 9 }}>G</kbd> — summons the assistant from anywhere on the site (not when typing).
         </div>
       </div>
@@ -2592,7 +2605,7 @@ export default function Settings() {
                     if (first) setActivePanel(first.id);
                   }}
                   style={{
-                    fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em",
+                    fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.1em",
                     textTransform: "uppercase", padding: "5px 12px 7px", whiteSpace: "nowrap",
                     background: "transparent", outline: "none", cursor: "pointer",
                     border: "none",
@@ -2617,7 +2630,7 @@ export default function Settings() {
                   disabled={isLocked}
                   onClick={() => !isLocked && setActivePanel(item.id)}
                   style={{
-                    fontFamily: "var(--font-mono)", fontSize: 10, padding: "5px 12px",
+                    fontFamily: "var(--font-sans)", fontSize: 10, padding: "5px 12px",
                     whiteSpace: "nowrap", outline: "none", cursor: isLocked ? "not-allowed" : "pointer",
                     flexShrink: 0,
                     background: isActive ? "var(--ft-accent)" : "var(--ft-raised)",
@@ -2655,7 +2668,7 @@ export default function Settings() {
                         display: "flex", alignItems: "center", gap: 6,
                         width: "100%", textAlign: "left",
                         padding: "7px 14px 7px 16px",
-                        fontFamily: "var(--font-mono)", fontSize: 12,
+                        fontFamily: "var(--font-sans)", fontSize: 12,
                         background: "transparent",
                         color: "var(--ft-dim)",
                         cursor: "not-allowed",
@@ -2675,7 +2688,7 @@ export default function Settings() {
                     style={{
                       display: "block", width: "100%", textAlign: "left",
                       padding: "7px 14px 7px 16px",
-                      fontFamily: "var(--font-mono)", fontSize: 12,
+                      fontFamily: "var(--font-sans)", fontSize: 12,
                       background: isActive ? "var(--ft-raised)" : "transparent",
                       borderTop: "none", borderRight: "none", borderBottom: "none",
                       color: isActive ? "var(--ft-text)" : "var(--ft-muted)",

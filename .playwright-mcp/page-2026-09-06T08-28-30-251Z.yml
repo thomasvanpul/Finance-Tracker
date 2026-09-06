@@ -1,0 +1,207 @@
+- generic [active] [ref=f89e1]:
+  - generic [ref=f89e2]:
+    - banner "Header" [ref=f89e4]:
+      - generic [ref=f89e7]:
+        - navigation [ref=f89e8]:
+          - generic [ref=f89e9]:
+            - generic [ref=f89e10]:
+              - link [ref=f89e12] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en
+                - img "logo" [ref=f89e14]
+              - button "Explore S&P Global" [ref=f89e15] [cursor=pointer]
+            - generic [ref=f89e21]:
+              - button "Search" [ref=f89e22] [cursor=pointer]
+              - button "English" [ref=f89e27] [cursor=pointer]
+              - link "Contact Us" [ref=f89e31] [cursor=pointer]:
+                - /url: /spdji/en/contact-us/
+              - link "Register / Login" [ref=f89e35] [cursor=pointer]:
+                - /url: "#"
+          - text:     
+        - navigation [ref=f89e39]:
+          - generic [ref=f89e40]:
+            - generic [ref=f89e41]:
+              - link "S&P Dow Jones Indices" [ref=f89e42] [cursor=pointer]:
+                - /url: /spdji/en/
+              - button "Our Solutions" [ref=f89e45] [cursor=pointer]:
+                - img [ref=f89e47]: 
+                - text: 
+              - button "Indices" [ref=f89e49] [cursor=pointer]:
+                - img [ref=f89e51]: 
+                - text: 
+              - button "Research & Insights" [ref=f89e53] [cursor=pointer]:
+                - img [ref=f89e55]: 
+                - text: 
+              - button "Governance" [ref=f89e57] [cursor=pointer]:
+                - img [ref=f89e59]: 
+                - text: 
+              - button "SPICE" [ref=f89e61] [cursor=pointer]:
+                - img [ref=f89e63]: 
+                - text: 
+              - link "About S&P DJI" [ref=f89e65] [cursor=pointer]:
+                - /url: /spdji/en/about-us/
+            - link "Index Finder" [ref=f89e68] [cursor=pointer]:
+              - /url: /spdji/en/index-finder/
+          - text:                          
+      - text:                                        
+    - generic [ref=f89e69]:
+      - generic [ref=f89e72]:
+        - generic [ref=f89e73]:
+          - heading "404" [level=2] [ref=f89e74]
+          - heading "Page Not Found" [level=2] [ref=f89e75]
+          - paragraph
+        - generic [ref=f89e76]:
+          - paragraph [ref=f89e77]:
+            - text: The page you are looking for might have been removed, had its name changed, or is temporarily unavailable. Please check your URL or return to the
+            - link "homepage." [ref=f89e78] [cursor=pointer]:
+              - /url: /spdji/en/
+          - paragraph
+      - contentinfo "Footer" [ref=f89e80]:
+        - list [ref=f89e81]:
+          - list [ref=f89e84]:
+            - listitem [ref=f89e85]:
+              - generic [ref=f89e86]: Follow Us
+            - listitem [ref=f89e87]:
+              - link "" [ref=f89e88] [cursor=pointer]:
+                - /url: https://twitter.com/SPDJIndices
+            - listitem [ref=f89e90]:
+              - link "" [ref=f89e91] [cursor=pointer]:
+                - /url: https://www.facebook.com/SP-Dow-Jones-Indices-161630018534/
+            - listitem [ref=f89e93]:
+              - link "" [ref=f89e94] [cursor=pointer]:
+                - /url: https://www.youtube.com/user/SPIndicesChannel
+            - listitem [ref=f89e96]:
+              - link "" [ref=f89e97] [cursor=pointer]:
+                - /url: https://www.linkedin.com/company/s&p-dow-jones-indices
+            - listitem [ref=f89e99]:
+              - link [ref=f89e100] [cursor=pointer]:
+                - /url: /spdji/en/rss/
+                - link "" [ref=f89e101]
+        - generic [ref=f89e102]:
+          - contentinfo "Footer Primary Nav" [ref=f89e103]:
+            - generic [ref=f89e105]:
+              - list [ref=f89e107]:
+                - listitem [ref=f89e108]:
+                  - generic [ref=f89e109]: Our Purpose
+                - listitem [ref=f89e110]:
+                  - link "Our Values" [ref=f89e111] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/who-we-are
+                - listitem [ref=f89e112]:
+                  - link "Our History" [ref=f89e113] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/our-history
+                - listitem [ref=f89e114]:
+                  - link "Ventures" [ref=f89e115] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/venture
+                - listitem [ref=f89e116]:
+                  - link "Press" [ref=f89e117] [cursor=pointer]:
+                    - /url: https://press.spglobal.com
+              - list [ref=f89e119]:
+                - listitem [ref=f89e120]:
+                  - generic [ref=f89e121]: Investor Relations
+                - listitem [ref=f89e122]:
+                  - link "Overview" [ref=f89e123] [cursor=pointer]:
+                    - /url: https://investor.spglobal.com/investor-relations-overview/default.aspx
+                - listitem [ref=f89e124]:
+                  - link "News Releases" [ref=f89e125] [cursor=pointer]:
+                    - /url: https://investor.spglobal.com/news-releases/default.aspx
+                - listitem [ref=f89e126]:
+                  - link "Quarterly Earnings" [ref=f89e127] [cursor=pointer]:
+                    - /url: https://investor.spglobal.com/quarterly-earnings/
+                - listitem [ref=f89e128]:
+                  - link "SEC Filings & Reports" [ref=f89e129] [cursor=pointer]:
+                    - /url: https://investor.spglobal.com/sec-filings-reports/overview/
+              - list [ref=f89e131]:
+                - listitem [ref=f89e132]:
+                  - generic [ref=f89e133]: Contact Us
+                - listitem [ref=f89e134]:
+                  - link "Customer Care & Sales" [ref=f89e135] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/enterprise/about/contact-us.html
+                - listitem [ref=f89e136]:
+                  - link "Support by Division" [ref=f89e137] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/contact-us
+                - listitem [ref=f89e138]:
+                  - link "Report an Ethics Concern" [ref=f89e139] [cursor=pointer]:
+                    - /url: https://secure.ethicspoint.com/domain/media/en/gui/7615/index.html
+                - listitem [ref=f89e140]:
+                  - link "Office Locations" [ref=f89e141] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/contact-us/office-locations
+              - list [ref=f89e143]:
+                - listitem [ref=f89e144]:
+                  - generic [ref=f89e145]: Our Organization
+                - listitem [ref=f89e146]:
+                  - link "Careers" [ref=f89e147] [cursor=pointer]:
+                    - /url: https://careers.spglobal.com/jobs
+                - listitem [ref=f89e148]:
+                  - link "Corporate Responsibility" [ref=f89e149] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/who-we-are/corporate-responsibility
+                - listitem [ref=f89e150]:
+                  - link "Leadership" [ref=f89e151] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/who-we-are/about-sp-global/our-people/our-leadership
+                - listitem [ref=f89e152]:
+                  - link "IOSCO ESG Rating & Data Product Statements" [ref=f89e153] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/esg-statements
+          - separator [ref=f89e155]
+          - contentinfo [ref=f89e156]:
+            - generic [ref=f89e158]:
+              - list [ref=f89e161]:
+                - listitem [ref=f89e162]:
+                  - link "About S&P Dow Jones Indices" [ref=f89e163] [cursor=pointer]:
+                    - /url: /spdji/en/about-us/
+                - listitem [ref=f89e164]:
+                  - link "S&P DJI Leadership" [ref=f89e165] [cursor=pointer]:
+                    - /url: /spdji/en/our-leadership/
+              - list [ref=f89e168]:
+                - listitem [ref=f89e169]:
+                  - link "Our Services" [ref=f89e170] [cursor=pointer]:
+                    - /url: /spdji/en/about-us/our-services/
+                - listitem [ref=f89e171]:
+                  - link "Media Center" [ref=f89e172] [cursor=pointer]:
+                    - /url: /spdji/en/media-center/news-announcements/
+              - list [ref=f89e175]:
+                - listitem [ref=f89e176]:
+                  - link "Contact Us" [ref=f89e177] [cursor=pointer]:
+                    - /url: /spdji/en/contact-us/
+              - list [ref=f89e180]:
+                - listitem [ref=f89e181]:
+                  - link "Email Preference Center" [ref=f89e182] [cursor=pointer]:
+                    - /url: https://on.spdji.com/SignUp?src=IDS
+          - contentinfo [ref=f89e183]:
+            - generic [ref=f89e185]:
+              - button "Customize Cookies" [ref=f89e187] [cursor=pointer]
+              - list [ref=f89e189]:
+                - listitem [ref=f89e190]:
+                  - link "Legal Disclaimer" [ref=f89e191] [cursor=pointer]:
+                    - /url: /spdji/en/disclaimers/
+                - listitem [ref=f89e192]:
+                  - link "Terms of Use" [ref=f89e193] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/terms-of-use
+                - listitem [ref=f89e194]:
+                  - link "Cookie Notice" [ref=f89e195] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/cookie-notice
+                - listitem [ref=f89e196]:
+                  - link "Privacy Policy" [ref=f89e197] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/privacy/privacy-policy-english
+                - listitem [ref=f89e198]:
+                  - link "Client Privacy Portal" [ref=f89e199] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/enterprise/Legal/privacy.html
+                - listitem [ref=f89e200]:
+                  - link "Do Not Sell or Share My Personal Information" [ref=f89e201] [cursor=pointer]:
+                    - /url: https://privacyportal.onetrust.com/webform/5cb57702-8ef7-437e-a62b-408fe78cd310/draft/78fa28ce-6010-42fa-96b5-28d8837492e3
+                - listitem [ref=f89e202]:
+                  - link "Complaints" [ref=f89e203] [cursor=pointer]:
+                    - /url: /spdji/en/benchmark-complaints-policy/
+                - listitem [ref=f89e204]: © 2026 S&P Global
+  - text: "> > > > >"
+  - region "Cookie banner" [ref=f89e205]:
+    - dialog "Your Cookie Controls:" [ref=f89e206]:
+      - generic [ref=f89e208]:
+        - generic [ref=f89e210]:
+          - heading "Your Cookie Controls:" [level=2] [ref=f89e211]
+          - generic [ref=f89e212]:
+            - text: S&P Global uses cookies to improve user experience and site performance, offer tailored advertising and enable social media sharing. By clicking "Accept All", you agree to our use of cookies. By clicking “Reject All”, we will not place cookies on your device unless strictly necessary for website functionality. For details, please refer to our
+            - link "More information about your privacy, opens in a new tab" [ref=f89e213] [cursor=pointer]:
+              - /url: https://www.spglobal.com/en/cookie-notice
+              - text: Cookie Notice
+        - generic [ref=f89e215]:
+          - button "Customize Cookies" [ref=f89e216] [cursor=pointer]
+          - button "Reject All" [ref=f89e217] [cursor=pointer]
+          - button "Accept All" [ref=f89e218] [cursor=pointer]

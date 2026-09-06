@@ -17,6 +17,146 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Whether the signed-in account is on the admin allowlist
+ */
+export const GetAdminWhoamiResponse = zod.object({
+  "admin": zod.boolean()
+})
+
+
+/**
+ * @summary Operations overview — services, ceilings, deploy state, users, traffic
+ */
+export const GetAdminOverviewQueryParams = zod.object({
+  "webCommit": zod.coerce.string().optional().describe('The commit the running web bundle was built from, baked in at build time. Sent by the SPA so the server can compare it with origin\/main.\n')
+})
+
+export const GetAdminOverviewResponse = zod.object({
+  "generatedAt": zod.string(),
+  "gate": zod.object({
+  "matchedOn": zod.enum(['user-id', 'email'])
+}),
+  "services": zod.object({
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "category": zod.enum(['infrastructure', 'market-data', 'ai', 'monitoring']),
+  "role": zod.string(),
+  "plan": zod.string(),
+  "monthlyCostGbp": zod.number(),
+  "nextPlan": zod.object({
+  "name": zod.string(),
+  "monthlyCostGbp": zod.number()
+}).nullable(),
+  "ceilings": zod.array(zod.object({
+  "label": zod.string(),
+  "limit": zod.number().nullable(),
+  "unit": zod.string(),
+  "symptom": zod.string(),
+  "source": zod.object({
+  "kind": zod.enum(['measurable', 'stated']),
+  "via": zod.string().optional(),
+  "checkedOn": zod.string().optional()
+})
+})),
+  "launchBlocker": zod.string().nullable(),
+  "checkedOn": zod.string(),
+  "dashboardUrl": zod.string().nullable()
+})),
+  "totalMonthlyCostGbp": zod.number(),
+  "launchBlockerIds": zod.array(zod.string()),
+  "oldestCheckDate": zod.string()
+}),
+  "deploy": zod.object({
+  "apiCommit": zod.string().nullable(),
+  "apiCommitSource": zod.string().nullable(),
+  "webCommit": zod.string().nullable(),
+  "originMainCommit": zod.string().nullable(),
+  "originMainSource": zod.string().nullable(),
+  "verdict": zod.enum(['match', 'behind', 'unknown']),
+  "detail": zod.string()
+}),
+  "providers": zod.array(zod.object({
+  "name": zod.string(),
+  "configured": zod.boolean(),
+  "breaker": zod.enum(['closed', 'open', 'half']),
+  "consecutiveFailures": zod.number(),
+  "cooldownUntil": zod.string().nullable(),
+  "lastOk": zod.string().nullable(),
+  "lastError": zod.object({
+  "message": zod.string(),
+  "ts": zod.string()
+}).nullable(),
+  "creditsUsedToday": zod.number(),
+  "creditsBudget": zod.number().nullable(),
+  "creditsResetAt": zod.string()
+})),
+  "ai": zod.object({
+  "available": zod.boolean(),
+  "providers": zod.array(zod.object({
+  "name": zod.string(),
+  "keyConfigured": zod.boolean(),
+  "models": zod.array(zod.string()),
+  "modelsVerified": zod.boolean().nullable(),
+  "verifiedAt": zod.string().nullable(),
+  "lastError": zod.string().nullable()
+}))
+}),
+  "yahooRichQuote": zod.object({
+  "degradedCount": zod.number(),
+  "degradedSince": zod.string().nullable(),
+  "lastError": zod.string().nullable()
+}),
+  "users": zod.object({
+  "total": zod.number(),
+  "signupsByDay": zod.array(zod.object({
+  "day": zod.string(),
+  "count": zod.number()
+})),
+  "accounts": zod.array(zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "createdAt": zod.string(),
+  "holdings": zod.object({
+  "accounts": zod.number(),
+  "transactions": zod.number(),
+  "investments": zod.number(),
+  "goals": zod.number(),
+  "budgets": zod.number(),
+  "debts": zod.number(),
+  "subscriptions": zod.number(),
+  "connections": zod.number()
+})
+}))
+}),
+  "traffic": zod.object({
+  "windowDays": zod.number(),
+  "requests": zod.number(),
+  "serverErrors": zod.number(),
+  "clientErrors": zod.number(),
+  "errorRatePct": zod.number().nullable(),
+  "slowestRoutes": zod.array(zod.object({
+  "route": zod.string(),
+  "samples": zod.number(),
+  "p95Ms": zod.number(),
+  "p50Ms": zod.number()
+})),
+  "failingRoutes": zod.array(zod.object({
+  "route": zod.string(),
+  "samples": zod.number(),
+  "errors": zod.number()
+})),
+  "byClient": zod.object({
+  "phone": zod.number(),
+  "desktop": zod.number(),
+  "unclassified": zod.number()
+}),
+  "clientSplitNote": zod.string().nullable()
+})
+})
+
+
+/**
  * @summary Get full dashboard summary
  */
 export const GetDashboardResponse = zod.object({

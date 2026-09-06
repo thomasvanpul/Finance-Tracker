@@ -38,6 +38,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
+  # ── ADMIN ──────────────────────────────────────────────────────────────────
+  # Operator-only. Gated by an environment allowlist (ADMIN_USER_IDS) on top
+  # of the normal session auth; see artifacts/api-server/src/lib/admin-gate.ts.
+  /admin/whoami:
+    get:
+      operationId: getAdminWhoami
+      tags: [admin]
+      summary: Whether the signed-in account is on the admin allowlist
+      responses:
+        "200":
+          description: Answer
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [admin]
+                properties:
+                  admin: { type: boolean }
+
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: Operations overview — services, ceilings, deploy state, users, traffic
+      parameters:
+        - in: query
+          name: webCommit
+          required: false
+          schema:
+            type: string
+          description: >
+            The commit the running web bundle was built from, baked in at build
+            time. Sent by the SPA so the server can compare it with origin/main.
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "403":
+          description: Signed in but not an admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminForbidden"
+
   # ── DASHBOARD ──────────────────────────────────────────────────────────────
   /dashboard:
     get:
@@ -1276,6 +1323,250 @@ paths:
 
 components:
   schemas:
+    AdminForbidden:
+      type: object
+      required: [error, reason]
+      properties:
+        error: { type: string }
+        reason: { type: string }
+
+    AdminCeiling:
+      type: object
+      required: [label, limit, unit, symptom, source]
+      properties:
+        label: { type: string }
+        limit:
+          type: number
+          nullable: true
+        unit: { type: string }
+        symptom: { type: string }
+        source:
+          type: object
+          required: [kind]
+          properties:
+            kind:
+              type: string
+              enum: [measurable, stated]
+            via: { type: string }
+            checkedOn: { type: string }
+
+    AdminServiceFact:
+      type: object
+      required: [id, name, category, role, plan, monthlyCostGbp, nextPlan, ceilings, launchBlocker, checkedOn, dashboardUrl]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category:
+          type: string
+          enum: [infrastructure, market-data, ai, monitoring]
+        role: { type: string }
+        plan: { type: string }
+        monthlyCostGbp: { type: number }
+        nextPlan:
+          type: object
+          nullable: true
+          required: [name, monthlyCostGbp]
+          properties:
+            name: { type: string }
+            monthlyCostGbp: { type: number }
+        ceilings:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCeiling"
+        launchBlocker:
+          type: string
+          nullable: true
+        checkedOn: { type: string }
+        dashboardUrl:
+          type: string
+          nullable: true
+
+    AdminDeployTruth:
+      type: object
+      required: [apiCommit, apiCommitSource, webCommit, originMainCommit, originMainSource, verdict, detail]
+      properties:
+        apiCommit: { type: string, nullable: true }
+        apiCommitSource: { type: string, nullable: true }
+        webCommit: { type: string, nullable: true }
+        originMainCommit: { type: string, nullable: true }
+        originMainSource: { type: string, nullable: true }
+        verdict:
+          type: string
+          enum: [match, behind, unknown]
+        detail: { type: string }
+
+    AdminUserRow:
+      type: object
+      required: [id, email, createdAt, holdings]
+      properties:
+        id: { type: string }
+        email: { type: string }
+        createdAt: { type: string }
+        holdings:
+          type: object
+          required: [accounts, transactions, investments, goals, budgets, debts, subscriptions, connections]
+          properties:
+            accounts: { type: integer }
+            transactions: { type: integer }
+            investments: { type: integer }
+            goals: { type: integer }
+            budgets: { type: integer }
+            debts: { type: integer }
+            subscriptions: { type: integer }
+            connections: { type: integer }
+
+    AdminRouteTiming:
+      type: object
+      required: [route, samples, p95Ms, p50Ms]
+      properties:
+        route: { type: string }
+        samples: { type: integer }
+        p95Ms: { type: integer }
+        p50Ms: { type: integer }
+
+    AdminRouteErrors:
+      type: object
+      required: [route, samples, errors]
+      properties:
+        route: { type: string }
+        samples: { type: integer }
+        errors: { type: integer }
+
+    AdminTraffic:
+      type: object
+      required: [windowDays, requests, serverErrors, clientErrors, errorRatePct, slowestRoutes, failingRoutes, byClient, clientSplitNote]
+      properties:
+        windowDays: { type: integer }
+        requests: { type: integer }
+        serverErrors: { type: integer }
+        clientErrors: { type: integer }
+        errorRatePct:
+          type: number
+          nullable: true
+        slowestRoutes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRouteTiming"
+        failingRoutes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRouteErrors"
+        byClient:
+          type: object
+          required: [phone, desktop, unclassified]
+          properties:
+            phone: { type: integer }
+            desktop: { type: integer }
+            unclassified: { type: integer }
+        clientSplitNote:
+          type: string
+          nullable: true
+
+    AdminProviderHealth:
+      type: object
+      required: [name, configured, breaker, consecutiveFailures, cooldownUntil, lastOk, lastError, creditsUsedToday, creditsBudget, creditsResetAt]
+      properties:
+        name: { type: string }
+        configured: { type: boolean }
+        breaker:
+          type: string
+          enum: [closed, open, half]
+        consecutiveFailures: { type: integer }
+        cooldownUntil: { type: string, nullable: true }
+        lastOk: { type: string, nullable: true }
+        lastError:
+          type: object
+          nullable: true
+          required: [message, ts]
+          properties:
+            message: { type: string }
+            ts: { type: string }
+        creditsUsedToday: { type: integer }
+        creditsBudget:
+          type: integer
+          nullable: true
+        creditsResetAt: { type: string }
+
+    AdminAiProviderHealth:
+      type: object
+      required: [name, keyConfigured, models, modelsVerified, verifiedAt, lastError]
+      properties:
+        name: { type: string }
+        keyConfigured: { type: boolean }
+        models:
+          type: array
+          items: { type: string }
+        modelsVerified: { type: boolean, nullable: true }
+        verifiedAt: { type: string, nullable: true }
+        lastError: { type: string, nullable: true }
+
+    AdminOverview:
+      type: object
+      required: [generatedAt, gate, services, deploy, providers, ai, yahooRichQuote, users, traffic]
+      properties:
+        generatedAt: { type: string }
+        gate:
+          type: object
+          required: [matchedOn]
+          properties:
+            matchedOn:
+              type: string
+              enum: [user-id, email]
+        services:
+          type: object
+          required: [facts, totalMonthlyCostGbp, launchBlockerIds, oldestCheckDate]
+          properties:
+            facts:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminServiceFact"
+            totalMonthlyCostGbp: { type: number }
+            launchBlockerIds:
+              type: array
+              items: { type: string }
+            oldestCheckDate: { type: string }
+        deploy:
+          $ref: "#/components/schemas/AdminDeployTruth"
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminProviderHealth"
+        ai:
+          type: object
+          required: [available, providers]
+          properties:
+            available: { type: boolean }
+            providers:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminAiProviderHealth"
+        yahooRichQuote:
+          type: object
+          required: [degradedCount, degradedSince, lastError]
+          properties:
+            degradedCount: { type: integer }
+            degradedSince: { type: string, nullable: true }
+            lastError: { type: string, nullable: true }
+        users:
+          type: object
+          required: [total, signupsByDay, accounts]
+          properties:
+            total: { type: integer }
+            signupsByDay:
+              type: array
+              items:
+                type: object
+                required: [day, count]
+                properties:
+                  day: { type: string }
+                  count: { type: integer }
+            accounts:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminUserRow"
+        traffic:
+          $ref: "#/components/schemas/AdminTraffic"
+
     ErrorResponse:
       type: object
       required: [error]

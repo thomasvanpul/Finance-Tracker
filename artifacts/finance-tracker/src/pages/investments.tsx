@@ -2245,9 +2245,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                         style={{
                           fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "2px 7px",
                           border: "1px solid", letterSpacing: "0.06em", cursor: "pointer",
-                          borderColor: histPeriod === p ? "var(--ft-blue)" : "var(--ft-border)",
+                          borderColor: histPeriod === p ? "var(--ft-accent)" : "var(--ft-border)",
                           background: histPeriod === p ? "rgba(96,165,250,0.15)" : "transparent",
-                          color: histPeriod === p ? "var(--ft-blue)" : "var(--ft-dim)",
+                          color: histPeriod === p ? "var(--ft-accent)" : "var(--ft-dim)",
                           transition: "background 0.1s, color 0.1s, border-color 0.1s",
                         }}>{p.toUpperCase()}</button>
                     ))}

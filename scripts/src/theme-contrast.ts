@@ -172,7 +172,19 @@ const bloodline: DarkPalette = {
   amber: "#FF6600", green: "#1A8C3A", red: "#FF0022", blue: "#6688AA", cyan: "#FF8899",
 };
 
+// void is the product's default theme — the palette every new user sees
+// first, and the one this audit omitted until 2026-09-06. Values read from
+// the bare :root block in artifacts/finance-tracker/src/index.css.
+const voidTheme: DarkPalette = {
+  base: "#0A0D12", surface: "#0F1318", raised: "#141A22",
+  border: "#1C2530", border2: "#243040",
+  text: "#E8EDF2", muted: "#6A8098", dim: "#506070",
+  accent: "#E8C14A",
+  amber: "#FFB300", green: "#00E5A0", red: "#FF4757", blue: "#4A9EFF", cyan: "#00D4FF",
+};
+
 const DARK_THEMES: Record<string, DarkPalette> = {
+  void: voidTheme,
   phosphor, amber, midnight, matrix, synthwave,
   "deep-space": deepSpace, mario, gilded, bloodline,
 };

@@ -45,6 +45,28 @@ function warnOnce(err: unknown): void {
   );
 }
 
+/**
+ * Coarse phone/desktop split for the admin hub. Two buckets and a null —
+ * not a device database.
+ *
+ * Only the bucket is stored, never the User-Agent itself: the raw string is
+ * a fingerprinting surface and this table keeps 30 days of rows keyed to a
+ * userId. Anything the UA cannot place returns null and is reported as
+ * unclassified rather than folded into "desktop", which would quietly
+ * overstate desktop share.
+ */
+export function classifyClient(userAgent: string | undefined): "phone" | "desktop" | null {
+  if (!userAgent) return null;
+  const ua = userAgent.toLowerCase();
+  // Capacitor's iOS/Android shells and mobile browsers. iPad reports as
+  // "macintosh" on iPadOS 13+ and is treated as desktop, which matches how
+  // the SPA itself decides: PhoneShell is chosen on viewport width.
+  if (/iphone|ipod|android.*mobile|windows phone|blackberry/.test(ua)) return "phone";
+  if (/mozilla|chrome|safari|firefox|edg\//.test(ua)) return "desktop";
+  // Bots, curl, the cron pinger. Not a person either way.
+  return null;
+}
+
 export function requestMetricsMiddleware(
   req: Request,
   res: Response,
@@ -85,6 +107,13 @@ export function requestMetricsMiddleware(
         statusCode: res.statusCode,
         durationMs,
         userId,
+        // req.headers, not req.get(): the header bag is a plain object on any
+        // request-shaped value, so this stays correct for a real Express
+        // request and for the hand-rolled fixtures this middleware is tested
+        // with. Array-valued headers are ignored rather than joined.
+        client: classifyClient(
+          typeof req.headers?.["user-agent"] === "string" ? req.headers["user-agent"] : undefined,
+        ),
       })
       .catch(warnOnce);
   });

@@ -1,0 +1,262 @@
+- generic [active] [ref=f31e1]:
+  - link [aria-hidden] [ref=f31e2] [cursor=pointer]:
+    - /url: "#"
+    - text: ___
+  - generic:
+    - link "Skip to Content" [ref=f31e4] [cursor=pointer]:
+      - /url: "#skipToContent"
+    - link "Skip to Menu" [ref=f31e5] [cursor=pointer]:
+      - /url: "#skipToMenu"
+    - link "Skip to Footer" [ref=f31e6] [cursor=pointer]:
+      - /url: "#skipToFooter"
+  - banner "Header" [ref=f31e7]:
+    - generic [ref=f31e9]:
+      - navigation [ref=f31e11]:
+        - generic [ref=f31e12]:
+          - generic [ref=f31e13]:
+            - link [ref=f31e14] [cursor=pointer]:
+              - /url: https://www.spglobal.com/en
+              - img "spglobal" [ref=f31e16]
+            - button " Explore S&P Global" [ref=f31e17] [cursor=pointer]:
+              - generic [ref=f31e18]: 
+              - generic [ref=f31e21]: Explore S&P Global
+          - generic [ref=f31e22]:
+            - text: 
+            - generic [ref=f31e23]:
+              - button " Search" [ref=f31e24] [cursor=pointer]:
+                - generic [ref=f31e25]: 
+                - generic [ref=f31e27]: Search
+              - button "language selector" [ref=f31e29] [cursor=pointer]:
+                - generic [ref=f31e30]: 
+                - generic [ref=f31e32]: EN
+              - link " Support" [ref=f31e33] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en/contact-us
+                - generic [ref=f31e34]: 
+                - generic [ref=f31e36]: Support
+        - text:                                                                    
+      - navigation [ref=f31e38]:
+        - generic [ref=f31e39]:
+          - list [ref=f31e40]:
+            - listitem [ref=f31e41]:
+              - button "Find Products " [ref=f31e42] [cursor=pointer]:
+                - generic [ref=f31e43]: Find Products
+                - generic [ref=f31e44]: 
+                - text: 
+            - listitem [ref=f31e45]:
+              - button "Research & Insights " [ref=f31e46] [cursor=pointer]:
+                - generic [ref=f31e47]: Research & Insights
+                - generic [ref=f31e48]: 
+                - text: 
+            - listitem [ref=f31e49]:
+              - button "Who We Are " [ref=f31e50] [cursor=pointer]:
+                - generic [ref=f31e51]: Who We Are
+                - generic [ref=f31e52]: 
+                - text: 
+          - link "Contact Us" [ref=f31e54] [cursor=pointer]:
+            - /url: https://www.spglobal.com/en/contact-us
+        - text:                                                                                                    
+    - text:                                                                                                                                                                                   
+  - main [ref=f31e55]:
+    - text: 
+    - generic [ref=f31e69]:
+      - tablist [ref=f31e70]:
+        - tab [selected] [ref=f31e71] [cursor=pointer]:
+          - generic [ref=f31e72]: Terms of Use 
+          - text: +
+        - tab [ref=f31e74] [cursor=pointer]:
+          - generic [ref=f31e75]: Purchase Order Terms and Conditions – S&P Global +
+          - text: +
+        - tab [ref=f31e76] [cursor=pointer]:
+          - generic [ref=f31e77]: Purchase Order Terms and Conditions - United Kingdom +
+          - text: +
+        - tab [ref=f31e78] [cursor=pointer]:
+          - generic [ref=f31e79]: Purchase Order Terms and Conditions - French (Français) +
+          - text: +
+        - tab [ref=f31e80] [cursor=pointer]:
+          - generic [ref=f31e81]: Purchase Order Terms and Conditions - German (Deutsche) +
+          - text: +
+        - tab [ref=f31e82] [cursor=pointer]:
+          - generic [ref=f31e83]: Purchase Order Terms and Conditions - Mobility (R.L. Polk & Co.) +
+          - text: +
+      - generic [ref=f31e84]:
+        - tabpanel [ref=f31e85]:
+          - generic [ref=f31e88]:
+            - heading "Terms of Use" [level=3] [ref=f31e94]
+            - separator [ref=f31e96]:
+              - separator [ref=f31e97]
+            - paragraph [ref=f31e103]:
+              - link "English" [ref=f31e104] [cursor=pointer]:
+                - /url: /en/terms-of-use
+              - text: "|"
+              - link "Arabic" [ref=f31e105] [cursor=pointer]:
+                - /url: /en/terms-of-use-arabic
+              - text: "|"
+              - link "Chinese - Traditional" [ref=f31e106] [cursor=pointer]:
+                - /url: /en/terms-of-use-chinese-traditional
+              - text: "|"
+              - link "Chinese - Simplified" [ref=f31e107] [cursor=pointer]:
+                - /url: /en/terms-of-use-chinese-simplified
+              - text: "|"
+              - link "French" [ref=f31e108] [cursor=pointer]:
+                - /url: /en/terms-of-use-french
+              - text: "|"
+              - link "Hebrew" [ref=f31e109] [cursor=pointer]:
+                - /url: /en/terms-of-use-hebrew
+              - text: "|"
+              - link "German" [ref=f31e110] [cursor=pointer]:
+                - /url: /en/terms-of-use-german
+              - text: "|"
+              - link "Italian" [ref=f31e111] [cursor=pointer]:
+                - /url: /en/terms-of-use-italian
+              - text: "|"
+              - link "Japanese" [ref=f31e112] [cursor=pointer]:
+                - /url: /en/terms-of-use-japanese
+              - text: "|"
+              - link "Korean" [ref=f31e113] [cursor=pointer]:
+                - /url: /en/terms-of-use-korean
+              - text: "|"
+              - link "Portuguese" [ref=f31e114] [cursor=pointer]:
+                - /url: /en/terms-of-use-portuguese
+              - text: "|"
+              - link "Russian" [ref=f31e115] [cursor=pointer]:
+                - /url: /en/terms-of-use-russian
+              - text: "|"
+              - link "Spanish" [ref=f31e116] [cursor=pointer]:
+                - /url: /en/terms-of-use-spanish
+              - text: "|"
+              - link "Spanish - Mexican" [ref=f31e117] [cursor=pointer]:
+                - /url: /en/terms-of-use-spanish-mexican
+            - heading [level=4] [ref=f31e121]:
+              - button "S&P Global Terms of Use +" [ref=f31e122] [cursor=pointer]:
+                - generic [ref=f31e123]: S&P Global Terms of Use
+                - generic [ref=f31e125]: +
+        - text: + + + + +
+  - contentinfo "Footer" [ref=f31e127]:
+    - generic [ref=f31e131]:
+      - list [ref=f31e135]:
+        - listitem [ref=f31e136]:
+          - paragraph [ref=f31e137]: Follow Us
+        - listitem [ref=f31e138]:
+          - link "Twitter" [ref=f31e139] [cursor=pointer]:
+            - /url: https://twitter.com/SPGlobal
+            - generic [ref=f31e140]: 
+        - listitem [ref=f31e141]:
+          - link "Facebook" [ref=f31e142] [cursor=pointer]:
+            - /url: https://www.facebook.com/sandpglobal
+            - generic [ref=f31e143]: 
+        - listitem [ref=f31e144]:
+          - link "Instagram" [ref=f31e145] [cursor=pointer]:
+            - /url: https://www.instagram.com/sp_global/
+            - generic [ref=f31e146]: 
+        - listitem [ref=f31e147]:
+          - link "Youtube" [ref=f31e148] [cursor=pointer]:
+            - /url: https://www.youtube.com/channel/UCfXvCHeuAzcYIrR8WeHJgSw
+            - generic [ref=f31e149]: 
+        - listitem [ref=f31e150]:
+          - link "LinkedIn" [ref=f31e151] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/2934
+            - generic [ref=f31e152]: 
+        - listitem [ref=f31e153]:
+          - link "We Chat" [ref=f31e154] [cursor=pointer]:
+            - /url: https://www.spglobal.com/zh/spg-wechat-article
+            - generic [ref=f31e155]: 
+      - contentinfo [ref=f31e156]:
+        - generic [ref=f31e158]:
+          - navigation [ref=f31e160]:
+            - list [ref=f31e161]:
+              - listitem [ref=f31e162]: Our Purpose
+              - listitem [ref=f31e163]:
+                - link "Our Values" [ref=f31e164] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/
+              - listitem [ref=f31e165]:
+                - link "Our History" [ref=f31e166] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/our-history
+              - listitem [ref=f31e167]:
+                - link "Ventures" [ref=f31e168] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/venture
+              - listitem [ref=f31e169]:
+                - link "Press" [ref=f31e170] [cursor=pointer]:
+                  - /url: https://press.spglobal.com/
+          - navigation [ref=f31e172]:
+            - list [ref=f31e173]:
+              - listitem [ref=f31e174]: Investor Relations
+              - listitem [ref=f31e175]:
+                - link "Overview" [ref=f31e176] [cursor=pointer]:
+                  - /url: http://investor.spglobal.com/
+              - listitem [ref=f31e177]:
+                - link "News Releases" [ref=f31e178] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/news-releases/default.aspx
+              - listitem [ref=f31e179]:
+                - link "Quarterly Earnings" [ref=f31e180] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/quarterly-earnings/
+              - listitem [ref=f31e181]:
+                - link "SEC Filings & Reports" [ref=f31e182] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/sec-filings-reports/overview/
+          - navigation [ref=f31e184]:
+            - list [ref=f31e185]:
+              - listitem [ref=f31e186]: Contact Us
+              - listitem [ref=f31e187]:
+                - link "Customer Care & Sales" [ref=f31e188] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us
+              - listitem [ref=f31e189]:
+                - link "Support by Division" [ref=f31e190] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us
+              - listitem [ref=f31e191]:
+                - link "Report an Ethics Concern" [ref=f31e192] [cursor=pointer]:
+                  - /url: https://secure.ethicspoint.com/domain/media/en/gui/7615/index.html
+              - listitem [ref=f31e193]:
+                - link "Office Locations" [ref=f31e194] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us/office-locations
+          - navigation [ref=f31e196]:
+            - list [ref=f31e197]:
+              - listitem [ref=f31e198]: Our Organization
+              - listitem [ref=f31e199]:
+                - link "Careers" [ref=f31e200] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/explore-s-p-global/careers
+              - listitem [ref=f31e201]:
+                - link "Corporate Responsibility" [ref=f31e202] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/corporate-responsibility
+              - listitem [ref=f31e203]:
+                - link "Leadership" [ref=f31e204] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/about-sp-global/our-people/our-leadership
+              - listitem [ref=f31e205]:
+                - link "IOSCO ESG Rating & Data Product Statements" [ref=f31e206] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/esg-statements
+      - separator [ref=f31e208]
+      - navigation [ref=f31e209]:
+        - generic [ref=f31e212]:
+          - button "Customize Cookies" [ref=f31e214] [cursor=pointer]
+          - list [ref=f31e216]:
+            - listitem [ref=f31e217]:
+              - link "Terms of Use" [ref=f31e218] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en/terms-of-use
+            - listitem [ref=f31e219]:
+              - link "Cookie Notice" [ref=f31e220] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en/cookie-notice
+            - listitem [ref=f31e221]:
+              - link "Privacy Policy" [ref=f31e222] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en/privacy/privacy-policy-english
+            - listitem [ref=f31e223]:
+              - link "Client Privacy Portal" [ref=f31e224] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en/enterprise/Legal/privacy.html
+            - listitem [ref=f31e225]:
+              - link "Do Not Sell or Share My Personal Information" [ref=f31e226] [cursor=pointer]:
+                - /url: https://privacyportal.onetrust.com/webform/5cb57702-8ef7-437e-a62b-408fe78cd310/draft/78fa28ce-6010-42fa-96b5-28d8837492e3
+            - listitem [ref=f31e227]:
+              - paragraph [ref=f31e228]: © 2026 S&P Global
+  - region "Cookie banner" [ref=f31e229]:
+    - dialog "Your Cookie Controls:" [ref=f31e230]:
+      - generic [ref=f31e232]:
+        - generic [ref=f31e234]:
+          - heading "Your Cookie Controls:" [level=2] [ref=f31e235]
+          - generic [ref=f31e236]:
+            - text: S&P Global uses cookies to improve user experience and site performance, offer tailored advertising and enable social media sharing. By clicking "Accept All", you agree to our use of cookies. By clicking “Reject All”, we will not place cookies on your device unless strictly necessary for website functionality. For details, please refer to our
+            - link "More information about your privacy, opens in a new tab" [ref=f31e237] [cursor=pointer]:
+              - /url: https://www.spglobal.com/en/cookie-notice
+              - text: Cookie Notice
+        - generic [ref=f31e239]:
+          - button "Customize Cookies" [ref=f31e240] [cursor=pointer]
+          - button "Reject All" [ref=f31e241] [cursor=pointer]
+          - button "Accept All" [ref=f31e242] [cursor=pointer]
+  - generic:
+    - iframe

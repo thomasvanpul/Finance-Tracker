@@ -64,6 +64,7 @@ const Briefing       = lazy(() => import("@/pages/briefing"));
 const Business       = lazy(() => import("@/pages/business"));
 const FamilyFinance  = lazy(() => import("@/pages/family-finance"));
 const TradingJournal = lazy(() => import("@/pages/trading-journal"));
+const Admin = lazy(() => import("@/pages/admin"));
 
 // Shape-matching skeleton for lazy-loaded desktop pages. Sizes to the
 // Suspense slot via flex:1; minHeight:0 — no more full-viewport cream
@@ -154,6 +155,7 @@ function BootEffects() {
 
 const PAGE_TITLES: Record<string, string> = {
   "/": "Dashboard · Numeris",
+  "/admin": "Admin · Numeris",
   "/accounts": "Accounts · Numeris",
   "/transactions": "Transactions · Numeris",
   "/upcoming": "Upcoming · Numeris",
@@ -250,6 +252,7 @@ function Router() {
         <Route path="/business" component={Business} />
         <Route path="/family" component={FamilyFinance} />
         <Route path="/trading" component={TradingJournal} />
+        <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
       </Suspense>

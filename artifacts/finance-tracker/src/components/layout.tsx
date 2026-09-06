@@ -12,7 +12,7 @@ import { createPortal } from "react-dom";
 import { useFintrackTheme } from "@/contexts/theme-context";
 import { authClient } from "@/lib/auth-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useGetMarketQuotes, useGetDashboard } from "@workspace/api-client-react";
+import { useGetMarketQuotes, useGetDashboard, useGetAdminWhoami } from "@workspace/api-client-react";
 import { useTickers } from "@/contexts/tickers-context";
 import { FixingTag } from "@/components/FixingMark";
 import { usePrivacy, PrivNum } from "@/contexts/privacy-context";
@@ -20,7 +20,7 @@ import { CommandPalette, useCommandPalette } from "@/components/command-palette"
 import { QuickAddTransaction, useQuickAdd } from "@/components/quick-add-transaction";
 import { GlobalSearch, useGlobalSearch } from "@/components/global-search";
 import { KeyboardShortcuts, useKeyboardShortcuts } from "@/components/keyboard-shortcuts";
-import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, ChevronLeft, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Home, CreditCard, ArrowLeftRight, BarChart2, PieChart, LineChart, TrendingUp, FileText, Briefcase, Activity, Target, Calendar, RefreshCw, Users, Grid3X3, X } from "lucide-react";
+import { Search, Pencil, Check, Pin, ChevronUp, ChevronDown, ChevronLeft, Settings2, ChevronsLeft, ChevronsRight, Eye, EyeOff, ChevronRight, Bell, Home, CreditCard, ArrowLeftRight, BarChart2, PieChart, LineChart, TrendingUp, FileText, Briefcase, Activity, Target, Calendar, RefreshCw, Users, Grid3X3, X, ShieldAlert } from "lucide-react";
 import { Logo, LogoMark } from "@/components/logo";
 import { formatBaseMoney } from "@/lib/utils";
 import { ThemeEffects } from "@/components/theme-effects";
@@ -175,6 +175,7 @@ const HREF_ICON_MAP: Record<string, React.ElementType> = {
   "/family":        Users,
   "/trading":       TrendingUp,
   "/settings":      Settings2,
+  "/admin":         ShieldAlert,
 };
 
 // Section that each page belongs to (for breadcrumb context on mobile)
@@ -207,6 +208,7 @@ const HREF_SECTION_MAP: Record<string, string> = {
   "/family":        "ADVANCED",
   "/trading":       "ADVANCED",
   "/settings":      "SETTINGS",
+  "/admin":         "ADMIN",
 };
 
 
@@ -383,8 +385,11 @@ function ClockDisplay({ clock }: { clock: string; }) {
             const status = getMarketStatus(city, now);
             const t = tzTime(city.tz, now);
             const badgeColor = status === "OPEN" ? "var(--ft-green)" : status === "PRE" ? "var(--ft-amber)" : "var(--ft-dim)";
-            const badgeBg   = status === "OPEN" ? "rgba(63,185,80,0.15)" : status === "PRE" ? "rgba(244,162,30,0.12)" : "rgba(255,255,255,0.05)";
-            const badgeBdr  = status === "OPEN" ? "rgba(63,185,80,0.3)"  : status === "PRE" ? "rgba(244,162,30,0.3)"  : "var(--ft-border)";
+            // Semantic ramp, not the accent (DESIGN.md §11): open is green,
+            // pre/post is amber, closed is neutral. Mixed from the theme's own
+            // tokens so the tint is right on all fourteen themes.
+            const badgeBg   = status === "OPEN" ? "color-mix(in srgb, var(--ft-green) 15%, transparent)" : status === "PRE" ? "color-mix(in srgb, var(--ft-amber) 12%, transparent)" : "var(--ft-hover)";
+            const badgeBdr  = status === "OPEN" ? "color-mix(in srgb, var(--ft-green) 30%, transparent)" : status === "PRE" ? "color-mix(in srgb, var(--ft-amber) 30%, transparent)" : "var(--ft-border)";
             return (
               <div key={city.tz} style={{ display: "flex", alignItems: "center", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", gap: 8 }}>
                 {editing && (
@@ -454,7 +459,7 @@ function NavRow({
           justifyContent: collapsed ? "center" : "flex-start",
           border: "none",
           borderRadius: 0,
-          background: hovered && !active ? "rgba(255,255,255,0.04)" : "transparent",
+          background: hovered && !active ? "var(--ft-hover)" : "transparent",
           cursor: "pointer",
           transition: "background 0.1s",
         }}
@@ -475,12 +480,12 @@ function NavRow({
           fontWeight: 700,
           letterSpacing: "0.05em",
           background: active
-            ? "rgba(244,162,30,0.15)"
-            : "rgba(255,255,255,0.04)",
+            ? "var(--ft-accent-tint)"
+            : "var(--ft-hover)",
           color: active ? "var(--ft-accent)" : "var(--ft-dim)",
           border: active
-            ? "1px solid rgba(244,162,30,0.3)"
-            : "1px solid rgba(255,255,255,0.06)",
+            ? "1px solid var(--ft-accent-edge)"
+            : "1px solid var(--ft-border)",
           boxShadow: "none",
           transition: "all 0.12s",
         }}>
@@ -873,11 +878,11 @@ function SidebarConfigPanel({ config, allItems, collapsed, onClose, onChange }: 
                 width: 28,
                 height: 26,
                 background: c.visible
-                  ? c.pinned ? "rgba(244,162,30,0.12)" : "rgba(255,255,255,0.04)"
+                  ? c.pinned ? "var(--ft-accent-tint)" : "var(--ft-hover)"
                   : "transparent",
                 border: c.visible
-                  ? c.pinned ? "1px solid rgba(244,162,30,0.25)" : "1px solid var(--ft-border)"
-                  : "1px dashed rgba(255,255,255,0.1)",
+                  ? c.pinned ? "1px solid var(--ft-accent-edge)" : "1px solid var(--ft-border)"
+                  : "1px dashed var(--ft-border2)",
                 borderRadius: 4,
                 cursor: "pointer",
                 color: c.visible ? (c.pinned ? "var(--ft-accent)" : "var(--ft-muted)") : "var(--ft-dim)",
@@ -1188,6 +1193,16 @@ export function Layout({ children }: LayoutProps) {
   const { local: clock } = useClock();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
+  // One boolean, no database work on the server. Decides whether the Admin
+  // row renders at all; the actual gate is decideAdmin() on /api/admin/*.
+  const { data: whoami } = useGetAdminWhoami({
+    query: {
+      queryKey: ["admin", "whoami"],
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    },
+  });
+  const isAdmin = whoami?.admin === true;
   const { open: cmdOpen, closePalette } = useCommandPalette();
   const { open: qaOpen, openQuickAdd, close: qaClose } = useQuickAdd();
   const { open: searchOpen, openSearch, closeSearch } = useGlobalSearch();
@@ -1409,6 +1424,7 @@ export function Layout({ children }: LayoutProps) {
     "/reports": "Reports", "/projection": "Projection",
     "/decisions": "Decisions", "/ai-coach": "AI Coach",
     "/net-worth": "Net Worth",
+    "/admin": "Admin",
   };
   const activePage = allItems.find(i => isActive(i.href))?.label
     ?? Object.entries(UNLISTED_LABELS).find(([href]) => isActive(href))?.[1]
@@ -1618,7 +1634,7 @@ export function Layout({ children }: LayoutProps) {
                           />
                         ))}
                       </div>
-                      <div style={{ margin: "6px 12px 2px", height: 1, background: "rgba(244,162,30,0.2)" }} />
+                      <div style={{ margin: "6px 12px 2px", height: 1, background: "var(--ft-accent-edge)" }} />
                     </div>
                   )}
 
@@ -1735,7 +1751,7 @@ export function Layout({ children }: LayoutProps) {
             onMouseEnter={(e) => {
               if (!configuring) {
                 e.currentTarget.style.color = "var(--ft-text)";
-                e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                e.currentTarget.style.background = "var(--ft-hover)";
               }
             }}
             onMouseLeave={(e) => {
@@ -1784,6 +1800,21 @@ export function Layout({ children }: LayoutProps) {
                 Icon={HREF_ICON_MAP[item.href]}
               />
             ))}
+            {/* Admin sits with Settings because that is where the app's own
+                configuration already lives, and it is not one of the ~20
+                things a user looks for by name. Hidden for everyone else —
+                which is tidiness, not access control: the boundary is
+                decideAdmin() on the server and it runs either way. */}
+            {isAdmin && (
+              <NavRow
+                href="/admin"
+                label="Admin"
+                code="G·X"
+                collapsed={effectiveCollapsed}
+                active={isActive("/admin")}
+                Icon={HREF_ICON_MAP["/admin"]}
+              />
+            )}
           </div>
 
           {/* User card — click navigates to profile */}
@@ -1910,7 +1941,7 @@ export function Layout({ children }: LayoutProps) {
               justifyContent: "center",
               gap: 6,
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-text)"; e.currentTarget.style.background = "var(--ft-hover)"; }}
             onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; e.currentTarget.style.background = "none"; }}
           >
             {collapsed ? <ChevronsRight size={10} /> : <ChevronsLeft size={10} />}
@@ -1993,7 +2024,7 @@ export function Layout({ children }: LayoutProps) {
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center",
                   padding: "4px 9px",
-                  background: notifOpen ? "rgba(244,162,30,0.08)" : "var(--ft-raised)",
+                  background: notifOpen ? "var(--ft-accent-tint)" : "var(--ft-raised)",
                   border: `1px solid ${notifOpen ? "var(--ft-amber)" : "var(--ft-border)"}`,
                   color: notifOpen ? "var(--ft-amber)" : "var(--ft-muted)",
                   cursor: "pointer", borderRadius: 4,
@@ -2002,7 +2033,7 @@ export function Layout({ children }: LayoutProps) {
                 onMouseEnter={(e) => {
                   if (!notifOpen) {
                     e.currentTarget.style.color = "var(--ft-text)";
-                    e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                    e.currentTarget.style.background = "var(--ft-hover)";
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -2075,7 +2106,7 @@ export function Layout({ children }: LayoutProps) {
               style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
                 padding: "4px 9px",
-                background: privacy ? "rgba(244,162,30,0.12)" : "var(--ft-raised)",
+                background: privacy ? "var(--ft-accent-tint)" : "var(--ft-raised)",
                 border: `1px solid ${privacy ? "var(--ft-accent)" : "var(--ft-border)"}`,
                 color: privacy ? "var(--ft-accent)" : "var(--ft-muted)",
                 cursor: "pointer", borderRadius: 4, marginRight: 8,

@@ -1,0 +1,463 @@
+- generic [active] [ref=f49e1]:
+  - link [aria-hidden] [ref=f49e2] [cursor=pointer]:
+    - /url: "#"
+    - text: ___
+  - generic [ref=f49e4]:
+    - banner "Header" [ref=f49e6]:
+      - generic [ref=f49e9]:
+        - navigation [ref=f49e10]:
+          - generic [ref=f49e11]:
+            - generic [ref=f49e12]:
+              - link [ref=f49e14] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en
+                - img "logo" [ref=f49e16]
+              - button "Explore S&P Global" [ref=f49e17] [cursor=pointer]
+            - generic [ref=f49e23]:
+              - button "Search" [ref=f49e24] [cursor=pointer]
+              - button "English" [ref=f49e29] [cursor=pointer]
+              - link "Contact Us" [ref=f49e33] [cursor=pointer]:
+                - /url: /spdji/en/contact-us/
+              - link "Register / Login" [ref=f49e37] [cursor=pointer]:
+                - /url: "#"
+          - text:     
+        - navigation [ref=f49e41]:
+          - generic [ref=f49e42]:
+            - generic [ref=f49e43]:
+              - link "S&P Dow Jones Indices" [ref=f49e44] [cursor=pointer]:
+                - /url: /spdji/en/
+              - button "Our Solutions" [ref=f49e47] [cursor=pointer]:
+                - img [ref=f49e49]: 
+                - text: 
+              - button "Indices" [ref=f49e51] [cursor=pointer]:
+                - img [ref=f49e53]: 
+                - text: 
+              - button "Research & Insights" [ref=f49e55] [cursor=pointer]:
+                - img [ref=f49e57]: 
+                - text: 
+              - button "Governance" [ref=f49e59] [cursor=pointer]:
+                - img [ref=f49e61]: 
+                - text: 
+              - button "SPICE" [ref=f49e63] [cursor=pointer]:
+                - img [ref=f49e65]: 
+                - text: 
+              - link "About S&P DJI" [ref=f49e67] [cursor=pointer]:
+                - /url: /spdji/en/about-us/
+            - link "Index Finder" [ref=f49e70] [cursor=pointer]:
+              - /url: /spdji/en/index-finder/
+          - text:                          
+      - text:                                        
+    - generic [ref=f49e72]:
+      - generic [ref=f49e74]:
+        - generic [ref=f49e75]:
+          - link "Equity>" [ref=f49e76] [cursor=pointer]:
+            - /url: /spdji/en/index-family/equity/
+          - link "U.S. Equity>" [ref=f49e77] [cursor=pointer]:
+            - /url: /spdji/en/index-family/equity/us-equity/
+          - link "U.S. Market Cap" [ref=f49e78] [cursor=pointer]:
+            - /url: /spdji/en/index-family/equity/us-equity/us-market-cap/
+        - generic [ref=f49e79]:
+          - heading "S&P 500®" [level=1] [ref=f49e80]
+          - generic [ref=f49e82]:
+            - generic [ref=f49e83]:
+              - text: 7,718.60
+              - generic [ref=f49e84]: USD Price Return
+            - generic [ref=f49e85]: "-0.38%"
+            - generic [ref=f49e86]: 1 Day
+        - navigation [ref=f49e89]:
+          - generic [ref=f49e90]:
+            - link "Overview" [ref=f49e91] [cursor=pointer]:
+              - /url: "#overview"
+            - link "Data" [ref=f49e92] [cursor=pointer]:
+              - /url: "#data"
+            - link "Index-Linked Products" [ref=f49e93] [cursor=pointer]:
+              - /url: "#index-linked-product"
+            - link "News & Research" [ref=f49e94] [cursor=pointer]:
+              - /url: "#news-research"
+            - generic [ref=f49e95]:
+              - button "bookmark" [ref=f49e96] [cursor=pointer]
+              - button "share" [ref=f49e97] [cursor=pointer]
+              - text:    
+      - generic [ref=f49e105]:
+        - generic [ref=f49e106]:
+          - generic [ref=f49e108]:
+            - button "Performance" [ref=f49e110]
+            - button "USD >" [ref=f49e112] [cursor=pointer]
+            - button "Price Return >" [ref=f49e114] [cursor=pointer]
+          - generic [ref=f49e116]:
+            - list [ref=f49e118]:
+              - listitem "Graph View" [ref=f49e119] [cursor=pointer]
+              - listitem "Table View" [ref=f49e120] [cursor=pointer]
+            - generic [ref=f49e121]:
+              - generic [ref=f49e122]:
+                - generic [ref=f49e124]:
+                  - generic [ref=f49e125]:
+                    - generic [ref=f49e126]: As of Sep 04, 2026
+                    - generic [ref=f49e127]: 7,718.60
+                  - generic [ref=f49e128]:
+                    - generic [ref=f49e129]: 18.71%
+                    - generic [ref=f49e130]: 1 Yr Return
+                - generic [ref=f49e131]:
+                  - list [ref=f49e133]:
+                    - listitem [ref=f49e134]:
+                      - generic [ref=f49e135] [cursor=pointer]: MTD
+                    - listitem [ref=f49e136]:
+                      - generic [ref=f49e137] [cursor=pointer]: QTD
+                    - listitem [ref=f49e138]:
+                      - generic [ref=f49e139] [cursor=pointer]: YTD
+                    - listitem [ref=f49e140]:
+                      - generic [ref=f49e141] [cursor=pointer]: 1 Year
+                    - listitem [ref=f49e142]:
+                      - generic [ref=f49e143] [cursor=pointer]: 3 Year
+                    - listitem [ref=f49e144]:
+                      - generic [ref=f49e145] [cursor=pointer]: 5 Year
+                    - listitem [ref=f49e146]:
+                      - generic [ref=f49e147] [cursor=pointer]: 10 Year
+                  - generic [ref=f49e148]:
+                    - link "Factsheet" [ref=f49e150] [cursor=pointer]:
+                      - /url: /spdji/en/idsenhancedfactsheet/file.pdf?calcFrequency=M&force_download=true&hostIdentifier=48190c8c-42c4-46af-8d1a-0cd5db894797&languageId=1&indexId=340
+                    - link "Export" [ref=f49e152] [cursor=pointer]:
+                      - /url: /spdji/en/idsexport/file.xls?hostIdentifier=48190c8c-42c4-46af-8d1a-0cd5db894797&redesignExport=true&languageId=1&selectedModule=PerformanceGraphView&selectedSubModule=Graph&yearFlag=oneYearFlag&indexId=340
+                    - link "Compare" [ref=f49e154] [cursor=pointer]:
+                      - /url: javascript:void(0);
+                    - link "SPICE" [ref=f49e156] [cursor=pointer]:
+                      - /url: https://www.spice-indices.com/idp/#/index/SPUSA-500-USDUF--P-US-L--
+                  - img [ref=f49e159]:
+                    - generic [ref=f49e171]:
+                      - generic [ref=f49e172]: Oct 2025
+                      - generic [ref=f49e173]: Nov 2025
+                      - generic [ref=f49e174]: Dec 2025
+                      - generic [ref=f49e175]: Jan 2026
+                      - generic [ref=f49e176]: Feb 2026
+                      - generic [ref=f49e177]: Mar 2026
+                      - generic [ref=f49e178]: Apr 2026
+                      - generic [ref=f49e179]: May 2026
+                      - generic [ref=f49e180]: Jun 2026
+                      - generic [ref=f49e181]: Jul 2026
+                      - generic [ref=f49e182]: Aug 2026
+                      - generic "Sep 2026" [ref=f49e183]: Sep…
+                    - generic [ref=f49e184]:
+                      - generic [ref=f49e185]: 7,500
+                      - generic [ref=f49e186]: 5,500
+                      - generic [ref=f49e187]: 6,000
+                      - generic [ref=f49e188]: 6,500
+                      - generic [ref=f49e189]: 7,000
+                      - generic [ref=f49e190]: 8,000
+                  - text: ": :"
+                  - generic [ref=f49e192]:
+                    - paragraph [ref=f49e193]:
+                      - text: The index Launch Date is Mar 04, 1957. All information for an index prior to its Launch Date is hypothetical back-tested, not actual performance, based on the index methodology in effect on the Launch Date.
+                      - generic [ref=f49e194] [cursor=pointer]:
+                        - text: See More
+                        - generic [aria-hidden] [ref=f49e195]: 
+                    - paragraph
+              - text: " : : : : : : : : : : : : : : : : : : : :"
+        - generic [ref=f49e196]:
+          - generic [ref=f49e197]:
+            - generic [ref=f49e198]:
+              - generic:
+                - heading "Description" [level=2]
+              - generic [ref=f49e199]:
+                - paragraph
+                - paragraph [ref=f49e200]: The S&P 500® is widely regarded as the best single gauge of large-cap U.S. equities. The index includes 500 leading companies and covers approximately 80% of available market capitalization.
+                - paragraph
+            - generic [ref=f49e201]:
+              - generic:
+                - heading "Documents" [level=2]
+              - generic [ref=f49e202]:
+                - link "Methodology >" [ref=f49e206] [cursor=pointer]:
+                  - /url: "#"
+                - generic [ref=f49e210]:
+                  - link "Additional Info Additional Info" [ref=f49e211] [cursor=pointer]:
+                    - /url: "#"
+                    - img "Additional Info" [ref=f49e212]
+                    - text: Additional Info
+                  - generic [ref=f49e219]:
+                    - 'link "At a Glance: SPIVA After-Tax Scorecard" [ref=f49e221] [cursor=pointer]':
+                      - /url: /spdji/en/documents/brochure/spiva-after-tax-infographic.pdf
+                    - link "S&P 500® The Gauge of the U.S. Large-Cap Market" [ref=f49e225] [cursor=pointer]:
+                      - /url: /spdji/en/documents/additional-material/sp-500-brochure.pdf
+                    - link "S&P 500 GICS Scorecard" [ref=f49e229] [cursor=pointer]:
+                      - /url: /spdji/en/documents/premium/additional-material/gics-500-scorecard.pdf
+                    - link "S&P 500 Stock Buybacks" [ref=f49e233] [cursor=pointer]:
+                      - /url: /spdji/en/documents/additional-material/sp-500-buyback.xlsx
+            - generic [ref=f49e236]:
+              - generic:
+                - heading "Related Indices" [level=2]
+              - list [ref=f49e238]:
+                - listitem [ref=f49e239]:
+                  - link "S&P 500 Carbon Efficient Index" [ref=f49e240] [cursor=pointer]:
+                    - /url: /spdji/en/indices/sustainability/sp-500-carbon-efficient-index
+                - listitem [ref=f49e241]:
+                  - link "S&P 500 Top 10 Index" [ref=f49e242] [cursor=pointer]:
+                    - /url: /spdji/en/indices/equity/sp-500-top-10-index
+                - listitem [ref=f49e243]:
+                  - link "S&P 500 Top 50 Index" [ref=f49e244] [cursor=pointer]:
+                    - /url: /spdji/en/indices/equity/sp-500-top-50-index
+                - listitem [ref=f49e245]:
+                  - link "S&P 100" [ref=f49e246] [cursor=pointer]:
+                    - /url: /spdji/en/indices/equity/sp-100
+                - listitem [ref=f49e247]:
+                  - link "S&P 500 Focused 50 Index" [ref=f49e248] [cursor=pointer]:
+                    - /url: /spdji/en/indices/equity/sp-500-focused-50-index
+          - generic [ref=f49e249]:
+            - generic [ref=f49e251]:
+              - generic [ref=f49e252]:
+                - heading "News & Announcements" [level=2] [ref=f49e253]
+                - link "SEE ALL >" [ref=f49e254] [cursor=pointer]:
+                  - /url: "#news-research"
+              - list [ref=f49e256]:
+                - listitem [ref=f49e257]:
+                  - link [ref=f49e258] [cursor=pointer]:
+                    - /url: /spdji/en/documents/indexnews/announcements/20260904-1484999/1484999_shuffle5461-sept2026.pdf
+                    - generic [ref=f49e259]:
+                      - list [ref=f49e260]:
+                        - listitem [ref=f49e261]: Index News -
+                        - listitem [ref=f49e262]: Sep 4, 2026 -
+                        - listitem [ref=f49e263]: 5:15 PM
+                      - heading "Bloom Energy, Illumina, and Everpure Set to Join S&P 500; Others to Join S&P 100, S&P MidCap 400, and S&P SmallCap 600" [level=1] [ref=f49e264]
+                - listitem [ref=f49e265]:
+                  - link [ref=f49e266] [cursor=pointer]:
+                    - /url: /spdji/en/documents/indexnews/announcements/20260826-1484795/1484795_leg6.pdf
+                    - generic [ref=f49e267]:
+                      - list [ref=f49e268]:
+                        - listitem [ref=f49e269]: Index News -
+                        - listitem [ref=f49e270]: Aug 26, 2026 -
+                        - listitem [ref=f49e271]: 5:15 PM
+                      - heading "Tenable Holdings Set to Join S&P SmallCap 600" [level=1] [ref=f49e272]
+                - listitem [ref=f49e273]:
+                  - link [ref=f49e274] [cursor=pointer]:
+                    - /url: /spdji/en/documents/indexnews/announcements/20260813-1484396/1484396_avb54wbs.pdf
+                    - generic [ref=f49e275]:
+                      - list [ref=f49e276]:
+                        - listitem [ref=f49e277]: Index News -
+                        - listitem [ref=f49e278]: Aug 13, 2026 -
+                        - listitem [ref=f49e279]: 5:15 PM
+                      - heading "Reddit Set to Join S&P 500 and Sun Communities to Join S&P MidCap 400" [level=1] [ref=f49e280]
+                - listitem [ref=f49e281]:
+                  - link [ref=f49e282] [cursor=pointer]:
+                    - /url: /spdji/en/documents/indexnews/announcements/20260731-1484374/1484374_ea5-rezi6.pdf
+                    - generic [ref=f49e283]:
+                      - list [ref=f49e284]:
+                        - listitem [ref=f49e285]: Index News -
+                        - listitem [ref=f49e286]: Jul 31, 2026 -
+                        - listitem [ref=f49e287]: 5:15 PM
+                      - heading "Ferguson Enterprises Set to Join S&P 500 and ADI Global Distribution to Join S&P SmallCap 600" [level=1] [ref=f49e288]
+            - generic [ref=f49e289]:
+              - generic [ref=f49e290]:
+                - heading "Index-Linked Products" [level=2] [ref=f49e291]
+                - link "SEE ALL >" [ref=f49e292] [cursor=pointer]:
+                  - /url: "#index-linked-product"
+              - table [ref=f49e293]:
+                - rowgroup [ref=f49e294]:
+                  - row [ref=f49e295]:
+                    - columnheader "Product Name" [ref=f49e296]
+                    - columnheader "Product Type" [ref=f49e297]
+                    - columnheader "Exchange" [ref=f49e298]
+                    - columnheader "Ticker" [ref=f49e299]
+                - rowgroup [ref=f49e300]:
+                  - row [ref=f49e301]:
+                    - cell "10X S&P 500 ETF" [ref=f49e302]
+                    - cell "ETF" [ref=f49e303]
+                    - cell "JOHANNESBURG STOCK EXCHANGE" [ref=f49e304]
+                    - cell "CSP500" [ref=f49e305]
+                  - row [ref=f49e306]:
+                    - cell "1nvest S&P500 Feeder ETF" [ref=f49e307]
+                    - cell "ETF" [ref=f49e308]
+                    - cell "JOHANNESBURG STOCK EXCHANGE" [ref=f49e309]
+                    - cell "ETF500" [ref=f49e310]
+                  - row [ref=f49e311]:
+                    - cell "1Q U.S. S&P500" [ref=f49e312]
+                    - cell "ETF" [ref=f49e313]
+                    - cell "Korea Exchange (Stock Market)" [ref=f49e314]
+                    - cell "0026S0" [ref=f49e315]
+                  - row [ref=f49e316]:
+                    - cell "ACE S&P500" [ref=f49e317]
+                    - cell "ETF" [ref=f49e318]
+                    - cell "KOREA EXCHANGE (STOCK MARKET)" [ref=f49e319]
+                    - cell "360200" [ref=f49e320]
+                  - row [ref=f49e321]:
+                    - cell "Adjusted Interest Rate S&P 500 Total Return" [ref=f49e322]
+                    - cell "Future" [ref=f49e323]
+                    - cell "CME" [ref=f49e324]
+                    - cell "ASR" [ref=f49e325]
+          - generic [ref=f49e326]:
+            - generic [ref=f49e327]:
+              - heading "Research & Insights" [level=2] [ref=f49e328]
+              - link "SEE ALL >" [ref=f49e329] [cursor=pointer]:
+                - /url: "#news-research"
+            - list [ref=f49e332]:
+              - listitem [ref=f49e333]:
+                - link [ref=f49e335] [cursor=pointer]:
+                  - /url: /spdji/en/research/article/etfs-in-insurance-general-accounts-2026
+                  - generic [ref=f49e336]:
+                    - list [ref=f49e337]:
+                      - listitem [ref=f49e338]: Research - Jul 14, 2026
+                    - heading "ETFs in Insurance General Accounts - 2026" [level=3] [ref=f49e339]
+              - listitem [ref=f49e341]:
+                - link [ref=f49e343] [cursor=pointer]:
+                  - /url: /spdji/en/education/article/the-sp-500-and-trump-accounts
+                  - generic [ref=f49e344]:
+                    - list [ref=f49e345]:
+                      - listitem [ref=f49e346]: Education
+                    - heading [level=3] [ref=f49e347]:
+                      - text: The S&P 500
+                      - superscript [ref=f49e348]: ®
+                      - text: and Trump Accounts
+              - listitem [ref=f49e350]:
+                - link [ref=f49e352] [cursor=pointer]:
+                  - /url: /spdji/en/research/article/etfs-in-institutional-portfolios-the-new-normal
+                  - generic [ref=f49e353]:
+                    - list [ref=f49e354]:
+                      - listitem [ref=f49e355]: Research - Jun 30, 2026
+                    - 'heading "ETFs in Institutional Portfolios: The New Normal" [level=3] [ref=f49e356]'
+      - text: "- – – - - - - - > >"
+    - contentinfo "Footer" [ref=f49e359]:
+      - list [ref=f49e360]:
+        - list [ref=f49e363]:
+          - listitem [ref=f49e364]:
+            - generic [ref=f49e365]: Follow Us
+          - listitem [ref=f49e366]:
+            - link "" [ref=f49e367] [cursor=pointer]:
+              - /url: https://twitter.com/SPDJIndices
+          - listitem [ref=f49e369]:
+            - link "" [ref=f49e370] [cursor=pointer]:
+              - /url: https://www.facebook.com/SP-Dow-Jones-Indices-161630018534/
+          - listitem [ref=f49e372]:
+            - link "" [ref=f49e373] [cursor=pointer]:
+              - /url: https://www.youtube.com/user/SPIndicesChannel
+          - listitem [ref=f49e375]:
+            - link "" [ref=f49e376] [cursor=pointer]:
+              - /url: https://www.linkedin.com/company/s&p-dow-jones-indices
+          - listitem [ref=f49e378]:
+            - link [ref=f49e379] [cursor=pointer]:
+              - /url: /spdji/en/rss/
+              - link "" [ref=f49e380]
+      - generic [ref=f49e381]:
+        - contentinfo "Footer Primary Nav" [ref=f49e382]:
+          - generic [ref=f49e384]:
+            - list [ref=f49e386]:
+              - listitem [ref=f49e387]:
+                - generic [ref=f49e388]: Our Purpose
+              - listitem [ref=f49e389]:
+                - link "Our Values" [ref=f49e390] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are
+              - listitem [ref=f49e391]:
+                - link "Our History" [ref=f49e392] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/our-history
+              - listitem [ref=f49e393]:
+                - link "Ventures" [ref=f49e394] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/venture
+              - listitem [ref=f49e395]:
+                - link "Press" [ref=f49e396] [cursor=pointer]:
+                  - /url: https://press.spglobal.com
+            - list [ref=f49e398]:
+              - listitem [ref=f49e399]:
+                - generic [ref=f49e400]: Investor Relations
+              - listitem [ref=f49e401]:
+                - link "Overview" [ref=f49e402] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/investor-relations-overview/default.aspx
+              - listitem [ref=f49e403]:
+                - link "News Releases" [ref=f49e404] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/news-releases/default.aspx
+              - listitem [ref=f49e405]:
+                - link "Quarterly Earnings" [ref=f49e406] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/quarterly-earnings/
+              - listitem [ref=f49e407]:
+                - link "SEC Filings & Reports" [ref=f49e408] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/sec-filings-reports/overview/
+            - list [ref=f49e410]:
+              - listitem [ref=f49e411]:
+                - generic [ref=f49e412]: Contact Us
+              - listitem [ref=f49e413]:
+                - link "Customer Care & Sales" [ref=f49e414] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/enterprise/about/contact-us.html
+              - listitem [ref=f49e415]:
+                - link "Support by Division" [ref=f49e416] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us
+              - listitem [ref=f49e417]:
+                - link "Report an Ethics Concern" [ref=f49e418] [cursor=pointer]:
+                  - /url: https://secure.ethicspoint.com/domain/media/en/gui/7615/index.html
+              - listitem [ref=f49e419]:
+                - link "Office Locations" [ref=f49e420] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us/office-locations
+            - list [ref=f49e422]:
+              - listitem [ref=f49e423]:
+                - generic [ref=f49e424]: Our Organization
+              - listitem [ref=f49e425]:
+                - link "Careers" [ref=f49e426] [cursor=pointer]:
+                  - /url: https://careers.spglobal.com/jobs
+              - listitem [ref=f49e427]:
+                - link "Corporate Responsibility" [ref=f49e428] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/corporate-responsibility
+              - listitem [ref=f49e429]:
+                - link "Leadership" [ref=f49e430] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/about-sp-global/our-people/our-leadership
+              - listitem [ref=f49e431]:
+                - link "IOSCO ESG Rating & Data Product Statements" [ref=f49e432] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/esg-statements
+        - separator [ref=f49e434]
+        - contentinfo [ref=f49e435]:
+          - generic [ref=f49e437]:
+            - list [ref=f49e440]:
+              - listitem [ref=f49e441]:
+                - link "About S&P Dow Jones Indices" [ref=f49e442] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/
+              - listitem [ref=f49e443]:
+                - link "S&P DJI Leadership" [ref=f49e444] [cursor=pointer]:
+                  - /url: /spdji/en/our-leadership/
+            - list [ref=f49e447]:
+              - listitem [ref=f49e448]:
+                - link "Our Services" [ref=f49e449] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/our-services/
+              - listitem [ref=f49e450]:
+                - link "Media Center" [ref=f49e451] [cursor=pointer]:
+                  - /url: /spdji/en/media-center/news-announcements/
+            - list [ref=f49e454]:
+              - listitem [ref=f49e455]:
+                - link "Contact Us" [ref=f49e456] [cursor=pointer]:
+                  - /url: /spdji/en/contact-us/
+            - list [ref=f49e459]:
+              - listitem [ref=f49e460]:
+                - link "Email Preference Center" [ref=f49e461] [cursor=pointer]:
+                  - /url: https://on.spdji.com/SignUp?src=IDS
+        - contentinfo [ref=f49e462]:
+          - generic [ref=f49e464]:
+            - button "Customize Cookies" [ref=f49e466] [cursor=pointer]
+            - list [ref=f49e468]:
+              - listitem [ref=f49e469]:
+                - link "Legal Disclaimer" [ref=f49e470] [cursor=pointer]:
+                  - /url: /spdji/en/disclaimers/
+              - listitem [ref=f49e471]:
+                - link "Terms of Use" [ref=f49e472] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/terms-of-use
+              - listitem [ref=f49e473]:
+                - link "Cookie Notice" [ref=f49e474] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/cookie-notice
+              - listitem [ref=f49e475]:
+                - link "Privacy Policy" [ref=f49e476] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/privacy/privacy-policy-english
+              - listitem [ref=f49e477]:
+                - link "Client Privacy Portal" [ref=f49e478] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/enterprise/Legal/privacy.html
+              - listitem [ref=f49e479]:
+                - link "Do Not Sell or Share My Personal Information" [ref=f49e480] [cursor=pointer]:
+                  - /url: https://privacyportal.onetrust.com/webform/5cb57702-8ef7-437e-a62b-408fe78cd310/draft/78fa28ce-6010-42fa-96b5-28d8837492e3
+              - listitem [ref=f49e481]:
+                - link "Complaints" [ref=f49e482] [cursor=pointer]:
+                  - /url: /spdji/en/benchmark-complaints-policy/
+              - listitem [ref=f49e483]: © 2026 S&P Global
+  - text: "> > > > >"
+  - region "Cookie banner" [ref=f49e484]:
+    - dialog "Your Cookie Controls:" [ref=f49e485]:
+      - generic [ref=f49e487]:
+        - generic [ref=f49e489]:
+          - heading "Your Cookie Controls:" [level=2] [ref=f49e490]
+          - generic [ref=f49e491]:
+            - text: S&P Global uses cookies to improve user experience and site performance, offer tailored advertising and enable social media sharing. By clicking "Accept All", you agree to our use of cookies. By clicking “Reject All”, we will not place cookies on your device unless strictly necessary for website functionality. For details, please refer to our
+            - link "More information about your privacy, opens in a new tab" [ref=f49e492] [cursor=pointer]:
+              - /url: https://www.spglobal.com/en/cookie-notice
+              - text: Cookie Notice
+        - generic [ref=f49e494]:
+          - button "Customize Cookies" [ref=f49e495] [cursor=pointer]
+          - button "Reject All" [ref=f49e496] [cursor=pointer]
+          - button "Accept All" [ref=f49e497] [cursor=pointer]

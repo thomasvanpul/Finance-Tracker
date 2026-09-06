@@ -1,0 +1,574 @@
+- generic [ref=f15e1]:
+  - link [aria-hidden] [ref=f15e2] [cursor=pointer]:
+    - /url: "#"
+    - text: ___
+  - generic [ref=f15e4]:
+    - banner "Header" [ref=f15e6]:
+      - generic [ref=f15e9]:
+        - navigation [ref=f15e10]:
+          - generic [ref=f15e11]:
+            - generic [ref=f15e12]:
+              - link [ref=f15e14] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en
+                - img "logo" [ref=f15e16]
+              - button "Explore S&P Global" [ref=f15e17] [cursor=pointer]
+            - generic [ref=f15e23]:
+              - button "Search" [ref=f15e24] [cursor=pointer]
+              - button "English" [ref=f15e29] [cursor=pointer]
+              - link "Contact Us" [ref=f15e33] [cursor=pointer]:
+                - /url: /spdji/en/contact-us/
+              - link "Register / Login" [ref=f15e37] [cursor=pointer]:
+                - /url: "#"
+          - text:     
+        - navigation [ref=f15e41]:
+          - generic [ref=f15e42]:
+            - generic [ref=f15e43]:
+              - link "S&P Dow Jones Indices" [ref=f15e44] [cursor=pointer]:
+                - /url: /spdji/en/
+              - button "Our Solutions" [ref=f15e47] [cursor=pointer]:
+                - img [ref=f15e49]: 
+                - text: 
+              - button "Indices" [ref=f15e51] [cursor=pointer]:
+                - img [ref=f15e53]: 
+                - text: 
+              - button "Research & Insights" [ref=f15e55] [cursor=pointer]:
+                - img [ref=f15e57]: 
+                - text: 
+              - button "Governance" [ref=f15e59] [cursor=pointer]:
+                - img [ref=f15e61]: 
+                - text: 
+              - button "SPICE" [ref=f15e63] [cursor=pointer]:
+                - img [ref=f15e65]: 
+                - text: 
+              - link "About S&P DJI" [ref=f15e67] [cursor=pointer]:
+                - /url: /spdji/en/about-us/
+            - link "Index Finder" [ref=f15e70] [cursor=pointer]:
+              - /url: /spdji/en/index-finder/
+          - text:                          
+      - text:                                        
+    - generic [ref=f15e72]:
+      - generic [ref=f15e74]:
+        - generic:
+          - list:
+            - generic [ref=f15e76]:
+              - listitem [ref=f15e77]:
+                - 'link "Reflecting on 15 Years with 15 Facts: The Dow Jones U.S. Dividend 100 Index Learn more >" [ref=f15e79] [cursor=pointer]':
+                  - /url: https://www.spglobal.com/spdji/en/education/article/reflecting-on-15-years-with-15-facts-the-dow-jones-us-dividend-100-index/
+                  - generic [ref=f15e80]:
+                    - list [ref=f15e81]:
+                      - listitem
+                    - 'heading "Reflecting on 15 Years with 15 Facts: The Dow Jones U.S. Dividend 100 Index" [level=3] [ref=f15e82]'
+                    - generic [ref=f15e83]: Learn more >
+              - listitem [ref=f15e86]:
+                - link "Performance Analytics at a Glance ACCESS THE LATEST DASHBOARDS >" [ref=f15e88] [cursor=pointer]:
+                  - /url: /spdji/en/research-insights/performance-reports
+                  - generic [ref=f15e89]:
+                    - list [ref=f15e90]:
+                      - listitem
+                    - heading "Performance Analytics at a Glance" [level=3] [ref=f15e91]
+                    - generic [ref=f15e92]: ACCESS THE LATEST DASHBOARDS >
+              - listitem [ref=f15e95]:
+                - link "Factor Index Performance across Macroeconomic Cycles Learn more >" [ref=f15e97] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/spdji/en/education/article/a-historical-perspective-on-factor-index-performance-across-macroeconomic-cycles/
+                  - generic [ref=f15e98]:
+                    - list [ref=f15e99]:
+                      - listitem
+                    - heading "Factor Index Performance across Macroeconomic Cycles" [level=3] [ref=f15e100]
+                    - generic [ref=f15e101]: Learn more >
+      - list [ref=f15e104]:
+        - generic [ref=f15e106]:
+          - listitem [ref=f15e108]:
+            - link "S&P 500 7,718.6 -0.38%" [ref=f15e109] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-500
+              - generic [ref=f15e110]:
+                - paragraph [ref=f15e111]: S&P 500
+                - paragraph [ref=f15e112]:
+                  - generic [ref=f15e113]: 7,718.6
+                  - generic [ref=f15e114]: "-0.38%"
+          - listitem [ref=f15e116]:
+            - link "DJIA 53,414.25 -0.51%" [ref=f15e117] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/dow-jones-industrial-average
+              - generic [ref=f15e118]:
+                - paragraph [ref=f15e119]: DJIA
+                - paragraph [ref=f15e120]:
+                  - generic [ref=f15e121]: 53,414.25
+                  - generic [ref=f15e122]: "-0.51%"
+          - listitem [ref=f15e124]:
+            - link "S&P/TSX 60 2,145.93 -0.38%" [ref=f15e125] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-tsx-60-index
+              - generic [ref=f15e126]:
+                - paragraph [ref=f15e127]: S&P/TSX 60
+                - paragraph [ref=f15e128]:
+                  - generic [ref=f15e129]: 2,145.93
+                  - generic [ref=f15e130]: "-0.38%"
+          - listitem [ref=f15e132]:
+            - link "S&P Europe 350 2,642.5 0.08%" [ref=f15e133] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-europe-350
+              - generic [ref=f15e134]:
+                - paragraph [ref=f15e135]: S&P Europe 350
+                - paragraph [ref=f15e136]:
+                  - generic [ref=f15e137]: 2,642.5
+                  - generic [ref=f15e138]: 0.08%
+          - listitem [ref=f15e140]:
+            - link "S&P GSCI 5,958.51 -0.18%" [ref=f15e141] [cursor=pointer]:
+              - /url: /spdji/en/indices/commodities/sp-gsci
+              - generic [ref=f15e142]:
+                - paragraph [ref=f15e143]: S&P GSCI
+                - paragraph [ref=f15e144]:
+                  - generic [ref=f15e145]: 5,958.51
+                  - generic [ref=f15e146]: "-0.18%"
+          - listitem [ref=f15e148]:
+            - link "S&P/TOPIX 150 3,597.89 0%" [ref=f15e149] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-topix-150
+              - generic [ref=f15e150]:
+                - paragraph [ref=f15e151]: S&P/TOPIX 150
+                - paragraph [ref=f15e152]:
+                  - generic [ref=f15e153]: 3,597.89
+                  - generic [ref=f15e154]: 0%
+          - listitem [ref=f15e156]:
+            - link "S&P/ASX 200 9,005.9 -0.2%" [ref=f15e157] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-asx-200
+              - generic [ref=f15e158]:
+                - paragraph [ref=f15e159]: S&P/ASX 200
+                - paragraph [ref=f15e160]:
+                  - generic [ref=f15e161]: 9,005.9
+                  - generic [ref=f15e162]: "-0.2%"
+          - listitem [ref=f15e164]:
+            - link "S&P Global BMI 553.77 -0.06%" [ref=f15e165] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-global-bmi
+              - generic [ref=f15e166]:
+                - paragraph [ref=f15e167]: S&P Global BMI
+                - paragraph [ref=f15e168]:
+                  - generic [ref=f15e169]: "553.77"
+                  - generic [ref=f15e170]: "-0.06%"
+          - listitem [ref=f15e172]:
+            - link "S&P/BMV IPC 64,866.61 -0.87%" [ref=f15e173] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-bmv-ipc
+              - generic [ref=f15e174]:
+                - paragraph [ref=f15e175]: S&P/BMV IPC
+                - paragraph [ref=f15e176]:
+                  - generic [ref=f15e177]: 64,866.61
+                  - generic [ref=f15e178]: "-0.87%"
+          - listitem [ref=f15e180]:
+            - link "S&P Latin America 40 3,680.82 -0.76%" [ref=f15e181] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-latin-america-40
+              - generic [ref=f15e182]:
+                - paragraph [ref=f15e183]: S&P Latin America 40
+                - paragraph [ref=f15e184]:
+                  - generic [ref=f15e185]: 3,680.82
+                  - generic [ref=f15e186]: "-0.76%"
+          - listitem [ref=f15e188]:
+            - link "S&P Asia 50 11,269.11 2.09%" [ref=f15e189] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-asia-50
+              - generic [ref=f15e190]:
+                - paragraph [ref=f15e191]: S&P Asia 50
+                - paragraph [ref=f15e192]:
+                  - generic [ref=f15e193]: 11,269.11
+                  - generic [ref=f15e194]: 2.09%
+          - listitem [ref=f15e196]:
+            - link "S&P China 500 2,988.34 0.15%" [ref=f15e197] [cursor=pointer]:
+              - /url: /spdji/en/indices/equity/sp-china-500
+              - generic [ref=f15e198]:
+                - paragraph [ref=f15e199]: S&P China 500
+                - paragraph [ref=f15e200]:
+                  - generic [ref=f15e201]: 2,988.34
+                  - generic [ref=f15e202]: 0.15%
+          - listitem [ref=f15e204]:
+            - link "S&P 500 Bond 541.7 -0.02%" [ref=f15e205] [cursor=pointer]:
+              - /url: /spdji/en/indices/fixed-income/sp-500-bond-index
+              - generic [ref=f15e206]:
+                - paragraph [ref=f15e207]: S&P 500 Bond
+                - paragraph [ref=f15e208]:
+                  - generic [ref=f15e209]: "541.7"
+                  - generic [ref=f15e210]: "-0.02%"
+          - listitem [ref=f15e212]:
+            - link "S&P 500 VIX Short-Term... 5,044.65 0.42%" [ref=f15e213] [cursor=pointer]:
+              - /url: /spdji/en/indices/indicators/sp-500-vix-short-term-index-mcap
+              - generic [ref=f15e214]:
+                - paragraph [ref=f15e215]: S&P 500 VIX Short-Term...
+                - paragraph [ref=f15e216]:
+                  - generic [ref=f15e217]: 5,044.65
+                  - generic [ref=f15e218]: 0.42%
+        - generic [ref=f15e219]:
+          - button "Previous" [ref=f15e220]:
+            - generic "Previous" [ref=f15e221]: ‹
+          - button "Next" [ref=f15e222] [cursor=pointer]:
+            - generic "Next" [ref=f15e223]: ›
+      - paragraph [ref=f15e224]: Index values and changes reflect the latest available data. Index frequencies may vary.
+      - separator [ref=f15e225]
+      - generic [ref=f15e226]:
+        - generic [ref=f15e227]:
+          - heading "Investment Themes" [level=2] [ref=f15e228]
+          - paragraph [ref=f15e229]: Explore key index-based investment themes relevant in today's global market.
+          - link "SEE ALL >" [ref=f15e230] [cursor=pointer]:
+            - /url: /spdji/en/investment-themes/overview/
+        - generic [ref=f15e231]:
+          - link [ref=f15e233] [cursor=pointer]:
+            - /url: /spdji/en/landing/investment-themes/commodities
+            - paragraph [ref=f15e237]: Commodities >
+          - link [ref=f15e239] [cursor=pointer]:
+            - /url: /spdji/en/landing/investment-themes/dividends
+            - paragraph [ref=f15e243]: Dividends >
+          - link [ref=f15e245] [cursor=pointer]:
+            - /url: /spdji/en/landing/investment-themes/factors
+            - paragraph [ref=f15e249]: Factors >
+          - link [ref=f15e251] [cursor=pointer]:
+            - /url: /spdji/en/landing/investment-themes/global-broad-market
+            - paragraph [ref=f15e255]: Global Broad Market >
+          - link [ref=f15e257] [cursor=pointer]:
+            - /url: /spdji/en/landing/topic/multi-asset
+            - paragraph [ref=f15e261]: Multi-Asset Indices >
+          - link [ref=f15e263] [cursor=pointer]:
+            - /url: /spdji/en/landing/investment-themes/sectors
+            - paragraph [ref=f15e267]: Sectors >
+          - link [ref=f15e269] [cursor=pointer]:
+            - /url: /spdji/en/landing/investment-themes/sustainability
+            - paragraph [ref=f15e273]: Sustainability >
+          - link [ref=f15e275] [cursor=pointer]:
+            - /url: /spdji/en/landing/investment-themes/us-core
+            - paragraph [ref=f15e279]: U.S. Core >
+      - separator [ref=f15e280]
+      - generic [ref=f15e282]:
+        - heading "Professional Resources" [level=2] [ref=f15e284]
+        - list [ref=f15e287]:
+          - listitem [ref=f15e288]:
+            - generic [ref=f15e289] [cursor=pointer]: Wealth Managers >
+          - listitem [ref=f15e290]:
+            - generic [ref=f15e291] [cursor=pointer]: Insurance >
+          - listitem [ref=f15e292]:
+            - generic [ref=f15e293] [cursor=pointer]: Institutional Investors >
+          - listitem [ref=f15e294]:
+            - generic [ref=f15e295] [cursor=pointer]: Defined Contribution >
+        - generic [ref=f15e297]:
+          - link [ref=f15e299] [cursor=pointer]:
+            - /url: https://www.spglobal.com/spdji/en/landing/professional-resources/financial-advisors/
+            - generic [ref=f15e300]:
+              - paragraph
+              - paragraph [ref=f15e301]: CE-accredited research, education, and timely market commentary for financial advisors and wealth managers.
+              - paragraph
+              - text: LEARN MORE >
+          - text: "> > >"
+      - text: "> > > >"
+      - separator [ref=f15e302]
+      - generic:
+        - generic [ref=f15e303]:
+          - heading "News & Announcements" [level=2] [ref=f15e304]
+          - link "SEE ALL >" [ref=f15e305] [cursor=pointer]:
+            - /url: /spdji/en/media-center/news-announcements/#corporateNews
+        - generic [ref=f15e306]:
+          - list [ref=f15e307]:
+            - listitem [ref=f15e310]:
+              - link [ref=f15e312] [cursor=pointer]:
+                - /url: /spdji/en/documents/indexnews/announcements/20260904-1485006/1485006_s&platinamerica40indexannouncement.pdf
+                - generic [ref=f15e313]:
+                  - list [ref=f15e314]:
+                    - listitem [ref=f15e315]: Index News ‑
+                    - listitem [ref=f15e316]: Sep 4, 2026 - 8:44 PM
+                  - 'heading "Notice: S&P Dow Jones Indices Announces Changes to the S&P Latin America 40 Index" [level=3] [ref=f15e317]'
+          - list [ref=f15e319]:
+            - listitem [ref=f15e320]:
+              - link [ref=f15e321] [cursor=pointer]:
+                - /url: /spdji/en/documents/indexnews/announcements/20260904-1485005/1485005_spbmvipcsept2026rebalanceannouncement(english)-preliminary.pdf
+                - generic [ref=f15e322]:
+                  - list [ref=f15e323]:
+                    - listitem [ref=f15e324]: Index News -
+                    - listitem [ref=f15e325]: Sep 4, 2026 - 8:44 PM
+                  - 'heading "Notice: S&P Dow Jones Indices Announces Preliminary Rebalancing Results for the S..." [level=1] [ref=f15e326]'
+            - listitem [ref=f15e327]:
+              - link [ref=f15e328] [cursor=pointer]:
+                - /url: /spdji/en/documents/indexnews/announcements/20260904-1484999/1484999_shuffle5461-sept2026.pdf
+                - generic [ref=f15e329]:
+                  - list [ref=f15e330]:
+                    - listitem [ref=f15e331]: Index News -
+                    - listitem [ref=f15e332]: Sep 4, 2026 - 5:15 PM
+                  - heading "Bloom Energy, Illumina, and Everpure Set to Join S&P 500; Others to Join S&P 100, S&P..." [level=1] [ref=f15e333]
+            - listitem [ref=f15e334]:
+              - link [ref=f15e335] [cursor=pointer]:
+                - /url: /spdji/en/documents/indexnews/announcements/20260904-1484997/1484997_2026-09-04compositereview-pr.pdf
+                - generic [ref=f15e336]:
+                  - list [ref=f15e337]:
+                    - listitem [ref=f15e338]: Index News -
+                    - listitem [ref=f15e339]: Sep 4, 2026 - 5:15 PM
+                  - heading "S&P Dow Jones Indices Announces Changes to the S&P/TSX Composite Index" [level=1] [ref=f15e340]
+            - listitem [ref=f15e341]:
+              - link [ref=f15e342] [cursor=pointer]:
+                - /url: /spdji/en/documents/indexnews/announcements/20260904-1484998/1484998_sp-pan-arab-reopening-consult-updated-20260904.pdf
+                - generic [ref=f15e343]:
+                  - list [ref=f15e344]:
+                    - listitem [ref=f15e345]: Index News -
+                    - listitem [ref=f15e346]: Sep 4, 2026 - 3:14 PM
+                  - heading "S&P Dow Jones Indices Announces the Reopening of the Consultation on Certain..." [level=1] [ref=f15e347]
+            - listitem [ref=f15e348]:
+              - link [ref=f15e349] [cursor=pointer]:
+                - /url: /spdji/en/documents/indexnews/announcements/20260904-1484995/1484995_s&peurope350indexreviewsept26.pdf
+                - generic [ref=f15e350]:
+                  - list [ref=f15e351]:
+                    - listitem [ref=f15e352]: Index News -
+                    - listitem [ref=f15e353]: Sep 4, 2026 - 12:30 PM
+                  - heading "S&P Dow Jones Indices Announces September 2026 Quarterly Rebalance of t..." [level=1] [ref=f15e354]
+      - separator [ref=f15e355]
+      - generic [ref=f15e356]:
+        - generic [ref=f15e357]:
+          - heading [level=2] [ref=f15e358]:
+            - text: Indexology
+            - superscript [ref=f15e359]: ®
+            - text: Blog
+          - text: ">"
+        - generic [ref=f15e360]:
+          - generic [ref=f15e361]:
+            - generic:
+              - list:
+                - generic [ref=f15e363]:
+                  - listitem [ref=f15e364]:
+                    - 'link "Blog - Aug 14, 2026 The S&P Developed Ex-North America Dividend Growers Index: Dividend Discipline, Defen... Read >" [ref=f15e366] [cursor=pointer]':
+                      - /url: https://indexologyblog.com/2026/08/14/the-sp-developed-ex-north-america-dividend-growers-index-dividend-discipline-defensive-characteristics-and-outperformance/
+                      - generic [ref=f15e367]:
+                        - list [ref=f15e368]:
+                          - listitem [ref=f15e369]: Blog -
+                          - listitem [ref=f15e370]: Aug 14, 2026
+                        - 'heading "The S&P Developed Ex-North America Dividend Growers Index: Dividend Discipline, Defen..." [level=3] [ref=f15e371]'
+                        - generic [ref=f15e372]: Read >
+                  - listitem [ref=f15e374]:
+                    - link "Blog - Aug 13, 2026 Indexing Autocalls Read >" [ref=f15e376] [cursor=pointer]:
+                      - /url: https://indexologyblog.com/2026/08/13/indexing-autocalls/
+                      - generic [ref=f15e377]:
+                        - list [ref=f15e378]:
+                          - listitem [ref=f15e379]: Blog -
+                          - listitem [ref=f15e380]: Aug 13, 2026
+                        - heading "Indexing Autocalls" [level=3] [ref=f15e381]
+                        - generic [ref=f15e382]: Read >
+          - list [ref=f15e385]:
+            - listitem [ref=f15e386]:
+              - link [ref=f15e387] [cursor=pointer]:
+                - /url: https://indexologyblog.com/2026/08/11/broadening-the-base/
+                - generic [ref=f15e388]:
+                  - list [ref=f15e389]:
+                    - listitem [ref=f15e390]: Blog ‑
+                    - listitem [ref=f15e391]: Aug 11, 2026
+                  - heading "Broadening the Base" [level=3] [ref=f15e392]
+            - listitem [ref=f15e393]:
+              - link [ref=f15e394] [cursor=pointer]:
+                - /url: https://www.indexologyblog.com/2026/08/05/factor-index-leadership-in-australia-has-the-tide-turned/
+                - generic [ref=f15e395]:
+                  - list [ref=f15e396]:
+                    - listitem [ref=f15e397]: Blog ‑
+                    - listitem [ref=f15e398]: Aug 5, 2026
+                  - 'heading "Factor Index Leadership in Australia: Has the Tide Turned?" [level=3] [ref=f15e399]'
+            - listitem [ref=f15e400]:
+              - link [ref=f15e401] [cursor=pointer]:
+                - /url: https://indexologyblog.com/2026/08/05/extending-market-representation-public-private-blends-in-investment-solutions/
+                - generic [ref=f15e402]:
+                  - list [ref=f15e403]:
+                    - listitem [ref=f15e404]: Blog ‑
+                    - listitem [ref=f15e405]: Aug 5, 2026
+                  - 'heading "Extending Market Representation: Public-Privat..." [level=3] [ref=f15e406]'
+            - listitem [ref=f15e407]:
+              - link [ref=f15e408] [cursor=pointer]:
+                - /url: https://www.indexologyblog.com/
+                - heading "View Latest Blog Posts >" [level=3] [ref=f15e410]
+      - separator [ref=f15e411]
+      - generic:
+        - generic [ref=f15e412]:
+          - heading "Research & Insights" [level=2] [ref=f15e413]
+          - link "SEE ALL >" [ref=f15e414] [cursor=pointer]:
+            - /url: /spdji/en/research-insights/
+        - generic [ref=f15e415]:
+          - link [ref=f15e416] [cursor=pointer]:
+            - /url: /spdji/en/commentary/article/daily-index-insights
+            - generic [ref=f15e419]:
+              - list [ref=f15e420]:
+                - listitem [ref=f15e421]: Commentary -
+                - listitem [ref=f15e422]: Sep 4, 2026
+              - heading "Daily Index Insights" [level=2] [ref=f15e423]
+          - link [ref=f15e424] [cursor=pointer]:
+            - /url: /spdji/en/spiva/article/spiva-south-africa
+            - generic [ref=f15e427]:
+              - list [ref=f15e428]:
+                - listitem [ref=f15e429]: SPIVA -
+                - listitem [ref=f15e430]: Sep 3, 2026
+              - heading "SPIVA® South Africa Mid-Year 2026" [level=2] [ref=f15e431]
+          - link [ref=f15e432] [cursor=pointer]:
+            - /url: /spdji/en/education/article/reflecting-on-15-years-with-15-facts-the-dow-jones-us-dividend-100-index
+            - generic [ref=f15e435]:
+              - list [ref=f15e436]:
+                - listitem [ref=f15e437]: Education
+              - 'heading "Reflecting on 15 Years with 15 Facts: The Dow Jones U.S. Dividend 100 Index" [level=2] [ref=f15e438]'
+          - link [ref=f15e439] [cursor=pointer]:
+            - /url: /spdji/en/index-tv/article/how-and-why-institutions-are-evolving-their-etf-usage
+            - generic [ref=f15e442]:
+              - list [ref=f15e443]:
+                - listitem [ref=f15e444]: Index TV -
+                - listitem [ref=f15e445]: Aug 27, 2026
+              - heading "How and Why Institutions Are Evolving Their ETF Usage" [level=2] [ref=f15e446]
+          - link [ref=f15e447] [cursor=pointer]:
+            - /url: /spdji/en/education/article/a-historical-perspective-on-factor-index-performance-across-macroeconomic-cycles
+            - generic [ref=f15e450]:
+              - list [ref=f15e451]:
+                - listitem [ref=f15e452]: Education
+              - heading "A Historical Perspective on Factor Index Performance across Macroeconomic Cycles" [level=2] [ref=f15e453]
+          - link [ref=f15e454] [cursor=pointer]:
+            - /url: /spdji/en/index-tv/article/sp-tip-global-allcap-index-a-new-tool-for-tracking-diversification-and-limiting-concentration-risk-in-global-equities
+            - generic [ref=f15e457]:
+              - list [ref=f15e458]:
+                - listitem [ref=f15e459]: Index TV -
+                - listitem [ref=f15e460]: Aug 13, 2026
+              - 'heading "S&P TIP Global AllCap Index: A New Tool for Tracking Diversification and Limiting Concentration Risk in Global Equities" [level=2] [ref=f15e461]'
+          - link "Sign up to receive updates via email Sign Up >" [ref=f15e463] [cursor=pointer]:
+            - /url: https://on.spdji.com/SignUp?src=IDS
+            - generic [ref=f15e464]:
+              - heading "Sign up to receive updates via email" [level=4] [ref=f15e465]
+              - generic [ref=f15e466]: Sign Up >
+    - contentinfo "Footer" [ref=f15e468]:
+      - list [ref=f15e469]:
+        - list [ref=f15e472]:
+          - listitem [ref=f15e473]:
+            - generic [ref=f15e474]: Follow Us
+          - listitem [ref=f15e475]:
+            - link "" [ref=f15e476] [cursor=pointer]:
+              - /url: https://twitter.com/SPDJIndices
+          - listitem [ref=f15e478]:
+            - link "" [ref=f15e479] [cursor=pointer]:
+              - /url: https://www.facebook.com/SP-Dow-Jones-Indices-161630018534/
+          - listitem [ref=f15e481]:
+            - link "" [ref=f15e482] [cursor=pointer]:
+              - /url: https://www.youtube.com/user/SPIndicesChannel
+          - listitem [ref=f15e484]:
+            - link "" [ref=f15e485] [cursor=pointer]:
+              - /url: https://www.linkedin.com/company/s&p-dow-jones-indices
+          - listitem [ref=f15e487]:
+            - link [ref=f15e488] [cursor=pointer]:
+              - /url: /spdji/en/rss/
+              - link "" [ref=f15e489]
+      - generic [ref=f15e490]:
+        - contentinfo "Footer Primary Nav" [ref=f15e491]:
+          - generic [ref=f15e493]:
+            - generic:
+              - list:
+                - listitem:
+                  - generic [ref=f15e494]: Our Purpose
+                - listitem:
+                  - link "Our Values" [ref=f15e495] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/who-we-are
+                - listitem:
+                  - link "Our History" [ref=f15e496] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/our-history
+                - listitem:
+                  - link "Ventures" [ref=f15e497] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/venture
+                - listitem:
+                  - link "Press" [ref=f15e498] [cursor=pointer]:
+                    - /url: https://press.spglobal.com
+            - generic:
+              - list:
+                - listitem:
+                  - generic [ref=f15e499]: Investor Relations
+                - listitem:
+                  - link "Overview" [ref=f15e500] [cursor=pointer]:
+                    - /url: https://investor.spglobal.com/investor-relations-overview/default.aspx
+                - listitem:
+                  - link "News Releases" [ref=f15e501] [cursor=pointer]:
+                    - /url: https://investor.spglobal.com/news-releases/default.aspx
+                - listitem:
+                  - link "Quarterly Earnings" [ref=f15e502] [cursor=pointer]:
+                    - /url: https://investor.spglobal.com/quarterly-earnings/
+                - listitem:
+                  - link "SEC Filings & Reports" [ref=f15e503] [cursor=pointer]:
+                    - /url: https://investor.spglobal.com/sec-filings-reports/overview/
+            - generic:
+              - list:
+                - listitem:
+                  - generic [ref=f15e504]: Contact Us
+                - listitem:
+                  - link "Customer Care & Sales" [ref=f15e505] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/enterprise/about/contact-us.html
+                - listitem:
+                  - link "Support by Division" [ref=f15e506] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/contact-us
+                - listitem:
+                  - link "Report an Ethics Concern" [ref=f15e507] [cursor=pointer]:
+                    - /url: https://secure.ethicspoint.com/domain/media/en/gui/7615/index.html
+                - listitem:
+                  - link "Office Locations" [ref=f15e508] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/contact-us/office-locations
+            - generic:
+              - list:
+                - listitem:
+                  - generic [ref=f15e509]: Our Organization
+                - listitem:
+                  - link "Careers" [ref=f15e510] [cursor=pointer]:
+                    - /url: https://careers.spglobal.com/jobs
+                - listitem:
+                  - link "Corporate Responsibility" [ref=f15e511] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/who-we-are/corporate-responsibility
+                - listitem:
+                  - link "Leadership" [ref=f15e512] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/who-we-are/about-sp-global/our-people/our-leadership
+                - listitem:
+                  - link "IOSCO ESG Rating & Data Product Statements" [ref=f15e513] [cursor=pointer]:
+                    - /url: https://www.spglobal.com/en/esg-statements
+        - separator [ref=f15e515]
+        - contentinfo [ref=f15e516]:
+          - generic [ref=f15e518]:
+            - list [ref=f15e521]:
+              - listitem [ref=f15e522]:
+                - link "About S&P Dow Jones Indices" [ref=f15e523] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/
+              - listitem [ref=f15e524]:
+                - link "S&P DJI Leadership" [ref=f15e525] [cursor=pointer]:
+                  - /url: /spdji/en/our-leadership/
+            - list [ref=f15e528]:
+              - listitem [ref=f15e529]:
+                - link "Our Services" [ref=f15e530] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/our-services/
+              - listitem [ref=f15e531]:
+                - link "Media Center" [ref=f15e532] [cursor=pointer]:
+                  - /url: /spdji/en/media-center/news-announcements/
+            - list [ref=f15e535]:
+              - listitem [ref=f15e536]:
+                - link "Contact Us" [ref=f15e537] [cursor=pointer]:
+                  - /url: /spdji/en/contact-us/
+            - list [ref=f15e540]:
+              - listitem [ref=f15e541]:
+                - link "Email Preference Center" [ref=f15e542] [cursor=pointer]:
+                  - /url: https://on.spdji.com/SignUp?src=IDS
+        - contentinfo [ref=f15e543]:
+          - generic [ref=f15e545]:
+            - button "Customize Cookies" [ref=f15e547] [cursor=pointer]
+            - list [ref=f15e549]:
+              - listitem [ref=f15e550]:
+                - link "Legal Disclaimer" [ref=f15e551] [cursor=pointer]:
+                  - /url: /spdji/en/disclaimers/
+              - listitem [ref=f15e552]:
+                - link "Terms of Use" [ref=f15e553] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/terms-of-use
+              - listitem [ref=f15e554]:
+                - link "Cookie Notice" [ref=f15e555] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/cookie-notice
+              - listitem [ref=f15e556]:
+                - link "Privacy Policy" [ref=f15e557] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/privacy/privacy-policy-english
+              - listitem [ref=f15e558]:
+                - link "Client Privacy Portal" [ref=f15e559] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/enterprise/Legal/privacy.html
+              - listitem [ref=f15e560]:
+                - link "Do Not Sell or Share My Personal Information" [ref=f15e561] [cursor=pointer]:
+                  - /url: https://privacyportal.onetrust.com/webform/5cb57702-8ef7-437e-a62b-408fe78cd310/draft/78fa28ce-6010-42fa-96b5-28d8837492e3
+              - listitem [ref=f15e562]:
+                - link "Complaints" [ref=f15e563] [cursor=pointer]:
+                  - /url: /spdji/en/benchmark-complaints-policy/
+              - listitem [ref=f15e564]: © 2026 S&P Global
+  - text: "> > > > >"
+  - region "Cookie banner" [ref=f15e565]:
+    - dialog "Your Cookie Controls:" [ref=f15e566]:
+      - generic [ref=f15e568]:
+        - generic [ref=f15e570]:
+          - heading "Your Cookie Controls:" [level=2] [ref=f15e571]
+          - generic [ref=f15e572]:
+            - text: S&P Global uses cookies to improve user experience and site performance, offer tailored advertising and enable social media sharing. By clicking "Accept All", you agree to our use of cookies. By clicking “Reject All”, we will not place cookies on your device unless strictly necessary for website functionality. For details, please refer to our
+            - link "More information about your privacy, opens in a new tab" [active] [ref=f15e573] [cursor=pointer]:
+              - /url: https://www.spglobal.com/en/cookie-notice
+              - text: Cookie Notice
+        - generic [ref=f15e575]:
+          - button "Customize Cookies" [ref=f15e576] [cursor=pointer]
+          - button "Reject All" [ref=f15e577] [cursor=pointer]
+          - button "Accept All" [ref=f15e578] [cursor=pointer]

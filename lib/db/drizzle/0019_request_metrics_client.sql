@@ -1,0 +1,1 @@
+ALTER TABLE "request_metrics" ADD COLUMN "client" text;

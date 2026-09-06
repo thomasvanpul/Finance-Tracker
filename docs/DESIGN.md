@@ -246,7 +246,106 @@ The two densest pages follow every rule above with two additions:
   "outdated" look. A box is reserved for something the user can press; a
   label that only reads is drawn as a label.
 
-## 10. Checklist before shipping a screen
+## 10. Type: mono is for data, sans is for language
+
+Two families, one question to decide between them.
+
+**Ask: would replacing this text with different text of the same length
+change how it reads against its neighbours?** If yes — because it lines up
+in a column, or a reader compares it digit by digit against the row above —
+it is data, and it is `var(--font-mono)`. If no, it is language, and it is
+`var(--font-sans)`.
+
+**Mono** — every number (§7 already requires this), currency, percentage,
+date, time, duration, ticker, ISIN, commit sha, route path, env var name,
+keyboard shortcut, and the short uppercase legend directly above or beside
+a figure. Column headers over a numeric column are mono because they are
+part of the column. `PanelHeader`, `MonoLabel` and `.pnum` are the three
+places this is already correct; prefer them over writing the family by hand.
+
+**Sans** — sentences, and anything read as language rather than scanned as a
+value: navigation and menu items, button and tab labels, form field labels,
+placeholder and help text, empty-state copy, error and validation messages,
+tooltip prose, dialog body copy, section descriptions, and every name a
+human wrote (account, merchant, category, goal, person).
+
+**Why.** Monospace earns its place by making a column of digits comparable —
+each glyph the same width, so the eye reads position as magnitude. Applied
+to a sentence it buys nothing and costs legibility: proportional spacing is
+what makes prose scannable, and monospaced prose reads as decoration, which
+is exactly the "terminal cosplay" tell `AI-DESIGN-TELLS.md` warns about. The
+instrument argument survives only if mono means something. When everything
+is mono, nothing is.
+
+**The failure this section was written against.** The desktop sidebar draws
+its navigation labels in sans. The settings rail draws the same thing — a
+vertical list of single-word destinations — in mono. Same element, same job,
+two families, on two screens a user moves between in one click. The
+inconsistency is the defect; the count is only how it was found.
+
+Two things a passing glance gets wrong, so they are written down:
+
+- **A short uppercase label is not automatically mono.** `MONTHLY SPEND`
+  above a figure is mono, because it names that column. `Weekly Digest` in a
+  settings menu is sans, because it names a destination.
+- **A word inside a table cell is not automatically mono.** A merchant name
+  in a ledger is language; the amount beside it is data. The row carries
+  both families, and that is correct.
+
+## 11. Colour: one interactive accent, and a categorical ramp that stays back
+
+`--ft-accent` is the interactive accent, per theme, and the only colour that
+means *you can press this*. Active nav item, selected tab, primary button,
+focus ring, the current value in a segmented control. It is user-overridable
+in Settings; every theme sets its own.
+
+`--ft-green`, `--ft-red`, `--ft-amber`, `--ft-blue`, `--ft-cyan` are the
+**semantic ramp**. Green and red carry sign. Amber carries warning. Blue and
+cyan are categorical only — a series line, a type badge, an identity — and
+they carry no affordance. They are ranked *below* the accent and below
+gain/loss: an informational colour must not shout as loudly as a number that
+tells the user they lost money.
+
+**A categorical colour never becomes an interactive one.** If a control is
+pressable, selected, or current, it is `--ft-accent`. This is the rule the
+codebase broke: `/owing` and parts of `/investments` used `--ft-blue` for
+primary button backgrounds, active tab underlines and selected-period
+chips, which gave the product two accents — gold on most screens and a
+generic blue on those. A user cannot learn "this colour means press" if the
+colour changes per screen.
+
+**Tints and hovers follow the theme.** Never write a hardcoded `rgba()` for
+an accent tint or a hover wash. `rgba(244,162,30,…)` is a previous accent
+that no longer matches `--ft-accent` and does not change on any of the
+fourteen themes; `rgba(255,255,255,0.04)` is invisible on the four light
+ones. Use the derived tokens, which are defined once from `--ft-accent` and
+`--ft-text` and therefore correct on every theme:
+
+    --ft-hover          a wash for a hovered row or button
+    --ft-accent-tint    the fill behind an active or pinned item
+    --ft-accent-edge    the border of that same item
+
+## 12. The sidebar
+
+The desktop sidebar is a navigation list, so §10 applies to it directly:
+labels are sans, the section headings (`CORE`, `INVEST`, `PLAN`) are mono
+uppercase because they are legends, and the net-worth figure in the footer
+is `.pnum`.
+
+Beyond that it follows the same rules as any other surface, with two it is
+especially prone to breaking:
+
+- **The active item is `--ft-accent-tint` with an `--ft-accent-edge`
+  border** (§11), not a hardcoded gold. Hover is `--ft-hover`, not white
+  alpha. Both must be visible on `arctic`, `linen`, `parchment` and `slate`.
+- **No coloured left edge on the active item** (§4). The tint and the label
+  weight carry the state. A 3px accent bar down the side of a nav item is
+  the single most cited AI-design tell.
+
+The collapsed rail shows icons only and keeps the same tint rules; the
+width is user-set and persisted, so nothing may assume a fixed value.
+
+## 13. Checklist before shipping a screen
 
 - Every group is inside a 1px square frame (§1) with at most one
   `PanelHeader` (§2), title only, no glyph.
@@ -259,3 +358,7 @@ The two densest pages follow every rule above with two additions:
 - Widen the seed data in your head to a 7-figure balance and a 5-letter
   currency code; nothing collides (§8).
 - Read `AI-DESIGN-TELLS.md` once more against the screenshot, not the code.
+- Every run of words is sans and every value is mono (§10). No sentence
+  is monospaced.
+- Nothing pressable is `--ft-blue`; nothing informational is `--ft-accent`
+  (§11). No hardcoded `rgba()` tint or hover anywhere.

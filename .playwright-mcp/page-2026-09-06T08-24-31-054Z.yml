@@ -1,0 +1,316 @@
+- generic [active] [ref=f41e1]:
+  - link [aria-hidden] [ref=f41e2] [cursor=pointer]:
+    - /url: "#"
+    - text: ___
+  - generic [ref=f41e4]:
+    - banner "Header" [ref=f41e6]:
+      - generic [ref=f41e9]:
+        - navigation [ref=f41e10]:
+          - generic [ref=f41e11]:
+            - generic [ref=f41e12]:
+              - link [ref=f41e14] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en
+                - img "logo" [ref=f41e16]
+              - button "Explore S&P Global" [ref=f41e17] [cursor=pointer]
+            - generic [ref=f41e23]:
+              - button "Search" [ref=f41e24] [cursor=pointer]
+              - button "English" [ref=f41e29] [cursor=pointer]
+              - link "Contact Us" [ref=f41e33] [cursor=pointer]:
+                - /url: /spdji/en/contact-us/
+              - link "Register / Login" [ref=f41e37] [cursor=pointer]:
+                - /url: "#"
+          - text:     
+        - navigation [ref=f41e41]:
+          - generic [ref=f41e42]:
+            - generic [ref=f41e43]:
+              - link "S&P Dow Jones Indices" [ref=f41e44] [cursor=pointer]:
+                - /url: /spdji/en/
+              - button "Our Solutions" [ref=f41e47] [cursor=pointer]:
+                - img [ref=f41e49]: 
+                - text: 
+              - button "Indices" [ref=f41e51] [cursor=pointer]:
+                - img [ref=f41e53]: 
+                - text: 
+              - button "Research & Insights" [ref=f41e55] [cursor=pointer]:
+                - img [ref=f41e57]: 
+                - text: 
+              - button "Governance" [ref=f41e59] [cursor=pointer]:
+                - img [ref=f41e61]: 
+                - text: 
+              - button "SPICE" [ref=f41e63] [cursor=pointer]:
+                - img [ref=f41e65]: 
+                - text: 
+              - link "About S&P DJI" [ref=f41e67] [cursor=pointer]:
+                - /url: /spdji/en/about-us/
+            - link "Index Finder" [ref=f41e70] [cursor=pointer]:
+              - /url: /spdji/en/index-finder/
+          - text:                          
+      - text:                                        
+    - generic [ref=f41e73]:
+      - navigation [ref=f41e78]:
+        - link "About Us" [ref=f41e79] [cursor=pointer]:
+          - /url: /spdji/en/about-us/
+        - link "Our Services" [ref=f41e80] [cursor=pointer]:
+          - /url: /spdji/en/about-us/our-services/
+        - link "DATA & INDEX LICENSING":
+          - /url: /spdji/en/about-us/data-index-licensing/
+      - generic [ref=f41e82]:
+        - generic [ref=f41e87]:
+          - heading "Data & Index Licensing" [level=1] [ref=f41e88]
+          - paragraph [ref=f41e89]: Whether used as the foundation of a custom-built financial instrument, to uncover specific market trends, or to gain a better understanding of the markets in general, licensing indices and associated data packages from S&P Dow Jones Indices (S&P DJI) can be invaluable to a range of financial professionals.
+          - generic:
+            - list
+        - generic [ref=f41e91]:
+          - heading "Index Licensing" [level=2] [ref=f41e93]
+          - generic [ref=f41e94]:
+            - paragraph [ref=f41e95]: "S&P DJI licenses indices to more than 550 financial institutions worldwide to build investment products linked to our indices, including:"
+            - generic [ref=f41e96]:
+              - list [ref=f41e98]:
+                - listitem [ref=f41e99]:
+                  - paragraph [ref=f41e104]:
+                    - strong [ref=f41e105]: Exchange-Traded Funds (ETFs)
+                - listitem [ref=f41e106]:
+                  - paragraph [ref=f41e111]:
+                    - strong [ref=f41e112]: Mutual Funds
+                - listitem [ref=f41e113]:
+                  - paragraph [ref=f41e118]:
+                    - strong [ref=f41e119]: Futures and Options
+                - listitem [ref=f41e120]:
+                  - paragraph [ref=f41e125]:
+                    - strong [ref=f41e126]: Structured Products
+                - listitem [ref=f41e127]:
+                  - paragraph [ref=f41e132]:
+                    - strong [ref=f41e133]: Annuities and Insurance Products
+              - paragraph [ref=f41e134]: A license with S&P DJI gives an organization the data and permissions needed to replicate the performance of one or more of our indices in their investment products. Licensees are also able to leverage our world-renowned brand to promote their products.
+        - separator [ref=f41e135]
+        - generic [ref=f41e137]:
+          - heading "Data and Benchmarking" [level=2] [ref=f41e139]
+          - generic [ref=f41e140]:
+            - paragraph [ref=f41e141]: S&P DJI index data packages can be invaluable tools for asset managers, investment banks, and others to measure, track, and analyze the global markets.
+            - paragraph [ref=f41e142]: "A range of flexible index data subscriptions—from broad to extremely detailed—are available to suit specific needs and desired outcomes. Packages can be tailored by geography, sector, style, and/or index family. Packages are offered at three levels: index, constituent data, and/or corporate action information."
+            - generic [ref=f41e143]:
+              - generic [ref=f41e144]:
+                - paragraph [ref=f41e145]:
+                  - strong [ref=f41e146]: "Applications include:"
+                - list [ref=f41e147]:
+                  - listitem [ref=f41e148]:
+                    - generic [ref=f41e152]:
+                      - paragraph [ref=f41e153]:
+                        - strong [ref=f41e154]: Benchmarking
+                      - paragraph [ref=f41e155]: Benchmarking the performance of actively managed funds and institutional portfolios
+                  - listitem [ref=f41e156]:
+                    - generic [ref=f41e160]:
+                      - paragraph [ref=f41e161]:
+                        - strong [ref=f41e162]: Portfolios
+                      - paragraph [ref=f41e163]: Modeling portfolios and supporting asset allocation decisions
+                  - listitem [ref=f41e164]:
+                    - generic [ref=f41e168]:
+                      - paragraph [ref=f41e169]:
+                        - strong [ref=f41e170]: Research & Analysis
+                      - paragraph [ref=f41e171]: Research and analysis, such as performance attribution
+              - separator [ref=f41e172]
+              - paragraph [ref=f41e173]:
+                - text: We also license real-time values of our indices, including the iconic Dow Jones Industrial Average
+                - superscript [ref=f41e174]: ®
+                - text: ", and the S&P 500"
+                - superscript [ref=f41e175]: ®
+                - text: ", to the media for display on television, websites, and mobile apps."
+        - generic [ref=f41e178]:
+          - generic [ref=f41e179]:
+            - heading "Data Delivery Platforms" [level=2] [ref=f41e181]
+            - generic [ref=f41e182]:
+              - heading [level=5]
+              - paragraph [ref=f41e184]: We enable our clients to access data and files through a variety of platforms, depending on their needs.
+              - link "LEARN MORE>" [ref=f41e185] [cursor=pointer]:
+                - /url: https://www.spglobal.com/spdji/en/landing/topic/data-delivery-platforms/
+          - generic [ref=f41e187]:
+            - generic [ref=f41e188]:
+              - paragraph
+              - heading "API Data Solutions" [level=3] [ref=f41e189]
+              - paragraph [ref=f41e190]: We offer secure, flexible, continuously updated electronic data delivery solutions as an efficient and customizable alternative to traditional file delivery.
+              - link "LEARN MORE>" [ref=f41e191] [cursor=pointer]:
+                - /url: https://www.spglobal.com/spdji/en/landing/topic/api-data-solutions/
+            - generic [ref=f41e192]:
+              - paragraph
+              - heading "SFTP File Delivery" [level=3] [ref=f41e193]
+              - paragraph [ref=f41e194]: SFTP is our standard data delivery platform, intended for clients who are seeking to integrate index data with other datasets by feeding it into data management platforms on an automated basis.
+            - generic [ref=f41e195]:
+              - paragraph
+              - heading "SPICE" [level=3] [ref=f41e196]
+              - paragraph [ref=f41e197]:
+                - text: SPICE
+                - superscript [ref=f41e198]: ®
+                - text: is a web-based platform that allows individual users to access our data through an easy-to-use interface with no implementation required.
+              - link "LEARN MORE>" [ref=f41e199] [cursor=pointer]:
+                - /url: https://www.spglobal.com/spdji/en/landing/topic/spice/
+            - generic [ref=f41e200]:
+              - paragraph
+              - heading "Third-Party Vendors" [level=3] [ref=f41e201]
+              - paragraph [ref=f41e202]: Our indices are available on a wide range of leading data vendor and analytics platforms.
+        - generic [ref=f41e204]:
+          - heading "Contact Us" [level=2] [ref=f41e206]
+          - generic [ref=f41e207]:
+            - paragraph [ref=f41e208]: For more information about how to license our indices or subscribe to our data, please contact the Commercial Services representative for your region.
+            - generic [ref=f41e211]:
+              - list [ref=f41e213]:
+                - listitem [ref=f41e214]:
+                  - generic [ref=f41e215]: Region
+                  - combobox [aria-hidden] [ref=f41e216]
+                  - combobox [ref=f41e219] [cursor=pointer]:
+                    - textbox [ref=f41e220]
+                    - text: 
+                - listitem [ref=f41e221]:
+                  - generic [ref=f41e222]: Location
+                  - combobox [disabled] [ref=f41e223]
+              - generic [ref=f41e224]:
+                - list
+    - contentinfo "Footer" [ref=f41e226]:
+      - list [ref=f41e227]:
+        - list [ref=f41e230]:
+          - listitem [ref=f41e231]:
+            - generic [ref=f41e232]: Follow Us
+          - listitem [ref=f41e233]:
+            - link "" [ref=f41e234] [cursor=pointer]:
+              - /url: https://twitter.com/SPDJIndices
+          - listitem [ref=f41e236]:
+            - link "" [ref=f41e237] [cursor=pointer]:
+              - /url: https://www.facebook.com/SP-Dow-Jones-Indices-161630018534/
+          - listitem [ref=f41e239]:
+            - link "" [ref=f41e240] [cursor=pointer]:
+              - /url: https://www.youtube.com/user/SPIndicesChannel
+          - listitem [ref=f41e242]:
+            - link "" [ref=f41e243] [cursor=pointer]:
+              - /url: https://www.linkedin.com/company/s&p-dow-jones-indices
+          - listitem [ref=f41e245]:
+            - link [ref=f41e246] [cursor=pointer]:
+              - /url: /spdji/en/rss/
+              - link "" [ref=f41e247]
+      - generic [ref=f41e248]:
+        - contentinfo "Footer Primary Nav" [ref=f41e249]:
+          - generic [ref=f41e251]:
+            - list [ref=f41e253]:
+              - listitem [ref=f41e254]:
+                - generic [ref=f41e255]: Our Purpose
+              - listitem [ref=f41e256]:
+                - link "Our Values" [ref=f41e257] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are
+              - listitem [ref=f41e258]:
+                - link "Our History" [ref=f41e259] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/our-history
+              - listitem [ref=f41e260]:
+                - link "Ventures" [ref=f41e261] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/venture
+              - listitem [ref=f41e262]:
+                - link "Press" [ref=f41e263] [cursor=pointer]:
+                  - /url: https://press.spglobal.com
+            - list [ref=f41e265]:
+              - listitem [ref=f41e266]:
+                - generic [ref=f41e267]: Investor Relations
+              - listitem [ref=f41e268]:
+                - link "Overview" [ref=f41e269] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/investor-relations-overview/default.aspx
+              - listitem [ref=f41e270]:
+                - link "News Releases" [ref=f41e271] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/news-releases/default.aspx
+              - listitem [ref=f41e272]:
+                - link "Quarterly Earnings" [ref=f41e273] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/quarterly-earnings/
+              - listitem [ref=f41e274]:
+                - link "SEC Filings & Reports" [ref=f41e275] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/sec-filings-reports/overview/
+            - list [ref=f41e277]:
+              - listitem [ref=f41e278]:
+                - generic [ref=f41e279]: Contact Us
+              - listitem [ref=f41e280]:
+                - link "Customer Care & Sales" [ref=f41e281] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/enterprise/about/contact-us.html
+              - listitem [ref=f41e282]:
+                - link "Support by Division" [ref=f41e283] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us
+              - listitem [ref=f41e284]:
+                - link "Report an Ethics Concern" [ref=f41e285] [cursor=pointer]:
+                  - /url: https://secure.ethicspoint.com/domain/media/en/gui/7615/index.html
+              - listitem [ref=f41e286]:
+                - link "Office Locations" [ref=f41e287] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us/office-locations
+            - list [ref=f41e289]:
+              - listitem [ref=f41e290]:
+                - generic [ref=f41e291]: Our Organization
+              - listitem [ref=f41e292]:
+                - link "Careers" [ref=f41e293] [cursor=pointer]:
+                  - /url: https://careers.spglobal.com/jobs
+              - listitem [ref=f41e294]:
+                - link "Corporate Responsibility" [ref=f41e295] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/corporate-responsibility
+              - listitem [ref=f41e296]:
+                - link "Leadership" [ref=f41e297] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/about-sp-global/our-people/our-leadership
+              - listitem [ref=f41e298]:
+                - link "IOSCO ESG Rating & Data Product Statements" [ref=f41e299] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/esg-statements
+        - separator [ref=f41e301]
+        - contentinfo [ref=f41e302]:
+          - generic [ref=f41e304]:
+            - list [ref=f41e307]:
+              - listitem [ref=f41e308]:
+                - link "About S&P Dow Jones Indices" [ref=f41e309] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/
+              - listitem [ref=f41e310]:
+                - link "S&P DJI Leadership" [ref=f41e311] [cursor=pointer]:
+                  - /url: /spdji/en/our-leadership/
+            - list [ref=f41e314]:
+              - listitem [ref=f41e315]:
+                - link "Our Services" [ref=f41e316] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/our-services/
+              - listitem [ref=f41e317]:
+                - link "Media Center" [ref=f41e318] [cursor=pointer]:
+                  - /url: /spdji/en/media-center/news-announcements/
+            - list [ref=f41e321]:
+              - listitem [ref=f41e322]:
+                - link "Contact Us" [ref=f41e323] [cursor=pointer]:
+                  - /url: /spdji/en/contact-us/
+            - list [ref=f41e326]:
+              - listitem [ref=f41e327]:
+                - link "Email Preference Center" [ref=f41e328] [cursor=pointer]:
+                  - /url: https://on.spdji.com/SignUp?src=IDS
+        - contentinfo [ref=f41e329]:
+          - generic [ref=f41e331]:
+            - button "Customize Cookies" [ref=f41e333] [cursor=pointer]
+            - list [ref=f41e335]:
+              - listitem [ref=f41e336]:
+                - link "Legal Disclaimer" [ref=f41e337] [cursor=pointer]:
+                  - /url: /spdji/en/disclaimers/
+              - listitem [ref=f41e338]:
+                - link "Terms of Use" [ref=f41e339] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/terms-of-use
+              - listitem [ref=f41e340]:
+                - link "Cookie Notice" [ref=f41e341] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/cookie-notice
+              - listitem [ref=f41e342]:
+                - link "Privacy Policy" [ref=f41e343] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/privacy/privacy-policy-english
+              - listitem [ref=f41e344]:
+                - link "Client Privacy Portal" [ref=f41e345] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/enterprise/Legal/privacy.html
+              - listitem [ref=f41e346]:
+                - link "Do Not Sell or Share My Personal Information" [ref=f41e347] [cursor=pointer]:
+                  - /url: https://privacyportal.onetrust.com/webform/5cb57702-8ef7-437e-a62b-408fe78cd310/draft/78fa28ce-6010-42fa-96b5-28d8837492e3
+              - listitem [ref=f41e348]:
+                - link "Complaints" [ref=f41e349] [cursor=pointer]:
+                  - /url: /spdji/en/benchmark-complaints-policy/
+              - listitem [ref=f41e350]: © 2026 S&P Global
+  - text: "> > > > >"
+  - region "Cookie banner" [ref=f41e351]:
+    - dialog "Your Cookie Controls:" [ref=f41e352]:
+      - generic [ref=f41e354]:
+        - generic [ref=f41e356]:
+          - heading "Your Cookie Controls:" [level=2] [ref=f41e357]
+          - generic [ref=f41e358]:
+            - text: S&P Global uses cookies to improve user experience and site performance, offer tailored advertising and enable social media sharing. By clicking "Accept All", you agree to our use of cookies. By clicking “Reject All”, we will not place cookies on your device unless strictly necessary for website functionality. For details, please refer to our
+            - link "More information about your privacy, opens in a new tab" [ref=f41e359] [cursor=pointer]:
+              - /url: https://www.spglobal.com/en/cookie-notice
+              - text: Cookie Notice
+        - generic [ref=f41e361]:
+          - button "Customize Cookies" [ref=f41e362] [cursor=pointer]
+          - button "Reject All" [ref=f41e363] [cursor=pointer]
+          - button "Accept All" [ref=f41e364] [cursor=pointer]

@@ -1,0 +1,266 @@
+- generic [active] [ref=f23e1]:
+  - link [aria-hidden] [ref=f23e2] [cursor=pointer]:
+    - /url: "#"
+    - text: ___
+  - generic [ref=f23e4]:
+    - banner "Header" [ref=f23e6]:
+      - generic [ref=f23e9]:
+        - navigation [ref=f23e10]:
+          - generic [ref=f23e11]:
+            - generic [ref=f23e12]:
+              - link [ref=f23e14] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en
+                - img "logo" [ref=f23e16]
+              - button "Explore S&P Global" [ref=f23e17] [cursor=pointer]
+            - generic [ref=f23e23]:
+              - button "Search" [ref=f23e24] [cursor=pointer]
+              - button "English" [ref=f23e29] [cursor=pointer]
+              - link "Contact Us" [ref=f23e33] [cursor=pointer]:
+                - /url: /spdji/en/contact-us/
+              - link "Register / Login" [ref=f23e37] [cursor=pointer]:
+                - /url: "#"
+          - text:     
+        - navigation [ref=f23e41]:
+          - generic [ref=f23e42]:
+            - generic [ref=f23e43]:
+              - link "S&P Dow Jones Indices" [ref=f23e44] [cursor=pointer]:
+                - /url: /spdji/en/
+              - button "Our Solutions" [ref=f23e47] [cursor=pointer]:
+                - img [ref=f23e49]: 
+                - text: 
+              - button "Indices" [ref=f23e51] [cursor=pointer]:
+                - img [ref=f23e53]: 
+                - text: 
+              - button "Research & Insights" [ref=f23e55] [cursor=pointer]:
+                - img [ref=f23e57]: 
+                - text: 
+              - button "Governance" [ref=f23e59] [cursor=pointer]:
+                - img [ref=f23e61]: 
+                - text: 
+              - button "SPICE" [ref=f23e63] [cursor=pointer]:
+                - img [ref=f23e65]: 
+                - text: 
+              - link "About S&P DJI" [ref=f23e67] [cursor=pointer]:
+                - /url: /spdji/en/about-us/
+            - link "Index Finder" [ref=f23e70] [cursor=pointer]:
+              - /url: /spdji/en/index-finder/
+          - text:                          
+      - text:                                        
+    - generic [ref=f23e73]:
+      - generic:
+        - list [ref=f23e75]:
+          - listitem [ref=f23e76]:
+            - generic [ref=f23e77] [cursor=pointer]: General Disclaimer >
+          - listitem [ref=f23e78]:
+            - generic [ref=f23e79] [cursor=pointer]: Performance Disclosure >
+        - generic [ref=f23e80]:
+          - heading "Legal Disclaimers" [level=3] [ref=f23e82]
+          - separator [ref=f23e83]
+          - generic [ref=f23e84]:
+            - generic [ref=f23e85]:
+              - heading "General Disclaimer" [level=5] [ref=f23e86]
+              - generic [ref=f23e87]:
+                - paragraph [ref=f23e88]: © 2026 S&P Dow Jones Indices. All rights reserved. S&P, S&P 500, S&P 500 LOW VOLATILITY INDEX, S&P 100, S&P COMPOSITE 1500, S&P 400, S&P MIDCAP 400, S&P 600, S&P SMALLCAP 600, S&P GIVI, GLOBAL TITANS, DIVIDEND ARISTOCRATS, S&P TARGET DATE INDICES, S&P PRISM, S&P STRIDE, GICS, SPIVA, SPDR and INDEXOLOGY are registered trademarks of S&P Global, Inc. (“S&P Global”) or its affiliates. DOW JONES, DJ, DJIA, THE DOW and DOW JONES INDUSTRIAL AVERAGE are registered trademarks of Dow Jones Trademark Holdings LLC (“Dow Jones”). These trademarks together with others have been licensed to S&P Dow Jones Indices LLC. Redistribution or reproduction in whole or in part are prohibited without written permission of S&P Dow Jones Indices LLC. This document does not constitute an offer of services in jurisdictions where S&P Dow Jones Indices LLC, S&P Global, Dow Jones or their respective affiliates (collectively “S&P Dow Jones Indices”) do not have the necessary licenses. Except for certain custom index calculation services, all information provided by S&P Dow Jones Indices is impersonal and not tailored to the needs of any person, entity or group of persons. S&P Dow Jones Indices receives compensation in connection with licensing its indices to third parties and providing custom calculation services. Past performance of an index is not an indication or guarantee of future results.
+                - paragraph [ref=f23e89]: It is not possible to invest directly in an index. Exposure to an asset class represented by an index may be available through investable instruments based on that index. S&P Dow Jones Indices does not sponsor, endorse, sell, promote or manage any investment fund or other investment vehicle that is offered by third parties and that seeks to provide an investment return based on the performance of any index. S&P Dow Jones Indices makes no assurance that investment products based on the index will accurately track index performance or provide positive investment returns. S&P Dow Jones Indices LLC is not an investment advisor, and S&P Dow Jones Indices makes no representation regarding the advisability of investing in any such investment fund or other investment vehicle. A decision to invest in any such investment fund or other investment vehicle should not be made in reliance on any of the statements set forth in this document. Prospective investors are advised to make an investment in any such fund or other vehicle only after carefully considering the risks associated with investing in such funds, as detailed in an offering memorandum or similar document that is prepared by or on behalf of the issuer of the investment fund or other investment product or vehicle. S&P Dow Jones Indices LLC is not a tax advisor. A tax advisor should be consulted to evaluate the impact of any tax-exempt securities on portfolios and the tax consequences of making any particular investment decision. Inclusion of a security within an index is not a recommendation by S&P Dow Jones Indices to buy, sell, or hold such security, nor is it considered to be investment advice. Closing prices for S&P Dow Jones Indices’ US benchmark indices are calculated by S&P Dow Jones Indices based on the closing price of the individual constituents of the index as set by their primary exchange. Closing prices are received by S&P Dow Jones Indices from one of its third party vendors and verified by comparing them with prices from an alternative vendor. The vendors receive the closing price from the primary exchanges. Real-time intraday prices are calculated similarly without a second verification.
+                - paragraph [ref=f23e90]: These materials have been prepared solely for informational purposes based upon information generally available to the public and from sources believed to be reliable. No content contained in these materials (including index data, ratings, credit-related analyses and data, research, valuations, model, software or other application or output therefrom) or any part thereof (“Content”) may be modified, reverse-engineered, reproduced or distributed in any form or by any means, or stored in a database or retrieval system, without the prior written permission of S&P Dow Jones Indices. The Content shall not be used for any unlawful or unauthorized purposes. S&P Dow Jones Indices and its third-party data providers and licensors (collectively “S&P Dow Jones Indices Parties”) do not guarantee the accuracy, completeness, timeliness or availability of the Content. S&P Dow Jones Indices Parties are not responsible for any errors or omissions, regardless of the cause, for the results obtained from the use of the Content. THE CONTENT IS PROVIDED ON AN “AS IS” BASIS. S&P DOW JONES INDICES PARTIES DISCLAIM ANY AND ALL EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, ANY WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE OR USE, FREEDOM FROM BUGS, SOFTWARE ERRORS OR DEFECTS, THAT THE CONTENT’S FUNCTIONING WILL BE UNINTERRUPTED OR THAT THE CONTENT WILL OPERATE WITH ANY SOFTWARE OR HARDWARE CONFIGURATION. In no event shall S&P Dow Jones Indices Parties be liable to any party for any direct, indirect, incidental, exemplary, compensatory, punitive, special or consequential damages, costs, expenses, legal fees, or losses (including, without limitation, lost income or lost profits and opportunity costs) in connection with any use of the Content even if advised of the possibility of such damages.
+                - paragraph [ref=f23e91]: Credit-related information and other analyses, including ratings, research and valuations are generally provided by licensors and/or affiliates of S&P Dow Jones Indices, including but not limited to S&P Global’s other divisions such as S&P Global Market Intelligence. Any credit-related information and other related analyses and statements in the Content are statements of opinion as of the date they are expressed and not statements of fact. Any opinion, analyses and rating acknowledgement decisions are not recommendations to purchase, hold, or sell any securities or to make any investment decisions, and do not address the suitability of any security. S&P Dow Jones Indices does not assume any obligation to update the Content following publication in any form or format. The Content should not be relied on and is not a substitute for the skill, judgment and experience of the user, its management, employees, advisors and/or clients when making investment and other business decisions. S&P Dow Jones Indices LLC does not act as a fiduciary or an investment advisor. While S&P Dow Jones Indices has obtained information from sources they believe to be reliable, S&P Dow Jones Indices does not perform an audit or undertake any duty of due diligence or independent verification of any information it receives.
+                - paragraph [ref=f23e92]:
+                  - text: To the extent that regulatory authorities allow a rating agency to acknowledge in one jurisdiction a rating issued in another jurisdiction for certain regulatory purposes, S&P Global Ratings reserves the right to assign, withdraw or suspend such acknowledgement at any time and in its sole discretion. S&P Dow Jones Indices, including S&P Global Ratings, disclaim any duty whatsoever arising out of the assignment, withdrawal or suspension of an acknowledgement as well as any liability for any damage alleged to have been suffered on account thereof. Affiliates of S&P Dow Jones Indices LLC, including S&P Global Ratings, may receive compensation for its ratings and certain credit-related analyses, normally from issuers or underwriters of securities or from obligors. Such affiliates of S&P Dow Jones Indices LLC, including S&P Global Ratings, reserve the right to disseminate its opinions and analyses. Public ratings and analyses from S&P Global Ratings are made available on its Web sites,
+                  - link "www.standardandpoors.com" [ref=f23e93] [cursor=pointer]:
+                    - /url: https://www.standardandpoors.com/
+                  - text: (free of charge), and
+                  - link "www.ratingsdirect.com" [ref=f23e94] [cursor=pointer]:
+                    - /url: http://www.ratingsdirect.com/
+                  - text: and
+                  - link "www.globalcreditportal.com" [ref=f23e95] [cursor=pointer]:
+                    - /url: https://www.globalcreditportal.com/
+                  - text: (subscription), and may be distributed through other means, including via S&P Global Ratings publications and third-party redistributors. Additional information about our ratings fees is available at
+                  - link "www.standardandpoors.com/usratingsfees" [ref=f23e96] [cursor=pointer]:
+                    - /url: https://www.standardandpoors.com/usratingsfees
+                  - text: .
+                - paragraph [ref=f23e97]: S&P Global keeps certain activities of its various divisions and business units separate from each other in order to preserve the independence and objectivity of their respective activities. As a result, certain divisions and business units of S&P Global may have information that is not available to other business units. S&P Global has established policies and procedures to maintain the confidentiality of certain non-public information received in connection with each analytical process.
+                - paragraph [ref=f23e98]: In addition, S&P Dow Jones Indices provides a wide range of services to, or relating to, many organizations, including issuers of securities, investment advisers, broker-dealers, investment banks, other financial institutions and financial intermediaries, and accordingly may receive fees or other economic benefits from those organizations, including organizations whose securities or services they may recommend, rate, include in model portfolios, evaluate or otherwise address.
+                - paragraph [ref=f23e99]: The Global Industry Classification Standard (GICS®) was developed by and is the exclusive property and a trademark of S&P and MSCI. Neither MSCI, S&P nor any other party involved in making or compiling any GICS classifications makes any express or implied warranties or representations with respect to such standard or classification (or the results to be obtained by the use thereof), and all such parties hereby expressly disclaim all warranties of originality, accuracy, completeness, merchantability or fitness for a particular purpose with respect to any of such standard or classification. Without limiting any of the foregoing, in no event shall MSCI, S&P, any of their affiliates or any third party involved in making or compiling any GICS classifications have any liability for any direct, indirect, special, punitive, consequential or any other damages (including lost profits) even if notified of the possibility of such damages.
+                - paragraph [ref=f23e100]: The S&P 500 FC TCA Indices (the “Licensee Indices”) are based in part on “Fast Convergence” methodology developed by and licensed from BofA. The Licensee Indices were developed in collaboration with BofA. The Fast Convergence (FC) methodology (collectively, the “FC Methodology”) and the name “BofAS” and trademarks “FC” and “Fast Convergence” (collectively, the “BofAS Trademarks”) are the intellectual property of BofA Securities Inc. and its affiliates (“BofAS”). The FC Methodology has been licensed to S&P Dow Jones Indices LLC (“Licensee”) by BofAS on an “AS IS” basis for inclusion in the Licensee Indices. BofAS is not the “administrator” of the Licensee Indices for the purposes of Regulation (EU) 2016/1011 of the European Parliament and the Council of 8 June 2016 on indices used as benchmarks in financial instruments and financial contracts or to measure the performance of investment funds) in the European Union (the “EU Benchmarks Regulations”) or the Benchmarks (Amendment and Transitional Provision) (EU Exit) Regulations 2019 which transposed the EU Benchmark Regulation into UK Law (the “UK Benchmarks Regulations”) (collectively, the “Benchmarks Regulations”). BofAS was not and is not involved in any way in the calculation, maintenance or review of the Licensee Indices. BOFAS DOES NOT MAKE, AND HEREBY SPECIFICALLY DISCLAIMS, ANY REPRESENTATIONS, ENDORSEMENTS, GUARANTEES, OR WARRANTIES, EXPRESS OR IMPLIED, INCLUDING, WITHOUT LIMITATION, ANY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE OF THE FC METHODOLOGY, BOFAS TRADEMARKS OR THE LICENSEE INDICES (INCLUDING WITHOUT LIMITATION, THEIR QUALITY, ACCURACY, SUITABILITY AND/OR COMPLETENESS), AND AS TO RESULTS TO BE OBTAINED BY LICENSEE, ISSUERS OR OWNERS OF ANY FINANCIAL PRODUCT REFERENCING ANY OF THE LICENSEE INDICES, OR ANY OTHER PERSON OR ENTITY. BOFAS FURTHER DISCLAIMS ANY REPRESENTATIONS RELATING TO TITLE OR NONINFRINGEMENT OF INTELLECTUAL PROPERTY RIGHTS WITH RESPECT TO ANY OF THE LICENSEE INDICES, ANY RELATED INFORMATION, THE BOFAS TRADEMARKS, OR ANY FINANCIAL PRODUCT REFERENCING ANY OF THE LICENSEE INDICES. PROSPECTIVE INVESTORS ACKNOWLEDGE THAT THEY ARE RESPONSIBLE FOR DETERMINING THE NATURE, POTENTIAL VALUE, AND SUITABILITY FOR ITSELF OF ANY PARTICULAR SECURITY, TRANSACTION, INVESTMENT STRATEGY OR FINANCIAL PRODUCT REFERENCING ANY OF THE LICENSEE INDICES AND THAT BOFAS DOES NOT GIVE SUCH ADVICE OR RECOMMENDATIONS. Without limiting the foregoing, in no event shall BofAS have any liability for any direct, indirect, special, incidental, punitive, consequential (including, without limitation, lost profits) or any other damages in connection with the FC Methodology, the BofAS Trademarks or the Licensee Indices. BofAS (or its affiliates) may be engaging in services or transactions for its other clients or for its own proprietary accounts which could affect the value of the constituents underlying a Licensee Index and thereby the calculated values of the Licensee Indices.
+                - paragraph [ref=f23e101]: ASX, ALL ORDINARIES are trademarks of ASX Operations Pty Ltd. and have been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e102]: B3 is a trademark of B3 S.A. - Brasil, Bolsa, Balcão and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e103]: BMV is a trademark of Bolsa Mexicana de Valores, S.A.B. de C.V. and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e104]: BNY Mellon is a trademark of The Bank of New York Mellon Corporation and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e105]: Brookfield Redding, Inc. and/or its affiliates (including but not limited to Brookfield Asset Management Inc., collectively “Co-Publisher”) own certain intellectual property rights with respect to the Dow Jones Brookfield Infrastructure Indexes, which rights have been licensed to S&P for use.
+                - paragraph [ref=f23e106]: BYMA is a trademark of Bolsas y Mercados Argentinos S.A. and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e107]: Case-Shiller™, Cotality™, and Cotality Case-Shiller™ are the trademarks of CoreLogic, Inc. d/b/a Cotality or its affiliates or subsidiaries and are used herein by permission of the trademark owner.
+                - paragraph [ref=f23e108]: CSE is a trademark of Colombo Stock Exchange and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e109]: DRUCKER INSTITUTE is a trademark of Claremont Graduate University and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e110]: EGX is a trademark of The Egyptian Exchange and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e111]: FMDQ is a trademark of FMDQ OTC Securities Exchange and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e112]: GSCI is a registered trademark of The Goldman Sachs Group, Inc. (“Goldman”) and has been licensed for use by S&P Dow Jones Indices. The S&P GSCI index is not created, owned, endorsed, sponsored, sold or promoted by Goldman or its affiliates and Goldman bears no liability with respect to such index or data related thereto. Goldman provides no guarantee as to the accuracy and/or the completeness of the S&P GSCI index or any data related thereto.
+                - paragraph [ref=f23e113]: HAREL is a trademark of Harel Insurance Investments and Financial Services Ltd. and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e114]: HAWKAMAH is a trademark of Hawkamah LLC and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e115]: HKEx is a trademark of HKEx Information Services Limited and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e116]: IFCI and IFCG are trademarks of International Finance Corporation and have been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e117]: JPX is a trademark of Japan Exchange Group, Inc. and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e118]: KENSHO is a trademark of Kensho Technologies, LLC and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e119]: KRX and KOSPI are trademarks of The Korea Exchange and have been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e120]: MARKETAXESS is a trademark of MarketAxess Corporation and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e121]: MERVAL is a trademark of Bolsas y Mercados Argentinos S.A. and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e122]: In countries within the global territory other than Chile, MILA is a trademark of Balsa de Valores de Colombia, S.A, Balsa de Valores de Lima and Bolsa de Comercio de Santiago. In Chile, MILA is a trademark of Bolsa de Comercio de Santiago and Deposito Central de Valores. This mark has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e123]: NZX is a trademark of NZX Limited and have been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e124]: S&P Global, provides the data that powers the globally recognized Dow Jones Sustainability Indices, S&P 500 ESG Index, and others in the S&P ESG Index Series. Each year, S&P Global conducts the Corporate Sustainability Assessment, an ESG analysis of over 7,300 companies. The CSA has produced one of the world’s most comprehensive databases of financially material sustainability information, and serves as the basis for the scores that govern S&P DJI ESG indices.
+                - paragraph [ref=f23e125]: TAIFEX is a trademark of Taiwan Futures Exchange and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e126]: TOPIX is a trademark of Tokyo Stock Exchange and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e127]: TSX is a trademark of TSX, Inc. and has been licensed for use by S&P Dow Jones Indices.
+                - paragraph [ref=f23e128]: VALMER is a trademark of Valuacion Operativa y Referencias de Mercado S.A. de C.V. and has been licensed for use by S&P Dow Jones Indices
+                - paragraph [ref=f23e129]: VIX and Cboe are registered trademarks of Cboe Exchange, Inc. and have been licensed for use by S&P Dow Jones Indices.
+            - generic:
+              - generic:
+                - menu
+    - contentinfo "Footer" [ref=f23e131]:
+      - list [ref=f23e132]:
+        - list [ref=f23e135]:
+          - listitem [ref=f23e136]:
+            - generic [ref=f23e137]: Follow Us
+          - listitem [ref=f23e138]:
+            - link "" [ref=f23e139] [cursor=pointer]:
+              - /url: https://twitter.com/SPDJIndices
+          - listitem [ref=f23e141]:
+            - link "" [ref=f23e142] [cursor=pointer]:
+              - /url: https://www.facebook.com/SP-Dow-Jones-Indices-161630018534/
+          - listitem [ref=f23e144]:
+            - link "" [ref=f23e145] [cursor=pointer]:
+              - /url: https://www.youtube.com/user/SPIndicesChannel
+          - listitem [ref=f23e147]:
+            - link "" [ref=f23e148] [cursor=pointer]:
+              - /url: https://www.linkedin.com/company/s&p-dow-jones-indices
+          - listitem [ref=f23e150]:
+            - link [ref=f23e151] [cursor=pointer]:
+              - /url: /spdji/en/rss/
+              - link "" [ref=f23e152]
+      - generic [ref=f23e153]:
+        - contentinfo "Footer Primary Nav" [ref=f23e154]:
+          - generic [ref=f23e156]:
+            - list [ref=f23e158]:
+              - listitem [ref=f23e159]:
+                - generic [ref=f23e160]: Our Purpose
+              - listitem [ref=f23e161]:
+                - link "Our Values" [ref=f23e162] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are
+              - listitem [ref=f23e163]:
+                - link "Our History" [ref=f23e164] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/our-history
+              - listitem [ref=f23e165]:
+                - link "Ventures" [ref=f23e166] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/venture
+              - listitem [ref=f23e167]:
+                - link "Press" [ref=f23e168] [cursor=pointer]:
+                  - /url: https://press.spglobal.com
+            - list [ref=f23e170]:
+              - listitem [ref=f23e171]:
+                - generic [ref=f23e172]: Investor Relations
+              - listitem [ref=f23e173]:
+                - link "Overview" [ref=f23e174] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/investor-relations-overview/default.aspx
+              - listitem [ref=f23e175]:
+                - link "News Releases" [ref=f23e176] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/news-releases/default.aspx
+              - listitem [ref=f23e177]:
+                - link "Quarterly Earnings" [ref=f23e178] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/quarterly-earnings/
+              - listitem [ref=f23e179]:
+                - link "SEC Filings & Reports" [ref=f23e180] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/sec-filings-reports/overview/
+            - list [ref=f23e182]:
+              - listitem [ref=f23e183]:
+                - generic [ref=f23e184]: Contact Us
+              - listitem [ref=f23e185]:
+                - link "Customer Care & Sales" [ref=f23e186] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/enterprise/about/contact-us.html
+              - listitem [ref=f23e187]:
+                - link "Support by Division" [ref=f23e188] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us
+              - listitem [ref=f23e189]:
+                - link "Report an Ethics Concern" [ref=f23e190] [cursor=pointer]:
+                  - /url: https://secure.ethicspoint.com/domain/media/en/gui/7615/index.html
+              - listitem [ref=f23e191]:
+                - link "Office Locations" [ref=f23e192] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us/office-locations
+            - list [ref=f23e194]:
+              - listitem [ref=f23e195]:
+                - generic [ref=f23e196]: Our Organization
+              - listitem [ref=f23e197]:
+                - link "Careers" [ref=f23e198] [cursor=pointer]:
+                  - /url: https://careers.spglobal.com/jobs
+              - listitem [ref=f23e199]:
+                - link "Corporate Responsibility" [ref=f23e200] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/corporate-responsibility
+              - listitem [ref=f23e201]:
+                - link "Leadership" [ref=f23e202] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/about-sp-global/our-people/our-leadership
+              - listitem [ref=f23e203]:
+                - link "IOSCO ESG Rating & Data Product Statements" [ref=f23e204] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/esg-statements
+        - separator [ref=f23e206]
+        - contentinfo [ref=f23e207]:
+          - generic [ref=f23e209]:
+            - list [ref=f23e212]:
+              - listitem [ref=f23e213]:
+                - link "About S&P Dow Jones Indices" [ref=f23e214] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/
+              - listitem [ref=f23e215]:
+                - link "S&P DJI Leadership" [ref=f23e216] [cursor=pointer]:
+                  - /url: /spdji/en/our-leadership/
+            - list [ref=f23e219]:
+              - listitem [ref=f23e220]:
+                - link "Our Services" [ref=f23e221] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/our-services/
+              - listitem [ref=f23e222]:
+                - link "Media Center" [ref=f23e223] [cursor=pointer]:
+                  - /url: /spdji/en/media-center/news-announcements/
+            - list [ref=f23e226]:
+              - listitem [ref=f23e227]:
+                - link "Contact Us" [ref=f23e228] [cursor=pointer]:
+                  - /url: /spdji/en/contact-us/
+            - list [ref=f23e231]:
+              - listitem [ref=f23e232]:
+                - link "Email Preference Center" [ref=f23e233] [cursor=pointer]:
+                  - /url: https://on.spdji.com/SignUp?src=IDS
+        - contentinfo [ref=f23e234]:
+          - generic [ref=f23e236]:
+            - button "Customize Cookies" [ref=f23e238] [cursor=pointer]
+            - list [ref=f23e240]:
+              - listitem [ref=f23e241]:
+                - link "Legal Disclaimer" [ref=f23e242] [cursor=pointer]:
+                  - /url: /spdji/en/disclaimers/
+              - listitem [ref=f23e243]:
+                - link "Terms of Use" [ref=f23e244] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/terms-of-use
+              - listitem [ref=f23e245]:
+                - link "Cookie Notice" [ref=f23e246] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/cookie-notice
+              - listitem [ref=f23e247]:
+                - link "Privacy Policy" [ref=f23e248] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/privacy/privacy-policy-english
+              - listitem [ref=f23e249]:
+                - link "Client Privacy Portal" [ref=f23e250] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/enterprise/Legal/privacy.html
+              - listitem [ref=f23e251]:
+                - link "Do Not Sell or Share My Personal Information" [ref=f23e252] [cursor=pointer]:
+                  - /url: https://privacyportal.onetrust.com/webform/5cb57702-8ef7-437e-a62b-408fe78cd310/draft/78fa28ce-6010-42fa-96b5-28d8837492e3
+              - listitem [ref=f23e253]:
+                - link "Complaints" [ref=f23e254] [cursor=pointer]:
+                  - /url: /spdji/en/benchmark-complaints-policy/
+              - listitem [ref=f23e255]: © 2026 S&P Global
+  - text: "> > > > >"
+  - region "Cookie banner" [ref=f23e256]:
+    - dialog "Your Cookie Controls:" [ref=f23e257]:
+      - generic [ref=f23e259]:
+        - generic [ref=f23e261]:
+          - heading "Your Cookie Controls:" [level=2] [ref=f23e262]
+          - generic [ref=f23e263]:
+            - text: S&P Global uses cookies to improve user experience and site performance, offer tailored advertising and enable social media sharing. By clicking "Accept All", you agree to our use of cookies. By clicking “Reject All”, we will not place cookies on your device unless strictly necessary for website functionality. For details, please refer to our
+            - link "More information about your privacy, opens in a new tab" [ref=f23e264] [cursor=pointer]:
+              - /url: https://www.spglobal.com/en/cookie-notice
+              - text: Cookie Notice
+        - generic [ref=f23e266]:
+          - button "Customize Cookies" [ref=f23e267] [cursor=pointer]
+          - button "Reject All" [ref=f23e268] [cursor=pointer]
+          - button "Accept All" [ref=f23e269] [cursor=pointer]

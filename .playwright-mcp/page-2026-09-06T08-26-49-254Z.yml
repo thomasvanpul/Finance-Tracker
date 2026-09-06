@@ -1,0 +1,338 @@
+- generic [ref=f76e1]:
+  - link [aria-hidden] [ref=f76e2] [cursor=pointer]:
+    - /url: "#"
+    - text: ___
+  - generic [ref=f76e4]:
+    - banner "Header" [ref=f76e6]:
+      - generic [ref=f76e9]:
+        - navigation [ref=f76e10]:
+          - generic [ref=f76e11]:
+            - generic [ref=f76e12]:
+              - link [ref=f76e14] [cursor=pointer]:
+                - /url: https://www.spglobal.com/en
+                - img "logo" [ref=f76e16]
+              - button "Explore S&P Global" [ref=f76e17] [cursor=pointer]
+            - generic [ref=f76e23]:
+              - button "Search" [ref=f76e24] [cursor=pointer]
+              - button "English" [ref=f76e29] [cursor=pointer]
+              - link "Contact Us" [ref=f76e33] [cursor=pointer]:
+                - /url: /spdji/en/contact-us/
+              - link "Register / Login" [ref=f76e37] [cursor=pointer]:
+                - /url: "#"
+          - text:     
+        - navigation [ref=f76e41]:
+          - generic [ref=f76e42]:
+            - generic [ref=f76e43]:
+              - link "S&P Dow Jones Indices" [ref=f76e44] [cursor=pointer]:
+                - /url: /spdji/en/
+              - button "Our Solutions" [ref=f76e47] [cursor=pointer]:
+                - img [ref=f76e49]: 
+                - text: 
+              - button "Indices" [ref=f76e51] [cursor=pointer]:
+                - img [ref=f76e53]: 
+                - text: 
+              - button "Research & Insights" [ref=f76e55] [cursor=pointer]:
+                - img [ref=f76e57]: 
+                - text: 
+              - button "Governance" [ref=f76e59] [cursor=pointer]:
+                - img [ref=f76e61]: 
+                - text: 
+              - button "SPICE" [ref=f76e63] [cursor=pointer]:
+                - img [ref=f76e65]: 
+                - text: 
+              - link "About S&P DJI" [ref=f76e67] [cursor=pointer]:
+                - /url: /spdji/en/about-us/
+            - link "Index Finder" [ref=f76e70] [cursor=pointer]:
+              - /url: /spdji/en/index-finder/
+          - text:                          
+      - text:                                        
+    - generic [ref=f76e73]:
+      - heading "SPICE Terms of Use" [level=3] [ref=f76e75]
+      - separator [ref=f76e76]
+      - generic [ref=f76e78]:
+        - paragraph [ref=f76e79]: These Terms of Use were last updated on July 23, 2025. By clicking “I Accept” or accessing and using this web site, you acknowledge that you have read, understood, and agree to be legally bound by these Terms of Use and you represent that you are 18 years or older. If any of these terms are unacceptable to you, you may not access this web site until agreement has been reached between you and S&P Dow Jones Indices LLC as to the applicable terms of use.
+        - paragraph [ref=f76e80]:
+          - text: These Terms of Use and the
+          - link "Terms of Use | S&P Global" [ref=f76e81] [cursor=pointer]:
+            - /url: https://www.spglobal.com/en/terms-of-use#terms-of-use
+          - text: apply to the access and use of this web site by you, including the access and use of the SPICE IndexBuilder™ tool including any beta versions thereof (together, the “Tool”). References to this web site in these Terms of Use include the use of the Tool. In the event of any conflict between these Terms of Use and the S&P Global Terms of Use, these Terms of Use shall prevail with respect to the subject matter hereof.
+        - paragraph [ref=f76e82]: The Tool is a customizable index calculation tool designed to enable clients to create and analyse indices based on S&P’s proprietary data including index data, Licensed Content and User Content (where applicable). Your use of the Tool constitutes your express agreement to all policies, guidelines, and future modifications published on this web site, including to these Terms of Use.
+        - paragraph [ref=f76e83]: The terms "you" and "User" refer to anyone who accesses this web site and where such use is by the employee of any legal entity, the term includes that entity. The terms "we", "us", and "S&P Dow Jones Indices" refer to S&P Dow Jones Indices LLC and/or its affiliates.
+        - paragraph [ref=f76e84]: Subject to applicable laws and regulations, S&P Dow Jones Indices may change these Terms of Use at any time without notice. Your use of this web site after any changes have been posted will constitute your agreement to the modified Terms of Use and all of the changes. Therefore, you should read these Terms of Use from time to time for changes.
+        - heading "1. USE OF THE WEB SITE" [level=5] [ref=f76e85]
+        - paragraph [ref=f76e86]: S&P Dow Jones Indices grants you a non-exclusive, non-transferable, limited, revocable license to access and use the web site and its Content (as defined below) subject to the terms set forth below.
+        - paragraph [ref=f76e87]: The content of this web site includes, but is not limited to, text, data, reports, images, photos, graphics, graphs, charts, animations, and videos, as modified and/or updated from time to time (collectively, the "Content").
+        - paragraph [ref=f76e88]:
+          - text: You agree not to copy, reproduce, modify, display, perform, publish, distribute, transmit, broadcast, circulate, create derivative works from, store, or link to the web site or any Content without the express prior written consent of S&P Dow Jones Indices (which may be in the form of an email). To request consent for uses such as linking to Content on your web site, please contact S&P Dow Jones Indices at
+          - link "index_services@spglobal.com" [ref=f76e89] [cursor=pointer]:
+            - /url: mailto:index_services@spglobal.com
+          - text: . Without limiting the foregoing, the Content may not be used in connection with the creation, structuring, development, calculation, compilation, publication or distribution of any financial instrument or product or any index or investment strategy except pursuant to a specific license granted by S&P Dow Jones Indices for such use.
+        - paragraph [ref=f76e90]: S&P Dow Jones Indices may disclose the User Content, including the content of communications stored on S&P Dow Jones Indices’ systems (i) if S&P Dow Jones Indices believes that disclosure is reasonably necessary to comply with any law or a judicial, regulatory or law enforcement demand, order or request that S&P Dow Jones Indices believes in good faith is lawful, (ii) to perform and enforce S&P Dow Jones Indices’ agreements and policies, including for billing, (iii) to protect the security or integrity of the web site, (iv) to protect S&P Dow Jones Indices, other customers or the public from harm or illegal activities, and (v) to respond to an emergency that S&P Dow Jones Indices believes in good faith requires us to disclose the User Content to assist in preventing a death or serious bodily injury.
+        - paragraph [ref=f76e91]: S&P Dow Jones Indices is not obligated to back up User Content or any Content. Except as otherwise agreed in writing, S&P Dow Jones Indices may periodically delete User Content and S&P Dow Jones Indices has no liability whatsoever for damages, liabilities, losses or any other consequence relating to such deletion.
+        - paragraph [ref=f76e92]:
+          - text: This web site and/or the Tool may provide real-time, dynamic content with the use of generative artificial intelligence technology (“AI”). Such AI-generated content may have been generated without human review and is provided for informational purposes only, subject to the
+          - link "Terms of Use | S&P Global" [ref=f76e93] [cursor=pointer]:
+            - /url: https://www.spglobal.com/en/terms-of-use#terms-of-use
+          - text: . You must independently verify all such content before its use. Any reliance on such content is entirely at your own risk.
+        - heading "2. INTELLECTUAL PROPERTY RIGHTS OF S&P DOW JONES INDICES AND LICENSING" [level=5] [ref=f76e94]
+        - paragraph [ref=f76e95]: Except as otherwise provided by these Terms of Use or pursuant to separate licensing with S&P, the web site, the Content and any indices or derivative works, including any data manipulations, indices, or analytical outputs, which are created or generated using the Tool, are the property of S&P Dow Jones Indices, its affiliates, or their third party licensors, and are protected by copyright and other intellectual property laws.
+        - paragraph [ref=f76e96]: Should you wish to license any index that you have generated using the Tool, you must submit a request to S&P Dow Jones Indices via the “Confirm Order” button under the “Order Index” section of the Tool (or equivalent). Calculation and licensing of any such indices is subject to additional approval and governance procedures, contract terms, and fees as deemed appropriate by us. S&P Dow Jones Indices is under no obligation to calculate or license an index to you pursuant to your submission of a request through the Tool. For clarity, any names you assign to an index, concept or project in the Tool is temporary and the naming of an index designed using the Tool shall be subject to S&P Dow Jones Indices’ naming rules and approval.
+        - paragraph [ref=f76e97]: All trade names, trademarks, service marks and other product and service names and logos on the web site and within the Content are proprietary to their respective owners and are protected by applicable trademark and copyright laws. Any of the trademarks, service marks or logos (collectively, the "Marks") displayed on the web site may be registered or unregistered marks of S&P Dow Jones Indices, its affiliates, or their third party licensors. Nothing contained on this web site should be construed as granting any license or right to use any of the Marks displayed on the web site without the express written permission of S&P Dow Jones Indices or the third party owner of such Marks.
+        - heading "3. INTELLECTUAL PROPERTY RIGHTS IN LICENSED CONTENT" [level=5] [ref=f76e98]
+        - paragraph [ref=f76e99]: Third parties who provide material that appears on the website have done so under a direct license agreement with S&P Dow Jones Indices or its affiliates ("Licensed Content"). Licensed Content is the property of such third parties who have contracted with S&P Dow Jones Indices to calculate and maintain such Licensed Content. The Licensed Content is not sponsored, endorsed, sold or promoted by S&P Dow Jones Indices or its affiliates or its third party licensors, including Standard & Poor's Financial Services LLC and Dow Jones Trademark Holdings LLC (collectively, "S&P Dow Jones Indices Parties"). S&P Dow Jones Indices Parties will not be liable for any errors or omissions in calculating Licensed Content.
+        - paragraph [ref=f76e100]: "\"Calculated by S&P Dow Jones Indices\" and the related stylized mark(s) are service marks of S&P Dow Jones Indices Parties and have been licensed for use by the Licensed Content provider. S&P®, S&P 500®, US 500, The 500, iBoxx®, iTraxx® and CDX® are trademarks of S&P Global, Inc. or its affiliates; Dow Jones® is a registered trademark of Dow Jones Trademark Holdings LLC (“Dow Jones”)."
+        - paragraph [ref=f76e101]: S&P Dow Jones Indices Parties do not make any representation or warranty, express or implied, to the owners of the Licensed Content or any member of the public regarding the advisability of investing in securities generally or in the Licensed Content particularly or the ability of an index to track general market performance. S&P Dow Jones Indices Parties' only relationship to the relevant third party with respect to the Licensed Content is the licensing of the underlying indices, certain trademarks, service marks and trade names of S&P Dow Jones Indices Parties, and the provision of the calculation services related to such underlying indices. S&P Dow Jones Indices Parties are not responsible for and have not participated in the determination of the prices and amount of the Licensed Content or the timing of the issuance or sale of the Licensed Content or in the determination or calculation of the equation by which the Licensed Content may be converted into cash or other redemption mechanics. S&P Dow Jones Indices Parties have no obligation or liability in connection with the administration, marketing or trading of the Licensed Content. S&P Dow Jones Indices LLC is not an investment advisor. Inclusion of a security within an underlying index is not a recommendation by S&P Dow Jones Indices Parties to buy, sell, or hold such security, nor is it investment advice.
+        - heading "4. THE USER'S CONTENT" [level=5] [ref=f76e102]
+        - paragraph [ref=f76e103]: Material that appears on the web site or the Tool that is entered by you or other Users is referred to as "User Content" or "Other Content".
+        - paragraph [ref=f76e104]: You grant to S&P Dow Jones Indices the non-exclusive worldwide right to use, publish, distribute, and/or repurpose all material entered, submitted, uploaded, or transmitted into the web site by you (other than third-party material transmitted through private electronic mail) in any of S&P Dow Jones Indices' or its affiliates print or electronic publications. You will not receive any compensation from S&P Dow Jones Indices or its affiliates in connection with your submission of Other Content to the web site.
+        - paragraph [ref=f76e105]: Users submitting Other Content into the web site are responsible for the content of that material. Neither S&P Dow Jones Indices nor any of its affiliates have any responsibility for Other Content, including the content of any messages or information posted by Users, or for the content of information accessible via direct or indirect hyperlinks from the web site. However, S&P Dow Jones Indices retains the right, which it may or may not exercise in its sole discretion, to review, edit, or delete Other Content that S&P Dow Jones Indices deems to be illegal, offensive, irrelevant, or otherwise inappropriate. Further, S&P Dow Jones Indices will act expeditiously to remove any Other Content from the web site that is alleged to be infringing. See Section 11 below.
+        - paragraph [ref=f76e106]: You may not input or distribute any material through the S&P Dow Jones Indices' web site that is promotional in nature, including solicitations for funds or business, without the prior written authorization of S&P Dow Jones Indices.
+        - paragraph [ref=f76e107]: "You agree (a) to use this web site in accordance with these Terms of Use, and (b) that you will not: (i) post or transmit any Other Content that is unlawful, threatening, abusive, libelous, defamatory, tortious, obscene, vulgar, pornographic, harassing, profane, invasive of another's privacy, indecent, bigoted, hateful, or racially, ethnically, sexually or otherwise offensive; (ii) impersonate any person or entity or falsely state or otherwise misrepresent your professional or other affiliation with any person or entity; (iii) post or transmit any Other Content that infringes any patent, trademark, trade secret, copyright, or other proprietary rights of any party; (iv) disrupt others' normal use of the web site; (v) post or transmit any information, software or other material which contains a virus or other harmful component; (vi) post, transmit, or in any way exploit any information, software or other material for commercial or political purposes; (vii) post or transmit any information, software or other material which contains advertising (including but not limited to \"junk mail\" or \"pyramid schemes\"), or any other form of solicitation; (viii) access (or attempt to access) another User's account or access (or attempt to access) areas to which you are not authorized access; or (ix) use the web site to violate or attempt to violate, or assist any other person or entity in violating or attempting to violate, any contractual obligations you have with S&P Dow Jones Indices, including, without limitation, any confidentiality, non-solicitation or non-competition agreements between you and S&P Dow Jones Indices."
+        - paragraph [ref=f76e108]: "Be advised that S&P Dow Jones Indices, at its sole discretion, shall determine whether any Other Content submitted into this web site violates these Terms of Use. While S&P Dow Jones Indices has no obligation to monitor or pre-screen the Other Content, Other Content on this web site may be pre-screened and otherwise monitored to ensure compliance with these Terms of Use. S&P Dow Jones Indices reserves the right to discontinue your access to this web site either with or without notice if S&P Dow Jones Indices has a reasonable basis to believe that you are accessing or using the web site or the Content in violation of these Terms of Use. You also agree and understand that S&P Dow Jones Indices may preserve and disclose Content and Other Content if, in S&P Dow Jones Indices' sole discretion, such action is reasonably necessary to: (a) comply with applicable law; (b) enforce these Terms of Use; (c) respond to claims that a User has violated the rights of third parties; or (d) protect the rights, interests, property, or safety of S&P Dow Jones Indices, Users, or others. Your use of the web site constitutes your consent to such monitoring and disclosure."
+        - paragraph [ref=f76e109]: "You agree to indemnify S&P Dow Jones Indices, its affiliates, and any third party Content providers from all damages, liabilities, costs, charges and expenses, including reasonable attorneys' fees, that S&P Dow Jones Indices, its affiliates, and any third party Content providers may incur as a result of either: (i) your breach of Section 5 (Anti-Hacking and Anti-Copying Provisions) or Section 10 (Confidentiality) of these Terms of Use; or (ii) the submission of Other Content into the web site."
+        - heading "5. ANTI-HACKING AND ANTI-COPYING PROVISION" [level=5] [ref=f76e110]
+        - paragraph [ref=f76e111]:
+          - strong [ref=f76e112]: "You expressly agree not to:"
+        - list [ref=f76e113]:
+          - listitem [ref=f76e114]: use or attempt to use any screenshotting, "deep-link," "scraper," "robot," "bot," "spider," "data-mining," "computer code" or any other automated device, program, tool, algorithm, process, or methodology or manual process having similar processes or functionality, to access, acquire, copy, or monitor any portion of the web site, or Content found on or accessed through the web site or any Other Content without the prior express written consent of S&P Dow Jones Indices;
+          - listitem [ref=f76e115]: obtain or attempt to obtain through any means any materials or information on this web site that have not been intentionally made publicly available either by their public display on the web site or through their accessibility by a visible link on this web site;
+          - listitem [ref=f76e116]: violate the restrictions in any robot inclusion headers on this web site or in any way bypass or circumvent any other measure employed to limit or prevent access to the web site or its Content;
+          - listitem [ref=f76e117]: violate the security of the web site or attempt to gain unauthorized access to this web site, its Content and Other Content, or the computer systems, networks or servers of S&P Dow Jones Indices, through hacking, password mining or any other means;
+          - listitem [ref=f76e118]: interfere or attempt to interfere with the proper working of the web site or any activities conducted on or through this web site, including accessing any data, content or other information prior to the time that it is intended to be available to the public on the web site;
+          - listitem [ref=f76e119]: take or attempt any action that, in the sole discretion of S&P Dow Jones Indices, imposes or may impose an unreasonable or disproportionately large load or burden on the web site or S&P Dow Jones Indices' infrastructure; and/or
+          - listitem [ref=f76e120]: misuse the web site by knowingly introducing viruses, Trojans, worms, logic bombs or other materials that is malicious or technologically harmful.
+        - heading "REGISTRATION" [level=5] [ref=f76e121]
+        - paragraph [ref=f76e122]: As part of the registration process, you may be required to select a username and password (“Account Credentials”). In connection with the registration process, you must provide S&P Dow Jones Indices with accurate, complete, and updated information. Failure to do so constitutes a breach of these Terms of Use, which may result in immediate termination of your access. Please see our Customer Privacy Policy regarding how this information will be used and maintained. You are not permitted to share Account Credentials or to allow any unauthorized person to access the web site by any means. S&P Dow Jones Indices or its affiliates are not responsible for costs, loss or other damages arising from unauthorized use of Account Credentials.
+        - paragraph [ref=f76e123]: S&P Dow Jones Indices reserves the right to terminate Account Credentials and/or corresponding access to the web site if S&P Dow Jones Indices believes that account information is inaccurate or Account Credentials or the web site were used by an unauthorized person or otherwise are not secure.
+        - paragraph [ref=f76e124]: Please immediately notify S&P Dow Jones Indices if unauthorized activity is suspected or detected.
+        - heading "7. SPICE AND IDP" [level=5] [ref=f76e125]
+        - paragraph [ref=f76e126]:
+          - text: "You may be required to enter into a license agreement or subscription agreement with S&P Dow Jones Indices in order to access certain Content on the web sites or to license any indices generated by use of the Tool. In the event that you have entered into a separate agreement with S&P Dow Jones Indices regarding your access to, use, and distribution of the Content, the terms of such separate agreement will govern in the event of a conflict with these Terms of Use, to the extent of such conflict. If you wish to access subscription-only Content, please contact Client Services at:"
+          - link "index_services@spglobal.com" [ref=f76e127] [cursor=pointer]:
+            - /url: mailto:index_services@spglobal.com
+          - text: .
+        - heading "8. TEST PHASE SERVICES" [level=5] [ref=f76e128]
+        - paragraph [ref=f76e129]: A beta, UAT and/or soft-launch version of the services on this web site includes all non-public content, designs, features, functions, elements, and aspects of the web site, including the Tool, made available by S&P Dow Jones Indices to you from time to time for the purposes of testing that are identified to you as ‘beta’, ‘pilot’, ‘preview’, ‘soft launch’, ‘evaluation’ or similar designation (“Test Phase Services”).
+        - paragraph [ref=f76e130]: You may access and use any Test Phase Services on this web site solely for internal, testing, demonstration, trial and other evaluative (but not any developmental, commercial, or product creation) purposes. You agree to provide any requested or voluntary feedback about such Test Phase Services to S&P Dow Jones Indices, and you agree that S&P Dow Jones Indices shall own any rights, title, and interest in any such feedback (“Feedback”). S&P Dow Jones Indices reserves the right to modify this web site including the beta services without notice and S&P Dow Jones Indices may decide not to make certain beta / UAT phase services part of this web site and/or the Tool and may do so without any liability to you or any other person and/or entity.
+        - paragraph [ref=f76e131]:
+          - text: NOTWITHSTANDING THE WARRANTIES AND DISCLAIMERS, INDEMNIFICATION AND LIMITATIONS OF LIABILITY SECTIONS ELSEWHERE IN THESE TERMS OF USE, ANY TEST PHASE SERVICES ARE PROVIDED “AS-IS” WITHOUT ANY WARRANTY OF ANY KIND, AND S&P DOW JONES INDICES AND ITS AFFILIATES AND THIRD-PARTY LICENSORS (
+          - strong [ref=f76e132]: “S&P PARTIES”
+          - text: ) SHALL HAVE NO INDEMNIFICATION OBLIGATIONS OR LIABILITY OF ANY KIND ARISING FROM USE OF ANY TEST PHASE SERVICES. IF ANY EXCLUSION OF LIABILITY IS NOT ENFORCEABLE UNDER APPLICABLE LAW, THE SOLE LIABILITY OF THE S&P PARTIES WITH RESPECT TO THE TEST PHASE SERVICES IS FOR YOUR DIRECT DAMAGES UP TO THE GREATER OF THE AMOUNT PAID BY YOU DURING THE CALENDAR MONTH PRECEDING THE EVENT THAT GAVE RISE TO THE LIABILITY OR $100, WHICHEVER IS GREATER.
+        - paragraph [ref=f76e133]: "WITHOUT LIMITING THE FOREGOING, S&P PARTIES DO NOT REPRESENT OR WARRANT TO YOU THAT: (A) YOUR USE OF ANY TEST PHASE SERVICES WILL MEET YOUR REQUIREMENTS OR (B) YOUR USE OF TEST PHASE SERVICES WILL BE UNINTERRUPTED, TIMELY, SECURE, OR FREE FROM ERROR. NOTWITHSTANDING ANYTHING TO THE CONTRARY IN THESE TERMS OF USE, YOU ARE FULLY LIABLE TO S&P DOW JONES INDICES AND THE S&P PARTIES UNDER THESE TERMS OF USE FOR ANY DAMAGES ARISING OUT OF OR RELATED TO USE OF THE WEB SITE / TOOLS BY YOU AND ANY BREACH BY YOU OF THESE TERMS OF USE."
+        - heading "9. PRIVACY AND DATA SECURITY" [level=5] [ref=f76e134]
+        - paragraph [ref=f76e135]:
+          - strong [ref=f76e136]: "Privacy Policy:"
+          - text: To the extent that S&P processes any of your personal data, S&P will comply with the Privacy Policy available at
+          - link "Corporate Privacy Policy | S&P Global" [ref=f76e137] [cursor=pointer]:
+            - /url: https://www.spglobal.com/en/privacy/privacy-policy-english
+          - text: . For information related to how S&P Global uses cookies and similar technologies, please review our cookie notice at
+          - link "Cookie Notice | S&P Global" [ref=f76e138] [cursor=pointer]:
+            - /url: https://www.spglobal.com/en/cookie-notice
+          - text: .
+        - paragraph [ref=f76e139]:
+          - strong [ref=f76e140]: "Security:"
+          - text: S&P Dow Jones Indices uses administrative, physical and technical safeguards intended to protect the web site. Our safeguards are designed to provide a level of security appropriate to the risk and include (as applicable) measures to ensure the ongoing confidentiality, integrity, availability and resilience of processing systems and a procedure for regularly testing, assessing and evaluating the effectiveness of technical and organizational measures for ensuring the security of the processing. User Content may not include any sensitive or special data that imposes any new obligations on S&P Dow Jones Indices.
+        - heading "10. CONFIDENTIALITY." [level=5] [ref=f76e141]
+        - paragraph [ref=f76e142]: Any confidential information of the S&P Parties which is identified as confidential, any information which reasonably should be considered confidential under the circumstances, and all information, documentation, web pages, features and functionality of the Tool that are made available to you during any Test Phase Services and thereafter, and your feedback in relation to these, are the “Confidential Information” of S&P.
+        - paragraph [ref=f76e143]: "You agree:"
+        - paragraph [ref=f76e144]: (i) not to disclose Confidential Information to anyone other than to S&P Dow Jones Indices; and
+        - paragraph [ref=f76e145]: (ii) not to use Confidential Information for any purpose other than completing the testing / evaluation / feedback requested by S&P Dow Jones Indices and using the Tool.
+        - paragraph [ref=f76e146]: Notwithstanding the foregoing, you may disclose Confidential Information to the extent required by a court of competent jurisdiction or other applicable governmental authority or as required by applicable law.
+        - paragraph [ref=f76e147]: You agree and acknowledge that your breach or threatened breach of this provision may result in irreparable harm to one or more S&P Parties, for which money damages would be an insufficient remedy, and therefore that such S&P Parties will be entitled to seek injunctive relief to enforce the provisions of this section.
+        - heading "11. LIMITATION ON WARRANTIES AND LIABILITY" [level=5] [ref=f76e148]
+        - paragraph [ref=f76e149]: You are entirely liable for activities conducted by you in connection with browsing and using the web site including any customized indices generated through the use of the Tool. If you are dissatisfied with the web site, Tool or with these Terms of Use, your sole and exclusive remedy is to stop using the web site and/or the Tool. Neither S&P Dow Jones Indices nor any third party provider will pay you any damages in connection with your browsing or use of the web site.
+        - paragraph [ref=f76e150]: Access to the web site and all Content is provided "as is". Neither S&P Dow Jones Indices, nor its affiliates, nor their third party providers guarantee the accuracy, completeness, timeliness or availability of any information provided through this web site including the Content and Other Content. S&P Dow Jones Indices, its affiliates or their third party providers and their directors, officers, shareholders, employees or agents are not responsible for any errors or omissions, regardless of the cause, or for the results obtained from the use of the website, the Content and/or Other Content.
+        - paragraph [ref=f76e151]: S&P DOW JONES INDICES DOES NOT EXCLUDE OR LIMIT IN ANY WAY OUR LIABILITY TO YOU WHERE IT WOULD BE UNLAWFUL TO DO SO. THIS INCLUDES LIABILITY FOR DEATH OR PERSONAL INJURY CAUSED BY OUR NEGLIGENCE OR THE NEGLIGENCE OF OUR EMPLOYEES, AGENTS, OR SUBCONTRACTORS AND FOR FRAUD OR FRAUDULENT MISREPRESENTATION. TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, S&P DOW JONES INDICES, ITS AFFILIATES AND THEIR THIRD PARTY PROVIDERS DISCLAIM ANY AND ALL EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, ANY WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE OR USE WITH RESPECT TO THE WEBSITE INCLUDING THE TOOL, CONTENT AND OTHER CONTENT. IN NO EVENT SHALL S&P DOW JONES INDICES, ITS AFFILIATES OR THEIR THIRD PARTY PROVIDERS AND THEIR DIRECTORS, OFFICERS, SHAREHOLDERS, EMPLOYEES OR AGENTS BE LIABLE TO ANY PARTY FOR ANY DIRECT, INDIRECT, INCIDENTAL, EXEMPLARY, COMPENSATORY, PUNITIVE, SPECIAL OR CONSEQUENTIAL DAMAGES, COSTS, EXPENSES, LEGAL FEES, OR LOSSES (INCLUDING, WITHOUT LIMITATION, LOST INCOME OR LOST PROFITS AND OPPORTUNITY COSTS) IN CONNECTION WITH ANY USE OF THE WEBSITE, THE CONTENT AND/OR OTHER CONTENT EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+        - paragraph [ref=f76e152]: The opinions, observations, and analysis of S&P Dow Jones Indices and its affiliates contained in the Content are statements of opinion as of the date they are expressed and not statements of fact or recommendations to purchase, hold, or sell any securities or make any investment decisions. S&P Dow Jones Indices assumes no obligation to update any Content following publication. Users of the Content provided through this web site should not rely on any of it in making any investment decision. S&P Dow Jones Indices' opinions, observations and analyses do not address the suitability of any security. S&P Dow Jones Indices does not act as a fiduciary or an investment advisor. While S&P Dow Jones Indices has obtained information from sources it believes to be reliable, S&P Dow Jones Indices does not perform an audit and undertakes no duty of due diligence or independent verification of any information it receives. S&P Dow Jones Indices keeps its activities separate from the activities of its affiliates in order to preserve the independence and objectivity of each of these activities. As a result, certain affiliates of S&P Dow Jones Indices may have information that is not available to S&P Dow Jones Indices.
+        - heading "12. PERFORMANCE DISCLOSURE/BACK-TESTED DATA" [level=5] [ref=f76e153]
+        - paragraph [ref=f76e154]:
+          - strong [ref=f76e155]: When using the Tool to build an index, the Tool’s historical data may differ when compared with the actual data used in the production version of such index. Differences between the two data sets include, but are not limited to, index event implementation approaches and/or timings (e.g. correction dividends, intra-rebalance component replacements, reference dates for component weighting). Therefore, actual performance of an index you build using the Tool may differ significantly from back-tested performance. Past performance is not an indication or guarantee of future results.
+        - paragraph [ref=f76e156]: All information presented prior to an index’s Launch Date is hypothetical (back-tested), not actual performance, and is based on the index methodology in effect on the index launch date. However, when creating back-tested history for periods of market anomalies or other periods that do not reflect the general current market environment, index methodology rules may be relaxed to capture a large enough universe of securities to simulate the target market the index is designed to measure or strategy the index is designed to capture. For example, market capitalization and liquidity thresholds may be reduced. In addition, forks have not been factored into the back-test data with respect to the S&P Cryptocurrency Indices. For the S&P Cryptocurrency Top 5 & 10 Equal Weight Indices, the custody element of the methodology was not considered; the back-test history is based on the index constituents that meet the custody element as of the Launch Date. Also, the treatment of corporate actions in back-tested performance may differ from treatment for live indices due to limitations in replicating index management decisions. Complete index methodology details are available at www.spglobal.com/spdji. Back-tested performance reflects application of an index methodology and selection of index constituents with the benefit of hindsight and knowledge of factors that may have positively affected its performance, cannot account for all financial risk that may affect results and may be considered to reflect survivor/look ahead bias. Actual returns may differ significantly from, and be lower than, back-tested returns. Past performance is not an indication or guarantee of future results.
+        - paragraph [ref=f76e157]: Please refer to the methodology for the Index for more details about the index, including the manner in which it is rebalanced, the timing of such rebalancing, criteria for additions and deletions, as well as all index calculations. Back-tested performance is for use with institutions only; not for use with retail investors.
+        - paragraph [ref=f76e158]: "S&P Dow Jones Indices defines various dates to assist our clients in providing transparency. The First Value Date is the first day for which there is a calculated value (either live or back-tested) for a given index. The Base Date is the date at which the index is set to a fixed value for calculation purposes. The Launch Date designates the date when the values of an index are first considered live: index values provided for any date or time period prior to the index’s Launch Date are considered back-tested. S&P Dow Jones Indices defines the Launch Date as the date by which the values of an index are known to have been released to the public, for example via the company’s public website or its data feed to external parties. For Dow Jones-branded indices introduced prior to May 31, 2013, the Launch Date (which prior to May 31, 2013, was termed “Date of introduction”) is set at a date upon which no further changes were permitted to be made to the index methodology, but that may have been prior to the Index’s public release date."
+        - paragraph [ref=f76e159]:
+          - text: Typically, when S&P DJI creates back-tested index data, S&P DJI uses actual historical constituent-level data (e.g., historical price, market capitalization, and corporate action data) in its calculations. As ESG investing is still in early stages of development, certain datapoints used to calculate S&P DJI’s ESG indices may not be available for the entire desired period of back-tested history. The same data availability issue could be true for other indices as well. In cases when actual data is not available for all relevant historical periods, S&P DJI may employ a process of using “Backward Data Assumption” (or pulling back) of ESG data for the calculation of back-tested historical performance. “Backward Data Assumption” is a process that applies the earliest actual live data point available for an index constituent company to all prior historical instances in the index performance. For example, Backward Data Assumption inherently assumes that companies currently not involved in a specific business activity (also known as “product involvement”) were never involved historically and similarly also assumes that companies currently involved in a specific business activity were involved historically too. The Backward Data Assumption allows the hypothetical back-test to be extended over more historical years than would be feasible using only actual data. For more information on “Backward Data Assumption” please refer to the
+          - 'link "Frequently Asked Questions ESG Back-Testing: Backward Data Assumption Overview - Education | S&P Dow Jones Indices" [ref=f76e160] [cursor=pointer]':
+            - /url: https://www.spglobal.com/spdji/en/education/article/faq-esg-back-testing-backward-data-assumption-overview/
+          - text: . The methodology and factsheets of any index that employs backward assumption in the back-tested history will explicitly state so. The methodology will include an Appendix with a table setting forth the specific data points and relevant time period for which backward projected data was used.
+        - paragraph [ref=f76e161]: Index returns shown do not represent the results of actual trading of investable assets/securities. S&P Dow Jones Indices maintains the index and calculates the index levels and performance shown or discussed but does not manage actual assets. Index returns do not reflect payment of any sales charges or fees an investor may pay to purchase the securities underlying the Index or investment funds that are intended to track the performance of the Index. The imposition of these fees and charges would cause actual and back-tested performance of the securities/fund to be lower than the Index performance shown. As a simple example, if an index returned 10% on a US $100,000 investment for a 12-month period (or US $10,000) and an actual asset-based fee of 1.5% was imposed at the end of the period on the investment plus accrued interest (or US $1,650), the net return would be 8.35% (or US $8,350) for the year. Over a three-year period, an annual 1.5% fee taken at year end with an assumed 10% return per year would result in a cumulative gross return of 33.10%, a total fee of US $5,375, and a cumulative net return of 27.2% (or US $27,200).
+        - heading [level=5] [ref=f76e162]:
+          - text: 13. ADDITIONAL LEGAL TERMS
+          - paragraph [ref=f76e163]: Subject to applicable laws and regulations, S&P Dow Jones Indices may discontinue or change the S&P Dow Jones Indices web site, the Tool or their availability to you, at any time. These Terms of Use will survive any such discontinuation.
+          - paragraph [ref=f76e164]: Unless you are required to and/or have entered into a separate license agreement or subscription agreement with S&P Dow Jones Indices related to your access to, use, and/or distribution of the Content or the indices / data generated through the Tool (see Section 7 above), these Terms of Use constitutes the entire agreement between you and S&P Dow Jones Indices relating to this web site, the Content, and Other Content and supersedes any and all other agreements, oral or in writing, with respect to the web site, the Content, and Other Content. The failure of S&P Dow Jones Indices to insist upon strict compliance with any term of these Terms of Use shall not be construed as a waiver with regard to any subsequent failure to comply with such term or provision. If any provision in these Terms of Use is invalid or unenforceable under applicable law, it shall be deemed modified to the minimum extent necessary to make it valid, legal and enforceable. If such modification is not possible, the relevant terms shall be deemed deleted and the remaining provisions will continue in full force and effect. These Terms of Use, your rights and obligations, and all claims or actions related to these Terms of Use shall be governed by the laws of the United States of America and New York State. The parties agree that the State and Federal courts located in New York, NY shall be the exclusive forums for any dispute arising out of these Terms of Use and the parties hereby consent to the personal jurisdiction of such courts. A printed version of these Terms of Use shall be admissible in judicial or administrative proceedings.
+          - paragraph [ref=f76e165]: As you browse through this web site, you may access other web sites that are subject to different terms of use. When you use those sites, you may be legally bound by the specific terms of use posted on such sites. If there is a conflict between these Terms of Use and those other terms of use, the other terms of use will govern with respect to use of such other sites.
+        - heading "14. COPYRIGHT INFRINGEMENT CLAIMS" [level=5] [ref=f76e166]
+        - paragraph [ref=f76e167]:
+          - text: We respect the intellectual property rights of others, and require that the people who use this Website do the same. If you believe that your work has been copied in a way that constitutes copyright infringement, please forward the following information to S&P Global's Copyright Agent, designated as such pursuant to the Digital Millennium Copyright Act, 17 U.S.C. § 512(c)(2) (the "
+          - strong [ref=f76e168]: DMCA
+          - text: "\"), named below:"
+        - list [ref=f76e169]:
+          - listitem [ref=f76e170]: Your address, telephone number, and email address;
+          - listitem [ref=f76e171]: A description of the copyrighted work that you claim has been infringed;
+          - listitem [ref=f76e172]: A description of where the alleged infringing material is located;
+          - listitem [ref=f76e173]: A statement by you that you have a good faith belief that the disputed use is not authorized by the copyright owner, its agent, or the law;
+          - listitem [ref=f76e174]: An electronic or physical signature of the person authorized to act on behalf of the owner of the copyright interest; and
+          - listitem [ref=f76e175]: A statement by you, made under penalty of perjury, that the above information in your notice is accurate and that you are the copyright owner or authorized to act on the copyright owner's behalf.
+        - paragraph [ref=f76e176]: "Copyright Agent:"
+        - generic [ref=f76e177]:
+          - text: "S&P Global 55 Water Street New York, NY 10041, U.S.A. Attention: Legal Department"
+          - link "legal@spglobal.com" [ref=f76e178] [cursor=pointer]:
+            - /url: mailto:legal@spglobal.com
+        - heading "15. HOW TO CONTACT US" [level=5] [ref=f76e179]
+        - paragraph [ref=f76e180]: "If you have any questions or concerns about these Terms of Use, please contact us:"
+        - paragraph [ref=f76e181]:
+          - text: By email at
+          - link "index_services@spglobal.com" [ref=f76e182] [cursor=pointer]:
+            - /url: mailto:index_services@spglobal.com
+        - paragraph [ref=f76e183]: "In writing:"
+        - generic [ref=f76e184]: Index Services S&P Dow Jones Indices LLC 55 Water Street, New York, NY 10041.
+    - contentinfo "Footer" [ref=f76e186]:
+      - list [ref=f76e187]:
+        - list [ref=f76e190]:
+          - listitem [ref=f76e191]:
+            - generic [ref=f76e192]: Follow Us
+          - listitem [ref=f76e193]:
+            - link "" [ref=f76e194] [cursor=pointer]:
+              - /url: https://twitter.com/SPDJIndices
+          - listitem [ref=f76e196]:
+            - link "" [ref=f76e197] [cursor=pointer]:
+              - /url: https://www.facebook.com/SP-Dow-Jones-Indices-161630018534/
+          - listitem [ref=f76e199]:
+            - link "" [ref=f76e200] [cursor=pointer]:
+              - /url: https://www.youtube.com/user/SPIndicesChannel
+          - listitem [ref=f76e202]:
+            - link "" [ref=f76e203] [cursor=pointer]:
+              - /url: https://www.linkedin.com/company/s&p-dow-jones-indices
+          - listitem [ref=f76e205]:
+            - link [ref=f76e206] [cursor=pointer]:
+              - /url: /spdji/en/rss/
+              - link "" [ref=f76e207]
+      - generic [ref=f76e208]:
+        - contentinfo "Footer Primary Nav" [ref=f76e209]:
+          - generic [ref=f76e211]:
+            - list [ref=f76e213]:
+              - listitem [ref=f76e214]:
+                - generic [ref=f76e215]: Our Purpose
+              - listitem [ref=f76e216]:
+                - link "Our Values" [ref=f76e217] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are
+              - listitem [ref=f76e218]:
+                - link "Our History" [ref=f76e219] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/our-history
+              - listitem [ref=f76e220]:
+                - link "Ventures" [ref=f76e221] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/venture
+              - listitem [ref=f76e222]:
+                - link "Press" [ref=f76e223] [cursor=pointer]:
+                  - /url: https://press.spglobal.com
+            - list [ref=f76e225]:
+              - listitem [ref=f76e226]:
+                - generic [ref=f76e227]: Investor Relations
+              - listitem [ref=f76e228]:
+                - link "Overview" [ref=f76e229] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/investor-relations-overview/default.aspx
+              - listitem [ref=f76e230]:
+                - link "News Releases" [ref=f76e231] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/news-releases/default.aspx
+              - listitem [ref=f76e232]:
+                - link "Quarterly Earnings" [ref=f76e233] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/quarterly-earnings/
+              - listitem [ref=f76e234]:
+                - link "SEC Filings & Reports" [ref=f76e235] [cursor=pointer]:
+                  - /url: https://investor.spglobal.com/sec-filings-reports/overview/
+            - list [ref=f76e237]:
+              - listitem [ref=f76e238]:
+                - generic [ref=f76e239]: Contact Us
+              - listitem [ref=f76e240]:
+                - link "Customer Care & Sales" [ref=f76e241] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/enterprise/about/contact-us.html
+              - listitem [ref=f76e242]:
+                - link "Support by Division" [ref=f76e243] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us
+              - listitem [ref=f76e244]:
+                - link "Report an Ethics Concern" [ref=f76e245] [cursor=pointer]:
+                  - /url: https://secure.ethicspoint.com/domain/media/en/gui/7615/index.html
+              - listitem [ref=f76e246]:
+                - link "Office Locations" [ref=f76e247] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/contact-us/office-locations
+            - list [ref=f76e249]:
+              - listitem [ref=f76e250]:
+                - generic [ref=f76e251]: Our Organization
+              - listitem [ref=f76e252]:
+                - link "Careers" [ref=f76e253] [cursor=pointer]:
+                  - /url: https://careers.spglobal.com/jobs
+              - listitem [ref=f76e254]:
+                - link "Corporate Responsibility" [ref=f76e255] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/corporate-responsibility
+              - listitem [ref=f76e256]:
+                - link "Leadership" [ref=f76e257] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/who-we-are/about-sp-global/our-people/our-leadership
+              - listitem [ref=f76e258]:
+                - link "IOSCO ESG Rating & Data Product Statements" [ref=f76e259] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/esg-statements
+        - separator [ref=f76e261]
+        - contentinfo [ref=f76e262]:
+          - generic [ref=f76e264]:
+            - list [ref=f76e267]:
+              - listitem [ref=f76e268]:
+                - link "About S&P Dow Jones Indices" [ref=f76e269] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/
+              - listitem [ref=f76e270]:
+                - link "S&P DJI Leadership" [ref=f76e271] [cursor=pointer]:
+                  - /url: /spdji/en/our-leadership/
+            - list [ref=f76e274]:
+              - listitem [ref=f76e275]:
+                - link "Our Services" [ref=f76e276] [cursor=pointer]:
+                  - /url: /spdji/en/about-us/our-services/
+              - listitem [ref=f76e277]:
+                - link "Media Center" [ref=f76e278] [cursor=pointer]:
+                  - /url: /spdji/en/media-center/news-announcements/
+            - list [ref=f76e281]:
+              - listitem [ref=f76e282]:
+                - link "Contact Us" [ref=f76e283] [cursor=pointer]:
+                  - /url: /spdji/en/contact-us/
+            - list [ref=f76e286]:
+              - listitem [ref=f76e287]:
+                - link "Email Preference Center" [ref=f76e288] [cursor=pointer]:
+                  - /url: https://on.spdji.com/SignUp?src=IDS
+        - contentinfo [ref=f76e289]:
+          - generic [ref=f76e291]:
+            - button "Customize Cookies" [ref=f76e293] [cursor=pointer]
+            - list [ref=f76e295]:
+              - listitem [ref=f76e296]:
+                - link "Legal Disclaimer" [ref=f76e297] [cursor=pointer]:
+                  - /url: /spdji/en/disclaimers/
+              - listitem [ref=f76e298]:
+                - link "Terms of Use" [ref=f76e299] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/terms-of-use
+              - listitem [ref=f76e300]:
+                - link "Cookie Notice" [ref=f76e301] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/cookie-notice
+              - listitem [ref=f76e302]:
+                - link "Privacy Policy" [ref=f76e303] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/privacy/privacy-policy-english
+              - listitem [ref=f76e304]:
+                - link "Client Privacy Portal" [ref=f76e305] [cursor=pointer]:
+                  - /url: https://www.spglobal.com/en/enterprise/Legal/privacy.html
+              - listitem [ref=f76e306]:
+                - link "Do Not Sell or Share My Personal Information" [ref=f76e307] [cursor=pointer]:
+                  - /url: https://privacyportal.onetrust.com/webform/5cb57702-8ef7-437e-a62b-408fe78cd310/draft/78fa28ce-6010-42fa-96b5-28d8837492e3
+              - listitem [ref=f76e308]:
+                - link "Complaints" [ref=f76e309] [cursor=pointer]:
+                  - /url: /spdji/en/benchmark-complaints-policy/
+              - listitem [ref=f76e310]: © 2026 S&P Global
+  - text: "> > > > >"
+  - region "Cookie banner" [ref=f76e311]:
+    - dialog "Your Cookie Controls:" [ref=f76e312]:
+      - generic [ref=f76e314]:
+        - generic [ref=f76e316]:
+          - heading "Your Cookie Controls:" [level=2] [ref=f76e317]
+          - generic [ref=f76e318]:
+            - text: S&P Global uses cookies to improve user experience and site performance, offer tailored advertising and enable social media sharing. By clicking "Accept All", you agree to our use of cookies. By clicking “Reject All”, we will not place cookies on your device unless strictly necessary for website functionality. For details, please refer to our
+            - link "More information about your privacy, opens in a new tab" [active] [ref=f76e319] [cursor=pointer]:
+              - /url: https://www.spglobal.com/en/cookie-notice
+              - text: Cookie Notice
+        - generic [ref=f76e321]:
+          - button "Customize Cookies" [ref=f76e322] [cursor=pointer]
+          - button "Reject All" [ref=f76e323] [cursor=pointer]
+          - button "Accept All" [ref=f76e324] [cursor=pointer]

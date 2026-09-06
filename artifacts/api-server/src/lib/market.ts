@@ -438,34 +438,128 @@ const STALE_MAX_MS = 30 * 60 * 1000; // 30 minutes
 // UI already renders those fields with "—" when null, so the degradation
 // is honest.
 
-// Yahoo price shape → StockPriceData
-async function yahooFetchPrice(ticker: string): Promise<StockPriceData> {
-  return withProvider("yahoo", async () => {
-    const quote = await yahooFinance.quote(ticker);
-    const price = quote?.regularMarketPrice ?? null;
-    if (typeof price !== "number" || price <= 0) {
-      throw new Error(`yahoo returned no price for ${ticker}`);
-    }
-    const previousClose =
-      typeof quote?.regularMarketPreviousClose === "number"
-        ? quote.regularMarketPreviousClose
+// ── Yahoo transport: two endpoints, only one of which needs a crumb ─────────
+//
+// STATUS 2026-09-06. Yahoo is a STOPGAP, not a launch-safe provider — see the
+// licensing note above yahooChartPrice's caller chain and docs/OPERATIONS.md.
+// Fixing the throttling below makes the lane work for Thomas today. It does
+// not make an undocumented, unlicensed endpoint legitimate for public users.
+//
+// DIAGNOSIS. The lane was dark for days with `lastOk: null` and the recorded
+// error `Failed to get crumb, status 429, statusText: Too Many Requests`
+// (read from https://numeris-api.onrender.com/api/market/providers on
+// 2026-09-06). The 429 is on the cookie+crumb BOOTSTRAP, not on the quote
+// itself. yahoo-finance2 caches the crumb at module scope and single-flights
+// concurrent bootstraps, so caching it harder fixes nothing: the bootstrap
+// never succeeded, so there was never a crumb to cache, so every eligible
+// call re-attempted one. Verified against the library source at
+// node_modules/.pnpm/yahoo-finance2@3.15.3/.../lib/getCrumb.js.
+//
+// THE FIX IS TO STOP NEEDING THE CRUMB. In yahoo-finance2 v3 only four
+// modules set `needsCrumb: true` — quote, quoteSummary, options, screener
+// (grep `needsCrumb` under esm/src/modules). `chart` does not: it reads
+// /v8/finance/chart/<sym>, which requires no cookie and no crumb, and its
+// `meta` block carries regularMarketPrice, chartPreviousClose and currency —
+// exactly the three fields StockPriceData needs. Probed from this machine on
+// 2026-09-06: chart returned live values for AAPL, ^GSPC, ^FTSE, GBP=X and
+// GC=F, i.e. it covers the two asset classes (index, futures) for which Yahoo
+// is the ONLY provider in PROVIDER_COVERAGE.
+//
+// So the price lane below no longer touches the throttled endpoint at all.
+// The rich-quote lane still needs it, and degrades rather than failing.
+
+// Yahoo chart shape → StockPriceData. No crumb, no cookie jar.
+//
+// Split into an unwrapped inner and a withProvider wrapper because the
+// rich-quote lane below calls the inner one as its fallback. Nesting
+// withProvider inside withProvider would double-count a single failure
+// against the breaker and, worse, the inner call would be refused by the
+// half-open single-probe gate while the outer call held the probe slot.
+async function yahooChartPrice(ticker: string): Promise<StockPriceData> {
+  // A 5-day window is the smallest that reliably contains a previous
+  // close across a weekend or a public holiday. We read `meta` only; the
+  // quote rows are not requested for a price lookup.
+  const period1 = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const chart: any = await yahooFinance.chart(ticker, { period1, interval: "1d" });
+  const meta = chart?.meta;
+  const price = typeof meta?.regularMarketPrice === "number" ? meta.regularMarketPrice : null;
+  if (typeof price !== "number" || price <= 0) {
+    throw new Error(`yahoo returned no price for ${ticker}`);
+  }
+  // chartPreviousClose is the close of the session before the window's
+  // first bar. Null rather than a substitute if absent — a wrong previous
+  // close renders as a wrong day-change percentage, which is a fabricated
+  // number in the sense CLAUDE.md forbids.
+  const previousClose =
+    typeof meta?.chartPreviousClose === "number" && meta.chartPreviousClose > 0
+      ? meta.chartPreviousClose
+      : typeof meta?.previousClose === "number" && meta.previousClose > 0
+        ? meta.previousClose
         : null;
-    return {
-      ticker,
-      price,
-      currency: quote?.currency ?? "USD",
-      previousClose,
-      updatedAt: new Date().toISOString(),
-      provider: "yahoo",
-    };
-  });
+  return {
+    ticker,
+    price,
+    currency: meta?.currency ?? "USD",
+    previousClose,
+    updatedAt: new Date().toISOString(),
+    provider: "yahoo",
+  };
+}
+
+async function yahooFetchPrice(ticker: string): Promise<StockPriceData> {
+  return withProvider("yahoo", () => yahooChartPrice(ticker));
+}
+
+// ── Rich-quote degradation ──────────────────────────────────────────────────
+// quote() is the crumb-requiring endpoint, so it is the one that actually
+// 429s. When it does, the honest answer is not "Yahoo is dark" — chart() is
+// still serving a real price. So the quote lane falls back to the crumb-free
+// price and nulls every field chart cannot supply (PE, 52w range, analyst
+// target, pre/post-market …). priceToQuote already encodes that nulling, and
+// the UI already renders those fields as "—". Nothing is invented: the
+// degraded quote carries a real price and honest nulls.
+//
+// The degradation is COUNTED rather than swallowed. A lane that quietly stops
+// returning analyst data is exactly the failure this codebase has been bitten
+// by before, so the counter below is surfaced on the admin hub.
+let richQuoteDegradedCount = 0;
+let richQuoteDegradedSince: string | null = null;
+let richQuoteLastError: string | null = null;
+
+export function getYahooRichQuoteStatus(): {
+  degradedCount: number;
+  degradedSince: string | null;
+  lastError: string | null;
+} {
+  return {
+    degradedCount: richQuoteDegradedCount,
+    degradedSince: richQuoteDegradedSince,
+    lastError: richQuoteLastError,
+  };
 }
 
 // Yahoo full-quote shape → StockQuoteData
 async function yahooFetchQuote(ticker: string): Promise<StockQuoteData> {
   return withProvider("yahoo", async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const q: any = await yahooFinance.quote(ticker);
+    let q: any;
+    try {
+      q = await yahooFinance.quote(ticker);
+    } catch (err) {
+      // The crumb-gated endpoint is unavailable. Serve the crumb-free price
+      // rather than darkening the whole lane. If THAT fails too, the throw
+      // propagates and the breaker sees a genuine Yahoo outage.
+      richQuoteDegradedCount += 1;
+      richQuoteLastError = err instanceof Error ? err.message : String(err);
+      if (richQuoteDegradedSince === null) richQuoteDegradedSince = new Date().toISOString();
+      logger.warn(
+        { ticker, err: richQuoteLastError },
+        "yahoo rich quote unavailable, degrading to chart price",
+      );
+      const chartPrice = await yahooChartPrice(ticker);
+      return priceToQuote(chartPrice);
+    }
     const price = typeof q?.regularMarketPrice === "number" ? q.regularMarketPrice : null;
     if (typeof price !== "number" || price <= 0) {
       throw new Error(`yahoo returned no quote for ${ticker}`);

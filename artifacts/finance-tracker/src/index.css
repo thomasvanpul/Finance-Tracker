@@ -199,6 +199,17 @@
     background-color var(--ft-motion-base) var(--ft-ease),
     border-color     var(--ft-motion-base) var(--ft-ease),
     color            var(--ft-motion-base) var(--ft-ease);
+
+  /* Derived state colours — DESIGN.md §11. Declared once and resolved from
+     --ft-text / --ft-accent on the same element the theme attribute sits on
+     (documentElement), so all fourteen themes get a correct value without a
+     per-theme override. This replaces two families of hardcoded literal:
+     rgba(255,255,255,0.03-0.06) hovers, which are invisible on the four
+     light themes, and rgba(244,162,30,...) accent tints, which are a
+     previous accent that no longer matches --ft-accent on any theme. */
+  --ft-hover:        color-mix(in srgb, var(--ft-text) 7%, transparent);
+  --ft-accent-tint:  color-mix(in srgb, var(--ft-accent) 14%, transparent);
+  --ft-accent-edge:  color-mix(in srgb, var(--ft-accent) 32%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

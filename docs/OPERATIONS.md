@@ -164,8 +164,44 @@ by running the SQL query in Neon.
 
 For each service, the specific limit that would bite first and the
 symptom it produces — so a future degradation is recognisable
-rather than mysterious. Numbers accurate at 2026-09-01; re-verify
-on the provider's pricing page at decision time.
+rather than mysterious.
+
+**The numbers live in `artifacts/api-server/src/lib/service-facts.ts`,
+not here.** That module is the typed source the admin hub renders, and
+the table below is generated from it by
+`pnpm --filter @workspace/api-server gen:service-facts`. Editing the table
+by hand is pointless — `service-facts.doc-drift.lock.test.ts` regenerates
+it during the gate and fails if the committed file differs. Change the
+module, run the script, commit both.
+
+The prose in this section is NOT generated. It carries what a table
+cannot: why each ceiling matters and what the upgrade argument is.
+
+<!-- BEGIN SERVICE-FACTS (generated — edit lib/service-facts.ts, then pnpm gen:service-facts) -->
+
+Generated from `artifacts/api-server/src/lib/service-facts.ts`. Total monthly spend: **£0**.
+
+| Service | Plan | Cost | Next plan | Ceiling that bites first | Checked |
+| --- | --- | --- | --- | --- | --- |
+| Render | Free | £0 | Starter ($7/mo) ≈ £5.5/mo | RAM 512 MB | 2026-09-01 |
+| Neon | Free | £0 | Launch ($19/mo) ≈ £15/mo | Storage 500 MB | 2026-09-01 |
+| Vercel | Hobby | £0 | Pro ($20/mo) ≈ £16/mo | Bandwidth 100 GB/month | 2026-09-01 |
+| cron-job.org | Free | £0 | — | Cron jobs 50 jobs | 2026-09-01 |
+| Healthchecks.io | Free | £0 | — | Checks 20 checks | 2026-09-01 |
+| Yahoo Finance | Undocumented public endpoints — no plan, no contract, no key | £0 | — | Rate limit — unpublished | 2026-09-06 |
+| Alpaca | Free (Basic market data) | £0 | Algo Trader Plus ($99/mo) ≈ £78/mo | Requests 200 per minute | 2026-09-06 |
+| Polygon | Free | £0 | Stocks Starter ($29/mo) ≈ £23/mo | Requests 5 per minute | 2026-09-06 |
+| Twelve Data | Free (Basic) | £0 | Grow ($79/mo) ≈ £62/mo | Credits 800 per day | 2026-09-06 |
+| Frankfurter (ECB) | Free, open data | £0 | — | Rate limit — none published | 2026-09-06 |
+| Groq | Free | £0 | Developer (pay-as-you-go) ≈ £0 | Requests 30 per minute | 2026-09-06 |
+| Cerebras | Free | £0 | — | Requests 30 per minute | 2026-09-06 |
+| OpenRouter | Free tier models | £0 | Credits (pay-as-you-go) ≈ £0 | Requests 50 per day (free models) | 2026-09-06 |
+
+**Cannot ship to public users as configured:**
+
+- **Yahoo Finance** — NOT LAUNCH-SAFE. Undocumented endpoints with no commercial licence and no redistribution right. Works for Thomas today; cannot ship to public users. Fixing the throttling did not change this.
+- **Alpaca** — Redistribution to third parties is not granted on this tier. Not a breach today — every account is Thomas's own — and Thomas has sent the 30-day notice separately. Becomes a blocker the moment a third party signs up.
+<!-- END SERVICE-FACTS -->
 
 ### Render (numeris-api)
 

@@ -18,10 +18,35 @@
 // it succeeds, the breaker closes and the failure counter resets; if it
 // fails, we cool down again.
 //
+// A half-open breaker admits exactly ONE call. It previously admitted every
+// caller that arrived while the state was "half", which for a fan-out batch
+// meant the whole batch: chainFetchPrices calls withProvider once per ticker
+// and Promise.allSettles them, so a 15-ticker batch put 15 calls through a
+// "probe" and recorded 15 failures. That is how Yahoo reached 77 consecutive
+// failures within minutes on 2026-09-06 — the counter was measuring batch
+// width, not elapsed outages, and each probe sent the provider a burst rather
+// than the single request a probe is supposed to be.
+//
 // N=3 chosen over 5: at 60s cooldown, 3 failures ≈ 6-10s of wasted retries
 // before the lane goes dormant. 5 would be 10-20s. For a per-request path on
 // a warm endpoint, 6-10s is the ceiling we can absorb before the user notices
 // the whole page has stalled.
+//
+// ── Why the cooldown escalates ───────────────────────────────────────────
+// The cooldown was a flat 60s. Against a provider that is DOWN for seconds
+// that is right — probe often, recover fast. Against a provider that is
+// RATE-LIMITING US it is actively harmful: the half-open probe reopens into
+// the same throttle, fails, and re-arms another flat 60s, forever. Measured
+// on 2026-09-06, Yahoo's crumb bootstrap had been failing that way for days
+// (`lastOk: null`), which means the flat cooldown was presenting Render's
+// shared egress IP to Yahoo ~1,440 times a day and feeding the very throttle
+// it was waiting out.
+//
+// So the cooldown doubles per consecutive re-open — 60s, 120s, 240s … capped
+// at COOLDOWN_MAX_MS. A lane that is briefly down still recovers in a minute;
+// a lane that is being throttled backs off to a 30-minute probe and stops
+// being part of the problem. The escalation resets on the first success,
+// because consecutiveFailures resets there.
 //
 // ── Credit budget ───────────────────────────────────────────────────────────
 // Some providers (Twelve Data on free) enforce a daily credit ceiling. The
@@ -55,10 +80,27 @@ interface ProviderState {
   // Not exposed on health endpoint — internal to withMinuteBudget.
   minuteWindowStart: number;
   minuteRequests: number;
+  // True while a half-open probe is running. A half-open breaker must admit
+  // exactly ONE call; see the note on half-open above.
+  probeInFlight: boolean;
 }
 
 const FAILURE_THRESHOLD = 3;
-const COOLDOWN_MS = 60_000;
+const COOLDOWN_BASE_MS = 60_000;
+const COOLDOWN_MAX_MS = 30 * 60_000;
+
+// Cooldown for the Nth consecutive failure past the threshold. failures=3 is
+// the first open (base), 4 doubles, 5 doubles again, and so on to the cap.
+// Exported so the health endpoint and its tests read the same arithmetic
+// rather than restating it.
+export function cooldownForFailures(consecutiveFailures: number): number {
+  const steps = Math.max(0, consecutiveFailures - FAILURE_THRESHOLD);
+  // 2 ** steps overflows to Infinity long after the cap bites; clamp the
+  // exponent first so the arithmetic stays finite for a lane that has been
+  // dark for days.
+  const capped = Math.min(steps, 20);
+  return Math.min(COOLDOWN_BASE_MS * 2 ** capped, COOLDOWN_MAX_MS);
+}
 
 const providers = new Map<string, ProviderState>();
 
@@ -96,6 +138,7 @@ export function registerProvider(opts: {
     creditsResetAt: nextUtcMidnight(),
     minuteWindowStart: Date.now(),
     minuteRequests: 0,
+    probeInFlight: false,
   });
 }
 
@@ -156,6 +199,17 @@ export async function withProvider<T>(
   if (state.breaker === "open") {
     throw new ProviderUnavailableError(providerName, "circuit open");
   }
+  // Half-open admits one probe. Everyone else is refused for free — they
+  // would otherwise turn a single probe into a whole batch against a lane we
+  // already believe is dead.
+  let isProbe = false;
+  if (state.breaker === "half") {
+    if (state.probeInFlight) {
+      throw new ProviderUnavailableError(providerName, "circuit half-open (probe in flight)");
+    }
+    state.probeInFlight = true;
+    isProbe = true;
+  }
   const credits = opts.credits ?? 0;
   if (state.creditsBudget !== null && credits > 0) {
     // Buffer: stop at 95% of budget so races or the odd late-arriving
@@ -175,19 +229,22 @@ export async function withProvider<T>(
     state.breaker = "closed";
     state.consecutiveFailures = 0;
     state.cooldownUntil = null;
+    state.probeInFlight = false;
     state.lastOk = new Date().toISOString();
     return result;
   } catch (err) {
+    if (isProbe) state.probeInFlight = false;
     state.consecutiveFailures += 1;
     state.lastError = {
       message: err instanceof Error ? err.message : String(err),
       ts: new Date().toISOString(),
     };
     if (state.consecutiveFailures >= FAILURE_THRESHOLD) {
+      const cooldownMs = cooldownForFailures(state.consecutiveFailures);
       state.breaker = "open";
-      state.cooldownUntil = Date.now() + COOLDOWN_MS;
+      state.cooldownUntil = Date.now() + cooldownMs;
       logger.warn(
-        { provider: providerName, failures: state.consecutiveFailures, cooldownMs: COOLDOWN_MS },
+        { provider: providerName, failures: state.consecutiveFailures, cooldownMs },
         "provider circuit opened",
       );
     }
@@ -252,5 +309,6 @@ export function __resetProviderHealthForTesting(): void {
     state.creditsResetAt = nextUtcMidnight(now);
     state.minuteWindowStart = now;
     state.minuteRequests = 0;
+    state.probeInFlight = false;
   }
 }

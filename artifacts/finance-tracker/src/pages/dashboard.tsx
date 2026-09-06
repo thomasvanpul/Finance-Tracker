@@ -23,6 +23,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import { apiFetch } from "@/lib/api-fetch";
+import { splitInsight } from "@/lib/insight-split";
 import { useWidgets, WIDGET_REGISTRY, type WidgetId, type WidgetSpan } from "@/contexts/widgets-context";
 import { NetWorthWidget } from "@/components/widgets/net-worth";
 import { AccountsSummaryWidget } from "@/components/widgets/accounts-summary";
@@ -801,7 +802,11 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
       setLoading(true); // only show skeleton after confirming AI is reachable
       const result = await oneShotInsight({
         path: "/",
-        prompt: "You are a concise personal finance analyst. Given the dashboard snapshot in the portfolio context, write exactly 3 short, punchy, data-specific insight sentences (1 sentence each). Each should be actionable and reference actual numbers from the context. Respond with only the 3 sentences, one per line, no numbering, no extra text.",
+        // Figure first, then a short clause — not a sentence. A reader
+        // scanning three insights should get the number before the grammar.
+        // The separator is what the renderer splits on; a line without one
+        // still renders, as prose, rather than being dropped or invented.
+        prompt: "You are a concise personal finance analyst. Given the dashboard snapshot in the portfolio context, write exactly 3 data-specific insights, one per line. Each line MUST start with the figure it is about — a currency amount, a percentage or a count taken from the context — then ' — ' then a clause of at most 8 words saying what it means or what to do. No leading verb, no full sentence, no numbering, no extra text. Example shape: '£412/mo — subscriptions, up 18% on last quarter'.",
       });
       const lines = result.text
         .split("\n")
@@ -905,7 +910,9 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                 }}
               />
             ))
-          : (insights ?? []).map((text, i) => (
+          : (insights ?? []).map((text, i) => {
+            const { figure, clause } = splitInsight(text);
+            return (
               <div
                 key={i}
                 style={{
@@ -918,13 +925,23 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                 }}
               >
                 <Zap size={10} style={{ color: "var(--ft-accent)", flexShrink: 0, marginTop: 1, opacity: 0.8 }} />
-                {/* Prose, not a figure. Mono here made three sentences read
-                    as a log dump; sans is what a sentence wants. */}
+                {/* Figure first, clause second (DESIGN.md §10): the figure is
+                    data, so it is mono and .pnum and carries the weight; the
+                    clause is language, so it is sans and recedes. A line the
+                    model returned without the separator is rendered whole as
+                    prose — never split on a guess, never shown as a figure it
+                    is not. */}
                 <Text as="span" size={10} color="var(--ft-muted)" lineHeight={1.6}>
-                  {text}
+                  {figure !== null && (
+                    <Text as="span" numeric size={11} weight={700} color="var(--ft-text)">
+                      {figure}{" "}
+                    </Text>
+                  )}
+                  {clause}
                 </Text>
               </div>
-            ))
+            );
+          })
         }
       </div>
     </div>

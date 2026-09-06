@@ -23,9 +23,11 @@ import sharedExpensesRouter from "./shared-expenses";
 import recurringRouter from "./recurring";
 import accountRouter from "./account";
 import preferencesRouter from "./preferences";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
+router.use(adminRouter);
 router.use(marketLiveRouter);
 router.use(budgetsRouter);
 router.use(goalsRouter);

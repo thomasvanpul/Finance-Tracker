@@ -24,6 +24,8 @@ import type {
   AccountInput,
   AccountUpdate,
   AddGoalFundsBody,
+  AdminForbidden,
+  AdminOverview,
   Budget,
   Connection,
   ConnectionSyncFailure,
@@ -45,6 +47,8 @@ import type {
   DownloadBackup200,
   ErrorResponse,
   FxRates,
+  GetAdminOverviewParams,
+  GetAdminWhoami200,
   GetMarketPricesParams,
   GetMarketQuotesParams,
   GetTransactionSummaryParams,
@@ -162,6 +166,167 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getHealthCheckQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAdminWhoamiUrl = () => {
+
+
+
+
+  return `/api/admin/whoami`
+}
+
+/**
+ * @summary Whether the signed-in account is on the admin allowlist
+ */
+export const getAdminWhoami = async ( options?: RequestInit): Promise<GetAdminWhoami200> => {
+
+  return customFetch<GetAdminWhoami200>(getGetAdminWhoamiUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminWhoamiQueryKey = () => {
+    return [
+    `/api/admin/whoami`
+    ] as const;
+    }
+
+
+export const getGetAdminWhoamiQueryOptions = <TData = Awaited<ReturnType<typeof getAdminWhoami>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminWhoami>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminWhoamiQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminWhoami>>> = ({ signal }) => getAdminWhoami({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminWhoami>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminWhoamiQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminWhoami>>>
+export type GetAdminWhoamiQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Whether the signed-in account is on the admin allowlist
+ */
+
+export function useGetAdminWhoami<TData = Awaited<ReturnType<typeof getAdminWhoami>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminWhoami>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminWhoamiQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAdminOverviewUrl = (params?: GetAdminOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/overview?${stringifiedParams}` : `/api/admin/overview`
+}
+
+/**
+ * @summary Operations overview — services, ceilings, deploy state, users, traffic
+ */
+export const getAdminOverview = async (params?: GetAdminOverviewParams, options?: RequestInit): Promise<AdminOverview> => {
+
+  return customFetch<AdminOverview>(getGetAdminOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminOverviewQueryKey = (params?: GetAdminOverviewParams,) => {
+    return [
+    `/api/admin/overview`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAdminOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getAdminOverview>>, TError = ErrorType<AdminForbidden>>(params?: GetAdminOverviewParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminOverview>>> = ({ signal }) => getAdminOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminOverview>>>
+export type GetAdminOverviewQueryError = ErrorType<AdminForbidden>
+
+
+/**
+ * @summary Operations overview — services, ceilings, deploy state, users, traffic
+ */
+
+export function useGetAdminOverview<TData = Awaited<ReturnType<typeof getAdminOverview>>, TError = ErrorType<AdminForbidden>>(
+ params?: GetAdminOverviewParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminOverviewQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

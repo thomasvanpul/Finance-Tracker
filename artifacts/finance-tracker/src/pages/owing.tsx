@@ -1040,7 +1040,7 @@ export default function Owing() {
             <Button
               size="sm"
               onClick={() => setOpen(true)}
-              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", height: 30, fontSize: 12, gap: 6 }}
+              style={{ background: "var(--ft-accent)", color: "var(--ft-base)", height: 30, fontSize: 12, gap: 6 }}
             >
               <Plus className="w-3.5 h-3.5" /> Add IOU
             </Button>
@@ -1058,7 +1058,7 @@ export default function Owing() {
             <Button
               size="sm"
               onClick={() => setOpen(true)}
-              style={{ background: "var(--ft-blue)", color: "var(--ft-base)", height: 30, fontSize: 12, gap: 6 }}
+              style={{ background: "var(--ft-accent)", color: "var(--ft-base)", height: 30, fontSize: 12, gap: 6 }}
             >
               <Plus className="w-3.5 h-3.5" /> Add IOU
             </Button>
@@ -1178,7 +1178,7 @@ export default function Owing() {
               <Button size="sm" onClick={() => setSplitOpen(true)} style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", fontSize: 12 }}>
                 <SplitSquareHorizontal className="w-3.5 h-3.5 mr-1.5" /> Split a Bill
               </Button>
-              <Button size="sm" onClick={() => setOpen(true)} style={{ background: "var(--ft-blue)", color: "var(--ft-base)", fontSize: 12 }}>
+              <Button size="sm" onClick={() => setOpen(true)} style={{ background: "var(--ft-accent)", color: "var(--ft-base)", fontSize: 12 }}>
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> Add IOU
               </Button>
             </HStack>
@@ -1472,11 +1472,11 @@ export default function Owing() {
                       fontWeight: 600,
                       textTransform: "uppercase",
                       letterSpacing: "0.06em",
-                      color: filter === f ? "var(--ft-blue)" : "var(--ft-dim)",
+                      color: filter === f ? "var(--ft-accent)" : "var(--ft-dim)",
                       background: "transparent",
                       cursor: "pointer",
                       border: "none",
-                      borderBottom: `2px solid ${filter === f ? "var(--ft-blue)" : "transparent"}`,
+                      borderBottom: `2px solid ${filter === f ? "var(--ft-accent)" : "transparent"}`,
                     }}
                   >
                     {f}
@@ -1557,7 +1557,7 @@ export default function Owing() {
               )}
               {!isLoading && filtered.length === 0 && (
                 <div style={{ padding: "32px 12px", textAlign: "center", color: "var(--ft-dim)", fontSize: 12 }}>
-                  No entries — add one with <strong style={{ color: "var(--ft-blue)" }}>Add IOU</strong>
+                  No entries — add one with <strong style={{ color: "var(--ft-accent)" }}>Add IOU</strong>
                 </div>
               )}
               {!isLoading && filtered.map((d) => {

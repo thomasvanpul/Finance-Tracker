@@ -58,6 +58,14 @@ const GBP_ALLOWLIST = new Set([
   "toGbp",    // market.ts helper: any currency → GBP via Frankfurter pivot
   "gbpTo",    // market.ts helper: GBP → any currency
   "GBP",      // ISO currency string literal
+  // service-facts.ts. These are NOT base-currency values — they are vendor
+  // prices that are genuinely and only in GBP: what Render, Neon and Vercel
+  // cost per month. The lock exists because a value in the USER's base
+  // currency must not be named for one specific currency; a supplier's
+  // sterling price is the opposite case, and naming it `monthlyCostBase`
+  // would be the lie here. The unit is part of the fact.
+  "monthlyCostGbp",
+  "totalMonthlyCostGbp",
 ]);
 
 function walk(dir: string, acc: string[] = []): string[] {

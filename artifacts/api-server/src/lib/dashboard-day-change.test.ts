@@ -14,8 +14,29 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { __setYahooForTesting, getStockPrices } from "./market";
 
+// The stub speaks the CHART shape, because that is the transport the price
+// lane uses. It moved off quote() on 2026-09-06: quote() requires Yahoo's
+// cookie+crumb bootstrap, which 429s from Render's shared egress, and chart()
+// requires neither. Only the transport changed — every assertion below is the
+// one it always was, on the same values.
+//
+// The table is still written in quote() field names so the cases stay
+// readable; the adapter below renames them to their chart `meta` equivalents
+// (regularMarketPreviousClose → chartPreviousClose) exactly as Yahoo does.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const yahooWith = (byTicker: Record<string, any>) => ({
+  chart: async (t: string) => {
+    const row = byTicker[t];
+    if (!row) return Promise.reject(new Error(`no ${t}`));
+    return {
+      meta: {
+        regularMarketPrice: row.regularMarketPrice,
+        chartPreviousClose: row.regularMarketPreviousClose,
+        currency: row.currency,
+      },
+      quotes: [],
+    };
+  },
   quote: async (t: string) => byTicker[t] ?? Promise.reject(new Error(`no ${t}`)),
 });
 

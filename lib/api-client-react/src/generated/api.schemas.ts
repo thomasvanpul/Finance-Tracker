@@ -5,6 +5,219 @@
  * Personal Finance Tracker API
  * OpenAPI spec version: 0.1.0
  */
+export interface AdminForbidden {
+  error: string;
+  reason: string;
+}
+
+export type AdminCeilingSourceKind = typeof AdminCeilingSourceKind[keyof typeof AdminCeilingSourceKind];
+
+
+export const AdminCeilingSourceKind = {
+  measurable: 'measurable',
+  stated: 'stated',
+} as const;
+
+export type AdminCeilingSource = {
+  kind: AdminCeilingSourceKind;
+  via?: string;
+  checkedOn?: string;
+};
+
+export interface AdminCeiling {
+  label: string;
+  limit: number | null;
+  unit: string;
+  symptom: string;
+  source: AdminCeilingSource;
+}
+
+export type AdminServiceFactCategory = typeof AdminServiceFactCategory[keyof typeof AdminServiceFactCategory];
+
+
+export const AdminServiceFactCategory = {
+  infrastructure: 'infrastructure',
+  'market-data': 'market-data',
+  ai: 'ai',
+  monitoring: 'monitoring',
+} as const;
+
+export type AdminServiceFactNextPlan = {
+  name: string;
+  monthlyCostGbp: number;
+} | null;
+
+export interface AdminServiceFact {
+  id: string;
+  name: string;
+  category: AdminServiceFactCategory;
+  role: string;
+  plan: string;
+  monthlyCostGbp: number;
+  nextPlan: AdminServiceFactNextPlan;
+  ceilings: AdminCeiling[];
+  launchBlocker: string | null;
+  checkedOn: string;
+  dashboardUrl: string | null;
+}
+
+export type AdminDeployTruthVerdict = typeof AdminDeployTruthVerdict[keyof typeof AdminDeployTruthVerdict];
+
+
+export const AdminDeployTruthVerdict = {
+  match: 'match',
+  behind: 'behind',
+  unknown: 'unknown',
+} as const;
+
+export interface AdminDeployTruth {
+  apiCommit: string | null;
+  apiCommitSource: string | null;
+  webCommit: string | null;
+  originMainCommit: string | null;
+  originMainSource: string | null;
+  verdict: AdminDeployTruthVerdict;
+  detail: string;
+}
+
+export type AdminUserRowHoldings = {
+  accounts: number;
+  transactions: number;
+  investments: number;
+  goals: number;
+  budgets: number;
+  debts: number;
+  subscriptions: number;
+  connections: number;
+};
+
+export interface AdminUserRow {
+  id: string;
+  email: string;
+  createdAt: string;
+  holdings: AdminUserRowHoldings;
+}
+
+export interface AdminRouteTiming {
+  route: string;
+  samples: number;
+  p95Ms: number;
+  p50Ms: number;
+}
+
+export interface AdminRouteErrors {
+  route: string;
+  samples: number;
+  errors: number;
+}
+
+export type AdminTrafficByClient = {
+  phone: number;
+  desktop: number;
+  unclassified: number;
+};
+
+export interface AdminTraffic {
+  windowDays: number;
+  requests: number;
+  serverErrors: number;
+  clientErrors: number;
+  errorRatePct: number | null;
+  slowestRoutes: AdminRouteTiming[];
+  failingRoutes: AdminRouteErrors[];
+  byClient: AdminTrafficByClient;
+  clientSplitNote: string | null;
+}
+
+export type AdminProviderHealthBreaker = typeof AdminProviderHealthBreaker[keyof typeof AdminProviderHealthBreaker];
+
+
+export const AdminProviderHealthBreaker = {
+  closed: 'closed',
+  open: 'open',
+  half: 'half',
+} as const;
+
+export type AdminProviderHealthLastError = {
+  message: string;
+  ts: string;
+} | null;
+
+export interface AdminProviderHealth {
+  name: string;
+  configured: boolean;
+  breaker: AdminProviderHealthBreaker;
+  consecutiveFailures: number;
+  cooldownUntil: string | null;
+  lastOk: string | null;
+  lastError: AdminProviderHealthLastError;
+  creditsUsedToday: number;
+  creditsBudget: number | null;
+  creditsResetAt: string;
+}
+
+export interface AdminAiProviderHealth {
+  name: string;
+  keyConfigured: boolean;
+  models: string[];
+  modelsVerified: boolean | null;
+  verifiedAt: string | null;
+  lastError: string | null;
+}
+
+export type AdminOverviewGateMatchedOn = typeof AdminOverviewGateMatchedOn[keyof typeof AdminOverviewGateMatchedOn];
+
+
+export const AdminOverviewGateMatchedOn = {
+  'user-id': 'user-id',
+  email: 'email',
+} as const;
+
+export type AdminOverviewGate = {
+  matchedOn: AdminOverviewGateMatchedOn;
+};
+
+export type AdminOverviewServices = {
+  facts: AdminServiceFact[];
+  totalMonthlyCostGbp: number;
+  launchBlockerIds: string[];
+  oldestCheckDate: string;
+};
+
+export type AdminOverviewAi = {
+  available: boolean;
+  providers: AdminAiProviderHealth[];
+};
+
+export type AdminOverviewYahooRichQuote = {
+  degradedCount: number;
+  degradedSince: string | null;
+  lastError: string | null;
+};
+
+export type AdminOverviewUsersSignupsByDayItem = {
+  day: string;
+  count: number;
+};
+
+export type AdminOverviewUsers = {
+  total: number;
+  signupsByDay: AdminOverviewUsersSignupsByDayItem[];
+  accounts: AdminUserRow[];
+};
+
+export interface AdminOverview {
+  generatedAt: string;
+  gate: AdminOverviewGate;
+  services: AdminOverviewServices;
+  deploy: AdminDeployTruth;
+  providers: AdminProviderHealth[];
+  ai: AdminOverviewAi;
+  yahooRichQuote: AdminOverviewYahooRichQuote;
+  users: AdminOverviewUsers;
+  traffic: AdminTraffic;
+}
+
 export interface ErrorResponse {
   error: string;
 }
@@ -1279,6 +1492,18 @@ export interface CsvImportResult {
 export interface OkResult {
   ok: boolean;
 }
+
+export type GetAdminWhoami200 = {
+  admin: boolean;
+};
+
+export type GetAdminOverviewParams = {
+/**
+ * The commit the running web bundle was built from, baked in at build time. Sent by the SPA so the server can compare it with origin/main.
+
+ */
+webCommit?: string;
+};
 
 export type ListTransactionsParams = {
 /**

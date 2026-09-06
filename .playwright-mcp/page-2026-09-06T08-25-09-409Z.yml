@@ -1,0 +1,261 @@
+- generic [active] [ref=f66e1]:
+  - generic [ref=f66e2]:
+    - banner [ref=f66e3]:
+      - generic [ref=f66e5]:
+        - generic:
+          - generic:
+            - button "Skip navigation"
+        - navigation [ref=f66e6]:
+          - list [ref=f66e7]:
+            - listitem [ref=f66e8]:
+              - link "LSEG" [ref=f66e9] [cursor=pointer]:
+                - /url: https://www.lseg.com/en
+            - listitem [ref=f66e10]:
+              - link "Data & Analytics" [ref=f66e11] [cursor=pointer]:
+                - /url: https://www.lseg.com/en/data-analytics
+            - listitem [ref=f66e12]:
+              - link "FTSE Russell" [ref=f66e13] [cursor=pointer]:
+                - /url: https://www.lseg.com/en/ftse-russell
+            - listitem [ref=f66e14]:
+              - link "London Stock Exchange" [ref=f66e15] [cursor=pointer]:
+                - /url: https://www.londonstockexchange.com
+            - listitem [ref=f66e16]:
+              - link "FX" [ref=f66e17] [cursor=pointer]:
+                - /url: https://www.lseg.com/en/fx
+            - listitem [ref=f66e18]:
+              - link "Post Trade" [ref=f66e19] [cursor=pointer]:
+                - /url: https://www.lseg.com/en/post-trade
+            - listitem [ref=f66e20]:
+              - link "Risk Intelligence" [ref=f66e21] [cursor=pointer]:
+                - /url: https://www.lseg.com/en/risk-intelligence
+      - banner [ref=f66e24]:
+        - navigation [ref=f66e25]:
+          - link [ref=f66e26] [cursor=pointer]:
+            - /url: https://www.lseg.com/en
+            - img "LSEG home page" [ref=f66e28]
+          - generic [ref=f66e29]:
+            - button "Search" [ref=f66e30] [cursor=pointer]
+            - button "Menu" [ref=f66e33]
+    - main [ref=f66e36]:
+      - navigation "Breadcrumb" [ref=f66e37]:
+        - list [ref=f66e38]:
+          - listitem [ref=f66e39]:
+            - link "Home" [ref=f66e40] [cursor=pointer]:
+              - /url: https://www.lseg.com/en
+            - text: /
+          - listitem [ref=f66e41]:
+            - link "Policies" [ref=f66e42] [cursor=pointer]:
+              - /url: https://www.lseg.com/en/policies
+            - text: /
+          - listitem [ref=f66e43]: Website Terms of Use
+      - heading "Website Terms of Use" [level=1] [ref=f66e54]
+      - generic [ref=f66e60]:
+        - generic [ref=f66e62]:
+          - paragraph [ref=f66e63]:
+            - text: PLEASE READ ALL OF THE FOLLOWING TERMS OF USE (‘TERMS’) BEFORE USING THIS WEB SITE. This website
+            - link "www.lseg.com" [ref=f66e64] [cursor=pointer]:
+              - /url: /en
+            - text: (the “Website”) is a website of London Stock Exchange Group plc, a company registered in England & Wales with Company Number 05369106, whose Registered Address is 10 Paternoster Square, London EC4M 7LS (“LSEG” or “We”).
+          - paragraph [ref=f66e65]: These Terms govern your access to and use of this Website and any other online and mobile websites, blogs and interactive applications operated by LSEG (unless a different policy is provided on a particular site, application or service, in which case such different policy shall govern and control).
+          - paragraph [ref=f66e66]: LSEG reserves the right to amend, remove, or add to the Terms at any time and such modifications shall be effective immediately. Accordingly, please continue to review the Terms whenever accessing, linking to, or using the Website. By continuing to access, link to, or use the Website you confirm that you have understood and agreed to the Terms. Any terms and conditions proposed by you which are in addition to or which conflict with the Terms are expressly rejected by LSEG and shall be of no force or effect.
+        - heading "1. Website content" [level=2] [ref=f66e70]
+        - generic [ref=f66e72]:
+          - paragraph [ref=f66e73]: This Website contains information including, but not limited to, text, data, video, audio or graphics, photographs, illustrations, artwork, names, logos, trademarks, service marks and information connected with LSEG and its group undertakings or third-party licensors (collectively, the “Information”). LSEG attempts to ensure Information is accurate. However, Information is provided “AS IS” and on an “AS AVAILABLE” basis and may not be accurate or up-to-date. Information on this Website may or may not have been prepared by LSEG but is made available without responsibility on the part of LSEG. LSEG does not guarantee the accuracy, timeliness, completeness, performance, or fitness for a particular purpose of the Website or any of the Information. No responsibility is accepted by or on behalf of LSEG for any errors, omissions, or inaccurate Information on the Website.
+          - paragraph [ref=f66e74]: No action should be taken or omitted to be taken in reliance upon Information on this Website. We accept no liability for the results of any action taken on the basis of the Information.
+          - paragraph [ref=f66e75]: Certain files of Information are available for download from the Website. These files of Information are subject to these Terms.
+        - heading "2. Liability" [level=2] [ref=f66e79]
+        - generic [ref=f66e81]:
+          - paragraph [ref=f66e82]: All implied warranties, including but not limited to the implied warranties of satisfactory quality, fitness for a particular purpose, non-infringement, compatibility, security and accuracy are excluded from these Terms to the extent that they may be excluded as a matter of law. Further, LSEG does not warrant that the Website will be uninterrupted or error free or that any defects will be corrected.
+          - paragraph [ref=f66e83]: "To the extent permitted by applicable law, LSEG expressly disclaims all liability howsoever arising whether in contract, tort (or deceit) or otherwise (including, but not limited to, liability for any negligent act or omissions) to any person in respect of any claims or losses of any nature, arising directly or indirectly from: (i) anything done or the consequences of anything done or omitted to be done wholly or partly in reliance upon the whole or any part of the Information of this Website; and (ii) the use of any Information on this Website or unauthorised access to this Website or otherwise."
+          - paragraph [ref=f66e84]: LSEG will not be responsible for any breach of these Terms caused by circumstances beyond its reasonable control.
+        - heading "3. Advice" [level=2] [ref=f66e88]
+        - paragraph [ref=f66e91]: Information on the Website is not offered as advice on any particular matter and must not be treated as a substitute for specific advice. In particular, Information on the Website does not constitute professional, legal, regulatory, financial or investment advice and must not be used as a basis for making investment decisions and is in no way intended, directly or indirectly, as an attempt to market or sell any type of financial instrument. Advice from a suitably qualified professional should always be sought in relation to any particular matter or circumstances.
+        - heading "4. Investment" [level=2] [ref=f66e95]
+        - generic [ref=f66e97]:
+          - paragraph [ref=f66e98]: LSEG does not conduct investment business in the United Kingdom with private customers and accordingly services and products mentioned or referred to in any advertisements on this Website are not available to such persons via LSEG. Please note that the provision of investment services may be restricted in certain jurisdictions. You are required to acquaint yourself with any local laws and restrictions on the usage of this Website and the availability of any services described therein. The information on this Website is not intended for distribution to or use by any person or entity in any jurisdiction or country where such distribution would be contrary to local law or regulation.
+          - paragraph [ref=f66e99]: The contents of this Website do not constitute an invitation to invest in shares of LSEG, or constitute or form a part of any offer for the sale or subscription of, or any invitation to offer to buy or subscribe for, any securities or other financial instruments, nor should it or any part of it form the basis of, or be relied upon in any connection with any contract or commitment whatsoever.
+        - heading "5. Forward-Looking Statements" [level=2] [ref=f66e103]
+        - paragraph [ref=f66e106]: Certain statements included in this website are forward-looking. These forward-looking statements are based on certain assumptions and reflect our current expectations. As a result, forward-looking statements are subject to a number of risks and uncertainties that could cause actual results or events to differ materially from current expectations. There is no assurance that any forward-looking statements will materialise. You are cautioned not to place undue reliance on forward-looking statements, which reflect expectations only as of the date of this Website. Except as may be required by applicable law, we disclaim any intention or obligation to update or revise any forward-looking statements.
+        - heading "6. Third-party advertising" [level=2] [ref=f66e110]
+        - paragraph [ref=f66e113]: We allow third parties to place advertisements on our website. Third party advertisements are clearly labelled as such. LSEG does not endorse and is not responsible for the content of any third- party advertisement on this Website or otherwise.
+        - heading "7. Links to this and other websites" [level=2] [ref=f66e117]
+        - generic [ref=f66e119]:
+          - paragraph [ref=f66e120]:
+            - text: You may not frame, link or deep link this Website to any other website without our prior written consent. Should you wish to frame or to set up a link / deep link to our Website please contact
+            - link "webmaster@londonstockexchange.com" [ref=f66e121] [cursor=pointer]:
+              - /url: mailto:webmaster@londonstockexchange.com
+            - text: .
+          - paragraph [ref=f66e122]: LSEG is not responsible for any third-party website or website content (including, without limitation, any advertising appearing therein) which can be accessed through this Website. LSEG includes links to other websites for information purposes only and makes no representation whatsoever about any such link, website or content.
+        - heading "8. Electronic Communications" [level=2] [ref=f66e126]
+        - paragraph [ref=f66e129]:
+          - text: When you visit the Website or send e-mails to us, you are communicating with us electronically and consent to receive communications from us electronically. We will communicate with you by e-mail or by posting notices on this Website. You agree that all agreements, notices, disclosures and other communications that we provide to you electronically satisfy any legal requirement that such communications be in writing.
+          - strong
+        - heading "9. License and Website Access" [level=2] [ref=f66e133]
+        - paragraph [ref=f66e136]: You are permitted to download, print, store temporarily, retrieve and display Information from the Website on a computer screen, print individual pages on paper (but not photocopy them) and store such pages in electronic form on disk (but not on any server or other storage device connected to a network) for your personal, non-professional use. The permission to copy by an individual does not allow for incorporation of material or any part of it in any work or publication in any form.
+        - heading "10. Restrictions on Use" [level=2] [ref=f66e140]:
+          - text: 10. Restrictions on Use
+          - strong
+        - generic [ref=f66e142]:
+          - paragraph [ref=f66e143]: You are not permitted (except where you have been given express permission to do so) to (i) adapt, or modify the Information on this Website or any part of it; (ii) copy, reproduce, republish, download, post, broadcast or transmit in any other way to any third parties for commercial gain the Information or any part of it; (iii) frame/ utilize framing techniques to enclose any Information or any part of it or (iv) use any meta tags, any other “hidden text” to utilise LSEG’s Information.
+          - paragraph [ref=f66e144]: "You agree not to use, or attempt to use, any bot, script, automation software, or other automated tool or process to access, interact with, or perform any function on this Website, including but not limited to:"
+          - list [ref=f66e145]:
+            - listitem [ref=f66e146]: Signing in or out of any user account
+            - listitem [ref=f66e147]: Creating or submitting cases or queries
+            - listitem [ref=f66e148]: Registering for services or content
+            - listitem [ref=f66e149]: Performing searches
+            - listitem [ref=f66e150]: Accessing or using any AI tools
+            - listitem [ref=f66e151]: Downloading content or features in bulk
+          - paragraph [ref=f66e152]: This restriction applies regardless of whether the automated activity is for internal, commercial, or personal use.
+          - paragraph [ref=f66e153]: You may not use the Information for any illegal purpose, for the facilitation of the violation of any law or regulation, or in any manner inconsistent with the Terms.
+        - heading "11. Consequences of Breach" [level=2] [ref=f66e157]
+        - generic [ref=f66e159]:
+          - paragraph [ref=f66e160]: Any breach of the Terms may result in immediate suspension or termination of your access to the Website and associated services, without notice.
+          - paragraph [ref=f66e161]: LSEG reserves the right to pursue any and all legal remedies available under applicable law, including but not limited to injunctive relief, damages, and recovery of costs (including legal fees) incurred in connection with the enforcement of these Terms. LSEG may also report violations to relevant regulatory authorities or law enforcement agencies, where appropriate.
+        - heading "12. Regulation" [level=2] [ref=f66e165]
+        - paragraph [ref=f66e168]: Certain of LSEG’s group undertakings operate regulated market infrastructure, such as Recognised Investment Exchange, Multilateral Trading Facilities and CCPs. Calls and communications with LSEG and such group undertakings may be recorded to enable such group undertakings to carry out their regulatory responsibilities.
+        - heading "13. Copyright and reproduction notice" [level=2] [ref=f66e172]
+        - generic [ref=f66e174]:
+          - paragraph [ref=f66e175]: All Information provided on this Website is owned by or licensed to LSEG or its group undertakings. Except as is otherwise indicated, LSEG or its applicable group undertaking is the owner of the copyright in all the Information featured on this Website and of all related intellectual property rights, including but not limited to all database rights, trademarks, registered trademarks, service marks and logos.
+          - paragraph [ref=f66e176]: Copyright © 2025, London Stock Exchange Group plc.
+        - heading "14. Trademarks" [level=2] [ref=f66e180]
+        - paragraph [ref=f66e183]: The trademarks and service marks used on the Website (collectively, the " Marks") are trademarks (whether registered or unregistered) and/or service marks owned by LSEG or its group undertakings or by third-party licensors. Nothing contained on this Website should be construed as granting any licence or right to use any of the Marks for any purpose whatsoever without the written permission or applicable licence terms of the lawful owner. Unauthorised use of the Marks or any Information is strictly prohibited and may violate trademark, copyright or other applicable laws.
+        - heading "15. Computer viruses" [level=2] [ref=f66e187]
+        - paragraph [ref=f66e190]: Whilst we use reasonable endeavours to protect this Website from computer viruses, worms, and Trojan Horses (the “Viruses”), we do not warrant that the Website is free from such Viruses and accept no liability for any damage that may result from the transmission of any Viruses via this Website or via any files which are available for you to download from the Website.
+        - heading "16. Changes" [level=2] [ref=f66e194]
+        - paragraph [ref=f66e197]: LSEG reserves the right, at its discretion, to make changes to any part of the Website, the Information, or these Terms. Should these Terms be amended, LSEG will publish details of the amendments on the Website. By continuing to use the Website you agree to be bound by these Terms as amended.
+        - heading "17. Severability" [level=2] [ref=f66e201]
+        - paragraph [ref=f66e204]: If these Terms or any part of them should be determined to be illegal, invalid or otherwise unenforceable under the laws of any state or country in which these Terms are intended to be effective, then to the extent that they are so illegal, invalid or unenforceable, they shall in that state or country be treated as severed and deleted from these Terms and the remaining Terms shall survive and remain in full force and effect and continue to be binding and enforceable in that state or country.
+        - heading "18. Privacy policy" [level=2] [ref=f66e208]
+        - paragraph [ref=f66e211]:
+          - text: Please refer to the
+          - link "Privacy and cookie statement" [ref=f66e212] [cursor=pointer]:
+            - /url: /en/policies/privacy-and-cookie-statement
+          - text: which is a part of these Terms and contains provisions applicable to the use of personal data.
+        - heading "19. Governing law" [level=2] [ref=f66e216]
+        - paragraph [ref=f66e218]: These Terms are subject to English law and to the exclusive jurisdiction of the English courts.
+    - contentinfo [ref=f66e220]:
+      - generic [ref=f66e224]:
+        - search [ref=f66e225]:
+          - generic [ref=f66e227]:
+            - generic [ref=f66e228]: Search
+            - generic [ref=f66e229]:
+              - combobox "Search Input" [ref=f66e230]
+              - button "Search" [ref=f66e232]
+        - navigation [ref=f66e236]:
+          - list [ref=f66e237]:
+            - listitem [ref=f66e238]:
+              - heading "About LSEG" [level=2] [ref=f66e239]
+              - region "About LSEG" [ref=f66e240]:
+                - list [ref=f66e241]:
+                  - listitem [ref=f66e242]:
+                    - link "LSEG Group" [ref=f66e243] [cursor=pointer]:
+                      - /url: /en/about-us/what-we-do
+                  - listitem [ref=f66e244]:
+                    - link "Careers" [ref=f66e245] [cursor=pointer]:
+                      - /url: /en/careers
+                  - listitem [ref=f66e246]:
+                    - link "Media Centre" [ref=f66e247] [cursor=pointer]:
+                      - /url: /en/media-centre
+                  - listitem [ref=f66e248]:
+                    - link "Investor Relations" [ref=f66e249] [cursor=pointer]:
+                      - /url: /en/investor-relations
+            - listitem [ref=f66e250]:
+              - heading "Corporate" [level=2] [ref=f66e251]
+              - region "Corporate" [ref=f66e252]:
+                - list [ref=f66e253]:
+                  - listitem [ref=f66e254]:
+                    - link "Shareholder information" [ref=f66e255] [cursor=pointer]:
+                      - /url: /en/investor-relations#t-shareholder-information
+                  - listitem [ref=f66e256]:
+                    - link "Board of Directors" [ref=f66e257] [cursor=pointer]:
+                      - /url: /en/about-us/board-of-directors
+                  - listitem [ref=f66e258]:
+                    - link "Executive Teams" [ref=f66e259] [cursor=pointer]:
+                      - /url: /en/about-us/executive-team
+            - listitem [ref=f66e260]:
+              - heading "Contact Us" [level=2] [ref=f66e261]
+              - region "Contact Us" [ref=f66e262]:
+                - list [ref=f66e263]:
+                  - listitem [ref=f66e264]:
+                    - link "Contact LSEG" [ref=f66e265] [cursor=pointer]:
+                      - /url: /en/contact-us
+                  - listitem [ref=f66e266]:
+                    - link "Office locations" [ref=f66e267] [cursor=pointer]:
+                      - /url: /en/locations
+                  - listitem [ref=f66e268]:
+                    - link "Security Centre" [ref=f66e269] [cursor=pointer]:
+                      - /url: /en/security-centre
+            - listitem [ref=f66e270]:
+              - heading "Connect with us" [level=2] [ref=f66e271]
+              - region "Connect with us" [ref=f66e272]:
+                - list [ref=f66e273]:
+                  - listitem [ref=f66e274]:
+                    - link "LinkedIn" [ref=f66e275] [cursor=pointer]:
+                      - /url: https://www.linkedin.com/company/london-stock-exchange-group/
+                  - listitem [ref=f66e277]:
+                    - link "X" [ref=f66e278] [cursor=pointer]:
+                      - /url: https://twitter.com/LSEGplc
+                  - listitem [ref=f66e280]:
+                    - link "YouTube" [ref=f66e281] [cursor=pointer]:
+                      - /url: https://www.youtube.com/lsegplc
+            - listitem [ref=f66e283]:
+              - heading "Language" [level=2] [ref=f66e284]
+              - region "Language" [ref=f66e285]:
+                - list [ref=f66e286]:
+                  - listitem [ref=f66e287]:
+                    - link "English" [ref=f66e288] [cursor=pointer]:
+                      - /url: /en
+                  - listitem [ref=f66e289]:
+                    - link "日本語 – 日本" [ref=f66e290] [cursor=pointer]:
+                      - /url: /ja
+                  - listitem [ref=f66e291]:
+                    - link "简体中文 – 中国" [ref=f66e292] [cursor=pointer]:
+                      - /url: https://www.lseg.com.cn/
+      - generic [ref=f66e296]:
+        - link [ref=f66e298] [cursor=pointer]:
+          - /url: https://www.lseg.com/en
+          - generic [ref=f66e299]:
+            - img "LSEG home page"
+        - navigation [ref=f66e300]:
+          - list [ref=f66e301]:
+            - listitem [ref=f66e302]:
+              - link "Privacy Statement" [ref=f66e303] [cursor=pointer]:
+                - /url: /en/policies/privacy-statement
+            - listitem [ref=f66e304]:
+              - link "Cookie Statement" [ref=f66e305] [cursor=pointer]:
+                - /url: /en/policies/cookie-statement
+            - listitem [ref=f66e306]:
+              - link "Cookie settings" [ref=f66e307] [cursor=pointer]:
+                - /url: javascript:void(0)
+            - listitem [ref=f66e308]:
+              - link "Sitemap" [ref=f66e309] [cursor=pointer]:
+                - /url: /en/sitemap
+            - listitem [ref=f66e310]:
+              - link "Terms of Use" [ref=f66e311] [cursor=pointer]:
+                - /url: /en/policies/website-terms-of-use
+            - listitem [ref=f66e312]:
+              - link "Accessibility" [ref=f66e313] [cursor=pointer]:
+                - /url: /en/policies/accessibility-statement
+            - listitem [ref=f66e314]:
+              - link "Whistleblowing" [ref=f66e315] [cursor=pointer]:
+                - /url: /en/policies/whistleblowing
+            - listitem [ref=f66e316]:
+              - link "UK Bribery Act" [ref=f66e317] [cursor=pointer]:
+                - /url: /en/policies/lseg-commitment-to-combat-bribery-fraud-and-tax-evasion
+            - listitem [ref=f66e318]:
+              - link "Modern Slavery Act" [ref=f66e319] [cursor=pointer]:
+                - /url: /en/policies/modern-slavery-act-statement
+  - generic "Our use of cookies" [ref=f66e320]:
+    - dialog "Our use of cookies" [ref=f66e321]:
+      - generic [ref=f66e323]:
+        - generic [ref=f66e325]:
+          - heading "Our use of cookies" [level=2] [ref=f66e326]
+          - generic [ref=f66e327]:
+            - text: LSEG websites use cookies and similar technologies for various purposes including functionality, performance, targeting, social media, and for the proper functioning of websites. The cookies and similar technologies may include those deployed by third parties for providing services to us and they may use the same to improve, enhance, and deliver their services to all of their customers. To access a list of cookies used by this LSEG website please review the Cookie Settings. You can change your cookie preferences for this LSEG website at any time through our Cookie Settings tool, available at the footer of the website. For more information, please read our
+            - link "Cookie Statement, opens in a new tab" [ref=f66e328] [cursor=pointer]:
+              - /url: https://www.lseg.com/en/policies/cookie-statement
+              - text: Cookie Statement.
+        - generic [ref=f66e330]:
+          - button "Cookie settings, Opens the preference center dialog" [ref=f66e331] [cursor=pointer]: Cookie settings
+          - button "Reject all" [ref=f66e332] [cursor=pointer]
+          - button "Accept all cookies" [ref=f66e333] [cursor=pointer]
