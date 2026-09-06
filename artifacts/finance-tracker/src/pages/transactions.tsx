@@ -1721,7 +1721,7 @@ export default function Transactions() {
           )}
         </div>
         <div style={{ width: 120, minWidth: 120, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
-          <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, border: "1px solid var(--ft-border2)", background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", letterSpacing: "0.05em", fontWeight: 700, whiteSpace: "nowrap" as const, lineHeight: "14px", flexShrink: 0, maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span style={{ fontSize: 9, color: "var(--ft-muted)", fontFamily: "var(--font-mono)", letterSpacing: "0.05em", fontWeight: 700, whiteSpace: "nowrap" as const, lineHeight: "14px", flexShrink: 0, maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }}>
             {tx.category}
           </span>
           {splits[String(tx.id)] && (

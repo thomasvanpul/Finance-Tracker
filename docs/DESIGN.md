@@ -238,10 +238,13 @@ The two densest pages follow every rule above with two additions:
   their own column or leave the row. Stacking a caption under a figure
   inside a right-aligned numeric cell is what made the accounts table
   "messy and hard to read".
-- **Type and status are text, not boxes.** `INCOME` / `EXPENSE` /
-  `TRANSFER` as coloured uppercase 9px mono, no border, no fill. A bordered
-  coloured badge per row is a second frame competing with the panel frame,
-  and forty of them in a ledger is the "outdated" look.
+- **Per-row labels are text, not boxes.** Type, status and category —
+  `INCOME` / `EXPENSE` / `TRANSFER`, `ACTIVE` / `DORMANT`, `Groceries` — as
+  uppercase or mono 9px text, coloured where colour carries meaning, with no
+  border, no fill and no radius. A bordered badge per row is a second frame
+  competing with the panel frame, and forty of them down a ledger is the
+  "outdated" look. A box is reserved for something the user can press; a
+  label that only reads is drawn as a label.
 
 ## 10. Checklist before shipping a screen
 
