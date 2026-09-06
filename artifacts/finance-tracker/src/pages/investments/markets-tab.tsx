@@ -151,10 +151,10 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
   return (
     <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 14px", borderBottom: "1px solid var(--ft-border)", background: "rgba(88,166,255,0.04)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.04em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
           <Star size={11} /> Watchlists
         </div>
-        <button onClick={() => { setCreatingNew(!creatingNew); }} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", padding: "3px 8px", cursor: "pointer" }}>
+        <button onClick={() => { setCreatingNew(!creatingNew); }} style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", padding: "3px 8px", cursor: "pointer" }}>
           {creatingNew ? "CANCEL" : "+ NEW"}
         </button>
       </div>
@@ -166,13 +166,13 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") createWatchlist(); }}
             placeholder="Watchlist name…"
-            style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 10px", outline: "none" }}
+            style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 10px", outline: "none" }}
           />
-          <button onClick={createWatchlist} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "5px 12px", cursor: "pointer" }}>CREATE</button>
+          <button onClick={createWatchlist} style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "5px 12px", cursor: "pointer" }}>CREATE</button>
         </div>
       )}
       {watchlists.length === 0 ? (
-        <div style={{ padding: "20px 14px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+        <div style={{ padding: "20px 14px", textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)" }}>
           No watchlists yet — create one to track tickers
         </div>
       ) : (
@@ -180,7 +180,7 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
           <div className="ft-watchlist-sidebar" style={{ borderRight: "1px solid var(--ft-border)", minWidth: 130, maxWidth: 170 }}>
             {watchlists.map((wl) => (
               <div key={wl.id} style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--ft-border)", background: activeWl === wl.id ? "rgba(88,166,255,0.08)" : "transparent" }}>
-                <button onClick={() => setActiveWl(wl.id)} style={{ flex: 1, padding: "7px 10px", fontFamily: "var(--font-mono)", fontSize: 10, color: activeWl === wl.id ? "var(--ft-blue)" : "var(--ft-muted)", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontWeight: activeWl === wl.id ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <button onClick={() => setActiveWl(wl.id)} style={{ flex: 1, padding: "7px 10px", fontFamily: "var(--font-sans)", fontSize: 10, color: activeWl === wl.id ? "var(--ft-blue)" : "var(--ft-muted)", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontWeight: activeWl === wl.id ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {wl.name} <Text as="span" size={9} color="var(--ft-dim)">({wl.tickers.length})</Text>
                 </button>
                 <button onClick={() => deleteWatchlist(wl.id)} title="Delete watchlist" style={{ padding: "4px 6px", background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", flexShrink: 0 }}>
@@ -199,10 +199,10 @@ function WatchlistsPanel({ watchlists, setWatchlists, onSelectTicker, qMap }: Wa
                   placeholder="Add ticker (e.g. AAPL)"
                   style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "4px 8px", outline: "none" }}
                 />
-                <button onClick={() => addTicker(activeList.id)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", padding: "4px 10px", cursor: "pointer" }}>ADD</button>
+                <button onClick={() => addTicker(activeList.id)} style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", padding: "4px 10px", cursor: "pointer" }}>ADD</button>
               </div>
               {activeList.tickers.length === 0 ? (
-                <div style={{ padding: "16px 12px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>Empty — add tickers above</div>
+                <div style={{ padding: "16px 12px", fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)", textAlign: "center" }}>Empty — add tickers above</div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
                   {activeList.tickers.map((ticker) => {
@@ -400,20 +400,20 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
 
   return (
     <div style={{ border: "1px solid var(--ft-border)" }}>
-      <div style={{ padding: "6px 14px", background: "rgba(230,162,60,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
-        <Bell size={10} /> Ticker Alerts — {ticker}
+      <div style={{ padding: "6px 14px", background: "rgba(230,162,60,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.04em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
+        <Bell size={10} /> Ticker Alerts — <Text as="span" mono>{ticker}</Text>
       </div>
       <VStack gap={10} padding="10px 14px">
         {/* Metric + direction + threshold row */}
         <HStack gap={6} wrap>
           <select value={metric} onChange={(e) => setMetric(e.target.value as AlertMetric)}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}>
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}>
             {(Object.keys(ALERT_METRIC_LABELS) as AlertMetric[]).map((k) => (
               <option key={k} value={k}>{ALERT_METRIC_LABELS[k].label}</option>
             ))}
           </select>
           <select value={direction} onChange={(e) => setDirection(e.target.value as "above" | "below")}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}>
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}>
             <option value="above">goes above</option>
             <option value="below">drops below</option>
           </select>
@@ -422,7 +422,7 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
             onKeyDown={(e) => { if (e.key === "Enter") addAlert(); }}
             style={{ flex: 1, minWidth: 100, fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-base)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }} />
           <button onClick={addAlert}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-amber)", border: "none", color: "var(--ft-base)", padding: "5px 12px", cursor: "pointer", fontWeight: 700 }}>
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-amber)", border: "none", color: "var(--ft-base)", padding: "5px 12px", cursor: "pointer", fontWeight: 700 }}>
             + ADD
           </button>
         </HStack>
@@ -441,9 +441,9 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
               return (
                 <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", background: isFired ? "rgba(230,162,60,0.12)" : "var(--ft-raised)", border: `1px solid ${isFired ? "var(--ft-amber)" : "var(--ft-border)"}` }}>
                   <Bell size={9} style={{ color: isFired ? "var(--ft-amber)" : "var(--ft-dim)", flexShrink: 0 }} />
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: isFired ? "var(--ft-amber)" : "var(--ft-text)", flex: 1 }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: isFired ? "var(--ft-amber)" : "var(--ft-text)", flex: 1 }}>
                     {alertLabel(a)}
-                    {isFired && <span style={{ marginLeft: 6, fontSize: 9 }}>● TRIGGERED</span>}
+                    {isFired && <span style={{ marginLeft: 6, fontSize: 9, fontFamily: "var(--font-mono)" }}>● TRIGGERED</span>}
                   </span>
                   <button onClick={() => removeAlert(a.id)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", padding: 2 }}><X size={9} /></button>
                 </div>
@@ -735,8 +735,8 @@ export function MarketsTab() {
       <>
       {/* ── Portal tooltip — renders over sidebar via document.body ── */}
       {tipInfo && createPortal(
-        <div className="ft-float" style={{ position: "fixed", left: tipInfo.x, top: tipInfo.y - 8, transform: "translate(-50%, -100%)", zIndex: 9999, padding: "8px 10px", width: 240, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5, pointerEvents: "none" }}>
-          <div style={{ fontWeight: 700, color: "var(--ft-text)", marginBottom: 4, fontSize: 9 }}>{tipInfo.label}</div>
+        <div className="ft-float" style={{ position: "fixed", left: tipInfo.x, top: tipInfo.y - 8, transform: "translate(-50%, -100%)", zIndex: 9999, padding: "8px 10px", width: 240, fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.5, pointerEvents: "none" }}>
+          <div style={{ fontWeight: 700, color: "var(--ft-text)", marginBottom: 4, fontSize: 10 }}>{tipInfo.label}</div>
           {tipInfo.text}
         </div>,
         document.body,
@@ -786,7 +786,7 @@ export function MarketsTab() {
         <HStack gap={8} align="center">
           <button
             onClick={() => { setSelectedTicker(null); setWlDropdownOpen(false); }}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 12px", cursor: "pointer", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 12px", cursor: "pointer", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: 6 }}
           >
             ← BACK
           </button>
@@ -799,11 +799,11 @@ export function MarketsTab() {
           </button>
           <form onSubmit={handleSearch} style={{ display: "flex", gap: 4, flex: 1 }}>
             <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search another ticker…" className="ft-filter-input" style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 10px", outline: "none" }} />
-            <button type="submit" style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "5px 12px", cursor: "pointer", letterSpacing: "0.06em" }}>GO</button>
+            <button type="submit" style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "5px 12px", cursor: "pointer", letterSpacing: "0.04em" }}>GO</button>
           </form>
           {watchlists.length > 0 && (
             <div style={{ position: "relative" }}>
-              <button onClick={() => setWlDropdownOpen(!wlDropdownOpen)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-blue)", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, letterSpacing: "0.06em" }}>
+              <button onClick={() => setWlDropdownOpen(!wlDropdownOpen)} style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-blue)", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, letterSpacing: "0.04em" }}>
                 <Star size={10} /> WATCHLIST
               </button>
               {wlDropdownOpen && (
@@ -811,7 +811,7 @@ export function MarketsTab() {
                   {watchlists.map((wl) => {
                     const inList = wl.tickers.includes(selectedTicker);
                     return (
-                      <button key={wl.id} onClick={() => addTickerToWatchlist(selectedTicker, wl.id)} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", padding: "7px 12px", fontFamily: "var(--font-mono)", fontSize: 10, color: inList ? "var(--ft-green)" : "var(--ft-muted)", background: "transparent", border: "none", borderBottom: "1px solid var(--ft-border)", cursor: "pointer", textAlign: "left" }}>
+                      <button key={wl.id} onClick={() => addTickerToWatchlist(selectedTicker, wl.id)} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", padding: "7px 12px", fontFamily: "var(--font-sans)", fontSize: 10, color: inList ? "var(--ft-green)" : "var(--ft-muted)", background: "transparent", border: "none", borderBottom: "1px solid var(--ft-border)", cursor: "pointer", textAlign: "left" }}>
                         {inList ? "✓ " : "+ "}{wl.name}
                       </button>
                     );
@@ -821,8 +821,8 @@ export function MarketsTab() {
             </div>
           )}
           <button onClick={() => setAlertsOpen(!alertsOpen)}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: alertsOpen ? "var(--ft-amber)" : "var(--ft-surface)", border: "1px solid var(--ft-border)", color: alertsOpen ? "var(--ft-base)" : priceAlerts.some(a => a.ticker === selectedTicker) ? "var(--ft-amber)" : "var(--ft-muted)", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, letterSpacing: "0.06em" }}>
-            <Bell size={10} /> ALERTS{priceAlerts.filter(a => a.ticker === selectedTicker).length > 0 ? ` (${priceAlerts.filter(a => a.ticker === selectedTicker).length})` : ""}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: alertsOpen ? "var(--ft-amber)" : "var(--ft-surface)", border: "1px solid var(--ft-border)", color: alertsOpen ? "var(--ft-base)" : priceAlerts.some(a => a.ticker === selectedTicker) ? "var(--ft-amber)" : "var(--ft-muted)", padding: "5px 10px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, letterSpacing: "0.04em" }}>
+            <Bell size={10} /> ALERTS{priceAlerts.filter(a => a.ticker === selectedTicker).length > 0 ? <>&nbsp;(<span className="pnum">{priceAlerts.filter(a => a.ticker === selectedTicker).length}</span>)</> : ""}
           </button>
         </HStack>
 
@@ -852,7 +852,7 @@ export function MarketsTab() {
               {/* Extended hours price shown prominently when market is pre/post */}
               {isExtended && extPrice != null && (
                 <>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", alignSelf: "center" }}>reg close</span>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", alignSelf: "center" }}>reg close</span>
                   <Text as="span" mono size={18} weight={700} color="var(--ft-amber)" nowrap>${extPrice.toFixed(2)}</Text>
                   {extChgPct != null && (
                     <span style={{ padding: "3px 8px", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", background: "rgba(245,158,11,0.12)", color: "var(--ft-amber)", border: "1px solid rgba(245,158,11,0.3)" }}>
@@ -868,12 +868,12 @@ export function MarketsTab() {
             <HStack gap={10} align="center" marginTop={3}>
               {detail?.sector && <Text as="span" mono size={10} color="var(--ft-muted)">{detail.sector} · {detail.industry}</Text>}
               {lastQuoteTime && (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "rgba(255,255,255,0.04)", border: "1px solid var(--ft-border)", padding: "1px 6px" }}>
-                  as of {lastQuoteTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", background: "rgba(255,255,255,0.04)", border: "1px solid var(--ft-border)", padding: "1px 6px" }}>
+                  as of <span className="pnum">{lastQuoteTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                 </span>
               )}
               {isExtended && (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-amber)", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", padding: "1px 6px" }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-amber)", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", padding: "1px 6px" }}>
                   {isPostMarket ? "After-hours trading" : "Pre-market trading"}
                 </span>
               )}
@@ -913,7 +913,7 @@ export function MarketsTab() {
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "12px 12px 4px" }}>
           <div className="ft-chart-controls-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
             <HStack gap={8} align="center">
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 6 }}>
                 Price Chart
                 {isLive && (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: "color-mix(in srgb, var(--ft-red) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-red) 35%, transparent)", color: "var(--ft-red)", fontSize: 9, padding: "1px 5px", letterSpacing: "0.1em" }}>
@@ -931,7 +931,7 @@ export function MarketsTab() {
                 <button
                   onClick={(e) => { e.stopPropagation(); localStorage.setItem("ft-chart-expand-seen","1"); setChartModalOpen(true); }}
                   title="Open advanced chart"
-                  style={{ display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-mono)", fontSize: 8, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-blue)", padding: "2px 7px", cursor: "pointer", letterSpacing: "0.04em" }}
+                  style={{ display: "flex", alignItems: "center", gap: 3, fontFamily: "var(--font-sans)", fontSize: 9, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-blue)", padding: "2px 7px", cursor: "pointer", letterSpacing: "0.04em" }}
                 >
                   <Maximize2 size={9} /> EXPAND
                 </button>
@@ -941,7 +941,7 @@ export function MarketsTab() {
                 <div style={{ display: "flex", gap: 1, marginLeft: 4, borderLeft: "1px solid var(--ft-border)", paddingLeft: 6 }}>
                   {([["area", "AREA"], ["line", "LINE"], ["candle", "OHLC"]] as const).map(([type, label]) => (
                     <button key={type} onClick={() => setChartType(type)} style={{
-                      fontFamily: "var(--font-mono)", fontSize: 9, padding: "1px 5px",
+                      fontFamily: "var(--font-sans)", fontSize: 10, padding: "1px 5px",
                       border: `1px solid ${chartType === type ? "var(--ft-accent)" : "var(--ft-border)"}`,
                       background: chartType === type ? "rgba(163,113,247,0.15)" : "var(--ft-raised)",
                       color: chartType === type ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", letterSpacing: "0.04em",
@@ -983,7 +983,7 @@ export function MarketsTab() {
                   {/* separator: intraday → daily (after 1h) — index shifts when tick buttons hidden */}
                   {((usUs && i === 9) || (!usUs && i === 6)) && <div key="sep-daily" style={{ width: 1, height: 14, background: "var(--ft-border2)", margin: "0 2px" }} />}
                   <button key={p} onClick={() => setChartPeriod(p)} style={{
-                    fontFamily: "var(--font-mono)", fontSize: 9, padding: "2px 6px",
+                    fontFamily: "var(--font-sans)", fontSize: 10, padding: "2px 6px",
                     border: `1px solid ${isTickBtn ? "rgba(168,85,247,0.3)" : "var(--ft-border)"}`,
                     background: p === chartPeriod ? "var(--ft-accent)"
                       : isTickBtn ? "rgba(168,85,247,0.08)"
@@ -1000,20 +1000,20 @@ export function MarketsTab() {
             </div>
           </div>
           {isTickPeriod && !isLive && chartData.length === 0 ? (
-            <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 11 }}>
+            <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ft-dim)", fontFamily: "var(--font-sans)", fontSize: 12 }}>
               <Text as="span" size={18}>◎</Text>
               <span>Awaiting live ticks…</span>
               <span style={{ fontSize: 9, opacity: 0.6 }}>US markets only · powered by Alpaca IEX</span>
             </div>
           ) : histFetching ? (
-            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 11 }}>Loading chart…</div>
+            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-sans)", fontSize: 12 }}>Loading chart…</div>
           ) : histError ? (
-            <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ft-red)", fontFamily: "var(--font-mono)", fontSize: 11 }}>
+            <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ft-red)", fontFamily: "var(--font-sans)", fontSize: 12 }}>
               <span>⚠ Failed to load chart data</span>
               <button onClick={() => refetchHistory()} style={{ fontSize: 9, padding: "2px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}>Retry</button>
             </div>
           ) : chartData.length === 0 ? (
-            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 11 }}>No history data</div>
+            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-sans)", fontSize: 12 }}>No history data</div>
           ) : (
             <div
               onClick={() => { if (!isTickPeriod && chartData.length > 0) { localStorage.setItem("ft-chart-expand-seen","1"); setChartModalOpen(true); } }}
@@ -1022,7 +1022,7 @@ export function MarketsTab() {
             >
               {/* Click-to-expand hint — only on first few views */}
               {!isTickPeriod && chartData.length > 0 && !localStorage.getItem("ft-chart-expand-seen") && (
-                <div style={{ position: "absolute", top: 4, left: "50%", transform: "translateX(-50%)", zIndex: 5, fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-blue)", background: "rgba(88,166,255,0.1)", border: "1px solid rgba(88,166,255,0.25)", padding: "1px 8px", pointerEvents: "none" }}>
+                <div style={{ position: "absolute", top: 4, left: "50%", transform: "translateX(-50%)", zIndex: 5, fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-blue)", background: "rgba(88,166,255,0.1)", border: "1px solid rgba(88,166,255,0.25)", padding: "1px 8px", pointerEvents: "none" }}>
                   click to expand ↗
                 </div>
               )}
@@ -1150,7 +1150,7 @@ export function MarketsTab() {
 
         {/* Key Statistics */}
         <div style={{ border: "1px solid var(--ft-border)" }}>
-          <div style={{ padding: "6px 14px", background: "rgba(88,166,255,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Key Statistics</div>
+          <div style={{ padding: "6px 14px", background: "rgba(88,166,255,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Key Statistics</div>
           <div className="ft-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
             <StatCell label="P/E (TTM)" value={q?.pe != null ? `${q.pe.toFixed(1)}×` : "—"} color={q?.pe ? (q.pe > 40 ? "var(--ft-amber)" : q.pe < 15 ? "var(--ft-green)" : "var(--ft-text)") : undefined} />
             <StatCell label="Forward P/E" value={q?.forwardPe != null ? `${q.forwardPe.toFixed(1)}×` : "—"} />
@@ -1179,7 +1179,7 @@ export function MarketsTab() {
         {/* Financial Data */}
         {detail && (detail.totalRevenue != null || detail.grossMargins != null) && (
           <div style={{ border: "1px solid var(--ft-border)" }}>
-            <div style={{ padding: "6px 14px", background: "rgba(163,113,247,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Financials</div>
+            <div style={{ padding: "6px 14px", background: "rgba(163,113,247,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Financials</div>
             <div className="ft-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
               <StatCell label="Revenue" value={fmtCap(detail.totalRevenue)} />
               <StatCell label="Revenue Growth" value={detail.revenueGrowth != null ? `${detail.revenueGrowth > 0 ? "+" : ""}${detail.revenueGrowth.toFixed(1)}%` : "—"} color={detail.revenueGrowth != null ? (detail.revenueGrowth > 0 ? "var(--ft-green)" : "var(--ft-red)") : undefined} />
@@ -1196,7 +1196,7 @@ export function MarketsTab() {
         {/* Balance Sheet */}
         {detail && (detail.operatingCashflow != null || detail.totalDebt != null || detail.debtToEquity != null || detail.currentRatio != null) && (
           <div style={{ border: "1px solid var(--ft-border)" }}>
-            <div style={{ padding: "6px 14px", background: "rgba(34,211,238,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-cyan)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Balance Sheet</div>
+            <div style={{ padding: "6px 14px", background: "rgba(34,211,238,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-cyan)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Balance Sheet</div>
             <div className="ft-stat-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
               <StatCell label="Op. Cash Flow" value={fmtCap(detail.operatingCashflow)} />
               <StatCell label="Free Cash Flow" value={fmtCap(detail.freeCashflow)} />
@@ -1214,7 +1214,7 @@ export function MarketsTab() {
         {detail && (detail.returnOnEquity != null || detail.institutionalOwnership != null || detail.pegRatio != null || detail.shortRatio != null) && (
           <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div style={{ border: "1px solid var(--ft-border)" }}>
-              <div style={{ padding: "6px 14px", background: "rgba(63,185,80,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-green)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Returns & Valuation</div>
+              <div style={{ padding: "6px 14px", background: "rgba(63,185,80,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-green)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Returns & Valuation</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)" }}>
                 <StatCell label="ROE" value={detail.returnOnEquity != null ? `${detail.returnOnEquity.toFixed(1)}%` : "—"} color={detail.returnOnEquity != null ? (detail.returnOnEquity > 15 ? "var(--ft-green)" : detail.returnOnEquity < 0 ? "var(--ft-red)" : undefined) : undefined} />
                 <StatCell label="ROA" value={detail.returnOnAssets != null ? `${detail.returnOnAssets.toFixed(1)}%` : "—"} color={detail.returnOnAssets != null ? (detail.returnOnAssets > 5 ? "var(--ft-green)" : undefined) : undefined} />
@@ -1225,7 +1225,7 @@ export function MarketsTab() {
               </div>
             </div>
             <div style={{ border: "1px solid var(--ft-border)" }}>
-              <div style={{ padding: "6px 14px", background: "rgba(248,81,73,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-red)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Ownership & Short Interest</div>
+              <div style={{ padding: "6px 14px", background: "rgba(248,81,73,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-red)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Ownership & Short Interest</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)" }}>
                 <StatCell label="Institutional" value={detail.institutionalOwnership != null ? `${detail.institutionalOwnership.toFixed(1)}%` : "—"} />
                 <StatCell label="Insider" value={detail.insiderOwnership != null ? `${detail.insiderOwnership.toFixed(1)}%` : "—"} />
@@ -1243,11 +1243,11 @@ export function MarketsTab() {
 
           {/* Earnings History */}
           <div style={{ border: "1px solid var(--ft-border)" }}>
-            <div style={{ padding: "6px 14px", background: "rgba(230,162,60,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.08em", textTransform: "uppercase" }}>EPS: Actual vs Estimate</div>
+            <div style={{ padding: "6px 14px", background: "rgba(230,162,60,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.04em", textTransform: "uppercase" }}>EPS: Actual vs Estimate</div>
             {detailFetching ? (
-              <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 11 }}>Loading…</div>
+              <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-sans)", fontSize: 12 }}>Loading…</div>
             ) : !detail?.earningsHistory?.length ? (
-              <div style={{ padding: 16, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>No earnings data</div>
+              <div style={{ padding: 16, fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)" }}>No earnings data</div>
             ) : (
               <div style={{ padding: "12px 8px 4px" }}>
                 <ResponsiveContainer width="100%" height={160}>
@@ -1255,7 +1255,7 @@ export function MarketsTab() {
                     <XAxis dataKey="date" tick={{ fill: "var(--ft-dim)", fontSize: 8 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: "var(--ft-dim)", fontSize: 8, className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v.toFixed(1)}`} width={36} />
                     <Tooltip contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontSize: 11 }} formatter={(v: number, name: string) => [`$${v.toFixed(2)}`, name === "epsActual" ? "Actual" : "Estimate"]} />
-                    <Legend iconSize={8} wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: 9, paddingTop: 4 }} formatter={(v) => v === "epsActual" ? "Actual" : "Estimate"} />
+                    <Legend iconSize={8} wrapperStyle={{ fontFamily: "var(--font-sans)", fontSize: 10, paddingTop: 4 }} formatter={(v) => v === "epsActual" ? "Actual" : "Estimate"} />
                     <Bar dataKey="epsEstimate" fill="var(--ft-dim)" opacity={0.5} radius={[1, 1, 0, 0]} maxBarSize={18} />
                     <Bar dataKey="epsActual" radius={[1, 1, 0, 0]} maxBarSize={18}>
                       {detail.earningsHistory.map((e, i) => (
@@ -1270,7 +1270,7 @@ export function MarketsTab() {
 
           {/* Analyst Recommendations */}
           <div style={{ border: "1px solid var(--ft-border)" }}>
-            <div style={{ padding: "6px 14px", background: "rgba(34,211,238,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-cyan)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Analyst Recommendations</div>
+            <div style={{ padding: "6px 14px", background: "rgba(34,211,238,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-cyan)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Analyst Recommendations</div>
             <VStack gap={12} padding={14}>
               {detail?.recommendationKey && (
                 <HStack gap={10} align="center">
@@ -1288,9 +1288,9 @@ export function MarketsTab() {
                   {(detail?.targetMedian != null || q?.analystTargetPrice != null) && q?.price != null && (
                     <VStack gap={3} marginTop={4}>
                       {(detail?.targetHigh != null || detail?.targetLow != null) && (
-                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", display: "flex", alignItems: "center", gap: 6 }}>
                           <span style={{ minWidth: 56 }}>Range:</span>
-                          <Text as="span" color="var(--ft-red)">${detail.targetLow?.toFixed(0)}</Text>
+                          <Text as="span" color="var(--ft-red)" numeric>${detail.targetLow?.toFixed(0)}</Text>
                           <span>—</span>
                           <Text as="span" color="var(--ft-green)">${detail.targetHigh?.toFixed(0)}</Text>
                         </div>
@@ -1317,8 +1317,8 @@ export function MarketsTab() {
         {/* Company Description */}
         {detail?.description && (
           <div style={{ border: "1px solid var(--ft-border)", padding: "12px 14px" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>About</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7, display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>About</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-muted)", lineHeight: 1.7, display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
               {detail.description}
             </div>
             {detail.website && (
@@ -1338,7 +1338,7 @@ export function MarketsTab() {
           return (
             <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div style={{ border: "1px solid var(--ft-border)" }}>
-                <div style={{ padding: "6px 14px", background: "rgba(88,166,255,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <div style={{ padding: "6px 14px", background: "rgba(88,166,255,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
                   FT Stock Rating
                 </div>
                 <div style={{ padding: "14px 14px 10px" }}>
@@ -1346,7 +1346,7 @@ export function MarketsTab() {
                     <div style={{ fontSize: 38, fontFamily: "var(--font-mono)", fontWeight: 700, color: gradeColor, lineHeight: 1 }}>{rating.grade}</div>
                     <div>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: gradeColor }}>{rating.overall.toFixed(1)}<Text as="span" size={11} color="var(--ft-dim)">/10</Text></div>
-                      <Text as="div" mono size={9} color="var(--ft-dim)" mt={1}>Overall Score</Text>
+                      <Text as="div" size={10} color="var(--ft-dim)" mt={1}>Overall Score</Text>
                     </div>
                   </HStack>
                   <RatingBar label="Value" score={rating.value} color="var(--ft-cyan)" />
@@ -1367,7 +1367,7 @@ export function MarketsTab() {
               )}
               {!alertsOpen && (
                 <div style={{ border: "1px solid var(--ft-border)", padding: "14px" }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Graham / DCF Valuation</div>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.04em" }}>Graham / DCF Valuation</div>
                   {q && (
                     <VStack gap={8}>
                       {(() => {
@@ -1384,21 +1384,21 @@ export function MarketsTab() {
                         const d = (eps > 0 && gr != null) ? dcfValue(eps, gr, 0.10, 15) : null;
                         return (<>
                           <HStack gap={8} justify="between">
-                            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Graham Number</span>
+                            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Graham Number</span>
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: g != null && g > 0 ? (q.price < g ? "var(--ft-green)" : "var(--ft-amber)") : "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{g != null && g > 0 ? `$${g.toFixed(2)}` : "—"}</span>
                           </HStack>
                           <HStack gap={8} justify="between">
-                            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>DCF Estimate</span>
+                            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>DCF Estimate</span>
                             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: d != null && d > 0 ? (q.price < d ? "var(--ft-green)" : "var(--ft-amber)") : "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>{d != null && d > 0 ? `$${d.toFixed(2)}` : "—"}</span>
                           </HStack>
                           {gr == null && (
-                            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em", lineHeight: 1.5 }}>
+                            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", lineHeight: 1.5 }}>
                               DCF needs a revenue-growth input the provider did not supply for this ticker.
                             </div>
                           )}
                           {g != null && g > 0 && (
                             <HStack gap={8} justify="between">
-                              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Margin of Safety</span>
+                              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Margin of Safety</span>
                               <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: ((g - q.price) / g * 100) > 0 ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>{(((g - q.price) / g) * 100).toFixed(1)}%</span>
                             </HStack>
                           )}
@@ -1414,19 +1414,19 @@ export function MarketsTab() {
 
         {/* ── News Panel ───────────────────────────────────────────────── */}
         <div style={{ border: "1px solid var(--ft-border)" }}>
-          <div style={{ padding: "6px 14px", background: "rgba(163,113,247,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
-            <span>News — {selectedTicker}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginLeft: "auto", fontWeight: 400 }}>keyword sentiment · click AI TLDR for deep analysis</span>
+          <div style={{ padding: "6px 14px", background: "rgba(163,113,247,0.06)", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", letterSpacing: "0.04em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
+            <span>News — <Text as="span" mono>{selectedTicker}</Text></span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginLeft: "auto", fontWeight: 400 }}>keyword sentiment · click AI TLDR for deep analysis</span>
           </div>
           {newsFetching ? (
-            <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>Loading news…</div>
+            <div style={{ padding: 20, fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)", textAlign: "center" }}>Loading news…</div>
           ) : newsError ? (
-            <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-amber)", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <div style={{ padding: 20, fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-amber)", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
               <span>⚠ Could not load news</span>
               <button onClick={() => selectedTicker && fetchNews(selectedTicker)} style={{ fontSize: 9, padding: "2px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}>Retry</button>
             </div>
           ) : news.length === 0 ? (
-            <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No recent news found for {selectedTicker}</div>
+            <div style={{ padding: 20, fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)", textAlign: "center" }}>No recent news found for <Text as="span" mono>{selectedTicker}</Text></div>
           ) : (
             <div>
               {news.map((item, i) => {
@@ -1443,7 +1443,7 @@ export function MarketsTab() {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <a href={item.link} target="_blank" rel="noopener noreferrer"
-                          style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", textDecoration: "none", lineHeight: 1.5, display: "block" }}
+                          style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)", textDecoration: "none", lineHeight: 1.5, display: "block" }}
                           onMouseEnter={e => { (e.target as HTMLAnchorElement).style.color = "var(--ft-accent)"; }}
                           onMouseLeave={e => { (e.target as HTMLAnchorElement).style.color = "var(--ft-text)"; }}>
                           {item.title}
@@ -1457,7 +1457,7 @@ export function MarketsTab() {
                               onClick={() => fetchTldr(item.link, item.title)}
                               disabled={loadingTldr}
                               style={{
-                                fontFamily: "var(--font-mono)", fontSize: 8, padding: "1px 6px",
+                                fontFamily: "var(--font-sans)", fontSize: 9, padding: "1px 6px",
                                 background: "rgba(163,113,247,0.08)", border: "1px solid rgba(163,113,247,0.25)",
                                 color: loadingTldr ? "var(--ft-dim)" : "var(--ft-accent)",
                                 cursor: loadingTldr ? "wait" : "pointer", letterSpacing: "0.04em",
@@ -1473,9 +1473,9 @@ export function MarketsTab() {
                       <div style={{
                         marginTop: 6, padding: "6px 10px",
                         background: "var(--ft-raised)", border: "1px solid var(--ft-border)",
-                        fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", lineHeight: 1.6,
+                        fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.6,
                       }}>
-                        <span style={{ fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.06em", marginRight: 6 }}>AI▸</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.06em", marginRight: 6 }}>AI▸</span>
                         {tldr}
                       </div>
                     )}
@@ -1569,7 +1569,7 @@ export function MarketsTab() {
       {/* Search bar */}
       <form onSubmit={handleSearch} style={{ display: "flex", gap: 6 }}>
         <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Enter ticker (e.g. AAPL, BRK-B, 0700.HK)…" className="ft-filter-input" style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "7px 10px", outline: "none" }} />
-        <button type="submit" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "7px 14px", cursor: "pointer", letterSpacing: "0.06em" }}>LOOKUP</button>
+        <button type="submit" style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "7px 14px", cursor: "pointer", letterSpacing: "0.04em" }}>LOOKUP</button>
       </form>
 
       {/* ── Earnings Calendar ─────────────────────────────────────────────── */}
@@ -1621,10 +1621,10 @@ export function MarketsTab() {
         return (
           <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
             <div style={{ display: "flex", alignItems: "center", padding: "5px 12px", borderBottom: "1px solid var(--ft-border)", background: "rgba(245,158,11,0.05)", overflow: "hidden" }}>
-              <span style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                ▼ EARNINGS CALENDAR · {earningsItems.length} upcoming
+              <span style={{ flexShrink: 0, fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                ▼ EARNINGS CALENDAR · <span className="pnum">{earningsItems.length}</span> upcoming
               </span>
-              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginLeft: 12, fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>next 90 days · click to view</span>
+              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginLeft: 12, fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-sans)" }}>next 90 days · click to view</span>
             </div>
             <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
               <HStack minWidth="max-content">
@@ -1701,7 +1701,7 @@ export function MarketsTab() {
           >
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)", lineHeight: 1 }}>{ticker}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, maxWidth: 130 }}>{nameOf(ticker)}</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, maxWidth: 130 }}>{nameOf(ticker)}</div>
             </div>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: up ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, letterSpacing: "0.01em" }}>
               {up ? "▲" : "▼"} {Math.abs(pct).toFixed(2)}%
@@ -1710,16 +1710,16 @@ export function MarketsTab() {
         );
         return (
           <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-            <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "var(--ft-dim)" }}>
+            <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-raised)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" as const, color: "var(--ft-dim)" }}>
               Market Movers
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
               <div style={{ borderRight: "1px solid var(--ft-border)" }}>
-                <div style={{ padding: "4px 10px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-green)", textTransform: "uppercase" as const }}>Top Gainers</div>
+                <div style={{ padding: "4px 10px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 9, fontWeight: 700, letterSpacing: "0.04em", color: "var(--ft-green)", textTransform: "uppercase" as const }}>Top Gainers</div>
                 {gainers.map(g => renderRow(g.ticker, g.pct, true))}
               </div>
               <div>
-                <div style={{ padding: "4px 10px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", color: "var(--ft-red)", textTransform: "uppercase" as const }}>Top Losers</div>
+                <div style={{ padding: "4px 10px", borderBottom: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 9, fontWeight: 700, letterSpacing: "0.04em", color: "var(--ft-red)", textTransform: "uppercase" as const }}>Top Losers</div>
                 {losers.map(l => renderRow(l.ticker, l.pct, false))}
               </div>
             </div>
@@ -1745,7 +1745,7 @@ export function MarketsTab() {
                 <HStack align="start" justify="between" marginBottom={4}>
                   <div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-accent)" }}>{ticker}</div>
-                    <Text as="div" mono size={9} color="var(--ft-dim)" mt={1}>{INDEX_LABELS[ticker] ?? ticker}</Text>
+                    <Text as="div" size={10} color="var(--ft-dim)" mt={1}>{INDEX_LABELS[ticker] ?? ticker}</Text>
                   </div>
                   {q && (
                     chg == null ? (
@@ -1780,7 +1780,7 @@ export function MarketsTab() {
                 onTouchEnd={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "var(--ft-border)"; }}>
                 <div style={{ position: "absolute", bottom: 0, left: 0, height: 2, width: `${barPct}%`, background: chgColor, opacity: 0.6 }} />
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>{SECTOR_LABELS[ticker] ?? ticker}</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 2 }}>{SECTOR_LABELS[ticker] ?? ticker}</div>
                 <Text as="div" mono size={11} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? `$${q.price.toFixed(2)}` : "—"}</Text>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 1 }}>{q ? pctLabel(chg) : "—"}</div>
               </button>
@@ -1812,7 +1812,7 @@ export function MarketsTab() {
                   style={{ display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", width: "100%", border: "none", borderBottom: "1px solid var(--ft-border)", background: i % 2 === 0 ? "var(--ft-base)" : "rgba(22,27,34,0.4)", cursor: "pointer", textAlign: "left" }}>
                   <div style={{ padding: "9px 10px", minWidth: 0 }}>
                     <Text as="span" mono size={11} weight={700} color="var(--ft-blue)">{ticker}</Text>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ""}</div>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ""}</div>
                   </div>
                   <div style={{ padding: "9px 8px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                     {q ? `$${q.price.toFixed(2)}` : "—"}
@@ -1843,7 +1843,7 @@ export function MarketsTab() {
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.filter = ""; }}>
                   <div style={{ ...TD, width: 32, minWidth: 32, textAlign: "center", color: "var(--ft-dim)", fontSize: 10 }}>{i + 1}</div>
                   <div style={{ ...TD, width: 72, minWidth: 72, fontWeight: 700, color: "var(--ft-blue)", letterSpacing: "0.04em" }}>{ticker}</div>
-                  <div style={{ ...TD, flex: 1, minWidth: 130, color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" }}>{POPULAR_NAMES[ticker] ?? ticker}</div>
+                  <div style={{ ...TD, flex: 1, minWidth: 130, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" }}>{POPULAR_NAMES[ticker] ?? ticker}</div>
                   <div style={{ ...TD, width: 90, minWidth: 90, textAlign: "right", color: "var(--ft-text)", fontWeight: 600 }}>{q ? `$${q.price.toFixed(2)}` : "—"}</div>
                   <div style={{ ...TD, width: 80, minWidth: 80, textAlign: "right" }}>
                     {q && chg != null ? <span style={{ padding: "1px 4px", fontSize: 10, fontWeight: 700, background: chg > 0 ? "rgba(63,185,80,0.1)" : chg < 0 ? "rgba(248,81,73,0.1)" : "transparent", color: chgColor }}>{pctLabel(chg)}</span> : "—"}
@@ -1862,7 +1862,7 @@ export function MarketsTab() {
             })}
           </div>
         )}
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, textAlign: "right" }}>Via Yahoo Finance · tap any row for chart, earnings, and analyst data</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 4, textAlign: "right" }}>Via Yahoo Finance · tap any row for chart, earnings, and analyst data</div>
       </div>
 
       {/* Top Movers */}
@@ -1890,7 +1890,7 @@ export function MarketsTab() {
                       onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(63,185,80,0.15)"; }}>
                       <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
                         <Text as="span" mono size={11} weight={700} color="var(--ft-green)">{ticker}</Text>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
+                        <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginLeft: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>${q!.price.toFixed(2)}</div>
@@ -1912,7 +1912,7 @@ export function MarketsTab() {
                       onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(248,81,73,0.15)"; }}>
                       <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
                         <Text as="span" mono size={11} weight={700} color="var(--ft-red)">{ticker}</Text>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
+                        <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginLeft: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{POPULAR_NAMES[ticker] ?? ticker}</span>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
                         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>${q!.price.toFixed(2)}</div>
@@ -1948,7 +1948,7 @@ export function MarketsTab() {
                 onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(230,162,60,0.15)"; }}>
                 <HStack align="start" justify="between" marginBottom={4}>
                   <div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)" }}>{CRYPTO_NAMES[ticker] ?? ticker}</div>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 700, color: "var(--ft-amber)" }}>{CRYPTO_NAMES[ticker] ?? ticker}</div>
                     <Text as="div" mono size={8} color="var(--ft-dim)" mt={1}>{ticker.replace("-USD", "")}</Text>
                   </div>
                   {q && (chg == null
