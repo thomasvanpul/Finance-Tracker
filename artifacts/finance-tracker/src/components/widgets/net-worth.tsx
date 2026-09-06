@@ -14,7 +14,7 @@ const MAX_ENTRIES = 365;
 type HistoryEntry = { date: string; netWorth: number; cash: number; portfolio: number };
 type Period = "7D" | "1M" | "3M" | "ALL";
 
-type CurrencyGroup = { currency: string; nativeTotal: number; gbpTotal: number; share: number };
+type CurrencyGroup = { currency: string; nativeTotal: number; gbpTotal: number; share: number | null };
 
 function buildCurrencyGroups(
   accountBreakdown: { currency: string; balance: number; baseEquivalent: number | null }[],
@@ -30,7 +30,8 @@ function buildCurrencyGroups(
       currency,
       nativeTotal: native,
       gbpTotal: gbp,
-      share: totalCash > 0 ? (gbp / totalCash) * 100 : 0,
+      // Share of zero total cash is undefined, not 0% for every currency.
+      share: totalCash > 0 ? (gbp / totalCash) * 100 : null,
     }))
     .sort((a, b) => b.gbpTotal - a.gbpTotal);
 }
@@ -86,7 +87,7 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
                 <CurrencyMark code={g.currency} size={10} />
               </span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 2 }}>
-                {g.share.toFixed(0)}%
+                {g.share == null ? "—" : `${g.share.toFixed(0)}%`}
               </span>
             </div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-accent)", whiteSpace: "nowrap" }}>
@@ -99,7 +100,7 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
             )}
             {/* share bar */}
             <div style={{ marginTop: 4, height: 2, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${g.share}%`, background: `hsl(${(groups.indexOf(g) * 47 + 200) % 360}, 60%, 55%)`, opacity: 0.9 }} />
+              <div style={{ height: "100%", width: `${g.share ?? 0}%`, background: `hsl(${(groups.indexOf(g) * 47 + 200) % 360}, 60%, 55%)`, opacity: 0.9 }} />
             </div>
           </div>
         ))}

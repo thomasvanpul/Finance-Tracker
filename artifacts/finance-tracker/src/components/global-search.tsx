@@ -160,12 +160,14 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
           .map((g) => {
             const current = parseFloat(String(g.current));
             const target = parseFloat(String(g.target));
-            const pct = target > 0 ? Math.round((current / target) * 100) : 0;
+            // No target → no progress percentage. The subtitle drops the
+            // figure rather than claiming "0% complete".
+            const pct = target > 0 ? Math.round((current / target) * 100) : null;
             return {
               id: `goal-${g.id}`,
               kind: "goal" as ResultKind,
               primary: `${g.emoji ? g.emoji + " " : ""}${g.name}`,
-              secondary: `${pct}% complete`,
+              secondary: pct == null ? "no target set" : `${pct}% complete`,
               tertiary: `${formatBaseMoney(current)} of ${formatBaseMoney(target)}`,
               amountColor: current >= target ? "var(--ft-green)" : undefined,
               navigateTo: `/goals?highlight=${g.id}`,

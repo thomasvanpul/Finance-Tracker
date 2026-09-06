@@ -251,8 +251,10 @@ export function ChartAnalysisModal({
   const chgColor = changePercent == null ? "var(--ft-muted)" : changePercent >= 0 ? "var(--ft-green)" : "var(--ft-red)";
   const firstClose = enriched[0]?.close ?? 0;
   const lastClose = enriched[enriched.length - 1]?.close ?? 0;
-  const periodReturn = firstClose > 0 ? ((lastClose - firstClose) / firstClose) * 100 : 0;
-  const chartFill = periodReturn >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+  // No opening close to measure from → the period return is unknown, not
+  // flat. "+0.00%" on a chart header is a claim the data does not make.
+  const periodReturn: number | null = firstClose > 0 ? ((lastClose - firstClose) / firstClose) * 100 : null;
+  const chartFill = (periodReturn ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)";
 
   const tickCount = enriched.length > 60 ? Math.floor(enriched.length / 6) : "preserveStartEnd";
   const xTickFormatter = (v: string) => fmtDate(v, period);
@@ -276,8 +278,15 @@ export function ChartAnalysisModal({
               {changePercent == null ? "—" : `${changePercent >= 0 ? "▲" : "▼"} ${Math.abs(changePercent).toFixed(2)}%`}
             </span>
             {enriched.length > 0 && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: periodReturn >= 0 ? "var(--ft-green)" : "var(--ft-red)", marginLeft: 6 }}>
-                {period.toUpperCase()}: {periodReturn >= 0 ? "+" : ""}{periodReturn.toFixed(2)}%
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  color: periodReturn == null ? "var(--ft-dim)" : periodReturn >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+                  marginLeft: 6,
+                }}
+              >
+                {period.toUpperCase()}: {periodReturn == null ? "—" : `${periodReturn >= 0 ? "+" : ""}${periodReturn.toFixed(2)}%`}
               </span>
             )}
           </div>
