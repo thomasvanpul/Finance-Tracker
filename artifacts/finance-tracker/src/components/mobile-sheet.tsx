@@ -77,7 +77,6 @@ export function MobileSheet({ open, onOpenChange, title, children, footer, maxWi
                 paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
                 flexShrink: 0,
                 borderTop: "1px solid var(--ft-border)",
-                background: "var(--ft-surface)",
               }}
             >
               {footer}

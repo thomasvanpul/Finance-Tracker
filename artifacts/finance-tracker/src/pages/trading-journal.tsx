@@ -496,7 +496,6 @@ function TradeCallouts({ closed }: { closed: Trade[] }) {
           key={label}
           style={{
             padding: "12px 16px",
-            background: "var(--ft-surface)",
             borderRight: i === 0 ? "1px solid var(--ft-border)" : "none",
           }}
         >

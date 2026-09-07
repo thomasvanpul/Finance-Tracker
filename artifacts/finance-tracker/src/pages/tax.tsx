@@ -610,7 +610,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
         gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
         borderBottom: "1px solid var(--ft-border)",
       }}>
-        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
+        <div style={{ padding: "12px 16px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             Est. Income Tax
           </div>
@@ -621,7 +621,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             on <span className="pnum">{fmt(grossSalary, sym)}</span> gross
           </div>
         </div>
-        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
+        <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             Effective Rate
           </div>
@@ -632,7 +632,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             marginal: {marginRate}%
           </div>
         </div>
-        <div style={{ padding: "12px 16px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)" }}>
+        <div style={{ padding: "12px 16px", borderRight: "1px solid var(--ft-border)" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             Take-Home Pay
           </div>
@@ -643,7 +643,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             <span className="pnum">{fmt(netPay / 12, sym)}</span>/mo
           </div>
         </div>
-        <div style={{ padding: "12px 16px", background: "var(--ft-surface)" }}>
+        <div style={{ padding: "12px 16px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             NI Contributions
           </div>
@@ -766,7 +766,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
       </div>
 
       {/* Tax savings row */}
-      <div style={{ padding: "12px 16px", background: "var(--ft-surface)", display: "flex", gap: 24, flexWrap: "wrap" as const }}>
+      <div style={{ padding: "12px 16px", display: "flex", gap: 24, flexWrap: "wrap" as const }}>
         <HStack gap={8} align="center">
           <ShieldCheck style={{ width: 12, height: 12, color: "var(--ft-green)", flexShrink: 0 }} />
           <div>
@@ -1145,7 +1145,7 @@ export default function Tax() {
             />
           ))}
         </div>
-        <div className="px-3 py-3 border-t flex items-center gap-3 flex-wrap" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
+        <div className="px-3 py-3 border-t flex items-center gap-3 flex-wrap" style={{ borderColor: "var(--ft-border)" }}>
           <Button size="sm" onClick={() => setAddDisposalOpen(true)} style={{ background: "var(--ft-green)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 11 }}>
             <Plus className="w-3 h-3 mr-1.5" />Record Disposal
           </Button>
@@ -1202,7 +1202,7 @@ export default function Tax() {
           </div>
         )}
         {shelterHistoryData.some(d => d.amount > 0) && rules.shelterLimit > 0 && (
-          <div className="p-4 border-b" style={{ borderColor: "var(--ft-border)", background: "var(--ft-surface)" }}>
+          <div className="p-4 border-b" style={{ borderColor: "var(--ft-border)" }}>
             <div className="text-xs font-bold mb-3 uppercase tracking-wide font-mono" style={{ color: "var(--ft-blue)" }}>5-Year {rules.shelterName} History</div>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={shelterHistoryData} margin={{ top: 4, right: 8, left: -4, bottom: 0 }}>
@@ -1217,7 +1217,7 @@ export default function Tax() {
             </ResponsiveContainer>
           </div>
         )}
-        <div className="px-3 py-2.5 flex items-center gap-3 flex-wrap" style={{ background: "var(--ft-surface)" }}>
+        <div className="px-3 py-2.5 flex items-center gap-3 flex-wrap">
           <Button size="sm" onClick={() => { setShelterForm({ taxYear: selectedYear, amount: "", provider: "" }); setAddShelterOpen(true); }} style={{ background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 11 }}>
             <Plus className="w-3 h-3 mr-1.5" />Add Contribution
           </Button>
@@ -1260,7 +1260,7 @@ export default function Tax() {
               />
             ))}
           </div>
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 16px", background: "var(--ft-surface)", borderTop: "1px solid var(--ft-border)" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--ft-border)" }}>
             <Info style={{ width: 13, height: 13, flexShrink: 0, marginTop: 1, color: "var(--ft-dim)" }} />
             <Text as="span" mono size={9} color="var(--ft-dim)" lineHeight={1.6}>For information only. Rates may change year to year and vary by individual circumstances. Consult a qualified tax professional for personalised advice.</Text>
           </div>

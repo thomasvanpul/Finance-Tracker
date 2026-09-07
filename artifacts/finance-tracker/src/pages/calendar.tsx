@@ -1251,7 +1251,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
             { label: "Out", value: data.totalExpenses, color: "var(--ft-red)" },
             { label: "Net", value: data.net, color: data.net >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
           ].map(({ label, value, color }, i, arr) => (
-            <div key={label} style={{ padding: "7px 10px", background: "var(--ft-surface)", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
+            <div key={label} style={{ padding: "7px 10px", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
               <div style={{ fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>{label}</div>
               <div className="pnum" style={{ fontSize: 12, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>
                 {value !== 0 ? formatBaseMoney(Math.abs(value)) : "—"}

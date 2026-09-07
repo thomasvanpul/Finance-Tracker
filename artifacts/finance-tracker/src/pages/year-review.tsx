@@ -142,7 +142,6 @@ function KpiStrip({ income, expenses, txCount, year, prevIncome, prevExpenses }:
           key={tile.label}
           style={{
             padding: "10px 16px",
-            background: "var(--ft-surface)",
             borderRight: i === tiles.length - 1 ? "none" : "1px solid var(--ft-border)",
             minWidth: 0,
           }}

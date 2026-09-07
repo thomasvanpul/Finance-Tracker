@@ -188,7 +188,6 @@ function KpiBar({ patterns, rules }: KpiBarProps) {
         <div
           key={k.label}
           style={{
-            background: "var(--ft-surface)",
             borderRight: i % cols === cols - 1 ? undefined : "1px solid var(--ft-border)",
             borderBottom: i < kpis.length - cols ? "1px solid var(--ft-border)" : undefined,
             padding: isMobile ? "8px 12px" : "10px 16px",
@@ -522,10 +521,10 @@ function TrendStrip({ txs }: { txs: Tx[] }) {
       border: "1px solid var(--ft-border)",
       background: "var(--ft-surface)",
     }}>
-      <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "8px 14px" }}>
+      <div style={{ borderRight: "1px solid var(--ft-border)", padding: "8px 14px" }}>
         <div style={{ ...labelStyle, marginBottom: 2 }}>Recurring Spend Trend</div>
       </div>
-      <div style={{ background: "var(--ft-surface)", padding: "8px 14px", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+      <div style={{ padding: "8px 14px", display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
         <div>
           <div style={{ ...labelStyle }}>Last Year</div>
           <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>

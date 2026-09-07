@@ -1863,7 +1863,7 @@ export default function Business() {
             }}
           >
             {/* VAT collected */}
-            <div style={{ background: "var(--ft-surface)", padding: "16px 20px", borderRight: "1px solid var(--ft-border)" }}>
+            <div style={{ padding: "16px 20px", borderRight: "1px solid var(--ft-border)" }}>
               <div style={vatLabel}>VAT Collected on Income</div>
               <div className="pnum" style={vatValue}>
                 {formatBaseMoney(vatData.vatCollected)}
@@ -1872,7 +1872,7 @@ export default function Business() {
             </div>
 
             {/* VAT reclaimable */}
-            <div style={{ background: "var(--ft-surface)", padding: "16px 20px", borderRight: "1px solid var(--ft-border)" }}>
+            <div style={{ padding: "16px 20px", borderRight: "1px solid var(--ft-border)" }}>
               <div style={vatLabel}>VAT Reclaimable on Expenses</div>
               <div className="pnum" style={{ ...vatValue, color: "var(--ft-green)" }}>
                 {formatBaseMoney(vatData.vatReclaimable)}
@@ -1882,7 +1882,6 @@ export default function Business() {
 
             {/* Net VAT */}
             <div style={{
-              background: "var(--ft-surface)",
               padding: "16px 20px",
             }}>
               <div style={vatLabel}>Net VAT Position</div>
@@ -1928,7 +1927,6 @@ export default function Business() {
               fontFamily: "var(--font-mono)",
               fontSize: 10,
               color: "var(--ft-dim)",
-              background: "var(--ft-surface)",
               display: "flex",
               alignItems: "center",
               gap: 8,

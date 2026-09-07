@@ -675,7 +675,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
         </div>
         <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
           {/* Header */}
-          <div style={{ display: "flex", background: "var(--ft-surface)" }}>
+          <div style={{ display: "flex" }}>
             {[
               ["ASSET CLASS", "160px"],
               ["CURRENT VALUE", "130px"],
@@ -2673,7 +2673,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               </div>
             ) : (
               <div className="ft-scroll-x" style={{ overflowX: "auto" }}>
-                <div style={{ display: "flex", background: "var(--ft-surface)", minWidth: 620 }}>
+                <div style={{ display: "flex", minWidth: 620 }}>
                   {[["TICKER", "100px"], ["DIRECTION", "100px"], ["TARGET", "110px"], ["CURRENT", "110px"], ["STATUS", "100px"], ["CREATED", "1"]].map(([h, w]) => (
                     <div key={h} style={{ ...TH, width: w !== "1" ? w : undefined, minWidth: w !== "1" ? w : undefined, flex: w === "1" ? 1 : undefined }}>{h}</div>
                   ))}

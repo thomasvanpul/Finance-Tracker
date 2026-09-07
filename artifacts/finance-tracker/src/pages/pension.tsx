@@ -1351,7 +1351,7 @@ function PensionSection() {
             <div style={{ background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)", padding: "6px 14px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>Contributions / Month</div>
             </div>
-            <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
+            <div style={{ padding: "10px 14px" }}>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
                 <HStack justify="between">
                   <span style={{ color: "var(--ft-muted)" }}>Your contribution</span>
@@ -1370,7 +1370,7 @@ function PensionSection() {
             <div style={{ background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", padding: "6px 14px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>Retirement income breakdown</div>
             </div>
-            <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
+            <div style={{ padding: "10px 14px" }}>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.9 }}>
                 <HStack justify="between">
                   <Text as="span" color="var(--ft-muted)">From pension pot</Text>

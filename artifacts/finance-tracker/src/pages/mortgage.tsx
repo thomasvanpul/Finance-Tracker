@@ -365,13 +365,13 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
     <div style={{ marginTop: 16 }}>
       {/* KPI strip — one framed table; cells carry their own rules */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
-        <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 12px" }}>
+        <div style={{ borderRight: "1px solid var(--ft-border)", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Repaid</div>
           <Text as="div" mono size={16} weight={700} color="var(--ft-text)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatBaseMoney(totalPaid)}</span>
           </Text>
         </div>
-        <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 12px" }}>
+        <div style={{ borderRight: "1px solid var(--ft-border)", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Interest</div>
           <Text as="div" mono size={16} weight={700} color="var(--ft-red)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatBaseMoney(totalInterest)}</span>
@@ -380,7 +380,7 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
             <span className="pnum">{interestRatio.toFixed(1)}</span>% of total repaid
           </div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "10px 12px" }}>
+        <div style={{ padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Principal</div>
           <Text as="div" mono size={16} weight={700} color="var(--ft-green)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatBaseMoney(principal)}</span>
@@ -610,19 +610,19 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
 
       {/* Border-as-gap savings summary */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
-        <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 14px" }}>
+        <div style={{ borderRight: "1px solid var(--ft-border)", padding: "10px 14px" }}>
           <div style={LABEL_STYLE}>Months Saved</div>
           <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: monthsSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
             {monthsSaved > 0 ? `${monthsSaved}mo` : "—"}
           </div>
         </div>
-        <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 14px" }}>
+        <div style={{ borderRight: "1px solid var(--ft-border)", padding: "10px 14px" }}>
           <div style={LABEL_STYLE}>Interest Saved</div>
           <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: interestSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
             <span className="pnum">{interestSaved > 0 ? formatBaseMoney(interestSaved) : "—"}</span>
           </div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "10px 14px" }}>
+        <div style={{ padding: "10px 14px" }}>
           <div style={LABEL_STYLE}>New Payoff</div>
           <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--ft-text)" }}>{newPayoffDate}</div>
         </div>

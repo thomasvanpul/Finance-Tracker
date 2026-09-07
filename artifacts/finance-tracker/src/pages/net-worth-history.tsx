@@ -860,7 +860,7 @@ export default function NetWorthHistory() {
       {history.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(5, 1fr)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
           {/* Current Net Worth — hero number */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
+          <div style={{ padding: "14px 18px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Net Worth</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: currentNW >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1, whiteSpace: "nowrap" }}>
               {formatBaseMoney(currentNW)}
@@ -871,7 +871,7 @@ export default function NetWorthHistory() {
           </div>
 
           {/* MTD */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
+          <div style={{ padding: "14px 18px", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>MTD Change</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: mtdChange === null ? "var(--ft-muted)" : mtdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
               {mtdChange === null ? "—" : `${mtdChange >= 0 ? "+" : ""}${formatBaseMoney(mtdChange)}`}
@@ -880,7 +880,7 @@ export default function NetWorthHistory() {
           </div>
 
           {/* YTD */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
+          <div style={{ padding: "14px 18px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>YTD Change</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: ytdChange === null ? "var(--ft-muted)" : ytdChange >= 0 ? "var(--ft-green)" : "var(--ft-red)", lineHeight: 1 }}>
               {ytdChange === null ? "—" : `${ytdChange >= 0 ? "+" : ""}${formatBaseMoney(ytdChange)}`}
@@ -889,7 +889,7 @@ export default function NetWorthHistory() {
           </div>
 
           {/* All-time high */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
+          <div style={{ padding: "14px 18px", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>All-Time High</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-cyan)", lineHeight: 1 }}>
               {allTimeHigh ? formatBaseMoney(allTimeHigh.netWorth) : "—"}
@@ -900,7 +900,7 @@ export default function NetWorthHistory() {
           </div>
 
           {/* All-time low */}
-          <div style={{ padding: "14px 18px", background: "var(--ft-surface)", borderRight: "none", borderBottom: "none", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
+          <div style={{ padding: "14px 18px", borderRight: "none", borderBottom: "none", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Best Single Month</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>
               {bestMonthIncrease > 0 ? `+${formatBaseMoney(Math.abs(bestMonthIncrease))}` : (allTimeLow ? formatBaseMoney(allTimeLow.netWorth) : "—")}

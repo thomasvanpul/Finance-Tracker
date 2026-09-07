@@ -1499,7 +1499,6 @@ export default function FamilyFinance() {
             style={{
               flex: 1,
               padding: "10px 14px",
-              background: "var(--ft-surface)",
               // Desktop port: dropped `borderTop: 2px solid --ft-blue`
               // (rainbow accent — Household size is neither positive
               // nor negative).

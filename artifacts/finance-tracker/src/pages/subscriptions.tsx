@@ -1199,24 +1199,24 @@ export default function Subscriptions() {
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
       }}>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 20px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
+        <div style={{ padding: "12px 20px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Monthly Cost</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--ft-blue)", lineHeight: 1 }}>{formatBaseMoney(totalMonthly)}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>{activeSubs.length} active subscription{activeSubs.length !== 1 ? "s" : ""}</div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderRight: isMobile ? undefined : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
+        <div style={{ padding: "12px 16px", borderRight: isMobile ? undefined : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Annual Cost</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-accent)", lineHeight: 1 }}>{formatBaseMoney(totalAnnual)}</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>{formatBaseMoney(totalMonthly * 12)} projected</div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
+        <div style={{ padding: "12px 16px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Could Save / mo</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: couldSave > 0 ? "var(--ft-amber)" : "var(--ft-green)", lineHeight: 1 }}>{formatBaseMoney(couldSave)}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 4 }}>
             {couldSave > 0 ? `${cancelCandidates.length} inactive >60d` : "all subs active"}
           </div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", borderRight: isMobile ? undefined : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
+        <div style={{ padding: "12px 16px", borderRight: isMobile ? undefined : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : undefined }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Renewing This Week</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: renewingThisWeek.length > 0 ? "var(--ft-red)" : "var(--ft-text)", lineHeight: 1 }}>
             {renewingThisWeek.length}
@@ -1227,7 +1227,7 @@ export default function Subscriptions() {
               : "nothing due"}
           </div>
         </div>
-        <div style={{ background: "var(--ft-surface)", padding: "12px 16px", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
+        <div style={{ padding: "12px 16px", ...(isMobile ? { gridColumn: "span 2" } : {}) }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>Renewals (30d)</div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>
             {upcomingRenewals.length}
@@ -1344,7 +1344,7 @@ export default function Subscriptions() {
         </PanelHeader>
 
         {/* Filter bar */}
-        <div className="ft-filter-bar" style={{ display: "flex", gap: 6, padding: "8px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", flexWrap: "wrap", alignItems: "center" }}>
+        <div className="ft-filter-bar" style={{ display: "flex", gap: 6, padding: "8px 10px", borderBottom: "1px solid var(--ft-border)", flexWrap: "wrap", alignItems: "center" }}>
           <input
             type="text"
             placeholder="Search subscriptions…"

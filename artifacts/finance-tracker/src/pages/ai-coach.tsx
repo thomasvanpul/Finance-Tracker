@@ -658,7 +658,7 @@ export default function AiCoach() {
                     the frame's top/left come from the wrapper. */}
                 <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderLeft: "1px solid var(--ft-border)", marginLeft: -1, marginBottom: -1 }}>
                   {dashboard?.thisMonth?.income != null && (
-                    <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+                    <div style={{ padding: "10px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Income</div>
                       <Text as="div" mono size={15} weight={700} color={dashboard.thisMonth.income! > 0 ? "var(--ft-green)" : "var(--ft-muted)"}>
                         <span className="pnum">{formatBaseMoney(dashboard.thisMonth.income!)}</span>
@@ -667,7 +667,7 @@ export default function AiCoach() {
                     </div>
                   )}
                   {dashboard?.thisMonth?.expenses != null && (
-                    <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+                    <div style={{ padding: "10px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Spent</div>
                       <Text as="div" mono size={15} weight={700} color={dashboard.thisMonth.expenses! > 0 ? "var(--ft-red)" : "var(--ft-muted)"}>
                         <span className="pnum">{formatBaseMoney(dashboard.thisMonth.expenses!)}</span>
@@ -676,7 +676,7 @@ export default function AiCoach() {
                     </div>
                   )}
                   {dashboard?.thisMonth?.savingsRate != null && (
-                    <div style={{ background: "var(--ft-surface)", padding: "10px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+                    <div style={{ padding: "10px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>Savings Rate</div>
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: srColor }}>
                         <span className="pnum">{srPct!.toFixed(0)}%</span>

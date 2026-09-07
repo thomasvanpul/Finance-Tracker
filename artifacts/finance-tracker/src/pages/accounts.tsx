@@ -2647,7 +2647,7 @@ export default function Accounts() {
         {/* Section title — no controls */}
         <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">{baseCurrency} base</Text>}>CASH ACCOUNTS</PanelHeader>
         {/* Filter bar — separate row, wraps fine */}
-        <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)", flexWrap: "wrap" }}>
           <input
             type="text"
             placeholder="Search…"

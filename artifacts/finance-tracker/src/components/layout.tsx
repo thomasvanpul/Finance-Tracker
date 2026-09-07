@@ -1794,7 +1794,7 @@ export function Layout({ children }: LayoutProps) {
           const year = m === 11 ? new Date().getFullYear() : new Date().getFullYear() - 1;
           return (
             <Link href="/year-review">
-              <div style={{ margin: "0 8px 6px", padding: "8px 10px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", cursor: "pointer", transition: "border-color 0.15s" }}
+              <div style={{ margin: "0 8px 6px", padding: "8px 10px", border: "1px solid var(--ft-border)", cursor: "pointer", transition: "border-color 0.15s" }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ft-border2)"; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--ft-border)"; }}>
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: "var(--ft-accent)", marginBottom: 2, display: "flex", alignItems: "center", gap: 5 }}>

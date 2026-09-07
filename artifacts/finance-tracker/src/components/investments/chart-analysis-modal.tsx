@@ -299,7 +299,7 @@ export function ChartAnalysisModal({
         </div>
 
         {/* Controls */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 16px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", flexWrap: "wrap", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 16px", borderBottom: "1px solid var(--ft-border)", flexWrap: "wrap", flexShrink: 0 }}>
           {/* Period */}
           <div style={{ display: "flex", gap: 2 }}>
             {PERIODS.map(p => (

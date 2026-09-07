@@ -1057,7 +1057,7 @@ function Step3({
           { label: "Income", value: String(incomeCount), color: "var(--ft-green)" },
           { label: "Expenses", value: String(expenseCount), color: "var(--ft-red)" },
         ].map(k => (
-          <div key={k.label} style={{ background: "var(--ft-surface)", padding: "7px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
+          <div key={k.label} style={{ padding: "7px 12px", borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 3 }}>
               {k.label}
             </div>
