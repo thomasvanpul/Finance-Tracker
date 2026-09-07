@@ -469,6 +469,100 @@ function TxDetailDialog({
   );
 }
 
+// ── the ledger's filter state ────────────────────────────────────────────────
+// One object rather than nine useStates, and one list of fields rather than
+// two hand-written summaries of them.
+//
+// The bug this closes: `hasFilters` was a disjunction over eight fields and
+// `activeFilterCount` an array over five, written separately and free to
+// disagree — and they did. A search term or a type selection made the empty
+// state say "no transactions match the current filters" while the FILTERS
+// badge showed nothing and the chip row was empty, so the screen told the
+// user they had filters and refused to say which. Deriving both from
+// FILTER_FIELDS makes `hasFilters === activeFilterCount > 0` true by
+// construction rather than by two authors agreeing.
+
+type LedgerFilters = {
+  q: string;
+  type: "all" | TxType;
+  category: string;
+  account: string;
+  from: string;
+  to: string;
+  amountMin: string;
+  amountMax: string;
+  tag: string;
+};
+
+const NO_FILTERS: LedgerFilters = {
+  q: "", type: "all", category: "all", account: "all",
+  from: "", to: "", amountMin: "", amountMax: "", tag: "",
+};
+
+// The six named periods the period control offers. `null` means the from/to
+// pair matches none of them — a custom range, which the panel owns.
+type QuickRange = "all" | "today" | "week" | "month" | "lastmonth" | "3m";
+
+const QUICK_RANGE_LABEL: Record<QuickRange, string> = {
+  all: "All time",
+  today: "Today",
+  week: "This week",
+  month: "This month",
+  lastmonth: "Last month",
+  "3m": "Last 3 months",
+};
+
+function quickRangeBounds(range: QuickRange): { from: string; to: string } {
+  const today = new Date().toISOString().slice(0, 10);
+  switch (range) {
+    case "today": return { from: today, to: today };
+    case "week": return { from: getWeekStart(), to: "" };
+    case "month": return { from: getMonthStart(), to: "" };
+    case "lastmonth": return { from: getMonthStart(-1), to: getMonthEnd(-1) };
+    case "3m": return { from: get3MonthsAgo(), to: "" };
+    case "all": return { from: "", to: "" };
+  }
+}
+
+function quickRangeOf(f: LedgerFilters): QuickRange | null {
+  for (const r of ["all", "today", "week", "month", "lastmonth", "3m"] as QuickRange[]) {
+    const b = quickRangeBounds(r);
+    if (b.from === f.from && b.to === f.to) return r;
+  }
+  return null;
+}
+
+// Every field that can narrow the ledger, with the label its chip carries and
+// what clearing it means. Adding a filter is one entry here, not five edits in
+// five places that have to be kept in step.
+const FILTER_FIELDS: readonly {
+  key: string;
+  active: (f: LedgerFilters) => boolean;
+  label: (f: LedgerFilters) => string;
+  cleared: Partial<LedgerFilters>;
+}[] = [
+  { key: "q", active: (f) => f.q !== "", label: (f) => `"${f.q}"`, cleared: { q: "" } },
+  { key: "type", active: (f) => f.type !== "all", label: (f) => f.type.toUpperCase(), cleared: { type: "all" } },
+  {
+    key: "period",
+    active: (f) => f.from !== "" || f.to !== "",
+    label: (f) => {
+      const r = quickRangeOf(f);
+      return r == null ? `${f.from || "…"}–${f.to || "…"}` : QUICK_RANGE_LABEL[r];
+    },
+    cleared: { from: "", to: "" },
+  },
+  { key: "category", active: (f) => f.category !== "all", label: (f) => `CAT: ${f.category}`, cleared: { category: "all" } },
+  { key: "account", active: (f) => f.account !== "all", label: (f) => `ACCT: ${f.account}`, cleared: { account: "all" } },
+  { key: "tag", active: (f) => f.tag !== "", label: (f) => `#${f.tag}`, cleared: { tag: "" } },
+  {
+    key: "amount",
+    active: (f) => f.amountMin !== "" || f.amountMax !== "",
+    label: (f) => `${f.amountMin || "0"}–${f.amountMax || "∞"}`,
+    cleared: { amountMin: "", amountMax: "" },
+  },
+];
+
 export default function Transactions() {
   const { data: transactions, isLoading, isError, error } = useListTransactions();
   const { data: summary, isLoading: isSummaryLoading, isError: isSummaryError } = useGetTransactionSummary();
@@ -484,9 +578,6 @@ export default function Transactions() {
   // `isMobile &&` branch it used to carry was unreachable. Verified: the
   // only importer of pages/transactions is App.tsx:34.
 
-  // Computed each render so it stays correct after midnight
-  const today = new Date().toISOString().slice(0, 10);
-
   // ── core dialog state ───────────────────────────────────────────────────
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -497,8 +588,7 @@ export default function Transactions() {
 
   // ── filters ─────────────────────────────────────────────────────────────
   const qParam = useQueryParam("q");
-  const [search, setSearch] = useState(() => qParam ?? "");
-  useEffect(() => { setSearch(qParam ?? ""); }, [qParam]);
+
   // ?category=, ?account=, ?type=, ?from= and ?to= are how a drill arrives
   // here (DESIGN.md §14, lib/entity-href.ts `ledgerHref`). They seed the same
   // filters the selects write, so a drilled-in view and a hand-filtered one
@@ -510,28 +600,40 @@ export default function Transactions() {
   const toParam = useQueryParam("to");
   const parseTypeParam = (v: string | null): "all" | TxType =>
     v === "income" || v === "expense" || v === "transfer" ? v : "all";
-  const [filterType, setFilterType] = useState<"all" | TxType>(() => parseTypeParam(typeParam));
-  const [filterCategory, setFilterCategory] = useState(() => categoryParam ?? "all");
-  const [filterAccount, setFilterAccount] = useState("all");
-  useEffect(() => { setFilterCategory(categoryParam ?? "all"); }, [categoryParam]);
+  const [filters, setFilters] = useState<LedgerFilters>(() => ({
+    ...NO_FILTERS,
+    q: qParam ?? "",
+    type: parseTypeParam(typeParam),
+    category: categoryParam ?? "all",
+    from: fromParam ?? "",
+    to: toParam ?? "",
+  }));
+  // One write path. Every control on this screen goes through it, so there is
+  // no field a control can set without the count and the chips noticing.
+  const patchFilters = useCallback((p: Partial<LedgerFilters>) => {
+    setFilters((f) => ({ ...f, ...p }));
+  }, []);
+  // Read aliases, so the ~40 places that only read a filter keep reading a
+  // plain name. Writes never go through these.
+  const { q: search, type: filterType, category: filterCategory, account: filterAccount,
+          from: filterDateFrom, to: filterDateTo, amountMin, amountMax, tag: filterTag } = filters;
+
+  useEffect(() => { patchFilters({ q: qParam ?? "" }); }, [qParam, patchFilters]);
+  useEffect(() => { patchFilters({ category: categoryParam ?? "all" }); }, [categoryParam, patchFilters]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setFilterType(parseTypeParam(typeParam)); }, [typeParam]);
+  useEffect(() => { patchFilters({ type: parseTypeParam(typeParam) }); }, [typeParam, patchFilters]);
+  useEffect(() => { patchFilters({ from: fromParam ?? "" }); }, [fromParam, patchFilters]);
+  useEffect(() => { patchFilters({ to: toParam ?? "" }); }, [toParam, patchFilters]);
   // The parameter carries an account id; the filter matches on the name the
   // ledger rows carry. Resolving here rather than putting a name in the URL
   // keeps `account` meaning one thing across the whole app, and a name that
   // is later edited does not strand the link.
   useEffect(() => {
-    if (accountParam == null) { setFilterAccount("all"); return; }
+    if (accountParam == null) { patchFilters({ account: "all" }); return; }
     const match = accounts?.find((a) => String(a.id) === accountParam);
-    if (match) setFilterAccount(match.name);
-  }, [accountParam, accounts]);
+    if (match) patchFilters({ account: match.name });
+  }, [accountParam, accounts, patchFilters]);
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-high" | "amount-low">("date-desc");
-  const [filterDateFrom, setFilterDateFrom] = useState(() => fromParam ?? "");
-  const [filterDateTo, setFilterDateTo] = useState(() => toParam ?? "");
-  useEffect(() => { setFilterDateFrom(fromParam ?? ""); }, [fromParam]);
-  useEffect(() => { setFilterDateTo(toParam ?? ""); }, [toParam]);
-  const [amountMin, setAmountMin] = useState("");
-  const [amountMax, setAmountMax] = useState("");
 
   // ── the return leg: state back into the URL ──────────────────────────────
   // Until now this was one-way. ?category= and friends seeded the filters on
@@ -586,7 +688,6 @@ export default function Transactions() {
       return raw ? (JSON.parse(raw) as Record<number, string[]>) : {};
     } catch { return {}; }
   });
-  const [filterTag, setFilterTag] = useState("");
 
   // ── merchant grouping ────────────────────────────────────────────────────
   const [groupByMerchant, setGroupByMerchant] = useState(false);
@@ -636,15 +737,18 @@ export default function Transactions() {
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  const hasFilters = search || filterType !== "all" || filterCategory !== "all" || filterAccount !== "all" || filterDateFrom || filterDateTo || amountMin || amountMax || filterTag;
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  const activeFilterCount = [filterCategory !== "all", filterAccount !== "all", !!(filterDateFrom || filterDateTo), !!(amountMin || amountMax), !!filterTag].filter(Boolean).length;
+  // Both derived from the same list, so they cannot disagree. `hasFilters`
+  // is `activeFilterCount > 0` by construction, not by convention.
+  const activeFilters = FILTER_FIELDS.filter((f) => f.active(filters));
+  const activeFilterCount = activeFilters.length;
+  const hasFilters = activeFilterCount > 0;
 
-  // Reset pagination when filters change
-  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, filterTag]);
-
-  // Reset row selection when filters change
-  useEffect(() => { setSelectedRowIndex(null); }, [search, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, sortBy, filterTag]);
+  // Reset pagination and row selection when the filters change. One object,
+  // so these are one dependency each — and a filter added later cannot be
+  // forgotten here the way it could when this was a nine-name list.
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [filters]);
+  useEffect(() => { setSelectedRowIndex(null); }, [filters, sortBy]);
 
   // Scroll selected row into view
   useEffect(() => {
@@ -737,45 +841,9 @@ export default function Transactions() {
     return () => document.removeEventListener("keydown", handler);
   }, [filtered]);
 
-  // ── quick date range helpers ─────────────────────────────────────────────
-  const activeQuickRange = (() => {
-    if (!filterDateFrom && !filterDateTo) return "all";
-    if (filterDateFrom === today && filterDateTo === today) return "today";
-    if (filterDateFrom === getWeekStart() && !filterDateTo) return "week";
-    if (filterDateFrom === getMonthStart() && !filterDateTo) return "month";
-    if (filterDateFrom === getMonthStart(-1) && filterDateTo === getMonthEnd(-1)) return "lastmonth";
-    if (filterDateFrom === get3MonthsAgo() && !filterDateTo) return "3m";
-    return null;
-  })();
-
-  const applyQuickRange = (range: string) => {
-    switch (range) {
-      case "today":
-        setFilterDateFrom(today);
-        setFilterDateTo(today);
-        break;
-      case "week":
-        setFilterDateFrom(getWeekStart());
-        setFilterDateTo("");
-        break;
-      case "month":
-        setFilterDateFrom(getMonthStart());
-        setFilterDateTo("");
-        break;
-      case "lastmonth":
-        setFilterDateFrom(getMonthStart(-1));
-        setFilterDateTo(getMonthEnd(-1));
-        break;
-      case "3m":
-        setFilterDateFrom(get3MonthsAgo());
-        setFilterDateTo("");
-        break;
-      case "all":
-        setFilterDateFrom("");
-        setFilterDateTo("");
-        break;
-    }
-  };
+  // ── the period control ───────────────────────────────────────────────────
+  const activeQuickRange = quickRangeOf(filters);
+  const applyQuickRange = (range: QuickRange) => patchFilters(quickRangeBounds(range));
 
   // ── merchant groups ──────────────────────────────────────────────────────
   const merchantGroups: MerchantGroup[] = useMemo(() => {
@@ -1963,62 +2031,48 @@ export default function Transactions() {
               ref={searchInputRef}
               placeholder="search…  ( / )"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => patchFilters({ q: e.target.value })}
               className="ft-filter-input"
               style={{ width: "100%", paddingLeft: 26, paddingRight: 8, height: 26, fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", boxSizing: "border-box" as const }}
             />
           </div>
-          {/* Type buttons */}
-          {(["all", "income", "expense", "transfer"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setFilterType(t)}
-              style={{
-                height: 26,
-                padding: "0 9px",
-                fontFamily: "var(--font-sans)",
-                fontSize: 11,
-                fontWeight: 500,
-                cursor: "pointer",
-                border: "1px solid",
-                borderColor: filterType === t ? "var(--ft-accent)" : "var(--ft-border2)",
-                background: filterType === t ? "var(--ft-accent)" : "transparent",
-                color: filterType === t ? "var(--ft-base)" : "var(--ft-muted)",
-                textTransform: "uppercase" as const,
-              }}
-            >
-              {t}
-            </button>
-          ))}
-          {/* Quick date presets */}
-          {(["today", "week", "month", "lastmonth", "3m", "all"] as const).map((k) => {
-            const labels: Record<string, string> = { today: "TODAY", week: "WEEK", month: "MONTH", lastmonth: "LAST MO", "3m": "3M", all: "ALL" };
-            const isActive = activeQuickRange === k;
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => applyQuickRange(k)}
-                style={{
-                  height: 26,
-                  padding: "0 8px",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: 11,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  border: "1px solid",
-                  borderColor: isActive ? "var(--ft-accent)" : "var(--ft-border2)",
-                  background: isActive ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
-                  color: isActive ? "var(--ft-accent)" : "var(--ft-dim)",
-                  whiteSpace: "nowrap" as const,
-                  textTransform: "uppercase" as const,
-                }}
-              >
-                {labels[k]}
-              </button>
-            );
-          })}
+          {/* One type control and one period control.
+              Before this there were ten chips here, two of them labelled ALL
+              — one meaning "any type", one meaning "any date". Two identical
+              words a few pixels apart, each the default state of a different
+              axis, which is a control that reads as a choice and is really
+              just "off". A select says which axis it belongs to and shows the
+              current value without spending a chip on every alternative. */}
+          <select
+            value={filterType}
+            onChange={(e) => patchFilters({ type: e.target.value as LedgerFilters["type"] })}
+            aria-label="Transaction type"
+            style={{ height: 26, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 11, cursor: "pointer", border: "1px solid", borderColor: filterType !== "all" ? "var(--ft-accent)" : "var(--ft-border2)", background: filterType !== "all" ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "var(--ft-raised)", color: filterType !== "all" ? "var(--ft-accent)" : "var(--ft-muted)" }}
+          >
+            <option value="all">ALL TYPES</option>
+            <option value="income">INCOME</option>
+            <option value="expense">EXPENSE</option>
+            <option value="transfer">TRANSFER</option>
+          </select>
+          <select
+            value={activeQuickRange ?? "custom"}
+            onChange={(e) => {
+              const v = e.target.value;
+              // "Custom" is not a range to apply — it is where the range
+              // already is, and the two date inputs that own it live in the
+              // panel. Selecting it opens that panel rather than silently
+              // doing nothing, which is the defect this whole task is about.
+              if (v === "custom") { setFilterPanelOpen(true); return; }
+              applyQuickRange(v as QuickRange);
+            }}
+            aria-label="Period"
+            style={{ height: 26, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 11, cursor: "pointer", border: "1px solid", borderColor: activeQuickRange === "all" ? "var(--ft-border2)" : "var(--ft-accent)", background: activeQuickRange === "all" ? "var(--ft-raised)" : "color-mix(in srgb, var(--ft-accent) 12%, transparent)", color: activeQuickRange === "all" ? "var(--ft-muted)" : "var(--ft-accent)" }}
+          >
+            {(Object.keys(QUICK_RANGE_LABEL) as QuickRange[]).map((k) => (
+              <option key={k} value={k}>{QUICK_RANGE_LABEL[k].toUpperCase()}</option>
+            ))}
+            <option value="custom">CUSTOM…</option>
+          </select>
           {/* Sort */}
           <select
             value={sortBy}
@@ -2058,7 +2112,7 @@ export default function Transactions() {
           {hasFilters && (
             <button
               type="button"
-              onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); }}
+              onClick={() => { setFilters(NO_FILTERS); setSortBy("date-desc"); }}
               style={{ height: 26, padding: "0 10px", fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.08em", cursor: "pointer", border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-red)" }}
               aria-label="Clear all filters"
             >
@@ -2066,34 +2120,23 @@ export default function Transactions() {
             </button>
           )}
         </div>
-        {/* Active chips — only when panel is closed */}
+        {/* Active chips — one per active field, off the same list the count
+            and `hasFilters` are derived from, so the row can never show four
+            chips beside a badge reading 5. Shown only when the panel is
+            closed; the panel shows the controls themselves. */}
         {!filterPanelOpen && activeFilterCount > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 4, paddingBottom: 6 }}>
-            {filterCategory !== "all" && (
-              <button type="button" onClick={() => setFilterCategory("all")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                CAT: {filterCategory} ×
+            {activeFilters.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => patchFilters(f.cleared)}
+                aria-label={`Clear the ${f.key} filter`}
+                style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+              >
+                {f.label(filters)} ×
               </button>
-            )}
-            {filterAccount !== "all" && (
-              <button type="button" onClick={() => setFilterAccount("all")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                ACCT: {filterAccount} ×
-              </button>
-            )}
-            {(filterDateFrom || filterDateTo) && (
-              <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); applyQuickRange("all"); }} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                {filterDateFrom || "…"}–{filterDateTo || "…"} ×
-              </button>
-            )}
-            {filterTag && (
-              <button type="button" onClick={() => setFilterTag("")} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                #{filterTag} ×
-              </button>
-            )}
-            {(amountMin || amountMax) && (
-              <button type="button" onClick={() => { setAmountMin(""); setAmountMax(""); }} style={{ height: 20, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-accent)", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", color: "var(--ft-accent)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                {amountMin || "0"}–{amountMax || "∞"} ×
-              </button>
-            )}
+            ))}
           </div>
         )}
         {/* Expanded filter panel */}
@@ -2102,7 +2145,7 @@ export default function Transactions() {
             {/* Category */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>CATEGORY</span>
-              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 10, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
+              <select value={filterCategory} onChange={(e) => patchFilters({ category: e.target.value })} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 10, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
                 <option value="all">all</option>
                 {(allCategories as string[]).map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -2110,7 +2153,7 @@ export default function Transactions() {
             {/* Account */}
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>ACCOUNT</span>
-              <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 10, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
+              <select value={filterAccount} onChange={(e) => patchFilters({ account: e.target.value })} style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 10, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)" }}>
                 <option value="all">all</option>
                 {(allAccounts as string[]).map(a => <option key={a} value={a}>{a}</option>)}
               </select>
@@ -2121,7 +2164,7 @@ export default function Transactions() {
               <input
                 type="text"
                 value={filterTag}
-                onChange={(e) => setFilterTag(e.target.value)}
+                onChange={(e) => patchFilters({ tag: e.target.value })}
                 placeholder="#tag"
                 className="ft-filter-input"
                 style={{ height: 26, padding: "0 8px", fontFamily: "var(--font-sans)", fontSize: 10, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }}
@@ -2131,9 +2174,9 @@ export default function Transactions() {
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>DATE RANGE</span>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }} />
+                <input type="date" value={filterDateFrom} onChange={(e) => patchFilters({ from: e.target.value })} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }} />
                 <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>–</span>
-                <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }} />
+                <input type="date" value={filterDateTo} onChange={(e) => patchFilters({ to: e.target.value })} style={{ flex: 1, height: 26, padding: "0 4px", fontFamily: "var(--font-mono)", fontSize: 9, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none" }} />
               </div>
               <div style={{ display: "flex", gap: 4 }}>
                 <button type="button" onClick={() => applyQuickRange("lastmonth")} style={{ height: 20, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 9, border: "1px solid var(--ft-border2)", background: "transparent", color: "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" as const }}>LAST MO</button>
@@ -2144,9 +2187,9 @@ export default function Transactions() {
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
               <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", color: "var(--ft-dim)", textTransform: "uppercase" as const }}>AMOUNT</span>
               <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <input type="number" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} placeholder="min" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
+                <input type="number" value={amountMin} onChange={(e) => patchFilters({ amountMin: e.target.value })} placeholder="min" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
                 <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>–</span>
-                <input type="number" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} placeholder="max" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
+                <input type="number" value={amountMax} onChange={(e) => patchFilters({ amountMax: e.target.value })} placeholder="max" min="0" step="0.01" style={{ flex: 1, height: 26, padding: "0 6px", fontFamily: "var(--font-mono)", fontSize: 9, color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", outline: "none", fontVariantNumeric: "tabular-nums" }} />
               </div>
             </div>
           </div>
