@@ -513,12 +513,27 @@ input[type="checkbox"]:checked {
    surface and base. Iterate that script if you change any token here.
    The four light themes are personality-distinct, not tints of
    arctic: cool-white-office (arctic), warm-newspaper (parchment),
-   cool-analyst-grey (slate), warm-ledger (linen). */
+   cool-analyst-grey (slate), warm-ledger (linen).
+
+   --ft-raised on all four sits at the L* midpoint between --ft-base and
+   --ft-surface, and that placement is deliberate. It used to sit BELOW
+   base: arctic ran base L* 96.0, surface 100.0, raised 93.6, so a raised
+   sub-region inside a white panel was a 6.4 L* drop — twice the step any
+   dark theme uses (terminal +3.3, midnight +4.6, matrix +0.7) and in the
+   opposite direction, past the page ground. That is the "grey block on
+   white" this theme was reported for. Measured steps were arctic -6.4,
+   parchment -8.3, slate -8.6, linen -8.0.
+
+   On a dark theme the ladder ascends and raised is the top. On a light
+   theme surface is white and there is no room above it, so raised is a
+   well between base and surface instead. Keep it there: pushing it below
+   base reinstates the block, and pulling it to surface makes the 568
+   raised fills across the app disappear on light themes. */
 
 [data-theme="arctic"] {
   --ft-base:    #F0F4F8;
   --ft-surface: #FFFFFF;
-  --ft-raised:  #E8EDF5;
+  --ft-raised:  #F7FAFC;
   /* border used to be #C9D4E0 / #B0BDD0 — 1.5:1 and 1.9:1 on white,
      both under WCAG 1.4.11's 3:1 for UI components. Darkened so a
      panel divider is genuinely visible without leaning on shadows. */
@@ -562,7 +577,7 @@ input[type="checkbox"]:checked {
 [data-theme="parchment"] {
   --ft-base:    #F5EBD8;
   --ft-surface: #FFF8EC;
-  --ft-raised:  #EDE0C4;
+  --ft-raised:  #FAF1E2;
   --ft-border:  #9C8248;
   --ft-border2: #7A6535;
   --ft-text:    #241A0C;
@@ -596,7 +611,7 @@ input[type="checkbox"]:checked {
 [data-theme="slate"] {
   --ft-base:    #DFE6EE;
   --ft-surface: #F0F4F8;
-  --ft-raised:  #D3DCE6;
+  --ft-raised:  #E7EDF3;
   --ft-border:  #748596;
   --ft-border2: #5F6C7E;
   --ft-text:    #141A22;
@@ -629,7 +644,7 @@ input[type="checkbox"]:checked {
 [data-theme="linen"] {
   --ft-base:    #EEE7D6;
   --ft-surface: #F8F2E3;
-  --ft-raised:  #E4DBC4;
+  --ft-raised:  #F3ECDD;
   --ft-border:  #8F7E4D;
   --ft-border2: #6E6035;
   --ft-text:    #241D0F;

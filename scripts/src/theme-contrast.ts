@@ -32,7 +32,7 @@ interface DarkPalette {
 // ── Light themes ──────────────────────────────────────────────────────────────
 
 const arctic: Palette = {
-  base: "#F0F4F8", surface: "#FFFFFF", raised: "#E8EDF5",
+  base: "#F0F4F8", surface: "#FFFFFF", raised: "#F7FAFC",
   // border used to be #C9D4E0 / #B0BDD0 — both under 2:1 on white.
   // Darkened so the strict WCAG 1.4.11 "3:1 for UI components /
   // graphical objects" threshold clears. Reads as a firmer divider.
@@ -50,7 +50,7 @@ const arctic: Palette = {
 // pink paper of the Financial Times; ink brown for text; burgundy for
 // accent so gains/losses read as newsprint red on ivory.
 const parchment: Palette = {
-  base: "#F5EBD8", surface: "#FFF8EC", raised: "#EDE0C4",
+  base: "#F5EBD8", surface: "#FFF8EC", raised: "#FAF1E2",
   border: "#9C8248", border2: "#7A6535",
   text: "#241A0C", muted: "#4B3818", dim: "#6E5528",
   accent: "#7A1F30",
@@ -65,7 +65,7 @@ const parchment: Palette = {
 // rather than office; teal accent stays serious. Between arctic (crisp
 // white saas) and something more industrial.
 const slate: Palette = {
-  base: "#DFE6EE", surface: "#F0F4F8", raised: "#D3DCE6",
+  base: "#DFE6EE", surface: "#F0F4F8", raised: "#E7EDF3",
   border: "#748596", border2: "#5F6C7E",
   text: "#141A22", muted: "#3E4A58", dim: "#5A6572",
   accent: "#0E5766",
@@ -79,7 +79,7 @@ const slate: Palette = {
 // wealth theme. Warm cream base with a lower-chroma feel than
 // parchment; olive-gold accent nods to accountancy ledger inks.
 const linen: Palette = {
-  base: "#EEE7D6", surface: "#F8F2E3", raised: "#E4DBC4",
+  base: "#EEE7D6", surface: "#F8F2E3", raised: "#F3ECDD",
   border: "#8F7E4D", border2: "#6E6035",
   text: "#241D0F", muted: "#4A3E1E", dim: "#6A5A32",
   accent: "#5A4610",
