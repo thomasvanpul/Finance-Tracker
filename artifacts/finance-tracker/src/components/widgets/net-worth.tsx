@@ -70,8 +70,11 @@ function formatXAxis(value: string): string {
 function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
   if (groups.length <= 1) return null;
   return (
-    <div style={{ borderTop: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 0, overflowX: "auto", scrollbarWidth: "none" }}>
+    // No band fill either. A strip painted a different colour from the panel
+    // around it is the same box drawn without a border, and on the light
+    // themes it read as the strongest rectangle in the widget.
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 0 0 12px", overflowX: "auto", scrollbarWidth: "none" }}>
         {groups.map((g, i) => (
           // The two totals are sums of the accounts held in this currency, so
           // the cell opens the accounts list (§14). The share percentage beside
@@ -83,8 +86,7 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
             style={{
               display: "flex",
               flexDirection: "column",
-              padding: "8px 12px",
-              borderRight: i < groups.length - 1 ? "1px solid var(--ft-border)" : undefined,
+              padding: "8px 12px 8px 0",
               minWidth: 0,
               flexShrink: 0,
             }}
@@ -216,8 +218,10 @@ function KpiCell({ label, raw, value, color, sub, animate, href, isLast }: KpiCe
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "14px 12px",
-        borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
+        // No rule of any kind on a KPI cell inside a framed panel
+        // (DESIGN.md § 5). The grid gap and the shared baseline separate
+        // these four; the widget frame is the only line.
+        padding: "14px 12px 14px 0",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
         overflow: "hidden",
@@ -253,9 +257,10 @@ function MonthStatCell({ label, value, color, href, isLast }: MonthStatCellProps
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "10px 12px",
-        borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
-        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
+        // No rule, and no band fill either: --ft-raised across the whole row
+        // was the other way this strip drew itself as a box.
+        padding: "10px 12px 10px 0",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
         overflow: "hidden",
         minWidth: 0,
@@ -282,8 +287,7 @@ function BreakdownCell({ label, value, color, href, isLast }: BreakdownCellProps
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "8px 12px",
-        borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
+        padding: "8px 12px 8px 0",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
         overflow: "hidden",
@@ -432,7 +436,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
       {/* KPI strip — border-as-gap pattern. ft-four-col opts into the
           main-content container query: 4-col at wide, 3-col ≤900
           container width, 2-col ≤700. */}
-      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", columnGap: 16, padding: "0 0 0 12px" }}>
         {kpis.map((k, i) => (
           <KpiCell
             key={k.label}
@@ -454,14 +458,16 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
           `?? 0` drops; StaleAsOf shows the fetch time when the data
           is past its fresh window or offline. */}
       {((d.unconvertibleAccounts ?? 0) > 0 || isStale) && (
-        <div style={{ padding: "6px 12px", borderTop: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        // A caption on the figures above, not a band between two strips —
+        // so it carries no rule and sits directly under what it qualifies.
+        <div style={{ padding: "0 12px 8px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <UnconvertibleAccountsBadge count={d.unconvertibleAccounts ?? 0} />
           <StaleAsOf ts={dataUpdatedAt} isFresh={!isStale} />
         </div>
       )}
 
       {/* Month stats strip */}
-      <div className="ft-three-col" style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+      <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", columnGap: 16, padding: "0 0 0 12px" }}>
         {monthStats.map((item, i) => (
           <MonthStatCell
             key={item.label}
@@ -475,7 +481,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
       </div>
 
       {/* Breakdown strip */}
-      <div className="ft-three-col" style={{ borderTop: "1px solid var(--ft-border)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
+      <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", columnGap: 16, padding: "0 0 12px 12px" }}>
         {breakdownItems.map((item, i) => (
           <BreakdownCell
             key={item.label}

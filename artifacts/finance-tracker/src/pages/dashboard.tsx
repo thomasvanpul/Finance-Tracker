@@ -860,11 +860,16 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
       marginBottom: 6,
     }}>
       {/* Float header: prose title, not a panel label — this surface is
-          not part of the page and must not be drawn like one. */}
+          not part of the page and must not be drawn like one.
+
+          The rule under this row and the --ft-panel-header-h it was set to
+          were the panel header idiom exactly, on a surface that is not a
+          panel. DESIGN.md § 6: PanelHeader is a panel's internal rule and
+          only ever appears inside a frame. A float announces itself by
+          elevation, radius and the dismiss control; it does not need a line
+          across it, and the line is most of why this still read as a card. */}
       <div style={{
-        borderBottom: "1px solid var(--ft-border)",
-        padding: "0 8px 0 12px",
-        height: "var(--ft-panel-header-h)",
+        padding: "9px 8px 3px 12px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -907,27 +912,28 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
         </button>
       </div>
 
-      {/* Content grid.
+      {/* Content.
 
-          The three cards used to draw --ft-raised on --ft-raised inside a
-          1px border, inset inside the float's own 1px border: a fill that
-          painted the parent's own token (so it was never visible) and a
-          frame inside a frame (so it was). Explicit interior rules instead
-          (DESIGN.md § 5): each card draws its right and bottom hairline and
-          the wrapper clips the outermost pair, so nothing paints an outer
-          edge against the float's own border. The column count here is the
-          browser's (`auto-fit`), so :nth-child cannot name the last cell of a
-          row — hence the clip rather than a per-breakpoint rule. */}
-      <div className="ft-cellrules-clip">
-      <div className="ft-dashboard-insights ft-cellrules-auto" style={{ gap: 0 }}>
+          These three were a box each: --ft-raised painted on --ft-raised, then
+          a 1px border, then interior hairlines, all inset inside the float's
+          own border. Every version of that kept the lines and changed only how
+          they were drawn. There are now no lines and no fill inside the float
+          at all (DESIGN.md § 5).
+
+          They were also three columns, and three columns is what made them
+          three captions: at 1440 each cell was ~300px, so anything the model
+          returned longer than a label wrapped into a paragraph inside a
+          column and looked wrong, and the shape kept pulling the writing back
+          to "£412/mo · subscriptions up". Three explanatory sentences are a
+          list, not a grid. Stacked, this also stops reading as a row of
+          cards — which is the other half of what § 6 asks for. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "2px 12px 11px" }}>
         {loading && insights === null
           ? [0, 1, 2].map(i => (
               <div
                 key={i}
                 style={{
-                  background: "var(--ft-raised)",
-                  padding: "10px 12px",
-                  minHeight: 52,
+                  minHeight: 34,
                 }}
               />
             ))
@@ -937,21 +943,27 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
               <div
                 key={i}
                 style={{
-                  background: "var(--ft-raised)",
-                  padding: "10px 12px",
                   display: "flex",
-                  gap: 6,
+                  gap: 7,
                   alignItems: "flex-start",
                 }}
               >
-                <Zap size={10} style={{ color: "var(--ft-accent)", flexShrink: 0, marginTop: 1, opacity: 0.8 }} />
+                <Zap size={10} style={{ color: "var(--ft-accent)", flexShrink: 0, marginTop: 3, opacity: 0.8 }} />
                 {/* Figure first, clause second (DESIGN.md §10): the figure is
                     data, so it is mono and .pnum and carries the weight; the
                     clause is language, so it is sans and recedes. A line the
                     model returned without the separator is rendered whole as
                     prose — never split on a guess, never shown as a figure it
-                    is not. */}
-                <Text as="span" size={10} color="var(--ft-muted)" lineHeight={1.6}>
+                    is not.
+
+                    .ft-float-body is the message typography § 6 specifies for
+                    an ephemeral surface: the head face at 12px, prose. This
+                    component was rendering 10px --ft-muted instead, which is
+                    the caption size used inside widgets — so the surface said
+                    "float" and the writing in it said "panel". The figure
+                    stays a figure but sits at the prose size: it opens the
+                    sentence rather than heading a cell. */}
+                <span className="ft-float-body" style={{ lineHeight: 1.5 }}>
                   {figure !== null && (
                     <>
                       {/* The separating space lives OUTSIDE the .pnum span.
@@ -960,19 +972,18 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                           at its edge — the figure and the clause ran together
                           as "£412/mosubscriptions" on every insight the model
                           returned in the shape the prompt asks for. */}
-                      <Text as="span" numeric size={11} weight={700} color="var(--ft-text)">
+                      <Text as="span" numeric size={12} weight={700} color="var(--ft-text)">
                         {figure}
                       </Text>
                       {" "}
                     </>
                   )}
                   {clause}
-                </Text>
+                </span>
               </div>
             );
           })
         }
-      </div>
       </div>
     </div>
   );
@@ -1970,11 +1981,14 @@ function DashboardKpiBar({
       gridTemplateColumns: `auto auto repeat(${cells.length}, 1fr)`,
       // Structure, not a widget — DESIGN.md § 6. The KPI strip is the page:
       // it cannot be dragged, removed or reordered, so it is not framed and
-      // does not paint --ft-surface. A single hairline underneath seats it
-      // against the content below; the vertical hairlines between cells do
-      // the dividing. Four sides here is what made the dashboard read as a
-      // stack of identical rectangles.
+      // does not paint --ft-surface. One hairline underneath seats it against
+      // the content below and it is the only line here. The vertical rules
+      // that used to divide the cells are gone (DESIGN.md § 5): a column of
+      // figures is separated by its own alignment and by the space around it,
+      // which is how a terminal has always done it. Ruling every cell is what
+      // turned one strip into eight rectangles.
       borderBottom: "1px solid var(--ft-border)",
+      columnGap: 10,
       marginBottom: 10,
       overflowX: "auto",
       scrollbarWidth: "none",
@@ -1985,7 +1999,6 @@ function DashboardKpiBar({
         style={{
           background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 10%, transparent)" : "transparent",
           border: "none",
-          borderRight: "1px solid var(--ft-border)",
           borderTop: isCustomizing ? "2px solid var(--ft-accent)" : "2px solid transparent",
           color: isCustomizing ? "var(--ft-accent)" : "var(--ft-dim)",
           fontFamily: "var(--font-sans)",
@@ -2009,9 +2022,8 @@ function DashboardKpiBar({
       <div style={{
         display: "flex",
         alignItems: "center",
-        padding: "0 14px",
+        padding: "0 14px 0 4px",
         borderTop: "2px solid transparent",
-        borderRight: "1px solid var(--ft-border)",
         flexShrink: 0,
         minWidth: 110,
         gap: 5,
@@ -2029,8 +2041,7 @@ function DashboardKpiBar({
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            padding: "var(--ft-metric-py) 14px",
-            borderRight: i < cells.length - 1 ? "1px solid var(--ft-border)" : undefined,
+            padding: "var(--ft-metric-py) 14px var(--ft-metric-py) 0",
             flexShrink: 0,
             minWidth: 100, // widened from 90 so a 6-digit figure at 18px
                            // does not need to shrink; column widths on

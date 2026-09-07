@@ -104,13 +104,15 @@ export function CashFlowSankeyWidget() {
       {!isLoading && (
         <>
           {/* Month nav */}
-          <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--ft-raised)" }}>
+          <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <button onClick={() => setOffset(o => o - 1)} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "0 4px", lineHeight: 1 }}>‹</button>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)" }}>{monthLabel}</span>
             <button onClick={() => setOffset(o => Math.min(o + 1, 0))} disabled={offset >= 0} style={{ background: "none", border: "none", color: offset >= 0 ? "var(--ft-border2)" : "var(--ft-dim)", cursor: offset >= 0 ? "default" : "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "0 4px", lineHeight: 1 }}>›</button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
+          {/* Three figures, no rules between them (DESIGN.md § 5) — the
+              columns and the space are the separation. */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", columnGap: 16, padding: "0 0 10px 12px" }}>
             {[
               // Each is a sum over the month the diagram is drawn from, so
               // each opens its own slice of it. The "% of income" caption
@@ -118,8 +120,8 @@ export function CashFlowSankeyWidget() {
               { label: "Income", value: totalIncome, color: "var(--ft-green)", href: ledgerHref({ type: "income", from: dateFrom, to: dateTo }) },
               { label: "Expenses", value: totalExpense, color: "var(--ft-red)", href: ledgerHref({ type: "expense", from: dateFrom, to: dateTo }) },
               { label: savings >= 0 ? "Saved" : "Deficit", value: Math.abs(savings), color: savings >= 0 ? "var(--ft-accent)" : "var(--ft-red)", href: ledgerHref({ from: dateFrom, to: dateTo }) },
-            ].map((item, i) => (
-              <div key={item.label} style={{ padding: "8px 12px", background: "var(--ft-surface)", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined, overflow: "hidden", minWidth: 0 }}>
+            ].map((item) => (
+              <div key={item.label} style={{ padding: "8px 12px 8px 0", overflow: "hidden", minWidth: 0 }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
                   {item.label}
                 </div>
