@@ -870,7 +870,9 @@ export default function Transactions() {
       // but the total is honest about what was rolled up.
       if (tx.baseEquivalent == null) continue;
       const key = tx.description ?? "(no description)";
-      const signed = tx.type === "income" ? tx.baseEquivalent : -tx.baseEquivalent;
+      // Same correction as the day net: baseEquivalent is already signed, so
+      // negating expenses again turned a merchant's spending into a credit.
+      const signed = tx.baseEquivalent;
       const existing = map.get(key);
       if (existing) {
         existing.count += 1;
@@ -922,7 +924,16 @@ export default function Transactions() {
         txs,
         // Day net: skip unconvertible rows; unconvertible income and
         // expense wash out of the daily net without fabrication.
-        net: txs.reduce((acc, tx) => acc + (tx.baseEquivalent == null ? 0 : tx.type === "income" ? tx.baseEquivalent : tx.type === "expense" ? -tx.baseEquivalent : 0), 0),
+        //
+        // baseEquivalent arrives already signed — measured against the dev
+        // dataset, all 41 expenses are negative and all 3 income rows
+        // positive. Re-deriving the sign from tx.type negated it a second
+        // time, so a day of spending printed as a green gain: "SAT 5 SEPT
+        // +£3.85" above a single −£3.85 row. Use the sign the API supplied.
+        //
+        // Transfers still contribute nothing. Their baseEquivalent is
+        // positive on both legs, so counting one leg would invent a gain.
+        net: txs.reduce((acc, tx) => acc + (tx.baseEquivalent == null || (tx.type !== "income" && tx.type !== "expense") ? 0 : tx.baseEquivalent), 0),
       }));
   }, [filtered, groupByDay, sortBy]);
 
