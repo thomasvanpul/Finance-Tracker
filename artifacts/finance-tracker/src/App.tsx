@@ -6,6 +6,7 @@ import { createOfflineQueryClient } from "@/lib/offline-cache";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
+import { LazyRouteBoundary } from "@/components/lazy-route-boundary";
 import { AuthGate } from "@/components/auth-gate";
 import { ThemeProvider } from "@/contexts/theme-context";
 import { WidgetsProvider } from "@/contexts/widgets-context";
@@ -214,6 +215,7 @@ function Router() {
 
   return (
     <Layout>
+      <LazyRouteBoundary>
       <Suspense fallback={PageFallback}>
       <Switch>
         <Route path="/" component={Dashboard} />
@@ -256,6 +258,7 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
       </Suspense>
+      </LazyRouteBoundary>
     </Layout>
   );
 }

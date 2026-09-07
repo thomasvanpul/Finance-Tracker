@@ -1,5 +1,6 @@
 import { Switch, Route, useLocation } from "wouter";
 import { lazy, Suspense } from "react";
+import { LazyRouteBoundary } from "@/components/lazy-route-boundary";
 import { MobileHome } from "@/components/mobile/MobileHome";
 import { PhoneTabBar } from "./PhoneTabBar";
 import { DirectoryScreen } from "./DirectoryScreen";
@@ -92,9 +93,11 @@ function wrappedRoute(
     <Route key={path} path={path}>
       {() => (
         <DirectoryItemScreen title={title}>
-          <Suspense fallback={PageFallback}>
-            <Component />
-          </Suspense>
+          <LazyRouteBoundary>
+            <Suspense fallback={PageFallback}>
+              <Component />
+            </Suspense>
+          </LazyRouteBoundary>
         </DirectoryItemScreen>
       )}
     </Route>
