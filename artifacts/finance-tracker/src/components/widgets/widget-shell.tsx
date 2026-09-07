@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "wouter";
+import { PanelBox } from "../primitives/panel-box";
+import { PanelHeader } from "../primitives/panel-header";
 import { useDashboardCustomize } from "../../lib/dashboard-customize-context";
 
 interface WidgetShellProps {
@@ -27,74 +29,61 @@ export function WidgetShell({
   const accentColor = accent ?? "var(--ft-accent)";
 
   return (
-    <div
-      style={{
-        overflow: "hidden",
-        // The border used to appear only in customize mode, which meant the
-        // one view where widget boundaries mattered least was the only view
-        // that had them. 1px, zero radius, packed — the boundary is the
-        // whole job, so it does not need to be decorative.
-        border: "1px solid var(--ft-border)",
-        background: "var(--ft-surface)",
-        ...(hovered && { borderColor: "var(--ft-border2)" }),
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* Header — hairline rule always; raised background only in customize mode */}
-      <div style={{
-        padding: "0 12px",
-        height: "var(--ft-panel-header-h)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 8,
-        borderBottom: "1px solid var(--ft-border)",
-        marginBottom: 8,
-        ...(isCustomizing && {
-          background: "var(--ft-raised)",
-        }),
-      }}>
-        {/* Same .ft-panel-label as every PanelHeader, so the dashboard and
-            the pages share one title face rather than two near-misses. */}
-        <span className="ft-panel-label" style={{
-          minWidth: 0,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}>
-          {title}
-        </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          {headerRight}
-          {href && (
-            <Link href={href}>
-              <span style={{
-                fontSize: 11,
-                fontFamily: "var(--font-sans)",
-                color: hovered ? accentColor : "var(--ft-dim)",
-                cursor: "pointer",
-                fontWeight: 500,
-                textTransform: "none",
-                transition: "color 0.1s",
-                whiteSpace: "nowrap",
-              }}>
-                {linkLabel}
-              </span>
-            </Link>
+    <PanelBox>
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* Customize mode tints the header. It is a state of the dashboard,
+            not of a panel, so the background belongs to WidgetShell — which
+            knows about the mode — rather than to PanelBox or PanelHeader,
+            both of which stay pure surface. */}
+        <PanelHeader
+          className={isCustomizing ? "ft-widget-header-customizing" : undefined}
+          right={
+            <>
+              {headerRight}
+              {href && (
+                <Link href={href}>
+                  <span style={{
+                    fontSize: 11,
+                    fontFamily: "var(--font-sans)",
+                    color: hovered ? accentColor : "var(--ft-dim)",
+                    cursor: "pointer",
+                    fontWeight: 500,
+                    textTransform: "none",
+                    transition: "color 0.1s",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {linkLabel}
+                  </span>
+                </Link>
+              )}
+            </>
+          }
+        >
+          <span style={{
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}>
+            {title}
+          </span>
+        </PanelHeader>
+
+        {/* Content */}
+        <div style={{ marginTop: 8 }}>
+          {isLoading ? (
+            <SkeletonRows />
+          ) : isEmpty ? (
+            <EmptyState message={emptyMessage} action={emptyAction} accent={accentColor} />
+          ) : (
+            children
           )}
         </div>
       </div>
-
-      {/* Content */}
-      {isLoading ? (
-        <SkeletonRows />
-      ) : isEmpty ? (
-        <EmptyState message={emptyMessage} action={emptyAction} accent={accentColor} />
-      ) : (
-        children
-      )}
-    </div>
+    </PanelBox>
   );
 }
 

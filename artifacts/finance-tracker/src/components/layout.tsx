@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { entityHref } from "@/lib/entity-href";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useNetworkStatus } from "@/hooks/use-network-status";
@@ -1547,7 +1548,7 @@ export function Layout({ children }: LayoutProps) {
           const color = PERSONA_COLORS[primary.id] ?? "var(--ft-accent)";
           const glyph = PERSONA_GLYPHS[primary.id] ?? "·";
           return (
-            <Link href="/settings?panel=terminal-profile">
+            <Link href={entityHref("settings", "terminal-profile")}>
               <div
                 style={{
                   padding: "5px 14px 5px",

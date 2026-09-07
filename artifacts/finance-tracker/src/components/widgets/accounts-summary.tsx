@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "wouter";
+import { entityHref } from "@/lib/entity-href";
 import { useGetDashboard } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -47,17 +49,26 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
     >
       <td style={{ padding: "0 10px" }}>
         <div style={{ paddingTop: 6, paddingBottom: 2 }}>
-          <div style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: 12,
-            color: "var(--ft-text)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            maxWidth: isExpanded ? 160 : 110,
-          }}>
+          {/* The name is the row's identity, so it is the link: keyboard
+              reachable and middle-clickable, unlike an onClick on the <tr>.
+              It opens the account's detail surface on /accounts — a query
+              parameter, not a route (lib/entity-href.ts). */}
+          <Link
+            href={entityHref("account", acct.id)}
+            style={{
+              display: "block",
+              fontFamily: "var(--font-sans)",
+              fontSize: 12,
+              color: hov ? "var(--ft-accent)" : "var(--ft-text)",
+              textDecoration: "none",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: isExpanded ? 160 : 110,
+            }}
+          >
             {acct.name}
-          </div>
+          </Link>
         </div>
         {/* Mini balance bar */}
         <div style={{ height: 2, background: "var(--ft-border)", marginBottom: 5 }}>

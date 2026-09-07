@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef, useSyncExternalStore } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useQueryParam } from "@/hooks/use-query-param";
 import { apiFetch } from "@/lib/api-fetch";
 import { getAiStyle, setAiStylePref, type AiStyle } from "@/components/ai-agent";
 import { loadCatRules, saveCatRules, type CatRule } from "@/lib/auto-cat";
@@ -201,6 +202,13 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
     ],
   },
 ];
+
+/** Narrow a raw `?panel=` value to a known nav id, or null. */
+function toNavItem(raw: string | null): NavItem | null {
+  if (!raw) return null;
+  const allIds = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id)) as string[];
+  return allIds.includes(raw) ? (raw as NavItem) : null;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function loadDensity(): Density {
@@ -2400,17 +2408,17 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const { theme, setTheme } = useFintrackTheme();
   const isMobile = useIsMobile();
-  const [activePanel, setActivePanel] = useState<NavItem>(() => {
-    try {
-      const p = new URLSearchParams(window.location.search).get("panel");
-      // Any known nav id in ?panel= wins. Prior code only allowed
-      // "terminal-profile"; widened so screenshot harnesses can pick
-      // any tab (e.g. ?panel=connections) without dispatching events.
-      const allIds = NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id));
-      if (p && (allIds as string[]).includes(p)) return p as NavItem;
-    } catch {}
-    return "appearance";
-  });
+  // Any known nav id in ?panel= wins. Prior code only allowed
+  // "terminal-profile"; widened so screenshot harnesses can pick
+  // any tab (e.g. ?panel=connections) without dispatching events.
+  const panelParam = useQueryParam("panel");
+  const [activePanel, setActivePanel] = useState<NavItem>(
+    () => toNavItem(panelParam) ?? "appearance"
+  );
+  useEffect(() => {
+    const p = toNavItem(panelParam);
+    if (p) setActivePanel(p);
+  }, [panelParam]);
   const [density, setDensityState] = useState<Density>(() => loadDensity());
   const [aiStyle, setAiStyleState] = useState<AiStyle>(getAiStyle);
 

@@ -64,6 +64,9 @@ import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useQueryParam } from "@/hooks/use-query-param";
+import { DetailSurface } from "@/components/detail-surface";
+import { ENTITY_PARAM } from "@/lib/entity-href";
 import {
   AreaChart,
   Area,
@@ -1635,6 +1638,12 @@ function exportAccountsCSV(
 
 // ─── Main Accounts page ───────────────────────────────────────────────────────
 
+/** Narrow a raw `?account=` value to an account id, or null. */
+function parseAccountId(raw: string | null): number | null {
+  const n = raw ? Number.parseInt(raw, 10) : Number.NaN;
+  return Number.isFinite(n) ? n : null;
+}
+
 export default function Accounts() {
   // dataUpdatedAt + isStale power the StaleAsOf badge next to the KPI
   // bar so a cached total is legible as cached, not presented as live.
@@ -1786,12 +1795,15 @@ export default function Accounts() {
   const [submitting, setSubmitting] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [expandedAccountId, setExpandedAccountId] = useState<number | null>(null);
-  const [highlightId, setHighlightId] = useState<number | null>(() => {
-    try {
-      const v = new URLSearchParams(window.location.search).get("highlight");
-      return v ? parseInt(v, 10) : null;
-    } catch { return null; }
-  });
+  // `?account=<id>` is the one convention (lib/entity-href.ts). It does two
+  // things: scroll the row into view and flash it, and open the detail
+  // surface below. It replaced `?highlight=<id>`, which meant only the first
+  // and collided by name with the goals link that nothing reads.
+  const accountParam = useQueryParam(ENTITY_PARAM.account);
+  const [highlightId, setHighlightId] = useState<number | null>(
+    () => parseAccountId(accountParam)
+  );
+  useEffect(() => { setHighlightId(parseAccountId(accountParam)); }, [accountParam]);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [qaOpen, setQaOpen] = useState(false);
@@ -2150,6 +2162,37 @@ export default function Accounts() {
           </div>
         );
       })()}
+
+      {/* Detail surface — `?account=<id>`. The detail content is the same
+          AccountDetailPanel the expanded row renders; promoting it to a
+          route would have moved 400 finished lines to buy a URL shape. */}
+      <DetailSurface
+        kind="account"
+        maxWidth={640}
+        title={(id) => accounts?.find(a => String(a.id) === id)?.name ?? "Account"}
+      >
+        {(id) => {
+          const account = accounts?.find(a => String(a.id) === id);
+          if (!account) {
+            return (
+              <div style={{ padding: "24px 4px", fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)" }}>
+                No account with that id.
+              </div>
+            );
+          }
+          return (
+            <AccountDetailPanel
+              accountName={account.name}
+              accountId={account.id}
+              balance={account.balance}
+              currency={account.currency}
+              nwHistory={nwHistory}
+              meta={accountMeta[account.name] ?? { notes: "", targetBalance: null, apy: null, lowBalanceThreshold: null }}
+              onMetaChange={(patch) => updateAccountMeta(account.name, patch)}
+            />
+          );
+        }}
+      </DetailSurface>
 
       {/* Add Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>

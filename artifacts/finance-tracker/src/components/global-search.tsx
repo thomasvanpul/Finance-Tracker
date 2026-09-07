@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { entityHref, transactionSearchHref } from "@/lib/entity-href";
 import { useLocation } from "wouter";
 import { Search } from "lucide-react";
 import {
@@ -108,7 +109,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             tertiary: `${formatDate(tx.date)} · ${tx.baseEquivalent == null ? "—" : (tx.type === "income" ? "+" : "-") + formatBaseMoney(Math.abs(tx.baseEquivalent))}`,
             amountColor:
               tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)",
-            navigateTo: `/transactions?q=${encodeURIComponent(tx.description)}`,
+            navigateTo: transactionSearchHref(tx.description),
           }))),
         ...((accounts ?? [])
           .filter((a) =>
@@ -121,7 +122,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             primary: a.name,
             secondary: a.currency,
             tertiary: formatBaseMoney(a.balance),
-            navigateTo: `/accounts?highlight=${a.id}`,
+            navigateTo: entityHref("account", a.id),
           }))),
         ...((investments ?? [])
           .filter(
@@ -170,7 +171,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
               secondary: pct == null ? "no target set" : `${pct}% complete`,
               tertiary: `${formatBaseMoney(current)} of ${formatBaseMoney(target)}`,
               amountColor: current >= target ? "var(--ft-green)" : undefined,
-              navigateTo: `/goals?highlight=${g.id}`,
+              navigateTo: entityHref("goal", g.id),
             };
           })),
       ]

@@ -1,4 +1,5 @@
 import { useGetDashboard } from "@workspace/api-client-react";
+import { entityHref } from "@/lib/entity-href";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { PrivNum } from "@/contexts/privacy-context";
 import { useCountUp } from "@/hooks/use-count-up";
@@ -113,7 +114,7 @@ export function KpiBar() {
       <div className="flex-1" />
       {/* Persona mode badge — shown at end of KPI bar */}
       {persona && personaGlyph && personaColor && (
-        <Link href="/settings?panel=terminal-profile">
+        <Link href={entityHref("settings", "terminal-profile")}>
           <div
             className="flex items-center gap-1.5 px-3 py-1 border-l flex-shrink-0 cursor-pointer"
             style={{

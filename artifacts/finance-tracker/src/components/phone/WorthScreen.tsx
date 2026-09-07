@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { entityHref } from "@/lib/entity-href";
 import {
   useGetDashboard,
   useListInvestments,
@@ -324,7 +325,7 @@ export function WorthScreen() {
         title="No accounts or holdings yet."
         description="Connect a bank account or add a holding to see your balance sheet across currencies."
         ctaLabel="Open settings"
-        onCta={() => { window.location.hash = ""; window.location.assign("/settings?panel=connections"); }}
+        onCta={() => { window.location.hash = ""; window.location.assign(entityHref("settings", "connections")); }}
       />
     );
   }

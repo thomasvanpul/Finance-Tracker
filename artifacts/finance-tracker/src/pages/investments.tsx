@@ -45,6 +45,7 @@ import { DerivativesTab } from "@/components/investments/derivatives-tab";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useQueryParam } from "@/hooks/use-query-param";
 import { ChartAnalysisModal } from "@/components/investments/chart-analysis-modal";
 import { StatDrillModal } from "@/components/investments/stat-drill-modal";
 import { FundamentalsTable, DividendTracker } from "@/components/investments/portfolio-tables";
@@ -1528,16 +1529,15 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   // Open the Add-Position dialog automatically when the URL carries
   // ?add=1. Used by the market-persona quick-add path (P2·8): pressing
   // N or the FAB for a market user navigates to /investments?add=1
-  // instead of opening the transaction modal. Runs once on mount.
+  // instead of opening the transaction modal. Re-fires if the parameter is
+  // set again after the dialog was dismissed.
+  const addParam = useQueryParam("add");
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("add") === "1") {
-        setForm(makeEmptyInvForm());
-        setAddOpen(true);
-      }
-    } catch { /* ignore */ }
-  }, []);
+    if (addParam === "1") {
+      setForm(makeEmptyInvForm());
+      setAddOpen(true);
+    }
+  }, [addParam]);
 
   const hasInvestments = (investments?.length ?? 0) > 0;
   const { data: spyHistory } = useGetMarketHistory(

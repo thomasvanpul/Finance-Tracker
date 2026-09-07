@@ -136,10 +136,10 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // Preview-mode UI state — theme-swatch preview, widget-carousel preview.
   // Not a data fabrication; the "preview" here is a controlled UI state
   // toggled by the user, and no financial value is invented.
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1552, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1554, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 746, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 747, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1553, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1555, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 754, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 755, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
 
 const ALLOWLIST_B: readonly AllowEntry[] = [
@@ -148,13 +148,13 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // is a mathematical placeholder that never renders as a currency figure.
   { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", line: 1488, reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
   { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", line: 148, reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
-  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 554, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
-  { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 133, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
-  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 545, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 555, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
+  { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 144, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
+  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 548, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1511, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1580, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 431, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
-  { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 236, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
+  { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 237, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
   { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 756, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
   { path: "artifacts/finance-tracker/src/pages/year-review.tsx", line: 1264, reason: "chart max denominator: empty topCats → 1 to avoid /0" },
 
@@ -177,7 +177,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // values in JSX-style variable initializers. Non-currency.
   { path: "artifacts/finance-tracker/src/components/ai-wanderer.tsx", line: 1003, reason: "sidebar-width fallback: 212px, matches the default rail width in layout.tsx" },
   { path: "artifacts/finance-tracker/src/components/currency-mark.tsx", line: 41, reason: "SVG font-size in px based on character count (18 or 22)" },
-  { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1283, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
+  { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1284, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
   { path: "artifacts/finance-tracker/src/components/matrix-rain.tsx", line: 91, reason: "matrix-rain glyph scale (1.4 or 1) — animation randomisation, not currency" },
   { path: "artifacts/finance-tracker/src/components/page-transition.tsx", line: 59, reason: "CSS opacity for fade transition (0 or 1)" },
   { path: "artifacts/finance-tracker/src/components/primitives/block-field.tsx", line: 163, reason: "grid-column count for hero/no-hero layout" },
@@ -189,18 +189,18 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/widgets/cash-flow.tsx", line: 142, reason: "chart height in px (220 expanded or 150 collapsed)" },
   { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 131, reason: "row cap: 30 expanded or 15 collapsed" },
   { path: "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx", line: 131, reason: "row cap: 8 expanded or 5 collapsed" },
-  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1546, reason: "border thickness (2px hi-value, 4px normal)" },
+  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1549, reason: "border thickness (2px hi-value, 4px normal)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1248, reason: "chart bar width in px (38 mobile / 44 desktop)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1249, reason: "chart bar height in px (34 mobile / 40 desktop)" },
-  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 437, reason: "popup position fallback: no anchor rect → 100px default" },
-  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 441, reason: "popup position fallback: no anchor rect → 100px default" },
+  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 438, reason: "popup position fallback: no anchor rect → 100px default" },
+  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 442, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 795, reason: "chart bar min height in px (4px)" },
   { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 508, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
   { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 509, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
 
   // Formatting / config defaults — decimal counts, period lengths.
   { path: "artifacts/finance-tracker/src/components/mobile/mobile-format.ts", line: 10, reason: "default decimals count (2) for nfmt when unspecified" },
-  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 44, reason: "default decimals count (2) for local nfmt fallback" },
+  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 45, reason: "default decimals count (2) for local nfmt fallback" },
   { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", line: 236, reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
 
   // Streaks, thresholds — non-money integers.

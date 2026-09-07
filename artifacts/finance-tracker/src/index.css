@@ -824,6 +824,14 @@ input[type="checkbox"]:checked {
   background: var(--ft-surface);
 }
 
+/* Dashboard customize mode tints each widget's header so the draggable
+   handles read as handles. It is a state of the dashboard, not of a panel,
+   so WidgetShell owns it — PanelBox and PanelHeader stay pure surface
+   (CLAUDE.md, "The primitives family has a hard split"). */
+.ft-widget-header-customizing {
+  background: var(--ft-raised);
+}
+
 /* An ephemeral surface — one that floats above the page and will leave
    (DESIGN.md §6). The only radius and elevation a desktop surface may carry.
    Permanent surfaces (.ft-panel, .ft-widget-frame, PanelBox) stay square. */

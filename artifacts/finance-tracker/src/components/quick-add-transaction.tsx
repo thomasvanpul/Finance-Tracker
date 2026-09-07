@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type ChangeEvent } from "react";
+import { addInvestmentHref } from "@/lib/entity-href";
 import {
   useCreateTransaction,
   useListAccounts,
@@ -670,7 +671,7 @@ export function useQuickAdd(): { open: boolean; openQuickAdd: () => void; close:
   // opens the transaction modal as before.
   const openQuickAdd = useCallback(() => {
     if (persona === "market") {
-      navigate("/investments?add=1");
+      navigate(addInvestmentHref());
       return;
     }
     setOpen(true);

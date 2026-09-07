@@ -63,6 +63,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { oneShotInsight } from "@/lib/ai-chat-client";
 import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
+import { entityHref } from "@/lib/entity-href";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -1741,7 +1742,7 @@ function DashboardEmptyState() {
     ? "Type a ticker and Numeris tracks it from the market. No bank connection needed — enter a few tickers once and the dashboard fills in whenever prices move."
     : "Connect a bank account or add one by hand. Once one is connected the dashboard fills in on its own.";
   const ctaLabel = isMarket ? "Add a holding →" : "Connect an account →";
-  const ctaHref = isMarket ? "/investments" : "/settings?panel=connections";
+  const ctaHref = isMarket ? "/investments" : entityHref("settings", "connections");
   const label = isMarket ? "NO HOLDINGS" : "NO ACCOUNTS";
   return (
     <div

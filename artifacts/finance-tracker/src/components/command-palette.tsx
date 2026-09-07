@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { entityHref } from "@/lib/entity-href";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { useListTransactions, useListAccounts } from "@workspace/api-client-react";
@@ -59,7 +60,7 @@ function buildCommands(
     section: "persona",
     icon: "◎",
     title: "Manage Terminal Profile",
-    action: nav("/settings?panel=terminal-profile"),
+    action: nav(entityHref("settings", "terminal-profile")),
   });
 
   return [

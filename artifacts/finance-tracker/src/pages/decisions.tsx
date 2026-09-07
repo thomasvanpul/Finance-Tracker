@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { entityHref } from "@/lib/entity-href";
 import { Link } from "wouter";
 import { loadPersonaIds, PERSONAS } from "@/lib/persona";
 import {
@@ -699,7 +700,7 @@ export default function Decisions() {
           <Text as="span" color="var(--ft-dim)" letterSpacing="0.04em">
             Sorted for {activePersona.label} — {personaBoostCategories.join(", ")} actions surfaced first
           </Text>
-          <a href="/settings?panel=terminal-profile" style={{ marginLeft: "auto", color: "var(--ft-dim)", opacity: 0.55, textDecoration: "none", letterSpacing: "0.06em", fontSize: 8 }}
+          <a href={entityHref("settings", "terminal-profile")} style={{ marginLeft: "auto", color: "var(--ft-dim)", opacity: 0.55, textDecoration: "none", letterSpacing: "0.06em", fontSize: 8 }}
             onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "1"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "0.55"; }}>
             Change →

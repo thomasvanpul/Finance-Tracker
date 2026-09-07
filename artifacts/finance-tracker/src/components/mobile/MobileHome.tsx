@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { entityHref } from "@/lib/entity-href";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
 import {
@@ -222,7 +223,7 @@ export function MobileHome(_props: MobileHomeProps) {
               title="Nothing to show yet."
               description="Connect a bank account or add one by hand. Once one is connected the home screen fills in on its own."
               ctaLabel="Connect an account"
-              onCta={() => navigate("/settings?panel=connections")}
+              onCta={() => navigate(entityHref("settings", "connections"))}
             />
           );
         })()}

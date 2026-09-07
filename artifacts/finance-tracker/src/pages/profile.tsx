@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { entityHref } from "@/lib/entity-href";
 import { Pencil, X, Copy, Check, User, Shield, Eye, Clock, Activity, Database } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -1433,7 +1434,7 @@ export default function Profile() {
             />
           ))}
           <a
-            href="/settings?panel=terminal-profile"
+            href={entityHref("settings", "terminal-profile")}
             style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: primaryColor, letterSpacing: "0.04em", textDecoration: "none", padding: "6px 12px", display: "block", borderTop: "1px solid var(--ft-border)", opacity: 0.8 }}
             onMouseEnter={e => { e.currentTarget.style.opacity = "1"; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = "0.8"; }}

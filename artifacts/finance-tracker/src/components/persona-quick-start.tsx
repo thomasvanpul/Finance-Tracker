@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { entityHref } from "@/lib/entity-href";
+import { Link, useLocation } from "wouter";
+import { PanelBox } from "@/components/primitives/panel-box";
+import { PanelHeader } from "@/components/primitives/panel-header";
 import { PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -75,36 +78,37 @@ export function PersonaQuickStart() {
   const doneCount = steps.filter(s => done.has(s.id)).length;
 
   return (
-    // Ephemeral (DESIGN.md §6): dismissable, gone once the steps are done.
-    // The amber-tinted edge it carried until 2026-09-06 was a coloured
-    // border standing in for "this is different" — the float treatment
-    // says the same thing without a coloured edge (§4).
-    <div className="ft-float" style={{
-      marginBottom: 14,
-    }}>
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "6px 14px 5px",
-        borderBottom: "1px solid var(--ft-border)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.12em" }}>
-            ◈ {persona.code} — QUICK START
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
-            {doneCount}/{steps.length} DONE
-          </span>
-        </div>
-        <button
-          onClick={dismiss}
-          title="Dismiss"
-          style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", lineHeight: 1 }}
+    // Permanent, not ephemeral (DESIGN.md §6). It carried `.ft-float` — radius
+    // and shadow — but it never floated above the page: it sits in the flow at
+    // the top of the screen and pushes the content down, for as long as it
+    // exists. §6's elevation is for surfaces that hover and leave in seconds.
+    // A first-run surface is part of the page until it is gone, so it is a
+    // panel: square, flat, 1px --ft-border. The dismiss affordance stays.
+    <div style={{ marginBottom: 14 }}>
+      <PanelBox>
+        <PanelHeader
+          right={
+            <>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+                {persona.code}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+                {doneCount}/{steps.length} DONE
+              </span>
+              <button
+                onClick={dismiss}
+                title="Dismiss"
+                style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", background: "transparent", border: "none", cursor: "pointer", padding: "0 4px", lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </>
+          }
         >
-          ✕
-        </button>
-      </div>
+          QUICK START
+        </PanelHeader>
 
-      <div className={isMobile ? undefined : "ft-three-col"} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", borderBottom: "1px solid rgba(244,162,30,0.1)" }}>
+      <div className={isMobile ? undefined : "ft-three-col"} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", borderBottom: "1px solid var(--ft-border)" }}>
         {steps.map((step, i) => {
           const isDone = done.has(step.id);
           return isMobile ? (
@@ -113,7 +117,7 @@ export function PersonaQuickStart() {
               key={step.id}
               style={{
                 padding: "8px 14px",
-                borderBottom: i < steps.length - 1 ? "1px solid rgba(244,162,30,0.1)" : "none",
+                borderBottom: i < steps.length - 1 ? "1px solid var(--ft-border)" : "none",
                 display: "flex", alignItems: "center", gap: 10,
                 opacity: isDone ? 0.45 : 1,
               }}
@@ -159,7 +163,7 @@ export function PersonaQuickStart() {
               key={step.id}
               style={{
                 padding: "10px 14px",
-                borderRight: i < steps.length - 1 ? "1px solid rgba(244,162,30,0.1)" : "none",
+                borderRight: i < steps.length - 1 ? "1px solid var(--ft-border)" : "none",
                 display: "flex", flexDirection: "column", gap: 4,
                 opacity: isDone ? 0.45 : 1,
                 transition: "opacity 0.15s",
@@ -214,19 +218,20 @@ export function PersonaQuickStart() {
       </div>
       {!isMobile && (
         <div style={{ padding: "5px 14px", display: "flex", justifyContent: "flex-end" }}>
-          <a
-            href="/settings?panel=terminal-profile"
+          <Link
+            href={entityHref("settings", "terminal-profile")}
             style={{
               fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)",
               opacity: 0.65, textDecoration: "none",
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "1"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "0.65"; }}
+            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.opacity = "1"; }}
+            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => { (e.currentTarget as HTMLAnchorElement).style.opacity = "0.65"; }}
           >
             Wrong profile? Change in Settings →
-          </a>
+          </Link>
         </div>
       )}
+      </PanelBox>
     </div>
   );
 }

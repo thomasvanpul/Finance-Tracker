@@ -48,6 +48,7 @@ import { useToast } from "@/hooks/use-toast";
 import { haptic } from "@/lib/haptics";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useQueryParam } from "@/hooks/use-query-param";
 import { useSwipeDelete } from "@/hooks/use-swipe-delete";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
@@ -475,11 +476,9 @@ export default function Transactions() {
   const [submitting, setSubmitting] = useState(false);
 
   // ── filters ─────────────────────────────────────────────────────────────
-  const [search, setSearch] = useState(() => {
-    try {
-      return new URLSearchParams(window.location.search).get("q") ?? "";
-    } catch { return ""; }
-  });
+  const qParam = useQueryParam("q");
+  const [search, setSearch] = useState(() => qParam ?? "");
+  useEffect(() => { setSearch(qParam ?? ""); }, [qParam]);
   const [filterType, setFilterType] = useState<"all" | TxType>("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterAccount, setFilterAccount] = useState("all");
