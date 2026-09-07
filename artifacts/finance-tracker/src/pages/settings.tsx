@@ -1581,7 +1581,7 @@ function WiseSyncKpiStrip({ synced, added, updated }: { synced: number; added: n
   return (
     <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
       {cells.map((c, i) => (
-        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "12px 14px", borderRight: i < cells.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "12px 14px", }}>
           <div
             style={{
               fontFamily: "var(--font-mono)",
@@ -2393,7 +2393,7 @@ function CurrencyKpiStrip({ baseCurrency, pairCount }: { baseCurrency: string; p
   return (
     <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
       {cells.map((c, i) => (
-        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", borderRight: i < cells.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", }}>
           <Text as="div" mono size={22} weight={700} color="var(--ft-text)" lineHeight={1}>{c.value}</Text>
           <Text as="div" mono upper size={9} color="var(--ft-dim)" letterSpacing="0.08em" mt={4}>{c.label}</Text>
         </div>

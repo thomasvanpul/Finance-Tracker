@@ -312,7 +312,7 @@ export function StorageKpiStrip({ keyCount, sizeKb, nrKeyCount }: { keyCount: nu
   return (
     <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
       {cells.map((c, i) => (
-        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", borderRight: i < cells.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
+        <div key={c.label} style={{ background: "var(--ft-surface)", padding: "14px 16px", }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1 }}>{c.value}</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginTop: 4 }}>{c.label}</div>
         </div>

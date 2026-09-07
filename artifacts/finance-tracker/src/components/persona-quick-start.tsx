@@ -163,7 +163,7 @@ export function PersonaQuickStart() {
               key={step.id}
               style={{
                 padding: "10px 14px",
-                borderRight: i < steps.length - 1 ? "1px solid var(--ft-border)" : "none",
+
                 display: "flex", flexDirection: "column", gap: 4,
                 opacity: isDone ? 0.45 : 1,
                 transition: "opacity 0.15s",

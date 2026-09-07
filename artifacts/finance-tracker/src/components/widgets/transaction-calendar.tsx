@@ -352,7 +352,7 @@ export function TransactionCalendarWidget() {
                   { label: "DAYS",   value: String(activeDays), color: "var(--ft-accent)", href: undefined },
                   { label: "AVG/D",  value: `-${formatBaseMoney(Math.abs(avgDailySpend))}`, color: "var(--ft-amber)", href: undefined },
                 ].map((item, i) => (
-                  <div key={item.label} style={{ padding: "6px 10px", borderRight: i < 4 ? "1px solid var(--ft-border)" : undefined }}>
+                  <div key={item.label} style={{ padding: "6px 10px", }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", color: "var(--ft-dim)", marginBottom: 2 }}>
                       {item.label}
                     </div>

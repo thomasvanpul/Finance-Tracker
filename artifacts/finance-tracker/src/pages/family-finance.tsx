@@ -1039,10 +1039,10 @@ function MemberCard({
         background: hovered
           ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-surface))"
           // At rest the card fill was the section --ft-surface, and its
-          // border a second frame inside the section frame (DESIGN.md § 1). The grid
-          // draws the cell rules instead (§ 5).
+          // border a second frame inside the section frame (DESIGN.md § 1).
+          // There are no cell rules either (§ 5) — the gap separates them.
           : "transparent",
-        padding: "12px 14px",
+        padding: "12px 14px 12px 0",
         transition: "background 0.1s",
       }}
     >
@@ -1563,12 +1563,17 @@ export default function FamilyFinance() {
             onCta={openAddMember}
           />
         ) : (
-          <div className="ft-cellrules-clip">
+          // No rules between the cells (DESIGN.md § 5). The previous pass
+          // replaced a 1px-gap-over-a-border-background with cells that drew
+          // their own rules — new code, the same grid of boxes inside a panel
+          // that is already framed. Column and row gaps separate them now,
+          // which is what the frame around the whole section was for.
           <div
-            className="ft-cellrules-auto"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+              columnGap: 18,
+              rowGap: 4,
             }}
           >
             {members.map((m) => (
@@ -1581,7 +1586,6 @@ export default function FamilyFinance() {
                 onDelete={() => deleteMember(m.id)}
               />
             ))}
-          </div>
           </div>
         )}
 

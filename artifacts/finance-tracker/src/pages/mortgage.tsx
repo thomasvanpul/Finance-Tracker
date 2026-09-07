@@ -530,10 +530,10 @@ function OverpaymentScenarioCard({ label, months, interest, color }: Overpayment
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
-        // No frame: the grid draws explicit interior rules (.ft-cellrules,
-        // DESIGN.md § 5), so the cell is bounded by shared hairlines rather
-        // than by its own four-sided border inside the panel frame.
-        padding: "10px 12px",
+        // No frame and no rule of any kind (DESIGN.md § 5). The interior
+        // hairlines this cell used to draw were the boxes; the grid gap and
+        // the shared baseline separate the cells now.
+        padding: "10px 12px 10px 0",
         transition: "background 0.1s",
       }}
     >
@@ -603,20 +603,22 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
         </div>
       </div>
 
-      <div className="ft-two-col ft-cellrules" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid var(--ft-border)", marginBottom: 6 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid var(--ft-border)", columnGap: 16, marginBottom: 6 }}>
         <OverpaymentScenarioCard label="Standard" months={standard.length} interest={stdInterest} color="var(--ft-muted)" />
         <OverpaymentScenarioCard label="With Overpayment" months={overpaid.length} interest={ovInterest} color="var(--ft-accent)" />
       </div>
 
-      {/* Border-as-gap savings summary */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
-        <div style={{ borderRight: "1px solid var(--ft-border)", padding: "10px 14px" }}>
+      {/* Three figures the overpayment buys, separated by their columns and
+          not by rules (DESIGN.md § 5). This block was literally called
+          "border-as-gap" and it is the idiom the whole pass removes. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", columnGap: 16, marginBottom: 6 }}>
+        <div style={{ padding: "10px 14px 10px 0" }}>
           <div style={LABEL_STYLE}>Months Saved</div>
           <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: monthsSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
             {monthsSaved > 0 ? `${monthsSaved}mo` : "—"}
           </div>
         </div>
-        <div style={{ borderRight: "1px solid var(--ft-border)", padding: "10px 14px" }}>
+        <div style={{ padding: "10px 14px 10px 0" }}>
           <div style={LABEL_STYLE}>Interest Saved</div>
           <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: interestSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
             <span className="pnum">{interestSaved > 0 ? formatBaseMoney(interestSaved) : "—"}</span>
@@ -712,7 +714,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
           style={{ ...INPUT_STYLE, width: 90 }}
         />
       </HStack>
-      <div className="ft-four-col ft-cellrules" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", borderTop: "1px solid var(--ft-border)" }}>
+      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", borderTop: "1px solid var(--ft-border)", columnGap: 16 }}>
         {scenarios.map((delta) => (
           <RateScenarioCard
             key={delta}
@@ -746,10 +748,10 @@ function AffordabilityKpiCard({ label, value, color, sub }: AffordabilityKpiCard
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        // No frame: the grid below draws explicit interior rules
-        // (.ft-cellrules, DESIGN.md § 5), so the cells are separated by shared
-        // hairlines rather than each drawing its own four-sided border.
-        padding: "10px 14px",
+        // No frame and no rule (DESIGN.md § 5): six figures in a grid are
+        // separated by their columns and the space around them, which is how
+        // a terminal has always held dense numbers.
+        padding: "10px 14px 10px 0",
         transition: "background 0.1s",
       }}
     >
@@ -844,7 +846,7 @@ function AffordabilityTab() {
       </div>
 
       {maxLoan > 0 && (
-        <div className="ft-two-col ft-cellrules" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid var(--ft-border)" }}>
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid var(--ft-border)", columnGap: 16 }}>
           <AffordabilityKpiCard label="Max Loan" value={formatBaseMoney(maxLoan)} color="var(--ft-text)" />
           <AffordabilityKpiCard label="Max Property Value" value={formatBaseMoney(maxPropertyValue)} color="var(--ft-accent)" />
           <AffordabilityKpiCard label="Stamp Duty" value={formatBaseMoney(sdlt)} color="var(--ft-amber)" />

@@ -343,7 +343,7 @@ const TH: React.CSSProperties = {
 
 function MetricTile({ label, value, color, sub }: { label: string; value: string; color: string; sub?: string }) {
   return (
-    <div style={{ padding: "10px 14px", background: "var(--ft-surface)", minWidth: 0 }}>
+    <div style={{ padding: "10px 14px 10px 0", minWidth: 0 }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 5 }}>{label}</div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" as const }}>{value}</div>
       {sub && <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{sub}</div>}
@@ -357,9 +357,11 @@ function MetricTileGroup({ cols, children }: { cols: number; children: React.Rea
   const colClass = cols === 4 ? "ft-four-col" : cols === 3 ? "ft-three-col" : "ft-two-col";
   const items = Children.toArray(children);
   return (
-    <div className={colClass} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, borderBottom: "1px solid var(--ft-border)" }}>
+    // No rules between the tiles (DESIGN.md § 5) — the column gap and the
+    // tiles own padding do the separating.
+    <div className={colClass} style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, borderBottom: "1px solid var(--ft-border)", columnGap: 14 }}>
       {items.map((child, i) => (
-        <div key={i} style={{ minWidth: 0, borderRight: i < items.length - 1 ? "1px solid var(--ft-border)" : "none" }}>{child}</div>
+        <div key={i} style={{ minWidth: 0, }}>{child}</div>
       ))}
     </div>
   );
@@ -604,13 +606,18 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
     <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
       <PanelHeader>{`UK TAX YEAR ${selectedYear} — OVERVIEW`}</PanelHeader>
 
-      {/* Top KPI bar — border-as-gap grid */}
+      {/* Top KPI bar. No rule between the cells (DESIGN.md § 5) — four
+          figures on a shared baseline are separated by their columns and the
+          space around them. The single hairline under the strip seats it
+          against what follows, and is the only line here. */}
       <div style={{
         display: "grid",
         gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
         borderBottom: "1px solid var(--ft-border)",
+        columnGap: 18,
+        rowGap: isMobile ? 4 : 0,
       }}>
-        <div style={{ padding: "12px 16px", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
+        <div style={{ padding: "12px 16px 12px 0" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             Est. Income Tax
           </div>
@@ -621,7 +628,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             on <span className="pnum">{fmt(grossSalary, sym)}</span> gross
           </div>
         </div>
-        <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
+        <div style={{ padding: "12px 16px 12px 0" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             Effective Rate
           </div>
@@ -632,7 +639,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             marginal: {marginRate}%
           </div>
         </div>
-        <div style={{ padding: "12px 16px", borderRight: "1px solid var(--ft-border)" }}>
+        <div style={{ padding: "12px 16px 12px 0" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             Take-Home Pay
           </div>
@@ -643,7 +650,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             <span className="pnum">{fmt(netPay / 12, sym)}</span>/mo
           </div>
         </div>
-        <div style={{ padding: "12px 16px" }}>
+        <div style={{ padding: "12px 16px 12px 0" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
             NI Contributions
           </div>

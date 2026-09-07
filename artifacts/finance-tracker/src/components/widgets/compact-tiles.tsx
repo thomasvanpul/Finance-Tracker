@@ -425,7 +425,7 @@ export function CompactNetWorth() {
                 { label: "OUT", value: formatBaseMoney(expenses), color: "var(--ft-red)" },
                 { label: "SAVED", value: `${savingsRate.toFixed(0)}%`, color: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)" },
               ].map((stat, i) => (
-                <div key={stat.label} style={{ flex: 1, textAlign: "center", borderRight: i < 2 ? "1px solid var(--ft-border)" : "none", padding: "0 4px" }}>
+                <div key={stat.label} style={{ flex: 1, textAlign: "center", padding: "0 4px" }}>
                   <div style={{ ...MONO, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", marginBottom: 3, textTransform: "uppercase" as const }}>{stat.label}</div>
                   <div className="pnum" style={{ ...MONO, fontSize: 14, fontWeight: 700, color: stat.color, letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>{stat.value}</div>
                 </div>

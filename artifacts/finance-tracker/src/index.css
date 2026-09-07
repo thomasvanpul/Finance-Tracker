@@ -1071,33 +1071,25 @@ input[type="checkbox"]:checked {
 .ft-four-col  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
 .ft-five-col  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; }
 
-/* ── Interior rules for a grid of cells (DESIGN.md § 5) ──────────────────────
-   § 5 bans `gap: 1px` over a `--ft-border` background and asks for explicit
-   rules drawn by the cells. Inside an already-framed panel the grid must also
-   not draw an outer box, which would be a second frame competing with the
-   panel's (§ 1) — so only interior rules are painted. Every cell carries a
-   bottom rule (the bottom row's becomes the strip's closing edge, the same
-   treatment a KPI strip gets) and a right rule, cleared on the last cell of
-   each row. Which cell is last moves with the breakpoint, so the clearing
-   rule is restated per breakpoint rather than guessed with :last-child. */
-.ft-cellrules > * {
-  border-right: 1px solid var(--ft-border);
-  border-bottom: 1px solid var(--ft-border);
-}
-.ft-cellrules.ft-two-col   > *:nth-child(2n) { border-right: none; }
-.ft-cellrules.ft-three-col > *:nth-child(3n) { border-right: none; }
-.ft-cellrules.ft-four-col  > *:nth-child(4n) { border-right: none; }
-.ft-cellrules.ft-five-col  > *:nth-child(5n) { border-right: none; }
+/* ── A grid of cells carries no interior rules (DESIGN.md § 5) ───────────────
+   There used to be an .ft-cellrules family here that drew a right and bottom
+   rule on every cell of a KPI grid, with per-breakpoint restatements to clear
+   whichever cell had become last in its row. It was written to replace an
+   older `gap: 1px` over a --ft-border background, and it did: new code,
+   identical pixels. Thomas read the result as boxes five rounds running,
+   because ten ruled cells inside one framed panel ARE ten boxes however the
+   lines are produced.
 
-/* The same idea for a grid whose column count the browser decides
-   (`auto-fit`), where :nth-child cannot name the last cell of a row: every
-   cell draws both rules and the wrapper clips the outermost pair. */
-.ft-cellrules-clip { overflow: hidden; }
-.ft-cellrules-clip > .ft-cellrules-auto { margin: 0 -1px -1px 0; }
-.ft-cellrules-auto > * {
-  border-right: 1px solid var(--ft-border);
-  border-bottom: 1px solid var(--ft-border);
-}
+   A terminal does not draw them. Bloomberg holds dense numbers in columns
+   with alignment and whitespace, and the pane's own edge is the only rule.
+   So: inside a framed panel a KPI cell has no border of any kind — no
+   border-right, no border-bottom, no divider row. Label above, figure below,
+   aligned on a grid, separated by a column gap wide enough that the
+   alignment does the separating (14–18px at desktop widths). If the numbers
+   stop reading as columns the gap is too small; the rules do not come back.
+
+   Row rules inside a genuine table (a run of records, § 5) are a different
+   thing and are unaffected. */
 
 /* ── Dashboard responsive grid ── */
 .ft-dashboard-two-col {
@@ -1158,14 +1150,6 @@ input[type="checkbox"]:checked {
    consistency with older mobile-media rules. */
 @container main-content (max-width: 900px) {
   .ft-five-col           { grid-template-columns: repeat(3, 1fr) !important; }
-  /* 5- and 4-column grids drop to 3, 3-column drops to 2: the last cell of a
-     row moves, so the cleared right rule moves with it. */
-  .ft-cellrules.ft-five-col > *,
-  .ft-cellrules.ft-four-col > *,
-  .ft-cellrules.ft-three-col > *  { border-right: 1px solid var(--ft-border); }
-  .ft-cellrules.ft-five-col > *:nth-child(3n),
-  .ft-cellrules.ft-four-col > *:nth-child(3n),
-  .ft-cellrules.ft-three-col > *:nth-child(2n) { border-right: none; }
   .ft-four-col           { grid-template-columns: repeat(3, 1fr) !important; }
   .ft-three-col          { grid-template-columns: repeat(2, 1fr) !important; }
   /* KPI bars pack 4–7 cells inline via `gridTemplateColumns:
@@ -1180,13 +1164,6 @@ input[type="checkbox"]:checked {
 }
 @container main-content (max-width: 700px) {
   .ft-five-col           { grid-template-columns: repeat(2, 1fr) !important; }
-  .ft-cellrules.ft-five-col > *,
-  .ft-cellrules.ft-four-col > *   { border-right: 1px solid var(--ft-border); }
-  .ft-cellrules.ft-five-col > *:nth-child(2n),
-  .ft-cellrules.ft-four-col > *:nth-child(2n) { border-right: none; }
-  /* One column: there is no interior column rule left to draw. */
-  .ft-cellrules.ft-three-col > *,
-  .ft-cellrules.ft-two-col > *    { border-right: none; }
   .ft-four-col           { grid-template-columns: repeat(2, 1fr) !important; }
   .ft-three-col          { grid-template-columns: 1fr !important; }
   .ft-two-col            { grid-template-columns: 1fr !important; }
@@ -1425,13 +1402,12 @@ input[type="checkbox"]:checked {
   .ft-kpi-bar.ft-kpi-grid {
     overflow-x: hidden !important;
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 0 !important;
-  }
-
-  /* Add top border on row-2 cells (cells 4+) in 3-col KPI bar */
-  .ft-kpi-bar > div:nth-child(n+4),
-  .ft-kpi-bar > a:nth-child(n+4) {
-    border-top: 1px solid var(--ft-border) !important;
+    /* gap: 0 was correct while every cell drew its own rules — the rules
+       were the separation. With the rules gone (DESIGN.md § 5) the gap is
+       all there is, and the row gap replaces the top border cells 4+ used
+       to draw to mark the second row. */
+    column-gap: 6px !important;
+    row-gap: 10px !important;
   }
 
   /* ── Responsive grid utilities ── */
@@ -1920,10 +1896,25 @@ strong.pnum {
   grid-template-columns: repeat(var(--kpi-cols, 6), 1fr);
   border: 1px solid var(--ft-border);
   background: var(--ft-surface);
+  /* Alignment does the separating, so the space between columns has to be
+     wide enough to be read as separation. The cells keep their left inset
+     (--ft-cell-px) so the first one still stands off the frame; this gap
+     adds to it, putting ~18px between one figure and the next — about what
+     the rule and its two paddings used to occupy, so the columns land
+     where they did. */
+  column-gap: 6px;
 }
 .ft-kpi-bar-cell {
-  padding: var(--ft-metric-py) var(--ft-cell-px);
-  border-right: 1px solid var(--ft-border);
+  /* No border-right. This one declaration drew six to eight rectangles
+     across the top of fourteen pages, and it is the single largest source
+     of the boxed reading Thomas reported five rounds running (DESIGN.md
+     § 5). A column of figures is separated by its own alignment and by the
+     space around it; the bar's own frame is the only line here.
+
+     The right padding goes with it: it was there to hold the figure off the
+     rule, and the grid gap provides that now. The left inset stays, so the
+     first cell still stands off the frame. */
+  padding: var(--ft-metric-py) 0 var(--ft-metric-py) var(--ft-cell-px);
   /* min-width: 0 lets a 1fr grid column shrink below its min-content —
      without it, a long single-word delta ("UNDER-DIVERSIFIED",
      "DIVERSIFIED") forces the column wider than its 1fr share and
@@ -1934,7 +1925,6 @@ strong.pnum {
      the strip. Labels and deltas are descriptive text and CAN wrap. */
   min-width: 0;
 }
-.ft-kpi-bar-cell:last-child { border-right: none; }
 .ft-kpi-bar-cell-label {
   font-family: var(--font-mono);
   font-size: 9px;

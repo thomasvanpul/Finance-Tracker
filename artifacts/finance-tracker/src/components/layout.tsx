@@ -711,7 +711,7 @@ function LiveTickerBar() {
                 style={{
                   display: "flex", alignItems: "center", gap: 4,
                   padding: "4px 10px",
-                  borderRight: i < tickers.length - 1 ? "1px solid var(--ft-border)" : "none",
+
                   fontFamily: "var(--font-mono)", fontSize: 10,
                   cursor: "default",
                 }}>

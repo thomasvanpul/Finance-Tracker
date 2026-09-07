@@ -309,13 +309,18 @@ function KpiBar({
 
   const isMobile = useIsMobile();
   return (
+    // No rule between the cells (DESIGN.md § 5): four figures on a shared
+    // baseline are separated by their columns and the space around them, and
+    // the hairline under the strip is the only line here.
     <div style={{
       display: "grid",
       gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
       borderBottom: "1px solid var(--ft-border)",
+      columnGap: 18,
+      rowGap: isMobile ? 4 : 0,
     }}>
       {/* Projected pot */}
-      <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none" }}>
+      <div style={{ padding: "14px 16px 14px 0", background: "var(--ft-surface)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
           Projected Pot
         </div>
@@ -364,7 +369,7 @@ function KpiBar({
       </div>
 
       {/* Investment growth */}
-      <div style={{ padding: "14px 16px", background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)" }}>
+      <div style={{ padding: "14px 16px 14px 0", background: "var(--ft-surface)" }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 6 }}>
           Investment Growth
         </div>
@@ -377,7 +382,7 @@ function KpiBar({
       </div>
 
       {/* Health / monthly income */}
-      <div style={{ padding: "14px 16px", background: "var(--ft-surface)" }}>
+      <div style={{ padding: "14px 16px 14px 0", background: "var(--ft-surface)" }}>
         <HStack gap={6} align="center" marginBottom={6}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const }}>
             Monthly Income
@@ -594,7 +599,12 @@ function StatePensionCell({ label, value, opacity }: { label: string; value: str
       onTouchEnd={() => setHov(false)}
       onTouchCancel={() => setHov(false)}
       style={{
-        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
+        // At rest the cell paints nothing. A --ft-raised block inside a
+        // --ft-surface panel is a box drawn without a border (DESIGN.md § 5),
+        // and three of them in a row read exactly like the three ruled cells
+        // they replaced. The hover tint stays — that is an affordance, not
+        // structure.
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
         padding: "8px 10px",
         opacity,
         transition: "background 0.1s",
@@ -652,7 +662,7 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
 
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
           {statePensionCells.map(({ label, value }, i, arr) => (
-            <div key={label} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+            <div key={label} style={{ minWidth: 0, }}>
               <StatePensionCell
                 label={label}
                 value={value}
@@ -829,7 +839,12 @@ function AllowanceCellItem({ label, value, color }: { label: string; value: stri
       onTouchEnd={() => setHov(false)}
       onTouchCancel={() => setHov(false)}
       style={{
-        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
+        // At rest the cell paints nothing. A --ft-raised block inside a
+        // --ft-surface panel is a box drawn without a border (DESIGN.md § 5),
+        // and three of them in a row read exactly like the three ruled cells
+        // they replaced. The hover tint stays — that is an affordance, not
+        // structure.
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
         padding: "10px 12px",
         transition: "background 0.1s",
       }}
@@ -852,7 +867,12 @@ function TaxReliefCellItem({ band, relief, note }: { band: string; relief: numbe
       onTouchEnd={() => setHov(false)}
       onTouchCancel={() => setHov(false)}
       style={{
-        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
+        // At rest the cell paints nothing. A --ft-raised block inside a
+        // --ft-surface panel is a box drawn without a border (DESIGN.md § 5),
+        // and three of them in a row read exactly like the three ruled cells
+        // they replaced. The hover tint stays — that is an affordance, not
+        // structure.
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
         padding: "8px 10px",
         transition: "background 0.1s",
       }}
@@ -891,7 +911,7 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
       <div style={{ padding: 16 }}>
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 14 }}>
           {allowanceCells.map(({ label, value, color }, i, arr) => (
-            <div key={label} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+            <div key={label} style={{ minWidth: 0, }}>
               <AllowanceCellItem label={label} value={value} color={color} />
             </div>
           ))}
@@ -911,7 +931,7 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
           </div>
           <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
             {taxReliefCells.map(({ band, relief, note }, i, arr) => (
-              <div key={band} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+              <div key={band} style={{ minWidth: 0, }}>
                 <TaxReliefCellItem band={band} relief={relief} note={note} />
               </div>
             ))}
@@ -937,7 +957,12 @@ function IsaCellItem({ label, value, color }: { label: string; value: string; co
       onTouchEnd={() => setHov(false)}
       onTouchCancel={() => setHov(false)}
       style={{
-        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
+        // At rest the cell paints nothing. A --ft-raised block inside a
+        // --ft-surface panel is a box drawn without a border (DESIGN.md § 5),
+        // and three of them in a row read exactly like the three ruled cells
+        // they replaced. The hover tint stays — that is an affordance, not
+        // structure.
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
         padding: "10px 12px",
         transition: "background 0.1s",
       }}
@@ -1000,7 +1025,7 @@ function IsaSection() {
 
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 16 }}>
           {isaCells.map(({ label, value, color }, i, arr) => (
-            <div key={label} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+            <div key={label} style={{ minWidth: 0, }}>
               <IsaCellItem label={label} value={value} color={color} />
             </div>
           ))}

@@ -145,7 +145,7 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
             ["AVG BURN", `${formatBaseMoney(avgBurn)}/mo`, "var(--ft-red)", undefined],
             ["DAILY", `${formatBaseMoney(dailyBurn)}/d`, "var(--ft-dim)", undefined],
           ] as [string, string, string, string | undefined][]).map(([lbl, val, col, href], i) => (
-            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
+            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px", }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{href ? <Drill href={href}>{val}</Drill> : val}</div>
             </div>

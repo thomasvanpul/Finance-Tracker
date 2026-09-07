@@ -2537,7 +2537,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               <div className="flex items-stretch overflow-x-auto" style={{ scrollbarWidth: "thin" }}>
                 {upcomingEarnings.map((e, i) => (
                   <div key={e.ticker} className="flex-shrink-0 px-4 py-3" style={{
-                    borderRight: i < upcomingEarnings.length - 1 ? "1px solid var(--ft-border)" : "none",
+
                     minWidth: 120,
                   }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)" }}>{e.ticker}</div>

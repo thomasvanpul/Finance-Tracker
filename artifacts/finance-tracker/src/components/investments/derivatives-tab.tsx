@@ -400,7 +400,9 @@ function BSCalculator({ quoteMap }: BSCalcProps) {
       {result && (
         <div>
           {/* Price output */}
-          <div className="ft-four-col ft-cellrules grid grid-cols-2 sm:grid-cols-4 mb-3" style={{ borderTop: "1px solid var(--ft-border)" }}>
+          {/* Five figures on one line, no rules between them (DESIGN.md § 5):
+              the columns and the space around them are the separation. */}
+          <div className="ft-four-col grid grid-cols-2 sm:grid-cols-4 mb-3" style={{ borderTop: "1px solid var(--ft-border)", columnGap: 16, rowGap: 4 }}>
             {[
               {
                 label: "Call Price",
@@ -426,7 +428,7 @@ function BSCalculator({ quoteMap }: BSCalcProps) {
               <div
                 key={item.label}
                 style={{
-                  padding: "8px 10px",
+                  padding: "8px 10px 8px 0",
                 }}
               >
                 <div style={{ fontSize: 10, color: "var(--ft-dim)", marginBottom: 2 }}>

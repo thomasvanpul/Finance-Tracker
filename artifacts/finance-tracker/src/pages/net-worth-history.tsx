@@ -920,7 +920,7 @@ export default function NetWorthHistory() {
             { label: "Live Liabilities", value: formatBaseMoney(liveLiabilities), color: "var(--ft-red)" },
             { label: "Current Net Worth", value: formatBaseMoney(liveAssets - liveLiabilities), color: (liveAssets - liveLiabilities) >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
           ].map((cell, i) => (
-            <div key={cell.label} style={{ padding: "12px 16px", borderRight: i < 2 ? "1px solid var(--ft-border)" : "none" }}>
+            <div key={cell.label} style={{ padding: "12px 16px", }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>{cell.label}</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: i === 2 ? 18 : 14, fontWeight: 700, color: cell.color, lineHeight: 1, whiteSpace: "nowrap" }}>{cell.value}</div>
             </div>

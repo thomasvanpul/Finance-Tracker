@@ -127,7 +127,7 @@ function SkeletonRows() {
       {/* KPI bar skeleton */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", marginBottom: 12 }}>
         {[0, 1, 2].map(i => (
-          <div key={i} style={{ background: "var(--ft-surface)", padding: "10px 10px 8px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
+          <div key={i} style={{ background: "var(--ft-surface)", padding: "10px 10px 8px", }}>
             <div style={{ height: 7, width: "55%", background: "var(--ft-border)", borderRadius: 2, marginBottom: 5, opacity: 0.5, animation: `ft-pulse 1.6s ease-in-out ${i * 0.15}s infinite` }} />
             <div style={{ height: 11, width: "70%", background: "var(--ft-border2)", borderRadius: 2, opacity: 0.35, animation: `ft-pulse 1.6s ease-in-out ${i * 0.15 + 0.1}s infinite` }} />
           </div>

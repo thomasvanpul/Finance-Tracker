@@ -581,7 +581,7 @@ export default function Briefing() {
                 { label: "Liquid Assets", value: formatBaseMoney(totalLiquid), color: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-muted)", href: "/accounts" },
                 { label: "Monthly Income", value: dashboard?.thisMonth?.income != null ? formatBaseMoney(dashboard.thisMonth.income) : "—", color: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-muted)", href: (dashboard?.thisMonth?.income ?? 0) > 0 ? ledgerHref({ type: "income", from: monthRange.from, to: monthRange.to }) : undefined },
               ].map(({ label, value, color, href }, i, arr) => (
-                <div key={label} style={{ padding: "13px 14px", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none", borderBottom: "1px solid var(--ft-border)" }}>
+                <div key={label} style={{ padding: "13px 14px", borderBottom: "1px solid var(--ft-border)" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>{label}</div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color }}>
                     {href ? <Drill href={href} title="Open the rows this figure was computed from"><span className="pnum">{value}</span></Drill> : <span className="pnum">{value}</span>}
@@ -597,7 +597,7 @@ export default function Briefing() {
                 { label: "Savings Rate", value: srValue, color: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-muted)", href: undefined },
                 { label: "Budgets Over Limit", value: overBudgetCount > 0 ? `${overBudgetCount} over` : "All clear", color: overBudgetCount > 0 ? "var(--ft-red)" : "var(--ft-green)", href: undefined },
               ].map(({ label, value, color, href }, i, arr) => (
-                <div key={label} style={{ padding: "13px 14px", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+                <div key={label} style={{ padding: "13px 14px", }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>{label}</div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color }}>
                     {href ? <Drill href={href} title="Open the rows this figure was computed from"><span className="pnum">{value}</span></Drill> : <span className="pnum">{value}</span>}

@@ -1895,7 +1895,7 @@ function SpendingVolatility({ expenses }: { expenses: Tx[] }) {
         {/* Stats row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", border: "1px solid var(--ft-border)" }}>
           {([["MEAN/MO", formatBaseMoney(mean), "var(--ft-text)"], ["STD DEV (σ)", formatBaseMoney(sigma), cvColor], ["COEFF VAR", `${cv}%`, cvColor]] as [string, string, string][]).map(([lbl, val, col], i) => (
-            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 10px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
+            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 10px", }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums" }}>{val}</div>
             </div>
@@ -1997,7 +1997,7 @@ function IncomeStability({ allTxs }: { allTxs: Tx[] }) {
             ["STAB (CV)",   `${cv}%`,                                                     stabilityColor  ],
             ["MoM CHANGE",  latestMom != null ? `${latestMom > 0 ? "+" : ""}${latestMom}%` : "—", latestMom != null && latestMom > 0 ? "var(--ft-green)" : latestMom != null ? "var(--ft-red)" : "var(--ft-dim)"],
           ] as [string, string, string][]).map(([lbl, val, col], i) => (
-            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px", borderRight: i < 3 ? "1px solid var(--ft-border)" : undefined }}>
+            <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px", }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{val}</div>
             </div>
@@ -2538,7 +2538,7 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
           const expH  = maxVal > 0 ? Math.round((d.expenses / maxVal) * 80) : 0;
           const pos   = d.saved >= 0;
           return (
-            <div key={d.month} style={{ background: "var(--ft-surface)", padding: "10px 10px 8px", display: "flex", flexDirection: "column", gap: 4, borderRight: i < data.length - 1 ? "1px solid var(--ft-border)" : undefined }}>
+            <div key={d.month} style={{ background: "var(--ft-surface)", padding: "10px 10px 8px", display: "flex", flexDirection: "column", gap: 4, }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>{d.month}</div>
               <HStack gap={3} align="end" height={80}>
                 <VStack justify="end" grow>
@@ -2792,7 +2792,7 @@ function WeeklySpendingPulse({ expenses }: { expenses: Tx[] }) {
           { label: "Last Week", value: lastWeek, delta: null, show: true },
           { label: "8-Wk Avg", value: avgWeek, delta: vsAvg, show: true },
         ].map((cell, i) => (
-          <div key={cell.label} style={{ padding: isMobile ? "10px 10px" : "12px 14px", borderRight: i < 2 ? "1px solid var(--ft-border)" : "none" }}>
+          <div key={cell.label} style={{ padding: isMobile ? "10px 10px" : "12px 14px", }}>
             <div style={{ ...ftLabel, marginBottom: 4 }}>{cell.label}</div>
             <div className="pnum" style={{ ...mono, fontSize: isMobile ? 14 : 17, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, whiteSpace: "nowrap" as const }}>
               {formatBaseMoney(cell.value)}
@@ -3414,7 +3414,7 @@ export default function Analytics() {
         {/* KPI Bar skeleton */}
         <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", marginBottom: 6 }}>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} style={{ padding: "10px 12px", background: "var(--ft-surface)", borderRight: i < 5 ? "1px solid var(--ft-border)" : undefined }}>
+            <div key={i} style={{ padding: "10px 12px", background: "var(--ft-surface)", }}>
               <FtSkeleton width="60%" height={9} />
               <div style={{ marginTop: 6 }}><FtSkeleton width="85%" height={16} /></div>
               <div style={{ marginTop: 4 }}><FtSkeleton width="40%" height={9} /></div>

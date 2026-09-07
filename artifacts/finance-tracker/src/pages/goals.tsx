@@ -534,16 +534,18 @@ function GoalCard({
           {isAnalyticsOpen && (
             <div style={{ marginTop: 10, borderTop: "1px solid var(--ft-border)", paddingTop: 10 }}>
               {/* Projections row */}
+              {/* Two figures, no rule between them (DESIGN.md § 5). */}
               <div
-                className="ft-two-col ft-cellrules"
+                className="ft-two-col"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
                   borderTop: "1px solid var(--ft-border)",
+                  columnGap: 16,
                   marginBottom: 10,
                 }}
               >
-                <div style={{ padding: "8px 10px" }}>
+                <div style={{ padding: "8px 10px 8px 0" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Months to Complete</div>
                   <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
                     {projectedMonths < Infinity ? projectedMonths : "—"}
@@ -554,7 +556,7 @@ function GoalCard({
                 </div>
 
                 {goal.deadline && deadlineMonthsRemaining > 0 && (
-                  <div style={{ padding: "8px 10px" }}>
+                  <div style={{ padding: "8px 10px 8px 0" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Required Monthly</div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
                       {formatBaseMoney(requiredMonthly)}
