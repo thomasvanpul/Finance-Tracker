@@ -1184,7 +1184,7 @@ export default function Subscriptions() {
             <span style={{ color: "var(--ft-amber)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>INSIGHT</span>
             <Text as="span" color="var(--ft-dim)">{msg}</Text>
             {couldSave > 0 && (
-              <span className="pnum" style={{ marginLeft: "auto", flexShrink: 0, color: "var(--ft-green)", fontSize: 9, border: "1px solid var(--ft-green)", padding: "1px 8px" }}>
+              <span className="pnum" style={{ marginLeft: "auto", flexShrink: 0, color: "var(--ft-green)", fontSize: 9, padding: "1px 0" }}>
                 £{couldSave.toFixed(0)}/mo cancellable
               </span>
             )}

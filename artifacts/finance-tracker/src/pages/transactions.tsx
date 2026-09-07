@@ -2558,7 +2558,7 @@ export default function Transactions() {
                           : <PrivDesc>{group.description}</PrivDesc>}
                       </div>
                       <div style={{ width: 120, minWidth: 120, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }}>
-                        <span style={{ fontSize: 10, padding: "0 5px", borderRadius: 2, border: "1px solid var(--ft-border2)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", lineHeight: "16px" }}>
+                        <span style={{ fontSize: 10, padding: "0 5px 0 0", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", lineHeight: "16px" }}>
                           <span className="pnum">{group.count}</span> tx
                         </span>
                       </div>

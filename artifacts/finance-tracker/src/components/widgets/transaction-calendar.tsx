@@ -424,8 +424,9 @@ export function TransactionCalendarWidget() {
             {selectedDay && selectedTotals && (
               <div
                 style={{
+                  // Inside the widget frame the --ft-raised fill is the
+                  // separation; a border here is a frame inside a frame.
                   marginTop: 10,
-                  border: "1px solid var(--ft-border)",
                   background: "var(--ft-raised)",
                 }}
               >
@@ -488,7 +489,6 @@ export function TransactionCalendarWidget() {
                 style={{
                   marginTop: 10,
                   padding: "10px 12px",
-                  border: "1px solid var(--ft-border)",
                   background: "var(--ft-raised)",
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,

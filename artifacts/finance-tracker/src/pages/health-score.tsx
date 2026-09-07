@@ -561,8 +561,10 @@ function AchievementBadge({ achievement }: AchievementBadgeProps) {
         display: "flex", alignItems: "center", gap: 10,
         background: hovered
           ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
-          : "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
+          : "transparent",
+        // A run of badges inside a panel is separated by one rule each, not
+        // framed each; the resting fill was the same token as the panel.
+        borderBottom: "1px solid var(--ft-border)",
         padding: "9px 12px",
         cursor: "default",
         transition: "background 0.1s",

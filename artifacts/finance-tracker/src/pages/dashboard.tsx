@@ -912,9 +912,14 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
           The three cards used to draw --ft-raised on --ft-raised inside a
           1px border, inset inside the float's own 1px border: a fill that
           painted the parent's own token (so it was never visible) and a
-          frame inside a frame (so it was). Border-as-gap instead — the grid
-          paints --ft-border and the 1px gaps are the only rules. */}
-      <div className="ft-dashboard-insights" style={{ gap: 1, background: "var(--ft-border)" }}>
+          frame inside a frame (so it was). Explicit interior rules instead
+          (DESIGN.md § 5): each card draws its right and bottom hairline and
+          the wrapper clips the outermost pair, so nothing paints an outer
+          edge against the float's own border. The column count here is the
+          browser's (`auto-fit`), so :nth-child cannot name the last cell of a
+          row — hence the clip rather than a per-breakpoint rule. */}
+      <div className="ft-cellrules-clip">
+      <div className="ft-dashboard-insights ft-cellrules-auto" style={{ gap: 0 }}>
         {loading && insights === null
           ? [0, 1, 2].map(i => (
               <div
@@ -967,6 +972,7 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
             );
           })
         }
+      </div>
       </div>
     </div>
   );

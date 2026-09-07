@@ -182,8 +182,9 @@ function ExpenseCard({
                   fontWeight: 700,
                   color: STATUS_COLOR[p.status] ?? "var(--ft-dim)",
                   textTransform: "uppercase",
-                  border: `1px solid ${STATUS_COLOR[p.status] ?? "var(--ft-dim)"}44`,
-                  padding: "2px 6px",
+                  // Status is carried by the colour on the text, not by a box
+                  // around it (DESIGN.md § 9).
+                  padding: "2px 6px 2px 0",
                 }}
               >
                 {p.status}
@@ -456,7 +457,6 @@ function CreateForm({
           style={{
             marginTop: 12,
             padding: "8px 12px",
-            border: "1px solid var(--ft-red)44",
             background: "var(--ft-red)11",
             color: "var(--ft-red)",
             fontFamily: "var(--font-mono)",

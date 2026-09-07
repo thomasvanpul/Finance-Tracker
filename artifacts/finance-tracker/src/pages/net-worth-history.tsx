@@ -1205,7 +1205,7 @@ export default function NetWorthHistory() {
               <PanelHeader>Allocation Breakdown</PanelHeader>
               <div style={{ padding: "16px 16px 12px" }}>
                 <AllocationDonut slices={allocationSlices} />
-                <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", border: "1px solid var(--ft-border)" }}>
+                <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
                   <div style={{ padding: "8px 12px", borderRight: "1px solid var(--ft-border)" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Total Assets</div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(latestEntry.totalAssets)}</div>

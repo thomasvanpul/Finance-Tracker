@@ -547,7 +547,7 @@ function TerminalProfilePanel() {
                 >
                   {/* Code + checkmark row */}
                   <HStack align="center" justify="between" marginBottom={10}>
-                    <span style={{ ...mono, fontSize: 9, letterSpacing: "0.14em", color: isSelected ? color : "var(--ft-dim)", border: `1px solid ${isSelected ? color : "var(--ft-border)"}`, padding: "2px 5px", fontWeight: 700 }}>
+                    <span style={{ ...mono, fontSize: 9, letterSpacing: "0.14em", color: isSelected ? color : "var(--ft-dim)", padding: "2px 5px 2px 0", fontWeight: 700 }}>
                       {persona.code}
                     </span>
                     <div style={{ width: 16, height: 16, border: `1px solid ${isSelected ? color : "var(--ft-border2)"}`, background: isSelected ? color : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--ft-base)", flexShrink: 0, transition: "all 0.15s" }}>

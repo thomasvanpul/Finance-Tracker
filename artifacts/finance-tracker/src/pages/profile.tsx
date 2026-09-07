@@ -1103,7 +1103,7 @@ export default function Profile() {
             {imageInput.startsWith("data:") ? (
               <img src={imageInput} alt="preview" style={{ width: 64, height: 64, objectFit: "cover" }} />
             ) : (
-              <div style={{ width: 40, height: 40, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ width: 40, height: 40, background: "var(--ft-raised)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Pencil size={14} color="var(--ft-dim)" />
               </div>
             )}

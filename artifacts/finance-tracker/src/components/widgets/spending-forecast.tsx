@@ -435,8 +435,9 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
           {/* ── Hero: projected amount + status ── */}
           <div
             style={{
+              // The --ft-raised fill is what separates this from the widget
+              // around it; the border was a frame inside the widget frame.
               background: "var(--ft-raised)",
-              border: "1px solid var(--ft-border)",
               padding: "10px 12px 12px",
               marginBottom: 12,
             }}

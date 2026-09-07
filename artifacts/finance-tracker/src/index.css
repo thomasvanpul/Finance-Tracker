@@ -1056,6 +1056,34 @@ input[type="checkbox"]:checked {
 .ft-four-col  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
 .ft-five-col  { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; }
 
+/* ── Interior rules for a grid of cells (DESIGN.md § 5) ──────────────────────
+   § 5 bans `gap: 1px` over a `--ft-border` background and asks for explicit
+   rules drawn by the cells. Inside an already-framed panel the grid must also
+   not draw an outer box, which would be a second frame competing with the
+   panel's (§ 1) — so only interior rules are painted. Every cell carries a
+   bottom rule (the bottom row's becomes the strip's closing edge, the same
+   treatment a KPI strip gets) and a right rule, cleared on the last cell of
+   each row. Which cell is last moves with the breakpoint, so the clearing
+   rule is restated per breakpoint rather than guessed with :last-child. */
+.ft-cellrules > * {
+  border-right: 1px solid var(--ft-border);
+  border-bottom: 1px solid var(--ft-border);
+}
+.ft-cellrules.ft-two-col   > *:nth-child(2n) { border-right: none; }
+.ft-cellrules.ft-three-col > *:nth-child(3n) { border-right: none; }
+.ft-cellrules.ft-four-col  > *:nth-child(4n) { border-right: none; }
+.ft-cellrules.ft-five-col  > *:nth-child(5n) { border-right: none; }
+
+/* The same idea for a grid whose column count the browser decides
+   (`auto-fit`), where :nth-child cannot name the last cell of a row: every
+   cell draws both rules and the wrapper clips the outermost pair. */
+.ft-cellrules-clip { overflow: hidden; }
+.ft-cellrules-clip > .ft-cellrules-auto { margin: 0 -1px -1px 0; }
+.ft-cellrules-auto > * {
+  border-right: 1px solid var(--ft-border);
+  border-bottom: 1px solid var(--ft-border);
+}
+
 /* ── Dashboard responsive grid ── */
 .ft-dashboard-two-col {
   display: flex;
@@ -1115,6 +1143,14 @@ input[type="checkbox"]:checked {
    consistency with older mobile-media rules. */
 @container main-content (max-width: 900px) {
   .ft-five-col           { grid-template-columns: repeat(3, 1fr) !important; }
+  /* 5- and 4-column grids drop to 3, 3-column drops to 2: the last cell of a
+     row moves, so the cleared right rule moves with it. */
+  .ft-cellrules.ft-five-col > *,
+  .ft-cellrules.ft-four-col > *,
+  .ft-cellrules.ft-three-col > *  { border-right: 1px solid var(--ft-border); }
+  .ft-cellrules.ft-five-col > *:nth-child(3n),
+  .ft-cellrules.ft-four-col > *:nth-child(3n),
+  .ft-cellrules.ft-three-col > *:nth-child(2n) { border-right: none; }
   .ft-four-col           { grid-template-columns: repeat(3, 1fr) !important; }
   .ft-three-col          { grid-template-columns: repeat(2, 1fr) !important; }
   /* KPI bars pack 4–7 cells inline via `gridTemplateColumns:
@@ -1129,6 +1165,13 @@ input[type="checkbox"]:checked {
 }
 @container main-content (max-width: 700px) {
   .ft-five-col           { grid-template-columns: repeat(2, 1fr) !important; }
+  .ft-cellrules.ft-five-col > *,
+  .ft-cellrules.ft-four-col > *   { border-right: 1px solid var(--ft-border); }
+  .ft-cellrules.ft-five-col > *:nth-child(2n),
+  .ft-cellrules.ft-four-col > *:nth-child(2n) { border-right: none; }
+  /* One column: there is no interior column rule left to draw. */
+  .ft-cellrules.ft-three-col > *,
+  .ft-cellrules.ft-two-col > *    { border-right: none; }
   .ft-four-col           { grid-template-columns: repeat(2, 1fr) !important; }
   .ft-three-col          { grid-template-columns: 1fr !important; }
   .ft-two-col            { grid-template-columns: 1fr !important; }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { SectionRule } from "@/components/primitives";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -399,7 +400,7 @@ function BSCalculator({ quoteMap }: BSCalcProps) {
       {result && (
         <div>
           {/* Price output */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+          <div className="ft-four-col ft-cellrules grid grid-cols-2 sm:grid-cols-4 mb-3" style={{ borderTop: "1px solid var(--ft-border)" }}>
             {[
               {
                 label: "Call Price",
@@ -425,8 +426,6 @@ function BSCalculator({ quoteMap }: BSCalcProps) {
               <div
                 key={item.label}
                 style={{
-                  background: "var(--ft-base)",
-                  border: "1px solid var(--ft-border)",
                   padding: "8px 10px",
                 }}
               >
@@ -462,7 +461,7 @@ function BSCalculator({ quoteMap }: BSCalcProps) {
             const maxAbs = Math.max(...pts.map((p) => Math.abs(p.pl)));
             const breakeven = optType === "call" ? K + optPrice : K - optPrice;
             return (
-              <div style={{ marginBottom: 12, border: "1px solid var(--ft-border)", padding: "10px 4px 4px" }}>
+              <div style={{ marginBottom: 12, borderTop: "1px solid var(--ft-border)", padding: "10px 4px 4px" }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", padding: "0 10px", marginBottom: 6 }}>
                   AT-EXPIRY PAYOFF · BREAKEVEN {breakeven.toFixed(2)}
                 </div>
@@ -487,7 +486,7 @@ function BSCalculator({ quoteMap }: BSCalcProps) {
           })()}
 
           {/* Greeks table */}
-          <div style={{ border: "1px solid var(--ft-border)", overflowX: "auto" }}>
+          <div style={{ borderTop: "1px solid var(--ft-border)", overflowX: "auto" }}>
             <div
               style={{
                 padding: "5px 10px",
@@ -1185,7 +1184,7 @@ function OptionsChainViewer() {
 
       {/* Options chain table */}
       {chain && rows.length > 0 && !isLoading && (
-        <div style={{ overflowX: "auto", border: "1px solid var(--ft-border)" }}>
+        <div style={{ overflowX: "auto", borderTop: "1px solid var(--ft-border)" }}>
           <div
             style={{
               display: "flex",
@@ -1550,7 +1549,7 @@ function StrategyBuilder({ quoteMap }: { quoteMap: Map<string, QuoteData> }) {
       </div>
 
       {payoffData.length > 0 && (
-        <div style={{ border: "1px solid var(--ft-border)", padding: "10px 4px 4px" }}>
+        <div style={{ borderTop: "1px solid var(--ft-border)", padding: "10px 4px 4px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", padding: "0 10px", marginBottom: 6 }}>
             COMBINED PAYOFF AT EXPIRY
           </div>
@@ -1578,69 +1577,29 @@ function StrategyBuilder({ quoteMap }: { quoteMap: Map<string, QuoteData> }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function DerivativesTab({ quoteMap }: DerivativesTabProps) {
+  // Each of these is a section of the page, not an object on it, so none of
+  // them is framed (DESIGN.md § 6). They used to be a 1px box filled with
+  // --ft-base — the page ground token, so the fill drew nothing — wrapped
+  // round content that draws its own frames, which put every table, chart and
+  // viewer inside two borders.
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Live options chain from market data */}
-      <div style={{ border: "1px solid var(--ft-border)", padding: 16, background: "var(--ft-base)" }}>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--ft-cyan)",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            borderBottom: "1px solid var(--ft-border)",
-            paddingBottom: 8,
-            marginBottom: 16,
-          }}
-        >
-          ▼ Options Chain
-        </div>
-        <OptionsChainViewer />
+      <div>
+        <SectionRule><span style={{ color: "var(--ft-cyan)" }}>Options Chain</span></SectionRule>
+        <div style={{ paddingTop: 16 }}><OptionsChainViewer /></div>
       </div>
       <BSCalculator quoteMap={quoteMap} />
-      <div style={{ border: "1px solid var(--ft-border)", padding: 16, background: "var(--ft-base)" }}>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--ft-green)",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            borderBottom: "1px solid var(--ft-border)",
-            paddingBottom: 8,
-            marginBottom: 16,
-          }}
-        >
-          ▼ Options Tracker
-        </div>
-        <OptionsSection quoteMap={quoteMap} />
+      <div>
+        <SectionRule><span style={{ color: "var(--ft-green)" }}>Options Tracker</span></SectionRule>
+        <div style={{ paddingTop: 16 }}><OptionsSection quoteMap={quoteMap} /></div>
       </div>
-      <div style={{ border: "1px solid var(--ft-border)", padding: 16, background: "var(--ft-base)" }}>
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--ft-amber)",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            borderBottom: "1px solid var(--ft-border)",
-            paddingBottom: 8,
-            marginBottom: 16,
-          }}
-        >
-          ▼ Futures Tracker
-        </div>
-        <FuturesSection quoteMap={quoteMap} />
+      <div>
+        <SectionRule><span style={{ color: "var(--ft-amber)" }}>Futures Tracker</span></SectionRule>
+        <div style={{ paddingTop: 16 }}><FuturesSection quoteMap={quoteMap} /></div>
       </div>
-      <div style={{ border: "1px solid var(--ft-border)", padding: 16, background: "var(--ft-base)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-cyan)", textTransform: "uppercase", letterSpacing: "0.1em", borderBottom: "1px solid var(--ft-border)", paddingBottom: 8, marginBottom: 16 }}>
-          ▼ Strategy Builder
-        </div>
-        <StrategyBuilder quoteMap={quoteMap} />
+      <div>
+        <SectionRule><span style={{ color: "var(--ft-cyan)" }}>Strategy Builder</span></SectionRule>
+        <div style={{ paddingTop: 16 }}><StrategyBuilder quoteMap={quoteMap} /></div>
       </div>
     </div>
   );

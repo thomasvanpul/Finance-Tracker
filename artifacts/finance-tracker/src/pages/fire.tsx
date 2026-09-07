@@ -242,7 +242,6 @@ function MilestonePill({ label, value, pct, color, years, effPortfolio }: Milest
       gap: 6,
       padding: "4px 10px",
       background: reached ? `color-mix(in srgb, ${color} 10%, transparent)` : "var(--ft-raised)",
-      border: `1px solid ${reached ? color : "var(--ft-border)"}`,
       opacity: value <= 0 ? 0.4 : 1,
     }}>
       <div style={{ width: 6, height: 6, borderRadius: "50%", background: reached ? color : "var(--ft-dim)" }} />
@@ -870,7 +869,7 @@ export default function Fire() {
 
         {/* Gap to FIRE */}
         {effPortfolio < fireNumber && fireNumber > 0 && (
-          <div style={{ display: "grid", border: "1px solid var(--ft-border)", marginTop: 12, marginBottom: 2 }}
+          <div style={{ display: "grid", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginTop: 12, marginBottom: 2 }}
                className="ft-three-col">
             <GapMetricCell label="Portfolio" value={formatBaseMoney(effPortfolio)} color="var(--ft-text)" />
             <GapMetricCell label="Gap to FI" value={formatBaseMoney(fireNumber - effPortfolio)} color="var(--ft-red)" />

@@ -938,9 +938,9 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   color: "var(--ft-dim)",
-                  background: "var(--ft-surface)",
-                  border: "1px solid var(--ft-border)",
-                  padding: "2px 8px",
+                  // A chip that only reads is drawn as a label — no border, no
+                  // fill (DESIGN.md § 9). The fill was the same token as the panel.
+                  padding: "2px 8px 2px 0",
                   letterSpacing: "0.03em",
                 }}
               >
@@ -2550,9 +2550,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                       fontFamily: "var(--font-mono)",
                       fontSize: 9,
                       fontWeight: 700,
-                      padding: "2px 6px",
-                      borderRadius: 2,
-                      border: `1px solid ${e.daysUntil <= 7 ? "var(--ft-amber)" : "var(--ft-border2)"}`,
+                      // Urgency is carried by the colour on the digits, not
+                      // by a box round them (DESIGN.md § 4, § 9).
+                      padding: "2px 6px 2px 0",
                       color: e.daysUntil <= 7 ? "var(--ft-amber)" : "var(--ft-muted)",
                     }}>{e.daysUntil}d</div>
                   </div>
@@ -2606,7 +2606,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                               <td style={{ padding: "5px 10px", textAlign: "right" }}>{live > 0 ? mktVal.toFixed(2) : "—"}</td>
                               <td style={{ padding: "5px 10px", textAlign: "right", color: gl >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600 }}>{live > 0 ? `${gl >= 0 ? "+" : ""}${gl.toFixed(2)}` : "—"}</td>
                               <td style={{ padding: "5px 10px" }}>
-                                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 5px", borderRadius: 2, border: `1px solid ${isLT ? "var(--ft-green)" : "var(--ft-amber)"}`, color: isLT ? "var(--ft-green)" : "var(--ft-amber)" }}>
+                                <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 5px 2px 0", color: isLT ? "var(--ft-green)" : "var(--ft-amber)" }}>
                                   {isLT ? "LT" : "ST"} {daysHeld}d
                                 </span>
                               </td>

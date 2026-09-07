@@ -993,7 +993,7 @@ function ShareableCard({ income, expenses, txCount, year }: {
           </div>
         </div>
       </HStack>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", border: "1px solid var(--ft-border)", marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 16 }}>
         {tiles.map((s, i) => (
           <ShareTile key={s.text} text={s.text} value={s.value} color={s.color} isLast={i === tiles.length - 1} />
         ))}

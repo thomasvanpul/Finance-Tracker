@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatBaseMoney } from "@/lib/utils";
-import { HStack, MonoLabel, Panel, PanelBox, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, Panel, PanelBox, SectionRule, Text, VStack } from "@/components/primitives";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -530,8 +530,9 @@ function OverpaymentScenarioCard({ label, months, interest, color }: Overpayment
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
-        // Border-as-gap: the grid paints a 1px --ft-border ground, so each
-        // cell is bounded by shared hairlines instead of its own frame.
+        // No frame: the grid draws explicit interior rules (.ft-cellrules,
+        // DESIGN.md § 5), so the cell is bounded by shared hairlines rather
+        // than by its own four-sided border inside the panel frame.
         padding: "10px 12px",
         transition: "background 0.1s",
       }}
@@ -582,7 +583,9 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
   }, [standard, overpaid]);
 
   return (
-    <Panel className="mt-1.5" title="Overpayment Impact Calculator" padding="12px 16px">
+    <div style={{ marginTop: 12 }}>
+      <SectionRule>Overpayment Impact Calculator</SectionRule>
+      <div style={{ paddingTop: 12 }}>
 
       <div style={{ marginBottom: 12 }}>
         <div style={LABEL_STYLE}>Extra monthly payment: <span style={{ color: "var(--ft-accent)" }}><span className="pnum">{formatBaseMoney(extra)}</span></span></div>
@@ -600,7 +603,7 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
         </div>
       </div>
 
-      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 6 }}>
+      <div className="ft-two-col ft-cellrules" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid var(--ft-border)", marginBottom: 6 }}>
         <OverpaymentScenarioCard label="Standard" months={standard.length} interest={stdInterest} color="var(--ft-muted)" />
         <OverpaymentScenarioCard label="With Overpayment" months={overpaid.length} interest={ovInterest} color="var(--ft-accent)" />
       </div>
@@ -641,7 +644,8 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </Panel>
+      </div>
+    </div>
   );
 }
 
@@ -666,7 +670,7 @@ function RateScenarioCard({ rate, delta, principal, termYears, type }: RateScena
         background: delta === 0 ? "var(--ft-raised)" : hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         // The accent border marks the current rate — that is state, not a
         // region boundary, so it stays. Unselected cells fall back to the
-        // grid's shared hairline rather than each drawing a frame.
+        // shared interior rules of the grid rather than each drawing a frame.
         border: delta === 0 ? "1px solid var(--ft-accent)" : "none",
         padding: "10px 12px",
         transition: "background 0.1s",
@@ -694,7 +698,9 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
   const scenarios = [0, 0.5, 1, 2];
 
   return (
-    <Panel className="mt-1.5" title="Interest Rate Scenarios" padding="12px 16px">
+    <div style={{ marginTop: 12 }}>
+      <SectionRule>Interest Rate Scenarios</SectionRule>
+      <div style={{ paddingTop: 12 }}>
       <HStack gap={8} align="center" marginBottom={12}>
         <div style={LABEL_STYLE}>Base rate (%)</div>
         <input
@@ -706,7 +712,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
           style={{ ...INPUT_STYLE, width: 90 }}
         />
       </HStack>
-      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--ft-border)" }}>
+      <div className="ft-four-col ft-cellrules" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", borderTop: "1px solid var(--ft-border)" }}>
         {scenarios.map((delta) => (
           <RateScenarioCard
             key={delta}
@@ -718,7 +724,8 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
           />
         ))}
       </div>
-    </Panel>
+      </div>
+    </div>
   );
 }
 
@@ -739,9 +746,9 @@ function AffordabilityKpiCard({ label, value, color, sub }: AffordabilityKpiCard
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        // No frame: the grid below paints a 1px --ft-border ground and a 1px
-        // gap, so the cells are separated by shared hairlines rather than each
-        // drawing its own four-sided border inside the panel's.
+        // No frame: the grid below draws explicit interior rules
+        // (.ft-cellrules, DESIGN.md § 5), so the cells are separated by shared
+        // hairlines rather than each drawing its own four-sided border.
         padding: "10px 14px",
         transition: "background 0.1s",
       }}
@@ -837,7 +844,7 @@ function AffordabilityTab() {
       </div>
 
       {maxLoan > 0 && (
-        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
+        <div className="ft-two-col ft-cellrules" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid var(--ft-border)" }}>
           <AffordabilityKpiCard label="Max Loan" value={formatBaseMoney(maxLoan)} color="var(--ft-text)" />
           <AffordabilityKpiCard label="Max Property Value" value={formatBaseMoney(maxPropertyValue)} color="var(--ft-accent)" />
           <AffordabilityKpiCard label="Stamp Duty" value={formatBaseMoney(sdlt)} color="var(--ft-amber)" />

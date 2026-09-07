@@ -609,10 +609,11 @@ function EmptyState({
   subtitle: string;
 }) {
   return (
+    // No frame and no fill. Every use of this sits inside a panel that
+    // already draws both, so the border was a frame inside a frame and the
+    // --ft-surface fill was the same token as the panel (DESIGN.md § 1).
     <div
       style={{
-        background: "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
         padding: "36px 24px",
         display: "flex",
         flexDirection: "column",
@@ -625,7 +626,8 @@ function EmptyState({
         style={{
           width: 36,
           height: 36,
-          border: "1px solid var(--ft-border2)",
+          // The recessed --ft-base plate is what reads here; its border was a
+          // third frame at this depth.
           background: "var(--ft-base)",
           display: "flex",
           alignItems: "center",
@@ -1303,11 +1305,11 @@ export default function Business() {
           />
         </div>
 
-        {/* Monthly P&L chart */}
+        {/* Monthly P&L chart — no frame and no fill: the panel around it
+            already draws both, so the border was a frame inside a frame and
+            the --ft-surface fill was the same token as the panel (DESIGN.md § 1). */}
         <div
           style={{
-            background: "var(--ft-surface)",
-            border: "1px solid var(--ft-border)",
             padding: "14px 12px 8px 4px",
             marginBottom: 16,
           }}
@@ -1414,13 +1416,7 @@ export default function Business() {
             >
               Operating Expense Breakdown
             </div>
-            <div
-              style={{
-                background: "var(--ft-surface)",
-                border: "1px solid var(--ft-border)",
-                overflow: "hidden",
-              }}
-            >
+            <div style={{ overflow: "hidden" }}>
               <div className="ft-scroll-x">
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 360 }}>
                 <thead>
@@ -1535,8 +1531,11 @@ export default function Business() {
         {showInvoiceForm && (
           <div
             style={{
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border2)",
+              // A form that opens inside the panel is a region of it, not a
+              // second object: one rule above and below, no four-sided border
+              // inset from the panel frame (DESIGN.md § 1).
+              borderTop: "1px solid var(--ft-border)",
+              borderBottom: "1px solid var(--ft-border)",
               padding: 16,
               marginBottom: 12,
             }}
@@ -1744,8 +1743,6 @@ export default function Business() {
         {invoices.length > 0 ? (
           <div
             style={{
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border)",
               overflow: "hidden",
             }}
           >
@@ -1847,10 +1844,13 @@ export default function Business() {
           </div></>}>VAT Position</PanelHeader>
         <div style={{ padding: "10px 12px" }}>
 
-        {/* VAT grid — border-as-gap */}
+        {/* VAT grid — a strip inside the framed panel, so top and bottom
+            rules rather than a four-sided border (DESIGN.md § 1). The cells
+            already draw their own column rules. */}
         <div
           style={{
-            border: "1px solid var(--ft-border)",
+            borderTop: "1px solid var(--ft-border)",
+            borderBottom: "1px solid var(--ft-border)",
             overflow: "hidden",
           }}
         >

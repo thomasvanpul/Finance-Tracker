@@ -397,7 +397,9 @@ function StrategyTab() {
                 key={d.id}
                 style={{
                   background: "var(--ft-base)",
-                  border: "1px solid var(--ft-border)",
+                  // A run of rows is separated by one shared rule (DESIGN.md
+                  // § 5); the recessed --ft-base fill does the rest.
+                  borderBottom: "1px solid var(--ft-border)",
                   padding: "10px 14px",
                   display: "flex",
                   alignItems: "center",
@@ -517,7 +519,7 @@ function StrategyTab() {
                   key={po.id}
                   style={{
                     background: "var(--ft-base)",
-                    border: "1px solid var(--ft-border)",
+                    borderBottom: "1px solid var(--ft-border)",
                     padding: "10px 14px",
                     display: "flex",
                     alignItems: "center",

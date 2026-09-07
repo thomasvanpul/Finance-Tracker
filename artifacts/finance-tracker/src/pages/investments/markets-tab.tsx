@@ -439,7 +439,7 @@ function PriceAlertsPanel({ ticker, currentPrice, alerts, onAlertsChange }: Pric
             {tickerAlerts.map((a) => {
               const isFired = alertTriggered(a, currentPrice);
               return (
-                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", background: isFired ? "rgba(230,162,60,0.12)" : "var(--ft-raised)", border: `1px solid ${isFired ? "var(--ft-amber)" : "var(--ft-border)"}` }}>
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 8px", background: isFired ? "rgba(230,162,60,0.12)" : "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)" }}>
                   <Bell size={9} style={{ color: isFired ? "var(--ft-amber)" : "var(--ft-dim)", flexShrink: 0 }} />
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: isFired ? "var(--ft-amber)" : "var(--ft-text)", flex: 1 }}>
                     {alertLabel(a)}
@@ -1472,7 +1472,7 @@ export function MarketsTab() {
                     {tldr && (
                       <div style={{
                         marginTop: 6, padding: "6px 10px",
-                        background: "var(--ft-raised)", border: "1px solid var(--ft-border)",
+                        background: "var(--ft-raised)",
                         fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.6,
                       }}>
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.06em", marginRight: 6 }}>AI▸</span>

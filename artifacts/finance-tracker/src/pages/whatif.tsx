@@ -18,7 +18,7 @@ import { useGetDashboard, useListBudgets, useListInvestments, useGetInvestmentSu
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
 import { FlaskConical } from "lucide-react";
-import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, SectionRule, Text, VStack } from "@/components/primitives";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -229,7 +229,7 @@ function InflationKpiTile({ label, value, color, note }: InflationKpiTileProps) 
         background: hov
           ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))"
           : "var(--ft-raised)",
-        border: "1px solid var(--ft-border)",
+        // Inside the Panel frame the --ft-raised fill is the separation.
         padding: "10px 12px",
         transition: "background 0.1s",
       }}
@@ -1083,7 +1083,9 @@ function InflationTab() {
           </div>
         </div>
 
-        <Panel title="Purchasing Power Over Time" padding="12px 16px">
+        <div>
+          <SectionRule>Purchasing Power Over Time</SectionRule>
+          <div style={{ paddingTop: 12 }}>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--ft-border)" vertical={false} />
@@ -1115,7 +1117,8 @@ function InflationTab() {
             <InflationLegendItem color="var(--ft-green)" label="Invested (nominal)" />
             <InflationLegendItem color="var(--ft-cyan)" label="Invested (real)" />
           </HStack>
-        </Panel>
+          </div>
+        </div>
       </div>
       </Panel>
 

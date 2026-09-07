@@ -257,9 +257,9 @@ function RoleBadge({ role }: { role: FamilyMember["role"] }) {
         fontWeight: 700,
         textTransform: "uppercase",
         letterSpacing: "0.07em",
-        border: "1px solid var(--ft-border2)",
-        borderRadius: 2,
-        padding: "1px 5px",
+        // Label, not box — the role is carried by the colour on the text
+        // (DESIGN.md § 9).
+        padding: "1px 5px 1px 0",
         color:
           role === "primary"
             ? "var(--ft-accent)"
@@ -1038,8 +1038,10 @@ function MemberCard({
       style={{
         background: hovered
           ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-surface))"
-          : "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
+          // At rest the card fill was the section --ft-surface, and its
+          // border a second frame inside the section frame (DESIGN.md § 1). The grid
+          // draws the cell rules instead (§ 5).
+          : "transparent",
         padding: "12px 14px",
         transition: "background 0.1s",
       }}
@@ -1562,11 +1564,12 @@ export default function FamilyFinance() {
             onCta={openAddMember}
           />
         ) : (
+          <div className="ft-cellrules-clip">
           <div
+            className="ft-cellrules-auto"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-              gap: 8,
             }}
           >
             {members.map((m) => (
@@ -1579,6 +1582,7 @@ export default function FamilyFinance() {
                 onDelete={() => deleteMember(m.id)}
               />
             ))}
+          </div>
           </div>
         )}
 

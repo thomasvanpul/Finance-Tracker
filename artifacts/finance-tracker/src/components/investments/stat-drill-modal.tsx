@@ -553,7 +553,7 @@ export function StatDrillModal({ label, value, info, earningsHistory = [], recTr
 
           {/* Formula */}
           {bench?.formula && (
-            <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 12px" }}>
+            <div style={{ background: "var(--ft-raised)", padding: "8px 12px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Formula</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)" }}>{bench.formula}</div>
             </div>

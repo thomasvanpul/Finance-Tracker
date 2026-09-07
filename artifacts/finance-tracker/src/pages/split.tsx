@@ -1457,11 +1457,9 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
                 fontFamily: "var(--font-sans)",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
-                padding: "1px 5px",
-                borderRadius: 2,
-                background: "rgba(74,222,128,0.06)",
+                // Label, not box (DESIGN.md § 9).
+                padding: "1px 5px 1px 0",
                 color: "var(--ft-dim)",
-                border: "1px solid var(--ft-border2)",
               }}
             >
               {expense.category}

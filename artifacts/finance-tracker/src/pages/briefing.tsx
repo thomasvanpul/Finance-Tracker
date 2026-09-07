@@ -117,8 +117,11 @@ const PRIORITY_ICONS: Record<string, typeof AlertTriangle> = {
 
 function NarrativeBox({ text, icon: Icon }: { text: string; icon?: React.ElementType }) {
   return (
+    // No frame and no fill: this is prose belonging to the panel, and both the
+    // border and the --ft-surface fill were being drawn inside a panel that
+    // already paints --ft-surface behind a --ft-border frame. The fill was
+    // invisible; the frame was a frame inside a frame (DESIGN.md § 1).
     <div style={{
-      background: "var(--ft-surface)", border: "1px solid var(--ft-border)",
       padding: "12px 16px", fontFamily: "var(--font-mono)", fontSize: 12,
       color: "var(--ft-text)", lineHeight: 1.8, display: "flex", gap: 10,
     }}>
@@ -136,8 +139,10 @@ function KeyFindingRow({ finding, index }: { finding: string; index: number }) {
     <div
       style={{
         display: "flex", gap: 0,
-        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        border: "1px solid var(--ft-border)", overflow: "hidden",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        // Rows in a run are separated by a shared rule, not by a frame each
+        // (DESIGN.md § 5). The resting fill was the same token as the panel.
+        borderBottom: "1px solid var(--ft-border)", overflow: "hidden",
         transition: "background 0.1s",
       }}
       onMouseEnter={() => setHov(true)}
@@ -296,8 +301,9 @@ function RecommendationRow({
     <div
       style={{
         display: "flex", gap: 0,
-        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
+        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
+        // One shared rule between rows, not a frame each (DESIGN.md § 5).
+        borderBottom: "1px solid var(--ft-border)",
         overflow: "hidden",
         transition: "background 0.1s",
       }}
@@ -685,7 +691,7 @@ export default function Briefing() {
                   </Text>
                 </HStack>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid var(--ft-border)" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
                 <SituationMetricCell
                   label="Net Worth"
                   value={dashboard?.netWorth != null ? formatBaseMoney(dashboard.netWorth) : "—"}
@@ -738,7 +744,7 @@ export default function Briefing() {
             <VStack gap={6} padding="10px 12px">
               <NarrativeBox text={briefing.spendingNarrative} icon={TrendingDown} />
               {spendingCatData && (
-                <div style={{ border: "1px solid var(--ft-border)" }}>
+                <div>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 80px 50px" : "1fr 100px 60px 60px", background: "var(--ft-raised)", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", gap: 8 }}>
                     {(isMobile ? ["Category", "Amount", "Share"] : ["Category", "Bar", "Amount", "Share"]).map((h, idx) => (
                       <div key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", textAlign: isMobile ? (idx >= 1 ? "right" : "left") : (idx >= 2 ? "right" : "left") }}>{(!isMobile && idx === 1) ? "" : h}</div>
@@ -774,7 +780,7 @@ export default function Briefing() {
               <PanelHeader>Budget Performance <Text as="span" mono size={10} color="var(--ft-muted)">04</Text></PanelHeader>
               <VStack gap={6} padding="10px 12px">
                 <NarrativeBox text={briefing.budgetNarrative} icon={Shield} />
-                <div style={{ border: "1px solid var(--ft-border)" }}>
+                <div>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr auto 90px" : "1fr auto auto 120px", gap: 8, background: "var(--ft-raised)", padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", alignItems: "center" }}>
                     {(isMobile ? ["Category", "Spent", "Progress"] : ["Category", "Spent", "Limit", "Progress"]).map((h, idx) => (
                       <div key={h} style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", textAlign: idx === 1 ? "right" : "left" }}>{h}</div>
@@ -803,7 +809,7 @@ export default function Briefing() {
             <VStack gap={6} padding="10px 12px">
               <NarrativeBox text={briefing.portfolioNarrative} icon={TrendingUp} />
               {invSummary && (
-                <div style={{ display: "flex", flexWrap: "wrap", border: "1px solid var(--ft-border)" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
                   <div style={{ background: "var(--ft-surface)", padding: "14px 16px", borderRight: isMobile ? "none" : "1px solid var(--ft-border)", borderBottom: isMobile ? "1px solid var(--ft-border)" : "none", minWidth: isMobile ? 0 : 160, flex: isMobile ? "1 1 100%" : undefined }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Portfolio Value</div>
                     <Text as="div" mono size={18} weight={700} color="var(--ft-text)">
@@ -818,7 +824,7 @@ export default function Briefing() {
                           const totalVal = (invSummary as { totalValueBase: number }).totalValueBase;
                           const pct = totalVal > 0 ? `${((inv.baseEquivalent / totalVal) * 100).toFixed(1)}%` : "—";
                           return (
-                            <div key={inv.ticker} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "4px 8px", display: "flex", gap: 6, alignItems: "baseline" }}>
+                            <div key={inv.ticker} style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", padding: "4px 8px", display: "flex", gap: 6, alignItems: "baseline" }}>
                               <span style={{ color: "var(--ft-cyan)", fontWeight: 700 }}>{inv.ticker}</span>
                               <span className="pnum">{formatBaseMoney(inv.baseEquivalent)}</span>
                               <span className="pnum" style={{ color: "var(--ft-dim)", fontSize: 9 }}>{pct}</span>

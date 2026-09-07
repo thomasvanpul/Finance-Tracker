@@ -1650,7 +1650,7 @@ function AgendaView({ dayMap, feedEventMap, customEventMap, todayStr, debtEvents
                 </span>
                 <HStack gap={5} wrap grow>
                   {dayEvs.slice(0, 4).map((ev, i) => (
-                    <span key={i} style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "1px 6px", background: "var(--ft-raised)", border: `1px solid ${ev.color ?? "var(--ft-border)"}`, color: ev.color ?? "var(--ft-muted)", borderRadius: 2 }}>
+                    <span key={i} style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "1px 6px 1px 0", color: ev.color ?? "var(--ft-muted)" }}>
                       {TYPE_LABELS[ev.type]}
                     </span>
                   ))}

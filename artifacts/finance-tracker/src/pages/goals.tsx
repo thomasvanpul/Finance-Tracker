@@ -14,7 +14,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { oneShotInsight } from "@/lib/ai-chat-client";
-import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, SectionRule, Text, VStack } from "@/components/primitives";
 
 interface HistoryEntry {
   date: string;
@@ -365,8 +365,9 @@ function GoalCard({
           position: "absolute",
           top: 10,
           left: 10,
-          background: "var(--ft-raised)",
-          border: "1px solid var(--ft-border2)",
+          // A rank that only reads is drawn as a label, not as a box
+          // (DESIGN.md § 9) — a bordered chip here is a second frame inside
+          // the card frame, and the fill it carried was invisible against it.
           fontFamily: "var(--font-mono)",
           fontSize: 8,
           fontWeight: 700,
@@ -534,14 +535,15 @@ function GoalCard({
             <div style={{ marginTop: 10, borderTop: "1px solid var(--ft-border)", paddingTop: 10 }}>
               {/* Projections row */}
               <div
+                className="ft-two-col ft-cellrules"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
-                  gap: 6,
+                  borderTop: "1px solid var(--ft-border)",
                   marginBottom: 10,
                 }}
               >
-                <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
+                <div style={{ padding: "8px 10px" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Months to Complete</div>
                   <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
                     {projectedMonths < Infinity ? projectedMonths : "—"}
@@ -552,7 +554,7 @@ function GoalCard({
                 </div>
 
                 {goal.deadline && deadlineMonthsRemaining > 0 && (
-                  <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
+                  <div style={{ padding: "8px 10px" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Required Monthly</div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
                       {formatBaseMoney(requiredMonthly)}
@@ -564,7 +566,7 @@ function GoalCard({
                 )}
 
                 {projectedDate && (
-                  <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
+                  <div style={{ padding: "8px 10px" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Projected Date</div>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color }}>
                       {formatMonthYear(projectedDate)}
@@ -576,7 +578,7 @@ function GoalCard({
                 )}
 
                 {deadlineFeasibility && (
-                  <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
+                  <div style={{ padding: "8px 10px" }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>Deadline Status</div>
                     {deadlineFeasibility === "achievable" && (
                       <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 700, color: "var(--ft-green)", display: "flex", alignItems: "center", gap: 4 }}><Check size={10} /> Achievable</div>
@@ -603,7 +605,7 @@ function GoalCard({
 
               {/* Suggest Deadline */}
               {!goal.deadline && projectedDate && (
-                <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "8px 10px", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ background: "var(--ft-raised)", padding: "8px 10px", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                   <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
                     At current rate: done ~<Text as="span" mono>{formatMonthYear(projectedDate)}</Text>
                   </div>
@@ -664,7 +666,7 @@ function GoalCard({
                 </HStack>
 
                 {useCompound && goalMonthlyRate > 0 && (
-                  <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
+                  <div style={{ background: "var(--ft-raised)", padding: "8px 10px" }}>
                     <HStack gap={12} marginBottom={6}>
                       <div>
                         <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 2 }}>Without returns</div>
@@ -699,7 +701,7 @@ function GoalCard({
 
               {/* What-if calculator */}
               {!done && (
-                <div style={{ marginBottom: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "8px 10px" }}>
+                <div style={{ marginBottom: 10, background: "var(--ft-raised)", padding: "8px 10px" }}>
                   <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 6 }}>
                     What if I contributed…
                   </div>
@@ -1256,11 +1258,14 @@ export default function Goals() {
         );
       })()}
 
-      {/* ── KPI Bar (border-as-gap grid) ── */}
+      {/* ── KPI strip ──
+          Permanent structure, so it is not framed at all (DESIGN.md § 6): a
+          SectionRule over a run of cells on --ft-base, not a box with a lid.
+          The cells keep the interior rules the strip is made of. */}
       {goals.length > 0 && (
         <>
-          <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
-          <PanelHeader>Portfolio Overview</PanelHeader>
+          <div style={{ marginBottom: 6 }}>
+          <SectionRule>Portfolio Overview</SectionRule>
           <div className="ft-kpi-bar" style={{ gridTemplateColumns: "repeat(6, 1fr)", border: "none" }}>
             <KpiCell
               label="Total Goals"
@@ -1326,9 +1331,12 @@ export default function Goals() {
 
       {/* ── Goal Insights Summary ── */}
       {goals.length >= 2 && (mostUrgent || biggestGap || closestToDone) && (
-        <div style={{ marginBottom: 6, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-          <PanelHeader>Insights</PanelHeader>
-          <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: 6 }}>
+        <div style={{ marginBottom: 6 }}>
+          {/* Structure, not an object: the label gets a rule and the cards
+              keep their own frames (DESIGN.md § 6). Framing the run as well
+              drew a box around a row of boxes. */}
+          <SectionRule>Insights</SectionRule>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingTop: 6 }}>
             {mostUrgent && (
               <InsightCard
                 label="Most Urgent"
@@ -1494,9 +1502,9 @@ export default function Goals() {
 
       {/* ── Goal Cards Grid ── */}
       {goals.length > 0 && (
-        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
-        <PanelHeader>Active Goals</PanelHeader>
-        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, padding: 6 }}>
+        <div style={{ marginBottom: 6 }}>
+        <SectionRule>Active Goals</SectionRule>
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, paddingTop: 6 }}>
         {goals.map((goal) => (
           <GoalCard
             key={goal.id}

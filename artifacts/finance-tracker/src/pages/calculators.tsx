@@ -96,7 +96,6 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
           letterSpacing: "0.06em",
           padding: "3px 8px",
           background: "var(--ft-raised)",
-          border: "1px solid var(--ft-border2)",
           color: "var(--ft-dim)",
           flexShrink: 0,
           alignSelf: "flex-start",

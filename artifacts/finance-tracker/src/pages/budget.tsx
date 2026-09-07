@@ -286,7 +286,6 @@ function HealthSummaryChip({ category, spent: _spent, effectiveLimit: _eff, pct,
         alignItems: "center",
         gap: 6,
         padding: "4px 8px 4px 6px",
-        border: `1px solid ${isOver ? "var(--ft-red)" : "var(--ft-border2)"}`,
         background: hov
           ? isOver
             ? "color-mix(in srgb, var(--ft-red) 10%, var(--ft-raised))"
@@ -1524,7 +1523,6 @@ export default function Budget() {
                 whiteSpace: "pre" as const,
                 textAlign: "left" as const,
                 padding: "12px 16px",
-                border: "1px solid var(--ft-border)",
                 background: "var(--ft-raised)",
               }}
             >

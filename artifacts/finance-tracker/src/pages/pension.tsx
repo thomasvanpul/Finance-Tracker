@@ -481,7 +481,7 @@ function PensionHealthBlock({
         </div>
 
         {/* Side-by-side: projected vs target income */}
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", border: "1px solid var(--ft-border)", marginBottom: 16 }}>
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 16 }}>
           <div style={{ background: "var(--ft-raised)", padding: "10px 12px", borderRight: "1px solid var(--ft-border)" }}>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase" as const, marginBottom: 4 }}>Projected Annual Income</div>
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: barColor, lineHeight: 1 }}>{formatBaseMoney(Math.round(annualCurrentIncome))}</div>
@@ -507,7 +507,7 @@ function PensionHealthBlock({
                 Shortfall Analysis
               </Text>
             </HStack>
-            <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
+            <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
               <div style={{ background: "rgba(248,81,73,0.04)", padding: "8px 10px", borderRight: "1px solid var(--ft-border)" }}>
                 <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 3 }}>Monthly shortfall</div>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>-{formatBaseMoney(Math.abs(Math.round(shortfallMonthly)))}</div>
@@ -650,7 +650,7 @@ function StatePensionPanel({ includeStatePension, onToggle }: {
           </button>
         </HStack>
 
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
           {statePensionCells.map(({ label, value }, i, arr) => (
             <div key={label} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
               <StatePensionCell
@@ -889,7 +889,7 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginTop: 6 }}>
       <PanelHeader>Annual Pension Allowance — {taxYear}</PanelHeader>
       <div style={{ padding: 16 }}>
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", marginBottom: 14 }}>
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 14 }}>
           {allowanceCells.map(({ label, value, color }, i, arr) => (
             <div key={label} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
               <AllowanceCellItem label={label} value={value} color={color} />
@@ -909,7 +909,7 @@ function AnnualAllowanceSection({ monthlyTotal }: { monthlyTotal: number }) {
           <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", textTransform: "uppercase" as const, marginBottom: 8 }}>
             Estimated Tax Relief (on your <span className="pnum">{formatBaseMoney(Math.round(annualContrib))}</span> contributions)
           </div>
-          <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)" }}>
+          <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
             {taxReliefCells.map(({ band, relief, note }, i, arr) => (
               <div key={band} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
                 <TaxReliefCellItem band={band} relief={relief} note={note} />
@@ -998,7 +998,7 @@ function IsaSection() {
           </Text>
         </HStack>
 
-        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", marginBottom: 16 }}>
+        <div className="ft-kpi-bar" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", marginBottom: 16 }}>
           {isaCells.map(({ label, value, color }, i, arr) => (
             <div key={label} style={{ minWidth: 0, borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
               <IsaCellItem label={label} value={value} color={color} />
@@ -1347,7 +1347,7 @@ function PensionSection() {
           </div>
 
           {/* Summary note */}
-          <div style={{ margin: "0 16px 16px", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
+          <div style={{ margin: "0 16px 16px", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", overflow: "hidden" }}>
             <div style={{ background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border)", padding: "6px 14px" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.07em" }}>Contributions / Month</div>
             </div>

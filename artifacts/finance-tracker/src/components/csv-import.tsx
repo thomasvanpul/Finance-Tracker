@@ -371,14 +371,16 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                   { label: "Added", value: result.added, color: "var(--ft-green)" },
                   { label: "Skipped", value: result.skipped, color: "var(--ft-dim)" },
                 ].map(item => (
-                  <div key={item.label} style={{ background: "var(--ft-raised)", padding: "10px", border: "1px solid var(--ft-border)" }}>
+                  <div key={item.label} style={{ background: "var(--ft-raised)", padding: "10px" }}>
                     <div style={{ fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>{item.label}</div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: item.color }}>{item.value}</div>
                   </div>
                 ))}
               </div>
               {result.errors.length > 0 && (
-                <div style={{ background: "rgba(248,113,113,0.08)", border: "1px solid var(--ft-red)", padding: 10, marginBottom: 14, textAlign: "left" }}>
+                // The red carries the meaning on the tint and on the text, not
+                // on a border round it — colour never lands on an edge (§ 4).
+                <div style={{ background: "rgba(248,113,113,0.08)", padding: 10, marginBottom: 14, textAlign: "left" }}>
                   <div style={{ fontSize: 9, color: "var(--ft-red)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Errors</div>
                   {result.errors.slice(0, 5).map((e, i) => (
                     <div key={i} style={{ fontSize: 10, color: "var(--ft-muted)", marginBottom: 2 }}>· {e}</div>
