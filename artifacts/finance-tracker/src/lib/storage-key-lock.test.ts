@@ -154,14 +154,14 @@ const SAME_FILE_BASELINE = new Set<string>([
   "ft-tickers", "ft-trading-journal-trades", "ft-tx-notes", "ft-tx-tags",
   "ft-tx-templates", "ft-watchlists", "ft-widgets", "ft-world-clock-cities",
   "ft-amount-display", "ft-date-format", "ft-default-currency",
-  "ix-companion-v1", "nr-base-currency", "nr-beta-features",
+  "nr-base-currency", "nr-beta-features",
   "nr-compact-numbers", "nr-custom-categories", "nr-customize-discovered",
   "nr-debt-aprs", "nr-dev-mode", "nr-dismissed-insights", "nr-hide-from-print",
   "nr-import-history", "nr-pwa-dismissed", "nr-recurring-rules",
   "nr-show-cents", "nr-sidebar-collapsed-sections", "nr-sidebar-config",
   "nr-sidebar-more", "nr-tab-slot", "nr-tax-country", "nr-time-format",
   "nr-tx-default-category", "nr-tx-default-currency", "nr-tx-default-type",
-  "nr-week-start", "numeris-ai-style", "numeris-bot-skin",
+  "nr-week-start", "numeris-ai-style",
   "numeris:cashflow:multipliers",
 ]);
 

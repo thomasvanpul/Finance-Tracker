@@ -138,8 +138,8 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // toggled by the user, and no financial value is invented.
   { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1568, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
   { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1570, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 767, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 768, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 773, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 774, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
 
 const ALLOWLIST_B: readonly AllowEntry[] = [
@@ -174,7 +174,6 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
 
   // UI dimensions, font sizes, opacities, layout constants — pixel/percent
   // values in JSX-style variable initializers. Non-currency.
-  { path: "artifacts/finance-tracker/src/components/ai-wanderer.tsx", line: 1003, reason: "sidebar-width fallback: 212px, matches the default rail width in layout.tsx" },
   { path: "artifacts/finance-tracker/src/components/currency-mark.tsx", line: 41, reason: "SVG font-size in px based on character count (18 or 22)" },
   { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1285, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
   { path: "artifacts/finance-tracker/src/components/matrix-rain.tsx", line: 91, reason: "matrix-rain glyph scale (1.4 or 1) — animation randomisation, not currency" },
@@ -205,7 +204,6 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", line: 236, reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
 
   // Streaks, thresholds — non-money integers.
-  { path: "artifacts/finance-tracker/src/lib/ix-engine.ts", line: 215, reason: "streak counter: not-yesterday → reset to 1 (day count, not currency)" },
   { path: "artifacts/finance-tracker/src/pages/health-score.tsx", line: 749, reason: "savings-rate percentile threshold selector (10% or 20%), not a currency value" },
 
   // Three earlier entries here (markets-tab.tsx:1374 8% revenue growth,

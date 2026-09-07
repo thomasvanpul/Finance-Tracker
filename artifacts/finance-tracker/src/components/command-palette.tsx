@@ -413,6 +413,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Type a command, a destination, or 100 GBP to MYR..."
+            data-search-field=""
             style={{
               flex: 1,
               background: "transparent",

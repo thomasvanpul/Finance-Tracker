@@ -21,7 +21,11 @@ import type { ReconciliationReport, ReconciliationAccount } from "@workspace/api
 export const RECONCILIATION_PRIORITY = 90;
 
 // Anything under half a penny of base is rounding, not money.
-const ZERO_TOLERANCE = 0.005;
+// Exported because three callers need the same threshold and a second
+// hand-written copy had already drifted into reconciliation-panel.tsx. A
+// companion that sleeps on "reconciled" and a panel that says "unexplained"
+// disagreeing by a rounding constant would be the app contradicting itself.
+export const ZERO_TOLERANCE = 0.005;
 
 export function reconciliationPeriodLabel(report: Pick<ReconciliationReport, "periodRule" | "periodFrom">): string {
   if (report.periodRule === "month-to-date") return "this month";

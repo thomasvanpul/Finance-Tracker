@@ -18,9 +18,7 @@ import { PanelHeader, Text } from "@/components/primitives";
 import { Drill } from "@/components/drill";
 import { entityHref, accountTransactionsHref } from "@/lib/entity-href";
 import { formatMoney } from "@/lib/utils";
-import { formatShortDate, reconciliationPeriodLabel, isUntracked } from "@/lib/reconciliation-insight";
-
-const ZERO_TOLERANCE = 0.005;
+import { formatShortDate, reconciliationPeriodLabel, isUntracked, ZERO_TOLERANCE } from "@/lib/reconciliation-insight";
 
 const cell: CSSProperties = {
   fontFamily: "var(--font-mono)",

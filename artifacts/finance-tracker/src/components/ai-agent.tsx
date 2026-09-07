@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send, BotMessageSquare, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
-import { AiWanderer } from "@/components/ai-wanderer";
-import { getBotSkin, type BotSkinId } from "@/lib/bot-skins";
+import { Companion } from "@/components/companion/companion";
+import { useCompanionSignals, useSearchingField } from "@/hooks/use-companion-signals";
 import { MonoLabel } from "@/components/primitives";
 import {
   StreamingProgress,
@@ -76,43 +76,6 @@ import { apiFetch } from "@/lib/api-fetch";
 // API_BASE removed — /api requests route through apiFetch, which handles
 // both the web (relative) and native (VITE_NATIVE_API_URL) cases and
 // attaches the bearer token on native. See lib/api-fetch.ts + G13 · 3/5.
-
-// ── Skin-specific sling box themes ────────────────────────────────────────────
-
-const SLING_SKIN: Record<BotSkinId, {
-  border: string; bg: string; headerBg: string; headerBorder: string;
-  titleText: string; titleColor: string; iconColor: string;
-  shadow: string; tailColor: string; tag: string;
-}> = {
-  ix: {
-    border: "1px solid var(--ft-border2)", bg: "var(--ft-surface)",
-    headerBg: "var(--ft-raised)", headerBorder: "var(--ft-border)",
-    titleText: "AI Coach", titleColor: "var(--ft-text)",
-    iconColor: "var(--ft-accent)", shadow: "0 12px 48px rgba(0,0,0,0.7)",
-    tailColor: "var(--ft-border2)", tag: "Powered by Groq",
-  },
-  mario: {
-    border: "3px solid #e3170a", bg: "#0d0400",
-    headerBg: "#1f0800", headerBorder: "#e3170a",
-    titleText: "IT'S-A ME! Finance AI", titleColor: "#f7c948",
-    iconColor: "#f7c948", shadow: "0 12px 48px rgba(0,0,0,0.85), 0 0 0 1px #f7c94822",
-    tailColor: "#e3170a", tag: "Let's-a go!",
-  },
-  gilded: {
-    border: "2px solid #c9922a", bg: "#0e0a02",
-    headerBg: "#1c1205", headerBorder: "#c9922a",
-    titleText: "Gilded Financial Oracle", titleColor: "#d4a017",
-    iconColor: "#d4a017", shadow: "0 12px 48px rgba(0,0,0,0.8), 0 0 24px rgba(201,146,42,0.2)",
-    tailColor: "#c9922a", tag: "Wealth Management",
-  },
-  bloodline: {
-    border: "2px solid #8b0000", bg: "#060101",
-    headerBg: "#120000", headerBorder: "#8b0000",
-    titleText: "Bloodline Oracle", titleColor: "#c0392b",
-    iconColor: "#c0392b", shadow: "0 12px 48px rgba(0,0,0,0.92), 0 0 24px rgba(139,0,0,0.35)",
-    tailColor: "#8b0000", tag: "Dark Market Intelligence",
-  },
-};
 
 // ── Chat panel (shared across all styles) ────────────────────────────────────
 
@@ -236,12 +199,9 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
 
   const isCenter = style === "minimal";
   const isWandererSling = style === "wanderer" && wandererPos != null;
-  const skin = isWandererSling ? getBotSkin() : "ix";
-  const sk = SLING_SKIN[skin];
 
   // Compute sling box position — bubble slings out above+left of character
   let slingStyle: React.CSSProperties = {};
-  let tailStyle: React.CSSProperties = {};
   if (isWandererSling && wandererPos) {
     const panelW = Math.min(400, window.innerWidth * 0.88);
     const panelH = Math.min(460, window.innerHeight * 0.62);
@@ -251,17 +211,6 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
     let top = wandererPos.y - panelH - 8;
     if (top < 8) top = 8;
     slingStyle = { left, top, width: panelW, maxHeight: panelH };
-    // Position the tail at the bottom of the bubble pointing to character
-    tailStyle = {
-      position: "absolute",
-      bottom: -10, right: left < wandererPos.x - panelW - 10 ? 16 : "auto",
-      left: left >= wandererPos.x + 48 ? 24 : "auto",
-      width: 0, height: 0,
-      borderLeft: "10px solid transparent",
-      borderRight: "10px solid transparent",
-      borderTop: `10px solid ${sk.tailColor}`,
-      zIndex: 1,
-    };
   }
 
   return (
@@ -285,32 +234,31 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
         maxHeight: 520,
         animation: "bot-appear 0.12s ease-out forwards",
       }),
-      background: isWandererSling ? sk.bg : "var(--ft-surface)",
+      background: "var(--ft-surface)",
       // Wanderer skins keep their character-shaped border. Default
       // panel is a plain hairline frame, no box-shadow (constitution —
       // data surfaces). No accent stripe: the frame is the identity.
-      border: isWandererSling ? sk.border : "1px solid var(--ft-border2)",
+      border: "1px solid var(--ft-border2)",
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
     }}>
-      {isWandererSling && <div style={tailStyle} />}
       {/* ── Header ── hairline structure, mono type ladder ── */}
       <div style={{
-        background: isWandererSling ? sk.headerBg : "var(--ft-raised)",
-        borderBottom: `1px solid ${isWandererSling ? sk.headerBorder : "var(--ft-border)"}`,
+        background: "var(--ft-raised)",
+        borderBottom: "1px solid var(--ft-border)",
         padding: "8px 12px",
         display: "flex",
         alignItems: "baseline",
         gap: 10,
         flexShrink: 0,
       }}>
-        <span aria-hidden style={{ color: isWandererSling ? sk.iconColor : "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1 }}>◇</span>
-        <MonoLabel size={10} color={isWandererSling ? sk.titleColor : "var(--ft-text)"} letterSpacing="0.14em">
-          {isWandererSling ? sk.titleText : "AI Coach"}
+        <span aria-hidden style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1 }}>◇</span>
+        <MonoLabel size={10} color="var(--ft-text)" letterSpacing="0.14em">
+          {"AI Coach"}
         </MonoLabel>
         <MonoLabel size={9} color="var(--ft-muted)" letterSpacing="0.1em">
-          · {isWandererSling ? sk.tag : "GROQ · CEREBRAS · OPENROUTER"}
+          · {"GROQ · CEREBRAS · OPENROUTER"}
         </MonoLabel>
         <button
           onClick={onClose}
@@ -526,6 +474,12 @@ export function AiAgent({ sidebarW }: { sidebarW?: number }) {
   const [summoned, setSummoned] = useState(false);
   const summonedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  // What the companion is reacting to. Read here rather than inside the
+  // companion so the queries are mounted once, alongside the assistant,
+  // instead of once per sprite.
+  const searching = useSearchingField();
+  const companionSignals = useCompanionSignals(searching);
+
   // Keep style in sync with localStorage (settings page can change it)
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
@@ -587,7 +541,7 @@ export function AiAgent({ sidebarW }: { sidebarW?: number }) {
     <>
       {/* Wanderer style */}
       {aiStyle === "wanderer" && (
-        <AiWanderer
+        <Companion
           onOpen={(bx?: number, by?: number) => {
             if (bx != null && by != null) setWandererPos({ x: bx, y: by });
             setOpen(true);
@@ -595,6 +549,7 @@ export function AiAgent({ sidebarW }: { sidebarW?: number }) {
           summoned={summoned}
           locationKey={location}
           sidebarW={sidebarW}
+          signals={companionSignals}
         />
       )}
 

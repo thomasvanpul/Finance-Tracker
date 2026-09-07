@@ -256,6 +256,18 @@ async function interceptApiRequests(context: BrowserContext): Promise<void> {
     }
     let body = await response.body();
     let contentType = response.headers()["content-type"] ?? "";
+    // The assistant — and therefore the companion — is hidden entirely when
+    // no AI provider key is verified, which is the state of every local dev
+    // API. Flipping only `available` under SCREENSHOT_COMPANION lets the
+    // companion be looked at without inventing any figure; nothing else in
+    // the payload is touched, and no AI response is fabricated.
+    if (process.env.SCREENSHOT_COMPANION === "1" && targetUrl.includes("/api/ai/status")) {
+      try {
+        const parsed = JSON.parse(body.toString("utf-8")) as Record<string, unknown>;
+        parsed.available = true;
+        body = Buffer.from(JSON.stringify(parsed), "utf-8");
+      } catch { /* leave untouched if not JSON */ }
+    }
     if (nullForeignFx && contentType.includes("application/json") && response.status() === 200) {
       try {
         const parsed = JSON.parse(body.toString("utf-8"));
@@ -355,10 +367,19 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
   const personaSeed = persona === undefined ? "" : `
     window.localStorage.setItem("ft-persona", ${JSON.stringify(JSON.stringify([persona]))});`;
 
+  // SCREENSHOT_COMPANION=1 switches the assistant to the roaming companion.
+  // Same precedent as SCREENSHOT_AI_INSIGHTS above: the companion only mounts
+  // under the "wanderer" AI style, which a seeded account does not have, so
+  // without this it cannot be looked at — and "I could not see it" is exactly
+  // how the companion ended up sitting on top of figures in the first place.
+  const companionSeed = process.env.SCREENSHOT_COMPANION === "1"
+    ? `\n    window.localStorage.setItem("numeris-ai-style", "wanderer");`
+    : "";
+
   await page.addInitScript(`try {
     window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});${personaSeed}
     window.localStorage.setItem("ft-onboarding-complete", "1");
-    window.localStorage.setItem("nr-onboarding-complete", "1");${aiSeed}
+    window.localStorage.setItem("nr-onboarding-complete", "1");${aiSeed}${companionSeed}
   } catch (e) {}`);
 
   // Reported, not fatal. An uncaught exception does not always blank the

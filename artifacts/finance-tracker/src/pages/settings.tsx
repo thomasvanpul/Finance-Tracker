@@ -31,15 +31,21 @@ import { Check, Lock } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
 import { useWidgets, WIDGET_REGISTRY } from "@/contexts/widgets-context";
-import { getBotSkin, setBotSkin, SKINS, type BotSkinId } from "@/lib/bot-skins";
-import { BotPreview, type Phase } from "@/components/ai-wanderer";
+import { CAT, type CompanionState } from "@/lib/companion/manifest";
+import { SpriteActor } from "@/components/companion/sprite-actor";
+import { STATE_TITLE } from "@/components/companion/companion";
 import { ConnectionsPanel } from "./settings-connections";
 import {
   SLOT_OPTIONS, saveSlotId, clearSlotId, loadSlotId, slotIdForPersona,
   SLOT_UPDATE_EVENT,
 } from "@/lib/tab-slot";
 
-const WARDROBE_PHASES: Phase[] = ["idle", "sitting", "coffee", "thinking", "dancing", "complaining", "tired", "jumping", "lying"];
+// The companion states worth showing, in the order they read as a story:
+// asleep because the books balance, through to something waiting to be read.
+// Ordered by what they SAY, not by how they look.
+const COMPANION_STATES: CompanionState[] = [
+  "sleeping", "sitting", "walking", "digging", "eating", "lookAround", "stalking",
+];
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 // The alert thresholds. Two consumers read these — the notifications panel and
@@ -59,7 +65,7 @@ const DENSITY_KEY = "ft-density";
 type Density = "compact" | "normal" | "comfortable";
 
 type NavItem =
-  | "appearance" | "display" | "wardrobe" | "terminal-profile"
+  | "appearance" | "display" | "companion" | "terminal-profile"
   | "currency" | "alerts" | "rules" | "dashboard" | "tx-defaults"
   | "widgets" | "data" | "advanced"
   | "shortcuts" | "ai"
@@ -170,7 +176,7 @@ const NAV_GROUPS: { label: string; items: { id: NavItem; label: string }[] }[] =
       { id: "terminal-profile", label: "Terminal Profile" },
       { id: "appearance",  label: "Appearance" },
       { id: "display",     label: "Display & Motion" },
-      { id: "wardrobe",    label: "Wardrobe" },
+      { id: "companion",   label: "Companion" },
       { id: "categories",  label: "Categories" },
     ],
   },
@@ -1347,124 +1353,106 @@ const AI_STYLES: { id: AiStyle; label: string; desc: string; preview: string }[]
   },
 ];
 
-function WardrobePanel() {
-  const [skinId, setSkinId] = useState<BotSkinId>(getBotSkin);
-  const [previewPhase, setPreviewPhase] = useState<Phase>("idle");
-  const [blinking, setBlinking] = useState(false);
-  const [autoPlay, setAutoPlay] = useState(true);
-  const phaseIdxRef = useRef(0);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setBlinking(true);
-      setTimeout(() => setBlinking(false), 180);
-    }, 2800 + Math.random() * 1400);
-    return () => clearInterval(id);
-  }, []);
+// ── Companion ────────────────────────────────────────────────────────────────
+// One character, presented properly, rather than a grid of costumes.
+//
+// The old panel was a shop: four skins, a rarity word next to each, a list of
+// "perks" that did nothing, and a radio button. It asked the user to choose
+// between things that were not different in any way that mattered, and two of
+// them could not ship at all — `mario` is Nintendo's, and this is an App
+// Store-bound commercial app.
+//
+// What replaces it is a legend. The companion's states are wired to real
+// application data, so the useful thing to show is not "which cat" but "what
+// the cat is telling you" — which makes this panel documentation for a signal
+// rather than a wardrobe for a mascot.
+function CompanionPanel() {
+  const [preview, setPreview] = useState<CompanionState>("sleeping");
+  const [auto, setAuto] = useState(true);
+  const idxRef = useRef(0);
 
   useEffect(() => {
-    if (!autoPlay) return;
+    if (!auto) return;
     const id = setInterval(() => {
-      phaseIdxRef.current = (phaseIdxRef.current + 1) % WARDROBE_PHASES.length;
-      setPreviewPhase(WARDROBE_PHASES[phaseIdxRef.current]);
-    }, 2800);
+      idxRef.current = (idxRef.current + 1) % COMPANION_STATES.length;
+      setPreview(COMPANION_STATES[idxRef.current]);
+    }, 2600);
     return () => clearInterval(id);
-  }, [autoPlay]);
-
-  const pickSkin = useCallback((id: BotSkinId) => {
-    setBotSkin(id);
-    setSkinId(id);
-    window.dispatchEvent(new CustomEvent("numeris-skin-change"));
-  }, []);
-
-  const RARITY_COLOR_MAP: Record<string, string> = { COMMON: "var(--ft-dim)", EPIC: "#a855f7", LEGENDARY: "var(--ft-amber, #f59e0b)" };
+  }, [auto]);
 
   return (
     <VStack gap={6}>
       <div style={PANEL_STYLE}>
-        <PanelHeader>Bot Skin</PanelHeader>
-        <style>{`
-          @keyframes wand-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-          @keyframes wand-sit-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
-          @keyframes wand-dance{0%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-6px) rotate(-4deg)}50%{transform:translateY(-8px) rotate(0deg)}75%{transform:translateY(-6px) rotate(4deg)}100%{transform:translateY(0) rotate(0deg)}}
-          @keyframes wand-complain{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
-          @keyframes wand-jump{0%{transform:translateY(0)}45%{transform:translateY(-30px)}70%{transform:translateY(-3px)}100%{transform:translateY(0)}}
-        `}</style>
-        {/* Live preview */}
-        <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--ft-border)", display: "flex", gap: 12, alignItems: "flex-start" }}>
-          <div style={{ width: 86, height: 120, background: "var(--ft-base)", border: "1px solid var(--ft-border)", display: "flex", alignItems: "flex-end", justifyContent: "center", flexShrink: 0, overflow: "hidden", position: "relative" }}>
-            <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)", backgroundSize: "16px 16px", pointerEvents: "none" }} />
-            <div style={{ position: "absolute", bottom: 24, left: "8%", right: "8%", height: 1, background: "var(--ft-border)" }} />
-            <div style={{
-              width: previewPhase === "lying" ? 110 : 36, height: previewPhase === "lying" ? 57 : 66, flexShrink: 0,
-              transform: previewPhase === "lying" ? "scale(0.62)" : "scale(1.4)", transformOrigin: "center bottom", marginBottom: 24,
-              animation: previewPhase === "sitting" ? "wand-sit-bob 3s ease-in-out infinite" : previewPhase === "dancing" ? "wand-dance 0.52s ease-in-out infinite" : previewPhase === "complaining" ? "wand-complain 0.3s ease-in-out infinite" : previewPhase === "tired" || previewPhase === "lying" ? "none" : previewPhase === "jumping" ? "wand-jump 0.75s cubic-bezier(0.36,0.07,0.19,0.97) infinite" : "wand-bob 2.6s ease-in-out infinite",
-            }}>
-              <BotPreview skinId={skinId} phase={previewPhase} blinking={blinking} />
-            </div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <HStack align="center" justify="between" marginBottom={6}>
-              <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.12em">PHASE</Text>
-              <button onClick={() => setAutoPlay(a => !a)} style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", color: autoPlay ? "var(--ft-accent)" : "var(--ft-dim)", background: autoPlay ? "var(--ft-accent)15" : "transparent", border: `1px solid ${autoPlay ? "var(--ft-accent)44" : "var(--ft-border)"}`, padding: "2px 6px", cursor: "pointer" }}>
-                {autoPlay ? "AUTO ●" : "AUTO ○"}
-              </button>
-            </HStack>
-            <HStack gap={3} wrap>
-              {WARDROBE_PHASES.map(p => (
-                <button key={p} onClick={() => { setAutoPlay(false); setPreviewPhase(p); }} style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.05em", padding: "2px 5px", border: `1px solid ${previewPhase === p ? "var(--ft-accent)" : "var(--ft-border)"}`, background: previewPhase === p ? "var(--ft-accent)15" : "transparent", color: previewPhase === p ? "var(--ft-accent)" : "var(--ft-dim)", cursor: "pointer", textTransform: "uppercase" }}>
-                  {p}
-                </button>
-              ))}
-            </HStack>
-            {(() => {
-              const skin = SKINS.find(s => s.id === skinId);
-              if (!skin) return null;
-              return (
-                <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
-                  <Text as="span" size={10} weight={700} color="var(--ft-text)">{skin.label}</Text>
-                  {" "}
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: RARITY_COLOR_MAP[skin.rarity] }}>{skin.rarity}</span>
-                </div>
-              );
-            })()}
+        <PanelHeader>Companion</PanelHeader>
+
+        {/* The stage. A floor line and nothing else — the character is the
+            content, so there is no frame inside the frame. */}
+        <div style={{ padding: "16px 14px 0", display: "flex", justifyContent: "center" }}>
+          <div style={{ position: "relative", height: 96, display: "flex", alignItems: "flex-end" }}>
+            <div style={{ position: "absolute", left: -40, right: -40, bottom: 0, height: 1, background: "var(--ft-border)" }} />
+            <SpriteActor manifest={CAT} state={preview} scale={3} />
           </div>
         </div>
-        <div style={{ padding: "4px 0" }}>
-          {SKINS.map((skin) => {
-            // Skin `requiredTheme` field is kept on the data as a
-            // historical marker of the intended rarity gate, but the
-            // usability check is dropped — the theme was unlocked via
-            // XP, and XP no longer has a source. Every skin is
-            // pickable. See CLAUDE.md § Hard constraints.
-            const isActive = skinId === skin.id;
-            const rarityCol = RARITY_COLOR_MAP[skin.rarity] ?? "var(--ft-dim)";
+
+        <div style={{ padding: "10px 14px 14px", textAlign: "center" }}>
+          <Text as="div" size={11} weight={600} color="var(--ft-text)">{STATE_TITLE[preview]}</Text>
+        </div>
+
+        {/* The legend. Each row is a state and the thing in the app that
+            causes it, so the animation is readable as information. */}
+        <div style={{ borderTop: "1px solid var(--ft-border)" }}>
+          {COMPANION_STATES.map((st) => {
+            const isActive = preview === st;
             return (
-              <div key={skin.id} onClick={() => pickSkin(skin.id)} style={{ ...ROW, cursor: "pointer", background: isActive ? "var(--ft-raised)" : "transparent", transition: "background 0.1s", alignItems: "flex-start", paddingTop: 10, paddingBottom: 10 }}>
-                <div style={{ flex: 1 }}>
-                  <HStack gap={6} align="center" marginBottom={3}>
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: isActive ? rarityCol : "var(--ft-text)" }}>{skin.label}</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: rarityCol, opacity: 0.85 }}>{skin.rarity}</span>
-                  </HStack>
-                  <Text as="div" size={11} color="var(--ft-muted)" lineHeight={1.5} mb={skin.perks.length > 0 ? 5 : 0}>{skin.desc}</Text>
-                  {skin.perks.length > 0 && (
-                    <HStack gap="3px 6px" wrap>
-                      {skin.perks.map((perk) => (<span key={perk} style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: rarityCol, opacity: 0.7, letterSpacing: "0.04em" }}>· {perk}</span>))}
-                    </HStack>
-                  )}
-                </div>
-                <HStack gap={6} align="center" marginTop={2} shrink={false}>
-                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${isActive ? rarityCol : "var(--ft-border2)"}`, background: isActive ? rarityCol : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {isActive && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-base)" }} />}
-                  </div>
-                </HStack>
+              <div
+                key={st}
+                onClick={() => { setAuto(false); setPreview(st); }}
+                style={{ ...ROW, cursor: "pointer", justifyContent: "flex-start", flexWrap: "nowrap", background: isActive ? "var(--ft-raised)" : "transparent", transition: "background 0.1s" }}
+              >
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: isActive ? "var(--ft-accent)" : "var(--ft-dim)", width: 96, flexShrink: 0 }}>
+                  {st.replace(/([A-Z])/g, " $1")}
+                </span>
+                <Text as="span" size={11} color={isActive ? "var(--ft-text)" : "var(--ft-muted)"} lineHeight={1.5}>
+                  {COMPANION_MEANING[st]}
+                </Text>
               </div>
             );
           })}
+        </div>
+
+        <div style={{ padding: "10px 14px", borderTop: "1px solid var(--ft-border)" }}>
+          <HStack align="center" justify="between">
+            <Text as="span" size={10} color="var(--ft-dim)" lineHeight={1.5}>{CAT.credit}</Text>
+            <button
+              onClick={() => setAuto((a) => !a)}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", color: auto ? "var(--ft-accent)" : "var(--ft-dim)", background: "transparent", border: `1px solid ${auto ? "var(--ft-accent)44" : "var(--ft-border)"}`, padding: "2px 6px", cursor: "pointer", flexShrink: 0 }}
+            >
+              {auto ? "AUTO \u25cf" : "AUTO \u25cb"}
+            </button>
+          </HStack>
         </div>
       </div>
     </VStack>
   );
 }
+
+// What causes each state. This is the panel's actual content — it documents
+// the wiring in hooks/use-companion-signals.ts, so if that wiring changes,
+// this list is wrong and should change with it.
+const COMPANION_MEANING: Record<CompanionState, string> = {
+  sleeping: "Every account reconciles \u2014 there is no unexplained movement.",
+  resting: "Settled. There is a gap, but nothing is happening right now.",
+  sitting: "Waiting. The reconciliation figure has not been worked out yet.",
+  idle: "Waiting.",
+  walking: "A sync is running.",
+  running: "A sync is running.",
+  stalking: "Your cursor is nearby and moving slowly.",
+  pouncing: "Your cursor moved quickly past it.",
+  lookAround: "An insight is waiting that you have not dismissed.",
+  eating: "Income has landed since you last looked.",
+  digging: "You are searching.",
+  alert: "Something changed underneath it.",
+};
 
 function AiSettingsPanel() {
   const [selected, setSelected] = useState<AiStyle>(getAiStyle);
@@ -1517,9 +1505,9 @@ function AiSettingsPanel() {
       {selected === "wanderer" && (
         <div style={{ ...PANEL_STYLE, padding: "10px 14px" }}>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)" }}>
-            Bot skin can be customised in{" "}
-            <span style={{ color: "var(--ft-accent)", cursor: "pointer", textDecoration: "underline" }} onClick={() => window.dispatchEvent(new CustomEvent("numeris-settings-nav", { detail: "wardrobe" }))}>
-              Personalise → Wardrobe
+            What the companion is telling you is explained in{" "}
+            <span style={{ color: "var(--ft-accent)", cursor: "pointer", textDecoration: "underline" }} onClick={() => window.dispatchEvent(new CustomEvent("numeris-settings-nav", { detail: "companion" }))}>
+              Personalise → Companion
             </span>
           </div>
         </div>
@@ -2609,7 +2597,7 @@ export default function Settings() {
                 <button
                   key={group.label}
                   onClick={() => {
-                    const first = group.items.find(i => !(i.id === "wardrobe" && aiStyle !== "wanderer"));
+                    const first = group.items.find(i => !(i.id === "companion" && aiStyle !== "wanderer"));
                     if (first) setActivePanel(first.id);
                   }}
                   style={{
@@ -2631,7 +2619,7 @@ export default function Settings() {
           <div style={{ display: "flex", overflowX: "auto", scrollbarWidth: "none", padding: "8px 14px 10px", gap: 6 }}>
             {activeGroup.items.map(item => {
               const isActive = activePanel === item.id;
-              const isLocked = item.id === "wardrobe" && aiStyle !== "wanderer";
+              const isLocked = item.id === "companion" && aiStyle !== "wanderer";
               return (
                 <button
                   key={item.id}
@@ -2666,8 +2654,8 @@ export default function Settings() {
               </div>
               {group.items.map(item => {
                 const isActive = activePanel === item.id;
-                const isWardrobeLocked = item.id === "wardrobe" && aiStyle !== "wanderer";
-                if (isWardrobeLocked) {
+                const isCompanionLocked = item.id === "companion" && aiStyle !== "wanderer";
+                if (isCompanionLocked) {
                   return (
                     <div
                       key={item.id}
@@ -2943,7 +2931,7 @@ export default function Settings() {
 
         {activePanel === "ai" && <AiSettingsPanel />}
 
-        {activePanel === "wardrobe" && <WardrobePanel />}
+        {activePanel === "companion" && <CompanionPanel />}
 
         {activePanel === "categories" && <CategoriesPanel />}
 

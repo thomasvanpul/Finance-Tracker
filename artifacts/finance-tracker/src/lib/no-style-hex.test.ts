@@ -41,13 +41,8 @@ const REPO_ROOT = join(SRC_DIR, "..");
 const EXEMPT_SUFFIXES: readonly string[] = [
   "/contexts/theme-context.tsx",
   "/components/theme-effects.tsx",
-  "/components/mario-skin.tsx",
-  "/components/premium-skins.tsx",
-  "/components/ai-wanderer.tsx",
   "/components/easter-eggs.tsx",
-  "/components/ai-agent.tsx",
   "/lib/persona.ts",
-  "/lib/bot-skins.ts",
 ];
 
 function walk(dir: string): string[] {

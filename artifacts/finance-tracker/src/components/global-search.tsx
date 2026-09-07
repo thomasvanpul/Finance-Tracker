@@ -306,6 +306,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search transactions, accounts, investments, goals, IOUs..."
+            data-search-field=""
             style={{
               flex: 1,
               height: 44,

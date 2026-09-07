@@ -58,8 +58,6 @@ export const ACCOUNT_LEVEL_KEYS: readonly string[] = [
   "ft-default-currency", "ft-amount-display", "ft-date-format",
   "nr-date-format", "nr-number-format", "nr-show-cents", "nr-compact-numbers",
   "nr-week-start", "nr-time-format",
-  // the companion's memory of the user
-  "ix-companion-v1",
 ];
 
 export const DEVICE_LOCAL_KEYS: readonly string[] = [
@@ -83,7 +81,7 @@ export const SERVER_CACHE_KEYS: readonly string[] = [
 // (nr-native-auth-token) is Capacitor Preferences — none of them is a
 // localStorage key, so none is listed here.
 export const LOCAL_CACHE_KEYS: readonly string[] = [
-  "ft-briefing-cache", "ft-crypto-prices", "numeris-ai-style", "numeris-bot-skin",
+  "ft-briefing-cache", "ft-crypto-prices", "numeris-ai-style",
 ];
 
 export const ONBOARDING_KEYS: readonly string[] = [
