@@ -63,7 +63,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { oneShotInsight } from "@/lib/ai-chat-client";
 import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
-import { entityHref } from "@/lib/entity-href";
+import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, recurringSeriesHref, thisMonthRange } from "@/lib/entity-href";
+import { Drill, DrillTarget } from "@/components/drill";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -1719,12 +1720,28 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
 
 // ── Bloomberg KPI Bar ─────────────────────────────────────────────────────────
 
+const KPI_VALUE_STYLE: React.CSSProperties = {
+  display: "block",
+  fontFamily: "var(--font-mono)",
+  fontSize: "clamp(13px, 1.4vw, 18px)",
+  fontWeight: 700,
+  letterSpacing: "-0.01em",
+  lineHeight: 1,
+  fontVariantNumeric: "tabular-nums",
+  whiteSpace: "nowrap",
+};
+
 interface KpiCellData {
   label: string;
   value: string;
   delta?: string;
   deltaColor?: string;
   valueColor?: string;
+  /**
+   * The rows this figure was computed from (DESIGN.md §14). Ratios and
+   * projections leave it unset and stay flat.
+   */
+  href?: string;
 }
 
 // Persona-aware empty state for the desktop Dashboard. Same rules as
@@ -2024,17 +2041,17 @@ function DashboardKpiBar({
               value or delta. "A financial figure is shown in full or
               not at all" (CLAUDE.md). Font-size clamp allows the value
               to shrink instead of clip; nowrap keeps it single-line. */}
-          <span className="pnum" style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "clamp(13px, 1.4vw, 18px)",
-            fontWeight: 700,
-            letterSpacing: "-0.01em",
-            color: cell.valueColor ?? "var(--ft-text)",
-            lineHeight: 1,
-            fontVariantNumeric: "tabular-nums",
-            whiteSpace: "nowrap",
-          }}>
-            {cell.value}
+          {/* The cell's semantic colour sits on the wrapper, not on
+              `.ft-drill` — an inline colour on the drill itself would beat
+              the accent it takes on hover. */}
+          <span style={{ color: cell.valueColor ?? "var(--ft-text)" }}>
+            {cell.href ? (
+              <DrillTarget href={cell.href} title={`${cell.label} — open what it is made of`}>
+                <span className="pnum ft-drill" style={KPI_VALUE_STYLE}>{cell.value}</span>
+              </DrillTarget>
+            ) : (
+              <span className="pnum" style={KPI_VALUE_STYLE}>{cell.value}</span>
+            )}
           </span>
           {cell.delta && (
             <span className="pnum" style={{
@@ -2195,7 +2212,9 @@ function RecentTransactionsWidgetInline() {
             {tx.date.slice(5).replace("-", "/")}
           </Text>
           <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {tx.description}
+            {tx.description
+              ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill>
+              : tx.description}
           </span>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
             {/* Native amount alone when FX unavailable; the row still
@@ -2272,7 +2291,10 @@ function DashboardOverview() {
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
             <div>
               <div style={{ ...OV_LABEL, marginBottom: 3 }}>NET WORTH</div>
-              <div className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 34 : 36, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.03em", lineHeight: 1 }}>
+              {/* The whole card is already a Link to /net-worth; §14 asks
+                  that the figure itself say so, so it carries the underline
+                  the rest of the product uses. */}
+              <div className="pnum ft-drill" style={{ ...OV_MONO, fontSize: isMobile ? 34 : 36, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.03em", lineHeight: 1 }}>
                 {netWorth === null ? "—" : formatBaseMoney(netWorth)}
               </div>
             </div>
@@ -2280,6 +2302,11 @@ function DashboardOverview() {
               <HStack gap={14} align="start">
                 <div>
                   <div style={{ ...OV_LABEL, marginBottom: 3 }}>THIS MONTH</div>
+                  {/* Flat, deliberately: this figure sits inside the hero
+                      card, which is one Link to /net-worth. A drill here
+                      would signal "the month's rows" and deliver the net
+                      worth screen — §14 calls that worse than flat. The
+                      same number is drillable on the KPI strip above. */}
                   <div className="pnum" style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, ...C(netColor) }}>
                     {net >= 0 ? "+" : ""}{formatBaseMoney(net)}
                   </div>
@@ -2312,8 +2339,10 @@ function DashboardOverview() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: isMobile ? 12 : 14, paddingRight: 4, height: 34 }}>
             <span style={{ ...OV_LABEL }}>ACCOUNTS</span>
             <Link href="/accounts" style={{ textDecoration: "none" }}>
-              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-cyan)"), fontWeight: 700, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
-                {accounts.length} LINKED →
+              <span style={{ ...C("var(--ft-cyan)") }}>
+                <span className="ft-drill" style={{ ...OV_MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
+                  {accounts.length} LINKED →
+                </span>
               </span>
             </Link>
           </div>
@@ -2322,7 +2351,7 @@ function DashboardOverview() {
           ) : sortedAccounts.map((acc, i) => (
             <div key={acc.id ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: isMobile ? "10px 12px" : "7px 14px", borderBottom: i < sortedAccounts.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: isMobile ? 13 : 11, fontWeight: isMobile ? 500 : 400, ...C("var(--ft-text)") }}>{acc.name}</div>
+                <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: isMobile ? 13 : 11, fontWeight: isMobile ? 500 : 400, ...C("var(--ft-text)") }}><Drill href={entityHref("account", acc.id)} title={`${acc.name} — open the account`}>{acc.name}</Drill></div>
                 <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)"), letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: isMobile ? 2 : 0 }}>{(acc as any).currency ?? ""}</div>
               </div>
               <span className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
@@ -2364,8 +2393,8 @@ function DashboardOverview() {
                   <span style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, color: txTypeColor }}>{(tx.category ?? tx.type ?? "?")[0].toUpperCase()}</span>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 13, fontWeight: 500, ...C("var(--ft-text)"), marginBottom: 2 }}>{tx.description}</div>
-                  <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</div>
+                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 13, fontWeight: 500, ...C("var(--ft-text)"), marginBottom: 2 }}>{tx.description ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill> : tx.description}</div>
+                  <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? <>{" · "}<Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill></> : null}</div>
                 </div>
                 <span className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0 }}>
                   {tx.baseEquivalent == null
@@ -2377,8 +2406,8 @@ function DashboardOverview() {
             return (
               <div key={tx.id ?? i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 14px", borderBottom: i < txRows.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
                 <VStack minWidth0>
-                  <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 10, ...C("var(--ft-text)") }}>{tx.description}</span>
-                  <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? ` · ${tx.category}` : ""}</span>
+                  <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 10, ...C("var(--ft-text)") }}>{tx.description ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill> : tx.description}</span>
+                  <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? <>{" · "}<Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill></> : null}</span>
                 </VStack>
                 <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
                   {tx.baseEquivalent == null
@@ -2408,7 +2437,7 @@ function DashboardOverview() {
             <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(upcomingBills.length, isMobile ? 2 : 4)}, 1fr)`, gap: 8 }}>
               {upcomingBills.map((bill, i) => (
                 <div key={bill.id ?? i} style={{ padding: "9px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)" }}>
-                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 8, ...C("var(--ft-dim)"), marginBottom: 4 }}>{bill.description}</div>
+                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 8, ...C("var(--ft-dim)"), marginBottom: 4 }}>{bill.description ? <Drill href={recurringSeriesHref(bill.description)} title={`${bill.description} — the series this bill belongs to`}>{bill.description}</Drill> : bill.description}</div>
                   <div className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, ...C("var(--ft-text)"), marginBottom: 3 }}>
                     {formatBaseMoney(bill.baseEquivalent)}
                   </div>
@@ -2781,17 +2810,20 @@ export default function Dashboard() {
 
     const NET_WORTH: KpiCellData = {
       label: "NET WORTH",
+      href: "/net-worth",
       value: formatBaseMoney(netWorth),
       delta: netWorth > 0 ? undefined : "–",
       valueColor: "var(--ft-blue)",
     };
     const MONTHLY_INCOME: KpiCellData = {
       label: "MONTHLY INCOME",
+      href: ledgerHref({ type: "income", ...thisMonthRange() }),
       value: income > 0 ? formatBaseMoney(income) : "–",
       valueColor: income > 0 ? "var(--ft-green)" : "var(--ft-dim)",
     };
     const MONTHLY_SPEND: KpiCellData = {
       label: "MONTHLY SPEND",
+      href: ledgerHref({ type: "expense", ...thisMonthRange() }),
       value: expenses > 0 ? formatBaseMoney(expenses) : "–",
       valueColor: expenses > 0 ? "var(--ft-red)" : "var(--ft-dim)",
     };

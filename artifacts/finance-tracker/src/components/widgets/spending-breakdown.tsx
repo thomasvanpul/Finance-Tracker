@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 import { useListTransactions } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -59,9 +61,11 @@ type CategoryBarRowProps = {
   rank: number;
   prevHasData: boolean;
   trend: TrendChip;
+  /** The month these figures are summed over, so a drill opens the same rows. */
+  range: { from: string; to: string };
 };
 
-function CategoryBarRow({ cat, amount, pct, color, rank, prevHasData, trend }: CategoryBarRowProps) {
+function CategoryBarRow({ cat, amount, pct, color, rank, prevHasData, trend, range }: CategoryBarRowProps) {
   const [hov, setHov] = useState(false);
   const chipColor = trendColor(trend.tag);
 
@@ -83,9 +87,9 @@ function CategoryBarRow({ cat, amount, pct, color, rank, prevHasData, trend }: C
             {rank}
           </span>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {cat}
-          </span>
+          </Drill>
         </div>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
           {prevHasData && (
@@ -125,9 +129,11 @@ type DonutLegendItemProps = {
   amt: number;
   total: number;
   color: string;
+  /** The month these figures are summed over, so a drill opens the same rows. */
+  range: { from: string; to: string };
 };
 
-function DonutLegendItem({ cat, amt, total, color }: DonutLegendItemProps) {
+function DonutLegendItem({ cat, amt, total, color, range }: DonutLegendItemProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -143,7 +149,7 @@ function DonutLegendItem({ cat, amt, total, color }: DonutLegendItemProps) {
       }}
     >
       <div style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat}</span>
+      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 8, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat}</Drill>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color }}>{total > 0 ? ((amt / total) * 100).toFixed(0) : 0}%</span>
     </div>
   );
@@ -154,9 +160,11 @@ type VsLastMonthRowProps = {
   amount: number;
   prev: number;
   color: string;
+  /** The month these figures are summed over, so a drill opens the same rows. */
+  range: { from: string; to: string };
 };
 
-function VsLastMonthRow({ cat, amount, prev, color }: VsLastMonthRowProps) {
+function VsLastMonthRow({ cat, amount, prev, color, range }: VsLastMonthRowProps) {
   const [hov, setHov] = useState(false);
   const delta = amount - prev;
   const deltaColor = delta > 0 ? "var(--ft-red)" : delta < 0 ? "var(--ft-green)" : "var(--ft-dim)";
@@ -179,9 +187,9 @@ function VsLastMonthRow({ cat, amount, prev, color }: VsLastMonthRowProps) {
       }}
     >
       <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {cat}
-      </span>
+      </Drill>
       {pctChange !== null && (
         <span style={{
           fontFamily: "var(--font-mono)",
@@ -277,7 +285,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
       </button>
 
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>
-        −{formatBaseMoney(Math.abs(total))}
+        <Drill href={ledgerHref({ type: "expense", from: dateFrom, to: dateTo })} title="Total spent — every expense it is the sum of">−{formatBaseMoney(Math.abs(total))}</Drill>
       </span>
     </div>
   );
@@ -304,6 +312,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
             rank={i + 1}
             prevHasData={prevHasData}
             trend={trend}
+            range={{ from: dateFrom, to: dateTo }}
           />
         );
       })}
@@ -351,6 +360,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
               amt={amt}
               total={total}
               color={PALETTE[i % PALETTE.length] ?? "var(--ft-accent)"}
+              range={{ from: dateFrom, to: dateTo }}
             />
           ))}
         </div>
@@ -385,6 +395,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
               amount={amount}
               prev={prev}
               color={color}
+              range={{ from: dateFrom, to: dateTo }}
             />
           );
         })

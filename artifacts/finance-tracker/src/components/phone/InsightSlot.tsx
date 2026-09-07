@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { Drill } from "@/components/drill";
 import type { Insight } from "@/lib/spending-insights";
 
 // InsightSlot — the one-insight-or-nothing container on SPENDING.
@@ -41,6 +42,9 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
       }}
     >
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        {/* When the headline is a figure the app computed from rows, it is a
+            way into those rows (DESIGN.md §14). The producer decides, by
+            setting drillHref; the slot stays dumb. */}
         <div
           style={{
             fontSize: 15,
@@ -53,7 +57,9 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
             whiteSpace: "nowrap",
           }}
         >
-          {insight.headline}
+          {insight.drillHref
+            ? <Drill href={insight.drillHref}>{insight.headline}</Drill>
+            : insight.headline}
         </div>
         <div
           style={{

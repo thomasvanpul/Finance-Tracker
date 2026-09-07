@@ -832,6 +832,96 @@ input[type="checkbox"]:checked {
   background: var(--ft-raised);
 }
 
+/* ── The drill affordance ────────────────────────────────────────────────────
+   DESIGN.md §14: a figure computed from rows is a button, and pressing it
+   opens the rows. This class is the one signal that says so, and it is the
+   only one — a second convention would mean the user has to learn two.
+
+   At rest a 1px underline in --ft-border2, held 3px clear of the baseline so
+   it clears descenders and a currency glyph. On hover or keyboard focus the
+   text and the underline both go --ft-accent, which §11 reserves for "you
+   can press this". Rest state is deliberately visible rather than
+   hover-only: a phone has no hover, and a button that only announces itself
+   to a mouse is a secret on half the app's surfaces.
+
+   Solid, never dotted. Dotted is this product's signature for a figure that
+   has not happened yet; a number you can drill into is as real as any other,
+   and reusing the mark would make the two unreadable.
+
+   No box, no chip, no background. DESIGN.md §9 keeps a box for a control the
+   user presses in place, and forty boxes down a ledger is exactly the
+   "outdated" look that rule exists to prevent. A drill is not a control —
+   it is a route into the rows behind the number. */
+.ft-drill {
+  cursor: pointer;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--ft-border2);
+  text-underline-offset: 3px;
+  transition: color 120ms linear, text-decoration-color 120ms linear;
+}
+.ft-drill:hover,
+.ft-drill:focus-visible {
+  color: var(--ft-accent);
+  text-decoration-color: var(--ft-accent);
+}
+/* The underline plus the accent already say "focused"; a ring on top of a
+   figure inside a dense table lands on its neighbours. */
+.ft-drill:focus-visible { outline: none; }
+
+/* A text-decoration is drawn only on text in the decorating box's own inline
+   flow. It is not drawn on the contents of an atomic inline-level descendant,
+   and `span.pnum` is `display: inline-block` so the figure honours max-width
+   and sits on the baseline; several call sites also set `display: block` on
+   the value span. Where the drill's WHOLE content is one of those, the
+   underline is not drawn at all and the affordance is silently absent.
+
+   Measured 2026-09-07 across nine desktop routes before this rule existed:
+   21 of 268 drills drew no underline, and they were the headline figures —
+   all five on /briefing, the WORTH total, five of fifteen on /reports, four
+   of twenty on /accounts. Re-declaring the line on the child restores it.
+   The values are `inherit`, so the hover and focus rules above still reach
+   the child through the parent's computed value.
+
+   Direct children only, and measured safe: across the same 268 drills there
+   was no in-flow inline child whose font-size differs from its drill, which
+   is the one case where a second underline would sit at a different offset
+   and step. A drill that mixes type sizes in one line would need this
+   checked again. */
+.ft-drill > * {
+  text-decoration-line: inherit;
+  text-decoration-color: inherit;
+  text-decoration-thickness: inherit;
+}
+
+/* A drill whose whole row or cell is the target. The underline stays on the
+   figure — that is what the rule is about — but the hit area is the cell, so
+   a phone gets its 44px and a mouse gets a bigger thing to aim at. The
+   wrapper itself draws nothing. */
+.ft-drill-target {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ft-drill-target:hover .ft-drill,
+.ft-drill-target:focus-visible .ft-drill {
+  color: var(--ft-accent);
+  text-decoration-color: var(--ft-accent);
+}
+.ft-drill-target:focus-visible { outline: none; }
+
+/* Mobile Amendment: 44px minimum for anything tappable. Padding on an inline
+   box extends the hit area without moving the line box, and the negative
+   margin keeps the surrounding rhythm identical to desktop. */
+@media (max-width: 767px) {
+  .ft-drill {
+    padding-block: 8px;
+    margin-block: -8px;
+  }
+}
+
 /* An ephemeral surface — one that floats above the page and will leave
    (DESIGN.md §6). The only radius and elevation a desktop surface may carry.
    Permanent surfaces (.ft-panel, .ft-widget-frame, PanelBox) stay square. */

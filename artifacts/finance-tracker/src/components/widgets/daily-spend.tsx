@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref, merchantTransactionsHref } from "@/lib/entity-href";
 import { useListTransactions } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -53,12 +55,20 @@ function TodayTxRow({ description, category, baseEquivalent }: TodayTxRowProps) 
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ minWidth: 0, flex: 1, marginRight: 8 }}>
+        {/* The description is the merchant; the category is the set. Both
+            open rows. The amount is this one transaction's own, not a sum
+            (DESIGN.md §14). "Expense" is a placeholder for a row with
+            neither, so it links to nothing. */}
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", display: "block" }}>
-          {description || category || "Expense"}
+          {description
+            ? <Drill href={merchantTransactionsHref(description)}>{description}</Drill>
+            : category
+              ? <Drill href={categoryTransactionsHref(category)}>{category}</Drill>
+              : "Expense"}
         </span>
         {category && description && (
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
-            {category}
+            <Drill href={categoryTransactionsHref(category)}>{category}</Drill>
           </span>
         )}
       </div>
@@ -76,7 +86,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const dayOfMonth = now.getDate();
   const daysInMonth = getDaysInMonth(now.getFullYear(), now.getMonth());
-  const { dateFrom } = getMonthBounds();
+  const { dateFrom, dateTo } = getMonthBounds();
   const monthPrefix = dateFrom.slice(0, 7);
 
   // Signed baseEquivalent (fix 31 Aug): every reduce and sort below
@@ -171,7 +181,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
         </div>
       ) : (
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: totalColor, marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
-          {formatBaseMoney(todayTotal)}
+          <Drill href={ledgerHref({ type: "expense", from: today, to: today })} title="Today's spend — every expense it is the sum of">{formatBaseMoney(todayTotal)}</Drill>
         </div>
       )}
 
@@ -219,7 +229,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
           <div style={{ display: "flex", gap: 14, minWidth: 0 }}>
             <div style={{ minWidth: 0, overflow: "hidden" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>MTD SPEND</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", whiteSpace: "nowrap" }}>{formatBaseMoney(thisMonthExpenses)}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", whiteSpace: "nowrap" }}><Drill href={ledgerHref({ type: "expense", from: dateFrom, to: dateTo })}>{formatBaseMoney(thisMonthExpenses)}</Drill></div>
             </div>
             <div style={{ minWidth: 0, overflow: "hidden" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>PROJECTED</div>
@@ -248,7 +258,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
           ))}
           {todayExpenseCount > 4 && (
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
-              +{todayExpenseCount - 4} more
+              <Drill href={ledgerHref({ type: "expense", from: today, to: today })}>+{todayExpenseCount - 4} more</Drill>
             </div>
           )}
         </div>

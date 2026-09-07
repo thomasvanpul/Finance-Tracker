@@ -36,6 +36,14 @@ export interface Insight {
   headline: string;
   body: string;
   action?: { label: string; onTap: () => void };
+  /**
+   * Where the headline's figure came from (DESIGN.md §14). Set it when the
+   * headline is a number the app computed from rows, and the slot renders
+   * the headline as a drill into those rows. Leave it undefined when the
+   * headline is a statement rather than a total — a drill that opens
+   * something the user did not ask about is worse than no drill.
+   */
+  drillHref?: string;
 }
 
 export interface InsightContext {

@@ -49,6 +49,8 @@ import { haptic } from "@/lib/haptics";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryParam } from "@/hooks/use-query-param";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, entityHref, merchantTransactionsHref } from "@/lib/entity-href";
 import { useSwipeDelete } from "@/hooks/use-swipe-delete";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
@@ -479,12 +481,37 @@ export default function Transactions() {
   const qParam = useQueryParam("q");
   const [search, setSearch] = useState(() => qParam ?? "");
   useEffect(() => { setSearch(qParam ?? ""); }, [qParam]);
-  const [filterType, setFilterType] = useState<"all" | TxType>("all");
-  const [filterCategory, setFilterCategory] = useState("all");
+  // ?category=, ?account=, ?type=, ?from= and ?to= are how a drill arrives
+  // here (DESIGN.md §14, lib/entity-href.ts `ledgerHref`). They seed the same
+  // filters the selects write, so a drilled-in view and a hand-filtered one
+  // are the same view, and the filter chips already know how to clear them.
+  const categoryParam = useQueryParam("category");
+  const accountParam = useQueryParam("account");
+  const typeParam = useQueryParam("type");
+  const fromParam = useQueryParam("from");
+  const toParam = useQueryParam("to");
+  const parseTypeParam = (v: string | null): "all" | TxType =>
+    v === "income" || v === "expense" || v === "transfer" ? v : "all";
+  const [filterType, setFilterType] = useState<"all" | TxType>(() => parseTypeParam(typeParam));
+  const [filterCategory, setFilterCategory] = useState(() => categoryParam ?? "all");
   const [filterAccount, setFilterAccount] = useState("all");
+  useEffect(() => { setFilterCategory(categoryParam ?? "all"); }, [categoryParam]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setFilterType(parseTypeParam(typeParam)); }, [typeParam]);
+  // The parameter carries an account id; the filter matches on the name the
+  // ledger rows carry. Resolving here rather than putting a name in the URL
+  // keeps `account` meaning one thing across the whole app, and a name that
+  // is later edited does not strand the link.
+  useEffect(() => {
+    if (accountParam == null) { setFilterAccount("all"); return; }
+    const match = accounts?.find((a) => String(a.id) === accountParam);
+    if (match) setFilterAccount(match.name);
+  }, [accountParam, accounts]);
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-high" | "amount-low">("date-desc");
-  const [filterDateFrom, setFilterDateFrom] = useState("");
-  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState(() => fromParam ?? "");
+  const [filterDateTo, setFilterDateTo] = useState(() => toParam ?? "");
+  useEffect(() => { setFilterDateFrom(fromParam ?? ""); }, [fromParam]);
+  useEffect(() => { setFilterDateTo(toParam ?? ""); }, [toParam]);
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
 
@@ -1635,12 +1662,14 @@ export default function Transactions() {
             {/* Description + meta */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 15, fontWeight: 500, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
-                <PrivDesc>{tx.description}</PrivDesc>
+                {tx.description
+                  ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}><PrivDesc>{tx.description}</PrivDesc></Drill>
+                  : <PrivDesc>{tx.description}</PrivDesc>}
               </div>
               <div style={{ display: "flex", gap: 5, alignItems: "center", overflow: "hidden" }}>
-                {tx.category && <span style={{ fontSize: 11, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>{tx.category}</span>}
+                {tx.category && <span style={{ fontSize: 11, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}><Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill></span>}
                 {tx.category && tx.accountName && <span style={{ fontSize: 11, color: "var(--ft-border2)", flexShrink: 0 }}>·</span>}
-                {tx.accountName && <span style={{ fontSize: 11, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{tx.accountName}</span>}
+                {tx.accountName && <span style={{ fontSize: 11, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{tx.accountId != null ? <Drill href={entityHref("account", tx.accountId)} title={`${tx.accountName} — open the account`}>{tx.accountName}</Drill> : tx.accountName}</span>}
                 {hasNote && <span title="Has note" style={{ fontSize: 10, color: "var(--ft-amber)", flexShrink: 0 }}>✎</span>}
                 {hasTags && <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-amber)", flexShrink: 0 }}>+{txTags.length}</span>}
               </div>
@@ -1675,7 +1704,9 @@ export default function Transactions() {
         </div>
         <div style={{ flex: 1, minWidth: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: isKeyboardSelected ? "var(--ft-accent)" : "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-            <PrivDesc>{tx.description}</PrivDesc>
+            {tx.description
+              ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}><PrivDesc>{tx.description}</PrivDesc></Drill>
+              : <PrivDesc>{tx.description}</PrivDesc>}
           </span>
           {hasTags && (
             <HStack gap={3} align="center" shrink={false}>
@@ -1690,7 +1721,9 @@ export default function Transactions() {
         </div>
         <div style={{ width: 120, minWidth: 120, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
           <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", letterSpacing: "0.02em", fontWeight: 600, whiteSpace: "nowrap" as const, lineHeight: "14px", flexShrink: 0, maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }}>
-            {tx.category}
+            {tx.category
+              ? <Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill>
+              : tx.category}
           </span>
           {splits[String(tx.id)] && (
             <span style={{
@@ -1710,7 +1743,9 @@ export default function Transactions() {
           )}
         </div>
         <div className="ft-hide-mobile" style={{ width: 150, minWidth: 150, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontSize: 10, fontFamily: "var(--font-sans)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {tx.accountName}
+          {tx.accountId != null && tx.accountName
+            ? <Drill href={entityHref("account", tx.accountId)} title={`${tx.accountName} — open the account`}>{tx.accountName}</Drill>
+            : tx.accountName}
         </div>
         <div className="ft-hide-mobile" style={{ width: 90, minWidth: 90, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center" }}>
           <span style={{ fontSize: 9, color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase" as const, letterSpacing: "0.06em", fontFamily: "var(--font-mono)", fontWeight: 700, lineHeight: "14px" }}>
@@ -3008,7 +3043,9 @@ export default function Transactions() {
                       </div>
                       <div style={{ width: 90, minWidth: 90, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)" }} />
                       <div style={{ flex: 1, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 11, fontWeight: 600, fontFamily: "var(--font-sans)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        <PrivDesc>{group.description}</PrivDesc>
+                        {group.description
+                          ? <Drill href={merchantTransactionsHref(group.description)} title={`Every ${group.description} transaction, across accounts and months`}><PrivDesc>{group.description}</PrivDesc></Drill>
+                          : <PrivDesc>{group.description}</PrivDesc>}
                       </div>
                       <div style={{ width: 120, minWidth: 120, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }}>
                         <span style={{ fontSize: 10, padding: "0 5px", borderRadius: 2, border: "1px solid var(--ft-border2)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", lineHeight: "16px" }}>

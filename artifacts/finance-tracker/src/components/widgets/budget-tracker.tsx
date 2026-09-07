@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 import {
   useListBudgets,
   useCreateBudget,
@@ -101,6 +103,8 @@ type BudgetCardProps = {
   index: number;
   isExpanded: boolean;
   spent: number;
+  /** ISO date the spend figure is summed from — the drill must match it. */
+  monthFrom: string;
   daysPassed: number;
   totalDays: number;
   onRemove: (budget: Budget) => void;
@@ -116,6 +120,7 @@ function BudgetCard({
   index,
   isExpanded,
   spent: s,
+  monthFrom,
   daysPassed,
   totalDays,
   onRemove,
@@ -155,18 +160,22 @@ function BudgetCard({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
           <StatusDot color={color} />
-          <span
+          {/* The category and the amount spent are both about the same set
+              of rows — this month's expenses in this category — so both open
+              them (DESIGN.md §14). The limit beside them is a setting the
+              user typed, and the percentage is a ratio; both stay flat. */}
+          <Drill
+            href={categoryTransactionsHref(budget.category, { from: monthFrom })}
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 11,
-              color: "var(--ft-text)",
               textOverflow: "ellipsis",
               overflow: "hidden",
               whiteSpace: "nowrap",
             }}
           >
             {budget.category}
-          </span>
+          </Drill>
         </div>
         <span style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
           <span
@@ -230,7 +239,7 @@ function BudgetCard({
             minWidth: 0,
           }}
         >
-          {formatBaseMoney(s)}
+          <Drill href={categoryTransactionsHref(budget.category, { from: monthFrom })}>{formatBaseMoney(s)}</Drill>
         </span>
         <span
           style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
@@ -494,7 +503,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {formatBaseMoney(totalSpent)}
+                  <Drill href={ledgerHref({ type: "expense", from: dateFrom })} title="Total spent this month — every expense it is the sum of">{formatBaseMoney(totalSpent)}</Drill>
                 </span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>
                   / <span className="pnum">{formatBaseMoney(totalLimit)}</span>
@@ -611,6 +620,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
               index={i}
               isExpanded={!!isExpanded}
               spent={getSpent(budget.category)}
+              monthFrom={dateFrom}
               daysPassed={daysPassed}
               totalDays={totalDays}
               onRemove={removeBudget}

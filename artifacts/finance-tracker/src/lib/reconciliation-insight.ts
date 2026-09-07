@@ -12,6 +12,7 @@
 // ledger is not that.
 
 import type { Insight } from "./spending-insights";
+import { entityHref } from "./entity-href";
 import { formatMoney } from "./utils";
 import type { ReconciliationReport } from "@workspace/api-client-react";
 
@@ -61,6 +62,14 @@ export function reconciliationInsight(
     // number and the account must survive, so the sentence is the fact
     // alone. The reasoning lives on the desktop /accounts panel.
     body: `${magnitude} ${direction} ${where}, unrecorded.${caveat}`,
+    // The figure is a sum over cash accounts, so it opens them (DESIGN.md
+    // §14). One affected account goes straight to that account's detail —
+    // the movement is there, and a list of one is a wasted tap. Several go
+    // to the accounts screen, where the desktop panel's per-account
+    // breakdown is the answer to "which of them".
+    drillHref: affected.length === 1
+      ? entityHref("account", affected[0].accountId)
+      : "/accounts",
     action: { label: "Place it", onTap: onPlace },
   };
 }

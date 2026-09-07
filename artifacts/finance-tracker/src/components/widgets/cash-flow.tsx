@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { DrillTarget } from "@/components/drill";
+import { monthTransactionsHref } from "@/lib/entity-href";
 import { useGetDashboard } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -98,12 +100,14 @@ type SummaryItemProps = {
   value: string;
   color: string;
   delta: { label: string; color: string } | null;
+  /** The month's rows this figure is the sum of (DESIGN.md §14). */
+  href?: string;
   isLast?: boolean;
 };
 
-function SummaryItem({ label, value, color, delta, isLast }: SummaryItemProps) {
+function SummaryItem({ label, value, color, delta, href, isLast }: SummaryItemProps) {
   const [hov, setHov] = useState(false);
-  return (
+  const cell = (
     <div
       style={{
         padding: "10px 12px",
@@ -118,8 +122,9 @@ function SummaryItem({ label, value, color, delta, isLast }: SummaryItemProps) {
         {label}
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color }}>
-        {value}
+        {href ? <span className="ft-drill">{value}</span> : value}
       </div>
+      {/* The MoM delta is a change between two totals, not a set of rows. */}
       {delta && (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: delta.color, marginTop: 2, opacity: 0.8 }}>
           {delta.label}
@@ -127,6 +132,8 @@ function SummaryItem({ label, value, color, delta, isLast }: SummaryItemProps) {
       )}
     </div>
   );
+  if (!href) return cell;
+  return <DrillTarget href={href} title={`${label} — open what it is made of`}>{cell}</DrillTarget>;
 }
 
 export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
@@ -154,10 +161,14 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
   // momDelta already handles null/undefined prev — passing `?? 0` here forces
   // it onto a fabricated zero baseline and turns "no previous month" into
   // "+∞% MoM" instead of the honest "—".
+  // A zero figure is real but has no rows behind it, and a drill that opens
+  // an empty list is a promise the product did not keep (DESIGN.md §14).
+  // Measured on the dashboard 2026-09-07: September income is £0.00 and the
+  // cell was drillable.
   const summaryItems = d ? [
-    { label: "Income",      value: `+${formatBaseMoney(Math.abs(d.thisMonth.income))}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income) },
-    { label: "Expenses",    value: `−${formatBaseMoney(Math.abs(d.thisMonth.expenses))}`, color: d.thisMonth.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses) },
-    { label: "Net Savings", value: `${d.thisMonth.netSavings >= 0 ? "+" : ""}${formatBaseMoney(d.thisMonth.netSavings)}`, color: d.thisMonth.netSavings !== 0 ? (d.thisMonth.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", delta: null },
+    { label: "Income",      value: `+${formatBaseMoney(Math.abs(d.thisMonth.income))}`,   color: d.thisMonth.income > 0 ? "var(--ft-green)" : "var(--ft-muted)", delta: momDelta(d.thisMonth.income, prevMonth?.income), href: d.thisMonth.income !== 0 ? monthTransactionsHref(currentMonth, "income") : undefined },
+    { label: "Expenses",    value: `−${formatBaseMoney(Math.abs(d.thisMonth.expenses))}`, color: d.thisMonth.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)",   delta: momDelta(d.thisMonth.expenses, prevMonth?.expenses), href: d.thisMonth.expenses !== 0 ? monthTransactionsHref(currentMonth, "expense") : undefined },
+    { label: "Net Savings", value: `${d.thisMonth.netSavings >= 0 ? "+" : ""}${formatBaseMoney(d.thisMonth.netSavings)}`, color: d.thisMonth.netSavings !== 0 ? (d.thisMonth.netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", delta: null, href: (d.thisMonth.income !== 0 || d.thisMonth.expenses !== 0) ? monthTransactionsHref(currentMonth) : undefined },
   ] : [];
 
   // Border-as-gap KPI strip: 1px gap background = border, each cell bg = surface
@@ -170,6 +181,7 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
           value={item.value}
           color={item.color}
           delta={item.delta}
+          href={item.href}
           isLast={i === summaryItems.length - 1}
         />
       ))}

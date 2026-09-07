@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref, merchantTransactionsHref } from "@/lib/entity-href";
 import {
   startOfMonth,
   endOfMonth,
@@ -230,7 +232,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
           whiteSpace: "nowrap",
         }}
       >
-        {tx.description}
+        <Drill href={merchantTransactionsHref(tx.description)}>{tx.description}</Drill>
       </span>
       <span
         style={{
@@ -240,7 +242,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
           flexShrink: 0,
         }}
       >
-        {tx.category}
+        <Drill href={categoryTransactionsHref(tx.category)}>{tx.category}</Drill>
       </span>
       <span
         className="pnum"
@@ -341,18 +343,21 @@ export function TransactionCalendarWidget() {
             {transactions.length > 0 && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)" }}>
                 {[
-                  { label: "INCOME", value: `+${formatBaseMoney(Math.abs(monthIncome))}`, color: "var(--ft-green)" },
-                  { label: "SPEND",  value: `-${formatBaseMoney(Math.abs(monthExpenses))}`, color: "var(--ft-red)" },
-                  { label: "NET",    value: `${monthNet >= 0 ? "+" : ""}${formatBaseMoney(monthNet)}`, color: monthNet >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
-                  { label: "DAYS",   value: String(activeDays), color: "var(--ft-accent)" },
-                  { label: "AVG/D",  value: `-${formatBaseMoney(Math.abs(avgDailySpend))}`, color: "var(--ft-amber)" },
+                  // The first three are sums over the month on screen, so
+                  // each opens its own slice of it. DAYS is a count and AVG/D
+                  // is an average — neither is a set of rows (DESIGN.md §14).
+                  { label: "INCOME", value: `+${formatBaseMoney(Math.abs(monthIncome))}`, color: "var(--ft-green)", href: ledgerHref({ type: "income", from: dateFrom, to: dateTo }) },
+                  { label: "SPEND",  value: `-${formatBaseMoney(Math.abs(monthExpenses))}`, color: "var(--ft-red)", href: ledgerHref({ type: "expense", from: dateFrom, to: dateTo }) },
+                  { label: "NET",    value: `${monthNet >= 0 ? "+" : ""}${formatBaseMoney(monthNet)}`, color: monthNet >= 0 ? "var(--ft-green)" : "var(--ft-red)", href: ledgerHref({ from: dateFrom, to: dateTo }) },
+                  { label: "DAYS",   value: String(activeDays), color: "var(--ft-accent)", href: undefined },
+                  { label: "AVG/D",  value: `-${formatBaseMoney(Math.abs(avgDailySpend))}`, color: "var(--ft-amber)", href: undefined },
                 ].map((item, i) => (
                   <div key={item.label} style={{ padding: "6px 10px", borderRight: i < 4 ? "1px solid var(--ft-border)" : undefined }}>
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", color: "var(--ft-dim)", marginBottom: 2 }}>
                       {item.label}
                     </div>
                     <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: item.color }}>
-                      {item.value}
+                      {item.href ? <Drill href={item.href}>{item.value}</Drill> : item.value}
                     </div>
                   </div>
                 ))}
@@ -448,12 +453,12 @@ export function TransactionCalendarWidget() {
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     {selectedTotals.income > 0 && (
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)" }}>
-                        +{formatBaseMoney(Math.abs(selectedTotals.income))}
+                        <Drill href={ledgerHref({ type: "income", from: selectedKey!, to: selectedKey! })}>+{formatBaseMoney(Math.abs(selectedTotals.income))}</Drill>
                       </span>
                     )}
                     {selectedTotals.expense > 0 && (
                       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)" }}>
-                        −{formatBaseMoney(Math.abs(selectedTotals.expense))}
+                        <Drill href={ledgerHref({ type: "expense", from: selectedKey!, to: selectedKey! })}>−{formatBaseMoney(Math.abs(selectedTotals.expense))}</Drill>
                       </span>
                     )}
                     <span
@@ -463,8 +468,10 @@ export function TransactionCalendarWidget() {
                         color: "var(--ft-dim)",
                       }}
                     >
-                      {selectedTotals.transactions.length} txn
-                      {selectedTotals.transactions.length !== 1 ? "s" : ""}
+                      <Drill href={ledgerHref({ from: selectedKey!, to: selectedKey! })}>
+                        {selectedTotals.transactions.length} txn
+                        {selectedTotals.transactions.length !== 1 ? "s" : ""}
+                      </Drill>
                     </span>
                   </div>
                 </div>

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 import { useListTransactions, useListBudgets } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -114,9 +116,14 @@ interface CatRow {
 
 type CategoryForecastRowExpandedProps = {
   row: CatRow;
+  /** Month-to-date window the spend figure is summed over. */
+  range: { from: string; to: string };
 };
 
-function CategoryForecastRowExpanded({ row }: CategoryForecastRowExpandedProps) {
+// The category and the spend-so-far both stand for the same rows and open
+// them. Everything else on the row — projected, budget, the pace chip — is a
+// projection or a user-entered limit, so it stays flat (DESIGN.md §14).
+function CategoryForecastRowExpanded({ row, range }: CategoryForecastRowExpandedProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -143,7 +150,7 @@ function CategoryForecastRowExpanded({ row }: CategoryForecastRowExpandedProps) 
           whiteSpace: "nowrap",
         }}
       >
-        {row.category}
+        <Drill href={categoryTransactionsHref(row.category, range)}>{row.category}</Drill>
       </div>
       <div
         className="pnum"
@@ -154,7 +161,7 @@ function CategoryForecastRowExpanded({ row }: CategoryForecastRowExpandedProps) 
           textAlign: "right",
         }}
       >
-        {formatBaseMoney(row.spent)}
+        <Drill href={categoryTransactionsHref(row.category, range)}>{formatBaseMoney(row.spent)}</Drill>
       </div>
       <div
         className="pnum"
@@ -200,9 +207,10 @@ function CategoryForecastRowExpanded({ row }: CategoryForecastRowExpandedProps) 
 type CategoryForecastRowCompactProps = {
   row: CatRow;
   timeElapsed: number;
+  range: { from: string; to: string };
 };
 
-function CategoryForecastRowCompact({ row, timeElapsed }: CategoryForecastRowCompactProps) {
+function CategoryForecastRowCompact({ row, timeElapsed, range }: CategoryForecastRowCompactProps) {
   const [hov, setHov] = useState(false);
   const budgetPct =
     row.budget
@@ -245,7 +253,7 @@ function CategoryForecastRowCompact({ row, timeElapsed }: CategoryForecastRowCom
             minWidth: 0,
           }}
         >
-          {row.category}
+          <Drill href={categoryTransactionsHref(row.category, range)}>{row.category}</Drill>
         </span>
         <div
           style={{
@@ -516,7 +524,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                   whiteSpace: "nowrap",
                 }}
               >
-                {formatBaseMoney(totalSpentSoFar)} spent
+                <Drill href={ledgerHref({ type: "expense", from: thisMonthStart, to: today })} title="Spent so far this month — every expense it is the sum of">{formatBaseMoney(totalSpentSoFar)}</Drill> spent
               </span>
             </div>
 
@@ -662,7 +670,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                 ))}
               </div>
               {catRows.map((row) => (
-                <CategoryForecastRowExpanded key={row.category} row={row} />
+                <CategoryForecastRowExpanded key={row.category} row={row} range={{ from: thisMonthStart, to: today }} />
               ))}
             </>
           ) : (
@@ -681,7 +689,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                 </div>
               ) : (
                 catRows.slice(0, 5).map((row) => (
-                  <CategoryForecastRowCompact key={row.category} row={row} timeElapsed={timeElapsed} />
+                  <CategoryForecastRowCompact key={row.category} row={row} timeElapsed={timeElapsed} range={{ from: thisMonthStart, to: today }} />
                 ))
               )}
             </>

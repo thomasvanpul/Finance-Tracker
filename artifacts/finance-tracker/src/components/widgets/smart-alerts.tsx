@@ -2,12 +2,21 @@ import { useState, useEffect, useMemo } from "react";
 import { useGetDashboard, useListTransactions, useListUpcoming, useListDebts, useListGoals, useListBudgets } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { PanelHeader } from "@/components/primitives";
+import { DrillTarget } from "@/components/drill";
+import { categoryTransactionsHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
 
 interface Alert {
   id: string;
   level: "info" | "warn" | "critical" | "success";
   title: string;
   detail: string;
+  /**
+   * Where the rows behind this alert live (DESIGN.md §14). Set only where the
+   * alert's figure is a sum of rows a user can go and read. An alert whose
+   * number is a ratio, or a single item with no list behind it, has no href
+   * and stays flat.
+   */
+  href?: string;
 }
 
 const LEVEL_COLOR: Record<Alert["level"], string> = {
@@ -134,12 +143,25 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) 
       </div>
 
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-text)", marginBottom: 2, lineHeight: 1.3 }}>
-          {alert.title}
-        </div>
-        <div className="pnum" style={{ fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
-          {alert.detail}
-        </div>
+        {alert.href ? (
+          <DrillTarget href={alert.href} title="Open the rows this alert counted">
+            <div className="ft-drill" style={{ fontSize: 11, fontWeight: 700, marginBottom: 2, lineHeight: 1.3 }}>
+              {alert.title}
+            </div>
+            <div className="pnum" style={{ fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
+              {alert.detail}
+            </div>
+          </DrillTarget>
+        ) : (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-text)", marginBottom: 2, lineHeight: 1.3 }}>
+              {alert.title}
+            </div>
+            <div className="pnum" style={{ fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
+              {alert.detail}
+            </div>
+          </>
+        )}
       </div>
 
       <button
@@ -203,6 +225,7 @@ export function SmartAlertsWidget() {
             level: "critical",
             title: `${budget.category} budget exceeded`,
             detail: `${formatBaseMoney(total)} spent of ${formatBaseMoney(budget.monthlyLimit)} limit (${Math.round(pct * 100)}%)`,
+            href: categoryTransactionsHref(budget.category, thisMonthRange()),
           });
         } else if (pct >= alertRules.budgetWarningPct / 100) {
           result.push({
@@ -210,6 +233,7 @@ export function SmartAlertsWidget() {
             level: "warn",
             title: `${budget.category} budget at ${Math.round(pct * 100)}%`,
             detail: `${formatBaseMoney(total)} of ${formatBaseMoney(budget.monthlyLimit)} used`,
+            href: categoryTransactionsHref(budget.category, thisMonthRange()),
           });
         }
       }
@@ -224,6 +248,7 @@ export function SmartAlertsWidget() {
             level: "info",
             title: `Large transaction: ${tx.description}`,
             detail: `${formatBaseMoney(tx.baseEquivalent)} on ${tx.date} — ${tx.accountName}`,
+            href: merchantTransactionsHref(tx.description),
           });
         }
       }
@@ -262,6 +287,7 @@ export function SmartAlertsWidget() {
           level: "warn",
           title: `${overdueDebts.length} IOU${overdueDebts.length > 1 ? "s" : ""} older than 90 days`,
           detail: `${formatBaseMoney(total)} in long-outstanding debts — consider settling`,
+          href: "/owing",
         });
       }
     }

@@ -19,6 +19,8 @@ import { apiFetch } from "@/lib/api-fetch";
 import { formatBaseMoney, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref, merchantTransactionsHref, monthTransactionsHref } from "@/lib/entity-href";
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
@@ -363,12 +365,29 @@ function IncomeStatementRow({ m, rowIdx }: IncomeStatementRowProps) {
         transition: "background 0.1s",
       }}
     >
-      <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>{formatMonthLabel(m.month)}</td>
+      {/* Period, Revenue and Expenses are sums of rows and open them
+          (DESIGN.md §14). Net Income is a difference between two of
+          them and Margin is a percentage of one — neither is a set of
+          rows, and both stay flat. A null cell prints an em dash and
+          takes no drill: there is no figure to stand for anything. */}
+      <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>
+        <Drill href={monthTransactionsHref(m.month)} title="Open this month's transactions">{formatMonthLabel(m.month)}</Drill>
+      </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.income == null ? "var(--ft-dim)" : (m.income > 0 ? "var(--ft-green)" : "var(--ft-muted)") }}>
-        <span className="pnum">{m.income == null ? "—" : `+${formatBaseMoney(Math.abs(m.income))}`}</span>
+        <FigureCell
+          value={m.income}
+          text={`+${formatBaseMoney(Math.abs(m.income ?? 0))}`}
+          href={monthTransactionsHref(m.month, "income")}
+          title="Open the income this added up"
+        />
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: m.expenses == null ? "var(--ft-dim)" : (m.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)") }}>
-        <span className="pnum">{m.expenses == null ? "—" : `−${formatBaseMoney(Math.abs(m.expenses))}`}</span>
+        <FigureCell
+          value={m.expenses}
+          text={`−${formatBaseMoney(Math.abs(m.expenses ?? 0))}`}
+          href={monthTransactionsHref(m.month, "expense")}
+          title="Open the expenses this added up"
+        />
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", fontWeight: 700, color: m.netSavings == null ? "var(--ft-dim)" : (m.netSavings !== 0 ? (isNeg ? "var(--ft-red)" : "var(--ft-green)") : "var(--ft-muted)") }}>
         <span className="pnum">{m.netSavings == null ? "—" : `${m.netSavings >= 0 ? "+" : ""}${formatBaseMoney(m.netSavings)}`}</span>
@@ -380,7 +399,22 @@ function IncomeStatementRow({ m, rowIdx }: IncomeStatementRowProps) {
   );
 }
 
-function IncomeStatementTable({ rows }: { rows: MonthlyRow[] }) {
+/**
+ * A money cell in the income statement.
+ *
+ * Three states, and they are not the same thing. `null` means nothing was
+ * computed — an em dash, no drill. Zero means the sum is real but the ledger
+ * holds no rows for that window, so the figure prints and stays flat: a drill
+ * that opens an empty list is a promise the product did not keep
+ * (DESIGN.md §14). Anything else is made of rows and opens them.
+ */
+function FigureCell({ value, text, href, title }: { value: number | null; text: string; href: string; title: string }) {
+  if (value == null) return <span className="pnum">—</span>;
+  if (value === 0) return <span className="pnum">{text}</span>;
+  return <Drill href={href} title={title}><span className="pnum">{text}</span></Drill>;
+}
+
+function IncomeStatementTable({ rows, range }: { rows: MonthlyRow[]; range: { from: string; to: string } }) {
   // A total that sums across months where any month is null (FX-miss)
   // would present a partial sum as if it were the real thing — same
   // pnum failure as at the row level, escalated one aggregation up.
@@ -416,10 +450,20 @@ function IncomeStatementTable({ rows }: { rows: MonthlyRow[] }) {
           <tr>
             <td style={{ ...TD_TOTAL, color: "var(--ft-dim)" }}>TOTAL</td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.income == null ? "var(--ft-dim)" : (totals.income > 0 ? "var(--ft-green)" : "var(--ft-muted)") }}>
-              <span className="pnum">{totals.income == null ? "—" : `+${formatBaseMoney(Math.abs(totals.income))}`}</span>
+              <FigureCell
+                value={totals.income}
+                text={`+${formatBaseMoney(Math.abs(totals.income ?? 0))}`}
+                href={ledgerHref({ type: "income", from: range.from, to: range.to })}
+                title="Open the income across this period"
+              />
             </td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.expenses == null ? "var(--ft-dim)" : (totals.expenses > 0 ? "var(--ft-red)" : "var(--ft-muted)") }}>
-              <span className="pnum">{totals.expenses == null ? "—" : `−${formatBaseMoney(Math.abs(totals.expenses))}`}</span>
+              <FigureCell
+                value={totals.expenses}
+                text={`−${formatBaseMoney(Math.abs(totals.expenses ?? 0))}`}
+                href={ledgerHref({ type: "expense", from: range.from, to: range.to })}
+                title="Open the expenses across this period"
+              />
             </td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: totals.net == null ? "var(--ft-dim)" : (totals.net !== 0 ? (totals.net >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)") }}>
               <span className="pnum">{totals.net == null ? "—" : `${totals.net >= 0 ? "+" : ""}${formatBaseMoney(totals.net)}`}</span>
@@ -441,9 +485,10 @@ interface ExpenseReportRowProps {
   amount: number;
   i: number;
   totalExpenses: number;
+  range: { from: string; to: string };
 }
 
-function ExpenseReportRow({ cat, amount, i, totalExpenses }: ExpenseReportRowProps) {
+function ExpenseReportRow({ cat, amount, i, totalExpenses, range }: ExpenseReportRowProps) {
   const [hov, setHov] = useState(false);
   const pct = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
   const color = PALETTE[i % PALETTE.length];
@@ -461,12 +506,17 @@ function ExpenseReportRow({ cat, amount, i, totalExpenses }: ExpenseReportRowPro
         transition: "background 0.1s",
       }}
     >
+      {/* The category and its amount are the same set of rows, so both
+          open it. "% of Total" and the share bar are proportions of a
+          whole and stay flat (DESIGN.md §14). */}
       <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)" }}>
         <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: color, marginRight: 8, verticalAlign: "middle" }} />
-        {cat}
+        <Drill href={categoryTransactionsHref(cat, range)} title={`Open the ${cat} transactions in this period`}>{cat}</Drill>
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color }}>
-        <span className="pnum">−{formatBaseMoney(Math.abs(amount))}</span>
+        <Drill href={categoryTransactionsHref(cat, range)} title={`Open the ${cat} transactions this added up`}>
+          <span className="pnum">−{formatBaseMoney(Math.abs(amount))}</span>
+        </Drill>
       </td>
       <td style={{ ...TD, textAlign: "right", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)" }}>
         <span className="pnum">{pct.toFixed(1)}%</span>
@@ -482,9 +532,10 @@ function ExpenseReportRow({ cat, amount, i, totalExpenses }: ExpenseReportRowPro
 
 // ─── expense report table ─────────────────────────────────────────────────────
 
-function ExpenseReportTable({ categories, totalExpenses }: {
+function ExpenseReportTable({ categories, totalExpenses, range }: {
   categories: Array<[string, number]>;
   totalExpenses: number;
+  range: { from: string; to: string };
 }) {
   return (
     <div className="ft-scroll-x">
@@ -498,14 +549,16 @@ function ExpenseReportTable({ categories, totalExpenses }: {
         </thead>
         <tbody>
           {categories.map(([cat, amount], i) => (
-            <ExpenseReportRow key={cat} cat={cat} amount={amount} i={i} totalExpenses={totalExpenses} />
+            <ExpenseReportRow key={cat} cat={cat} amount={amount} i={i} totalExpenses={totalExpenses} range={range} />
           ))}
         </tbody>
         <tfoot>
           <tr>
             <td style={{ ...TD_TOTAL }}>TOTAL EXPENSES</td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: totalExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
-              <span className="pnum">−{formatBaseMoney(Math.abs(totalExpenses))}</span>
+              <Drill href={ledgerHref({ type: "expense", from: range.from, to: range.to })} title="Open the expenses across this period">
+                <span className="pnum">−{formatBaseMoney(Math.abs(totalExpenses))}</span>
+              </Drill>
             </td>
             <td style={{ ...TD_TOTAL, textAlign: "right", color: "var(--ft-muted)" }}>
               <span className="pnum">100%</span>
@@ -858,11 +911,11 @@ function BiggestTxRow({ tx, rowIdx }: BiggestTxRowProps) {
         {formatDate(tx.date)}
       </div>
       <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-        {tx.description}
+        <Drill href={merchantTransactionsHref(tx.description)} title="Open this merchant's history">{tx.description}</Drill>
       </div>
       <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
         <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
-          {tx.category}
+          <Drill href={categoryTransactionsHref(tx.category)} title={`Open the ${tx.category} transactions`}>{tx.category}</Drill>
         </span>
       </div>
       <div style={{ width: 90, minWidth: 90, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
@@ -889,6 +942,12 @@ interface KpiTile {
   delta: number | null;
   deltaFmt: (d: number) => string;
   deltaGoodDir: number;
+  /**
+   * Where the rows this tile was computed from live (DESIGN.md §14).
+   * Omitted for Net Savings (a difference between two of the others) and
+   * Savings Rate (a percentage of one) — neither is a set of rows.
+   */
+  href?: string;
 }
 
 interface KpiTileProps {
@@ -915,7 +974,7 @@ function KpiTileCell({ tile, isLoading, isLastCol, isLastRow }: KpiTileProps) {
       ) : (
         <>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: tile.color, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", minWidth: 0 }}>
-            {tile.value}
+            {tile.href ? <Drill href={tile.href} title="Open the transactions this figure added up">{tile.value}</Drill> : tile.value}
           </div>
           {tile.delta !== null && (
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, marginTop: 4, color: (tile.delta * tile.deltaGoodDir) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
@@ -1058,6 +1117,8 @@ export default function Reports() {
       delta: priorIncome !== null ? income - priorIncome : null,
       deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(d))}`,
       deltaGoodDir: 1,
+      // Zero income for the period means no income rows — see FigureCell.
+      href: income > 0 ? ledgerHref({ type: "income", from: dateFrom, to: dateTo }) : undefined,
     },
     {
       label: "Total Expenses",
@@ -1066,6 +1127,7 @@ export default function Reports() {
       delta: priorExpenses !== null ? expenses - priorExpenses : null,
       deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(d))} spend`,
       deltaGoodDir: -1,
+      href: expenses > 0 ? ledgerHref({ type: "expense", from: dateFrom, to: dateTo }) : undefined,
     },
     {
       label: "Net Savings",
@@ -1094,6 +1156,7 @@ export default function Reports() {
       delta: null,
       deltaFmt: (d: number) => `${d >= 0 ? "+" : ""}${d}`,
       deltaGoodDir: 1,
+      href: txList.length > 0 ? ledgerHref({ from: dateFrom, to: dateTo }) : undefined,
     },
   ];
 
@@ -1358,7 +1421,7 @@ export default function Reports() {
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
           <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
             <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">monthly breakdown</Text>}>Income Statement</PanelHeader>
-            <IncomeStatementTable rows={monthlyHistory} />
+            <IncomeStatementTable rows={monthlyHistory} range={{ from: dateFrom, to: dateTo }} />
           </div>
           <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
             <PanelHeader>Monthly Trend</PanelHeader>
@@ -1405,7 +1468,7 @@ export default function Reports() {
                 style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "2px 7px", cursor: "pointer", borderRadius: 2 }}
               >↓ CSV</button>
             }>Expense Breakdown by Category</PanelHeader>
-            <ExpenseReportTable categories={topCategories} totalExpenses={totalExpenses} />
+            <ExpenseReportTable categories={topCategories} totalExpenses={totalExpenses} range={{ from: dateFrom, to: dateTo }} />
           </div>
           <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
             <PanelHeader>Breakdown Chart</PanelHeader>

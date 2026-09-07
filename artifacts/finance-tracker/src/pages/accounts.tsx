@@ -66,7 +66,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryParam } from "@/hooks/use-query-param";
 import { DetailSurface } from "@/components/detail-surface";
-import { ENTITY_PARAM } from "@/lib/entity-href";
+import { ENTITY_PARAM, categoryTransactionsHref, entityHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
+import { Drill, DrillTarget } from "@/components/drill";
 import {
   AreaChart,
   Area,
@@ -950,11 +951,18 @@ function RecentTxRow({ tx }: RecentTxRowProps) {
     >
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 10, color: "var(--ft-text)", whiteSpace: "nowrap" }}>
-          {tx.description}
+          {tx.description
+            ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill>
+            : tx.description}
         </div>
         <Text as="div" size={9} color="var(--ft-dim)">
           {formatDate(tx.date)}
-          {tx.category ? ` · ${tx.category}` : ""}
+          {tx.category ? (
+            <>
+              {" · "}
+              <Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill>
+            </>
+          ) : null}
         </Text>
       </div>
       <div
@@ -998,7 +1006,7 @@ function MonthSpendingRow({ category, total, maxSpend }: MonthSpendingRowProps) 
       onMouseLeave={() => setHov(false)}
     >
       <HStack justify="between" marginBottom={2}>
-        <span style={{ fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{category}</span>
+        <span style={{ fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}><Drill href={categoryTransactionsHref(category, thisMonthRange())} title={`Everything in ${category} this month`}>{category}</Drill></span>
         <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", flexShrink: 0, whiteSpace: "nowrap", marginLeft: 4 }}>{formatBaseMoney(total)}</span>
       </HStack>
       <div style={{ height: 3, background: "var(--ft-raised)", borderRadius: 1 }}>
@@ -1068,11 +1076,17 @@ interface AccountAllocationRowProps {
   name: string;
   pct: number | null;
   colorIndex: number;
+  /**
+   * The account this legend row stands for (DESIGN.md §14 — a chart's
+   * legend carries the drills, the plotted geometry stays inert). The
+   * share beside it is a proportion of a whole and stays flat.
+   */
+  href: string;
 }
 
 const ACCT_ALLOC_COLORS = ["var(--ft-blue)", "var(--ft-green)", "var(--ft-amber)", "var(--ft-cyan)", "var(--ft-red)", "var(--ft-muted)"];
 
-function AccountAllocationRow({ name, pct, colorIndex }: AccountAllocationRowProps) {
+function AccountAllocationRow({ name, pct, colorIndex, href }: AccountAllocationRowProps) {
   const [hov, setHov] = React.useState(false);
   const color = ACCT_ALLOC_COLORS[colorIndex % ACCT_ALLOC_COLORS.length];
   return (
@@ -1090,7 +1104,7 @@ function AccountAllocationRow({ name, pct, colorIndex }: AccountAllocationRowPro
     >
       <div style={{ width: 6, height: 6, borderRadius: 1, background: color, flexShrink: 0 }} />
       <span style={{ fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", whiteSpace: "nowrap", maxWidth: 120 }}>
-        {name}
+        <Drill href={href} title={`Open ${name}`}>{name}</Drill>
       </span>
       <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", marginLeft: "auto" }}>
         {pct == null ? "—" : `${pct.toFixed(0)}%`}
@@ -1237,9 +1251,16 @@ interface KpiCellProps {
   isFinancial?: boolean;
   /** Last cell in its row: no right hairline, the frame closes it. */
   isLast?: boolean;
+  /**
+   * Where the rows this figure was computed from live (DESIGN.md §14).
+   * Omitted where the figure is not made of rows, or where those rows are
+   * already on this screen — a drill that lands where you already are is a
+   * dead affordance, which §14 says is worse than a flat number.
+   */
+  href?: string;
 }
 
-function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false, isLast = false }: KpiCellProps) {
+function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false, isLast = false, href }: KpiCellProps) {
   // The `accent` prop is deliberately ignored (renamed `_accent`).
   // Rainbow per-cell colour was decoration; per docs/MOBILE-CONCEPT.md
   // § Desktop port, colour is semantic or absent. Icon renders in
@@ -1276,7 +1297,11 @@ function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false
         className={isFinancial ? "pnum" : undefined}
         style={{ fontSize: "clamp(14px, 1.3vw, 18px)", fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap", minWidth: 0 }}
       >
-        {value}
+        {href ? (
+          <DrillTarget href={href} title={`${label} — open what it is made of`}>
+            <span className="ft-drill">{value}</span>
+          </DrillTarget>
+        ) : value}
       </div>
       <div style={{ fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", whiteSpace: "nowrap" }}>{sub}</div>
     </div>
@@ -1413,7 +1438,7 @@ function AccountTableRow({
           {isMobile ? (
             <div style={{ minWidth: 0 }}>
               <div style={{ color: "var(--ft-text)", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
-                {account.name}
+                <Drill href={entityHref("account", account.id)} title={`${account.name} — open the account`}>{account.name}</Drill>
               </div>
               <HStack gap={5} align="center" marginTop={3}>
                 <Text as="span" mono size={10} weight={700} color="var(--ft-blue)" letterSpacing="0.04em">{account.currency}</Text>
@@ -1427,7 +1452,7 @@ function AccountTableRow({
             <div className="flex items-center gap-2" style={{ minWidth: 0 }}>
               <Landmark className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--ft-dim)" }} />
               <span style={{ color: "var(--ft-text)", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", minWidth: 0 }}>
-                {account.name}
+                <Drill href={entityHref("account", account.id)} title={`${account.name} — open the account`}>{account.name}</Drill>
               </span>
               {account.isWiseLinked && (
                 <Text as="span" mono size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.06em">WISE</Text>
@@ -2325,6 +2350,7 @@ export default function Accounts() {
               />
               <KpiCell
                 label="Total Portfolio"
+                href="/investments"
                 value={<span className="pnum" style={{ color: "var(--ft-cyan)" }}>{formatBaseMoney(portfolioVal)}</span>}
                 sub="investments (GBP)"
                 accent="var(--ft-cyan)"
@@ -2333,6 +2359,7 @@ export default function Accounts() {
               />
               <KpiCell
                 label="Net Worth"
+                href="/net-worth"
                 value={<span className="pnum" style={{ color: netWorth >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>{formatBaseMoney(netWorth)}</span>}
                 // Net worth inherits Total Cash's `?? 0` shortfall
                 // when any account has a null baseEquivalent — the
@@ -2351,6 +2378,7 @@ export default function Accounts() {
               />
               <KpiCell
                 label="Most Active"
+                href={mostRecentAccount ? entityHref("account", mostRecentAccount.account.id) : undefined}
                 value={<span style={{ fontSize: 13, color: "var(--ft-text)", whiteSpace: "nowrap", display: "block", minWidth: 0 }}>{mostRecentAccount ? mostRecentAccount.account.name.split(" ").slice(0, 2).join(" ") : "—"}</span>}
                 sub={mostRecentAccount ? `last txn ${mostRecentAccount.lastTxDate}` : "no transactions"}
                 accent="var(--ft-blue)"
@@ -2482,6 +2510,7 @@ export default function Accounts() {
                               name={a.name}
                               pct={pct}
                               colorIndex={i}
+                              href={entityHref("account", a.id)}
                             />
                           );
                         })}

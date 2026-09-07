@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Drill } from "@/components/drill";
+import { merchantTransactionsHref } from "@/lib/entity-href";
 import { useListUpcoming } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -199,7 +201,11 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
               lineHeight: 1.2,
             }}
           >
-            {item.description}
+            {/* The subscription's name is the merchant; its history is the
+                charges. The monthly cost beside it is a normalised
+                projection (a yearly plan divided by twelve), not a sum of
+                rows, so that stays flat. DESIGN.md §14. */}
+            <Drill href={merchantTransactionsHref(item.description)}>{item.description}</Drill>
           </div>
           <div
             style={{

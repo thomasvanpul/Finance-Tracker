@@ -28,6 +28,8 @@ import { formatBaseMoney } from "@/lib/utils";
 import type { Transaction } from "@workspace/api-client-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -215,9 +217,16 @@ interface BudgetKpiCellProps {
   sub: React.ReactNode;
   extra?: React.ReactNode;
   isPriv?: boolean;
+  /**
+   * Where the rows this figure was computed from live (DESIGN.md §14).
+   * Omitted where the figure is not made of rows — a sum of user-entered
+   * limits, a difference against one, a percentage of a whole, a count of
+   * days. Pressing those would promise a list that does not exist.
+   */
+  href?: string;
 }
 
-function BudgetKpiCell({ label, value, sub, extra, isPriv = false }: BudgetKpiCellProps) {
+function BudgetKpiCell({ label, value, sub, extra, isPriv = false, href }: BudgetKpiCellProps) {
   const [hov, setHov] = React.useState(false);
   return (
     <div
@@ -241,7 +250,7 @@ function BudgetKpiCell({ label, value, sub, extra, isPriv = false }: BudgetKpiCe
         className={isPriv ? "pnum" : undefined}
         style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(14px, 1.4vw, 18px)", fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}
       >
-        {value}
+        {href ? <Drill href={href} title="Open the transactions this figure added up">{value}</Drill> : value}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontVariantNumeric: "tabular-nums" }}>
         {sub}
@@ -263,9 +272,11 @@ interface HealthSummaryChipProps {
   health: HealthInfo;
   isOver: boolean;
   title: string;
+  /** The rows this chip summed (DESIGN.md §14). */
+  href: string;
 }
 
-function HealthSummaryChip({ category, spent: _spent, effectiveLimit: _eff, pct, health, isOver, title }: HealthSummaryChipProps) {
+function HealthSummaryChip({ category, spent: _spent, effectiveLimit: _eff, pct, health, isOver, title, href }: HealthSummaryChipProps) {
   const [hov, setHov] = React.useState(false);
   const pctBar = pct ?? 0;
   return (
@@ -291,9 +302,17 @@ function HealthSummaryChip({ category, spent: _spent, effectiveLimit: _eff, pct,
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ width: 6, height: 6, background: health.color, borderRadius: 0, flexShrink: 0 }} />
-      <Text as="span" mono size={10} weight={isOver ? 700 : 400} color={isOver ? "var(--ft-red)" : "var(--ft-text)"} nowrap>
-        {category}
-      </Text>
+      {/* The category name opens its rows. The bar and the percentage
+          beside it are proportions of a limit, not sets of rows, and
+          stay flat (DESIGN.md §14). The colour sits on the wrapper so
+          `.ft-drill` inherits it and the accent still wins on hover. */}
+      <span style={{ color: isOver ? "var(--ft-red)" : "var(--ft-text)" }}>
+        <Drill href={href} title={`Open the ${category} transactions this chip summed`}>
+          <Text as="span" mono size={10} weight={isOver ? 700 : 400} nowrap>
+            {category}
+          </Text>
+        </Drill>
+      </span>
       <div style={{ width: 32, height: 3, background: "var(--ft-border)", borderRadius: 0, overflow: "hidden", flexShrink: 0 }}>
         <div style={{ height: "100%", width: `${Math.min(pctBar * 100, 100)}%`, background: health.color, borderRadius: 0 }} />
       </div>
@@ -311,9 +330,11 @@ interface ForecastAtRiskRowProps {
   effectiveLimit: number;
   projectedSpend: number;
   projectedOverspend: number;
+  /** The rows spent so far in this category (DESIGN.md §14). */
+  href: string;
 }
 
-function ForecastAtRiskRow({ category, effectiveLimit, projectedSpend, projectedOverspend }: ForecastAtRiskRowProps) {
+function ForecastAtRiskRow({ category, effectiveLimit, projectedSpend, projectedOverspend, href }: ForecastAtRiskRowProps) {
   const [hov, setHov] = React.useState(false);
   const barPct = Math.min((effectiveLimit / projectedSpend) * 100, 100);
   return (
@@ -331,8 +352,11 @@ function ForecastAtRiskRow({ category, effectiveLimit, projectedSpend, projected
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
+      {/* The category opens the rows spent so far. The projection and
+          the overspend beside it are extrapolations — no rows exist for
+          them yet — so they stay flat (DESIGN.md §14). */}
       <span style={{ minWidth: 110, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, fontSize: 11 }}>
-        {category}
+        <Drill href={href} title={`Open the ${category} transactions spent so far`}>{category}</Drill>
       </span>
       <div style={{ flex: 1, height: 3, background: "var(--ft-border)", borderRadius: 0, overflow: "hidden", position: "relative" as const }}>
         <div style={{ position: "absolute" as const, height: "100%", width: `${barPct}%`, background: "var(--ft-amber)", borderRadius: 0 }} />
@@ -604,6 +628,13 @@ interface BudgetTableRowProps {
   dayOfMonth: number | null;
   daysInMonth: number;
   isMobile?: boolean;
+  /**
+   * The rows this row's spend was computed from (DESIGN.md §14). The
+   * limit, the remaining and the "% used" beside it are a setting, a
+   * difference against a setting and a proportion — none of them is a
+   * set of rows, and all stay flat.
+   */
+  categoryHref: string;
   onEditLimitChange: (val: string) => void;
   onStartEdit: (category: string, currentLimit: number) => void;
   onCommitEdit: (category: string) => void;
@@ -617,6 +648,7 @@ function BudgetTableRow({
   budget, rowIdx, spent, lastSpent, rolloverEnabled, rolloverAccumulated,
   effectiveLimit, pct, rem, isOver, isEditing, editingLimit,
   deleteConfirmId, isCurrentMonth, dayOfMonth, daysInMonth, isMobile = false,
+  categoryHref,
   onEditLimitChange, onStartEdit, onCommitEdit, onCancelEdit,
   onToggleRollover, onResetRollover, onDeleteClick,
 }: BudgetTableRowProps) {
@@ -648,7 +680,7 @@ function BudgetTableRow({
         <div style={{ minWidth: 0 }}>
           <HStack gap={6} align="center" marginBottom={5}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: isOver ? "var(--ft-red)" : "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {budget.category}
+              <Drill href={categoryHref} title={`Open the ${budget.category} transactions this row added up`}>{budget.category}</Drill>
             </span>
             {health.status !== "empty" && (
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", color: health.color, background: health.bg, border: `1px solid ${health.color}`, padding: "1px 4px", whiteSpace: "nowrap", flexShrink: 0, lineHeight: 1.4 }}>
@@ -743,7 +775,7 @@ function BudgetTableRow({
               minWidth: 0,
             }}
           >
-            {budget.category}
+            <Drill href={categoryHref} title={`Open the ${budget.category} transactions this row added up`}>{budget.category}</Drill>
           </div>
           {health.status !== "empty" && (
             <span
@@ -1086,6 +1118,17 @@ export default function Budget() {
 
   const dateFrom = useMemo(
     () => getFirstOfMonth(selectedYear, selectedMonth),
+    [selectedYear, selectedMonth]
+  );
+
+  // The month this screen is showing. Every drill off it carries this
+  // range, so the rows that open are the rows that were summed — not
+  // "this category, ever" (DESIGN.md §14).
+  const monthRange = useMemo(
+    () => ({
+      from: getFirstOfMonth(selectedYear, selectedMonth),
+      to: getLastOfMonth(selectedYear, selectedMonth),
+    }),
     [selectedYear, selectedMonth]
   );
 
@@ -1668,9 +1711,13 @@ export default function Budget() {
             sub: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`,
             isPriv: true,
             extra: null,
+            // Total Spent is the sum of this month's expense rows.
+            // Total Budgeted above it is the sum of limits the user
+            // typed into this screen — there are no rows behind it.
+            href: ledgerHref({ type: "expense", from: monthRange.from, to: monthRange.to }),
           },
         ].map((item) => (
-          <BudgetKpiCell key={item.label} label={item.label} value={item.value} sub={item.sub} isPriv={item.isPriv} />
+          <BudgetKpiCell key={item.label} label={item.label} value={item.value} sub={item.sub} isPriv={item.isPriv} href={item.href} />
         ))}
         <BudgetKpiCell
           label="Remaining"
@@ -1808,6 +1855,7 @@ export default function Budget() {
                   health={h}
                   isOver={isOv}
                   title={`${b.category}: ${formatBaseMoney(sp)} of ${formatBaseMoney(eff)} (${Math.round(p * 100)}%)`}
+                  href={categoryTransactionsHref(b.category, monthRange)}
                 />
               );
             })}
@@ -1941,6 +1989,7 @@ export default function Budget() {
                       effectiveLimit={f.effectiveLimit}
                       projectedSpend={f.projectedSpend}
                       projectedOverspend={f.projectedOverspend}
+                      href={categoryTransactionsHref(f.category, monthRange)}
                     />
                   ))}
                 </VStack>
@@ -2038,6 +2087,7 @@ export default function Budget() {
                 <BudgetTableRow
                   key={budget.category}
                   budget={budget}
+                  categoryHref={categoryTransactionsHref(budget.category, monthRange)}
                   rowIdx={rowIdx}
                   spent={spent}
                   lastSpent={lastSpent}

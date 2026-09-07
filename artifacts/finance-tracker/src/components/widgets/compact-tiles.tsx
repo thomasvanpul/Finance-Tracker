@@ -10,6 +10,11 @@ import {
   useGetMarketQuotes,
 } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
+import { Drill, DrillTarget } from "@/components/drill";
+import {
+  categoryTransactionsHref, entityHref, ledgerHref,
+  merchantTransactionsHref, monthTransactionsHref, thisMonthRange,
+} from "@/lib/entity-href";
 import type { WidgetId } from "@/contexts/widgets-context";
 
 // ── Shared style constants ────────────────────────────────────────────────────
@@ -181,6 +186,8 @@ type RecentTxRowProps = {
   baseEquivalent: number | null;
   type: string;
   isLast: boolean;
+  /** The month this row's list was drawn from, so the category opens that month. */
+  range: { from: string; to: string };
 };
 
 const TX_TYPE_COLOR_TILE: Record<string, string> = {
@@ -189,7 +196,7 @@ const TX_TYPE_COLOR_TILE: Record<string, string> = {
   transfer: "var(--ft-amber)",
 };
 
-function RecentTxRow({ description, date, category, baseEquivalent, type, isLast }: RecentTxRowProps) {
+function RecentTxRow({ description, date, category, baseEquivalent, type, isLast, range }: RecentTxRowProps) {
   const [hov, setHov] = useState(false);
   const col = TX_TYPE_COLOR_TILE[type] ?? "var(--ft-muted)";
   const sign = type === "income" ? "+" : type === "expense" ? "−" : "";
@@ -232,9 +239,19 @@ function RecentTxRow({ description, date, category, baseEquivalent, type, isLast
         <span style={{ ...MONO, fontSize: 13, fontWeight: 700, color: col }}>{initial}</span>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ ...MONO, ...CLIP, fontSize: 13, fontWeight: 500, color: "var(--ft-text)", marginBottom: 3 }}>{description ?? "—"}</div>
+        <div style={{ ...MONO, ...CLIP, fontSize: 13, fontWeight: 500, color: "var(--ft-text)", marginBottom: 3 }}>
+          {description
+            ? <Drill href={merchantTransactionsHref(description)} title={`Every ${description} transaction`}>{description}</Drill>
+            : "—"}
+        </div>
         <div style={{ ...MONO, fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.03em" }}>
-          {dateStr}{category ? ` · ${category}` : ""}
+          {dateStr}
+          {category ? (
+            <>
+              {" · "}
+              <Drill href={categoryTransactionsHref(category, range)} title={`Everything in ${category} this month`}>{category}</Drill>
+            </>
+          ) : null}
         </div>
       </div>
       <span className="pnum" style={{
@@ -308,27 +325,38 @@ type CashFlowColProps = {
   value: string;
   color: string;
   borderRight: boolean;
+  href: string;
 };
 
-function CashFlowCol({ label, value, color, borderRight }: CashFlowColProps) {
+function CashFlowCol({ label, value, color, borderRight, href }: CashFlowColProps) {
   const [hov, setHov] = useState(false);
   return (
-    <div
-      style={{
-        flex: 1,
-        minWidth: 0,
-        padding: "12px 12px 12px",
-        borderRight: borderRight ? "1px solid var(--ft-border)" : "none",
-        background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        transition: "background 0.1s",
-        overflow: "hidden",
-      }}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+    // The whole column is the hit area; the underline stays on the figure.
+    // The column's semantic colour sits on a wrapper, not on `.ft-drill`
+    // itself — an inline colour on the drill would beat the accent on hover.
+    <DrillTarget
+      href={href}
+      title="Open the transactions this column added up"
+      style={{ flex: 1, minWidth: 0 }}
     >
-      <div style={{ ...MONO, fontSize: 9, color, letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" as const, whiteSpace: "nowrap" }}>{label}</div>
-      <div className="pnum" style={{ ...MONO, ...CLIP, fontSize: 16, fontWeight: 700, color, lineHeight: 1, letterSpacing: "-0.02em" }}>{value}</div>
-    </div>
+      <div
+        style={{
+          minWidth: 0,
+          padding: "12px 12px 12px",
+          borderRight: borderRight ? "1px solid var(--ft-border)" : "none",
+          background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
+          transition: "background 0.1s",
+          overflow: "hidden",
+        }}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+      >
+        <div style={{ ...MONO, fontSize: 9, color, letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" as const, whiteSpace: "nowrap" }}>{label}</div>
+        <div style={{ color }}>
+          <span className="pnum ft-drill" style={{ ...MONO, ...CLIP, display: "block", fontSize: 16, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.02em" }}>{value}</span>
+        </div>
+      </div>
+    </DrillTarget>
   );
 }
 
@@ -427,26 +455,32 @@ export function CompactAccountsSummary() {
       </div>
       {/* Total */}
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "10px 12px 8px", borderBottom: "1px solid var(--ft-border)" }}>
-        <span className="pnum" style={{ ...MONO, fontSize: 22, fontWeight: 700, color: total !== 0 ? (total >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", letterSpacing: "-0.03em", lineHeight: 1 }}>{formatBaseMoney(total)}</span>
+        <span style={{ color: total !== 0 ? (total >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)" }}>
+          <Drill href="/accounts" title="Total cash — every account it is the sum of">
+            <span className="pnum" style={{ ...MONO, fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1 }}>{formatBaseMoney(total)}</span>
+          </Drill>
+        </span>
         <span style={{ ...MONO, fontSize: 10, color: "var(--ft-dim)" }}>total cash</span>
       </div>
       {/* Account rows */}
       {sorted.length === 0 ? (
         <div style={{ ...MONO, fontSize: 10, color: "var(--ft-muted)", padding: "12px" }}>No accounts linked</div>
       ) : sorted.map((acc, i) => (
-        <div key={acc.id ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: i < sorted.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ ...MONO, ...CLIP, fontSize: 13, color: "var(--ft-text)", fontWeight: 500 }}>{acc.name}</div>
-            <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: 2 }}>{acc.currency}</div>
+        <DrillTarget key={acc.id ?? i} href={entityHref("account", acc.id)} title={`${acc.name} — open the account`}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: i < sorted.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="ft-drill" style={{ ...MONO, ...CLIP, fontSize: 13, fontWeight: 500 }}>{acc.name}</div>
+              <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: 2 }}>{acc.currency}</div>
+            </div>
+            <span className="pnum" style={{ ...MONO, fontSize: 15, fontWeight: 700, color: acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)", letterSpacing: "-0.02em", flexShrink: 0 }}>
+              {acc.baseEquivalent == null ? "—" : formatBaseMoney(acc.baseEquivalent)}
+            </span>
           </div>
-          <span className="pnum" style={{ ...MONO, fontSize: 15, fontWeight: 700, color: acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)", letterSpacing: "-0.02em", flexShrink: 0 }}>
-            {acc.baseEquivalent == null ? "—" : formatBaseMoney(acc.baseEquivalent)}
-          </span>
-        </div>
+        </DrillTarget>
       ))}
       {accounts.length > 5 && (
         <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", textAlign: "right", padding: "6px 12px", borderTop: "1px solid var(--ft-border)" }}>
-          +{accounts.length - 5} more →
+          <Drill href="/accounts" title="The accounts this card did not have room for">+{accounts.length - 5} more →</Drill>
         </div>
       )}
     </div>
@@ -481,6 +515,7 @@ export function CompactRecentTransactions() {
             baseEquivalent={t.baseEquivalent}
             type={t.type}
             isLast={i === rows.length - 1}
+            range={{ from: monthStart, to: now.toISOString().slice(0, 10) }}
           />
         ))
       )}
@@ -504,7 +539,7 @@ export function CompactSpendingBreakdown() {
     <Tile
       label="TOP SPEND"
       accent="#e3b341"
-      href="/analytics"
+      href={top ? categoryTransactionsHref(top[0], thisMonthRange()) : "/analytics"}
       primary={top ? top[0] : "No spend yet"}
       secondary={top ? `${formatBaseMoney(top[1])}${second ? ` · ${second[0]}` : ""}` : "Add transactions"}
     />
@@ -514,6 +549,7 @@ export function CompactSpendingBreakdown() {
 // cash-flow: FULL WIDTH — three equal columns
 export function CompactCashFlow() {
   const { data: dash } = useGetDashboard();
+  const thisMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
   const income = dash?.thisMonth?.income ?? null;
   const expenses = dash?.thisMonth?.expenses ?? null;
   if (income === null) return <LoadingTile label="CASH FLOW" accent="var(--ft-green)" />;
@@ -532,9 +568,9 @@ export function CompactCashFlow() {
         <span style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>THIS MONTH</span>
       </div>
       <div style={{ display: "flex", alignItems: "stretch" }}>
-        <CashFlowCol label="IN"  value={formatBaseMoney(income)}                            color={incomeColor}   borderRight={true} />
-        <CashFlowCol label="OUT" value={expenses == null ? "—" : formatBaseMoney(expenses)} color={expensesColor} borderRight={true} />
-        <CashFlowCol label="NET" value={net == null ? "—" : `${sign}${formatBaseMoney(net)}`} color={netColor}    borderRight={false} />
+        <CashFlowCol label="IN"  value={formatBaseMoney(income)}                            color={incomeColor}   borderRight={true}  href={monthTransactionsHref(thisMonth, "income")} />
+        <CashFlowCol label="OUT" value={expenses == null ? "—" : formatBaseMoney(expenses)} color={expensesColor} borderRight={true}  href={monthTransactionsHref(thisMonth, "expense")} />
+        <CashFlowCol label="NET" value={net == null ? "—" : `${sign}${formatBaseMoney(net)}`} color={netColor}    borderRight={false} href={monthTransactionsHref(thisMonth)} />
       </div>
     </div>
   );
@@ -740,7 +776,7 @@ export function CompactTransactionCalendar() {
     <Tile
       label="TODAY"
       accent="var(--ft-blue)"
-      href="/transactions"
+      href={ledgerHref({ type: "expense", from: today, to: today })}
       primary={todaySpend > 0 ? formatBaseMoney(todaySpend) : "£0"}
       secondary={`${txs.length} txns this month`}
     />
@@ -833,7 +869,7 @@ export function CompactDailySpend() {
     <Tile
       label="TODAY SPEND"
       accent="var(--ft-amber)"
-      href="/transactions"
+      href={ledgerHref({ type: "expense", from: today, to: today })}
       primary={formatBaseMoney(todaySpend)}
       secondary={`${todayTxs.length} txn${todayTxs.length !== 1 ? "s" : ""} today`}
     />

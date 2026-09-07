@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useQueryParam } from "@/hooks/use-query-param";
 import { useQueryClient } from "@tanstack/react-query";
 import { useListTransactions, useUpdateTransaction, getListTransactionsQueryKey } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
@@ -9,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Repeat2 } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, merchantTransactionsHref } from "@/lib/entity-href";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -244,8 +247,11 @@ function CategoryLegendRow({ category, monthly, pct, color }: CategoryLegendRowP
     >
       <div style={{ width: 8, height: 8, background: color, flexShrink: 0 }} />
       <span style={{ ...mono, fontSize: 10, color: "var(--ft-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {category}
+        <Drill href={categoryTransactionsHref(category)} title={`Open the ${category} transactions`}>{category}</Drill>
       </span>
+      {/* The monthly figure is a normalised estimate (weekly × 4.33 and
+          so on), not a sum of rows, so it stays flat — as does the
+          percentage, which is a share of a whole. */}
       <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)" }}>
         <span className="pnum">{formatBaseMoney(monthly)}</span>
       </span>
@@ -611,8 +617,12 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
     >
       {/* Title row */}
       <HStack gap={8} align="start" justify="between">
+        {/* The series was detected FROM rows, so its name opens them
+            (DESIGN.md §14). The confidence score, the estimated amount
+            and the next-estimated date are a score, an average and a
+            projection — no rows exist behind those, and they stay flat. */}
         <div style={{ ...mono, fontSize: 12, color: "var(--ft-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-          {p.merchantName}
+          <Drill href={merchantTransactionsHref(p.merchantName)} title={`Open the ${p.merchantName} transactions this series was detected from`}>{p.merchantName}</Drill>
         </div>
         <HStack gap={4} shrink={false}>
           <span style={{ ...mono, fontSize: 9, padding: "1px 6px", background: "var(--ft-accent)22", color: "var(--ft-accent)" }}>
@@ -657,13 +667,15 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
         )}
         <div>
           <div style={{ ...labelStyle, marginBottom: 2 }}>Count</div>
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-muted)" }}><span className="pnum">{p.occurrences}</span>×</div>
+          <div style={{ ...mono, fontSize: 10, color: "var(--ft-muted)" }}>
+            <Drill href={merchantTransactionsHref(p.merchantName)} title="Open the occurrences counted here"><span className="pnum">{p.occurrences}</span>×</Drill>
+          </div>
         </div>
       </div>
 
       {p.category && (
         <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", padding: "1px 6px", background: "var(--ft-raised)", alignSelf: "flex-start" }}>
-          {p.category}
+          <Drill href={categoryTransactionsHref(p.category)} title={`Open the ${p.category} transactions`}>{p.category}</Drill>
         </div>
       )}
 
@@ -686,7 +698,12 @@ function AutoDetected({
   patterns: RecurringPattern[];
   onAddRule: (p: RecurringPattern) => void;
 }) {
-  const [search, setSearch] = useState("");
+  // ?q= is how a drill from a transaction that belongs to a series arrives
+  // here (DESIGN.md §14). A series has no id of its own — it is detected from
+  // a merchant name (lib/recurring-detect.ts) — so the name is the address.
+  const seriesParam = useQueryParam("q");
+  const [search, setSearch] = useState(() => seriesParam ?? "");
+  useEffect(() => { setSearch(seriesParam ?? ""); }, [seriesParam]);
   const [freqFilter, setFreqFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"cards" | "calendar" | "category">("cards");
 
@@ -934,8 +951,12 @@ function RuleTableRow({
               {testMatches.map((t) => (
                 <div key={t.id} style={{ display: "flex", gap: 16, marginBottom: 4, alignItems: "center" }}>
                   <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", width: 80 }}>{t.date}</span>
-                  <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</span>
-                  <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)" }}>{t.category || "—"}</span>
+                  <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <Drill href={merchantTransactionsHref(t.description)} title="Open this merchant's history">{t.description}</Drill>
+                  </span>
+                  <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)" }}>
+                    {t.category ? <Drill href={categoryTransactionsHref(t.category)} title={`Open the ${t.category} transactions`}>{t.category}</Drill> : "—"}
+                  </span>
                   <span style={{ ...mono, fontSize: 9, color: "var(--ft-amber)" }}>→ {rule.category}</span>
                   <span style={{ ...mono, fontSize: 10, color: "var(--ft-red)" }}>
                     <span className="pnum">{formatBaseMoney(t.baseEquivalent)}</span>
@@ -997,8 +1018,12 @@ function PreviewTableRow({ tx, newCategory, rule }: PreviewTableRowProps) {
       }}
     >
       <td style={{ ...td, color: "var(--ft-dim)" }}>{tx.date}</td>
-      <td style={{ ...td, maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</td>
-      <td style={{ ...td, color: "var(--ft-muted)" }}>{tx.category || <em style={{ color: "var(--ft-dim)" }}>none</em>}</td>
+      <td style={{ ...td, maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis" }}>
+        <Drill href={merchantTransactionsHref(tx.description)} title="Open this merchant's history">{tx.description}</Drill>
+      </td>
+      <td style={{ ...td, color: "var(--ft-muted)" }}>
+        {tx.category ? <Drill href={categoryTransactionsHref(tx.category)} title={`Open the ${tx.category} transactions`}>{tx.category}</Drill> : <em style={{ color: "var(--ft-dim)" }}>none</em>}
+      </td>
       <td style={{ ...td, color: "var(--ft-accent)", fontSize: 9 }}>{rule.matchText}</td>
       <td style={td}>
         <span style={{ fontSize: 9, padding: "1px 6px", background: "var(--ft-green)22", color: "var(--ft-green)" }}>

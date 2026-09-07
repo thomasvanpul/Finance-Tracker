@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { HoverRow } from "./HoverRow";
+import { DrillTarget } from "@/components/drill";
 
 // StatGrid — the "border-as-gap" stat grid Thomas reads well narrow.
 // Merges profile's KpiStrip + accounts's isFinancial + accounts's icon
@@ -25,6 +26,12 @@ interface StatGridItem {
   accent?: string;
   icon?: ReactNode;
   isFinancial?: boolean;
+  /**
+   * Where this figure came from, when it is a sum over rows (DESIGN.md §14).
+   * The whole cell becomes the target so a thumb has 44px to land on, and
+   * the underline sits on the figure alone.
+   */
+  href?: string;
 }
 
 interface StatGridProps {
@@ -34,8 +41,8 @@ interface StatGridProps {
 
 type StatCellProps = StatGridItem & { isLastCol: boolean; isLastRow: boolean };
 
-function StatCell({ label, value, sub, accent, icon, isFinancial, isLastCol, isLastRow }: StatCellProps) {
-  return (
+function StatCell({ label, value, sub, accent, icon, isFinancial, href, isLastCol, isLastRow }: StatCellProps) {
+  const cell = (
     <HoverRow
       style={{
         background: "var(--ft-surface)",
@@ -46,6 +53,9 @@ function StatCell({ label, value, sub, accent, icon, isFinancial, isLastCol, isL
         flexDirection: "column",
         gap: 4,
         minWidth: 0,
+        // With a drill the anchor is the grid item, so the cell has to fill
+        // it or the hairlines stop short of the row below.
+        flex: href ? 1 : undefined,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -76,7 +86,7 @@ function StatCell({ label, value, sub, accent, icon, isFinancial, isLastCol, isL
           minWidth: 0,
         }}
       >
-        {value}
+        {href ? <span className="ft-drill">{value}</span> : value}
       </div>
       {sub && (
         <div
@@ -91,6 +101,16 @@ function StatCell({ label, value, sub, accent, icon, isFinancial, isLastCol, isL
         </div>
       )}
     </HoverRow>
+  );
+  if (!href) return cell;
+  return (
+    <DrillTarget
+      href={href}
+      title={`${label} — open what it is made of`}
+      style={{ display: "flex", flexDirection: "column", minWidth: 0 }}
+    >
+      {cell}
+    </DrillTarget>
   );
 }
 

@@ -17,6 +17,8 @@ import {
   getListTransactionsQueryKey,
 } from "@workspace/api-client-react";
 import { formatBaseMoney, formatNative, formatDate } from "@/lib/utils";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref } from "@/lib/entity-href";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -250,7 +252,10 @@ function UpcomingRow({
             <Text as="span" mono size={10} weight={isOverdue ? 700 : 400} color={isOverdue ? "var(--ft-red)" : "var(--ft-muted)"}>
               {formatDate(item.dueDate)}{isOverdue ? " · OVERDUE" : ""}
             </Text>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "0 4px", background: "var(--ft-raised)", color: "var(--ft-muted)" }}>{item.category}</span>
+            {/* The category was a filled chip. It is now drilled text: §9
+                draws a per-row label as text, and §14 gives the label the one
+                affordance the app uses for "this opens rows". */}
+            <Drill href={categoryTransactionsHref(item.category)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>{item.category}</Drill>
             {item.frequency !== "once" && <Text as="span" mono size={9} color="var(--ft-dim)">{item.frequency}</Text>}
           </HStack>
           <HStack gap={4}>
@@ -314,7 +319,7 @@ function UpcomingRow({
         <span className={item.status === "skipped" ? "line-through" : ""}>{item.description}</span>
       </div>
       <div style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
-        <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>{item.category}</span>
+        <Drill href={categoryTransactionsHref(item.category)} style={{ fontSize: 10, color: "var(--ft-muted)" }}>{item.category}</Drill>
       </div>
       <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, textTransform: "capitalize" }}>
         {item.frequency}
@@ -401,7 +406,7 @@ function SubRenewalRow({ sub }: SubRenewalRowProps) {
         {sub.name}
       </div>
       <div className="ft-hide-mobile" style={{ width: 110, minWidth: 110, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
-        <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>{sub.category}</span>
+        <Drill href={categoryTransactionsHref(sub.category)} style={{ fontSize: 10, color: "var(--ft-muted)" }}>{sub.category}</Drill>
       </div>
       <div className="ft-hide-mobile" style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, textTransform: "capitalize" }}>
         {sub.frequency}

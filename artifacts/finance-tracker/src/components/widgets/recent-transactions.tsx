@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
+import { Drill, DrillTarget } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref, merchantTransactionsHref } from "@/lib/entity-href";
 import { formatBaseMoney, formatDate } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import { Search, X } from "lucide-react";
@@ -38,6 +40,10 @@ type TxRecord = { id: number; type: string; date: string; description: string; c
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
+// Three things on this row stand for a set: the description (this merchant,
+// across accounts), the account name, and the category. The date and the
+// amount are properties of this one transaction, not sums, so they stay flat.
+// DESIGN.md §14.
 function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
   const [hov, setHov] = useState(false);
   return (
@@ -59,16 +65,29 @@ function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", flexShrink: 0, width: 68 }}>
         {formatDate(tx.date)}
       </span>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <Drill href={merchantTransactionsHref(tx.description)} style={{ fontFamily: "var(--font-sans)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {tx.description}
-      </span>
+      </Drill>
       {isExpanded && (
+        // TxRecord carries accountName but no accountId, so this cannot open
+        // the account's detail surface the way every other account name in
+        // the app does. `ledgerHref({ account })` needs the id. Left flat
+        // rather than pointed at a substring search that would also match a
+        // description — a drill that lands on the wrong rows is worse than
+        // no drill.
         <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", flexShrink: 0, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {tx.accountName}
         </span>
       )}
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", color: categoryColor(tx.category), flexShrink: 0, maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {tx.category}
+      {/* The category colour goes on the wrapper, not on the Drill:
+          `.ft-drill` takes `color: inherit`, so it wears the category colour
+          at rest and the hover rule still wins on hover. Putting the colour
+          on the anchor itself would make the inline style beat `:hover` and
+          the affordance would half-work here and nowhere else. */}
+      <span style={{ color: categoryColor(tx.category), flexShrink: 0, maxWidth: 90, overflow: "hidden" }}>
+        <Drill href={categoryTransactionsHref(tx.category)} style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {tx.category}
+        </Drill>
       </span>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", flexShrink: 0, width: 72, textAlign: "right" }}>
         {tx.baseEquivalent == null ? "—" : `${TYPE_PREFIX[tx.type]}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
@@ -83,10 +102,12 @@ type TxSummaryCardProps = {
   total: number;
 };
 
+// Both the count and the total are sums over one type's rows, and the card
+// stands for exactly the ledger filter `?type=` applies. DESIGN.md §14.
 function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
   const [hov, setHov] = useState(false);
   const color = type === "income" ? "var(--ft-green)" : type === "expense" ? "var(--ft-red)" : "var(--ft-amber)";
-  return (
+  const card = (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -112,9 +133,14 @@ function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
         </div>
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color, flexShrink: 0, whiteSpace: "nowrap" }}>
-        {TYPE_PREFIX[type]}{formatBaseMoney(Math.abs(total))}
+        <span className="ft-drill">{TYPE_PREFIX[type]}{formatBaseMoney(Math.abs(total))}</span>
       </div>
     </div>
+  );
+  return (
+    <DrillTarget href={ledgerHref({ type })} title={`${type} — every transaction`}>
+      {card}
+    </DrillTarget>
   );
 }
 

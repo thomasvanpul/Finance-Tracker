@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { entityHref } from "@/lib/entity-href";
+import { DrillTarget } from "@/components/drill";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
 import {
@@ -248,9 +249,13 @@ export function MobileHome(_props: MobileHomeProps) {
     >
         {/* Top bar (44px, JetBrains Mono, dim) */}
         <HStack justify="end" align="center" height={44} paddingX={18}>
-          <Text as="span" mono size={11} color="var(--ft-dim)">
-            LIVE · {activeAccounts.length} {activeAccounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
-          </Text>
+          <DrillTarget href="/accounts" title="The accounts this counts">
+            <span className="ft-drill">
+              <Text as="span" mono size={11} color="var(--ft-dim)">
+                LIVE · {activeAccounts.length} {activeAccounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
+              </Text>
+            </span>
+          </DrillTarget>
         </HStack>
 
         {/* Headline (P2·9). Market persona gets PORTFOLIO VALUE +
@@ -309,19 +314,23 @@ export function MobileHome(_props: MobileHomeProps) {
         ) : (
           <VStack padding="4px 18px 18px">
             <MonoLabel size={11} letterSpacing="0.16em">NET WORTH</MonoLabel>
-            <HStack align="baseline" gap={4} marginTop={6}>
-              <Text as="span" size={17} color="var(--ft-dim)">£</Text>
-              <Text
-                as="span"
-                size={34}
-                weight={600}
-                lineHeight="34px"
-                letterSpacing="-0.035em"
-                numeric
-              >
-                {dashboardLoading ? "…" : netWorth != null ? nfmt(netWorth) : "—"}
-              </Text>
-            </HStack>
+            <DrillTarget href="/net-worth" title="Net worth — everything it is the sum of">
+              <HStack align="baseline" gap={4} marginTop={6}>
+                <Text as="span" size={17} color="var(--ft-dim)">£</Text>
+                <span className="ft-drill">
+                  <Text
+                    as="span"
+                    size={34}
+                    weight={600}
+                    lineHeight="34px"
+                    letterSpacing="-0.035em"
+                    numeric
+                  >
+                    {dashboardLoading ? "…" : netWorth != null ? nfmt(netWorth) : "—"}
+                  </Text>
+                </span>
+              </HStack>
+            </DrillTarget>
             {mtdDelta != null && mtdPct != null ? (
               <Text
                 as="div"
@@ -364,17 +373,21 @@ export function MobileHome(_props: MobileHomeProps) {
                   marginTop: 2,
                 }}
               />
-              <Text
-                as="div"
-                mono
-                size={11}
-                lineHeight="16px"
-                color="var(--ft-red)"
-                numeric
-              >
-                CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount ?? 0}{" "}
-                {pendingCount === 1 ? "DEBT" : "DEBTS"}
-              </Text>
+              <DrillTarget href="/owing" title="The debts this claims">
+                <span className="ft-drill">
+                  <Text
+                    as="div"
+                    mono
+                    size={11}
+                    lineHeight="16px"
+                    color="var(--ft-red)"
+                    numeric
+                  >
+                    CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount ?? 0}{" "}
+                    {pendingCount === 1 ? "DEBT" : "DEBTS"}
+                  </Text>
+                </span>
+              </DrillTarget>
             </HStack>
             {topPending.filter((p) => p.direction === "i_owe_them").slice(0, 3).map((p) => (
               <HStack key={`${p.name}-${p.amountBase}`} align="baseline" justify="between" padding="0 0 0 26px">

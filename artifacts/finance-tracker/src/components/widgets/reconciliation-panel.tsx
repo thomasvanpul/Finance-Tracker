@@ -15,6 +15,8 @@
 import type { CSSProperties } from "react";
 import { useGetAccountsReconciliation, type ReconciliationAccount } from "@workspace/api-client-react";
 import { PanelHeader, Text } from "@/components/primitives";
+import { Drill } from "@/components/drill";
+import { entityHref, accountTransactionsHref } from "@/lib/entity-href";
 import { formatMoney } from "@/lib/utils";
 import { formatShortDate, reconciliationPeriodLabel } from "@/lib/reconciliation-insight";
 
@@ -52,11 +54,21 @@ function Row({ a, baseCurrency }: { a: ReconciliationAccount; baseCurrency: stri
   if (a.fxSkippedTransactions > 0) notes.push(`${a.fxSkippedTransactions} tx not converted`);
   return (
     <tr>
-      <td style={name}>{a.name}</td>
+      {/* The name opens the account; the gap opens the rows the gap is
+          measured against. Both are made of rows (DESIGN.md §14). The two
+          middle columns are not: "balance moved" is a difference between two
+          snapshots and "ledger says" is already the sum of what the gap
+          column links to. */}
+      <td style={name}><Drill href={entityHref("account", a.accountId)}>{a.name}</Drill></td>
       <td className="pnum" style={num}>{formatMoney(a.balanceChange, a.currency)}</td>
       <td className="pnum" style={num}>{formatMoney(a.ledgerChange, a.currency)}</td>
       <td className="pnum" style={{ ...num, fontWeight: 700, color: gapColour(a.gap) }}>
-        {formatMoney(a.gap, a.currency)}
+        <Drill
+          href={accountTransactionsHref(a.accountId)}
+          title={`Transactions on ${a.name}`}
+        >
+          {formatMoney(a.gap, a.currency)}
+        </Drill>
         {foreign && (
           <span style={{ color: "var(--ft-dim)", fontWeight: 400, marginLeft: 6 }}>
             {a.gapBase == null ? "fx unavailable" : `fx ${formatMoney(a.gapBase, baseCurrency)}`}

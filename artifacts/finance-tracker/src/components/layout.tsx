@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { entityHref } from "@/lib/entity-href";
+import { Drill } from "@/components/drill";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useNetworkStatus } from "@/hooks/use-network-status";
@@ -1933,10 +1934,14 @@ export function Layout({ children }: LayoutProps) {
               gap: 4,
               fontFamily: "var(--font-mono)",
             }}>
-              <span style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>NET WORTH</span>
-              <PrivNum style={{ fontSize: 10, color: "var(--ft-text)", fontWeight: 700 }}>
-                {formatBaseMoney(dashboardData.netWorth)}
-              </PrivNum>
+              {/* The sidebar figure is the same sum as everywhere else, so it
+                  opens the same place (DESIGN.md §14). */}
+              <Drill href="/net-worth" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4, flex: 1 }} title="Net worth — open what it is made of">
+                <span style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>NET WORTH</span>
+                <PrivNum style={{ fontSize: 10, color: "var(--ft-text)", fontWeight: 700 }}>
+                  {formatBaseMoney(dashboardData.netWorth)}
+                </PrivNum>
+              </Drill>
             </div>
           )}
 

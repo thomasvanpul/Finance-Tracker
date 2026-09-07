@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Drill } from "@/components/drill";
+import { ledgerHref } from "@/lib/entity-href";
 import { useListTransactions } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -110,16 +112,19 @@ export function CashFlowSankeyWidget() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid var(--ft-border)" }}>
             {[
-              { label: "Income", value: totalIncome, color: "var(--ft-green)" },
-              { label: "Expenses", value: totalExpense, color: "var(--ft-red)" },
-              { label: savings >= 0 ? "Saved" : "Deficit", value: Math.abs(savings), color: savings >= 0 ? "var(--ft-accent)" : "var(--ft-red)" },
+              // Each is a sum over the month the diagram is drawn from, so
+              // each opens its own slice of it. The "% of income" caption
+              // under two of them is a ratio and stays flat (DESIGN.md §14).
+              { label: "Income", value: totalIncome, color: "var(--ft-green)", href: ledgerHref({ type: "income", from: dateFrom, to: dateTo }) },
+              { label: "Expenses", value: totalExpense, color: "var(--ft-red)", href: ledgerHref({ type: "expense", from: dateFrom, to: dateTo }) },
+              { label: savings >= 0 ? "Saved" : "Deficit", value: Math.abs(savings), color: savings >= 0 ? "var(--ft-accent)" : "var(--ft-red)", href: ledgerHref({ from: dateFrom, to: dateTo }) },
             ].map((item, i) => (
               <div key={item.label} style={{ padding: "8px 12px", background: "var(--ft-surface)", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined, overflow: "hidden", minWidth: 0 }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
                   {item.label}
                 </div>
                 <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: item.color, whiteSpace: "nowrap" }}>
-                  {formatBaseMoney(item.value)}
+                  <Drill href={item.href}>{formatBaseMoney(item.value)}</Drill>
                 </div>
                 {totalIncome > 0 && item.label !== "Income" && (
                   <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>

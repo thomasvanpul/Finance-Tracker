@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useListTransactions } from "@workspace/api-client-react";
+import { Drill } from "@/components/drill";
+import { merchantTransactionsHref, monthTransactionsHref } from "@/lib/entity-href";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
@@ -78,9 +80,19 @@ function MerchantRow({ merchant, rank, isLast, isExpanded: expanded, color, barW
           {rank}
         </span>
         <div style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0 }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {/* The name is the merchant's identity, and the total beside it is a
+            sum of that merchant's rows, so the name opens them (DESIGN.md
+            §14). The link carries the full name, not the truncated one — the
+            ellipsis is display, and searching for "Sainsbury…" finds nothing.
+            The share-of-total percentage next to it stays flat: it is a
+            ratio, not a set of rows. */}
+        <Drill
+          href={merchantTransactionsHref(merchant.name)}
+          title={`${merchant.name} — every transaction, across accounts`}
+          style={{ fontFamily: "var(--font-mono)", fontSize: 10, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+        >
           {truncatedName}
-        </span>
+        </Drill>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0 }}>
           {pctOfTotal.toFixed(0)}%
         </span>
@@ -162,7 +174,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, justifyContent: "space-between" }}>
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-          {formatBaseMoney(monthlyTotal)}
+          <Drill href={monthTransactionsHref(thisMonth, "expense")} title="This month's spend — every expense it is the sum of">{formatBaseMoney(monthlyTotal)}</Drill>
         </span>
         {prevMonthTotal > 0 && (
           <span style={{

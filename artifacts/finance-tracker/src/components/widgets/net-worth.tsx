@@ -3,6 +3,8 @@ import { useGetDashboard } from "@workspace/api-client-react";
 import { UnconvertibleAccountsBadge } from "@/components/UnconvertibleAccountsBadge";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { formatBaseMoney, formatPercent } from "@/lib/utils";
+import { Drill, DrillTarget } from "@/components/drill";
+import { entityHref, ledgerHref, thisMonthRange } from "@/lib/entity-href";
 import { WidgetShell } from "./widget-shell";
 import { useCountUp } from "@/hooks/use-count-up";
 import { CurrencyMark } from "@/components/currency-mark";
@@ -71,8 +73,13 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
     <div style={{ borderTop: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 0, overflowX: "auto", scrollbarWidth: "none" }}>
         {groups.map((g, i) => (
-          <div
+          // The two totals are sums of the accounts held in this currency, so
+          // the cell opens the accounts list (§14). The share percentage beside
+          // them is a proportion of a whole, not a set of rows, and stays flat.
+          <DrillTarget
             key={g.currency}
+            href="/accounts"
+            title={`${g.currency} holdings — the accounts this adds up`}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -90,8 +97,10 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
                 {g.share == null ? "—" : `${g.share.toFixed(0)}%`}
               </span>
             </div>
-            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-accent)", whiteSpace: "nowrap" }}>
-              {formatNative(g.nativeTotal, g.currency)}
+            <div style={{ color: "var(--ft-accent)" }}>
+              <span className="pnum ft-drill" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+                {formatNative(g.nativeTotal, g.currency)}
+              </span>
             </div>
             {g.currency !== "GBP" && (
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>
@@ -102,7 +111,7 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
             <div style={{ marginTop: 4, height: 2, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${g.share ?? 0}%`, background: `hsl(${(groups.indexOf(g) * 47 + 200) % 360}, 60%, 55%)`, opacity: 0.9 }} />
             </div>
-          </div>
+          </DrillTarget>
         ))}
       </div>
     </div>
@@ -195,12 +204,14 @@ type KpiCellProps = {
   color: string;
   sub: string;
   animate: boolean;
+  /** Set when the figure is a sum over rows (DESIGN.md §14). */
+  href?: string;
   isLast: boolean;
 };
 
-function KpiCell({ label, raw, value, color, sub, animate, isLast }: KpiCellProps) {
+function KpiCell({ label, raw, value, color, sub, animate, href, isLast }: KpiCellProps) {
   const [hov, setHov] = useState(false);
-  return (
+  const cell = (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -217,20 +228,27 @@ function KpiCell({ label, raw, value, color, sub, animate, isLast }: KpiCellProp
         {label}
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color, lineHeight: 1.1, whiteSpace: "nowrap" }}>
-        {animate && raw !== null ? <AnimatedGbp value={raw} /> : value}
+        {href
+          ? <span className="ft-drill">{animate && raw !== null ? <AnimatedGbp value={raw} /> : value}</span>
+          : (animate && raw !== null ? <AnimatedGbp value={raw} /> : value)}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
         {sub}
       </div>
     </div>
   );
+  // The whole cell is the target and the underline sits on the figure —
+  // DESIGN.md §14. The existing hover tint stays on the inner div, so the
+  // cell keeps the behaviour it had and gains one.
+  if (!href) return cell;
+  return <DrillTarget href={href} title={`${label} — open what it is made of`}>{cell}</DrillTarget>;
 }
 
-type MonthStatCellProps = { label: string; value: string; color: string; isLast: boolean };
+type MonthStatCellProps = { label: string; value: string; color: string; href?: string; isLast: boolean };
 
-function MonthStatCell({ label, value, color, isLast }: MonthStatCellProps) {
+function MonthStatCell({ label, value, color, href, isLast }: MonthStatCellProps) {
   const [hov, setHov] = useState(false);
-  return (
+  const cell = (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -247,17 +265,19 @@ function MonthStatCell({ label, value, color, isLast }: MonthStatCellProps) {
         {label}
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color, whiteSpace: "nowrap" }}>
-        {value}
+        {href ? <span className="ft-drill">{value}</span> : value}
       </div>
     </div>
   );
+  if (!href) return cell;
+  return <DrillTarget href={href} title={`${label} — open what it is made of`}>{cell}</DrillTarget>;
 }
 
-type BreakdownCellProps = { label: string; value: string; color: string; isLast: boolean };
+type BreakdownCellProps = { label: string; value: string; color: string; href?: string; isLast: boolean };
 
-function BreakdownCell({ label, value, color, isLast }: BreakdownCellProps) {
+function BreakdownCell({ label, value, color, href, isLast }: BreakdownCellProps) {
   const [hov, setHov] = useState(false);
-  return (
+  const cell = (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -274,10 +294,12 @@ function BreakdownCell({ label, value, color, isLast }: BreakdownCellProps) {
         {label}
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color, whiteSpace: "nowrap" }}>
-        {value}
+        {href ? <span className="ft-drill">{value}</span> : value}
       </div>
     </div>
   );
+  if (!href) return cell;
+  return <DrillTarget href={href} title={`${label} — open what it is made of`}>{cell}</DrillTarget>;
 }
 
 type AccountTableRowProps = {
@@ -297,8 +319,11 @@ function AccountTableRow({ acct, isFirst }: AccountTableRowProps) {
         transition: "background 0.1s",
       }}
     >
+      {/* Same destination as the dashboard ACCOUNTS row and every other
+          account name in the product (DESIGN.md §14). The currency code and
+          the native balance beside it are not made of rows. */}
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "7px 0 7px 0", paddingRight: 8, maxWidth: 110, whiteSpace: "nowrap" }}>
-        {acct.name}
+        <Drill href={entityHref("account", acct.id)}>{acct.name}</Drill>
       </td>
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "7px 8px 7px 0" }}>
         {acct.currency}
@@ -343,23 +368,28 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const currencyGroups = d ? buildCurrencyGroups(d.accountBreakdown, d.totalCash) : [];
 
+  // "This month" here must sum the same window the ledger will show.
+  const month = thisMonthRange();
+
   const kpis = d ? [
-    { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true },
-    { label: "Total Cash",   raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false },
-    { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueBase), color: d.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlBase)}`, animate: false },
-    { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false },
+    { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true, href: "/net-worth" },
+    { label: "Total Cash",   raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false, href: "/accounts" },
+    { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueBase), color: d.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlBase)}`, animate: false, href: "/investments" },
+    { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false, href: "/accounts" },
   ] : [];
 
   const monthStats = d ? [
-    { label: "Income",       value: `+${formatBaseMoney(Math.abs(d.thisMonth.income))}`,   color: "var(--ft-green)" },
-    { label: "Expenses",     value: `-${formatBaseMoney(Math.abs(d.thisMonth.expenses))}`, color: "var(--ft-red)" },
+    { label: "Income",       value: `+${formatBaseMoney(Math.abs(d.thisMonth.income))}`,   color: "var(--ft-green)", href: ledgerHref({ type: "income", ...month }) },
+    { label: "Expenses",     value: `-${formatBaseMoney(Math.abs(d.thisMonth.expenses))}`, color: "var(--ft-red)", href: ledgerHref({ type: "expense", ...month }) },
+    // Savings Rate is income over expenses, a ratio rather than a set of
+    // rows. §14: a figure not made of rows is not a button.
     { label: "Savings Rate", value: d.thisMonth.savingsRate == null ? "—" : formatPercent(d.thisMonth.savingsRate), color: (d.thisMonth.savingsRate ?? 0) >= 20 ? "var(--ft-green)" : "var(--ft-amber)" },
   ] : [];
 
   const breakdownItems = d ? [
-    { label: "Cash",      value: formatBaseMoney(d.totalCash),                color: "var(--ft-accent)" },
-    { label: "Portfolio", value: formatBaseMoney(d.portfolio.totalValueBase),  color: "var(--ft-green)" },
-    { label: "Net Debt",  value: formatBaseMoney(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)" },
+    { label: "Cash",      value: formatBaseMoney(d.totalCash),                color: "var(--ft-accent)", href: "/accounts" },
+    { label: "Portfolio", value: formatBaseMoney(d.portfolio.totalValueBase),  color: "var(--ft-green)", href: "/investments" },
+    { label: "Net Debt",  value: formatBaseMoney(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)", href: "/owing" },
   ] : [];
 
   const chartSection = (
@@ -412,6 +442,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
             color={k.color}
             sub={k.sub}
             animate={k.animate}
+            href={k.href}
             isLast={i === kpis.length - 1}
           />
         ))}
@@ -437,6 +468,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
             label={item.label}
             value={item.value}
             color={item.color}
+            href={item.href}
             isLast={i === monthStats.length - 1}
           />
         ))}
@@ -450,6 +482,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
             label={item.label}
             value={item.value}
             color={item.color}
+            href={item.href}
             isLast={i === breakdownItems.length - 1}
           />
         ))}
@@ -487,7 +520,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
               Total Cash
             </td>
             <td style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-accent)", textAlign: "right", paddingTop: 8 }}>
-              <span className="pnum">{formatBaseMoney(d.totalCash)}</span>
+              <Drill href="/accounts" title="Total cash — every account it is the sum of"><span className="pnum">{formatBaseMoney(d.totalCash)}</span></Drill>
             </td>
           </tr>
         </tfoot>

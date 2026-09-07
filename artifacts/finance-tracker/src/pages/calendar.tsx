@@ -6,6 +6,8 @@ import type { Transaction, UpcomingItem, Subscription } from "@workspace/api-cli
 import { Download, Upload, Plus, Bell, BellOff, Calendar, X, Check, AlignJustify, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, merchantTransactionsHref, monthTransactionsHref } from "@/lib/entity-href";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -718,8 +720,18 @@ function DayTxRow({ tx }: DayTxRowProps) {
     >
       <span style={{ width: 5, height: 5, borderRadius: "50%", background: tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tx.description}</div>
-        {tx.category && <div style={{ fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>{tx.category}</div>}
+        {/* The merchant and the category open their rows (DESIGN.md §14).
+            The day's net total on the grid above stays flat: pressing the
+            cell already reveals this list, and a drill that lands where
+            you already are is a dead affordance. */}
+        <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <Drill href={merchantTransactionsHref(tx.description)} title="Open this merchant's history">{tx.description}</Drill>
+        </div>
+        {tx.category && (
+          <div style={{ fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>
+            <Drill href={categoryTransactionsHref(tx.category)} title={`Open the ${tx.category} transactions`}>{tx.category}</Drill>
+          </div>
+        )}
       </div>
       <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: tx.baseEquivalent == null ? "var(--ft-dim)" : tx.type === "income" ? "var(--ft-green)" : "var(--ft-red)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
         {tx.baseEquivalent == null
@@ -798,13 +810,18 @@ interface SummaryStripCellProps {
   value: string;
   color: string;
   sub: string;
+  /**
+   * Where the rows this figure was computed from live (DESIGN.md §14).
+   * Omitted where the figure is a difference or a fraction of a whole.
+   */
+  href?: string;
   /** @deprecated Ignored. Rainbow accent stripes were dropped per
    * docs/MOBILE-CONCEPT.md § Desktop port. Kept in the prop shape
    * so callers don't need updating in this pass. */
   accentBorderColor?: string;
 }
 
-function SummaryStripCell({ label, value, color, sub, accentBorderColor: _accentBorderColor }: SummaryStripCellProps) {
+function SummaryStripCell({ label, value, color, sub, href, accentBorderColor: _accentBorderColor }: SummaryStripCellProps) {
   const [hov, setHov] = useState(false);
   return (
     <div
@@ -822,7 +839,9 @@ function SummaryStripCell({ label, value, color, sub, accentBorderColor: _accent
       {/* clamp() + whiteSpace nowrap. Semantic colour on the .pnum
           value (green income, red expenses, etc.) is kept — that IS
           rank encoding, unlike the stripped decorative borderTop. */}
-      <div className="pnum" style={{ fontSize: "clamp(12px, 1.1vw, 15px)", fontFamily: "var(--font-mono)", fontWeight: 700, color, lineHeight: 1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{value}</div>
+      <div className="pnum" style={{ fontSize: "clamp(12px, 1.1vw, 15px)", fontFamily: "var(--font-mono)", fontWeight: 700, color, lineHeight: 1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+        {href ? <Drill href={href} title="Open the transactions this figure was computed from">{value}</Drill> : value}
+      </div>
       <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginTop: 2 }}>{sub}</div>
     </div>
   );
@@ -1730,6 +1749,9 @@ function SummaryStrip({ transactions, upcoming, year, month }: { transactions: T
     .filter((t) => t.type === "expense")
     .reduce((s, t) => t.baseEquivalent == null ? s : s + Math.abs(t.baseEquivalent), 0);
   const net = income - expenses;
+  // The counts the strip already prints, and what each drill is gated on.
+  const incomeCount = monthTx.filter((t) => t.type === "income").length;
+  const expenseCount = monthTx.filter((t) => t.type === "expense").length;
   const billsPaid = monthBills.filter((u) => u.status === "paid").length;
   const billsPending = monthBills.filter((u) => u.status === "pending").length;
 
@@ -1744,13 +1766,22 @@ function SummaryStrip({ transactions, upcoming, year, month }: { transactions: T
       }}
     >
       {[
-        { label: "Income",       value: formatBaseMoney(income),                              color: "var(--ft-green)",                                      sub: `${monthTx.filter(t => t.type === "income").length} tx`,   accent: "var(--ft-green)" },
-        { label: "Expenses",     value: formatBaseMoney(expenses),                            color: "var(--ft-red)",                                        sub: `${monthTx.filter(t => t.type === "expense").length} tx`,  accent: "var(--ft-red)" },
-        { label: "Net",          value: (net >= 0 ? "+" : "") + formatBaseMoney(Math.abs(net)), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)",        sub: net >= 0 ? "surplus" : "deficit",                          accent: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
-        { label: "Transactions", value: String(monthTx.length),                          color: "var(--ft-text)",                                       sub: "this month",                                              accent: "var(--ft-muted)" },
-        { label: "Bills",        value: `${billsPaid}/${billsPaid + billsPending}`,       color: billsPending > 0 ? "var(--ft-amber)" : "var(--ft-green)", sub: billsPending > 0 ? `${billsPending} pending` : "all paid", accent: billsPending > 0 ? "var(--ft-amber)" : "var(--ft-green)" },
-      ].map(({ label, value, color, sub, accent }) => (
-        <SummaryStripCell key={label} label={label} value={value} color={color} sub={sub} accentBorderColor={accent} />
+        // Income, Expenses and the transaction count are sums and a
+        // count over this month's rows, so each opens them (DESIGN.md
+        // §14). Net is a difference between two of them, and Bills is a
+        // fraction of a whole over calendar events rather than ledger
+        // rows — both stay flat.
+        //
+        // Each drill is gated on the count the cell is already showing:
+        // a month with "0 tx" has no rows to open, and a drill that
+        // lands on an empty list is a promise the product did not keep.
+        { label: "Income",       value: formatBaseMoney(income),                              color: "var(--ft-green)",                                      sub: `${incomeCount} tx`,   accent: "var(--ft-green)", href: incomeCount > 0 ? monthTransactionsHref(prefix, "income") : undefined },
+        { label: "Expenses",     value: formatBaseMoney(expenses),                            color: "var(--ft-red)",                                        sub: `${expenseCount} tx`,  accent: "var(--ft-red)", href: expenseCount > 0 ? monthTransactionsHref(prefix, "expense") : undefined },
+        { label: "Net",          value: (net >= 0 ? "+" : "") + formatBaseMoney(Math.abs(net)), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)",        sub: net >= 0 ? "surplus" : "deficit",                          accent: net >= 0 ? "var(--ft-green)" : "var(--ft-red)", href: undefined },
+        { label: "Transactions", value: String(monthTx.length),                          color: "var(--ft-text)",                                       sub: "this month",                                              accent: "var(--ft-muted)", href: monthTx.length > 0 ? monthTransactionsHref(prefix) : undefined },
+        { label: "Bills",        value: `${billsPaid}/${billsPaid + billsPending}`,       color: billsPending > 0 ? "var(--ft-amber)" : "var(--ft-green)", sub: billsPending > 0 ? `${billsPending} pending` : "all paid", accent: billsPending > 0 ? "var(--ft-amber)" : "var(--ft-green)", href: undefined },
+      ].map(({ label, value, color, sub, accent, href }) => (
+        <SummaryStripCell key={label} label={label} value={value} color={color} sub={sub} href={href} accentBorderColor={accent} />
       ))}
     </div>
   );

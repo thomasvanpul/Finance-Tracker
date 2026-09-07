@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Drill } from "@/components/drill";
 import { useListAccounts, useListTransactions } from "@workspace/api-client-react";
 import { WidgetShell } from "./widget-shell";
 import { formatBaseMoney } from "@/lib/utils";
@@ -134,14 +135,19 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
 
         {/* Stats row */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", marginTop: 4 }}>
+          {/* CASH is the sum of the cash accounts, so it opens them. AVG BURN
+              averages only the months that had spend (see the filter above),
+              so no date range reproduces the rows behind it — a drill would
+              include a zero month the figure deliberately excludes. DAILY is
+              that average divided by 30. Both stay flat (DESIGN.md §14). */}
           {([
-            ["CASH", formatBaseMoney(totalCash), "var(--ft-blue)"],
-            ["AVG BURN", `${formatBaseMoney(avgBurn)}/mo`, "var(--ft-red)"],
-            ["DAILY", `${formatBaseMoney(dailyBurn)}/d`, "var(--ft-dim)"],
-          ] as [string, string, string][]).map(([lbl, val, col], i) => (
+            ["CASH", formatBaseMoney(totalCash), "var(--ft-blue)", "/accounts"],
+            ["AVG BURN", `${formatBaseMoney(avgBurn)}/mo`, "var(--ft-red)", undefined],
+            ["DAILY", `${formatBaseMoney(dailyBurn)}/d`, "var(--ft-dim)", undefined],
+          ] as [string, string, string, string | undefined][]).map(([lbl, val, col, href], i) => (
             <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px", borderRight: i < 2 ? "1px solid var(--ft-border)" : undefined }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{val}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{href ? <Drill href={href}>{val}</Drill> : val}</div>
             </div>
           ))}
         </div>

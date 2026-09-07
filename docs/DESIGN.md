@@ -362,3 +362,141 @@ width is user-set and persisted, so nothing may assume a fixed value.
   is monospaced.
 - Nothing pressable is `--ft-blue`; nothing informational is `--ft-accent`
   (§11). No hardcoded `rgba()` tint or hover anywhere.
+- Every figure the screen computed from rows opens those rows, and does it
+  through `Drill` / `entityHref` (§14). Every figure that is not made of
+  rows is flat.
+
+## 14. A figure computed from rows is a button
+
+**A number the app worked out by adding up rows is a way into those rows.**
+Pressing `TOTAL CASH` opens the accounts it is the sum of. Pressing a
+category on a transaction opens that category's transactions. Pressing a
+merchant opens that merchant's history. Pressing an account name anywhere in
+the product opens the same account detail.
+
+This is the difference between a report and an instrument. A report states a
+figure and stops; an instrument lets you take the figure apart. The question
+a user has when they see a total they did not expect is always the same —
+*what is this made of* — and every screen should be able to answer it
+without a search box.
+
+**Where a figure is not made of rows, it is not a button.** An FX rate, a
+market quote, a projection, a percentage of a whole, a user-entered setting,
+a count of days — pressing those has nothing to open, and drawing them as
+pressable is worse than leaving them flat, because it teaches the user that
+the affordance means nothing.
+
+### The mechanism
+
+One convention, three files, no second implementation:
+
+- `lib/entity-href.ts` — `entityHref(kind, id)` for an entity's detail, and
+  `transactionSearchHref(query)` for a query over rows. Every destination
+  goes through here so a parameter name lives in one place.
+- `components/detail-surface.tsx` — `DetailSurface` opens that detail from
+  the query parameter, on the entity's own list screen rather than a new
+  route (CLAUDE.md: a new URL is a claim that this is one of the ~20 things
+  a user looks up by name).
+- `components/drill.tsx` — `Drill` (navigates, renders an `<a>`) and
+  `DrillButton` (opens a surface on the current screen, only where there is
+  genuinely no href).
+
+### The affordance
+
+`.ft-drill`, and only `.ft-drill`.
+
+- **At rest**: a 1px underline in `--ft-border2`, 3px clear of the baseline.
+- **Hover and keyboard focus**: text and underline both `--ft-accent` (§11 —
+  the accent is the only colour that means *you can press this*).
+- **No box, no chip, no fill.** §9 reserves a box for a control the user
+  presses in place; forty boxes down a ledger is the "outdated" look. A
+  drill is a route into rows, not a control.
+- **Solid, never dotted.** Dotted is this product's mark for a figure that
+  has not happened yet. A drillable number is as real as any other, and
+  reusing the mark makes both unreadable.
+- **Visible at rest, not hover-only.** A phone has no hover. An affordance
+  that only announces itself to a mouse is a secret on half the app's
+  surfaces.
+- On a phone the class adds vertical padding with a cancelling negative
+  margin, so the hit area reaches 44px without moving the line box.
+
+A drill inside a pressable row stops the click reaching the row. The drill is
+the more specific target: pressing a category inside a transaction row means
+"show me this category", not "open this transaction".
+
+### Charts are excluded, deliberately
+
+A bar, a pie slice, a Sankey node and a plotted point are all figures
+computed from rows, and none of them takes a drill. `Drill` renders an
+anchor; an anchor is not valid inside `<svg>`, and the workaround —
+an `onClick` on the shape — produces a target with no underline, no focus
+ring, no keyboard route and nothing in the status bar. That is precisely the
+secret button this section exists to prevent: pressable to a mouse that
+happens to try it, invisible to everyone else.
+
+So a chart's *legend*, *summary strip* and *table beside it* carry the
+drills, and the plotted geometry stays inert. Where a chart is the only
+place a figure appears, add the row it summarises rather than making the
+shape clickable. Revisit this only if the drill affordance gains a form that
+survives inside SVG.
+
+### Two rules the first full sweep produced
+
+**A drill that lands where you already are is a dead affordance.** The same
+figure can be drillable on one screen and flat on another, and that is
+correct, not an inconsistency. `TOTAL CASH` on the dashboard's accounts
+widget opens `/accounts`, because the accounts are not on the dashboard. The
+same `TOTAL CASH` on `/accounts` stays flat, because the rows it sums are
+already on screen under it. Likewise the `WORTH` headline and its section
+subtotals on the phone, the header totals on `/transactions`, and a
+calendar day's net — pressing the cell already reveals that day's list.
+Applying §14 mechanically to every total produces buttons that reload the
+screen you are standing on, which teaches the affordance means nothing just
+as surely as putting it on a percentage does.
+
+**Where the rows may not exist, no drill.** A subscription is a record the
+user typed, not a figure the app computed, and "Netflix" need not match the
+ledger's `NETFLIX.COM 1234`. `/subscriptions` therefore drills a
+subscription's name only where the page has already found charges matching
+it, and leaves it flat otherwise. The test is not "could this plausibly have
+rows" but "has this screen already proved they exist". A drill that opens an
+empty list is a promise the product did not keep.
+
+**A figure of zero is the same case, and it is easy to miss.** Zero is a real
+sum — it prints, and it is not an em dash — but it means the ledger holds no
+rows for that window, so the figure stays flat. This was live on four screens
+before it was looked for: `/briefing`'s MONTHLY INCOME, the dashboard cash-flow
+strip's INCOME, three cells on `/reports` and one on `/calendar` all offered a
+drill into an empty September. Null, zero and non-zero are three states, not
+two: null prints `—` and takes no drill, zero prints the figure and takes no
+drill, non-zero opens its rows. `pages/reports.tsx`'s `FigureCell` is the
+shape.
+
+### The affordance has one mechanical trap
+
+A `text-decoration` is painted only on text in the decorating box's own inline
+flow. It is **not** painted on the contents of an atomic inline-level
+descendant — and `span.pnum`, which nearly every figure in this app is wrapped
+in, is `display: inline-block` so the number honours `max-width` and sits on
+the baseline. So `<Drill><span className="pnum">£230,800.21</span></Drill>`
+draws no underline at all: the drill is wired, it navigates, and it is
+invisible.
+
+Measured across nine desktop routes on 2026-09-07, before the rule below
+existed: **21 of 268 drills drew nothing**, and they were the headline figures
+— all five on `/briefing`, the `WORTH` total, five of fifteen on `/reports`,
+four of twenty on `/accounts`. The affordance was most absent exactly where it
+mattered most, and it is invisible to code review because the markup is
+correct.
+
+`index.css` closes it with `.ft-drill > *` re-declaring
+`text-decoration-line/-color/-thickness` as `inherit`, so the hover and focus
+rules still reach the child through the parent's computed value. Direct
+children only, and that is measured safe rather than assumed: across the same
+268 drills there was no in-flow inline child whose font-size differs from its
+drill, which is the one case where a second underline would sit at a different
+offset and step. **A drill that mixes type sizes on one line needs this
+checked again.**
+
+The general lesson is not about CSS. **An affordance that is wired is not an
+affordance that is visible, and only a screenshot tells you which you have.**

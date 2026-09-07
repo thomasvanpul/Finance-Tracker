@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Drill, DrillTarget } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 import { useListTransactions } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -31,12 +33,14 @@ type TotalsKpiCellProps = {
   income: number | null;
   badge?: React.ReactNode;
   incomeDeltaLabel?: React.ReactNode;
+  /** The month's expense rows this total is the sum of. */
+  href?: string;
   isLast?: boolean;
 };
 
-function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incomeDeltaLabel, isLast }: TotalsKpiCellProps) {
+function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incomeDeltaLabel, href, isLast }: TotalsKpiCellProps) {
   const [hov, setHov] = useState(false);
-  return (
+  const cell = (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -54,7 +58,7 @@ function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incom
         {badge}
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
-        {formatBaseMoney(amount)}
+        {href ? <span className="ft-drill">{formatBaseMoney(amount)}</span> : formatBaseMoney(amount)}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
         <span className="pnum">{savingsRate == null ? "—" : `${savingsRate.toFixed(0)}%`}</span> saved
@@ -63,13 +67,19 @@ function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incom
       </div>
     </div>
   );
+  if (!href) return cell;
+  return <DrillTarget href={href} title={`${label} — every expense it is the sum of`}>{cell}</DrillTarget>;
 }
 
 type CategoryTableRowProps = {
+  /** The two windows the row's two figures are summed over, so each drill
+      opens its own month rather than both. */
+  bounds: { last: { from: string; to: string }; this: { from: string; to: string } };
+
   row: CategoryRow;
 };
 
-function CategoryTableRow({ row }: CategoryTableRowProps) {
+function CategoryTableRow({ row, bounds }: CategoryTableRowProps) {
   const [hov, setHov] = useState(false);
   const decreased = row.delta < 0;
   const deltaColor = row.delta === 0 ? "var(--ft-dim)" : decreased ? "var(--ft-green)" : "var(--ft-red)";
@@ -90,9 +100,19 @@ function CategoryTableRow({ row }: CategoryTableRowProps) {
         transition: "background 0.1s",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.category}</div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>{formatBaseMoney(row.lastMonth)}</div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>{formatBaseMoney(row.thisMonth)}</div>
+      {/* Each of the two figures opens its own month — the row shows two
+          different sets of rows, and one link for both would open the wrong
+          one half the time. The delta and the percentage between them are
+          differences, not sets, so they stay flat (DESIGN.md §14). */}
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <Drill href={categoryTransactionsHref(row.category, bounds.this)}>{row.category}</Drill>
+      </div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>
+        <Drill href={categoryTransactionsHref(row.category, bounds.last)}>{formatBaseMoney(row.lastMonth)}</Drill>
+      </div>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>
+        <Drill href={categoryTransactionsHref(row.category, bounds.this)}>{formatBaseMoney(row.thisMonth)}</Drill>
+      </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, textAlign: "right", color: deltaColor }}>
         {row.delta === 0 ? "—" : `${decreased ? "-" : "+"}${formatBaseMoney(Math.abs(row.delta))}`}
       </div>
@@ -111,11 +131,15 @@ function CategoryTableRow({ row }: CategoryTableRowProps) {
 }
 
 type CategoryBarRowProps = {
+  /** The two windows the row's two figures are summed over, so each drill
+      opens its own month rather than both. */
+  bounds: { last: { from: string; to: string }; this: { from: string; to: string } };
+
   row: CategoryRow;
   maxVal: number;
 };
 
-function CategoryBarRow({ row, maxVal }: CategoryBarRowProps) {
+function CategoryBarRow({ row, maxVal, bounds }: CategoryBarRowProps) {
   const [hov, setHov] = useState(false);
   const thisW = maxVal > 0 ? (row.thisMonth / maxVal) * 100 : 0;
   const lastW = maxVal > 0 ? (row.lastMonth / maxVal) * 100 : 0;
@@ -136,11 +160,11 @@ function CategoryBarRow({ row, maxVal }: CategoryBarRowProps) {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
+        <Drill href={categoryTransactionsHref(row.category, bounds.this)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
           {row.category}
-        </span>
+        </Drill>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>{formatBaseMoney(row.thisMonth)}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}><Drill href={categoryTransactionsHref(row.category, bounds.this)}>{formatBaseMoney(row.thisMonth)}</Drill></span>
           <span className="pnum" style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: chipBg, color: chipColor, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
             {row.delta === 0 ? "=" : decreased ? `↓${formatBaseMoney(Math.abs(row.delta))}` : `↑${formatBaseMoney(Math.abs(row.delta))}`}
           </span>
@@ -240,6 +264,11 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
   const expenseDelta = thisExpenses - lastExpenses;
   const incomeDelta = thisIncome - lastIncome;
 
+  const drillBounds = {
+    last: { from: lastMonthBounds.start, to: lastMonthBounds.end },
+    this: { from: thisMonthBounds.start, to: thisMonthBounds.end },
+  };
+
   const now = new Date();
   const thisMonthLabel = now.toLocaleString("en-GB", { month: "short" }).toUpperCase();
   const lastMonthLabel = new Date(now.getFullYear(), now.getMonth() - 1, 1).toLocaleString("en-GB", { month: "short" }).toUpperCase();
@@ -255,6 +284,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
         color="var(--ft-muted)"
         savingsRate={lastSavingsRate}
         income={lastIncome}
+        href={ledgerHref({ type: "expense", from: lastMonthBounds.start, to: lastMonthBounds.end })}
       />
       <TotalsKpiCell
         label={`${thisMonthLabel} SPEND`}
@@ -262,6 +292,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
         color="var(--ft-cyan)"
         savingsRate={thisSavingsRate}
         income={null}
+        href={ledgerHref({ type: "expense", from: thisMonthBounds.start, to: thisMonthBounds.end })}
         isLast
         badge={
           lastExpenses > 0 ? (
@@ -328,8 +359,8 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
               }}
             >
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)" }}>Total Income</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>{formatBaseMoney(lastIncome)}</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>{formatBaseMoney(thisIncome)}</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}><Drill href={ledgerHref({ type: "income", from: lastMonthBounds.start, to: lastMonthBounds.end })}>{formatBaseMoney(lastIncome)}</Drill></div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}><Drill href={ledgerHref({ type: "income", from: thisMonthBounds.start, to: thisMonthBounds.end })}>{formatBaseMoney(thisIncome)}</Drill></div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, textAlign: "right", color: thisIncome >= lastIncome ? "var(--ft-green)" : "var(--ft-red)" }}>
                 {thisIncome >= lastIncome ? "+" : ""}{formatBaseMoney(thisIncome - lastIncome)}
               </div>
@@ -365,7 +396,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
             </div>
           ) : (
             rows.map((row) => (
-              <CategoryTableRow key={row.category} row={row} />
+              <CategoryTableRow key={row.category} row={row} bounds={drillBounds} />
             ))
           )}
           </div>
@@ -392,7 +423,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
             </div>
           ) : (
             rows.map((row) => (
-              <CategoryBarRow key={row.category} row={row} maxVal={maxVal} />
+              <CategoryBarRow key={row.category} row={row} maxVal={maxVal} bounds={drillBounds} />
             ))
           )}
           </div>

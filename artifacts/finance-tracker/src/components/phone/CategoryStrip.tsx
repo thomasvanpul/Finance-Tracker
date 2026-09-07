@@ -1,4 +1,5 @@
 import { StatGrid } from "./StatGrid";
+import { categoryTransactionsHref } from "@/lib/entity-href";
 import { formatBaseMoney } from "@/lib/utils";
 import type { Transaction } from "@workspace/api-client-react";
 
@@ -32,12 +33,22 @@ interface CategoryStripProps {
 
 export function CategoryStrip({ txs }: CategoryStripProps) {
   const byCategory = new Map<string, number>();
+  // "Other" is a bucket this function invents for rows with no category. A
+  // drill on it would filter /transactions to a category literally named
+  // "Other" and come back empty, so it is tracked and left flat — unless a
+  // real category of that name also contributed, in which case the filter
+  // does find rows and the link is honest again.
+  let otherIsSynthetic = false;
+  let otherIsReal = false;
   for (const tx of txs) {
     if (tx.type !== "expense") continue;
     if (tx.baseEquivalent == null) continue;
-    const cat = tx.category?.trim() || "Other";
+    const raw = tx.category?.trim();
+    const cat = raw || "Other";
+    if (cat === "Other") { if (raw) otherIsReal = true; else otherIsSynthetic = true; }
     byCategory.set(cat, (byCategory.get(cat) ?? 0) + Math.abs(tx.baseEquivalent));
   }
+  const drillable = (cat: string) => cat !== "Other" || (otherIsReal && !otherIsSynthetic);
   if (byCategory.size === 0) return null;
 
   const top = [...byCategory.entries()]
@@ -48,10 +59,15 @@ export function CategoryStrip({ txs }: CategoryStripProps) {
     <div style={{ padding: "0 16px 16px" }}>
       <StatGrid
         columns={(top.length as 1 | 2 | 3)}
+        // Each cell is a category's expense total for the month, so it opens
+        // that category's rows (DESIGN.md §14). The label is upper-cased for
+        // display only; the link carries the category as it is stored, which
+        // is what /transactions matches on.
         items={top.map(([cat, total]) => ({
           label: cat.toUpperCase(),
           value: formatBaseMoney(total),
           isFinancial: true,
+          href: drillable(cat) ? categoryTransactionsHref(cat) : undefined,
         }))}
       />
     </div>

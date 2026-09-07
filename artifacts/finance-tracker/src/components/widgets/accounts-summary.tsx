@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "wouter";
 import { entityHref } from "@/lib/entity-href";
+import { Drill, DrillTarget } from "@/components/drill";
 import { useGetDashboard } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
@@ -52,15 +52,15 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
           {/* The name is the row's identity, so it is the link: keyboard
               reachable and middle-clickable, unlike an onClick on the <tr>.
               It opens the account's detail surface on /accounts — a query
-              parameter, not a route (lib/entity-href.ts). */}
-          <Link
+              parameter, not a route (lib/entity-href.ts). The hand-rolled
+              hover colour this carried became `.ft-drill` when the rule was
+              swept across the app; one affordance, defined once. */}
+          <Drill
             href={entityHref("account", acct.id)}
             style={{
               display: "block",
               fontFamily: "var(--font-sans)",
               fontSize: 12,
-              color: hov ? "var(--ft-accent)" : "var(--ft-text)",
-              textDecoration: "none",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -68,7 +68,7 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
             }}
           >
             {acct.name}
-          </Link>
+          </Drill>
         </div>
         {/* Mini balance bar */}
         <div style={{ height: 2, background: "var(--ft-border)", marginBottom: 5 }}>
@@ -106,11 +106,11 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
   );
 }
 
-type OwingCellProps = { label: string; value: string; color: string; raw: number; isLast: boolean };
+type OwingCellProps = { label: string; value: string; color: string; raw: number; href?: string; isLast: boolean };
 
-function OwingCell({ label, value, raw, color, isLast }: OwingCellProps) {
+function OwingCell({ label, value, raw, color, href, isLast }: OwingCellProps) {
   const [hov, setHov] = useState(false);
-  return (
+  const cell = (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -127,10 +127,13 @@ function OwingCell({ label, value, raw, color, isLast }: OwingCellProps) {
         {label}
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: raw === 0 ? "var(--ft-dim)" : color, whiteSpace: "nowrap" }}>
-        {raw === 0 ? "—" : value}
+        {href && raw !== 0 ? <span className="ft-drill">{value}</span> : (raw === 0 ? "—" : value)}
       </div>
     </div>
   );
+  // A zero is "—", and there is nothing behind an em dash to open.
+  if (!href || raw === 0) return cell;
+  return <DrillTarget href={href} title={`${label} — open what it is made of`}>{cell}</DrillTarget>;
 }
 
 // ─── Main widget ──────────────────────────────────────────────────────────────
@@ -185,8 +188,10 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
   );
 
   const owingItems = d ? [
-    { label: "They Owe Me", value: formatBaseMoney(d.owing.totalOwedToMe), color: "var(--ft-green)", raw: d.owing.totalOwedToMe },
-    { label: "I Owe",        value: formatBaseMoney(d.owing.totalIOwe),     color: "var(--ft-red)",   raw: d.owing.totalIOwe },
+    { label: "They Owe Me", value: formatBaseMoney(d.owing.totalOwedToMe), color: "var(--ft-green)", raw: d.owing.totalOwedToMe, href: "/owing" },
+    { label: "I Owe",        value: formatBaseMoney(d.owing.totalIOwe),     color: "var(--ft-red)",   raw: d.owing.totalIOwe, href: "/owing" },
+    // Net Position is one of those two minus the other. Both halves are a
+    // tap away and the difference is made of no rows of its own.
     {
       label: "Net Position",
       value: `${d.owing.netBase >= 0 ? "+" : ""}${formatBaseMoney(d.owing.netBase)}`,
@@ -242,7 +247,7 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
                 Total Cash · {sorted.length} account{sorted.length !== 1 ? "s" : ""}
               </td>
               <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-green)", fontWeight: 700 }}>
-                <span className="pnum">{formatBaseMoney(d!.totalCash)}</span>
+                <Drill href="/accounts" title="Total cash — every account it is the sum of"><span className="pnum">{formatBaseMoney(d!.totalCash)}</span></Drill>
               </td>
               {isExpanded && <td />}
             </tr>
@@ -260,6 +265,7 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
               value={item.value}
               color={item.color}
               raw={item.raw}
+              href={item.href}
               isLast={i === owingItems.length - 1}
             />
           ))}

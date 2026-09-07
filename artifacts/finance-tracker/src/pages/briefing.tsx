@@ -9,6 +9,8 @@ import { formatBaseMoney } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { FileText, RefreshCw, Loader2, AlertTriangle, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 import { oneShotInsight } from "@/lib/ai-chat-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -156,9 +158,11 @@ function KeyFindingRow({ finding, index }: { finding: string; index: number }) {
 // ─── Spending category row ────────────────────────────────────────────────────
 
 function SpendingCatRow({
-  cat, amt, index, total, maxAmt, sortedLength, isMobile,
+  cat, amt, index, total, maxAmt, sortedLength, isMobile, range,
 }: {
   cat: string; amt: number; index: number; total: number; maxAmt: number; sortedLength: number; isMobile?: boolean;
+  /** The month these rows were summed over (DESIGN.md §14). */
+  range: { from: string; to: string };
 }) {
   const [hov, setHov] = useState(false);
   // Share of a zero spend total is undefined, not 0%. The bar width below
@@ -184,14 +188,22 @@ function SpendingCatRow({
       onTouchEnd={() => setHov(false)}
       onTouchCancel={() => setHov(false)}
     >
-      <Text as="span" mono size={11} color="var(--ft-text)">{cat}</Text>
+      {/* Category and amount are the same set of rows and both open it.
+          The bar and the share are proportions of a whole (DESIGN.md §14). */}
+      <span style={{ color: "var(--ft-text)" }}>
+        <Drill href={categoryTransactionsHref(cat, range)} title={`Open the ${cat} transactions this month`}>
+          <Text as="span" mono size={11}>{cat}</Text>
+        </Drill>
+      </span>
       {!isMobile && (
         <div style={{ height: 4, background: "var(--ft-border2)", borderRadius: 1, overflow: "hidden" }}>
           <div style={{ width: `${barWidth}%`, height: "100%", background: barColor, borderRadius: 1, transition: "width 0.12s ease" }} />
         </div>
       )}
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", textAlign: "right" }}>
-        <span className="pnum">{formatBaseMoney(amt)}</span>
+        <Drill href={categoryTransactionsHref(cat, range)} title={`Open the ${cat} transactions this added up`}>
+          <span className="pnum">{formatBaseMoney(amt)}</span>
+        </Drill>
       </span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "right" }}>
         <span className="pnum">{share == null ? "—" : `${share.toFixed(0)}%`}</span>
@@ -203,9 +215,11 @@ function SpendingCatRow({
 // ─── Budget performance row ───────────────────────────────────────────────────
 
 function BudgetPerfRow({
-  budget, spent, index, totalBudgets, budgetSpendMap, isMobile,
+  budget, spent, index, totalBudgets, budgetSpendMap, isMobile, range,
 }: {
   budget: Budget; spent: number; index: number; totalBudgets: number; budgetSpendMap: Map<string, number>; isMobile?: boolean;
+  /** The month these rows were summed over (DESIGN.md §14). */
+  range: { from: string; to: string };
 }) {
   void budgetSpendMap;
   const [hov, setHov] = useState(false);
@@ -237,10 +251,17 @@ function BudgetPerfRow({
         {over && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-red)", flexShrink: 0 }} />}
         {warn && !over && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-amber)", flexShrink: 0 }} />}
         {!over && !warn && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-border2)", flexShrink: 0 }} />}
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{budget.category}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>
+          <Drill href={categoryTransactionsHref(budget.category, range)} title={`Open the ${budget.category} transactions this month`}>{budget.category}</Drill>
+        </span>
       </div>
+      {/* Spent is the sum of those rows. The limit beside it is a number
+          the user typed and the percentage is a proportion of it —
+          neither is a set of rows (DESIGN.md §14). */}
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: over ? "var(--ft-red)" : "var(--ft-text)", textAlign: "right" }}>
-        <span className="pnum">{formatBaseMoney(spent)}</span>
+        <Drill href={categoryTransactionsHref(budget.category, range)} title="Open the transactions this added up">
+          <span className="pnum">{formatBaseMoney(spent)}</span>
+        </Drill>
       </span>
       {!isMobile && (
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "right" }}>
@@ -373,6 +394,13 @@ export default function Briefing() {
   const dashboard = dashData as { netWorth?: number; thisMonth?: { income?: number; expenses?: number; savingsRate?: number } } | undefined;
 
   const ym = nowYm();
+  // The month every drill off this screen carries, so the rows that open
+  // are the rows that were summed (DESIGN.md §14). `thisTxs` filters on
+  // `date.startsWith(ym)`, and this is the same window as a range.
+  const monthRange = {
+    from: `${ym}-01`,
+    to: new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 0).toISOString().slice(0, 10),
+  };
   const lastYm = (() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7);
   })();
@@ -535,28 +563,38 @@ export default function Briefing() {
             <PanelHeader>Current Snapshot <Text as="span" mono size={10} color="var(--ft-muted)">01</Text></PanelHeader>
             <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
               {[
-                { label: "Net Worth", value: dashboard?.netWorth != null ? formatBaseMoney(dashboard.netWorth) : "—", color: "var(--ft-text)" },
-                { label: "Liquid Assets", value: formatBaseMoney(totalLiquid), color: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-muted)" },
-                { label: "Monthly Income", value: dashboard?.thisMonth?.income != null ? formatBaseMoney(dashboard.thisMonth.income) : "—", color: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-muted)" },
-              ].map(({ label, value, color }, i, arr) => (
+                // Each of these three is a sum over rows on another
+                // screen, so each opens them (DESIGN.md §14).
+                //
+                // A zero month is the exception: £0.00 income means the
+                // ledger holds no income rows for the window, and a drill
+                // that opens an empty list is a promise the product did
+                // not keep. Seen on this screen — September 2026 has no
+                // income and the figure was underlined anyway.
+                { label: "Net Worth", value: dashboard?.netWorth != null ? formatBaseMoney(dashboard.netWorth) : "—", color: "var(--ft-text)", href: "/net-worth" },
+                { label: "Liquid Assets", value: formatBaseMoney(totalLiquid), color: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-muted)", href: "/accounts" },
+                { label: "Monthly Income", value: dashboard?.thisMonth?.income != null ? formatBaseMoney(dashboard.thisMonth.income) : "—", color: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-muted)", href: (dashboard?.thisMonth?.income ?? 0) > 0 ? ledgerHref({ type: "income", from: monthRange.from, to: monthRange.to }) : undefined },
+              ].map(({ label, value, color, href }, i, arr) => (
                 <div key={label} style={{ background: "var(--ft-surface)", padding: "13px 14px", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none", borderBottom: "1px solid var(--ft-border)" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>{label}</div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color }}>
-                    <span className="pnum">{value}</span>
+                    {href ? <Drill href={href} title="Open the rows this figure was computed from"><span className="pnum">{value}</span></Drill> : <span className="pnum">{value}</span>}
                   </div>
                 </div>
               ))}
             </div>
             <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)" }}>
               {[
-                { label: "Monthly Spend", value: dashboard?.thisMonth?.expenses != null ? formatBaseMoney(dashboard.thisMonth.expenses) : "—", color: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-muted)" },
-                { label: "Savings Rate", value: srValue, color: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-muted)" },
-                { label: "Budgets Over Limit", value: overBudgetCount > 0 ? `${overBudgetCount} over` : "All clear", color: overBudgetCount > 0 ? "var(--ft-red)" : "var(--ft-green)" },
-              ].map(({ label, value, color }, i, arr) => (
+                { label: "Monthly Spend", value: dashboard?.thisMonth?.expenses != null ? formatBaseMoney(dashboard.thisMonth.expenses) : "—", color: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-muted)", href: (dashboard?.thisMonth?.expenses ?? 0) > 0 ? ledgerHref({ type: "expense", from: monthRange.from, to: monthRange.to }) : undefined },
+                // Savings Rate is a percentage of income and "Budgets Over
+                // Limit" is a status word, not a sum of rows. Both stay flat.
+                { label: "Savings Rate", value: srValue, color: dashboard?.thisMonth?.savingsRate != null && dashboard.thisMonth.savingsRate !== 0 ? "var(--ft-amber)" : "var(--ft-muted)", href: undefined },
+                { label: "Budgets Over Limit", value: overBudgetCount > 0 ? `${overBudgetCount} over` : "All clear", color: overBudgetCount > 0 ? "var(--ft-red)" : "var(--ft-green)", href: undefined },
+              ].map(({ label, value, color, href }, i, arr) => (
                 <div key={label} style={{ background: "var(--ft-surface)", padding: "13px 14px", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 7 }}>{label}</div>
                   <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color }}>
-                    <span className="pnum">{value}</span>
+                    {href ? <Drill href={href} title="Open the rows this figure was computed from"><span className="pnum">{value}</span></Drill> : <span className="pnum">{value}</span>}
                   </div>
                 </div>
               ))}
@@ -716,6 +754,7 @@ export default function Briefing() {
                       maxAmt={spendingCatData.maxAmt}
                       sortedLength={spendingCatData.sorted.length}
                       isMobile={isMobile}
+                      range={monthRange}
                     />
                   ))}
                   <div style={{ padding: "6px 12px", borderTop: "1px solid var(--ft-border)", background: "var(--ft-raised)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -750,6 +789,7 @@ export default function Briefing() {
                       totalBudgets={(budgetsRaw as Budget[]).length}
                       budgetSpendMap={budgetSpendMap}
                       isMobile={isMobile}
+                      range={monthRange}
                     />
                   ))}
                 </div>

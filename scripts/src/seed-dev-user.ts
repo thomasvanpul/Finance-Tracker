@@ -211,7 +211,15 @@ async function seedTransactions(userId: string, acc: Record<string, SeededAccoun
       accountId: account.id,
       nativeAmount: t.amount,
       currency: t.currency,
-      source: "manual",
+      // Seed rows are a dated historical import, not something typed into
+      // the app today, so they take the historical-import source. Lock #19
+      // (tx_rate_after_backfill) requires a manual row to record a rateAsOf
+      // at write time; a historical source deliberately writes both rate
+      // columns null and lets `backfill-tx-rates` fill them from
+      // Frankfurter keyed on tx.date, which is the accurate rate for a row
+      // dated weeks ago. Writing "manual" here both violated the constraint
+      // and claimed a provenance the rows do not have.
+      source: "csv",
     };
   });
   await db.insert(transactionsTable).values(rows);

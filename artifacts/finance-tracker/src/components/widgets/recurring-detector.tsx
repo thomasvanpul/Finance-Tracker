@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, merchantTransactionsHref } from "@/lib/entity-href";
 import {
   useListTransactions,
   useCreateUpcomingItem,
@@ -229,26 +231,32 @@ function CandidateRow({
           whiteSpace: "nowrap",
           minWidth: 0,
         }}>
-          {candidate.description}
+          <Drill href={merchantTransactionsHref(candidate.description)}>{candidate.description}</Drill>
         </span>
 
-        <span style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 8,
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          padding: "1px 4px",
-          border: "1px solid var(--ft-border2)",
-          color: "var(--ft-dim)",
-          flexShrink: 0,
-          whiteSpace: "nowrap",
-        }}>
-          {candidate.category}
+        {/* Was a bordered chip. §9 draws a per-row label as text, and §14
+            gives it the one drill affordance instead of a second frame. */}
+        <span style={{ color: "var(--ft-dim)", flexShrink: 0 }}>
+          <Drill
+            href={categoryTransactionsHref(candidate.category)}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 8,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {candidate.category}
+          </Drill>
         </span>
 
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>
-            −{formatBaseMoney(Math.abs(candidate.avgGbpValue))}
+            {/* The average of this merchant's run of charges — the run is the
+                rows. The /yr figure under it is that average times twelve, a
+                projection, and stays flat. */}
+            <Drill href={merchantTransactionsHref(candidate.description)}>−{formatBaseMoney(Math.abs(candidate.avgGbpValue))}</Drill>
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", lineHeight: 1.4 }}>
             {formatBaseMoney(annualCost)}/yr

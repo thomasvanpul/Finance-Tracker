@@ -17,6 +17,8 @@ import { haptic } from "@/lib/haptics";
 import { useToast } from "@/hooks/use-toast";
 import { useSwipeDelete } from "@/hooks/use-swipe-delete";
 
+import { Drill, DrillTarget } from "@/components/drill";
+import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
 import { PhoneEntityRow, deriveTone } from "./PhoneEntityRow";
 import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
@@ -635,21 +637,25 @@ function SpendingHero({ hero, now, loading }: { hero: HeroData | null; now: Date
       >
         {label}
       </div>
-      <div
-        className="pnum"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--ft-text-primary-num)",   // 30px (Amendment :77)
-          fontWeight: 700,
-          lineHeight: "34px",
-          letterSpacing: "-0.02em",
-          color: "var(--ft-text)",
-          marginTop: 6,
-          whiteSpace: "nowrap",
-        }}
+      <DrillTarget
+        href={ledgerHref({ type: "expense", ...thisMonthRange(now) })}
+        title="Month-to-date spend — every expense it is the sum of"
       >
-        {value}
-      </div>
+        <div
+          className="pnum ft-drill"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--ft-text-primary-num)",   // 30px (Amendment :77)
+            fontWeight: 700,
+            lineHeight: "34px",
+            letterSpacing: "-0.02em",
+            marginTop: 6,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {value}
+        </div>
+      </DrillTarget>
       {deltaLine && <div style={{ marginTop: 6 }}>{deltaLine}</div>}
     </div>
   );
@@ -733,18 +739,18 @@ function DayGroup({
         label={dayHeaderLabel(day.date)}
         right={
           expensesStr != null ? (
-            <span
-              className="pnum"
+            <Drill
+              href={ledgerHref({ type: "expense", from: day.date, to: day.date })}
+              title="This day's expenses, on their own"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "var(--ft-text-xs)",
-                color: "var(--ft-muted)",
                 letterSpacing: "0.04em",
                 textTransform: "none",
               }}
             >
-              {expensesStr}
-            </span>
+              <span className="pnum">{expensesStr}</span>
+            </Drill>
           ) : undefined
         }
       />
@@ -921,9 +927,9 @@ function TxDetailSheet({
           )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <DetailRow label="DESCRIPTION" value={tx.description} />
-          <DetailRow label="CATEGORY" value={tx.category} />
-          <DetailRow label="ACCOUNT" value={tx.accountName} />
+          <DetailRow label="DESCRIPTION" value={tx.description} href={tx.description ? merchantTransactionsHref(tx.description) : undefined} />
+          <DetailRow label="CATEGORY" value={tx.category} href={tx.category ? categoryTransactionsHref(tx.category) : undefined} />
+          <DetailRow label="ACCOUNT" value={tx.accountName} href={tx.accountId != null ? entityHref("account", tx.accountId) : undefined} />
           <DetailRow label="DATE" value={tx.date} />
         </div>
         <button
@@ -951,14 +957,19 @@ function TxDetailSheet({
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+// `href` is set for the three values that stand for a set of rows —
+// description (this merchant's history), category, account. Date is left
+// flat: a single day is a range the ledger has no filter chip for, and a
+// drill that lands on a filter the user cannot see or clear is worse than
+// none. DESIGN.md §14.
+function DetailRow({ label, value, href }: { label: string; value: string; href?: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "8px 0", borderBottom: "1px solid var(--ft-border)" }}>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", letterSpacing: "0.12em", color: "var(--ft-dim)" }}>
         {label}
       </span>
       <span style={{ fontSize: "var(--ft-text-body)", color: "var(--ft-text)", textAlign: "right", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {value}
+        {href ? <Drill href={href}>{value}</Drill> : value}
       </span>
     </div>
   );

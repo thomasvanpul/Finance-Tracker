@@ -26,6 +26,8 @@ import {
 } from "recharts";
 import { CreditCard, Plus, Trash2, Edit2, AlertTriangle, Calendar } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { Drill } from "@/components/drill";
+import { merchantTransactionsHref } from "@/lib/entity-href";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -260,6 +262,17 @@ function detectRecurring(
 
 function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onToggleActive }: SubRowProps) {
   const [hov, setHov] = useState(false);
+  // DESIGN.md §14. A subscription is a record, not a figure — but where
+  // the page has already found charges matching its name (`last`), the
+  // name stands for those rows and opens them. Where it has not, there
+  // is nothing to open and the name stays flat: a manually added
+  // "Netflix" need not match the ledger's "NETFLIX.COM 1234".
+  //
+  // `sub.category` is deliberately NOT a drill. SUB_CATEGORIES is its
+  // own vocabulary ("Streaming", "Cloud Storage") with no counterpart in
+  // the transaction categories, so a drill would land on an empty list
+  // every time.
+  const nameHref = last != null ? merchantTransactionsHref(sub.name) : null;
   const isMobile = useIsMobile();
   const priceIncreased = last?.prevAmount != null && last.amount > last.prevAmount * 1.02;
   const priceDiff = priceIncreased && last?.prevAmount ? last.amount - last.prevAmount : 0;
@@ -293,7 +306,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
           <div style={{ minWidth: 0 }}>
             <HStack gap={6} align="center" marginBottom={3}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {sub.name}
+                {nameHref ? <Drill href={nameHref} title={`Open the ${sub.name} charges`}>{sub.name}</Drill> : sub.name}
               </span>
             </HStack>
             <HStack gap={6} align="center" marginBottom={4}>
@@ -353,7 +366,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
         transition: "background 0.1s",
       }}>
         <div style={{ flex: 1, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 12, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 12, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nameHref ? <Drill href={nameHref} title={`Open the ${sub.name} charges`}>{sub.name}</Drill> : sub.name}</span>
           {sub.notes && <span style={{ marginLeft: 6, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>· {sub.notes}</span>}
         </div>
         <div style={{ width: 110, minWidth: 110, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{sub.category}</div>
@@ -531,9 +544,14 @@ function CandidateRow({ c, onConfirm, onDismiss }: CandidateRowProps) {
       }}
     >
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium truncate" style={{ color: "var(--ft-text)" }}>{c.description}</div>
+        {/* A candidate IS a set of rows the detector grouped, so both the
+            name and the charge count open them. The average is an average
+            and the month count is a span, not sets of rows (DESIGN.md §14). */}
+        <div className="text-sm font-medium truncate" style={{ color: "var(--ft-text)" }}>
+          <Drill href={merchantTransactionsHref(c.description)} title="Open the charges this candidate was detected from">{c.description}</Drill>
+        </div>
         <div className="text-xs mt-0.5" style={{ color: "var(--ft-dim)" }}>
-          avg <span className="pnum">{formatBaseMoney(c.avgAmount)}</span> · {c.transactions.length} charges · {c.monthCount} months
+          avg <span className="pnum">{formatBaseMoney(c.avgAmount)}</span> · <Drill href={merchantTransactionsHref(c.description)} title="Open the charges counted here"><span className="pnum">{c.transactions.length}</span> charges</Drill> · {c.monthCount} months
           {c.transactions[0] && ` · last ${formatDateShort(c.transactions[0].date)}`}
         </div>
       </div>
