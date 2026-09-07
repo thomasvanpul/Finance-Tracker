@@ -312,6 +312,14 @@ largest remaining components inside each file share types, hooks and
 localStorage-backed state with in-file closures. Lifting those to shared
 type modules is a follow-up.
 
+### E5 · /transactions — structural rebuild — PROPOSED (7 Sep 2026)
+Thomas has called this page "still weird, could be made and designed much
+better" three times. `docs/TRANSACTIONS-STRUCTURE.md` is the proposal: what is
+measurably wrong, four independent moves (URL-addressable filter state, five
+columns with the row as the affordance, day grouping by default, server-side
+filtering when the list gets large), and the order. §A's URL half landed
+7 Sep; the rest is unstarted.
+
 ---
 
 ## F. Product — the things that make it worth returning to
