@@ -910,8 +910,12 @@ export default function Transactions() {
     // defect this rebuild is removing. An amount sort orders the days by their
     // largest single row, so the control moves both levels rather than only
     // shuffling rows inside a day whose position never changes.
+    // Skip unconvertible rows rather than reading them as £0 — a fabricated
+    // zero would rank a day of unconverted spending as the quietest day there
+    // was. A day with nothing convertible ranks last, which is honest: there is
+    // no figure to rank it by.
     const peak = (txs: typeof filtered) =>
-      txs.reduce((acc, tx) => Math.max(acc, Math.abs(tx.baseEquivalent ?? 0)), 0);
+      txs.reduce((acc, tx) => (tx.baseEquivalent == null ? acc : Math.max(acc, Math.abs(tx.baseEquivalent))), 0);
     return Array.from(map.entries())
       .sort((a, b) => {
         if (sortBy === "date-asc") return a[0].localeCompare(b[0]);
