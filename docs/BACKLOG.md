@@ -312,13 +312,23 @@ largest remaining components inside each file share types, hooks and
 localStorage-backed state with in-file closures. Lifting those to shared
 type modules is a follow-up.
 
-### E5 · /transactions — structural rebuild — PROPOSED (7 Sep 2026)
+### E5 · /transactions — structural rebuild — A/B/C DONE (7 Sep 2026), D DEFERRED
 Thomas has called this page "still weird, could be made and designed much
 better" three times. `docs/TRANSACTIONS-STRUCTURE.md` is the proposal: what is
 measurably wrong, four independent moves (URL-addressable filter state, five
 columns with the row as the affordance, day grouping by default, server-side
-filtering when the list gets large), and the order. §A's URL half landed
-7 Sep; the rest is unstarted.
+filtering when the list gets large), and the order.
+
+A, B and C all landed 7 Sep. A · one `LedgerFilters` object behind one
+`patchFilters`, so `hasFilters` is `activeFilterCount > 0` by construction and
+ten chips became one type control and one period control (`202d885`). B ·
+eight columns to five, the 128px action column retired into a detail dialog
+the row opens, `SL` and its dead `ft-tx-splits` writer removed (`cb24e26`).
+C · one exclusive grouping lens defaulting to DAY, replacing two booleans that
+could both be true at once (`4bb1ea3`).
+
+**D stays deferred** with its threshold recorded: server-side filtering earns
+its complexity somewhere around 2,000 rows. The dev dataset is 46.
 
 ---
 
@@ -426,6 +436,28 @@ renderer for a decorative avatar is real battery and bundle cost.
 
 ## G. Smaller items
 
+- **G14 · Alert rules are saved to a key nothing reads — CONFIRMED 7 Sep 2026.**
+  `pages/settings.tsx:45` writes `ft-alert-rules`; the two consumers,
+  `components/notifications-panel.tsx:104` and
+  `components/widgets/smart-alerts.tsx:73`, both read `nr-alert-rules`. Seven
+  thresholds — smart-alerts on/off, large-transaction amount, category-spike
+  percentage, budget-warning percentage, overspend warning, goal-behind months,
+  bill-reminder days — are entered, saved, and reach nothing. The Settings
+  screen reads its own key back at `:235` to repopulate the form, so the
+  control looks alive from inside the screen that owns it, which is why a
+  write-vs-read sweep does not catch it. This is `DESIGN.md` §16.
+  **Needs a decision, not a rename:** aligning the key would silently activate
+  every rule a user has already saved. Either migrate deliberately, or delete
+  the panel.
+- **G15 · Print blur does not survive a reload — CONFIRMED 7 Sep 2026.**
+  "Hide amounts when printing" injects `<style id="nr-print-style">` inside its
+  click handler only (`pages/settings.tsx:1105`, `pages/profile.tsx:775`).
+  `nr-hide-from-print` is read on mount to set the toggle's *appearance*
+  (`settings.tsx:1094`, `profile.tsx:456`) but nothing re-injects the style, so
+  after a reload the toggle reads ON and printing is not blurred. Also
+  `DESIGN.md` §16: the control states a fact about the app that is not true.
+  Fix is a mount effect that applies the stored value, in one place both pages
+  call rather than the two copies that exist now.
 - **G1 · Motion tokens vs the constitution — UNDECIDED.** `index.css` bans
   transitions over 150ms on UI state changes; `--ft-motion-base` is 200ms and
   `--ft-motion-slow` is 320ms, both live on the five primitives. Either bring

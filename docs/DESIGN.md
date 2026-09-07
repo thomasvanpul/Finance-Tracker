@@ -365,6 +365,8 @@ width is user-set and persisted, so nothing may assume a fixed value.
 - Every figure the screen computed from rows opens those rows, and does it
   through `Drill` / `entityHref` (§14). Every figure that is not made of
   rows is flat.
+- Every control on the screen changes what is on the screen (§16). Tick it,
+  type in it, pick from it — if the pixels do not move, it does not ship.
 
 ## 14. A figure computed from rows is a button
 
@@ -574,3 +576,57 @@ balance snapshot has been taken"* is said.
 
 The same applies to a zero result. A reconciled ledger is not an insight; the
 slot exists for what Numeris does not know, and a gap of zero is not that.
+
+## 16. A control that does nothing is a lie
+
+**A control that does not change what the user sees is a lie, and shipping
+one costs more trust than the feature was worth.**
+
+This is not a style rule. A checkbox, a field, or a toggle is a promise that
+the app is listening. When it is not, the user does not conclude "that one
+control is unfinished" — they conclude the app is a picture of a finance
+tracker rather than a finance tracker, and they are right to, because they
+have no way to tell which of the other controls are real. One dead control
+discredits every live one on the same screen.
+
+It has happened three times here:
+
+- **The onboarding bank question.** Asked which bank the user was with,
+  stored the answer, and nothing ever read it. No connection was attempted,
+  no default was set, no copy changed.
+- **The category emoji field.** Accepted an emoji per category and saved it.
+  Nothing rendered it — correctly, since §10 and the no-emoji constraint in
+  `CLAUDE.md` forbid it — so the field was asking for something the design
+  had already ruled out.
+- **`SL` on the transaction row.** A per-row split control writing to
+  `ft-tx-splits` in `localStorage`. The split amounts reached no total, no
+  category, no export and no server. Only the presence badge rendered, so
+  the row could say a split existed while the split itself did nothing.
+
+The shape is always the same: a write with no read. That is what makes it
+findable — grep for every `localStorage.setItem` key and ask which read path
+consumes it. A key that is only ever written is a control that only ever
+pretends.
+
+### The two honest endings
+
+A control in this state has exactly two futures, and "leave it, someone will
+wire it up" is not one of them:
+
+1. **Make it real.** The read path lands in the same change as the write. Not
+   the next PR — the same one, because a half-landed feature is
+   indistinguishable from this defect from the outside.
+2. **Take it out.** Remove the control, the writer, and the key. Removing a
+   dead control is not a regression and does not need a deprecation path;
+   nothing downstream can depend on a value nothing reads.
+
+Deleting is the default. A feature worth finishing will be asked for again;
+a lie on the screen is charged for every time the screen is opened.
+
+### What this does not cover
+
+A control whose effect is real but currently empty is not this. A filter that
+matches nothing still moved the list to nothing, and the empty state says so.
+The test is whether the screen responded, not whether the response was
+interesting.
+
