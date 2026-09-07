@@ -138,8 +138,8 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // toggled by the user, and no financial value is invented.
   { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1555, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
   { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1557, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 754, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 755, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 771, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 772, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
 
 const ALLOWLIST_B: readonly AllowEntry[] = [
