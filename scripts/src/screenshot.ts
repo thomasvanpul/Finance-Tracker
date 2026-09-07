@@ -376,10 +376,24 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
     ? `\n    window.localStorage.setItem("numeris-ai-style", "wanderer");`
     : "";
 
+  // SCREENSHOT_WIDGETS='net-worth,cash-flow-sankey' enables dashboard widgets
+  // that ship defaultEnabled:false. Same precedent again: fourteen of the
+  // twenty-four registry entries are off by default, so a widget a human has
+  // turned on and is looking at every day cannot be seen in any screenshot
+  // taken here — which is how ten ruled cells inside NET WORTH survived five
+  // design rounds aimed at exactly that reading. Enabled widgets are appended
+  // to the defaults; order and spans stay at their registry values.
+  const widgetsEnv = process.env.SCREENSHOT_WIDGETS ?? null;
+  const widgetsSeed = widgetsEnv === null ? "" : `
+    window.localStorage.setItem("ft-widgets", JSON.stringify({
+      enabled: ${JSON.stringify(widgetsEnv.split(",").map(s => s.trim()).filter(Boolean))},
+      spans: {},
+    }));`;
+
   await page.addInitScript(`try {
     window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});${personaSeed}
     window.localStorage.setItem("ft-onboarding-complete", "1");
-    window.localStorage.setItem("nr-onboarding-complete", "1");${aiSeed}${companionSeed}
+    window.localStorage.setItem("nr-onboarding-complete", "1");${aiSeed}${companionSeed}${widgetsSeed}
   } catch (e) {}`);
 
   // Reported, not fatal. An uncaught exception does not always blank the
