@@ -364,7 +364,7 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
   return (
     <div style={{ marginTop: 16 }}>
       {/* KPI strip — one framed table; cells carry their own rules */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
         <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 4 }}>Total Repaid</div>
           <Text as="div" mono size={16} weight={700} color="var(--ft-text)" letterSpacing="-0.02em" lineHeight={1}>
@@ -530,7 +530,8 @@ function OverpaymentScenarioCard({ label, months, interest, color }: Overpayment
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
-        border: "1px solid var(--ft-border)",
+        // Border-as-gap: the grid paints a 1px --ft-border ground, so each
+        // cell is bounded by shared hairlines instead of its own frame.
         padding: "10px 12px",
         transition: "background 0.1s",
       }}
@@ -599,13 +600,13 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
         </div>
       </div>
 
-      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
+      <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)", marginBottom: 6 }}>
         <OverpaymentScenarioCard label="Standard" months={standard.length} interest={stdInterest} color="var(--ft-muted)" />
         <OverpaymentScenarioCard label="With Overpayment" months={overpaid.length} interest={ovInterest} color="var(--ft-accent)" />
       </div>
 
       {/* Border-as-gap savings summary */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderTop: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
         <div style={{ background: "var(--ft-surface)", borderRight: "1px solid var(--ft-border)", padding: "10px 14px" }}>
           <div style={LABEL_STYLE}>Months Saved</div>
           <div style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: monthsSaved > 0 ? "var(--ft-green)" : "var(--ft-dim)" }}>
@@ -663,7 +664,10 @@ function RateScenarioCard({ rate, delta, principal, termYears, type }: RateScena
       onMouseLeave={() => setHov(false)}
       style={{
         background: delta === 0 ? "var(--ft-raised)" : hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        border: `1px solid ${delta === 0 ? "var(--ft-accent)" : "var(--ft-border)"}`,
+        // The accent border marks the current rate — that is state, not a
+        // region boundary, so it stays. Unselected cells fall back to the
+        // grid's shared hairline rather than each drawing a frame.
+        border: delta === 0 ? "1px solid var(--ft-accent)" : "none",
         padding: "10px 12px",
         transition: "background 0.1s",
       }}
@@ -702,7 +706,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
           style={{ ...INPUT_STYLE, width: 90 }}
         />
       </HStack>
-      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--ft-border)" }}>
         {scenarios.map((delta) => (
           <RateScenarioCard
             key={delta}
@@ -735,7 +739,9 @@ function AffordabilityKpiCard({ label, value, color, sub }: AffordabilityKpiCard
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
+        // No frame: the grid below paints a 1px --ft-border ground and a 1px
+        // gap, so the cells are separated by shared hairlines rather than each
+        // drawing its own four-sided border inside the panel's.
         padding: "10px 14px",
         transition: "background 0.1s",
       }}
@@ -831,7 +837,7 @@ function AffordabilityTab() {
       </div>
 
       {maxLoan > 0 && (
-        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--ft-border)" }}>
           <AffordabilityKpiCard label="Max Loan" value={formatBaseMoney(maxLoan)} color="var(--ft-text)" />
           <AffordabilityKpiCard label="Max Property Value" value={formatBaseMoney(maxPropertyValue)} color="var(--ft-accent)" />
           <AffordabilityKpiCard label="Stamp Duty" value={formatBaseMoney(sdlt)} color="var(--ft-amber)" />

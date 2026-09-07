@@ -1587,9 +1587,10 @@ export default function FamilyFinance() {
           <div
             style={{
               marginTop: 10,
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border2)",
-              borderRadius: 2,
+              // DESIGN.md: inside a framed panel a sub-region is separated by
+              // a shared edge, never by its own four-sided border inset from
+              // the parent's. The fill went too — it was the parent's token.
+              borderTop: "1px solid var(--ft-border)",
               padding: "14px 16px",
             }}
           >
@@ -1716,8 +1717,6 @@ export default function FamilyFinance() {
         ) : (
           <div
             style={{
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border)",
               padding: "14px 16px",
             }}
           >
@@ -1836,8 +1835,6 @@ export default function FamilyFinance() {
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: 16,
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border)",
               padding: "14px 16px",
             }}
           >
@@ -1950,8 +1947,6 @@ export default function FamilyFinance() {
               display: "flex",
               flexDirection: "column",
               gap: 0,
-              border: "1px solid var(--ft-border)",
-              borderRadius: 2,
               overflow: "hidden",
             }}
           >
@@ -1999,9 +1994,10 @@ export default function FamilyFinance() {
           <div
             style={{
               marginTop: 10,
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border2)",
-              borderRadius: 2,
+              // DESIGN.md: inside a framed panel a sub-region is separated by
+              // a shared edge, never by its own four-sided border inset from
+              // the parent's. The fill went too — it was the parent's token.
+              borderTop: "1px solid var(--ft-border)",
               padding: "14px 16px",
             }}
           >
@@ -2127,9 +2123,6 @@ export default function FamilyFinance() {
         ) : (
           <div
             style={{
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border)",
-              borderRadius: 2,
               overflow: "hidden",
             }}
           >
@@ -2180,9 +2173,10 @@ export default function FamilyFinance() {
           <div
             style={{
               marginTop: 10,
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border2)",
-              borderRadius: 2,
+              // DESIGN.md: inside a framed panel a sub-region is separated by
+              // a shared edge, never by its own four-sided border inset from
+              // the parent's. The fill went too — it was the parent's token.
+              borderTop: "1px solid var(--ft-border)",
               padding: "14px 16px",
             }}
           >
@@ -2299,9 +2293,10 @@ export default function FamilyFinance() {
           <div
             style={{
               marginTop: 10,
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border2)",
-              borderRadius: 2,
+              // DESIGN.md: inside a framed panel a sub-region is separated by
+              // a shared edge, never by its own four-sided border inset from
+              // the parent's. The fill went too — it was the parent's token.
+              borderTop: "1px solid var(--ft-border)",
               padding: "14px 16px",
             }}
           >
