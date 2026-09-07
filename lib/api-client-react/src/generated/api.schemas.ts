@@ -427,6 +427,112 @@ export interface FxDriftReport {
   unmeasurableAccounts: number;
 }
 
+export interface ChangeAttributionAccountShare {
+  accountId: number;
+  name: string;
+  currency: string;
+  /** This account's contribution to the part, in base currency */
+  amountBase: number;
+  /**
+     * Native-to-base rate recorded on the baseline snapshot. Null on every part but `rate`.
+     * @nullable
+     */
+  fromRate: number | null;
+  /**
+     * Native-to-base rate now. Null on every part but `rate`.
+     * @nullable
+     */
+  toRate: number | null;
+}
+
+/**
+ * spend — the signed ledger effect. rate — the exchange rate moving
+under a balance nobody touched. valuation — a non-cash balance
+that moved with no transaction, which is a revaluation rather
+than a missing row. unexplained — the same on a cash account,
+where it is the reconciliation gap.
+
+ */
+export type ChangeAttributionPartKind = typeof ChangeAttributionPartKind[keyof typeof ChangeAttributionPartKind];
+
+
+export const ChangeAttributionPartKind = {
+  spend: 'spend',
+  rate: 'rate',
+  valuation: 'valuation',
+  unexplained: 'unexplained',
+} as const;
+
+export interface ChangeAttributionPart {
+  /** spend — the signed ledger effect. rate — the exchange rate moving
+  under a balance nobody touched. valuation — a non-cash balance
+  that moved with no transaction, which is a revaluation rather
+  than a missing row. unexplained — the same on a cash account,
+  where it is the reconciliation gap.
+   */
+  kind: ChangeAttributionPartKind;
+  amountBase: number;
+  /**
+     * How many ledger rows were summed. Null on every part but `spend`.
+     * @nullable
+     */
+  transactions: number | null;
+  /** Which accounts made up this part, largest magnitude first. Never empty — a part that contributed nothing is omitted rather than reported as zero. */
+  accounts: ChangeAttributionAccountShare[];
+}
+
+export type ChangeAttributionReportStatus = typeof ChangeAttributionReportStatus[keyof typeof ChangeAttributionReportStatus];
+
+
+export const ChangeAttributionReportStatus = {
+  ok: 'ok',
+  insufficient: 'insufficient',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ChangeAttributionReportPeriodRule = typeof ChangeAttributionReportPeriodRule[keyof typeof ChangeAttributionReportPeriodRule] | null;
+
+
+export const ChangeAttributionReportPeriodRule = {
+  'month-to-date': 'month-to-date',
+  'since-first-snapshot': 'since-first-snapshot',
+} as const;
+
+export interface ChangeAttributionReport {
+  status: ChangeAttributionReportStatus;
+  baseCurrency: string;
+  /** @nullable */
+  periodRule: ChangeAttributionReportPeriodRule;
+  /**
+     * Baseline date, YYYY-MM-DD. null when insufficient.
+     * @nullable
+     */
+  periodFrom: string | null;
+  /** Today, YYYY-MM-DD, server-local */
+  periodTo: string;
+  days: number;
+  /**
+     * Earliest snapshot date usable for attribution, whether or not it qualifies as a baseline
+     * @nullable
+     */
+  dataAvailableSince: string | null;
+  /**
+     * The headline. Equal to the sum of the parts.
+     * @nullable
+     */
+  totalDeltaBase: number | null;
+  parts: ChangeAttributionPart[];
+  /** totalDeltaBase − Σ parts. Zero by construction; carried so a consumer can check rather than trust. */
+  residualBase: number;
+  /** False means the parts do not add to the headline and the surface must say so rather than rounding into agreement */
+  balances: boolean;
+  measuredAccounts: number;
+  /** Accounts with no snapshot on the baseline date, no rate recorded with it, or no rate today. Counted rather than attributed to zero. */
+  unmeasurableAccounts: number;
+}
+
 export type AccountCurrency = typeof AccountCurrency[keyof typeof AccountCurrency];
 
 

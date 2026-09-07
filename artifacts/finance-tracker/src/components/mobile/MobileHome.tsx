@@ -19,6 +19,7 @@ import { loadPersonaIds, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { homeSectionOrder } from "@/lib/persona-emphasis";
 import { InsightSlot } from "@/components/phone/InsightSlot";
+import { ChangeAttributionBlock } from "@/components/change-attribution";
 import {
   computeHoldings,
   type Holdings,
@@ -369,6 +370,16 @@ export function MobileHome(_props: MobileHomeProps) {
             )}
           </VStack>
         )}
+
+        {/* ── What changed, and what caused it ──
+            Under the hero because the hero states the move ("+£X since 1
+            Sep") and this states what the move was made of. Standing, not an
+            insight: the FX share used to reach the phone only by dismissing
+            whatever outranked it on WORTH. It prints its own total and its
+            own window — the baseline rule usually lands on the 1st and
+            agrees with the hero, and when it does not, saying so is the
+            point. */}
+        <ChangeAttributionBlock />
 
         {/* Claimed (liabilities are outlined, no depth).
             C2-4: when the API supplies topPending, list up to 3

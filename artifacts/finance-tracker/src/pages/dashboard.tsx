@@ -65,6 +65,7 @@ import { oneShotInsight } from "@/lib/ai-chat-client";
 import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
 import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, recurringSeriesHref, thisMonthRange } from "@/lib/entity-href";
 import { Drill, DrillTarget } from "@/components/drill";
+import { ChangeAttributionBand } from "@/components/change-attribution";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -2993,6 +2994,15 @@ export default function Dashboard() {
         dashboardLabel={dashboardLabel}
         isMobile={isMobile}
       />
+
+      {/* ── What changed, and what caused it ──
+          Directly under the KPI bar because the bar's hero cell is the net
+          worth this decomposes the movement of. Standing surface, not a
+          widget: it is not in WIDGET_REGISTRY and cannot be removed, for the
+          same reason the KPI bar cannot — a headline figure with no stated
+          cause is what this is here to stop. The phone gets the same rows
+          from MobileHome; this branch is the wide one only. */}
+      {!isMobile && <ChangeAttributionBand />}
 
       {/* Persona quick start — shown once, disappears when all steps done or dismissed */}
       <PersonaQuickStart />

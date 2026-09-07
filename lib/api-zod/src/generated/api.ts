@@ -339,6 +339,71 @@ export const GetAccountsFxDriftResponse = zod.object({
 
 
 /**
+ * One period, one total, and the parts that add to it:
+
+  rate      = Σ baselineBalance × (currentRate − baselineRate)
+  activity  = Σ (currentBalance − baselineBalance) × currentRate
+  total     = rate + activity
+
+and `activity` splits again per account by whether the ledger
+explains it:
+
+  spend       = Σ signed transaction effects since the baseline, at currentRate
+  residual    = activity − spend
+
+The residual on a cash account is `unexplained` — a balance that
+moved with no transaction behind it. On a property, pension or
+investment account it is `valuation`, because a revaluation is not a
+missing transaction. Four parts rather than three is what makes the
+arithmetic true.
+
+Unlike `/accounts/fx-drift`, every part is measured over ONE window,
+because a decomposition whose parts use different windows does not
+sum. The window follows the reconciliation rule: the baseline is a
+snapshot date strictly before today on which every measurable
+account has a row, month-to-date when the 1st qualifies.
+
+`residualBase` is `totalDeltaBase` minus the sum of the parts and is
+zero by construction; `balances` is false if it is not, so the
+surface can say the parts do not add up rather than round into
+agreement. An account with no snapshot on the baseline date, no rate
+recorded with it, or no rate today is counted in
+`unmeasurableAccounts` rather than attributed to zero. `status` is
+`insufficient` when no baseline qualifies, and `totalDeltaBase` is
+then null rather than zero.
+
+ * @summary The headline change in net worth, decomposed into what caused it
+ */
+export const GetAccountsChangeAttributionResponse = zod.object({
+  "status": zod.enum(['ok', 'insufficient']),
+  "baseCurrency": zod.string(),
+  "periodRule": zod.union([zod.literal('month-to-date'),zod.literal('since-first-snapshot'),zod.literal(null)]).nullable(),
+  "periodFrom": zod.string().nullable().describe('Baseline date, YYYY-MM-DD. null when insufficient.'),
+  "periodTo": zod.string().describe('Today, YYYY-MM-DD, server-local'),
+  "days": zod.number(),
+  "dataAvailableSince": zod.string().nullable().describe('Earliest snapshot date usable for attribution, whether or not it qualifies as a baseline'),
+  "totalDeltaBase": zod.number().nullable().describe('The headline. Equal to the sum of the parts.'),
+  "parts": zod.array(zod.object({
+  "kind": zod.enum(['spend', 'rate', 'valuation', 'unexplained']).describe('spend — the signed ledger effect. rate — the exchange rate moving\nunder a balance nobody touched. valuation — a non-cash balance\nthat moved with no transaction, which is a revaluation rather\nthan a missing row. unexplained — the same on a cash account,\nwhere it is the reconciliation gap.\n'),
+  "amountBase": zod.number(),
+  "transactions": zod.number().nullable().describe('How many ledger rows were summed. Null on every part but `spend`.'),
+  "accounts": zod.array(zod.object({
+  "accountId": zod.number(),
+  "name": zod.string(),
+  "currency": zod.string(),
+  "amountBase": zod.number().describe('This account\'s contribution to the part, in base currency'),
+  "fromRate": zod.number().nullable().describe('Native-to-base rate recorded on the baseline snapshot. Null on every part but `rate`.'),
+  "toRate": zod.number().nullable().describe('Native-to-base rate now. Null on every part but `rate`.')
+})).describe('Which accounts made up this part, largest magnitude first. Never empty — a part that contributed nothing is omitted rather than reported as zero.')
+})),
+  "residualBase": zod.number().describe('totalDeltaBase − Σ parts. Zero by construction; carried so a consumer can check rather than trust.'),
+  "balances": zod.boolean().describe('False means the parts do not add to the headline and the surface must say so rather than rounding into agreement'),
+  "measuredAccounts": zod.number(),
+  "unmeasurableAccounts": zod.number().describe('Accounts with no snapshot on the baseline date, no rate recorded with it, or no rate today. Counted rather than attributed to zero.')
+})
+
+
+/**
  * @summary Update an account
  */
 export const UpdateAccountParams = zod.object({

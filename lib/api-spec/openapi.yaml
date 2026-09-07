@@ -191,6 +191,52 @@ paths:
               schema:
                 $ref: "#/components/schemas/FxDriftReport"
 
+  /accounts/change-attribution:
+    get:
+      operationId: getAccountsChangeAttribution
+      tags: [accounts]
+      summary: The headline change in net worth, decomposed into what caused it
+      description: |
+        One period, one total, and the parts that add to it:
+
+          rate      = Σ baselineBalance × (currentRate − baselineRate)
+          activity  = Σ (currentBalance − baselineBalance) × currentRate
+          total     = rate + activity
+
+        and `activity` splits again per account by whether the ledger
+        explains it:
+
+          spend       = Σ signed transaction effects since the baseline, at currentRate
+          residual    = activity − spend
+
+        The residual on a cash account is `unexplained` — a balance that
+        moved with no transaction behind it. On a property, pension or
+        investment account it is `valuation`, because a revaluation is not a
+        missing transaction. Four parts rather than three is what makes the
+        arithmetic true.
+
+        Unlike `/accounts/fx-drift`, every part is measured over ONE window,
+        because a decomposition whose parts use different windows does not
+        sum. The window follows the reconciliation rule: the baseline is a
+        snapshot date strictly before today on which every measurable
+        account has a row, month-to-date when the 1st qualifies.
+
+        `residualBase` is `totalDeltaBase` minus the sum of the parts and is
+        zero by construction; `balances` is false if it is not, so the
+        surface can say the parts do not add up rather than round into
+        agreement. An account with no snapshot on the baseline date, no rate
+        recorded with it, or no rate today is counted in
+        `unmeasurableAccounts` rather than attributed to zero. `status` is
+        `insufficient` when no baseline qualifies, and `totalDeltaBase` is
+        then null rather than zero.
+      responses:
+        "200":
+          description: Change attribution report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeAttributionReport"
+
   /accounts/{id}:
     patch:
       operationId: updateAccount
@@ -1833,6 +1879,94 @@ components:
         unmeasurableAccounts:
           type: integer
           description: Accounts with no usable baseline — no snapshot before today, or no rate captured with it. Named so the UI can say what is missing instead of implying the drift is zero.
+    ChangeAttributionAccountShare:
+      type: object
+      required: [accountId, name, currency, amountBase, fromRate, toRate]
+      properties:
+        accountId:
+          type: integer
+        name:
+          type: string
+        currency:
+          type: string
+        amountBase:
+          type: number
+          description: This account's contribution to the part, in base currency
+        # Nullable: only the rate part is priced between two rates.
+        fromRate:
+          type: ["number", "null"]
+          description: Native-to-base rate recorded on the baseline snapshot. Null on every part but `rate`.
+        # Nullable: as fromRate.
+        toRate:
+          type: ["number", "null"]
+          description: Native-to-base rate now. Null on every part but `rate`.
+    ChangeAttributionPart:
+      type: object
+      required: [kind, amountBase, transactions, accounts]
+      properties:
+        kind:
+          type: string
+          enum: [spend, rate, valuation, unexplained]
+          description: |
+            spend — the signed ledger effect. rate — the exchange rate moving
+            under a balance nobody touched. valuation — a non-cash balance
+            that moved with no transaction, which is a revaluation rather
+            than a missing row. unexplained — the same on a cash account,
+            where it is the reconciliation gap.
+        amountBase:
+          type: number
+        # Nullable: only the spend part counts ledger rows.
+        transactions:
+          type: ["integer", "null"]
+          description: How many ledger rows were summed. Null on every part but `spend`.
+        accounts:
+          type: array
+          description: Which accounts made up this part, largest magnitude first. Never empty — a part that contributed nothing is omitted rather than reported as zero.
+          items:
+            $ref: "#/components/schemas/ChangeAttributionAccountShare"
+    ChangeAttributionReport:
+      type: object
+      required: [status, baseCurrency, periodRule, periodFrom, periodTo, days, dataAvailableSince, totalDeltaBase, parts, residualBase, balances, measuredAccounts, unmeasurableAccounts]
+      properties:
+        status:
+          type: string
+          enum: [ok, insufficient]
+        baseCurrency:
+          type: string
+        periodRule:
+          type: ["string", "null"]
+          enum: [month-to-date, since-first-snapshot, null]
+        periodFrom:
+          type: ["string", "null"]
+          description: Baseline date, YYYY-MM-DD. null when insufficient.
+        periodTo:
+          type: string
+          description: Today, YYYY-MM-DD, server-local
+        days:
+          type: integer
+        # Nullable: null when there is no usable snapshot at all.
+        dataAvailableSince:
+          type: ["string", "null"]
+          description: Earliest snapshot date usable for attribution, whether or not it qualifies as a baseline
+        # Nullable: null when insufficient. Never zero standing in for unknown.
+        totalDeltaBase:
+          type: ["number", "null"]
+          description: The headline. Equal to the sum of the parts.
+        parts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChangeAttributionPart"
+        residualBase:
+          type: number
+          description: totalDeltaBase − Σ parts. Zero by construction; carried so a consumer can check rather than trust.
+        balances:
+          type: boolean
+          description: False means the parts do not add to the headline and the surface must say so rather than rounding into agreement
+        measuredAccounts:
+          type: integer
+        unmeasurableAccounts:
+          type: integer
+          description: Accounts with no snapshot on the baseline date, no rate recorded with it, or no rate today. Counted rather than attributed to zero.
     Account:
       type: object
       required: [id, name, currency, balance, baseEquivalent, type, isWiseLinked, createdAt]

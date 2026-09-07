@@ -27,6 +27,7 @@ import type {
   AdminForbidden,
   AdminOverview,
   Budget,
+  ChangeAttributionReport,
   Connection,
   ConnectionSyncFailure,
   ConnectionSyncResult,
@@ -741,6 +742,116 @@ export function useGetAccountsFxDrift<TData = Awaited<ReturnType<typeof getAccou
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAccountsFxDriftQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAccountsChangeAttributionUrl = () => {
+
+
+
+
+  return `/api/accounts/change-attribution`
+}
+
+/**
+ * One period, one total, and the parts that add to it:
+
+  rate      = Σ baselineBalance × (currentRate − baselineRate)
+  activity  = Σ (currentBalance − baselineBalance) × currentRate
+  total     = rate + activity
+
+and `activity` splits again per account by whether the ledger
+explains it:
+
+  spend       = Σ signed transaction effects since the baseline, at currentRate
+  residual    = activity − spend
+
+The residual on a cash account is `unexplained` — a balance that
+moved with no transaction behind it. On a property, pension or
+investment account it is `valuation`, because a revaluation is not a
+missing transaction. Four parts rather than three is what makes the
+arithmetic true.
+
+Unlike `/accounts/fx-drift`, every part is measured over ONE window,
+because a decomposition whose parts use different windows does not
+sum. The window follows the reconciliation rule: the baseline is a
+snapshot date strictly before today on which every measurable
+account has a row, month-to-date when the 1st qualifies.
+
+`residualBase` is `totalDeltaBase` minus the sum of the parts and is
+zero by construction; `balances` is false if it is not, so the
+surface can say the parts do not add up rather than round into
+agreement. An account with no snapshot on the baseline date, no rate
+recorded with it, or no rate today is counted in
+`unmeasurableAccounts` rather than attributed to zero. `status` is
+`insufficient` when no baseline qualifies, and `totalDeltaBase` is
+then null rather than zero.
+
+ * @summary The headline change in net worth, decomposed into what caused it
+ */
+export const getAccountsChangeAttribution = async ( options?: RequestInit): Promise<ChangeAttributionReport> => {
+
+  return customFetch<ChangeAttributionReport>(getGetAccountsChangeAttributionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountsChangeAttributionQueryKey = () => {
+    return [
+    `/api/accounts/change-attribution`
+    ] as const;
+    }
+
+
+export const getGetAccountsChangeAttributionQueryOptions = <TData = Awaited<ReturnType<typeof getAccountsChangeAttribution>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountsChangeAttribution>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountsChangeAttributionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountsChangeAttribution>>> = ({ signal }) => getAccountsChangeAttribution({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountsChangeAttribution>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountsChangeAttributionQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountsChangeAttribution>>>
+export type GetAccountsChangeAttributionQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The headline change in net worth, decomposed into what caused it
+ */
+
+export function useGetAccountsChangeAttribution<TData = Awaited<ReturnType<typeof getAccountsChangeAttribution>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountsChangeAttribution>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountsChangeAttributionQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
