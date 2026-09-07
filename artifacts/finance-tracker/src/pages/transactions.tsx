@@ -49,6 +49,8 @@ import { haptic } from "@/lib/haptics";
 import { MobileSheet } from "@/components/mobile-sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryParam } from "@/hooks/use-query-param";
+import { useLocation, useSearch } from "wouter";
+import { ledgerLocation, ledgerSearchMatches } from "@/lib/ledger-query";
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, entityHref, merchantTransactionsHref } from "@/lib/entity-href";
 import { useSwipeDelete } from "@/hooks/use-swipe-delete";
@@ -514,6 +516,38 @@ export default function Transactions() {
   useEffect(() => { setFilterDateTo(toParam ?? ""); }, [toParam]);
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
+
+  // ── the return leg: state back into the URL ──────────────────────────────
+  // Until now this was one-way. ?category= and friends seeded the filters on
+  // arrival, and from that moment the address bar described a view the screen
+  // had left behind — so a filtered ledger could be reached but not kept.
+  // Refresh, bookmark or paste it and you got the whole list back, which
+  // quietly undoes what the §14 drills are for.
+  //
+  // `replace`, never `push`: the filter bar is not a sequence of pages, and
+  // making every select press a back-button stop would be worse than the bug.
+  // Only the six filters lib/entity-href.ts already spells are written; see
+  // lib/ledger-query.ts for why a one-way parameter is worse than none.
+  const currentSearch = useSearch();
+  const [, navigate] = useLocation();
+  const filterAccountId = useMemo(() => {
+    if (filterAccount === "all") return null;
+    const match = accounts?.find((a) => a.name === filterAccount);
+    return match == null ? null : String(match.id);
+  }, [filterAccount, accounts]);
+  useEffect(() => {
+    // An ?account= id is resolved to a name by an effect that needs the
+    // account list. Writing before it loads would strip the parameter from
+    // the URL of a link that had only just been opened.
+    if (accountParam != null && accounts == null) return;
+    const state = {
+      q: search, type: filterType, category: filterCategory,
+      accountId: filterAccountId, from: filterDateFrom, to: filterDateTo,
+    };
+    if (ledgerSearchMatches(currentSearch, state)) return;
+    navigate(ledgerLocation(state), { replace: true });
+  }, [search, filterType, filterCategory, filterAccountId, filterDateFrom, filterDateTo,
+      currentSearch, navigate, accountParam, accounts]);
 
   // ── bulk selection ───────────────────────────────────────────────────────
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
