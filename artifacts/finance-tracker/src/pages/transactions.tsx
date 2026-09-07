@@ -501,6 +501,12 @@ const NO_FILTERS: LedgerFilters = {
 
 // The six named periods the period control offers. `null` means the from/to
 // pair matches none of them — a custom range, which the panel owns.
+// How the ledger is grouped. One value, three positions — DAY is the default,
+// because a ledger read chronologically is what every statement and every bank
+// app shows, and it is what the phone surface has always done.
+type Grouping = "day" | "merchant" | "none";
+const GROUPING_LABEL: Record<Grouping, string> = { day: "DAY", merchant: "MERCHANT", none: "LIST" };
+
 type QuickRange = "all" | "today" | "week" | "month" | "lastmonth" | "3m";
 
 const QUICK_RANGE_LABEL: Record<QuickRange, string> = {
@@ -689,12 +695,21 @@ export default function Transactions() {
     } catch { return {}; }
   });
 
-  // ── merchant grouping ────────────────────────────────────────────────────
-  const [groupByMerchant, setGroupByMerchant] = useState(false);
+  // ── how the ledger is grouped ────────────────────────────────────────────
+  // One lens, not two checkboxes. They used to be independent booleans, and
+  // the render read `groupByDay && !groupByMerchant` — so with both ticked the
+  // DAY box was lit and doing nothing, which is the same defect as SL: a
+  // control that does not change what the user sees. A single value cannot
+  // enter that state.
+  //
+  // DAY is the default, and was the documented intent all along ("group by
+  // day — the default grouping (Monzo/Revolut pattern)") while the state it
+  // annotated initialised to false. The phone has grouped by day with a day
+  // total since it was built; this is the desktop catching up.
+  const [grouping, setGrouping] = useState<Grouping>("day");
+  const groupByDay = grouping === "day";
+  const groupByMerchant = grouping === "merchant";
   const [expandedMerchants, setExpandedMerchants] = useState<Set<string>>(new Set());
-
-  // ── group by day — the default grouping (Monzo/Revolut pattern) ──────────
-  const [groupByDay, setGroupByDay] = useState(false);
 
   // ── pagination ────────────────────────────────────────────────────────────
   const PAGE_SIZE = 75;
@@ -887,8 +902,21 @@ export default function Transactions() {
         map.set(key, [tx]);
       }
     }
+    // Day order follows the sort control. It used to be hardcoded newest-first,
+    // which was survivable while DAY was opt-in: now that it is the default,
+    // choosing "Oldest first" would have changed nothing on screen — the same
+    // defect this rebuild is removing. An amount sort orders the days by their
+    // largest single row, so the control moves both levels rather than only
+    // shuffling rows inside a day whose position never changes.
+    const peak = (txs: typeof filtered) =>
+      txs.reduce((acc, tx) => Math.max(acc, Math.abs(tx.baseEquivalent ?? 0)), 0);
     return Array.from(map.entries())
-      .sort((a, b) => b[0].localeCompare(a[0]))
+      .sort((a, b) => {
+        if (sortBy === "date-asc") return a[0].localeCompare(b[0]);
+        if (sortBy === "amount-high") return peak(b[1]) - peak(a[1]);
+        if (sortBy === "amount-low") return peak(a[1]) - peak(b[1]);
+        return b[0].localeCompare(a[0]);
+      })
       .map(([date, txs]) => ({
         date,
         txs,
@@ -896,7 +924,7 @@ export default function Transactions() {
         // expense wash out of the daily net without fabrication.
         net: txs.reduce((acc, tx) => acc + (tx.baseEquivalent == null ? 0 : tx.type === "income" ? tx.baseEquivalent : tx.type === "expense" ? -tx.baseEquivalent : 0), 0),
       }));
-  }, [filtered, groupByDay]);
+  }, [filtered, groupByDay, sortBy]);
 
   // Paginated slices
   const visibleFiltered = filtered.slice(0, visibleCount);
@@ -2314,44 +2342,35 @@ export default function Transactions() {
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
         <PanelHeader right={(
           <HStack gap={4}>
-            <button
-              type="button"
-              onClick={() => { setGroupByDay((v) => !v); if (groupByMerchant) setGroupByMerchant(false); }}
-              style={{
-                height: 22,
-                padding: "0 8px",
-                fontSize: 10,
-                fontFamily: "var(--font-sans)",
-                letterSpacing: "0.04em",
-                background: groupByDay ? "color-mix(in srgb, var(--ft-blue) 10%, transparent)" : "transparent",
-                border: `1px solid ${groupByDay ? "var(--ft-blue)" : "var(--ft-border2)"}`,
-                borderRadius: 2,
-                color: groupByDay ? "var(--ft-blue)" : "var(--ft-dim)",
-                cursor: "pointer",
-                whiteSpace: "nowrap" as const,
-              }}
-            >
-              {groupByDay ? "▣ DAY" : "□ DAY"}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setGroupByMerchant((v) => !v); setExpandedMerchants(new Set()); if (groupByDay) setGroupByDay(false); }}
-              style={{
-                height: 22,
-                padding: "0 8px",
-                fontSize: 10,
-                fontFamily: "var(--font-sans)",
-                letterSpacing: "0.04em",
-                background: groupByMerchant ? "color-mix(in srgb, var(--ft-blue) 10%, transparent)" : "transparent",
-                border: `1px solid ${groupByMerchant ? "var(--ft-blue)" : "var(--ft-border2)"}`,
-                borderRadius: 2,
-                color: groupByMerchant ? "var(--ft-blue)" : "var(--ft-dim)",
-                cursor: "pointer",
-                whiteSpace: "nowrap" as const,
-              }}
-            >
-              {groupByMerchant ? "▣ MERCHANT" : "□ MERCHANT"}
-            </button>
+            {/* One lens, three exclusive positions. A segmented control says
+                "these are the same question answered differently"; two
+                checkboxes said "these are independent", which they never
+                were. */}
+            <HStack gap={0}>
+              {(Object.keys(GROUPING_LABEL) as Grouping[]).map((g, i) => (
+                <button
+                  key={g}
+                  type="button"
+                  aria-pressed={grouping === g}
+                  onClick={() => { setGrouping(g); if (g === "merchant") setExpandedMerchants(new Set()); }}
+                  style={{
+                    height: 22,
+                    padding: "0 9px",
+                    fontSize: 10,
+                    fontFamily: "var(--font-sans)",
+                    letterSpacing: "0.04em",
+                    background: grouping === g ? "color-mix(in srgb, var(--ft-blue) 12%, transparent)" : "transparent",
+                    border: `1px solid ${grouping === g ? "var(--ft-blue)" : "var(--ft-border2)"}`,
+                    borderLeftWidth: i === 0 ? 1 : 0,
+                    color: grouping === g ? "var(--ft-blue)" : "var(--ft-dim)",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap" as const,
+                  }}
+                >
+                  {GROUPING_LABEL[g]}
+                </button>
+              ))}
+            </HStack>
             <button
               type="button"
               onClick={() => exportJson(filtered)}
@@ -2372,12 +2391,6 @@ export default function Transactions() {
           <Text as="span" mono size={10} color="var(--ft-dim)">
             {hasFilters ? `${filtered.length} of ${transactions?.length ?? 0}` : `${filtered.length} entries`}
           </Text>
-          {groupByMerchant && (
-            <span style={{ fontSize: 9, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY MERCHANT</span>
-          )}
-          {groupByDay && !groupByMerchant && (
-            <span style={{ fontSize: 9, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", letterSpacing: "0.06em", border: "1px solid var(--ft-border2)", padding: "0 5px", borderRadius: 2, lineHeight: "18px" }}>BY DAY</span>
-          )}
         </PanelHeader>
 
         <div
@@ -2426,7 +2439,7 @@ export default function Transactions() {
           </div>
 
           {/* Rows — flat, grouped by day, or grouped by merchant */}
-          {!groupByMerchant && !groupByDay && (
+          {grouping === "none" && (
             <>
               {visibleFiltered.map((tx, idx) => <TxRow key={tx.id} tx={tx} isKeyboardSelected={selectedRowIndex === idx} {...txRowProps} />)}
               {filtered.length === 0 && (
@@ -2448,7 +2461,7 @@ export default function Transactions() {
             </>
           )}
 
-          {groupByDay && !groupByMerchant && (
+          {groupByDay && (
             <>
               {(() => {
                 let flatIdx = 0;
