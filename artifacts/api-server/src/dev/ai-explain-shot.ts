@@ -29,6 +29,7 @@
 //   ./node_modules/.bin/tsx --env-file-if-exists=.env src/dev/ai-explain-shot.ts \
 //     [--model=llama3.1:8b] [--email=seed@numeris.local] [--path=/] [--q="..."]
 
+import { readFile } from "node:fs/promises";
 import { eq } from "drizzle-orm";
 import { db, userTable } from "@workspace/db";
 import { buildChatContext } from "../lib/ai-context";
@@ -53,6 +54,14 @@ const email = arg("email", "seed@numeris.local");
 const path = arg("path", "/");
 const question = arg("q", DEFAULT_QUESTION);
 
+// --prompt-file lets a before/after be re-taken from git rather than trusted
+// from a transcript. Extract the old prompt out of history and pass it:
+//   git show <rev>:artifacts/api-server/src/routes/ai.ts > /tmp/old.ts
+//   node -e '...' # or paste the string into a file
+// Default (absent) is the shipped SYSTEM_PROMPT, which is the point of the
+// harness; this flag exists only so the comparison can be reproduced.
+const promptFile = arg("prompt-file", "");
+
 // Top-level await cannot be used here: this file transitively imports
 // lib/market.ts, which still uses require(), and the combination makes the
 // module format ambiguous to the loader. An async main() sidesteps it.
@@ -75,7 +84,10 @@ async function main(): Promise<void> {
     process.exit(0);
   }
   // Byte-for-byte the wrapping routes/ai.ts applies.
-  const systemPrompt = `${SYSTEM_PROMPT}\n\n--- USER PORTFOLIO CONTEXT (read-only data) ---\n${context.text}\n--- END CONTEXT ---`;
+  const prompt = promptFile === ""
+    ? SYSTEM_PROMPT
+    : (await readFile(promptFile, "utf8")).trim();
+  const systemPrompt = `${prompt}\n\n--- USER PORTFOLIO CONTEXT (read-only data) ---\n${context.text}\n--- END CONTEXT ---`;
 
   const res = await fetch(OLLAMA, {
     method: "POST",
@@ -103,7 +115,7 @@ async function main(): Promise<void> {
   }
 
   const words = answer.trim().split(/\s+/).length;
-  console.log(`── model ${model} · prompt ${SYSTEM_PROMPT.length} chars · context ${context.text.length} chars`);
+  console.log(`── model ${model} · prompt ${prompt.length} chars${promptFile === "" ? "" : ` (from ${promptFile})`} · context ${context.text.length} chars`);
   console.log(`── dropped sections: ${context.sectionsDropped.length === 0 ? "none" : context.sectionsDropped.join(", ")}`);
   console.log(`── question: ${question}`);
   console.log(`── answer: ${words} words, ${answer.trim().length} chars\n`);
