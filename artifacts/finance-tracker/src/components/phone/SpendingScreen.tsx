@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   useListTransactions,
+  useListBudgets,
   useDeleteTransaction,
   getListTransactionsQueryKey,
   getGetDashboardQueryKey,
@@ -366,13 +367,33 @@ export function SpendingScreen() {
     );
   }, [transactions, pendingDeleteIds, now]);
 
+  // Which categories already carry a budget. Left undefined while the read
+  // is in flight — an unresolved query is not evidence that nothing is
+  // budgeted, and the producer is written to tell the difference.
+  const { data: budgets } = useListBudgets();
+  const budgetedCategories = useMemo(
+    () => (budgets == null ? undefined : budgets.map((b) => b.category)),
+    [budgets],
+  );
+
+  // `transactions` above starts at `dateFrom`, which is only the months this
+  // screen shows — two of them by default. The recurrence guard needs three
+  // completed months, so reading history from that window silenced the
+  // producer entirely (measured 2026-09-07). The full ledger is a separate
+  // query, and the same key other screens already use, so it comes from cache.
+  const { data: allTransactions } = useListTransactions();
+
   // Insight selection — pure derivation from txs + baseCurrency +
-  // dismissed set. Zero producers registered today; this returns null
-  // and the slot renders nothing. When features land producers, this
-  // starts returning insights automatically.
+  // dismissed set. `historyTxs` is the full unsliced ledger, which the
+  // unbudgeted-category producer needs to test recurrence over the three
+  // completed months; `currentMonthTxs` stays the current period.
   const currentInsight = useMemo<Insight | null>(
-    () => selectInsight(currentMonthTxs, { baseCurrency }, dismissedInsights),
-    [currentMonthTxs, baseCurrency, dismissedInsights],
+    () => selectInsight(currentMonthTxs, {
+      baseCurrency,
+      budgetedCategories,
+      historyTxs: allTransactions ?? undefined,
+    }, dismissedInsights),
+    [currentMonthTxs, allTransactions, baseCurrency, budgetedCategories, dismissedInsights],
   );
 
   const handleDismissInsight = useCallback((id: string) => {

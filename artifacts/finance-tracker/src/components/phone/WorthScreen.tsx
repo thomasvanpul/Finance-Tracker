@@ -4,6 +4,7 @@ import {
   useGetDashboard,
   useListInvestments,
   useGetAccountsReconciliation,
+  useGetAccountsFxDrift,
 } from "@workspace/api-client-react";
 
 import { useBaseCurrency } from "@/lib/currency-store";
@@ -16,7 +17,8 @@ import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 import { InsightSlot } from "./InsightSlot";
 import { reconciliationInsight } from "@/lib/reconciliation-insight";
-import { loadDismissedIds, dismissInsight } from "@/lib/spending-insights";
+import { fxDriftInsight } from "@/lib/fx-drift-insight";
+import { loadDismissedIds, dismissInsight, rankInsights } from "@/lib/spending-insights";
 import { QuickAddTransaction } from "@/components/quick-add-transaction";
 import { MobileEmptyState } from "@/components/mobile/mobile-ui";
 import { PhoneSectionError } from "@/components/mobile/mobile-ui";
@@ -279,16 +281,20 @@ export function WorthScreen() {
   const [detailSubject, setDetailSubject] = useState<DetailSubject | null>(null);
   const [chartView, setChartView] = useState<ViewMode>("ring");
 
-  // Reconciliation gap — the one WORTH insight. Its data is a separate
-  // read so the balance sheet never waits on it; while it is loading or
-  // insufficient the slot stays empty (lib/reconciliation-insight.ts).
+  // Two WORTH candidates, both balance-sheet facts: money that moved with
+  // no transaction to explain it, and movement in base value that was the
+  // exchange rate rather than the user. Each is a separate read so the
+  // balance sheet never waits on either; while one is loading or its report
+  // is `insufficient` it simply contributes nothing. Ranked by the shared
+  // comparator, so the slot still says exactly one thing (DESIGN.md §15).
   const { data: reconciliation } = useGetAccountsReconciliation();
+  const { data: fxDrift } = useGetAccountsFxDrift();
   const [addOpen, setAddOpen] = useState(false);
   const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(() => loadDismissedIds());
-  const worthInsight = useMemo(() => {
-    const insight = reconciliationInsight(reconciliation, () => setAddOpen(true));
-    return insight != null && !dismissedInsights.has(insight.id) ? insight : null;
-  }, [reconciliation, dismissedInsights]);
+  const worthInsight = useMemo(() => rankInsights([
+    reconciliationInsight(reconciliation, () => setAddOpen(true)),
+    fxDriftInsight(fxDrift),
+  ], dismissedInsights), [reconciliation, fxDrift, dismissedInsights]);
   const handleDismissInsight = (id: string) => {
     dismissInsight(id);
     setDismissedInsights((prev) => new Set([...prev, id]));

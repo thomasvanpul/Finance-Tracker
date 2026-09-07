@@ -367,6 +367,66 @@ export interface ReconciliationReport {
   unconvertibleAccounts: number;
 }
 
+export interface FxDriftAccount {
+  accountId: number;
+  name: string;
+  currency: string;
+  type: string;
+  /** YYYY-MM-DD of the snapshot this account is measured from */
+  baselineDate: string;
+  /** Native balance stored in the baseline snapshot */
+  baselineBalance: number;
+  /** Native-to-base rate recorded on the baseline snapshot at capture time. Never re-derived. */
+  baselineRate: number;
+  /** Native balance now */
+  currentBalance: number;
+  /** Native-to-base rate now */
+  currentRate: number;
+  /** baselineBalance × (currentRate − baselineRate) — the part of the movement the user did not cause */
+  fxDeltaBase: number;
+  /** (currentBalance − baselineBalance) × currentRate — the part the user did cause, priced at today's rate */
+  activityDeltaBase: number;
+  /** fxDeltaBase + activityDeltaBase, equal to the change in base value over the period */
+  totalDeltaBase: number;
+  /**
+     * YYYY-MM-DD of the newest transaction on this account
+     * @nullable
+     */
+  lastTransactionDate: string | null;
+  /** @nullable */
+  daysSinceLastTransaction: number | null;
+}
+
+export type FxDriftReportStatus = typeof FxDriftReportStatus[keyof typeof FxDriftReportStatus];
+
+
+export const FxDriftReportStatus = {
+  ok: 'ok',
+  insufficient: 'insufficient',
+} as const;
+
+export interface FxDriftReport {
+  status: FxDriftReportStatus;
+  baseCurrency: string;
+  /**
+     * Earliest baseline actually used, YYYY-MM-DD
+     * @nullable
+     */
+  periodFrom: string | null;
+  /** Today, YYYY-MM-DD, server-local */
+  periodTo: string;
+  /** periodTo − periodFrom in days; 0 when insufficient */
+  days: number;
+  /**
+     * Earliest snapshot date held for any account, measurable or not
+     * @nullable
+     */
+  dataAvailableSince: string | null;
+  accounts: FxDriftAccount[];
+  /** Accounts with no usable baseline — no snapshot before today, or no rate captured with it. Named so the UI can say what is missing instead of implying the drift is zero. */
+  unmeasurableAccounts: number;
+}
+
 export type AccountCurrency = typeof AccountCurrency[keyof typeof AccountCurrency];
 
 

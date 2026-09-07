@@ -31,6 +31,10 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
   return (
     <div
       role="status"
+      // A stable hook for the screenshot harness, which has to be able to
+      // tell "the slot is empty" from "the harness could not find the slot".
+      // Same purpose as [data-skeleton] elsewhere.
+      data-insight-slot={insight.source}
       style={{
         margin: "0 16px 12px",
         padding: "14px 14px 12px 16px",

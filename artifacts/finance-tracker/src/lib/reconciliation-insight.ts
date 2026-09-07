@@ -14,7 +14,7 @@
 import type { Insight } from "./spending-insights";
 import { entityHref } from "./entity-href";
 import { formatMoney } from "./utils";
-import type { ReconciliationReport } from "@workspace/api-client-react";
+import type { ReconciliationReport, ReconciliationAccount } from "@workspace/api-client-react";
 
 // Above the recurring-detector producer (80): an unexplained balance
 // movement is the one thing on WORTH the user can act on today.
@@ -72,4 +72,28 @@ export function reconciliationInsight(
       : "/accounts",
     action: { label: "Place it", onTap: onPlace },
   };
+}
+
+/**
+ * The salvageable half of the big-day spending alert rejected on 2026-09-07
+ * (DESIGN.md §15). That insight failed because the user could not act on it;
+ * this observation survives because it names a specific, fixable state rather
+ * than a fact about the past.
+ *
+ * The account's balance moved and NO transaction was recorded against it at
+ * all — so the whole gap is the balance change. That is not a mis-keyed
+ * amount or a deleted row; it is an account being kept by hand while the
+ * ledger watches. The fix is a real one: record the movements, or stop
+ * treating the balance as maintained.
+ *
+ * Scoped to account types where transactions are expected, which the
+ * reconciliation report already guarantees — it selects `type = 'cash'` only
+ * (artifacts/api-server/src/routes/accounts.ts). A property revalued once a
+ * year is exactly the case this would be wrong about, and it never reaches
+ * here. If reconciliation is ever widened past cash, this needs the type.
+ */
+export function isUntracked(a: Pick<ReconciliationAccount, "transactionsCounted" | "balanceChange" | "gap">): boolean {
+  return a.transactionsCounted === 0
+    && Math.abs(a.balanceChange) >= ZERO_TOLERANCE
+    && Math.abs(a.gap - a.balanceChange) < ZERO_TOLERANCE;
 }

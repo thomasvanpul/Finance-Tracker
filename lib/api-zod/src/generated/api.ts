@@ -286,6 +286,59 @@ export const GetAccountsReconciliationResponse = zod.object({
 
 
 /**
+ * Per account, between the earliest balance snapshot held for it
+(strictly before today) and now:
+
+  fxDeltaBase       = baselineBalance × (currentRate − baselineRate)
+  activityDeltaBase = (currentBalance − baselineBalance) × currentRate
+  totalDeltaBase    = fxDeltaBase + activityDeltaBase
+
+The two terms sum exactly to the change in base value, so a foreign
+account that has not been touched shows its whole movement as
+`fxDeltaBase` — the number no other screen states.
+
+The baseline rate is the one recorded on the snapshot at capture
+time. An account with no snapshot, no stored baseline rate, or no
+rate available today is counted in `unmeasurableAccounts` and
+omitted: today's rate is never applied backwards, because doing so
+would make `fxDeltaBase` zero by construction and report a real
+drift as no drift. `status` is `insufficient` when nothing is
+measurable.
+
+Unlike the reconciliation gap this covers ALL account types, not just
+cash — a foreign-currency property or pension is where the effect is
+largest.
+
+ * @summary How much of each account's change in base value was the exchange rate rather than the user
+ */
+export const GetAccountsFxDriftResponse = zod.object({
+  "status": zod.enum(['ok', 'insufficient']),
+  "baseCurrency": zod.string(),
+  "periodFrom": zod.string().nullable().describe('Earliest baseline actually used, YYYY-MM-DD'),
+  "periodTo": zod.string().describe('Today, YYYY-MM-DD, server-local'),
+  "days": zod.number().describe('periodTo − periodFrom in days; 0 when insufficient'),
+  "dataAvailableSince": zod.string().nullable().describe('Earliest snapshot date held for any account, measurable or not'),
+  "accounts": zod.array(zod.object({
+  "accountId": zod.number(),
+  "name": zod.string(),
+  "currency": zod.string(),
+  "type": zod.string(),
+  "baselineDate": zod.string().describe('YYYY-MM-DD of the snapshot this account is measured from'),
+  "baselineBalance": zod.number().describe('Native balance stored in the baseline snapshot'),
+  "baselineRate": zod.number().describe('Native-to-base rate recorded on the baseline snapshot at capture time. Never re-derived.'),
+  "currentBalance": zod.number().describe('Native balance now'),
+  "currentRate": zod.number().describe('Native-to-base rate now'),
+  "fxDeltaBase": zod.number().describe('baselineBalance × (currentRate − baselineRate) — the part of the movement the user did not cause'),
+  "activityDeltaBase": zod.number().describe('(currentBalance − baselineBalance) × currentRate — the part the user did cause, priced at today\'s rate'),
+  "totalDeltaBase": zod.number().describe('fxDeltaBase + activityDeltaBase, equal to the change in base value over the period'),
+  "lastTransactionDate": zod.string().nullable().describe('YYYY-MM-DD of the newest transaction on this account'),
+  "daysSinceLastTransaction": zod.number().nullable()
+})),
+  "unmeasurableAccounts": zod.number().describe('Accounts with no usable baseline — no snapshot before today, or no rate captured with it. Named so the UI can say what is missing instead of implying the drift is zero.')
+})
+
+
+/**
  * @summary Update an account
  */
 export const UpdateAccountParams = zod.object({

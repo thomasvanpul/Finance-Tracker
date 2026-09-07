@@ -42,10 +42,25 @@ function frequencyFor(avgInterval: number, count: number): string {
   return "";
 }
 
-export function detectRecurring<T extends RecurringTx>(txs: T[]): RecurringPattern[] {
+export interface DetectRecurringOptions {
+  /**
+   * Which transaction type to group. Defaults to "expense", which is what
+   * every caller before the projected-trough insight wanted and what the
+   * amount-magnitude reasoning in the header comment was written for.
+   * The projection needs the income side of the same detector — a trough
+   * computed from outgoings alone is not a balance, it is a total.
+   */
+  type?: string;
+}
+
+export function detectRecurring<T extends RecurringTx>(
+  txs: T[],
+  options: DetectRecurringOptions = {},
+): RecurringPattern[] {
+  const wantedType = options.type ?? "expense";
   const groups: Record<string, T[]> = {};
   for (const tx of txs) {
-    if (tx.type !== "expense") continue;
+    if (tx.type !== wantedType) continue;
     const key = tx.description.trim().toLowerCase();
     if (!groups[key]) groups[key] = [];
     groups[key].push(tx);

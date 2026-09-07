@@ -89,6 +89,11 @@ export function MobileHome(_props: MobileHomeProps) {
   const { data: dashboard, isLoading: dashboardLoading } = useGetDashboard();
   const { data: _monthSummary } = useGetTransactionSummary({ month: monthStr });
   const { data: txns = [] } = useListTransactions({ dateFrom, dateTo });
+  // The month window above is what the screen shows. A recurring series
+  // cannot be seen inside one month, so the projected trough reads the full
+  // ledger instead — same query key the other screens use, so TanStack
+  // serves it from cache rather than fetching it twice.
+  const { data: allTxns } = useListTransactions();
   const { data: subs = [] } = useListSubscriptions();
   // C2-3: pull upcoming income items so COMING can show salary +
   // any other explicit income entries alongside the recurring bills.
@@ -129,8 +134,17 @@ export function MobileHome(_props: MobileHomeProps) {
     () => loadDismissedIds(),
   );
   const currentInsight = useMemo<Insight | null>(
-    () => selectInsight(txns, { baseCurrency: dashboard?.baseCurrency ?? null, upcomingItems, topPending }, dismissedInsights),
-    [txns, dashboard, upcomingItems, topPending, dismissedInsights],
+    // totalCash is holdings.cash, derived from the dashboard's own account
+    // breakdown — the projected trough starts from a level the API supplied,
+    // never from a zero stood in for a missing one.
+    () => selectInsight(txns, {
+      baseCurrency: dashboard?.baseCurrency ?? null,
+      upcomingItems,
+      topPending,
+      cashBalanceBase: dashboard == null ? null : totalCash,
+      historyTxs: allTxns ?? undefined,
+    }, dismissedInsights),
+    [txns, allTxns, dashboard, upcomingItems, topPending, totalCash, dismissedInsights],
   );
   const handleDismissInsight = useCallback((id: string) => {
     dismissInsight(id);

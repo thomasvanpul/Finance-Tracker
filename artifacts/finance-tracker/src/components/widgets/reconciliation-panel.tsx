@@ -18,7 +18,7 @@ import { PanelHeader, Text } from "@/components/primitives";
 import { Drill } from "@/components/drill";
 import { entityHref, accountTransactionsHref } from "@/lib/entity-href";
 import { formatMoney } from "@/lib/utils";
-import { formatShortDate, reconciliationPeriodLabel } from "@/lib/reconciliation-insight";
+import { formatShortDate, reconciliationPeriodLabel, isUntracked } from "@/lib/reconciliation-insight";
 
 const ZERO_TOLERANCE = 0.005;
 
@@ -50,6 +50,10 @@ function gapColour(gap: number): string {
 function Row({ a, baseCurrency }: { a: ReconciliationAccount; baseCurrency: string }) {
   const foreign = a.currency !== baseCurrency;
   const notes: string[] = [];
+  // Named first because it is a different diagnosis from the others: not a
+  // row that went wrong, but an account with no rows at all behind a balance
+  // that moved. See isUntracked for why this is worth saying.
+  if (isUntracked(a)) notes.push("nothing recorded — balance kept by hand");
   if (a.editedSinceBaseline > 0) notes.push(`${a.editedSinceBaseline} older tx edited`);
   if (a.fxSkippedTransactions > 0) notes.push(`${a.fxSkippedTransactions} tx not converted`);
   return (

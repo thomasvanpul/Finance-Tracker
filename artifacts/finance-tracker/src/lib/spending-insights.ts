@@ -28,6 +28,8 @@
 // "recurring:spotify:price:2026-08".
 
 import type { Transaction, UpcomingItem } from "@workspace/api-client-react";
+import { projectedTrough } from "./projected-trough";
+import { unbudgetedCategory } from "./unbudgeted-category";
 
 export interface Insight {
   id: string;
@@ -50,6 +52,23 @@ export interface InsightContext {
   baseCurrency: string | null;
   upcomingItems?: readonly UpcomingItem[];
   topPending?: readonly { name: string; amountBase: number; direction: string; daysOutstanding?: number }[];
+  /**
+   * Total cash in base currency, as the API supplied it. The projected
+   * trough needs a level to project from; without it there is no balance
+   * to reach a low point, only a running total of outgoings.
+   */
+  cashBalanceBase?: number | null;
+  /**
+   * Categories that already carry a budget. Undefined means the budgets read
+   * has not resolved — which is NOT the same as "nothing is budgeted", and
+   * the unbudgeted-category producer stays silent rather than assume.
+   */
+  budgetedCategories?: readonly string[];
+  /**
+   * A longer window than `txs` — enough to cover the completed months a
+   * producer needs for a recurrence test. `txs` stays the current period.
+   */
+  historyTxs?: readonly Transaction[];
   // Kept intentionally sparse. Producers should not need much more
   // than txs + baseCurrency. Add fields here only when a real
   // producer needs them, not speculatively.
@@ -123,7 +142,7 @@ const debtByAge: InsightProducer = (_txs, context) => {
 };
 
 // Register producers here. Order does not matter — selection sorts by priority.
-const PRODUCERS: readonly InsightProducer[] = [heavyWeekAhead, debtByAge];
+const PRODUCERS: readonly InsightProducer[] = [heavyWeekAhead, debtByAge, projectedTrough, unbudgetedCategory];
 
 // ── dismissal set — localStorage-backed, per-device ──
 // Migrates to user_preferences via G20/B when that lands. Until then
@@ -160,20 +179,30 @@ export function dismissInsight(id: string): void {
  * Run every producer, sort by (priority DESC, source ASC), filter
  * dismissed, return the top-1 or null. Pure function of its inputs.
  */
+// The one ranking rule, shared by every slot. Priority DESC, then source
+// ASC so a tie is stable rather than dependent on producer order, then the
+// top one — the slot says one thing (DESIGN.md §15).
+//
+// Exported because not every slot's candidates come from PRODUCERS: WORTH
+// builds its two from separate API reads and still has to rank them the
+// same way. Duplicating the comparator there is how two slots quietly end
+// up with two different ideas of which insight wins.
+export function rankInsights(
+  candidates: readonly (Insight | null)[],
+  dismissedIds: ReadonlySet<string>,
+): Insight | null {
+  const live = candidates.filter((c): c is Insight => c != null && !dismissedIds.has(c.id));
+  if (live.length === 0) return null;
+  return [...live].sort((a, b) => {
+    if (b.priority !== a.priority) return b.priority - a.priority;
+    return a.source.localeCompare(b.source);
+  })[0] ?? null;
+}
+
 export function selectInsight(
   txs: readonly Transaction[],
   context: InsightContext,
   dismissedIds: ReadonlySet<string>,
 ): Insight | null {
-  const candidates: Insight[] = [];
-  for (const p of PRODUCERS) {
-    const result = p(txs, context);
-    if (result != null && !dismissedIds.has(result.id)) candidates.push(result);
-  }
-  if (candidates.length === 0) return null;
-  candidates.sort((a, b) => {
-    if (b.priority !== a.priority) return b.priority - a.priority;
-    return a.source.localeCompare(b.source);
-  });
-  return candidates[0] ?? null;
+  return rankInsights(PRODUCERS.map((p) => p(txs, context)), dismissedIds);
 }

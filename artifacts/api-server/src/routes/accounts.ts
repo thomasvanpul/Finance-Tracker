@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, gt, inArray, lt, or } from "drizzle-orm";
+import { and, eq, gt, inArray, lt, max, or } from "drizzle-orm";
 import { db, accountsTable, accountBalanceSnapshotsTable, transactionsTable } from "@workspace/db";
 import {
   CreateAccountBody,
@@ -9,11 +9,13 @@ import {
   ListAccountsResponse,
   UpdateAccountResponse,
   GetAccountsReconciliationResponse,
+  GetAccountsFxDriftResponse,
 } from "@workspace/api-zod";
-import { getFxRates, toBase } from "../lib/market";
+import { getFxRates, snapshotFxRate, toBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { captureAccountSnapshots } from "../lib/account-snapshots";
 import { computeReconciliation } from "../lib/reconciliation";
+import { computeFxDrift } from "../lib/fx-drift";
 import { localDateString } from "../lib/date-ranges";
 
 const router: IRouter = Router();
@@ -123,6 +125,90 @@ router.get("/accounts/reconciliation", async (req, res): Promise<void> => {
     convert: toBase,
   });
   res.json(GetAccountsReconciliationResponse.parse(report));
+});
+
+// Registered before /accounts/:id, like the reconciliation route above —
+// otherwise "fx-drift" is parsed as an account id.
+router.get("/accounts/fx-drift", async (req, res): Promise<void> => {
+  const userId = (req as any).userId as string;
+  const [baseCurrency, accountRows] = await Promise.all([
+    getBaseCurrency(userId),
+    db
+      .select({
+        id: accountsTable.id,
+        name: accountsTable.name,
+        currency: accountsTable.currency,
+        type: accountsTable.type,
+        balance: accountsTable.balance,
+      })
+      .from(accountsTable)
+      // Every type, not just cash. A foreign-currency property or pension is
+      // where the rate move is largest, and that is the whole point.
+      .where(eq(accountsTable.userId, userId))
+      .orderBy(accountsTable.createdAt),
+  ]);
+  const today = localDateString(new Date());
+  const ids = accountRows.map((a) => a.id);
+
+  const [snapshotRows, activityRows] = await Promise.all([
+    ids.length === 0 ? Promise.resolve([]) : db
+      .select({
+        accountId: accountBalanceSnapshotsTable.accountId,
+        date: accountBalanceSnapshotsTable.date,
+        balance: accountBalanceSnapshotsTable.balance,
+        nativeToBaseRate: accountBalanceSnapshotsTable.nativeToBaseRate,
+      })
+      .from(accountBalanceSnapshotsTable)
+      .where(and(
+        eq(accountBalanceSnapshotsTable.userId, userId),
+        inArray(accountBalanceSnapshotsTable.accountId, ids),
+        lt(accountBalanceSnapshotsTable.date, today),
+      )),
+    ids.length === 0 ? Promise.resolve([]) : db
+      .select({
+        accountId: transactionsTable.accountId,
+        lastTransactionDate: max(transactionsTable.date),
+      })
+      .from(transactionsTable)
+      .where(and(
+        eq(transactionsTable.userId, userId),
+        inArray(transactionsTable.accountId, ids),
+      ))
+      .groupBy(transactionsTable.accountId),
+  ]);
+
+  // The same function that recorded every baseline rate, so both ends of the
+  // comparison are computed identically. A currency FX cannot price returns
+  // null, and computeFxDrift counts that account rather than estimating it.
+  const currentRates = new Map<string, number | null>();
+  for (const currency of new Set(accountRows.map((a) => a.currency))) {
+    const { rate } = await snapshotFxRate(currency, baseCurrency);
+    currentRates.set(currency, rate);
+  }
+
+  const report = computeFxDrift({
+    accounts: accountRows.map((a) => ({
+      id: a.id,
+      name: a.name,
+      currency: a.currency,
+      type: a.type,
+      balance: parseFloat(a.balance),
+      currentRate: currentRates.get(a.currency) ?? null,
+    })),
+    snapshots: snapshotRows.map((s) => ({
+      accountId: s.accountId,
+      date: s.date,
+      balance: parseFloat(s.balance),
+      nativeToBaseRate: s.nativeToBaseRate == null ? null : parseFloat(s.nativeToBaseRate),
+    })),
+    activity: activityRows.map((r) => ({
+      accountId: r.accountId,
+      lastTransactionDate: r.lastTransactionDate ?? null,
+    })),
+    today,
+    baseCurrency,
+  });
+  res.json(GetAccountsFxDriftResponse.parse(report));
 });
 
 router.patch("/accounts/:id", async (req, res): Promise<void> => {

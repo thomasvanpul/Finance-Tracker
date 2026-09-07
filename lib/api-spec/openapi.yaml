@@ -155,6 +155,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/ReconciliationReport"
 
+  /accounts/fx-drift:
+    get:
+      operationId: getAccountsFxDrift
+      tags: [accounts]
+      summary: How much of each account's change in base value was the exchange rate rather than the user
+      description: |
+        Per account, between the earliest balance snapshot held for it
+        (strictly before today) and now:
+
+          fxDeltaBase       = baselineBalance × (currentRate − baselineRate)
+          activityDeltaBase = (currentBalance − baselineBalance) × currentRate
+          totalDeltaBase    = fxDeltaBase + activityDeltaBase
+
+        The two terms sum exactly to the change in base value, so a foreign
+        account that has not been touched shows its whole movement as
+        `fxDeltaBase` — the number no other screen states.
+
+        The baseline rate is the one recorded on the snapshot at capture
+        time. An account with no snapshot, no stored baseline rate, or no
+        rate available today is counted in `unmeasurableAccounts` and
+        omitted: today's rate is never applied backwards, because doing so
+        would make `fxDeltaBase` zero by construction and report a real
+        drift as no drift. `status` is `insufficient` when nothing is
+        measurable.
+
+        Unlike the reconciliation gap this covers ALL account types, not just
+        cash — a foreign-currency property or pension is where the effect is
+        largest.
+      responses:
+        "200":
+          description: FX drift report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FxDriftReport"
+
   /accounts/{id}:
     patch:
       operationId: updateAccount
@@ -1724,6 +1760,79 @@ components:
         unconvertibleAccounts:
           type: integer
           description: Cash accounts whose gap could not be converted to base and are missing from gapBase
+    FxDriftAccount:
+      type: object
+      required: [accountId, name, currency, type, baselineDate, baselineBalance, baselineRate, currentBalance, currentRate, fxDeltaBase, activityDeltaBase, totalDeltaBase, lastTransactionDate, daysSinceLastTransaction]
+      properties:
+        accountId:
+          type: integer
+        name:
+          type: string
+        currency:
+          type: string
+        type:
+          type: string
+        baselineDate:
+          type: string
+          description: YYYY-MM-DD of the snapshot this account is measured from
+        baselineBalance:
+          type: number
+          description: Native balance stored in the baseline snapshot
+        baselineRate:
+          type: number
+          description: Native-to-base rate recorded on the baseline snapshot at capture time. Never re-derived.
+        currentBalance:
+          type: number
+          description: Native balance now
+        currentRate:
+          type: number
+          description: Native-to-base rate now
+        fxDeltaBase:
+          type: number
+          description: baselineBalance × (currentRate − baselineRate) — the part of the movement the user did not cause
+        activityDeltaBase:
+          type: number
+          description: (currentBalance − baselineBalance) × currentRate — the part the user did cause, priced at today's rate
+        totalDeltaBase:
+          type: number
+          description: fxDeltaBase + activityDeltaBase, equal to the change in base value over the period
+        # Nullable: an account may have no transactions at all.
+        lastTransactionDate:
+          type: ["string", "null"]
+          description: YYYY-MM-DD of the newest transaction on this account
+        # Nullable: null exactly when lastTransactionDate is null.
+        daysSinceLastTransaction:
+          type: ["integer", "null"]
+    FxDriftReport:
+      type: object
+      required: [status, baseCurrency, periodFrom, periodTo, days, dataAvailableSince, accounts, unmeasurableAccounts]
+      properties:
+        status:
+          type: string
+          enum: [ok, insufficient]
+        baseCurrency:
+          type: string
+        # Nullable: null when no account has a usable baseline.
+        periodFrom:
+          type: ["string", "null"]
+          description: Earliest baseline actually used, YYYY-MM-DD
+        periodTo:
+          type: string
+          description: Today, YYYY-MM-DD, server-local
+        days:
+          type: integer
+          description: periodTo − periodFrom in days; 0 when insufficient
+        # Nullable: null when no snapshots are held at all.
+        dataAvailableSince:
+          type: ["string", "null"]
+          description: Earliest snapshot date held for any account, measurable or not
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/FxDriftAccount"
+        unmeasurableAccounts:
+          type: integer
+          description: Accounts with no usable baseline — no snapshot before today, or no rate captured with it. Named so the UI can say what is missing instead of implying the drift is zero.
     Account:
       type: object
       required: [id, name, currency, balance, baseEquivalent, type, isWiseLinked, createdAt]

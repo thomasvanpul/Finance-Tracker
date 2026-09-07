@@ -500,3 +500,77 @@ checked again.**
 
 The general lesson is not about CSS. **An affordance that is wired is not an
 affordance that is visible, and only a screenshot tells you which you have.**
+
+## 15. The insight slot says one thing, and only if the user can act on it
+
+The slot is `components/phone/InsightSlot.tsx`; the selection contract is
+`lib/spending-insights.ts`. One insight or nothing — every producer returns
+`Insight | null`, all non-null results are ranked by priority, and the top one
+renders. Empty is the common case and it is correct, not a failure.
+
+### An insight the user cannot act on is not an insight
+
+This is the rule, and it has now been derived three times, so it lives here.
+
+It killed the big-day spending alert: *"you spent more on Saturday than any
+other day"* is true, is a real statistical fact about the rows, and there is
+nothing to do about it — Saturday has already happened.
+
+It killed *"an account with a balance but no transactions, so it cannot be
+reconciled"* (2026-09-07). Also true. It fires forever on exactly the accounts
+where it is correct and unfixable — a pension, a property, a loan. In the
+current data set that is 85% of net worth, triggering on day one and every day
+after, about a state the user cannot change.
+
+**An insight the user can never resolve is a permanent nag, and a slot that
+nags stops being read.** Once it stops being read, every future insight in it
+is wasted, including the ones that were worth saying. That is why the bar is
+this high for a surface this small.
+
+The test, in order:
+
+1. **Is it true?** Not "is the arithmetic right" — is the claim honest given
+   what the app actually knows. If the figure needs a baseline the app does not
+   hold, the answer is silence, never a synthesised one.
+2. **Can the user do something about it?** If not, it does not go in the slot.
+   It may still belong on a screen as a fact.
+3. **Will it stop?** An insight that re-fires every month on an unchanged
+   situation is the same nag arriving by instalments. Either it needs a
+   recurrence gate, a permanent dismissal, or it is not an insight.
+4. **Would you say it out loud?** A slot is a sentence a product says to a
+   person. "Your Saturday spend is 18% above your Wednesday spend" is not a
+   sentence anyone says.
+
+A producer that cannot answer all four is a panel that fires on trivia, and a
+panel that fires on trivia is the insight slot crying wolf.
+
+### The slot is one line each, and it does not wrap
+
+`InsightSlot` renders the headline and the body with `white-space: nowrap`
+and `text-overflow: ellipsis`. Nothing wraps and nothing grows — an overlong
+sentence is cut mid-word, and the reader is left with a half-claim. Measured
+on the rendered phone screen at 390px, 2026-09-07: **about 32 characters for
+the headline, about 45 for the body**.
+
+Three producers were written past that and truncated in place — *"3 accounts
+up £798.64 since 8 Aug without y…"*. Two consequences, both design rather
+than styling:
+
+- **The direction belongs in the headline.** *"£798.64 of the move was the
+  rate"* reads identically whether the rate rose or fell, which is the one
+  thing the sentence exists to settle. *"The rate added £798.64"* does not.
+- **The body carries the where and the when, not a second sentence.** If a
+  producer needs two sentences it is saying two things, and §15's first rule
+  is that the slot says one.
+
+### Silence is a statement
+
+Where a producer's data is missing rather than uninteresting, it returns null
+and the slot renders nothing. It does **not** say "not enough data yet" — the
+screen that owns the subject says that, in the place where the limitation
+matters. `lib/reconciliation-insight.ts` is the worked example: below the
+minimum history it is silent, and the desktop `/accounts` panel is where *"No
+balance snapshot has been taken"* is said.
+
+The same applies to a zero result. A reconciled ledger is not an insight; the
+slot exists for what Numeris does not know, and a gap of zero is not that.

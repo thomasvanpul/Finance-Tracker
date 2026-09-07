@@ -46,6 +46,7 @@ import type {
   DismissSubscriptionBody,
   DownloadBackup200,
   ErrorResponse,
+  FxDriftReport,
   FxRates,
   GetAdminOverviewParams,
   GetAdminWhoami200,
@@ -640,6 +641,106 @@ export function useGetAccountsReconciliation<TData = Awaited<ReturnType<typeof g
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetAccountsReconciliationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAccountsFxDriftUrl = () => {
+
+
+
+
+  return `/api/accounts/fx-drift`
+}
+
+/**
+ * Per account, between the earliest balance snapshot held for it
+(strictly before today) and now:
+
+  fxDeltaBase       = baselineBalance × (currentRate − baselineRate)
+  activityDeltaBase = (currentBalance − baselineBalance) × currentRate
+  totalDeltaBase    = fxDeltaBase + activityDeltaBase
+
+The two terms sum exactly to the change in base value, so a foreign
+account that has not been touched shows its whole movement as
+`fxDeltaBase` — the number no other screen states.
+
+The baseline rate is the one recorded on the snapshot at capture
+time. An account with no snapshot, no stored baseline rate, or no
+rate available today is counted in `unmeasurableAccounts` and
+omitted: today's rate is never applied backwards, because doing so
+would make `fxDeltaBase` zero by construction and report a real
+drift as no drift. `status` is `insufficient` when nothing is
+measurable.
+
+Unlike the reconciliation gap this covers ALL account types, not just
+cash — a foreign-currency property or pension is where the effect is
+largest.
+
+ * @summary How much of each account's change in base value was the exchange rate rather than the user
+ */
+export const getAccountsFxDrift = async ( options?: RequestInit): Promise<FxDriftReport> => {
+
+  return customFetch<FxDriftReport>(getGetAccountsFxDriftUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountsFxDriftQueryKey = () => {
+    return [
+    `/api/accounts/fx-drift`
+    ] as const;
+    }
+
+
+export const getGetAccountsFxDriftQueryOptions = <TData = Awaited<ReturnType<typeof getAccountsFxDrift>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountsFxDrift>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountsFxDriftQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountsFxDrift>>> = ({ signal }) => getAccountsFxDrift({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountsFxDrift>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountsFxDriftQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountsFxDrift>>>
+export type GetAccountsFxDriftQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary How much of each account's change in base value was the exchange rate rather than the user
+ */
+
+export function useGetAccountsFxDrift<TData = Awaited<ReturnType<typeof getAccountsFxDrift>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountsFxDrift>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountsFxDriftQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
