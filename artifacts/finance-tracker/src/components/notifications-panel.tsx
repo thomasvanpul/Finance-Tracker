@@ -98,10 +98,20 @@ function getLast7DaysFrom(): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Settings writes this key (pages/settings.tsx). It used to write
+// "ft-alert-rules" while this read "nr-alert-rules", so every threshold saved
+// in that panel was inert; the panel now writes here and migrates the old key.
+//
+// `enabled` is the panel's "Enable smart alerts" master switch. It is read
+// here because a switch that does not switch anything off is a lie
+// (DESIGN.md §16) — it defaults to true, so an unconfigured device is
+// unaffected.
 function loadAlertRules() {
-  const defaults = { largeTxThreshold: 500, budgetWarningPct: 80 };
+  const defaults = { largeTxThreshold: 500, budgetWarningPct: 80, enabled: true };
   try {
-    const raw = localStorage.getItem("nr-alert-rules");
+    // The legacy key is a read-only fallback so the dashboard is not blind
+    // until settings is next opened; settings owns the write that migrates it.
+    const raw = localStorage.getItem("nr-alert-rules") ?? localStorage.getItem("ft-alert-rules");
     if (!raw) return defaults;
     return { ...defaults, ...(JSON.parse(raw) as Partial<typeof defaults>) };
   } catch {
@@ -136,6 +146,7 @@ export function useAlerts() {
   const currentUserId = session?.user?.id ?? null;
 
   const alerts = useMemo<Alert[]>(() => {
+    if (!alertRules.enabled) return [];
     const result: Alert[] = [];
 
     if (budgets.length > 0 && monthTxs) {

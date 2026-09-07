@@ -42,7 +42,17 @@ import {
 const WARDROBE_PHASES: Phase[] = ["idle", "sitting", "coffee", "thinking", "dancing", "complaining", "tired", "jumping", "lying"];
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
-const ALERT_RULES_KEY = "ft-alert-rules";
+// The alert thresholds. Two consumers read these — the notifications panel and
+// the dashboard smart-alerts widget — and both have always read "nr-alert-rules"
+// while this panel wrote "ft-alert-rules". Seven thresholds saved here reached
+// nothing at all (DESIGN.md §16).
+//
+// The panel now writes the key the consumers read. The legacy key is read once,
+// when the new one is absent, and is then left in place rather than deleted:
+// someone configured this panel, and the honest repair is to carry the
+// configuration across, not to remove the evidence that they set it.
+const ALERT_RULES_KEY = "nr-alert-rules";
+const LEGACY_ALERT_RULES_KEY = "ft-alert-rules";
 const DENSITY_KEY = "ft-density";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -233,8 +243,15 @@ const DEFAULT_ALERT_RULES: AlertRules = {
 function loadAlertRules(): AlertRules {
   try {
     const raw = localStorage.getItem(ALERT_RULES_KEY);
-    if (!raw) return { ...DEFAULT_ALERT_RULES };
-    return { ...DEFAULT_ALERT_RULES, ...JSON.parse(raw) };
+    if (raw) return { ...DEFAULT_ALERT_RULES, ...JSON.parse(raw) };
+    // One-time migration off the key this panel used to write. Reading it is
+    // the whole point — a device that configured these thresholds before the
+    // rename keeps them, and the next save writes the new key.
+    const legacy = localStorage.getItem(LEGACY_ALERT_RULES_KEY);
+    if (!legacy) return { ...DEFAULT_ALERT_RULES };
+    const migrated = { ...DEFAULT_ALERT_RULES, ...JSON.parse(legacy) };
+    localStorage.setItem(ALERT_RULES_KEY, JSON.stringify(migrated));
+    return migrated;
   } catch { return { ...DEFAULT_ALERT_RULES }; }
 }
 

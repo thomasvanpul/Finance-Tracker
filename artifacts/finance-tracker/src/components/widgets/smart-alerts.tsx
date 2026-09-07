@@ -67,10 +67,14 @@ function getLast7DaysFrom(): string {
   return d.toISOString().slice(0, 10);
 }
 
+// Same key, same reason as components/notifications-panel.tsx — settings
+// writes it, this reads it, and `enabled` is the panel's master switch.
 function loadAlertRules() {
-  const defaults = { largeTxThreshold: 500, budgetWarningPct: 80 };
+  const defaults = { largeTxThreshold: 500, budgetWarningPct: 80, enabled: true };
   try {
-    const raw = localStorage.getItem("nr-alert-rules");
+    // The legacy key is a read-only fallback so the dashboard is not blind
+    // until settings is next opened; settings owns the write that migrates it.
+    const raw = localStorage.getItem("nr-alert-rules") ?? localStorage.getItem("ft-alert-rules");
     if (!raw) return defaults;
     return { ...defaults, ...JSON.parse(raw) };
   } catch { return defaults; }
@@ -207,6 +211,7 @@ export function SmartAlertsWidget() {
   const { data: budgets = [] } = useListBudgets();
 
   const alerts = useMemo<Alert[]>(() => {
+    if (!alertRules.enabled) return [];
     const result: Alert[] = [];
 
     if (budgets.length > 0 && monthTxs) {
