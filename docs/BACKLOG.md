@@ -436,7 +436,17 @@ renderer for a decorative avatar is real battery and bundle cost.
 
 ## G. Smaller items
 
-- **G14 · Alert rules are saved to a key nothing reads — CONFIRMED 7 Sep 2026.**
+- **G14 · Alert rules are saved to a key nothing reads — FIXED 7 Sep 2026 (`e71e77e`).**
+  Migrated rather than deleted: settings now writes `nr-alert-rules`, reads
+  `ft-alert-rules` once when the new key is absent to carry an existing
+  configuration across, and leaves the old key in place. Both consumers fall
+  back to the legacy key on read so a device that has not opened settings is
+  not blind in the meantime. The `enabled` master switch is now honoured by
+  both engines. Verified in the browser: seeded the legacy key alone with
+  {12, 37, 44, 5, 9} and the panel renders 12 · 44 · 37 · 5 · 9 with the new
+  key written. **Five thresholds remain inert — see G17.** The record of the
+  defect follows.
+- **G14 (original finding) · CONFIRMED 7 Sep 2026.**
   `pages/settings.tsx:45` writes `ft-alert-rules`; the two consumers,
   `components/notifications-panel.tsx:104` and
   `components/widgets/smart-alerts.tsx:73`, both read `nr-alert-rules`. Seven
@@ -449,6 +459,41 @@ renderer for a decorative avatar is real battery and bundle cost.
   **Needs a decision, not a rename:** aligning the key would silently activate
   every rule a user has already saved. Either migrate deliberately, or delete
   the panel.
+- **G16 · `lib/learn-xp.ts` is dead, and its keys say so — CONFIRMED 7 Sep 2026.**
+  Found by `lib/storage-key-lock.test.ts`, which flags `nr-learn-progress` and
+  `nr-cat-rules` as read by nothing that writes them. Both reads are in
+  `learn-xp.ts`. `nr-learn-progress` (`:147`) is written nowhere at all;
+  `nr-cat-rules` (`:169`) carries the comment *"Reads the same localStorage key
+  auto-cat.ts writes to"* while `auto-cat.ts` writes `ft-cat-rules` — a prefix
+  twin, the same shape as G14. The module exports `getLearnXP`,
+  `getCatRulesXP`, `getMaintenanceLocalXP` and three XP constants, and **no
+  non-test file imports any of them**; ten tests in `learn-xp.test.ts` keep it
+  alive. Its own comment points at `hooks/use-total-xp.ts`, which does not
+  exist. One decision — wire it up or delete the module, its tests and both
+  keys — not two key fixes. Both keys are allowlisted in the lock test until
+  it is made.
+- **G17 · Five of the seven alert thresholds still reach nothing — CONFIRMED
+  7 Sep 2026.** After the G14 migration the two alert engines read
+  `largeTxThreshold` and `budgetWarningPct` and nothing else. `savingsRateMin`,
+  `categorySpikeAlertPct`, `budgetHardStop`, `goalBehindMonths` and
+  `billReminderDays` are still entered, saved and unread — `DESIGN.md` §16
+  applies to a field of a stored object exactly as it does to a key, and the
+  storage-key lock cannot see this because it works at key granularity. Each
+  needs a decision about what it should mean in the alert engine, not a
+  rename; the engines already compute savings rate, category spikes, budget
+  overspend, goal pace and bill dates, so the thresholds have somewhere
+  obvious to land. Deleting the five controls is the other honest ending.
+- **G18 · `first-run-flow-shot.ts` leaked a user per pass — FIXED 7 Sep 2026.**
+  The screenshot harness signs up four fresh accounts per run (tags a, b, c, m)
+  and had no cleanup of any kind. Thirty-three `firstrun-*@numeris.local`
+  accounts were found on the Neon dev branch from runs on 6 Sep between 17:22
+  and 17:55, and removed through the app's own `POST /api/account/delete`
+  rather than by SQL, so the real cascade ran. The script now records every
+  address it creates and deletes them at the end and on `uncaughtException` /
+  `unhandledRejection`; `authed()` throws instead of calling `process.exit(1)`
+  so an auth failure no longer skips cleanup. Note for the record: the
+  account-deletion integration test was suspected and is not the cause — it
+  cleans up correctly and left no rows.
 - **G15 · Print blur does not survive a reload — CONFIRMED 7 Sep 2026.**
   "Hide amounts when printing" injects `<style id="nr-print-style">` inside its
   click handler only (`pages/settings.tsx:1105`, `pages/profile.tsx:775`).
