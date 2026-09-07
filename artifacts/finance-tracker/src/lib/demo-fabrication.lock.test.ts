@@ -138,8 +138,8 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // toggled by the user, and no financial value is invented.
   { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1555, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
   { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1557, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 771, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 772, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 767, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 768, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
 
 const ALLOWLIST_B: readonly AllowEntry[] = [
@@ -161,7 +161,6 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the
   // "already at cap" branch. Non-money literal (percentage points).
   { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", line: 1021, reason: "milestone progress cap: no next milestone → 100% (all reached)" },
-  { path: "artifacts/finance-tracker/src/lib/learn-xp.ts", line: 28, reason: "XP progress cap: no next tier → 100% (at cap)" },
   { path: "artifacts/finance-tracker/src/pages/analytics-helpers.ts", line: 36, reason: "pct-change fallback: curr === 0 branch returns 0; else 100 (∞ growth from 0 baseline)" },
   { path: "artifacts/finance-tracker/src/pages/fire.tsx", line: 375, reason: "coast-FIRE progress cap: coastNeeded <= 0 → 100% (already coasted)" },
   // pension.tsx:285 and :389 were the "100% bar when target undefined"

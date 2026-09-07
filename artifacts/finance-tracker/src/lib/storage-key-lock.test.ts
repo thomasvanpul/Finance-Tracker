@@ -117,12 +117,6 @@ const UNRESOLVED_SITES = new Set([
 
 // ── A · read with no writer ────────────────────────────────────────────────
 const READ_WITHOUT_WRITER = new Map<string, string>([
-  // BACKLOG G16. `lib/learn-xp.ts` is imported by nothing but its own tests,
-  // and the hook its comment names (`hooks/use-total-xp.ts`) does not exist.
-  // Both of its keys are dead for that reason rather than by intent, and the
-  // module is one decision — wire it up or delete it — not two key fixes.
-  ["nr-learn-progress", "learn-xp.ts, module unreferenced — BACKLOG G16"],
-  ["nr-cat-rules", "learn-xp.ts, prefix twin of ft-cat-rules — BACKLOG G16"],
   // Deliberate, and the reason this file exists. The settings alert panel used
   // to write this key while both consumers read "nr-alert-rules". It now writes
   // the key they read and reads this one once to carry an existing

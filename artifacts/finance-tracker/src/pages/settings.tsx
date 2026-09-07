@@ -69,10 +69,7 @@ type NavItem =
 interface AlertRules {
   largeTxThreshold: number;
   budgetWarningPct: number;
-  savingsRateMin: number;
-  categorySpikeAlertPct: number;
   budgetHardStop: boolean;
-  goalBehindMonths: number;
   billReminderDays: number;
   enabled: boolean;
 }
@@ -235,8 +232,7 @@ function applyDensity(d: Density) {
 }
 
 const DEFAULT_ALERT_RULES: AlertRules = {
-  largeTxThreshold: 500, budgetWarningPct: 80, savingsRateMin: 10,
-  categorySpikeAlertPct: 50, budgetHardStop: false, goalBehindMonths: 2,
+  largeTxThreshold: 500, budgetWarningPct: 80, budgetHardStop: true,
   billReminderDays: 3, enabled: true,
 };
 
@@ -2788,12 +2784,6 @@ export default function Settings() {
                 <Input type="number" min={0} value={alertRules.largeTxThreshold} onChange={e => setAlertRules(p => ({ ...p, largeTxThreshold: Number(e.target.value) }))} className="pnum" style={{ width: 100, fontFamily: "var(--font-mono)", fontSize: 11 }} />
               </HStack>
             </SettingsInputRow>
-            <SettingsInputRow title="Category spike alert" sub="Alert when a category is X% above last month">
-              <HStack gap={6} align="center">
-                <Input type="number" min={1} max={500} value={alertRules.categorySpikeAlertPct} onChange={e => setAlertRules(p => ({ ...p, categorySpikeAlertPct: Number(e.target.value) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
-                <Text as="span" size={11} color="var(--ft-muted)">% above last month</Text>
-              </HStack>
-            </SettingsInputRow>
             <PanelHeader>Budget Alerts</PanelHeader>
             <SettingsInputRow title="Budget warning threshold" sub="Show warning when budget used above this %">
               <HStack gap={6} align="center">
@@ -2802,13 +2792,6 @@ export default function Settings() {
               </HStack>
             </SettingsInputRow>
             <SettingsToggleRow title="Overspend warning" sub="Warn when you've exceeded a budget category" on={alertRules.budgetHardStop} onChange={v => setAlertRules(p => ({ ...p, budgetHardStop: v }))} />
-            <PanelHeader>Goal Alerts</PanelHeader>
-            <SettingsInputRow title="Months behind alert" sub="Alert when X months behind on a savings goal">
-              <HStack gap={6} align="center">
-                <Input type="number" min={1} max={24} value={alertRules.goalBehindMonths} onChange={e => setAlertRules(p => ({ ...p, goalBehindMonths: Math.max(1, Number(e.target.value)) }))} className="pnum" style={{ width: 80, fontFamily: "var(--font-mono)", fontSize: 11 }} />
-                <Text as="span" mono size={11} color="var(--ft-muted)">months</Text>
-              </HStack>
-            </SettingsInputRow>
             <PanelHeader>Bill Reminders</PanelHeader>
             <SettingsInputRow title="Bill reminder days" sub="Remind X days before a bill is due">
               <HStack gap={6} align="center">

@@ -648,7 +648,8 @@ function EmptyState({
       </div>
       <div
         style={{
-          fontFamily: "var(--font-mono)",
+          // DESIGN.md §10 — a sentence, so sans.
+          fontFamily: "var(--font-sans)",
           fontSize: 10,
           color: "var(--ft-dim)",
           maxWidth: 360,

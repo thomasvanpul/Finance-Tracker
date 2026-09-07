@@ -27,7 +27,7 @@ export type KeyClass = "account" | "device" | "server-cache" | "local-cache" | "
 export const ACCOUNT_LEVEL_KEYS: readonly string[] = [
   // transactions and categorisation
   "ft-tx-notes", "ft-tx-tags", "ft-tx-templates",
-  "ft-cat-rules", "nr-cat-rules", "ft-category-meta", "nr-custom-categories",
+  "ft-cat-rules", "ft-category-meta", "nr-custom-categories",
   "nr-tx-default-type", "nr-tx-default-currency", "nr-tx-default-category",
   "nr-recurring-rules", "nr-import-history",
   // accounts, debts, net worth, cash flow
@@ -35,7 +35,7 @@ export const ACCOUNT_LEVEL_KEYS: readonly string[] = [
   "numeris:cashflow:multipliers", "nr-fx-overrides",
   // budgets, goals, savings, health
   "ft-budget-rollover", "ft-budget-rollover-month", "ft-savings-target",
-  "ft-achievements", "ft-health-score-history", "nr-learn-progress",
+  "ft-achievements", "ft-health-score-history",
   // investments and markets
   "ft-tickers", "ft-watchlists", "ft-price-alerts", "ft-inv-classes", "ft-inv-orders",
   "ft-rebalance-targets", "ft-portfolio-snapshots", "ft-options-positions", "ft-futures-positions",

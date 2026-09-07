@@ -107,7 +107,16 @@ function getLast7DaysFrom(): string {
 // (DESIGN.md §16) — it defaults to true, so an unconfigured device is
 // unaffected.
 function loadAlertRules() {
-  const defaults = { largeTxThreshold: 500, budgetWarningPct: 80, enabled: true };
+  const defaults = {
+    largeTxThreshold: 500, budgetWarningPct: 80, enabled: true,
+    // Both of these were hardcoded in the loop below while the settings
+    // panel saved a value nobody read (BACKLOG G17). The defaults match
+    // what the code used to hardcode, so an unconfigured device is
+    // unaffected. `budgetHardStop` defaults true because the exceeded-
+    // budget alert already fired unconditionally — defaulting it false
+    // would silently switch off an alert every existing user gets.
+    billReminderDays: 3, budgetHardStop: true,
+  };
   try {
     // The legacy key is a read-only fallback so the dashboard is not blind
     // until settings is next opened; settings owns the write that migrates it.
@@ -161,6 +170,11 @@ export function useAlerts() {
         const total = spent[key] ?? 0;
         const pct = total / budget.monthlyLimit;
         if (pct >= 1) {
+          // Gated by the panel's "Overspend warning" toggle. Off means no
+          // alert for an exceeded budget — deliberately not a fall-through
+          // to the warn branch below, which would still warn and so make
+          // the toggle a lie (DESIGN.md §16).
+          if (!alertRules.budgetHardStop) continue;
           result.push({
             id: `budget-critical-${key}`,
             level: "critical",
@@ -199,11 +213,13 @@ export function useAlerts() {
 
     if (upcoming) {
       const now = new Date();
-      const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const horizon = new Date(
+        now.getTime() + alertRules.billReminderDays * 24 * 60 * 60 * 1000
+      );
       for (const item of upcoming) {
         if (item.status === "paid") continue;
         const due = new Date(item.dueDate);
-        if (due <= in3Days && due >= now) {
+        if (due <= horizon && due >= now) {
           result.push({
             id: `upcoming-${item.id}`,
             level: "warn",

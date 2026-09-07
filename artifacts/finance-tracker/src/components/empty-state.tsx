@@ -14,12 +14,17 @@ export function EmptyState({ title, description, action, fill = true, minHeight 
         textAlign: "center",
         border: "1px solid var(--ft-border)",
         background: "var(--ft-surface)",
-        fontFamily: "var(--font-mono)",
+        // DESIGN.md §10: an empty state is copy a reader reads, not a value
+        // scanned against its neighbours. The title below keeps mono because
+        // it is a short uppercase legend; the description and the button
+        // label are language and inherit sans from here.
+        fontFamily: "var(--font-sans)",
         ...(fill ? { minHeight: minHeight ?? "40vh", display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center" } : {}),
       }}
     >
       <div
         style={{
+          fontFamily: "var(--font-mono)",
           fontSize: 11,
           fontWeight: 700,
           color: "var(--ft-dim)",
@@ -48,7 +53,7 @@ export function EmptyState({ title, description, action, fill = true, minHeight 
           type="button"
           onClick={action.onClick}
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             letterSpacing: "0.08em",
             textTransform: "uppercase",

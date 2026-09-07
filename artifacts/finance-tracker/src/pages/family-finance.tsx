@@ -329,17 +329,19 @@ function EmptyPanel({
         alignItems: "center",
         justifyContent: "center",
         gap: 8,
+        // No frame and no fill: this sits inside a panel that already
+        // draws both. A second four-sided border inset from the parent's
+        // reads as two boxes for one region — the shape behind the
+        // "everything is in boxes" complaint. The panel bounds it.
         padding: "32px 20px",
-        border: "1px dashed var(--ft-border2)",
-        borderRadius: 2,
         textAlign: "center",
-        background: "var(--ft-surface)",
       }}
     >
       {Icon && <Icon size={22} style={{ color: "var(--ft-border2)", marginBottom: 2 }} />}
       <p
         style={{
-          fontFamily: "var(--font-mono)",
+          // DESIGN.md §10 — empty-state copy is language, so sans.
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-muted)",
           margin: 0,
@@ -348,7 +350,7 @@ function EmptyPanel({
         {text}
       </p>
       {subtext && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", margin: 0 }}>
+        <p style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", margin: 0 }}>
           {subtext}
         </p>
       )}
@@ -1702,7 +1704,8 @@ export default function FamilyFinance() {
         {members.length === 0 ? (
           <div
             style={{
-              fontFamily: "var(--font-mono)",
+              // DESIGN.md §10 — a sentence, so sans.
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: "var(--ft-dim)",
               padding: "12px 0",
@@ -1817,7 +1820,8 @@ export default function FamilyFinance() {
         {members.length === 0 ? (
           <div
             style={{
-              fontFamily: "var(--font-mono)",
+              // DESIGN.md §10 — a sentence, so sans.
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: "var(--ft-dim)",
               padding: "12px 0",

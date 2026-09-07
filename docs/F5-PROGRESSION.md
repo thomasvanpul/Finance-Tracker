@@ -1,5 +1,29 @@
 # F5 · Progression — proposal and refusals
 
+> **STATUS: NOT BUILT. Code removed 7 Sep 2026 (BACKLOG G16).**
+>
+> This document ends "Refusals hold. Building." — the gate passed, but the
+> feature was never wired. `lib/learn-xp.ts` sat in the tree for weeks with
+> the LEVELS table, THEME_REWARDS and three XP constants, imported by nothing
+> but its own ten tests, reading two localStorage keys nothing wrote (one of
+> them `nr-cat-rules`, a prefix twin of `auto-cat.ts`'s `ft-cat-rules`). The
+> hook this doc's earning events imply, `hooks/use-total-xp.ts`, never
+> existed. Deleted rather than wired: wiring it means building F5, and that
+> was not asked for.
+>
+> Deleted with it: `lib/f5-refusals.test.ts`, the source-level lock that
+> enforced the refusals below. **This is the deliberate decision that lock
+> was designed to force** — its discovery guard asserted `lib/learn-xp.ts`
+> must exist precisely so the XP surface could not be emptied quietly. With
+> no XP code in the tree it had nothing to scan, and a lock that scans
+> nothing is the "tests make it look maintained" failure one layer up.
+>
+> **If F5 is ever built, restore that lock in the same commit as the first
+> XP file.** The refusals below are not withdrawn — they are unenforced,
+> which is a different and more dangerous state. Recover the lock from
+> git history rather than rewriting it: `git log --diff-filter=D --
+> artifacts/finance-tracker/src/lib/f5-refusals.test.ts`.
+
 Written before code as a gate: if the refusals below cannot be stated
 convincingly, the mechanic is wrong and F5 does not ship.
 
