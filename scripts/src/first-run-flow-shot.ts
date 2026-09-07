@@ -20,11 +20,69 @@ const API = 'http://localhost:3001';
 const OUT = '/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots';
 const PASSWORD = 'Numeris-Dev-FirstRun-2026!';
 
+const browser = await chromium.launch();
+
+// Every account this script signs up, so the cleanup at the bottom can delete
+// them. Recorded here rather than at each call site because the leak this
+// fixes came from exactly that: four sign-ups, no list of them anywhere, and
+// nothing to delete them by. A new pass added later is cleaned up for free.
+const created: string[] = [];
+
 function freshEmail(tag: string): string {
-  return `firstrun-${tag}-${Date.now()}@numeris.local`;
+  const email = `firstrun-${tag}-${Date.now()}@numeris.local`;
+  created.push(email);
+  return email;
 }
 
-const browser = await chromium.launch();
+// Deletes every account this run created, through the app's own deletion
+// endpoint rather than by touching the database — the same path a user takes,
+// so the cascade is the real one and nothing is left behind in the 25 tables
+// that carry a userId.
+//
+// This runs on the failure paths too. Thirty-three of these accounts were
+// found on the dev branch on 7 Sep 2026 from runs on 6 Sep; a script that
+// leaks only when it aborts leaks just as permanently as one that never
+// cleaned up at all.
+async function cleanupCreatedUsers(): Promise<void> {
+  if (created.length === 0) return;
+  let gone = 0;
+  for (const email of created.splice(0)) {
+    try {
+      const ctx = await browser.newContext();
+      const signIn = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
+        headers: { 'Content-Type': 'application/json', 'Origin': FRONTEND },
+        data: { email, password: PASSWORD },
+      });
+      if (signIn.ok()) {
+        const del = await ctx.request.post(`${API}/api/account/delete`, {
+          headers: { 'Content-Type': 'application/json', 'Origin': FRONTEND },
+          data: { email },
+        });
+        if (del.ok()) gone += 1;
+        else console.error('cleanup: delete failed for', email, del.status(), await del.text());
+      } else {
+        console.error('cleanup: sign-in failed for', email, signIn.status());
+      }
+      await ctx.close();
+    } catch (e) {
+      console.error('cleanup: threw for', email, e instanceof Error ? e.message : e);
+    }
+  }
+  console.log(`\ncleanup: deleted ${gone} of ${gone + created.length} account(s) this run created`);
+}
+
+// An abort must still clean up. Without these the script leaks on every failed
+// assertion, which is how the strays accumulated.
+for (const signal of ['uncaughtException', 'unhandledRejection'] as const) {
+  process.on(signal, async (err) => {
+    console.error(`\n${signal}:`, err);
+    await cleanupCreatedUsers().catch(() => {});
+    await browser.close().catch(() => {});
+    process.exit(1);
+  });
+}
+
+
 
 // Proxies /api/** from the Vite origin to the API server, carrying the
 // context's cookies. Same shape as onboarding-shot.ts.
@@ -64,7 +122,7 @@ async function authed(email: string, mode: 'sign-up' | 'sign-in'): Promise<Brows
       ? { email, password: PASSWORD, name: 'First Run' }
       : { email, password: PASSWORD },
   });
-  if (!res.ok()) { console.error(mode, 'failed', res.status(), await res.text()); process.exit(1); }
+  if (!res.ok()) throw new Error(`${mode} failed ${res.status()} ${await res.text()}`);
   const cookies = await ctx.cookies();
   await ctx.clearCookies();
   await ctx.addCookies(cookies.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
@@ -335,5 +393,6 @@ const emailB = freshEmail('b');
   await ctx.close();
 }
 
+await cleanupCreatedUsers();
 await browser.close();
 console.log('\ndone');
