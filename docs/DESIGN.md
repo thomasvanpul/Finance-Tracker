@@ -126,17 +126,60 @@ not folded into a primitive.
 
 ## 5. Tables and grids of cells
 
-`gap: 1px` over a `var(--ft-border)` background to fake cell rules is
-banned. Where cells are columns of one table, draw explicit column rules:
-`border-right: 1px solid var(--ft-border)` on each cell but the last, and a
-`border-bottom` on each row.
+Two different things wear the word "cell", and this section got them
+confused for five design rounds. Separate them first.
 
-**Why:** the gap trick paints border colour through every gap including the
-outer edge, doubles up against the panel frame, and breaks the moment one
-cell has a different background. Explicit rules are the same pixel count and
-survive every theme.
+**A table** is a run of records — transactions, disposals, holdings,
+subscriptions. It has a header, many rows, and the same meaning down each
+column. A table draws rules: `border-bottom` on each row, and column rules
+where the columns would otherwise run together. `gap: 1px` over a
+`var(--ft-border)` background to fake those rules is still banned — it
+paints border colour through every gap including the outer edge, doubles up
+against the panel frame, and breaks the moment one cell has a different
+background. Draw them explicitly. Table header and total rules are 1px, not
+2px (`cc81351`).
 
-Table header and total rules are 1px, not 2px (`cc81351`).
+**A KPI grid is not a table.** Four to eight figures with a label above each
+one, sitting inside a panel, is a strip of readings, not a set of records.
+**Inside a framed panel a KPI cell has no border of any kind** — no
+`border-right`, no `border-bottom`, no divider row, and no band fill either.
+Label above, figure below, aligned on a grid, separated by a column gap
+(14–18px at desktop widths). The panel frame is the only line. If the
+numbers stop reading as columns the gap is too small; the rules do not come
+back.
+
+**This entry used to say the opposite, and that was wrong** (corrected
+2026-09-08). It required explicit `border-right` on every cell but the last,
+which is what `.ft-kpi-bar-cell` and the deleted `.ft-cellrules` family
+implemented across fourteen pages. It is **the single largest source of the
+boxed reading** Thomas reported — "everything is in boxes" — five rounds
+running.
+
+**Why the correction:** the earlier rule was written about the gap *trick*
+and quietly generalised into a rule about cells. Every round after that
+changed the *mechanism* and kept the lines: `gap: 1px` over a border-coloured
+background became explicit `border-right`, then a `.ft-cellrules` utility
+with per-breakpoint restatements — new code, identical pixels. The
+frame-in-frame pass removed *outer* frames and never touched the internal
+grids. Ten ruled cells inside one framed panel are ten boxes however the
+lines are produced, and `NET WORTH` was drawing exactly ten.
+
+A real terminal does not draw them. Bloomberg holds dense numbers in columns
+with alignment and whitespace, and the pane's own edge is the only rule.
+
+A ruled caption row is the same defect lying down: `AS OF 00:48` was a band
+with a rule above and below it, between two strips of figures. A caption is
+not a row — put it with what it qualifies, carrying no rule.
+
+A band fill is the same defect with the border taken out: a `--ft-raised`
+strip inside a `--ft-surface` panel is a box drawn without a line, and on the
+light themes it read as the strongest rectangle in the widget. Hover tints
+are an affordance and stay; the at-rest fill goes.
+
+**Still allowed, and not covered by this:** row rules inside a genuine table;
+the dividers inside a segmented control or button group, which are part of a
+control rather than of the data; and a single hairline *under* a strip to
+seat it against what follows (§ 6).
 
 ## 6. Three species of surface
 
