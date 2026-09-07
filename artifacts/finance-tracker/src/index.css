@@ -1318,14 +1318,14 @@ input[type="checkbox"]:checked {
     background: linear-gradient(to right, transparent, var(--ft-base));
   }
 
-  /* Insights grid → single col */
-  /* Clamp insight text to 2 lines — prevents tall cards from long sentences */
-  .ft-dashboard-insights > div > :last-child {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+  /* Insights grid → single col.
+
+     The 2-line clamp that used to live here is gone (2026-09-07). It cut
+     an insight mid-sentence to keep the card short, which is the same
+     defect as an ellipsised figure: the reader is left with a half-claim
+     and no way to tell there was more. The insight prompt now asks for an
+     explanation rather than an 8-word clause, so the card grows to fit
+     what it was given. */
 
   /* Show mobile bottom nav */
   .ft-mobile-nav {

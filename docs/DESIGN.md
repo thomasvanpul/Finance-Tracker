@@ -36,6 +36,12 @@ drawn: the `PanelBox` primitive (`components/primitives/panel-box.tsx`),
 `.ft-panel`, and `.ft-widget-frame` (both in `index.css`). Use `PanelBox`
 in new code. Do not add a fourth.
 
+**A panel is a widget, not the page.** §6 splits permanent surfaces into
+structure and widgets; this section governs widgets. Page structure — the
+KPI strip, a section label over a run of rows — is not framed at all and
+never adopts one of the three implementations above. Ask §6's question
+first, then come here.
+
 **Why:** the frame is what says "this is one object". For three cycles the
 boxes were drawn at the wrong level — a border around the grid but not the
 widget, or around the widget only when hovered — and the page read as an
@@ -53,6 +59,13 @@ split").
 
 One component: `PanelHeader` (`components/primitives/panel-header.tsx`). It
 sits **inside** the frame as the frame's first internal rule.
+
+Unframed structure (§6) uses `SectionRule`
+(`components/primitives/section-rule.tsx`) instead: the same label at the
+same size with the same hairline beneath it, but no horizontal inset, so the
+label and the content under it align to the page's content edge. A
+`PanelHeader` floating above unframed content is a bug — it draws a lid with
+no box.
 
 - Title: `.ft-panel-label` — `var(--font-head)` (Plex Sans), 12px, weight
   600, `letter-spacing: 0.07em`, uppercase, `var(--ft-text)`.
@@ -125,16 +138,45 @@ survive every theme.
 
 Table header and total rules are 1px, not 2px (`cc81351`).
 
-## 6. Ephemeral and permanent surfaces
+## 6. Three species of surface
 
-Two kinds of surface, and they must look like two kinds.
+There are three kinds of thing on a screen, and they must look like three
+kinds. Until 2026-09-07 there were two names in this spec and one costume:
+everything wore the 1px frame with a header inside it, so a reader could not
+tell the page's own structure from an object sitting on the page. Thomas said
+"everything is in boxes" four times before it was measured.
 
-**Permanent** — anything that *is* the page: panels, tables, tiles, rows,
-the shell. Flat, square, `1px var(--ft-border)`, `var(--ft-surface)`. §1.
+The test is a single question: **if the user could remove this, what would be
+left?**
 
-**Ephemeral** — anything that floats above the page and will leave: toasts,
-the undo banner, the install prompt, the AI insight card, popovers, menus,
-confirmation sheets. These get **elevation and radius**:
+**Structure** — it *is* the page. The KPI strip and its CUSTOMIZE control,
+`WHAT CHANGED`, the page identifier, a section heading over a run of rows.
+Not movable, not dismissible, not a thing the user owns. **Structure is not
+framed at all.** No border box, no `--ft-surface` fill; it sits on
+`--ft-base` and is separated by rules and spacing:
+
+- a hairline `1px solid var(--ft-border)` **under** a section label, or
+  **between** cells in a strip, or **beneath** a strip to seat it against
+  what follows — never all four sides;
+- `SectionRule` (`components/primitives/section-rule.tsx`), not
+  `PanelHeader`. `PanelHeader` is a panel's internal rule and only ever
+  appears inside a frame (§2);
+- content aligns to the page's content edge, so there is no inset gutter
+  implying a container.
+
+A frame says "this is one object". Structure is not an object, and drawing
+it as one is what produced the stack of identical rectangles.
+
+**Widget** — an object the user owns: NET WORTH, SAVINGS GOALS, ACCOUNTS,
+the FLOW DIAGRAM. Draggable in customize mode, removable, re-orderable.
+**The widget keeps the frame**, exactly as §1 specifies — flat, square,
+`1px var(--ft-border)`, `var(--ft-surface)`, `PanelHeader` inside it. The
+frame is what makes the drag target legible and what tells the reader this
+is a thing that can go away because they said so.
+
+**Ephemeral** — it floats above the page and will leave on its own or by a
+`×`: toasts, the undo banner, the install prompt, the AI insight card,
+popovers, menus, confirmation sheets. These get **elevation and radius**:
 
 ```
 .ft-float {
@@ -159,11 +201,24 @@ Mobile Amendment already permits elevation on floating surfaces below 768px;
 and leave. A panel that adopts `.ft-float` to look important is a violation
 of §1, not an exception under §6.
 
+Ephemeral is **not** a message. Thomas: "more like a notification, temporary
+— but don't make it look like a message." No bubble, no tail, no avatar, no
+alignment to one side, no chat affordance of any kind. The difference from a
+widget is elevation and a lighter fill, and that is the whole of it.
+
 **Why:** Thomas, on the AI insights card: "should be seen as a widget more
 like something temporary that popped in, so we gotta make it look like
 that." He raised the same point about toasts and the install prompt weeks
 earlier. Until 2026-09-05 all four were drawn exactly like the panels around
 them, so a reader could not tell what would still be there after a reload.
+
+**Why the third species:** because the first two were the same costume. On
+the 2026-09-07 arctic dashboard, six full-width rectangles stacked down the
+page — KPI strip, WHAT CHANGED, QUICK START, ACCOUNTS, RECENT
+TRANSACTIONS, SPENDING BREAKDOWN — all 1px `--ft-border` on
+`--ft-surface`, all with a header inside. Two of the six were the page
+itself. The fix that makes the most difference here *removes* boxes rather
+than adding a treatment to them.
 
 ## 7. Numbers
 

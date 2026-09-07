@@ -31,6 +31,23 @@ export interface AttributionRow {
   detail: string;
   /** §14: a figure computed from rows opens those rows. */
   drillHref: string;
+  /**
+   * The accounts behind this row, one line each, already sorted by
+   * magnitude by the API. The report has always carried these; until
+   * 2026-09-07 the band collapsed them into `detail` ("3 currencies") and
+   * threw the rest away, so a two-part month rendered as two lines and
+   * looked like the surface had nothing to say. Empty when the row is a
+   * single account — the row itself already names it.
+   */
+  breakdown: AttributionBreakdownLine[];
+}
+
+export interface AttributionBreakdownLine {
+  /** The account, plus the evidence particular to it where there is any. */
+  label: string;
+  amountBase: number;
+  /** §14 again: each sub-line opens the account it names. */
+  drillHref: string;
 }
 
 /**
@@ -78,9 +95,46 @@ function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
 
+/**
+ * One line per account behind a part. Suppressed when the part has a single
+ * account, because the row's own `detail` already names it and repeating it
+ * underneath would be two lines saying one thing.
+ *
+ * Capped: past six the band stops being a summary. The cap is stated in the
+ * tail line rather than silently dropping accounts, because a total that
+ * does not visibly add up is the defect this whole surface exists to avoid.
+ */
+const BREAKDOWN_MAX = 6;
+
+function breakdownFor(part: ChangeAttributionPart, base: string): AttributionBreakdownLine[] {
+  const accounts = part.accounts;
+  if (accounts.length < 2) return [];
+
+  const shown = accounts.slice(0, BREAKDOWN_MAX);
+  const lines: AttributionBreakdownLine[] = shown.map((a) => ({
+    label:
+      part.kind === "rate" && a.fromRate != null && a.toRate != null
+        ? `${a.name} · ${base}/${a.currency} ${quote(a.fromRate)} → ${quote(a.toRate)}`
+        : a.name,
+    amountBase: a.amountBase,
+    drillHref: entityHref("account", a.accountId),
+  }));
+
+  const rest = accounts.slice(BREAKDOWN_MAX);
+  if (rest.length > 0) {
+    lines.push({
+      label: `${plural(rest.length, "other account")}`,
+      amountBase: rest.reduce((sum, a) => sum + a.amountBase, 0),
+      drillHref: "/accounts",
+    });
+  }
+  return lines;
+}
+
 function rowFor(part: ChangeAttributionPart, from: string | null, to: string, base: string): AttributionRow {
   const accounts = part.accounts;
   const first = accounts[0];
+  const breakdown = breakdownFor(part, base);
 
   switch (part.kind) {
     case "spend":
@@ -94,6 +148,7 @@ function rowFor(part: ChangeAttributionPart, from: string | null, to: string, ba
         detail: part.transactions == null ? "from the ledger" : plural(part.transactions, "transaction"),
         // The rows that were summed, over the window they were summed over.
         drillHref: ledgerHref({ from: from ?? undefined, to }),
+        breakdown,
       };
     case "rate": {
       const currencies = new Set(accounts.map((a) => a.currency));
@@ -101,7 +156,7 @@ function rowFor(part: ChangeAttributionPart, from: string | null, to: string, ba
         currencies.size === 1 && first?.fromRate != null && first?.toRate != null
           ? `${base}/${first.currency} ${quote(first.fromRate)} → ${quote(first.toRate)}`
           : `${currencies.size} currencies`;
-      return { kind: "rate", label: "the rate moved", amountBase: part.amountBase, detail, drillHref: "/net-worth" };
+      return { kind: "rate", label: "the rate moved", amountBase: part.amountBase, detail, drillHref: "/net-worth", breakdown };
     }
     case "valuation":
       return {
@@ -110,6 +165,7 @@ function rowFor(part: ChangeAttributionPart, from: string | null, to: string, ba
         amountBase: part.amountBase,
         detail: accounts.length === 1 && first ? `${first.name}, no transaction` : `${plural(accounts.length, "account")}, no transaction`,
         drillHref: accounts.length === 1 && first ? entityHref("account", first.accountId) : "/accounts",
+        breakdown,
       };
     case "unexplained":
     default:
@@ -120,6 +176,7 @@ function rowFor(part: ChangeAttributionPart, from: string | null, to: string, ba
         detail: "balance moved, no transaction",
         // The reconciliation panel, which is the long form of this one line.
         drillHref: "/accounts",
+        breakdown,
       };
   }
 }

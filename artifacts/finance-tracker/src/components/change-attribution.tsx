@@ -1,8 +1,8 @@
 import { useGetAccountsChangeAttribution } from "@workspace/api-client-react";
-import { PanelBox, PanelHeader, Text, HStack, VStack, MonoLabel } from "@/components/primitives";
+import { PanelBox, PanelHeader, SectionRule, Text, HStack, VStack, MonoLabel } from "@/components/primitives";
 import { Drill, DrillTarget } from "@/components/drill";
 import { formatMoney } from "@/lib/utils";
-import { attributionView, type AttributionRow } from "@/lib/change-attribution-view";
+import { attributionView, type AttributionRow, type AttributionBreakdownLine } from "@/lib/change-attribution-view";
 
 // ── Change attribution ──────────────────────────────────────────────────────
 // The headline change figure with the causes underneath it, on the two
@@ -58,61 +58,88 @@ export function ChangeAttributionBand() {
   const view = attributionView(data);
   if (isLoading || view == null || data == null) return null;
 
+  // Structure, not a widget — DESIGN.md § 6. This band is the page: it
+  // cannot be dragged, removed or dismissed, and it states what moved the
+  // figure the strip above it prints. So it carries no frame and no
+  // --ft-surface fill; SectionRule's hairline and the spacing beneath are
+  // the whole of its separation. It used to be a PanelBox, which is why the
+  // dashboard read as a stack of identical rectangles.
   return (
-    <VStack marginBottom={6}>
-      <PanelBox>
-        {/* When there is nothing to attribute the panel is one row, not a
-            frame around a single sentence: the reason goes in the header's
-            right slot and there is no body at all. A tall empty card is the
-            "blocky" complaint in miniature. */}
-        <PanelHeader right={
-          <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em">
-            {view.status === "insufficient" ? view.emptyReason : view.windowLabel}
-          </Text>
-        }>
-          WHAT CHANGED
-        </PanelHeader>
+    <VStack marginBottom={14}>
+      {/* When there is nothing to attribute this is one rule and a reason,
+          not a frame around a single sentence: the reason goes in the
+          right slot and there is no body at all. */}
+      <SectionRule right={
+        <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em">
+          {view.status === "insufficient" ? view.emptyReason : view.windowLabel}
+        </Text>
+      }>
+        WHAT CHANGED
+      </SectionRule>
 
-        {view.status === "insufficient" ? null : (
-          <HStack align="stretch">
-            <VStack justify="center" padding="12px 16px">
-              <DrillTarget href="/net-worth" title="Net worth — everything this is the change in">
-                <span className="ft-drill">
-                  <Text as="div" size={26} weight={600} letterSpacing="-0.02em"
-                    color={amountColour(view.totalBase)} numeric>
-                    {signed(view.totalBase, data.baseCurrency)}
-                  </Text>
-                </span>
-              </DrillTarget>
-            </VStack>
-            <VStack grow gap={3} padding="10px 12px">
-              {view.rows.map((row) => (
-                <AttributionLine key={row.kind} row={row} currency={data.baseCurrency} />
-              ))}
-              {view.warning != null && (
-                <Text as="div" mono size={9} mt={3} color="var(--ft-amber)" letterSpacing="0.04em">
-                  {view.warning}
+      {view.status === "insufficient" ? null : (
+        <HStack align="stretch" gap={22}>
+          <VStack justify="center" padding="12px 0">
+            <DrillTarget href="/net-worth" title="Net worth — everything this is the change in">
+              <span className="ft-drill">
+                <Text as="div" size={26} weight={600} letterSpacing="-0.02em"
+                  color={amountColour(view.totalBase)} numeric>
+                  {signed(view.totalBase, data.baseCurrency)}
                 </Text>
-              )}
-            </VStack>
-          </HStack>
-        )}
-      </PanelBox>
+              </span>
+            </DrillTarget>
+          </VStack>
+          <VStack grow gap={5} padding="10px 0">
+            {view.rows.map((row) => (
+              <AttributionLine key={row.kind} row={row} currency={data.baseCurrency} />
+            ))}
+            {view.warning != null && (
+              <Text as="div" mono size={9} mt={3} color="var(--ft-amber)" letterSpacing="0.04em">
+                {view.warning}
+              </Text>
+            )}
+          </VStack>
+        </HStack>
+      )}
     </VStack>
   );
 }
 
 function AttributionLine({ row, currency }: { row: AttributionRow; currency: string }) {
   return (
-    <HStack align="baseline" gap={10}>
-      <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`} style={{ fontSize: 11, minWidth: 138 }}>
-        {row.label}
+    <VStack gap={2}>
+      <HStack align="baseline" gap={10}>
+        <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`} style={{ fontSize: 11, minWidth: 138 }}>
+          {row.label}
+        </Drill>
+        <Text as="span" mono size={11} color={amountColour(row.amountBase)} numeric>
+          {signed(row.amountBase, currency)}
+        </Text>
+        <Text as="span" mono size={10} color="var(--ft-dim)">
+          {row.detail}
+        </Text>
+      </HStack>
+      {row.breakdown.map((line) => (
+        <BreakdownLine key={line.drillHref + line.label} line={line} currency={currency} />
+      ))}
+    </VStack>
+  );
+}
+
+/**
+ * One account under a row. Indented to the row's own label column so the
+ * sub-lines read as belonging to it, and set a step smaller and dimmer so
+ * the row above still carries the weight. The figure is still a full .pnum
+ * — CLAUDE.md's "in full or not at all" has no small-print exception.
+ */
+function BreakdownLine({ line, currency }: { line: AttributionBreakdownLine; currency: string }) {
+  return (
+    <HStack align="baseline" gap={10} padding="0 0 0 14px">
+      <Drill href={line.drillHref} title={`Open ${line.label}`} style={{ fontSize: 10, minWidth: 124 }}>
+        {line.label}
       </Drill>
-      <Text as="span" mono size={11} color={amountColour(row.amountBase)} numeric>
-        {signed(row.amountBase, currency)}
-      </Text>
-      <Text as="span" mono size={10} color="var(--ft-dim)">
-        {row.detail}
+      <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
+        {signed(line.amountBase, currency)}
       </Text>
     </HStack>
   );

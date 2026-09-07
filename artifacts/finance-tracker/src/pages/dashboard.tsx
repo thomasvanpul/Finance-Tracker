@@ -804,11 +804,20 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
       setLoading(true); // only show skeleton after confirming AI is reachable
       const result = await oneShotInsight({
         path: "/",
-        // Figure first, then a short clause — not a sentence. A reader
-        // scanning three insights should get the number before the grammar.
-        // The separator is what the renderer splits on; a line without one
-        // still renders, as prose, rather than being dropped or invented.
-        prompt: "You are a concise personal finance analyst. Given the dashboard snapshot in the portfolio context, write exactly 3 data-specific insights, one per line. Each line MUST start with the figure it is about — a currency amount, a percentage or a count taken from the context — then ' — ' then a clause of at most 8 words saying what it means or what to do. No leading verb, no full sentence, no numbering, no extra text. Example shape: '£412/mo — subscriptions, up 18% on last quarter'.",
+        // Figure first, then the explanation. The figure-first shape is
+        // DESIGN.md §10 — the number is data and carries the weight, the
+        // rest is language — and the separator is what the renderer splits
+        // on; a line without one still renders, as prose, rather than being
+        // dropped or invented.
+        //
+        // Length: this asked for "a clause of at most 8 words" until
+        // 2026-09-07, and the result was three fragments that restated
+        // figures already on the screen above them. Thomas: the summary is
+        // "too short and doesn't explain much". It now asks for the same
+        // thing routes/ai.ts asks of the chat prompt — what moved, why, and
+        // what it means — with the same guard: longer is only allowed to
+        // mean more of the user's own data, never padding.
+        prompt: "You are a personal finance analyst. Given the dashboard snapshot in the portfolio context, write exactly 3 data-specific insights, one per line, no numbering and no extra text. Each line MUST start with the figure it is about — a currency amount, a percentage or a count taken from the context — then ' — ' then two or three sentences explaining it: what moved, why it moved given the other figures in the context, and what it means for them. Name the other figures you are reasoning from. Explain rather than restate: the user can already see the totals on the screen this sits on, so reading one back is not an insight. Never invent a figure that is not in the context, and never state a comparison whose baseline the context does not carry. Example shape: '£412/mo — subscriptions are up 18% on last quarter, and the whole of that rise is three annual renewals that landed in the same month. That is 9% of monthly spend against a 6% budget line, so the overshoot is timing rather than a new habit.'",
       });
       const lines = result.text
         .split("\n")
@@ -898,16 +907,21 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
         </button>
       </div>
 
-      {/* Content grid */}
-      <div className="ft-dashboard-insights" style={{ padding: 8, gap: 6 }}>
+      {/* Content grid.
+
+          The three cards used to draw --ft-raised on --ft-raised inside a
+          1px border, inset inside the float's own 1px border: a fill that
+          painted the parent's own token (so it was never visible) and a
+          frame inside a frame (so it was). Border-as-gap instead — the grid
+          paints --ft-border and the 1px gaps are the only rules. */}
+      <div className="ft-dashboard-insights" style={{ gap: 1, background: "var(--ft-border)" }}>
         {loading && insights === null
           ? [0, 1, 2].map(i => (
               <div
                 key={i}
                 style={{
                   background: "var(--ft-raised)",
-                  border: "1px solid var(--ft-border)",
-                  padding: "8px 10px",
+                  padding: "10px 12px",
                   minHeight: 52,
                 }}
               />
@@ -919,8 +933,7 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                 key={i}
                 style={{
                   background: "var(--ft-raised)",
-                  border: "1px solid var(--ft-border)",
-                  padding: "8px 10px",
+                  padding: "10px 12px",
                   display: "flex",
                   gap: 6,
                   alignItems: "flex-start",
@@ -1846,10 +1859,11 @@ function DashboardKpiBar({
 
   if (isMobile) {
     return (
+      // Structure, not a widget — DESIGN.md § 6, same as the desktop strip
+      // below. Unframed, seated by a hairline underneath.
       <div style={{
-        background: "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
-        marginBottom: 6,
+        borderBottom: "1px solid var(--ft-border)",
+        marginBottom: 10,
       }}>
         {/* Row 1: label + customize toggle */}
         <div style={{
@@ -1858,7 +1872,6 @@ function DashboardKpiBar({
           justifyContent: "space-between",
           borderBottom: "1px solid var(--ft-border)",
           height: 32,
-          paddingLeft: 12,
         }}>
           <span style={{
             fontFamily: "var(--font-mono)",
@@ -1949,9 +1962,14 @@ function DashboardKpiBar({
     <div style={{
       display: "grid",
       gridTemplateColumns: `auto auto repeat(${cells.length}, 1fr)`,
-      border: "1px solid var(--ft-border)",
-      background: "var(--ft-surface)",
-      marginBottom: 6,
+      // Structure, not a widget — DESIGN.md § 6. The KPI strip is the page:
+      // it cannot be dragged, removed or reordered, so it is not framed and
+      // does not paint --ft-surface. A single hairline underneath seats it
+      // against the content below; the vertical hairlines between cells do
+      // the dividing. Four sides here is what made the dashboard read as a
+      // stack of identical rectangles.
+      borderBottom: "1px solid var(--ft-border)",
+      marginBottom: 10,
       overflowX: "auto",
       scrollbarWidth: "none",
     }}>
@@ -1959,7 +1977,7 @@ function DashboardKpiBar({
       <button
         onClick={onCustomize}
         style={{
-          background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 10%, transparent)" : "var(--ft-surface)",
+          background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 10%, transparent)" : "transparent",
           border: "none",
           borderRight: "1px solid var(--ft-border)",
           borderTop: isCustomizing ? "2px solid var(--ft-accent)" : "2px solid transparent",
@@ -1968,7 +1986,7 @@ function DashboardKpiBar({
           fontSize: 9,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          padding: "0 14px",
+          padding: "0 14px 0 0",
           cursor: "pointer",
           flexShrink: 0,
           transition: "color 0.1s, background 0.1s",
@@ -1986,7 +2004,6 @@ function DashboardKpiBar({
         display: "flex",
         alignItems: "center",
         padding: "0 14px",
-        background: "var(--ft-surface)",
         borderTop: "2px solid transparent",
         borderRight: "1px solid var(--ft-border)",
         flexShrink: 0,
@@ -2007,7 +2024,6 @@ function DashboardKpiBar({
             flexDirection: "column",
             justifyContent: "center",
             padding: "var(--ft-metric-py) 14px",
-            background: "var(--ft-surface)",
             borderRight: i < cells.length - 1 ? "1px solid var(--ft-border)" : undefined,
             flexShrink: 0,
             minWidth: 100, // widened from 90 so a 6-digit figure at 18px
