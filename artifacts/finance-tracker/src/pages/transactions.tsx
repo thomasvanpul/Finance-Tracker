@@ -2114,6 +2114,7 @@ export default function Transactions() {
           </select>
           {/* Sort */}
           <select
+            aria-label="Sort order"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
             style={{ height: 26, padding: "0 6px", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", cursor: "pointer" }}
