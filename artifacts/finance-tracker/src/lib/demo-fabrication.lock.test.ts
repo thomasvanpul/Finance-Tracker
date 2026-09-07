@@ -136,8 +136,8 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // Preview-mode UI state — theme-swatch preview, widget-carousel preview.
   // Not a data fabrication; the "preview" here is a controlled UI state
   // toggled by the user, and no financial value is invented.
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1568, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1570, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1574, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1576, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 773, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 774, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
@@ -146,14 +146,14 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // Chart-normalisation denominators — `... ? maxOfNonEmpty : 1` avoids
   // division by zero when the input is empty. Non-money literals; the `1`
   // is a mathematical placeholder that never renders as a currency figure.
-  { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", line: 1488, reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
+  { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", line: 1487, reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
   { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", line: 148, reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
   { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 593, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
   { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 147, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 549, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1511, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1580, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
-  { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 459, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 465, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 237, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
   { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 756, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
   { path: "artifacts/finance-tracker/src/pages/year-review.tsx", line: 1264, reason: "chart max denominator: empty topCats → 1 to avoid /0" },
@@ -162,7 +162,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // "already at cap" branch. Non-money literal (percentage points).
   { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", line: 1021, reason: "milestone progress cap: no next milestone → 100% (all reached)" },
   { path: "artifacts/finance-tracker/src/pages/analytics-helpers.ts", line: 36, reason: "pct-change fallback: curr === 0 branch returns 0; else 100 (∞ growth from 0 baseline)" },
-  { path: "artifacts/finance-tracker/src/pages/fire.tsx", line: 375, reason: "coast-FIRE progress cap: coastNeeded <= 0 → 100% (already coasted)" },
+  { path: "artifacts/finance-tracker/src/pages/fire.tsx", line: 374, reason: "coast-FIRE progress cap: coastNeeded <= 0 → 100% (already coasted)" },
   // pension.tsx:285 and :389 were the "100% bar when target undefined"
   // sites — a fabricated goal-completion signal for a user who set no
   // target. Fixed 26-Aug: targetMonthlyIncome nullable end-to-end
@@ -204,7 +204,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", line: 236, reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
 
   // Streaks, thresholds — non-money integers.
-  { path: "artifacts/finance-tracker/src/pages/health-score.tsx", line: 749, reason: "savings-rate percentile threshold selector (10% or 20%), not a currency value" },
+  { path: "artifacts/finance-tracker/src/pages/health-score.tsx", line: 751, reason: "savings-rate percentile threshold selector (10% or 20%), not a currency value" },
 
   // Three earlier entries here (markets-tab.tsx:1374 8% revenue growth,
   // owing.tsx:225 + :429 20% APR default) were the defect, not exceptions.
