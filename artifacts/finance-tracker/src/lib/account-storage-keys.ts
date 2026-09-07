@@ -26,7 +26,7 @@ export type KeyClass = "account" | "device" | "server-cache" | "local-cache" | "
 
 export const ACCOUNT_LEVEL_KEYS: readonly string[] = [
   // transactions and categorisation
-  "ft-tx-notes", "ft-tx-tags", "ft-tx-splits", "ft-tx-templates",
+  "ft-tx-notes", "ft-tx-tags", "ft-tx-templates",
   "ft-cat-rules", "nr-cat-rules", "ft-category-meta", "nr-custom-categories",
   "nr-tx-default-type", "nr-tx-default-currency", "nr-tx-default-category",
   "nr-recurring-rules", "nr-import-history",

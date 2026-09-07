@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Trash2, Edit2, Search, Save, FileText, Sparkles, Tag, SlidersHorizontal } from "lucide-react";
+import { AlertCircle, Trash2, Edit2, Search, Save, Sparkles, SlidersHorizontal } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -53,336 +53,16 @@ import { useLocation, useSearch } from "wouter";
 import { ledgerLocation, ledgerSearchMatches } from "@/lib/ledger-query";
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, entityHref, merchantTransactionsHref } from "@/lib/entity-href";
-import { HStack, MonoLabel, PanelHeader, Text, VStack } from "@/components/primitives";
+import { HStack, PanelHeader, Text, VStack } from "@/components/primitives";
 
 import {
   type TxType, type Currency, type TxForm, type TxFormErrors,
-  type SplitLine, type SplitEntry, type MerchantGroup,
-  EMPTY_ERRORS, validateTxField, SPLITS_KEY, loadSplits, saveSplits,
+  type SplitLine, type MerchantGroup,
+  EMPTY_ERRORS, validateTxField,
   makeEmptyForm, BULK_CATEGORIES, CATEGORIES, TH, TX_TYPE_COLOR,
   getWeekStart, getMonthStart, getMonthEnd, get3MonthsAgo,
   exportCsv, exportJson,
 } from "./transactions-helpers";
-
-// ── SplitModal (localStorage-backed split view) ───────────────────────────────
-
-type SplitModalTx = {
-  id: number;
-  description: string;
-  date: string;
-  baseEquivalent: number | null;
-};
-
-function SplitModal({ tx, onClose }: { tx: SplitModalTx; onClose: () => void }) {
-  const existingSplits = loadSplits()[String(tx.id)] ?? [];
-  // A split needs a total GBP amount to allocate against. If the FX
-  // conversion is unavailable, refuse to open the split flow — this
-  // is a genuine "can't total, don't total" case per the FX-honesty
-  // rules. Caller sees a message and can retry once quotes refresh.
-  if (tx.baseEquivalent == null) {
-    return (
-      <Dialog open onOpenChange={(o) => !o && onClose()}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Split unavailable</DialogTitle></DialogHeader>
-          <div style={{ padding: "12px 0", fontSize: 13, color: "var(--ft-muted)" }}>
-            This transaction's FX conversion is not currently available, so
-            the split total can't be computed. Try again once market data
-            refreshes.
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-  const total = Math.abs(tx.baseEquivalent);
-
-  const [entries, setEntries] = useState<Array<{ id: string; category: string; amount: string; note: string }>>(
-    () =>
-      existingSplits.length > 0
-        ? existingSplits.map((e) => ({ id: crypto.randomUUID(), category: e.category, amount: String(e.amount), note: e.note ?? "" }))
-        : [
-            { id: crypto.randomUUID(), category: "", amount: total.toFixed(2), note: "" },
-          ]
-  );
-
-  const allocatedSum = entries.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
-  const remaining = parseFloat((total - allocatedSum).toFixed(2));
-
-  const addRow = () => {
-    setEntries((prev) => [...prev, { id: crypto.randomUUID(), category: "", amount: "", note: "" }]);
-  };
-
-  const removeRow = (id: string) => {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
-  };
-
-  const updateEntry = (id: string, field: "category" | "amount" | "note", value: string) => {
-    setEntries((prev) => prev.map((e) => e.id === id ? { ...e, [field]: value } : e));
-  };
-
-  const handleSave = () => {
-    if (Math.abs(remaining) > 0.005) return;
-    const splits = loadSplits();
-    const newSplits: SplitEntry[] = entries.map((e) => ({
-      category: e.category,
-      amount: parseFloat(e.amount) || 0,
-      ...(e.note ? { note: e.note } : {}),
-    }));
-    splits[String(tx.id)] = newSplits;
-    saveSplits(splits);
-    onClose();
-  };
-
-  const handleClear = () => {
-    const splits = loadSplits();
-    delete splits[String(tx.id)];
-    saveSplits(splits);
-    onClose();
-  };
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-        background: "rgba(0,0,0,0.75)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        className="ft-float"
-        style={{
-          width: "min(540px, 95vw)",
-          maxHeight: "85vh",
-          display: "flex",
-          flexDirection: "column",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 10 }}>
-          <MonoLabel as="span" size={9} color="var(--ft-accent)" letterSpacing="0.08em">⊕ SPLIT</MonoLabel>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{tx.description}</div>
-            <Text as="div" mono size={10} color="var(--ft-muted)" mt={2}>
-              {tx.date} · GBP {total.toFixed(2)}
-            </Text>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-dim)", fontSize: 16, lineHeight: 1, padding: "0 4px" }}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Entries */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 1fr 28px", gap: 6, marginBottom: 2 }}>
-            {["CATEGORY", "AMOUNT", "NOTE", ""].map((h) => (
-              <div key={h} style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>{h}</div>
-            ))}
-          </div>
-          {entries.map((entry) => (
-            <div key={entry.id} style={{ display: "grid", gridTemplateColumns: "1fr 90px 1fr 28px", gap: 6, alignItems: "center" }}>
-              <input
-                type="text"
-                list="tx-categories"
-                placeholder="Category"
-                value={entry.category}
-                onChange={(e) => updateEntry(entry.id, "category", e.target.value)}
-                style={{
-                  background: "var(--ft-base)",
-                  border: "1px solid var(--ft-border)",
-                  borderRadius: 2,
-                  color: "var(--ft-text)",
-                  fontSize: 12,
-                  fontFamily: "var(--font-sans)",
-                  padding: "5px 8px",
-                  outline: "none",
-                  width: "100%",
-                  boxSizing: "border-box" as const,
-                }}
-              />
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={entry.amount}
-                onChange={(e) => updateEntry(entry.id, "amount", e.target.value)}
-                style={{
-                  background: "var(--ft-base)",
-                  border: "1px solid var(--ft-border)",
-                  borderRadius: 2,
-                  color: "var(--ft-text)",
-                  fontSize: 12,
-                  fontFamily: "var(--font-mono)",
-                  padding: "5px 8px",
-                  outline: "none",
-                  width: "100%",
-                  textAlign: "right" as const,
-                  boxSizing: "border-box" as const,
-                }}
-              />
-              <input
-                type="text"
-                placeholder="Note (optional)"
-                value={entry.note}
-                onChange={(e) => updateEntry(entry.id, "note", e.target.value)}
-                style={{
-                  background: "var(--ft-base)",
-                  border: "1px solid var(--ft-border)",
-                  borderRadius: 2,
-                  color: "var(--ft-text)",
-                  fontSize: 12,
-                  fontFamily: "var(--font-sans)",
-                  padding: "5px 8px",
-                  outline: "none",
-                  width: "100%",
-                  boxSizing: "border-box" as const,
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => removeRow(entry.id)}
-                disabled={entries.length <= 1}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: entries.length <= 1 ? "not-allowed" : "pointer",
-                  color: entries.length <= 1 ? "var(--ft-border)" : "var(--ft-red)",
-                  fontSize: 15,
-                  lineHeight: 1,
-                  padding: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                aria-label="Remove row"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-
-          <button
-            type="button"
-            onClick={addRow}
-            style={{
-              marginTop: 4,
-              background: "none",
-              border: "1px dashed var(--ft-border)",
-              borderRadius: 2,
-              color: "var(--ft-muted)",
-              fontSize: 11,
-              fontFamily: "var(--font-sans)",
-              cursor: "pointer",
-              padding: "5px 0",
-              width: "100%",
-              textAlign: "center" as const,
-              letterSpacing: "0.04em",
-            }}
-          >
-            + Add Row
-          </button>
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding: "12px 18px", borderTop: "1px solid var(--ft-border)" }}>
-          {/* Running total */}
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "8px 10px",
-            background: "var(--ft-base)",
-            border: `1px solid ${Math.abs(remaining) <= 0.005 ? "var(--ft-green)" : remaining < 0 ? "var(--ft-red)" : "var(--ft-border)"}`,
-            borderRadius: 2,
-            marginBottom: 12,
-            fontFamily: "var(--font-sans)",
-            fontSize: 11,
-          }}>
-            <span style={{ color: "var(--ft-muted)" }}>
-              Allocated: <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>£{allocatedSum.toFixed(2)}</span>
-              {" "}of{" "}
-              <Text as="span" color="var(--ft-text)" numeric>£{total.toFixed(2)}</Text>
-            </span>
-            <Text as="span" weight={700} color={Math.abs(remaining) <= 0.005 ? "var(--ft-green)" : remaining < 0 ? "var(--ft-red)" : "var(--ft-amber)"}>
-              {Math.abs(remaining) <= 0.005
-                ? "✓ Balanced"
-                : remaining > 0
-                ? <>Remaining: <span className="pnum">£{remaining.toFixed(2)}</span></>
-                : <>Over by: <span className="pnum">£{Math.abs(remaining).toFixed(2)}</span></>}
-            </Text>
-          </div>
-
-          <HStack gap={8} justify="between">
-            <button
-              type="button"
-              onClick={handleClear}
-              style={{
-                fontSize: 11,
-                padding: "5px 14px",
-                background: "none",
-                border: "1px solid var(--ft-border)",
-                borderRadius: 2,
-                color: "var(--ft-muted)",
-                cursor: "pointer",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              Clear Split
-            </button>
-            <HStack gap={8}>
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  fontSize: 11,
-                  padding: "5px 14px",
-                  background: "none",
-                  border: "1px solid var(--ft-border)",
-                  borderRadius: 2,
-                  color: "var(--ft-dim)",
-                  cursor: "pointer",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={Math.abs(remaining) > 0.005}
-                title={Math.abs(remaining) > 0.005 ? "Allocated amounts must equal total" : undefined}
-                style={{
-                  fontSize: 11,
-                  padding: "5px 16px",
-                  background: Math.abs(remaining) <= 0.005 ? "var(--ft-accent)" : "var(--ft-raised)",
-                  border: "1px solid var(--ft-accent)",
-                  borderRadius: 2,
-                  color: Math.abs(remaining) <= 0.005 ? "#000" : "var(--ft-dim)",
-                  cursor: Math.abs(remaining) > 0.005 ? "not-allowed" : "pointer",
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 700,
-                  letterSpacing: "0.04em",
-                }}
-              >
-                Save
-              </button>
-            </HStack>
-          </HStack>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Honest empty state for an empty ledger ──────────────────────────────────
 //
@@ -477,41 +157,29 @@ interface TxRowProps {
   isKeyboardSelected?: boolean;
   notes: Record<number, string>;
   tags: Record<number, string[]>;
-  splits: Record<string, SplitEntry[]>;
   selectedIds: Set<number>;
   pendingDeleteIds: Set<number>;
-  openNoteId: number | null;
-  openTagId: number | null;
-  noteDraft: string;
-  tagInput: string;
-  allTagSuggestions: string[];
   toggleSelect: (id: number) => void;
-  openEdit: (id: number) => void;
-  openSplit: (id: number) => void;
-  openNote: (id: number) => void;
-  handleDelete: (id: number) => void;
-  saveNote: (id: number, text: string) => void;
-  clearNote: (id: number) => void;
-  addTag: (id: number, tag: string) => void;
-  removeTag: (id: number, tag: string) => void;
-  setSplitModalTx: (tx: SplitModalTx) => void;
-  setOpenNoteId: (id: number | null) => void;
-  setOpenTagId: (id: number | null) => void;
-  setNoteDraft: (v: string) => void;
-  setTagInput: (v: string) => void;
+  openDetail: (tx: Transaction) => void;
 }
 
 // Declared at module scope, not inside Transactions(). A component defined in
 // a render body is a NEW component type on every parent render, so React
 // unmounts and remounts every row whenever any filter changes — losing row
 // state and paying a full mount per row instead of a re-render.
+//
+// Five columns: DATE · DESCRIPTION · CATEGORY · ACCOUNT · AMOUNT. TYPE is
+// already carried by the sign and the colour on the amount, so it does not
+// need a column of its own, and the separate GBP column is gone — the
+// converted figure now sits beneath the native one, and only on the rows
+// where the two differ (DESIGN.md §7). The row itself is the affordance:
+// clicking it opens the detail surface, where note, tag, split, edit and
+// delete carry words instead of six unlabelled glyphs in 128px of chrome
+// repeated down every row.
 function TxRow({
   tx, indented = false, isKeyboardSelected = false,
-  notes, tags, splits, selectedIds, pendingDeleteIds,
-  openNoteId, openTagId, noteDraft, tagInput, allTagSuggestions,
-  toggleSelect, openEdit, openSplit, openNote, handleDelete,
-  saveNote, clearNote, addTag, removeTag,
-  setSplitModalTx, setOpenNoteId, setOpenTagId, setNoteDraft, setTagInput,
+  notes, tags, selectedIds, pendingDeleteIds,
+  toggleSelect, openDetail,
 }: TxRowProps) {
   const fxGbp = tx.currency !== "GBP" ? convertWithOverride(Math.abs(tx.nativeAmount), tx.currency, "GBP") : null;
   const hasOverride = fxGbp != null;
@@ -519,351 +187,286 @@ function TxRow({
   // FX conversion is available; the row still shows the native
   // amount alone, never £0.
   const displayGbp: number | null = hasOverride ? fxGbp : tx.baseEquivalent == null ? null : Math.abs(tx.baseEquivalent);
+  // The converted line is printed only where it says something the native
+  // line does not. On a GBP transaction it is the same figure in the same
+  // currency — which is what made the old GBP column repeat itself down
+  // almost every row.
+  const showConverted = tx.currency !== "GBP" && displayGbp != null;
   const hasNote = Boolean(notes[tx.id]);
-  const isNoteOpen = openNoteId === tx.id;
   const txTags = tags[tx.id] ?? [];
-  const hasTags = txTags.length > 0;
-  const isTagOpen = openTagId === tx.id;
   const visibleTags = txTags.slice(0, 2);
   const hiddenTagCount = txTags.length - 2;
-  const tagSuggestionsFiltered = tagInput
-    ? allTagSuggestions.filter((s) => s.toLowerCase().includes(tagInput.toLowerCase()) && !txTags.includes(s))
-    : allTagSuggestions.filter((s) => !txTags.includes(s));
   const [hovered, setHovered] = useState(false);
+  const sign = tx.type === "income" ? "+" : tx.type === "expense" ? "−" : "";
+  const tone = TX_TYPE_COLOR[tx.type as TxType];
   return (
-  <div className="ft-swipe-row" data-tx-row>
+  <div
+    data-tx-row
+    className="flex items-center border-b xls-row"
+    onMouseEnter={() => setHovered(true)}
+    onMouseLeave={() => setHovered(false)}
+    onClick={() => openDetail(tx)}
+    style={{
+      borderColor: "var(--ft-border)",
+      background: selectedIds.has(tx.id) ? "color-mix(in srgb, var(--ft-blue) 8%, var(--ft-base))" : isKeyboardSelected ? "var(--ft-raised)" : hovered ? "var(--ft-raised)" : "var(--ft-surface)",
+      opacity: pendingDeleteIds.has(tx.id) ? 0.4 : 1,
+      textDecoration: pendingDeleteIds.has(tx.id) ? "line-through" : "none",
+      transition: "opacity 0.15s, background 0.1s",
+      cursor: "pointer",
+    }}
+  >
+    {/* The checkbox is a plain input, so it needs its own guard; the three
+        drill links carry theirs inside Drill. */}
     <div
-      key={tx.id}
-      className="flex items-center border-b xls-row"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        borderColor: "var(--ft-border)",
-        background: selectedIds.has(tx.id) ? "color-mix(in srgb, var(--ft-blue) 8%, var(--ft-base))" : isKeyboardSelected ? "var(--ft-raised)" : hovered ? "var(--ft-raised)" : "var(--ft-surface)",
-        opacity: pendingDeleteIds.has(tx.id) ? 0.4 : 1,
-        textDecoration: pendingDeleteIds.has(tx.id) ? "line-through" : "none",
-        transition: "opacity 0.15s, background 0.1s",
-      }}
+      onClick={(e) => e.stopPropagation()}
+      style={{ width: 36, minWidth: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch" }}
     >
-      <div style={{ width: 36, minWidth: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch" }}>
-        <input
-          type="checkbox"
-          checked={selectedIds.has(tx.id)}
-          onChange={() => toggleSelect(tx.id)}
-          style={{ cursor: "pointer", accentColor: "var(--ft-accent)" }}
-          aria-label={`Select transaction ${tx.description}`}
-        />
-      </div>
-      <div style={{ width: 90, minWidth: 90, flexShrink: 0, padding: indented ? "6px 10px 6px 20px" : "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
-        {formatDate(tx.date)}
-      </div>
-      <div style={{ flex: 1, minWidth: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: isKeyboardSelected ? "var(--ft-accent)" : "var(--ft-text)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-          {tx.description
-            ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}><PrivDesc>{tx.description}</PrivDesc></Drill>
-            : <PrivDesc>{tx.description}</PrivDesc>}
-        </span>
-        {hasTags && (
-          <HStack gap={3} align="center" shrink={false}>
-            {visibleTags.map((t) => (
-              <span key={t} style={TAG_CHIP_STYLE}>{t}</span>
-            ))}
-            {hiddenTagCount > 0 && (
-              <span style={{ ...TAG_CHIP_STYLE, fontFamily: "var(--font-mono)", background: "color-mix(in srgb, var(--ft-amber) 8%, transparent)" }}>+{hiddenTagCount}</span>
-            )}
-          </HStack>
-        )}
-      </div>
-      <div style={{ width: 120, minWidth: 120, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
-        <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", letterSpacing: "0.02em", fontWeight: 600, whiteSpace: "nowrap" as const, lineHeight: "14px", flexShrink: 0, maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }}>
-          {tx.category
-            ? <Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill>
-            : tx.category}
-        </span>
-        {splits[String(tx.id)] && (
-          <span style={{
-            fontSize: 8,
-            padding: "0 4px",
-            borderRadius: 2,
-            background: "transparent",
-            color: "var(--ft-accent)",
-            border: "1px solid var(--ft-accent)",
-            fontFamily: "var(--font-mono)",
-            letterSpacing: "0.04em",
-            whiteSpace: "nowrap" as const,
-            lineHeight: "16px",
-          }}>
-            ⊕
-          </span>
-        )}
-      </div>
-      <div className="ft-hide-mobile" style={{ width: 150, minWidth: 150, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontSize: 10, fontFamily: "var(--font-sans)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <input
+        type="checkbox"
+        checked={selectedIds.has(tx.id)}
+        onChange={() => toggleSelect(tx.id)}
+        style={{ cursor: "pointer", accentColor: "var(--ft-accent)" }}
+        aria-label={`Select transaction ${tx.description}`}
+      />
+    </div>
+    <div style={{ width: 90, minWidth: 90, flexShrink: 0, padding: indented ? "6px 10px 6px 20px" : "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
+      {formatDate(tx.date)}
+    </div>
+    <div style={{ flex: 1, minWidth: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: isKeyboardSelected ? "var(--ft-accent)" : "var(--ft-text)", fontSize: 12, overflow: "hidden", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+      {/* No stopPropagation wrapper here: Drill already stops the click
+          reaching a pressable ancestor, and a wrapper sized to the cell would
+          swallow every click on the whitespace beside the name — which is
+          most of the row's width. */}
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+        {tx.description
+          ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}><PrivDesc>{tx.description}</PrivDesc></Drill>
+          : <PrivDesc>{tx.description}</PrivDesc>}
+      </span>
+      {/* Note and tags used to own a 36px icon column each. They are
+          annotations on the description, so the mark reads here and the
+          editing happens in the detail surface. */}
+      {hasNote && <span title="Has a note" style={{ fontSize: 10, color: "var(--ft-amber)", flexShrink: 0, lineHeight: "16px" }}>✎</span>}
+      {txTags.length > 0 && (
+        <HStack gap={3} align="center" shrink={false}>
+          {visibleTags.map((t) => (
+            <span key={t} style={TAG_CHIP_STYLE}>{t}</span>
+          ))}
+          {hiddenTagCount > 0 && (
+            <span style={{ ...TAG_CHIP_STYLE, fontFamily: "var(--font-mono)", background: "color-mix(in srgb, var(--ft-amber) 8%, transparent)" }}>+{hiddenTagCount}</span>
+          )}
+        </HStack>
+      )}
+    </div>
+    <div style={{ width: 120, minWidth: 120, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center", overflow: "hidden" }}>
+      <span style={{ fontSize: 10, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", letterSpacing: "0.02em", fontWeight: 600, whiteSpace: "nowrap" as const, lineHeight: "14px", flexShrink: 0, maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis" }}>
+        {tx.category
+          ? <Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill>
+          : tx.category}
+      </span>
+    </div>
+    <div style={{ width: 150, minWidth: 150, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontSize: 10, fontFamily: "var(--font-sans)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span>
         {tx.accountId != null && tx.accountName
           ? <Drill href={entityHref("account", tx.accountId)} title={`${tx.accountName} — open the account`}>{tx.accountName}</Drill>
           : tx.accountName}
-      </div>
-      <div className="ft-hide-mobile" style={{ width: 90, minWidth: 90, flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", display: "flex", alignItems: "center" }}>
-        <span style={{ fontSize: 9, color: TX_TYPE_COLOR[tx.type as TxType], textTransform: "uppercase" as const, letterSpacing: "0.06em", fontFamily: "var(--font-mono)", fontWeight: 700, lineHeight: "14px" }}>
-          {tx.type}
-        </span>
-      </div>
-      <div style={{ width: "var(--tx-amount-w)", minWidth: "var(--tx-amount-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-blue)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-        {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
-        {formatNative(Math.abs(tx.nativeAmount), tx.currency)}
-      </div>
-      {/* GBP column: "—" when FX unavailable; the native column above
-          still carries the honest amount. */}
-      <div className="pnum" style={{ width: "var(--tx-gbp-w)", minWidth: "var(--tx-gbp-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: displayGbp == null ? "var(--ft-dim)" : tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-blue)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-        {displayGbp == null
-          ? "—"
-          : (<>
-              {tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}
-              {formatBaseMoney(displayGbp)}
-              {hasOverride && <span title="Custom FX rate applied" style={{ fontSize: 8, color: "var(--ft-amber)", marginLeft: 2, verticalAlign: "super" }}>★</span>}
-            </>)}
-      </div>
-      {/* Note icon column */}
-      <div style={{ width: 36, minWidth: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch" }}>
-        <button
-          type="button"
-          onClick={() => { if (isNoteOpen) { setOpenNoteId(null); } else { openNote(tx.id); setOpenTagId(null); } }}
-          title={hasNote ? "View/edit note" : "Add note"}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", justifyContent: "center" }}
-          aria-label={hasNote ? `Note for ${tx.description}` : `Add note for ${tx.description}`}
-        >
-          <FileText
-            className="w-3.5 h-3.5"
-            style={{ color: hasNote ? "var(--ft-amber)" : "var(--ft-border2)", transition: "color 0.1s" }}
-          />
-        </button>
-      </div>
-      {/* Tag icon column */}
-      <div style={{ width: 36, minWidth: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch", position: "relative" }}>
-        <button
-          type="button"
-          onClick={() => { if (isTagOpen) { setOpenTagId(null); } else { setOpenTagId(tx.id); setTagInput(""); setOpenNoteId(null); } }}
-          title={hasTags ? `Tags: ${txTags.join(", ")}` : "Add tag"}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}
-          aria-label={hasTags ? `Tags for ${tx.description}` : `Add tag for ${tx.description}`}
-        >
-          <Tag
-            className="w-3.5 h-3.5"
-            style={{ color: hasTags ? "var(--ft-amber)" : "var(--ft-border2)", transition: "color 0.1s" }}
-          />
-          {hasTags && (
-            <span style={{ position: "absolute", top: -1, right: -1, background: "var(--ft-amber)", color: "var(--ft-base)", borderRadius: 2, fontSize: 9, fontWeight: 700, fontFamily: "var(--font-mono)", lineHeight: 1, padding: "1px 2px", minWidth: 10, textAlign: "center" }}>
-              {txTags.length}
-            </span>
-          )}
-        </button>
-      </div>
-      <div style={{ width: 128, minWidth: 128, flexShrink: 0, padding: "2px 4px", display: "flex", justifyContent: "flex-end", gap: 2, alignItems: "center" }}>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSplit(tx.id)} title="Split transaction (creates new transactions)">
-          <Text as="span" size={13} color="var(--ft-muted)">⊕</Text>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => setSplitModalTx({ id: tx.id, description: tx.description, date: tx.date, baseEquivalent: tx.baseEquivalent })}
-          title="Split view (local annotation)"
-          style={{ color: splits[String(tx.id)] ? "var(--ft-accent)" : undefined }}
-        >
-          <Text as="span" mono size={9} weight={700} color={splits[String(tx.id)] ? "var(--ft-accent)" : "var(--ft-dim)"}>SL</Text>
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(tx.id)} title="Edit transaction">
-          <Edit2 className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)" }} />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(tx.id)} title="Delete transaction (undo available)">
-          <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
-        </Button>
-      </div>
+      </span>
     </div>
-    {/* Note popover — inline below the row */}
-    {isNoteOpen && (
-      <div
-        style={{
-          position: "absolute",
-          right: 0,
-          top: "100%",
-          zIndex: 60,
-          background: "var(--ft-surface)",
-          border: "1px solid var(--ft-border2)",
-          borderRadius: 2,
-          padding: "10px 12px",
-          width: 280,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-          <div style={{ fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", fontFamily: "var(--font-sans)" }}>
-            <Text as="span" mono size={9} upper letterSpacing="0.06em">NOTE</Text> — <Text as="span" color="var(--ft-muted)" truncate>{tx.description}</Text>
-          </div>
-          <span style={{ fontSize: 8, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.04em", background: "var(--ft-raised)" }} title="Notes are saved locally on this device only and will not sync across browsers or devices">
-            device-local
-          </span>
-        </div>
-        <textarea
-          autoFocus
-          value={noteDraft}
-          onChange={(e) => setNoteDraft(e.target.value)}
-          rows={3}
-          placeholder="Add a note…"
-          style={{
-            width: "100%",
-            background: "var(--ft-base)",
-            border: "1px solid var(--ft-border2)",
-            borderRadius: 2,
-            color: "var(--ft-text)",
-            fontSize: 12,
-            fontFamily: "var(--font-sans)",
-            padding: "6px 8px",
-            resize: "vertical",
-            outline: "none",
-            boxSizing: "border-box",
-          }}
-        />
-        <HStack gap={6} justify="end" marginTop={8}>
-          <button
-            type="button"
-            onClick={() => { clearNote(tx.id); setOpenNoteId(null); }}
-            style={{ fontSize: 11, padding: "3px 10px", background: "none", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            onClick={() => { saveNote(tx.id, noteDraft); setOpenNoteId(null); }}
-            style={{ fontSize: 11, padding: "3px 10px", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 2, color: "var(--ft-base)", cursor: "pointer", fontFamily: "var(--font-sans)", fontWeight: 600 }}
-          >
-            Save
-          </button>
-        </HStack>
+    {/* Native first, converted beneath, and only on a foreign row
+        (DESIGN.md §7). The slot is sized from the widest of both strings
+        across the filtered set, so neither line can be clipped (§8). */}
+    <div style={{ width: "var(--tx-amount-w)", minWidth: "var(--tx-amount-w)", flexShrink: 0, padding: "6px 10px", textAlign: "right", color: tone, fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+      <div className="pnum">
+        {sign}{formatNative(Math.abs(tx.nativeAmount), tx.currency)}
       </div>
-    )}
-    {/* Tag popover — inline below the row */}
-    {isTagOpen && (
-      <div
-        style={{
-          position: "absolute",
-          right: 100,
-          top: "100%",
-          zIndex: 60,
-          background: "var(--ft-surface)",
-          border: "1px solid var(--ft-border2)",
-          borderRadius: 2,
-          padding: "10px 12px",
-          width: 300,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <div style={{ fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", fontFamily: "var(--font-sans)" }}>
-            <Text as="span" mono size={9} upper letterSpacing="0.06em">TAGS</Text> — <span style={{ color: "var(--ft-muted)" }}>{tx.description}</span>
-          </div>
-          <span style={{ fontSize: 8, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.04em", background: "var(--ft-raised)" }} title="Tags are saved locally on this device only and will not sync across browsers or devices">
-            device-local
-          </span>
+      {showConverted && (
+        <div className="pnum" style={{ fontSize: 10, fontWeight: 500, color: "var(--ft-dim)", marginTop: 1 }}>
+          {sign}{formatBaseMoney(displayGbp)}
+          {hasOverride && <span title="Custom FX rate applied" style={{ color: "var(--ft-amber)", marginLeft: 2 }}>★</span>}
         </div>
-        {/* Existing tag chips */}
-        {txTags.length > 0 && (
-          <HStack gap={4} wrap marginBottom={8}>
-            {txTags.map((t) => (
-              <span key={t} style={{ ...TAG_CHIP_STYLE, cursor: "pointer" }} onClick={() => removeTag(tx.id, t)} title="Click to remove">
-                {t}
-                <span style={{ marginLeft: 2, opacity: 0.7 }}>×</span>
-              </span>
-            ))}
-          </HStack>
-        )}
-        {/* Tag input */}
-        <div style={{ position: "relative" }}>
-          <input
-            autoFocus
-            type="text"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === ",") {
-                e.preventDefault();
-                const parts = tagInput.split(",").map((s) => s.trim()).filter(Boolean);
-                parts.forEach((p) => addTag(tx.id, p));
-                setTagInput("");
-              } else if (e.key === "Escape") {
-                setOpenTagId(null);
-              }
-            }}
-            placeholder="Add tag… (Enter or comma)"
-            style={{
-              width: "100%",
-              background: "var(--ft-base)",
-              border: "1px solid var(--ft-border2)",
-              borderRadius: 2,
-              color: "var(--ft-text)",
-              fontSize: 12,
-              fontFamily: "var(--font-sans)",
-              padding: "5px 8px",
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
-          {/* Autocomplete suggestions */}
-          {tagSuggestionsFiltered.length > 0 && tagInput && (
-            <div style={{
-              position: "absolute",
-              top: "100%",
-              left: 0,
-              right: 0,
-              background: "var(--ft-surface)",
-              border: "1px solid var(--ft-border2)",
-              borderTop: "none",
-              borderRadius: "0 0 2px 2px",
-              zIndex: 70,
-              maxHeight: 120,
-              overflowY: "auto",
-            }}>
-              {tagSuggestionsFiltered.slice(0, 8).map((s) => (
-                <div
-                  key={s}
-                  onClick={() => { addTag(tx.id, s); setTagInput(""); }}
-                  style={{ padding: "5px 8px", fontSize: 11, color: "var(--ft-muted)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}
-                >
-                  {s}
-                </div>
-              ))}
+      )}
+    </div>
+  </div>
+  );
+}
+
+const TX_DETAIL_SECONDARY_BTN: React.CSSProperties = {
+  fontSize: 11,
+  padding: "5px 12px",
+  background: "transparent",
+  border: "1px solid var(--ft-border2)",
+  borderRadius: 2,
+  color: "var(--ft-muted)",
+  cursor: "pointer",
+  fontFamily: "var(--font-sans)",
+  letterSpacing: "0.02em",
+  whiteSpace: "nowrap",
+};
+
+const TX_DETAIL_PRIMARY_BTN: React.CSSProperties = {
+  ...TX_DETAIL_SECONDARY_BTN,
+  padding: "5px 14px",
+  background: "var(--ft-accent)",
+  borderColor: "var(--ft-accent)",
+  color: "var(--ft-base)",
+  fontWeight: 700,
+};
+
+const TX_DEVICE_LOCAL_MARK: React.CSSProperties = {
+  fontSize: 8,
+  color: "var(--ft-dim)",
+  fontFamily: "var(--font-mono)",
+  border: "1px solid var(--ft-border2)",
+  padding: "1px 5px",
+  letterSpacing: "0.04em",
+  background: "var(--ft-raised)",
+};
+
+function TxDetailRow({ label, value, href }: { label: string; value: string | null | undefined; href?: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "7px 0", borderBottom: "1px solid var(--ft-border)" }}>
+      <Text as="span" mono size={9} upper letterSpacing="0.12em" color="var(--ft-dim)">{label}</Text>
+      <span style={{ fontSize: 12, color: "var(--ft-text)", textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {value == null || value === "" ? "—" : href ? <Drill href={href}>{value}</Drill> : value}
+      </span>
+    </div>
+  );
+}
+
+// The surface the row opens. It is where the 128px action column went: note,
+// tag, split, edit and delete, each carrying a word instead of one of six
+// unlabelled glyphs. Ephemeral — it floats and it leaves (DESIGN.md §6) — so
+// Dialog is the right frame, and the one the rest of this page already uses.
+function TxDetailDialog({
+  tx, note, txTags, allTagSuggestions,
+  onClose, onEdit, onSplit, onDelete,
+  onSaveNote, onClearNote, onAddTag, onRemoveTag,
+}: {
+  tx: Transaction;
+  note: string;
+  txTags: string[];
+  allTagSuggestions: string[];
+  onClose: () => void;
+  onEdit: () => void;
+  onSplit: () => void;
+  onDelete: () => void;
+  onSaveNote: (text: string) => void;
+  onClearNote: () => void;
+  onAddTag: (tag: string) => void;
+  onRemoveTag: (tag: string) => void;
+}) {
+  const [noteDraft, setNoteDraft] = useState(note);
+  const [tagInput, setTagInput] = useState("");
+  const fxGbp = tx.currency !== "GBP" ? convertWithOverride(Math.abs(tx.nativeAmount), tx.currency, "GBP") : null;
+  const hasOverride = fxGbp != null;
+  const displayGbp: number | null = hasOverride ? fxGbp : tx.baseEquivalent == null ? null : Math.abs(tx.baseEquivalent);
+  const showConverted = tx.currency !== "GBP" && displayGbp != null;
+  const sign = tx.type === "income" ? "+" : tx.type === "expense" ? "−" : "";
+  const tone = TX_TYPE_COLOR[tx.type as TxType];
+  const suggestions = (tagInput
+    ? allTagSuggestions.filter((s) => s.toLowerCase().includes(tagInput.toLowerCase()) && !txTags.includes(s))
+    : allTagSuggestions.filter((s) => !txTags.includes(s))
+  ).slice(0, 8);
+
+  const commitTags = () => {
+    tagInput.split(",").map((s) => s.trim()).filter(Boolean).forEach(onAddTag);
+    setTagInput("");
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent style={{ maxWidth: 460 }}>
+        <DialogHeader>
+          <DialogTitle style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <PrivDesc>{tx.description}</PrivDesc>
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* Native first, converted second (DESIGN.md §7) */}
+        <VStack gap={2}>
+          <Text as="div" mono size={9} upper letterSpacing="0.16em" color="var(--ft-dim)">{tx.type}</Text>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 700, lineHeight: "28px", color: tone, whiteSpace: "nowrap" }}>
+            {sign}{formatNative(Math.abs(tx.nativeAmount), tx.currency)}
+          </div>
+          {showConverted && (
+            <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)", whiteSpace: "nowrap" }}>
+              {sign}{formatBaseMoney(displayGbp)}
+              {hasOverride && <span title="Custom FX rate applied" style={{ color: "var(--ft-amber)", marginLeft: 3 }}>★</span>}
             </div>
           )}
-        </div>
-        {/* Existing tag suggestions (not typing) */}
-        {!tagInput && tagSuggestionsFiltered.length > 0 && (
-          <div style={{ marginTop: 8 }}>
-            <div style={{ fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-sans)", marginBottom: 4, letterSpacing: "0.04em", textTransform: "uppercase" }}>Suggestions</div>
+        </VStack>
+
+        <VStack gap={0} marginTop={14}>
+          <TxDetailRow label="DATE" value={formatDate(tx.date)} />
+          <TxDetailRow
+            label="CATEGORY"
+            value={tx.category}
+            href={tx.category ? categoryTransactionsHref(tx.category) : undefined}
+          />
+          <TxDetailRow
+            label="ACCOUNT"
+            value={tx.accountName}
+            href={tx.accountId != null ? entityHref("account", tx.accountId) : undefined}
+          />
+        </VStack>
+
+        <VStack gap={6} marginTop={14}>
+          <HStack align="center" justify="between">
+            <Text as="span" mono size={9} upper letterSpacing="0.12em" color="var(--ft-dim)">NOTE</Text>
+            <span style={TX_DEVICE_LOCAL_MARK} title="Notes are saved locally on this device only and will not sync across browsers or devices">device-local</span>
+          </HStack>
+          <textarea
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            rows={2}
+            placeholder="Add a note…"
+            style={{ width: "100%", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)", fontSize: 12, fontFamily: "var(--font-sans)", padding: "6px 8px", resize: "vertical", outline: "none", boxSizing: "border-box" }}
+          />
+          <HStack gap={6} justify="end">
+            <button type="button" onClick={() => { onClearNote(); setNoteDraft(""); }} style={TX_DETAIL_SECONDARY_BTN}>Clear note</button>
+            <button type="button" onClick={() => onSaveNote(noteDraft)} style={TX_DETAIL_PRIMARY_BTN}>Save note</button>
+          </HStack>
+        </VStack>
+
+        <VStack gap={6} marginTop={14}>
+          <HStack align="center" justify="between">
+            <Text as="span" mono size={9} upper letterSpacing="0.12em" color="var(--ft-dim)">TAGS</Text>
+            <span style={TX_DEVICE_LOCAL_MARK} title="Tags are saved locally on this device only and will not sync across browsers or devices">device-local</span>
+          </HStack>
+          {txTags.length > 0 && (
             <HStack gap={4} wrap>
-              {tagSuggestionsFiltered.slice(0, 10).map((s) => (
-                <span
-                  key={s}
-                  onClick={() => addTag(tx.id, s)}
-                  style={{ ...TAG_CHIP_STYLE, cursor: "pointer", opacity: 0.65 }}
-                >
-                  + {s}
+              {txTags.map((t) => (
+                <span key={t} style={{ ...TAG_CHIP_STYLE, cursor: "pointer" }} onClick={() => onRemoveTag(t)} title="Click to remove">
+                  {t}<span style={{ marginLeft: 2, opacity: 0.7 }}>×</span>
                 </span>
               ))}
             </HStack>
-          </div>
-        )}
-        <HStack justify="end" marginTop={8}>
-          <button
-            type="button"
-            onClick={() => setOpenTagId(null)}
-            style={{ fontSize: 11, padding: "3px 10px", background: "none", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-sans)" }}
-          >
-            Done
-          </button>
-        </HStack>
-      </div>
-    )}
-  </div>
-);
+          )}
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); commitTags(); } }}
+            placeholder="Add tag… (Enter or comma)"
+            style={{ width: "100%", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)", fontSize: 12, fontFamily: "var(--font-sans)", padding: "5px 8px", outline: "none", boxSizing: "border-box" }}
+          />
+          {suggestions.length > 0 && (
+            <HStack gap={4} wrap>
+              {suggestions.map((s) => (
+                <span key={s} onClick={() => onAddTag(s)} style={{ ...TAG_CHIP_STYLE, cursor: "pointer", opacity: 0.65 }}>+ {s}</span>
+              ))}
+            </HStack>
+          )}
+        </VStack>
+
+        {/* The former action column, with words */}
+        <DialogFooter style={{ marginTop: 18, gap: 8 }}>
+          <button type="button" onClick={onDelete} style={{ ...TX_DETAIL_SECONDARY_BTN, borderColor: "var(--ft-red)", color: "var(--ft-red)", marginRight: "auto" }}>Delete</button>
+          <button type="button" onClick={onSplit} style={TX_DETAIL_SECONDARY_BTN}>Split into transactions</button>
+          <button type="button" onClick={onEdit} style={TX_DETAIL_PRIMARY_BTN}>Edit</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function Transactions() {
@@ -975,8 +578,6 @@ export default function Transactions() {
       return raw ? (JSON.parse(raw) as Record<number, string>) : {};
     } catch { return {}; }
   });
-  const [openNoteId, setOpenNoteId] = useState<number | null>(null);
-  const [noteDraft, setNoteDraft] = useState("");
 
   // ── per-transaction tags (localStorage) ──────────────────────────────────
   const [tags, setTags] = useState<Record<number, string[]>>(() => {
@@ -985,8 +586,6 @@ export default function Transactions() {
       return raw ? (JSON.parse(raw) as Record<number, string[]>) : {};
     } catch { return {}; }
   });
-  const [openTagId, setOpenTagId] = useState<number | null>(null);
-  const [tagInput, setTagInput] = useState("");
   const [filterTag, setFilterTag] = useState("");
 
   // ── merchant grouping ────────────────────────────────────────────────────
@@ -1005,9 +604,10 @@ export default function Transactions() {
   const [splitLines, setSplitLines] = useState<SplitLine[]>([]);
   const [splitSubmitting, setSplitSubmitting] = useState(false);
 
-  // ── localStorage split modal ──────────────────────────────────────────────
-  const [splits, setSplits] = useState<Record<string, SplitEntry[]>>(() => loadSplits());
-  const [splitModalTx, setSplitModalTx] = useState<SplitModalTx | null>(null);
+  // ── the detail surface a row opens ────────────────────────────────────────
+  // Holds the transaction itself rather than its id, so the dialog does not
+  // have to re-find the row in a list that a refetch may have reordered.
+  const [detailTx, setDetailTx] = useState<Transaction | null>(null);
 
   // ── templates ─────────────────────────────────────────────────────────────
   const [templates, setTemplates] = useState<TxTemplate[]>(() => loadTemplates());
@@ -1098,22 +698,22 @@ export default function Transactions() {
     return base; // date-desc is server default
   }, [transactions, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, search, filterTag, tags, sortBy]);
 
-  // Numeric column widths reserve room for the widest figure the ledger is
-  // about to show, so a 7-figure balance widens the slot instead of running
-  // into the next cell (DESIGN.md §8: the slot gives, the digits do not).
+  // The amount slot reserves room for the widest figure the ledger is about to
+  // show, so a 7-figure balance widens the slot instead of running into the
+  // next cell (DESIGN.md §8: the slot gives, the digits do not). Since the
+  // converted figure now sits *beneath* the native one rather than in its own
+  // column, the slot has to clear whichever of the two strings is longer —
+  // §8 says exactly that: check the width "with a converted line beneath".
   // 7.3px is JetBrains Mono's advance at 12px; +1 for the sign glyph; 20 for
-  // the cell padding. The floors are the pre-2026-09-06 fixed widths.
-  const { amountColW, gbpColW } = useMemo(() => {
+  // the cell padding. The floor is the pre-2026-09-06 fixed width.
+  const amountColW = useMemo(() => {
     let nativeMax = 0;
     let baseMax = 0;
     for (const tx of filtered) {
       nativeMax = Math.max(nativeMax, formatNative(Math.abs(tx.nativeAmount), tx.currency).length);
       if (tx.baseEquivalent != null) baseMax = Math.max(baseMax, formatBaseMoney(Math.abs(tx.baseEquivalent)).length);
     }
-    return {
-      amountColW: `${Math.max(130, Math.ceil((nativeMax + 1) * 7.3) + 20)}px`,
-      gbpColW: `${Math.max(110, Math.ceil((baseMax + 1) * 7.3) + 20)}px`,
-    };
+    return `${Math.max(130, Math.ceil((Math.max(nativeMax, baseMax) + 1) * 7.3) + 20)}px`;
   }, [filtered]);
 
   // Filtered average: skips unconvertible rows; the denominator drops
@@ -1128,7 +728,7 @@ export default function Transactions() {
   useEffect(() => {
     const inInput = () => { const t = document.activeElement?.tagName; return t === "INPUT" || t === "TEXTAREA" || t === "SELECT"; };
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setSelectedIds(new Set()); setBulkFormCat(""); setBulkFormType(""); setOpenNoteId(null); setOpenTagId(null); return; }
+      if (e.key === "Escape") { setSelectedIds(new Set()); setBulkFormCat(""); setBulkFormType(""); setDetailTx(null); return; }
       if (e.key === "/" && !inInput()) { e.preventDefault(); searchInputRef.current?.focus(); }
       if (e.key === "n" && !inInput() && !e.metaKey && !e.ctrlKey) { e.preventDefault(); setForm(makeEmptyForm()); setAutoCatFilled(false); setAddOpen(true); }
       if (e.key === "e" && !inInput() && !e.metaKey && !e.ctrlKey) { e.preventDefault(); exportCsv(filtered); }
@@ -1487,11 +1087,6 @@ export default function Transactions() {
     });
   };
 
-  const openNote = (id: number) => {
-    setOpenNoteId(id);
-    setNoteDraft(notes[id] ?? "");
-  };
-
   // ── tag helpers ──────────────────────────────────────────────────────────
   const addTag = (id: number, tag: string) => {
     const trimmed = tag.trim();
@@ -1522,11 +1117,8 @@ export default function Transactions() {
   // three call sites (flat, day-grouped, merchant-grouped) cannot drift apart,
   // and so adding a row capability is one edit rather than four.
   const txRowProps = {
-    notes, tags, splits, selectedIds, pendingDeleteIds,
-    openNoteId, openTagId, noteDraft, tagInput, allTagSuggestions,
-    toggleSelect, openEdit, openSplit, openNote, handleDelete,
-    saveNote, clearNote, addTag, removeTag,
-    setSplitModalTx, setOpenNoteId, setOpenTagId, setNoteDraft, setTagInput,
+    notes, tags, selectedIds, pendingDeleteIds,
+    toggleSelect, openDetail: setDetailTx,
   };
 
   // ── split submit ─────────────────────────────────────────────────────────
@@ -1735,16 +1327,10 @@ export default function Transactions() {
       } else if (e.key === "Enter" && selectedRowIndex !== null) {
         e.preventDefault();
         const tx = visibleRows[selectedRowIndex];
-        if (tx) {
-          if (openNoteId === tx.id) {
-            setOpenNoteId(null);
-          } else {
-            openNote(tx.id);
-          }
-        }
+        if (tx) setDetailTx(tx);
       }
     },
-    [visibleFiltered, visibleDayGroups, groupByDay, groupByMerchant, selectedRowIndex, openNoteId, openNote]
+    [visibleFiltered, visibleDayGroups, groupByDay, groupByMerchant, selectedRowIndex]
   );
 
   if (isLoading || isSummaryLoading) {
@@ -2756,11 +2342,11 @@ export default function Transactions() {
           ref={tableContainerRef}
           tabIndex={0}
           onKeyDown={handleTableKeyDown}
-          style={{ outline: "none", "--tx-amount-w": amountColW, "--tx-gbp-w": gbpColW } as React.CSSProperties}
-          aria-label="Transaction table — use ↑↓ or j/k to navigate, Enter to open note, Escape to clear"
+          style={{ outline: "none", "--tx-amount-w": amountColW } as React.CSSProperties}
+          aria-label="Transaction table — use ↑↓ or j/k to navigate, Enter to open the transaction, Escape to clear"
         >
           {/* Column headers */}
-          <div style={{ display: "flex", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", minWidth: 760 }}>
+          <div style={{ display: "flex", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", minWidth: 546 }}>
             <div style={{ ...TH, width: 36, minWidth: 36, justifyContent: "center", padding: "0", borderRight: "1px solid var(--ft-border)" }}>
               <input
                 type="checkbox"
@@ -2774,13 +2360,8 @@ export default function Transactions() {
               ["DATE",        "90px",  "left",    ""],
               ["DESCRIPTION", "1",     "left",    ""],
               ["CATEGORY",    "120px", "left",    ""],
-              ["ACCOUNT",     "150px", "left",    "ft-hide-mobile"],
-              ["TYPE",        "90px",  "left",    "ft-hide-mobile"],
+              ["ACCOUNT",     "150px", "left",    ""],
               ["AMOUNT",      "var(--tx-amount-w)", "right",   ""],
-              ["GBP",         "var(--tx-gbp-w)",    "right",   ""],
-              ["",            "36px",  "center",  ""],
-              ["",            "36px",  "center",  ""],
-              ["",            "128px", "right",   ""],
             ] as [string, string, string, string][]).map(([h, w, align, extraClass], i) => (
               <div
                 key={`${h}-${i}`}
@@ -2909,15 +2490,10 @@ export default function Transactions() {
                           <span className="pnum">{group.count}</span> tx
                         </span>
                       </div>
-                      <div className="ft-hide-mobile" style={{ width: 150, minWidth: 150, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
-                      <div className="ft-hide-mobile" style={{ width: 90, minWidth: 90, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
-                      <div style={{ width: "var(--tx-amount-w)", minWidth: "var(--tx-amount-w)", padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
-                      <div className="pnum" style={{ width: "var(--tx-gbp-w)", minWidth: "var(--tx-gbp-w)", padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", textAlign: "right", color: group.total >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
+                      <div style={{ width: 150, minWidth: 150, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)" }} />
+                      <div className="pnum" style={{ width: "var(--tx-amount-w)", minWidth: "var(--tx-amount-w)", padding: "var(--ft-cell-py) 12px", textAlign: "right", color: group.total >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
                         {group.total >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(group.total))}
                       </div>
-                      <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)" }} />
-                      <div style={{ width: 36, minWidth: 36, borderRight: "1px solid var(--ft-border)" }} />
-                      <div style={{ width: 128, minWidth: 128 }} />
                     </div>
 
                     {group.expanded && groupTxs.map((tx) => <TxRow key={tx.id} tx={tx} indented {...txRowProps} />)}
@@ -2935,14 +2511,21 @@ export default function Transactions() {
         </div>
       </div>
 
-      {/* ── localStorage SplitModal ── */}
-      {splitModalTx && (
-        <SplitModal
-          tx={splitModalTx}
-          onClose={() => {
-            setSplits(loadSplits());
-            setSplitModalTx(null);
-          }}
+      {/* ── the detail surface a row opens ── */}
+      {detailTx && (
+        <TxDetailDialog
+          tx={detailTx}
+          note={notes[detailTx.id] ?? ""}
+          txTags={tags[detailTx.id] ?? []}
+          allTagSuggestions={allTagSuggestions}
+          onClose={() => setDetailTx(null)}
+          onEdit={() => { const id = detailTx.id; setDetailTx(null); openEdit(id); }}
+          onSplit={() => { const id = detailTx.id; setDetailTx(null); openSplit(id); }}
+          onDelete={() => { const id = detailTx.id; setDetailTx(null); handleDelete(id); }}
+          onSaveNote={(text) => { saveNote(detailTx.id, text); setDetailTx(null); }}
+          onClearNote={() => clearNote(detailTx.id)}
+          onAddTag={(t) => addTag(detailTx.id, t)}
+          onRemoveTag={(t) => removeTag(detailTx.id, t)}
         />
       )}
     </VStack>

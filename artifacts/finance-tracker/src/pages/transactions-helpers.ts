@@ -55,27 +55,6 @@ export interface SplitLine {
   amount: string;
 }
 
-// ── localStorage split entries ────────────────────────────────────────────────
-
-export interface SplitEntry {
-  category: string;
-  amount: number; // in GBP, positive
-  note?: string;
-}
-
-export const SPLITS_KEY = "ft-tx-splits";
-
-export function loadSplits(): Record<string, SplitEntry[]> {
-  try {
-    const raw = localStorage.getItem(SPLITS_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, SplitEntry[]>) : {};
-  } catch { return {}; }
-}
-
-export function saveSplits(splits: Record<string, SplitEntry[]>): void {
-  try { localStorage.setItem(SPLITS_KEY, JSON.stringify(splits)); } catch { /* quota exceeded — non-fatal */ }
-}
-
 export interface MerchantGroup {
   description: string;
   count: number;
