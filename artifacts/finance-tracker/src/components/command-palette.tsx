@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { entityHref } from "@/lib/entity-href";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
-import { useListTransactions, useListAccounts } from "@workspace/api-client-react";
+import { useListTransactions, useListAccounts, useGetFxRates } from "@workspace/api-client-react";
+import { parseCurrencyQuery, convertVia, formatConverted, formatUnitRate, PIVOT } from "@/lib/currency-query";
 import { formatBaseMoney } from "@/lib/utils";
 import { applyPersonas, loadPersonaIds, PERSONAS, PERSONA_GLYPHS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
@@ -15,7 +16,7 @@ interface CommandPaletteProps {
   onToggleSidebar?: () => void;
 }
 
-type CommandSection = "navigation" | "actions" | "persona" | "accounts" | "transactions";
+type CommandSection = "convert" | "navigation" | "actions" | "persona" | "accounts" | "transactions";
 
 interface Command {
   id: string;
@@ -167,6 +168,7 @@ function buildCommands(
 }
 
 const SECTION_LABELS: Record<CommandSection, string> = {
+  convert: "CONVERT",
   navigation: "NAVIGATION",
   actions: "ACTIONS",
   persona: "TERMINAL PROFILE",
@@ -174,7 +176,11 @@ const SECTION_LABELS: Record<CommandSection, string> = {
   transactions: "TRANSACTIONS",
 };
 
-const SECTION_ORDER: CommandSection[] = ["navigation", "actions", "persona", "accounts", "transactions"];
+// "convert" leads wherever it appears. It only ever holds a row when the
+// query IS a conversion, and when it is, the answer is the whole reason the
+// palette was opened — burying it under navigation would make the user arrow
+// down past six "Go to" rows to read a number they already typed.
+const SECTION_ORDER: CommandSection[] = ["convert", "navigation", "actions", "persona", "accounts", "transactions"];
 
 // Persona bias for section order (P2·7). Live search results
 // (accounts, transactions) float to the top for whichever the
@@ -187,8 +193,8 @@ const SECTION_ORDER: CommandSection[] = ["navigation", "actions", "persona", "ac
 // CommandSection and re-order here.
 function sectionOrderForPersona(persona: PersonaId): CommandSection[] {
   switch (persona) {
-    case "market": return ["accounts", "navigation", "transactions", "actions", "persona"];
-    case "budget": return ["transactions", "accounts", "navigation", "actions", "persona"];
+    case "market": return ["convert", "accounts", "navigation", "transactions", "actions", "persona"];
+    case "budget": return ["convert", "transactions", "accounts", "navigation", "actions", "persona"];
     default:       return SECTION_ORDER;
   }
 }
@@ -204,6 +210,9 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
 
   const { data: allAccounts } = useListAccounts({});
   const { data: allTxs } = useListTransactions();
+  // Already in the cache on most screens — /accounts and the header rate strip
+  // read the same query, so this costs a cache hit, not a request.
+  const { data: fxRates } = useGetFxRates();
 
   const activePersonaId = useActivePersona();
   const commands = buildCommands(navigate, onClose, onNewTransaction, togglePrivacy, activePersonaId, onToggleAlerts, onToggleSidebar);
@@ -211,6 +220,41 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
   const navTo = (path: string) => () => { navigate(path); onClose(); };
 
   const q = query.trim().toLowerCase();
+
+  // ── A conversion, answered in place ────────────────────────────────────
+  // "1000 gbp to myr" used to mean: go to /accounts, scroll past six panels,
+  // and find a three-input widget at the very bottom — and on a phone it meant
+  // nothing at all, because PhoneShell routes /accounts to WorthScreen, which
+  // never rendered the converter. A conversion is a question with an answer,
+  // which is exactly what this list is for, so it is answered here instead.
+  //
+  // parseCurrencyQuery refuses anything that is not unambiguously a
+  // conversion, and refuses a code the API does not quote — so an ordinary
+  // search never lights this up, and the row never prints a rate that was not
+  // supplied.
+  const rateTable = fxRates?.rates ?? {};
+  const knownCodes = new Set([PIVOT, ...Object.keys(rateTable)]);
+  const conversion = parseCurrencyQuery(query, knownCodes);
+  const convertCommands: Command[] = [];
+  if (conversion != null) {
+    const value = convertVia(conversion.amount, conversion.from, conversion.to, rateTable);
+    const unit = convertVia(1, conversion.from, conversion.to, rateTable);
+    if (value !== null && unit !== null) {
+      convertCommands.push({
+        id: "convert-result",
+        section: "convert",
+        icon: "\u21C4",
+        title: `${formatConverted(conversion.amount)} ${conversion.from} = ${formatConverted(value)} ${conversion.to}`,
+        shortcut: formatUnitRate(conversion.from, conversion.to, unit),
+        action: () => {
+          // Copying is a convenience on top of an answer that is already on
+          // screen, so a browser without clipboard access loses nothing.
+          navigator.clipboard?.writeText(formatConverted(value)).catch(() => {});
+          onClose();
+        },
+      });
+    }
+  }
 
   const liveCommands: Command[] = [];
   if (q.length >= 3) {
@@ -245,14 +289,16 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
   const sectionOrder = sectionOrderForPersona(activePersonaId);
   const grouped = sectionOrder.reduce<Record<CommandSection, Command[]>>(
     (acc, section) => {
-      if (section === "accounts" || section === "transactions") {
+      if (section === "convert") {
+        acc[section] = convertCommands;
+      } else if (section === "accounts" || section === "transactions") {
         acc[section] = liveCommands.filter((cmd) => cmd.section === section);
       } else {
         acc[section] = filtered.filter((cmd) => cmd.section === section);
       }
       return acc;
     },
-    { navigation: [], actions: [], persona: [], accounts: [], transactions: [] } as Record<CommandSection, Command[]>
+    { convert: [], navigation: [], actions: [], persona: [], accounts: [], transactions: [] } as Record<CommandSection, Command[]>
   );
 
   const flatFiltered = sectionOrder.flatMap((s) => grouped[s]);
@@ -366,7 +412,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a command or destination..."
+            placeholder="Type a command, a destination, or 100 GBP to MYR..."
             style={{
               flex: 1,
               background: "transparent",

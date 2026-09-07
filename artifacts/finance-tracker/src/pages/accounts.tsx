@@ -2986,11 +2986,20 @@ export default function Accounts() {
       {/* ── FX Rates Strip ───────────────────────────────────────── */}
       {fxRates && (
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+          {/* The converter that used to sit at the bottom of this page is now a
+              palette query — see lib/currency-query.ts for why. This line is
+              the only thing left behind: the gesture, named at the place a
+              currency question actually occurs to someone. */}
           <PanelHeader
             right={
-              <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">
-                {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-              </Text>
+              <HStack gap={10} align="center">
+                <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">
+                  press / then 100 GBP to MYR
+                </Text>
+                <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">
+                  {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                </Text>
+              </HStack>
             }
           >
             FX RATES — Live · GBP Base
@@ -3092,115 +3101,6 @@ export default function Accounts() {
         </div>
       </div>
 
-      {/* ── Currency Converter ─────────────────────────────────────── */}
-      {fxRates && <CurrencyConverter fxRates={fxRates.rates ?? {}} baseCurrency={baseCurrency} />}
-
-    </div>
-  );
-}
-
-// ─── Currency Converter Widget ────────────────────────────────────────────────
-
-function CurrencyConverter({ fxRates, baseCurrency }: { fxRates: Record<string, number>; baseCurrency: string }) {
-  const allCurrencies = ["GBP", ...Object.keys(fxRates).sort()];
-  const [amount, setAmount] = useState("1000");
-  const [from, setFrom] = useState(baseCurrency);
-  const [to, setTo] = useState(baseCurrency === "GBP" ? "USD" : "GBP");
-  const [fromInput, setFromInput] = useState(baseCurrency);
-  const [toInput, setToInput] = useState(baseCurrency === "GBP" ? "USD" : "GBP");
-
-  const rates: Record<string, number> = { GBP: 1, ...fxRates };
-  const fromValid = !!rates[from];
-  const toValid = !!rates[to];
-
-  const convert = (amt: number, fromCcy: string, toCcy: string): number => {
-    const gbpAmt = amt / (rates[fromCcy] ?? 1);
-    return gbpAmt * (rates[toCcy] ?? 1);
-  };
-
-  const result = fromValid && toValid ? convert(parseFloat(amount) || 0, from, to) : null;
-  const unitRate = fromValid && toValid ? convert(1, from, to) : null;
-
-  const ccyInputStyle: React.CSSProperties = {
-    width: 68, padding: "6px 8px", background: "var(--ft-base)", border: "1px solid var(--ft-border2)",
-    color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 13, outline: "none",
-    textTransform: "uppercase" as const, fontWeight: 700, letterSpacing: "0.05em",
-  };
-
-  const handleFromBlur = () => {
-    const v = fromInput.toUpperCase().trim();
-    if (rates[v]) setFrom(v);
-    setFromInput(from);
-  };
-  const handleToBlur = () => {
-    const v = toInput.toUpperCase().trim();
-    if (rates[v]) setTo(v);
-    setToInput(to);
-  };
-
-  return (
-    <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-      <datalist id="ft-ccy-list">
-        {allCurrencies.map((c) => <option key={c} value={c} />)}
-      </datalist>
-      <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">— type any currency code</Text>}>
-        CURRENCY CONVERTER
-      </PanelHeader>
-      <HStack gap={10} align="center" wrap padding="14px 16px">
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          style={{ width: 130, padding: "6px 10px", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, outline: "none", fontVariantNumeric: "tabular-nums" }}
-        />
-        <input
-          list="ft-ccy-list"
-          value={fromInput}
-          onChange={(e) => setFromInput(e.target.value.toUpperCase())}
-          onBlur={handleFromBlur}
-          onKeyDown={(e) => e.key === "Enter" && handleFromBlur()}
-          maxLength={6}
-          style={{ ...ccyInputStyle, borderColor: fromValid ? "var(--ft-border2)" : "var(--ft-red)" }}
-        />
-        <button
-          onClick={() => { setFrom(to); setTo(from); setFromInput(to); setToInput(from); }}
-          style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--ft-dim)", fontSize: 16, padding: "0 2px" }}
-          title="Swap currencies"
-        >
-          ⇄
-        </button>
-        <input
-          list="ft-ccy-list"
-          value={toInput}
-          onChange={(e) => setToInput(e.target.value.toUpperCase())}
-          onBlur={handleToBlur}
-          onKeyDown={(e) => e.key === "Enter" && handleToBlur()}
-          maxLength={6}
-          style={{ ...ccyInputStyle, borderColor: toValid ? "var(--ft-border2)" : "var(--ft-red)" }}
-        />
-        <Text as="span" size={18} weight={300} color="var(--ft-dim)">=</Text>
-        <span style={{ fontSize: 18, fontFamily: "var(--font-mono)", fontWeight: 700, color: result !== null ? "var(--ft-green)" : "var(--ft-dim)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-          {result !== null
-            ? result.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 4 })
-            : "—"}
-          <span style={{ fontSize: 12, fontWeight: 400, marginLeft: 6, color: "var(--ft-muted)" }}>{to}</span>
-        </span>
-        {unitRate !== null && (
-          <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <Text as="span" mono size={10} color="var(--ft-dim)">
-              1 {from} = {unitRate.toFixed(4)} {to}
-            </Text>
-            <Text as="span" mono size={10} color="var(--ft-dim)">
-              1 {to} = {(1 / unitRate).toFixed(4)} {from}
-            </Text>
-          </div>
-        )}
-        {(!fromValid || !toValid) && (
-          <Text as="span" mono size={10} color="var(--ft-red)">
-            {!fromValid ? `Unknown: ${from}` : `Unknown: ${to}`}
-          </Text>
-        )}
-      </HStack>
     </div>
   );
 }
