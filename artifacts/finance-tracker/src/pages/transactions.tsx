@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Plus, Trash2, Edit2, Search, X, Save, FileText, Sparkles, Tag, SlidersHorizontal } from "lucide-react";
+import { AlertCircle, Trash2, Edit2, Search, Save, FileText, Sparkles, Tag, SlidersHorizontal } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -47,14 +47,12 @@ import { ErrorState } from "@/components/error-state";
 import { useToast } from "@/hooks/use-toast";
 import { haptic } from "@/lib/haptics";
 import { MobileSheet } from "@/components/mobile-sheet";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryParam } from "@/hooks/use-query-param";
 import { useLocation, useSearch } from "wouter";
 import { ledgerLocation, ledgerSearchMatches } from "@/lib/ledger-query";
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, entityHref, merchantTransactionsHref } from "@/lib/entity-href";
-import { useSwipeDelete } from "@/hooks/use-swipe-delete";
-import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { HStack, MonoLabel, PanelHeader, Text, VStack } from "@/components/primitives";
 
 import {
   type TxType, type Currency, type TxForm, type TxFormErrors,
@@ -466,7 +464,11 @@ export default function Transactions() {
   const deleteTx = useDeleteTransaction();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
+  // No `isMobile` here on purpose. App.tsx returns <PhoneShell /> before it
+  // reaches the desktop <Switch>, and PhoneShell maps /transactions to
+  // SpendingScreen — so this page never mounts below 768px and every
+  // `isMobile &&` branch it used to carry was unreachable. Verified: the
+  // only importer of pages/transactions is App.tsx:34.
 
   // Computed each render so it stays correct after midnight
   const today = new Date().toISOString().slice(0, 10);
@@ -580,9 +582,8 @@ export default function Transactions() {
   const [groupByMerchant, setGroupByMerchant] = useState(false);
   const [expandedMerchants, setExpandedMerchants] = useState<Set<string>>(new Set());
 
-  // ── group by day — always on for mobile (Monzo/Revolut pattern) ───────────
+  // ── group by day — the default grouping (Monzo/Revolut pattern) ──────────
   const [groupByDay, setGroupByDay] = useState(false);
-  React.useEffect(() => { if (isMobile) setGroupByDay(true); }, [isMobile]);
 
   // ── pagination ────────────────────────────────────────────────────────────
   const PAGE_SIZE = 75;
@@ -625,7 +626,6 @@ export default function Transactions() {
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const hasFilters = search || filterType !== "all" || filterCategory !== "all" || filterAccount !== "all" || filterDateFrom || filterDateTo || amountMin || amountMax || filterTag;
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const activeFilterCount = [filterCategory !== "all", filterAccount !== "all", !!(filterDateFrom || filterDateTo), !!(amountMin || amountMax), !!filterTag].filter(Boolean).length;
 
@@ -1652,78 +1652,21 @@ export default function Transactions() {
       ? allTagSuggestions.filter((s) => s.toLowerCase().includes(tagInput.toLowerCase()) && !txTags.includes(s))
       : allTagSuggestions.filter((s) => !txTags.includes(s));
     const [hovered, setHovered] = useState(false);
-    const swipe = useSwipeDelete(() => handleDelete(tx.id));
     return (
     <div className="ft-swipe-row" data-tx-row>
-      {isMobile && (
-        <button
-          type="button"
-          className="ft-swipe-delete-action"
-          onClick={swipe.handleDelete}
-          aria-label={`Delete ${tx.description}`}
-        >
-          DELETE
-        </button>
-      )}
       <div
         key={tx.id}
-        className={`flex items-center border-b xls-row${isMobile ? " ft-swipe-row-content" : ""}`}
+        className="flex items-center border-b xls-row"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        {...(isMobile ? swipe.touchHandlers : {})}
         style={{
           borderColor: "var(--ft-border)",
           background: selectedIds.has(tx.id) ? "color-mix(in srgb, var(--ft-blue) 8%, var(--ft-base))" : isKeyboardSelected ? "var(--ft-raised)" : hovered ? "var(--ft-raised)" : "var(--ft-surface)",
           opacity: pendingDeleteIds.has(tx.id) ? 0.4 : 1,
           textDecoration: pendingDeleteIds.has(tx.id) ? "line-through" : "none",
-          transition: isMobile ? "opacity 0.15s, background 0.1s, transform 0.15s ease" : "opacity 0.15s, background 0.1s",
-          ...(isMobile ? { transform: `translateX(${swipe.offset}px)` } : {}),
+          transition: "opacity 0.15s, background 0.1s",
         }}
       >
-        {isMobile ? (
-          <HStack gap={12} align="center" padding="11px 14px" grow minWidth0>
-            {/* Category avatar circle */}
-            <div style={{
-              flexShrink: 0, width: 38, height: 38, borderRadius: "50%",
-              background: `color-mix(in srgb, ${TX_TYPE_COLOR[tx.type as TxType]} 18%, var(--ft-raised))`,
-              border: `1.5px solid ${TX_TYPE_COLOR[tx.type as TxType]}44`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <span style={{ fontSize: 13, fontFamily: "var(--font-mono)", fontWeight: 700, color: TX_TYPE_COLOR[tx.type as TxType] }}>
-                {(tx.category ?? tx.type ?? "?")[0].toUpperCase()}
-              </span>
-            </div>
-            {/* Description + meta */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 500, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
-                {tx.description
-                  ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}><PrivDesc>{tx.description}</PrivDesc></Drill>
-                  : <PrivDesc>{tx.description}</PrivDesc>}
-              </div>
-              <div style={{ display: "flex", gap: 5, alignItems: "center", overflow: "hidden" }}>
-                {tx.category && <span style={{ fontSize: 11, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}><Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill></span>}
-                {tx.category && tx.accountName && <span style={{ fontSize: 11, color: "var(--ft-border2)", flexShrink: 0 }}>·</span>}
-                {tx.accountName && <span style={{ fontSize: 11, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{tx.accountId != null ? <Drill href={entityHref("account", tx.accountId)} title={`${tx.accountName} — open the account`}>{tx.accountName}</Drill> : tx.accountName}</span>}
-                {hasNote && <span title="Has note" style={{ fontSize: 10, color: "var(--ft-amber)", flexShrink: 0 }}>✎</span>}
-                {hasTags && <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-amber)", flexShrink: 0 }}>+{txTags.length}</span>}
-              </div>
-            </div>
-            {/* Amount + edit */}
-            <div style={{ flexShrink: 0, textAlign: "right" }}>
-              <div className="pnum" style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-mono)", color: displayGbp == null ? "var(--ft-dim)" : TX_TYPE_COLOR[tx.type as TxType], whiteSpace: "nowrap" }}>
-                {displayGbp == null
-                  ? formatNative(Math.abs(tx.nativeAmount), tx.currency)
-                  : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(displayGbp)}`}
-              </div>
-              <HStack gap={6} align="center" justify="end" marginTop={3}>
-                <Text as="span" mono size={10} color="var(--ft-dim)" nowrap>{formatDate(tx.date)}</Text>
-                <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(tx.id); }} style={{ background: "none", border: "none", cursor: "pointer", padding: 2, lineHeight: 0, display: "flex", alignItems: "center" }}>
-                  <Edit2 style={{ width: 12, height: 12, color: "var(--ft-muted)" }} />
-                </button>
-              </HStack>
-            </div>
-          </HStack>
-        ) : (<>
         <div style={{ width: 36, minWidth: 36, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch" }}>
           <input
             type="checkbox"
@@ -1857,7 +1800,6 @@ export default function Transactions() {
             <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
           </Button>
         </div>
-        </>)}
       </div>
       {/* Note popover — inline below the row */}
       {isNoteOpen && (
@@ -2090,7 +2032,6 @@ export default function Transactions() {
       >
         <form id="add-tx-form" onSubmit={handleAdd}>
           {FormFields(false)}
-          {isMobile && <div style={{ height: 8 }} />}
         </form>
       </MobileSheet>
 
@@ -2108,7 +2049,6 @@ export default function Transactions() {
       >
         <form id="edit-tx-form" onSubmit={handleEdit}>
           {FormFields(true)}
-          {isMobile && <div style={{ height: 8 }} />}
         </form>
       </MobileSheet>
 
@@ -2370,179 +2310,8 @@ export default function Transactions() {
         </Alert>
       )}
 
-      {/* ── Mobile Wise-style summary strip ── */}
-      {isMobile && (
-        <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-          <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">{filtered.length} TX</Text>}>
-            {kpiDateFrom && kpiDateTo
-              ? kpiDateFrom === kpiDateTo ? kpiDateFrom : `${kpiDateFrom} → ${kpiDateTo}`
-              : "All Transactions"}
-          </PanelHeader>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
-            <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>In</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiIncome > 0 ? "var(--ft-green)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap" as const }}>
-                {formatBaseMoney(kpiIncome)}
-              </div>
-            </div>
-            <div style={{ padding: "10px 10px", borderRight: "1px solid var(--ft-border)" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>Out</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiExpenses > 0 ? "var(--ft-red)" : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap" as const }}>
-                {formatBaseMoney(kpiExpenses)}
-              </div>
-            </div>
-            <div style={{ padding: "10px 10px" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.10em", marginBottom: 3 }}>Net</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: kpiNet !== 0 ? (kpiNet >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap" as const }}>
-                {kpiNet >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(kpiNet))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Mobile filter bar: search + bottom-sheet for all filters ── */}
-      {isMobile && (
-        <>
-          <PanelBox padding="6px 10px"><HStack gap={6} align="center">
-            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 2, padding: "0 8px", height: 32 }}>
-              <Search style={{ width: 12, height: 12, color: "var(--ft-dim)", flexShrink: 0 }} />
-              <input
-                ref={searchInputRef}
-                placeholder="Search…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="ft-filter-input"
-                style={{ flex: 1, background: "none", border: "none", outline: "none", color: "var(--ft-text)", fontFamily: "var(--font-sans)", fontSize: 13 }}
-              />
-              {search && (
-                <button type="button" onClick={() => setSearch("")} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", padding: 0, display: "flex", alignItems: "center" }}>
-                  <X style={{ width: 13, height: 13 }} />
-                </button>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setFilterSheetOpen(true)}
-              style={{
-                height: 32, minWidth: 60, padding: "0 10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-                background: activeFilterCount > 0 ? "color-mix(in srgb, var(--ft-accent) 15%, transparent)" : "var(--ft-surface)",
-                border: `1px solid ${activeFilterCount > 0 ? "var(--ft-accent)" : "var(--ft-border2)"}`,
-                borderRadius: 2, cursor: "pointer", flexShrink: 0,
-                color: activeFilterCount > 0 ? "var(--ft-accent)" : "var(--ft-muted)",
-                fontFamily: "var(--font-sans)", fontSize: 11, letterSpacing: "0.04em", fontWeight: 600,
-              }}
-            >
-              <SlidersHorizontal style={{ width: 11, height: 11 }} />
-              {activeFilterCount > 0 ? <>·<span className="pnum">{activeFilterCount}</span></> : "FILTER"}
-            </button>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="ft-filter-input"
-              style={{ height: 32, padding: "0 6px", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", borderRadius: 2, outline: "none", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", cursor: "pointer", flexShrink: 0 }}
-            >
-              <option value="date-desc">↓ Date</option>
-              <option value="date-asc">↑ Date</option>
-              <option value="amount-high">↓ Amt</option>
-              <option value="amount-low">↑ Amt</option>
-            </select>
-          </HStack></PanelBox>
-          {activeFilterCount > 0 && (
-            <div style={{ display: "flex", gap: 6, padding: "5px 10px", flexWrap: "wrap" as const, border: "1px solid var(--ft-border)", background: "var(--ft-surface)", alignItems: "center" }}>
-              {filterType !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-blue) 15%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-blue) 40%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-blue)" }}>{filterType}</span>}
-              {filterCategory !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-accent) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-accent) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-accent)" }}>{filterCategory}</span>}
-              {filterAccount !== "all" && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-green) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-green) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-green)" }}>{filterAccount}</span>}
-              {(filterDateFrom || filterDateTo) && <span style={{ padding: "2px 8px", background: "color-mix(in srgb, var(--ft-amber) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 35%, transparent)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ft-amber)" }}>{filterDateFrom || "…"} → {filterDateTo || "…"}</span>}
-              <button type="button" onClick={() => { setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setFilterTag(""); }} style={{ marginLeft: "auto", padding: "2px 8px", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear</button>
-            </div>
-          )}
-          <MobileSheet
-            open={filterSheetOpen}
-            onOpenChange={setFilterSheetOpen}
-            title="Filter Transactions"
-            footer={
-              <HStack gap={8}>
-                {(hasFilters) && (
-                  <button type="button" onClick={() => { setSearch(""); setFilterType("all"); setFilterCategory("all"); setFilterAccount("all"); setFilterDateFrom(""); setFilterDateTo(""); setAmountMin(""); setAmountMax(""); setSortBy("date-desc"); setFilterTag(""); setFilterSheetOpen(false); }} style={{ flex: 1, padding: "11px", fontSize: 12, fontFamily: "var(--font-sans)", letterSpacing: "0.06em", background: "transparent", border: "1px solid var(--ft-border2)", borderRadius: 3, color: "var(--ft-red)", cursor: "pointer" }}>✕ Clear all</button>
-                )}
-                <button type="button" onClick={() => setFilterSheetOpen(false)} style={{ flex: 2, padding: "11px", fontSize: 13, fontFamily: "var(--font-sans)", letterSpacing: "0.06em", background: "var(--ft-accent)", border: "1px solid var(--ft-accent)", borderRadius: 3, color: "var(--ft-base)", fontWeight: 700, cursor: "pointer" }}>Show {filtered.length} results</button>
-              </HStack>
-            }
-          >
-            <VStack gap={22}>
-              <div>
-                <div style={{ fontSize: 10, fontFamily: "var(--font-sans)", letterSpacing: "0.10em", color: "var(--ft-dim)", textTransform: "uppercase" as const, marginBottom: 8 }}>Type</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
-                  {(["all", "income", "expense", "transfer"] as const).map(t => (
-                    <button key={t} type="button" onClick={() => setFilterType(t)} style={{ padding: "9px 4px", fontSize: 11, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", borderRadius: 3, cursor: "pointer", background: filterType === t ? "var(--ft-accent)" : "transparent", border: `1px solid ${filterType === t ? "var(--ft-accent)" : "var(--ft-border2)"}`, color: filterType === t ? "var(--ft-base)" : "var(--ft-muted)", fontWeight: filterType === t ? 700 : 400, textTransform: "capitalize" as const }}>
-                      {t === "all" ? "All" : t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Category</MonoLabel>
-                <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterCategory !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
-                  <option value="all">All categories</option>
-                  {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Account</MonoLabel>
-                <select value={filterAccount} onChange={(e) => setFilterAccount(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterAccount !== "all" ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", cursor: "pointer" }}>
-                  <option value="all">All accounts</option>
-                  {allAccounts.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
-              <div>
-                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Date Range</MonoLabel>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 10 }}>
-                  {(["Today", "Week", "Month", "Last Mo", "3M", "All"] as const).map((label, i) => {
-                    const keys = ["today", "week", "month", "lastmonth", "3m", "all"] as const;
-                    const k = keys[i];
-                    return (
-                      <button key={k} type="button" onClick={() => applyQuickRange(k)} style={{ padding: "9px 4px", fontSize: 11, fontFamily: "var(--font-sans)", letterSpacing: "0.04em", borderRadius: 3, cursor: "pointer", background: activeQuickRange === k ? "color-mix(in srgb, var(--ft-accent) 15%, transparent)" : "transparent", border: `1px solid ${activeQuickRange === k ? "var(--ft-accent)" : "var(--ft-border2)"}`, color: activeQuickRange === k ? "var(--ft-accent)" : "var(--ft-muted)", textTransform: "uppercase" as const }}>
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", marginBottom: 4 }}>FROM</div>
-                    <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterDateFrom ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
-                  </div>
-                  <div>
-                    <Text as="div" size={10} color="var(--ft-dim)" mb={4}>TO</Text>
-                    <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterDateTo ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <MonoLabel as="div" size={10} letterSpacing="0.10em" mb={8}>Amount Range</MonoLabel>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <div>
-                    <div style={{ fontSize: 10, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", marginBottom: 4 }}>MIN</div>
-                    <input type="number" placeholder="0.00" value={amountMin} min="0" step="0.01" onChange={(e) => setAmountMin(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: amountMin ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
-                  </div>
-                  <div>
-                    <Text as="div" size={10} color="var(--ft-dim)" mb={4}>MAX</Text>
-                    <input type="number" placeholder="∞" value={amountMax} min="0" step="0.01" onChange={(e) => setAmountMax(e.target.value)} style={{ width: "100%", padding: "9px", fontSize: 13, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: amountMax ? "var(--ft-text)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-mono)", boxSizing: "border-box" as const }} />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.04em" mb={8}>Tag</Text>
-                <input type="text" placeholder="Filter by tag…" value={filterTag} onChange={(e) => setFilterTag(e.target.value)} style={{ width: "100%", padding: "10px 12px", fontSize: 14, background: "var(--ft-base)", border: "1px solid var(--ft-border2)", borderRadius: 3, color: filterTag ? "var(--ft-amber)" : "var(--ft-muted)", outline: "none", fontFamily: "var(--font-sans)", boxSizing: "border-box" as const }} />
-              </div>
-            </VStack>
-          </MobileSheet>
-        </>
-      )}
 
       {/* ── Desktop filter bar — compact single-row terminal style ── */}
-      {!isMobile && (
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "0 10px" }}>
         {/* Single always-visible row */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 0", flexWrap: "wrap" as const }}>
@@ -2742,7 +2511,6 @@ export default function Transactions() {
           </div>
         )}
       </div>
-      )}
 
       {/* ── Floating bulk action bar (bottom-center) ── */}
       {selectedIds.size > 0 && (
@@ -2860,7 +2628,7 @@ export default function Transactions() {
 
       {/* ── Transaction ledger ──*/}
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-        <PanelHeader right={isMobile ? undefined : (
+        <PanelHeader right={(
           <HStack gap={4}>
             <button
               type="button"
@@ -2929,15 +2697,15 @@ export default function Transactions() {
         </PanelHeader>
 
         <div
-          className={isMobile ? undefined : "ft-scroll-x"}
+          className="ft-scroll-x"
           ref={tableContainerRef}
           tabIndex={0}
           onKeyDown={handleTableKeyDown}
           style={{ outline: "none", "--tx-amount-w": amountColW, "--tx-gbp-w": gbpColW } as React.CSSProperties}
           aria-label="Transaction table — use ↑↓ or j/k to navigate, Enter to open note, Escape to clear"
         >
-          {/* Column headers — desktop only */}
-          {!isMobile && <div style={{ display: "flex", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", minWidth: 760 }}>
+          {/* Column headers */}
+          <div style={{ display: "flex", background: "var(--ft-raised)", borderBottom: "1px solid var(--ft-border2)", minWidth: 760 }}>
             <div style={{ ...TH, width: 36, minWidth: 36, justifyContent: "center", padding: "0", borderRight: "1px solid var(--ft-border)" }}>
               <input
                 type="checkbox"
@@ -2976,7 +2744,7 @@ export default function Transactions() {
                 {h}
               </div>
             ))}
-          </div>}
+          </div>
 
           {/* Rows — flat, grouped by day, or grouped by merchant */}
           {!groupByMerchant && !groupByDay && (
@@ -3016,12 +2784,12 @@ export default function Transactions() {
                       const mobileLabel = isToday ? "Today" : isYesterday ? "Yesterday" : gd.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
                       const desktopLabel = gd.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
                       return (
-                        <div style={{ display: "flex", alignItems: "center", background: isMobile ? "color-mix(in srgb, var(--ft-raised) 80%, var(--ft-base))" : "var(--ft-base)", borderBottom: "1px solid var(--ft-border)", padding: isMobile ? "6px 14px" : "4px 10px 4px 48px", gap: 10, position: "sticky", top: 0, zIndex: 10 }}>
-                          <Text as="span" mono size={isMobile ? 12 : 9} weight={700} color={isMobile && (isToday || isYesterday) ? "var(--ft-accent)" : "var(--ft-dim)"} letterSpacing={isMobile ? "0.02em" : "0.1em"}>
-                            {isMobile ? mobileLabel : desktopLabel}
+                        <div style={{ display: "flex", alignItems: "center", background: "var(--ft-base)", borderBottom: "1px solid var(--ft-border)", padding: "4px 10px 4px 48px", gap: 10, position: "sticky", top: 0, zIndex: 10 }}>
+                          <Text as="span" mono size={9} weight={700} color="var(--ft-dim)" letterSpacing="0.1em">
+                            {desktopLabel}
                           </Text>
-                          <Text as="span" size={isMobile ? 12 : 10} color="var(--ft-dim)" letterSpacing="0.04em"><span className="pnum">{group.txs.length}</span> tx</Text>
-                          <span className="pnum" style={{ fontSize: isMobile ? 12 : 9, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: group.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto", letterSpacing: "0.04em" }}>
+                          <Text as="span" size={10} color="var(--ft-dim)" letterSpacing="0.04em"><span className="pnum">{group.txs.length}</span> tx</Text>
+                          <span className="pnum" style={{ fontSize: 9, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: group.net >= 0 ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto", letterSpacing: "0.04em" }}>
                             {group.net >= 0 ? "+" : "−"}{formatBaseMoney(Math.abs(group.net))}
                           </span>
                         </div>
@@ -3111,37 +2879,6 @@ export default function Transactions() {
           )}
         </div>
       </div>
-
-      {/* ── Mobile FAB — add transaction ── */}
-      {isMobile && (
-        <button
-          type="button"
-          onClick={openAdd}
-          aria-label="Add transaction"
-          style={{
-            position: "fixed",
-            bottom: "calc(68px + env(safe-area-inset-bottom))",
-            right: 20,
-            zIndex: 50,
-            width: 52,
-            height: 52,
-            borderRadius: "50%",
-            background: "var(--ft-accent)",
-            border: "none",
-            color: "var(--ft-base)",
-            fontSize: 26,
-            fontWeight: 300,
-            lineHeight: 1,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 4px 16px color-mix(in srgb, var(--ft-accent) 40%, transparent)",
-          }}
-        >
-          +
-        </button>
-      )}
 
       {/* ── localStorage SplitModal ── */}
       {splitModalTx && (
