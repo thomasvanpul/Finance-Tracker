@@ -19,10 +19,23 @@ interface PanelBoxProps {
   borderTop?: string;
 }
 
+// Every panel surface in the app carries `ft-panelbox`, in addition to
+// whatever the caller passed. It changes nothing on its own — the surface is
+// still drawn by the inline styles below — but it makes the surface
+// ADDRESSABLE from the stylesheet, which it was not.
+//
+// That matters more than it sounds. Five rounds of design work aimed at "the
+// page reads as boxed" edited .ft-panel and .ft-widget-frame in index.css,
+// and the dashboard's panels are none of those: they are this component's
+// inline border, which no stylesheet rule could name and therefore no
+// stylesheet rule could reach. A prototype of the page without frames was
+// literally unbuildable in CSS.
+const PANEL_BOX_CLASS = "ft-panelbox";
+
 export function PanelBox({ children, className, padding, borderTop }: PanelBoxProps) {
   return (
     <div
-      className={className}
+      className={className === undefined ? PANEL_BOX_CLASS : `${PANEL_BOX_CLASS} ${className}`}
       style={{
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border)",

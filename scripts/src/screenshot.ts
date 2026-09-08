@@ -418,6 +418,18 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
   // view before measuring and capturing. The app scrolls inside its own
   // container, so fullPage:true never reaches below the first viewport;
   // this is how a section further down a phone screen gets looked at.
+  // SCREENSHOT_PROTO=flat stamps data-proto="flat" on <html>, which turns on
+  // the prototype block at the end of index.css: no panel frames, no inner
+  // rules, separation by space and a header that carries the region on its
+  // own. It is set from here rather than from app code deliberately — the
+  // prototype has no runtime path in the shipped bundle at all, and nothing
+  // but this harness can reach it.
+  const proto = process.env.SCREENSHOT_PROTO ?? null;
+  if (proto !== null) {
+    await page.evaluate((p: string) => document.documentElement.setAttribute("data-proto", p), proto);
+    await page.waitForTimeout(250);
+  }
+
   const scrollTo = process.env.SCREENSHOT_SCROLL_TO ?? null;
   if (scrollTo !== null) {
     const found = await page.$eval(scrollTo, (el) => { el.scrollIntoView({ block: "start" }); return true; }).catch(() => false);

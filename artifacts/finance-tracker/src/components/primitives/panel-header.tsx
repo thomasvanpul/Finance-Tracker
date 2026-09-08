@@ -19,10 +19,14 @@ interface PanelHeaderProps {
   className?: string;
 }
 
+// See the note in panel-box.tsx: a marker class so the one section header in
+// the app can be named by a stylesheet. Additive, changes nothing drawn.
+const PANEL_HEADER_CLASS = "ft-panelrule";
+
 export function PanelHeader({ children, right, className }: PanelHeaderProps) {
   return (
     <div
-      className={className}
+      className={className === undefined ? PANEL_HEADER_CLASS : `${PANEL_HEADER_CLASS} ${className}`}
       style={{
         display: "flex",
         alignItems: "center",

@@ -1985,3 +1985,97 @@ strong.pnum {
   appearance: textfield;
   -moz-appearance: textfield;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   PROTOTYPE ONLY — frames off, inner rules off. NOT SHIPPED.
+
+   Four combinations exist and three have been tried:
+
+     frames ON,  inner rules ON    every round up to 2026-09-07
+     frames ON,  inner rules OFF   current state — "everything still boxed"
+     frames OFF, inner rules ON    the flat attempt — "can't tell where one stops"
+     frames OFF, inner rules OFF   this block
+
+   The flat attempt failed while the inner rules were still present, so the
+   page went from boxed to mush and the conclusion drawn was that frames are
+   required. That conclusion may have come from the wrong experiment, and
+   this block is the fourth cell.
+
+   Nothing in the app sets data-proto. It is stamped on <html> by the
+   screenshot harness under SCREENSHOT_PROTO=flat and by nothing else, so
+   this has no runtime path in the shipped bundle. Delete the whole block
+   once the comparison has been judged.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* The frames themselves.
+   !important throughout, and .ft-panelbox / .ft-panelrule in the list,
+   because the dashboard's frames are inline styles on the PanelBox and
+   PanelHeader primitives rather than any of the classes in this file. That
+   is why the first run of this prototype changed the headers and left every
+   box standing: the classes it named are not what draws them. */
+:root[data-proto="flat"] .ft-panel,
+:root[data-proto="flat"] .ft-panelbox,
+:root[data-proto="flat"] .ft-widget-frame,
+:root[data-proto="flat"] .ft-kpi-bar {
+  border: none !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+/* The inner cells are not classed and not framed either — they fill with
+   `var(--ft-surface)` inline so they disappear INTO the panel they sit in.
+   Take the panel away and that same fill turns each of them into a visible
+   tile against the page, which is the boxed reading arriving by a second
+   route. Rebinding the token inside a panel (it inherits to every
+   descendant) makes all of them read as page again, with no !important and
+   no edit to any widget. */
+:root[data-proto="flat"] .ft-panelbox,
+:root[data-proto="flat"] .ft-panel,
+:root[data-proto="flat"] .ft-widget-frame {
+  --ft-surface: var(--ft-base);
+}
+
+/* The header's own rule and fill are part of the box, not part of the
+   header. What is left has to open the region on its own. */
+:root[data-proto="flat"] .ft-panel-header,
+:root[data-proto="flat"] .ft-panelrule {
+  background: transparent !important;
+  border-bottom: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 0 7px 0 !important;
+}
+
+/* 12px/600 with a hairline under it was quiet enough to need the hairline.
+   Without one it has to be the loudest thing in the region: bigger, heavier,
+   full text colour rather than muted, and more tracking so the uppercase
+   still reads as a label and not as a heading in a document. */
+:root[data-proto="flat"] .ft-panel-label {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  color: var(--ft-text);
+}
+
+/* Separation is space. The board's real gaps are 6px across and 16px down —
+   not the 12–16px assumed — which is most of why the frames felt load-bearing:
+   at 6px apart, two unframed widgets are one widget. */
+:root[data-proto="flat"] .ft-dashboard-two-col { gap: 34px !important; }
+/* The board's own top gap is 14px and comes from an unclassed VStack gap={6}
+   at dashboard.tsx:3260, which no selector can name. The margin here stands
+   in for it so the vertical rhythm matches the horizontal one; a rollout
+   would change that gap prop rather than carry this line. */
+:root[data-proto="flat"] .ft-dashboard-two-col { margin-top: 20px !important; }
+:root[data-proto="flat"] .ft-dashboard-two-col > * { gap: 34px !important; }
+:root[data-proto="flat"] .ft-three-col,
+:root[data-proto="flat"] .ft-two-col,
+:root[data-proto="flat"] .ft-four-col { gap: 26px !important; }
+
+/* With no frame there is no edge for content to be inset from, so the inset
+   is what breaks the column. Figures line up on the region's own left edge. */
+:root[data-proto="flat"] .ft-panelbox > *,
+:root[data-proto="flat"] .ft-panel > :not(.ft-panel-header),
+:root[data-proto="flat"] .ft-widget-frame > * {
+  padding-left: 0;
+  padding-right: 0;
+}
