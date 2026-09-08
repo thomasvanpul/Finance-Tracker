@@ -70,7 +70,7 @@ function ThickBar({ pct, color }: { pct: number; color: string }) {
       style={{
         height: 6,
         background: "var(--ft-border)",
-        borderRadius: 3,
+        borderRadius: 2,
         overflow: "hidden",
         marginBottom: 8,
       }}
@@ -80,7 +80,7 @@ function ThickBar({ pct, color }: { pct: number; color: string }) {
           height: "100%",
           width: `${Math.min(pct, 100)}%`,
           background: color,
-          borderRadius: 3,
+          borderRadius: 2,
           transition: "none",
         }}
       />
@@ -213,7 +213,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
       </button>
 
       {/* top row: arc + title area */}
-      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8, paddingRight: 16 }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, paddingRight: 16 }}>
         {/* arc progress */}
         <div style={{ position: "relative", flexShrink: 0 }}>
           <ArcProgress pct={pct} color={color} done={done} size={52} />
@@ -228,14 +228,14 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
             }}
           >
             {done ? (
-              <span style={{ fontSize: 14, lineHeight: 1 }}>✓</span>
+              <span style={{ fontSize: 16, lineHeight: 1 }}>✓</span>
             ) : (
               <span
                 className="pnum"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  fontWeight: 700,
+                  fontSize: 11,
+                  fontWeight: 600,
                   color,
                   lineHeight: 1,
                 }}
@@ -269,12 +269,12 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 8,
+                  fontSize: 9,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
                   color: "var(--ft-green)",
                   background: "color-mix(in srgb, var(--ft-green) 12%, transparent)",
-                  padding: "1px 5px",
+                  padding: "var(--ft-badge-py) var(--ft-badge-px)",
                   borderRadius: 2,
                 }}
               >
@@ -286,12 +286,12 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
                   <span
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 8,
+                      fontSize: 9,
                       letterSpacing: "0.06em",
                       textTransform: "uppercase",
                       color: velocity.color,
                       background: `color-mix(in srgb, ${velocity.color} 12%, transparent)`,
-                      padding: "1px 5px",
+                      padding: "var(--ft-badge-py) var(--ft-badge-px)",
                       borderRadius: 2,
                     }}
                   >
@@ -302,7 +302,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
                   <span
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 8,
+                      fontSize: 9,
                       letterSpacing: "0.04em",
                       color: dlInfo.color,
                     }}
@@ -342,7 +342,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
           <div style={{ textAlign: "right", flexShrink: 0 }}>
             <div
               className="pnum"
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", whiteSpace: "nowrap" }}
+              style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", whiteSpace: "nowrap" }}
             >
               {formatBaseMoney(remaining)} left
             </div>
@@ -360,7 +360,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
       {!done && goal.monthlyContribution && goal.monthlyContribution > 0 && (
         <div style={{ marginBottom: 6 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Monthly
             </span>
             <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
@@ -403,11 +403,11 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
           style={{
             flex: 1,
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 11,
             background: "var(--ft-raised)",
             border: "1px solid var(--ft-border2)",
             color: "var(--ft-text)",
-            padding: "2px 5px",
+            padding: "var(--ft-badge-py) var(--ft-badge-px)",
             outline: "none",
             minWidth: 0,
           }}
@@ -431,7 +431,7 @@ function GoalsSummary({ totalSaved, totalTarget, totalPct, onAdd, adding }: Goal
   return (
     <div
       style={{
-        padding: "8px 12px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -439,7 +439,7 @@ function GoalsSummary({ totalSaved, totalTarget, totalPct, onAdd, adding }: Goal
       }}
     >
       <div style={{ display: "flex", gap: 12, alignItems: "center", flex: 1, minWidth: 0, overflow: "hidden" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, flexShrink: 0, whiteSpace: "nowrap" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, flexShrink: 0, whiteSpace: "nowrap" }}>
           <span style={{ color: "var(--ft-dim)", marginRight: 4, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: 9 }}>
             Saved
           </span>
@@ -447,7 +447,7 @@ function GoalsSummary({ totalSaved, totalTarget, totalPct, onAdd, adding }: Goal
             {formatBaseMoney(totalSaved)}
           </span>
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, flexShrink: 0, whiteSpace: "nowrap" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, flexShrink: 0, whiteSpace: "nowrap" }}>
           <span style={{ color: "var(--ft-dim)", marginRight: 4, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: 9 }}>
             Target
           </span>
@@ -488,7 +488,7 @@ function GoalsSummary({ totalSaved, totalTarget, totalPct, onAdd, adding }: Goal
           color: "var(--ft-green)",
           background: "transparent",
           border: "1px solid var(--ft-green)",
-          padding: "2px 8px",
+          padding: "var(--ft-badge-py) var(--ft-badge-px)",
           cursor: "pointer",
           textTransform: "uppercase",
           flexShrink: 0,
@@ -572,7 +572,7 @@ export function SavingsGoalsWidget() {
         {adding && (
           <div
             style={{
-              padding: "10px 12px",
+              padding: "var(--ft-widget-py) var(--ft-widget-px)",
               borderBottom: "1px solid var(--ft-border)",
               display: "flex",
               flexDirection: "column",
@@ -601,7 +601,7 @@ export function SavingsGoalsWidget() {
                     background: "var(--ft-surface)",
                     border: "1px solid var(--ft-border2)",
                     color: "var(--ft-text)",
-                    padding: "5px 8px",
+                    padding: "var(--ft-badge-py) var(--ft-badge-px)",
                     outline: "none",
                   }}
                 />
@@ -620,7 +620,7 @@ export function SavingsGoalsWidget() {
                   background: "var(--ft-surface)",
                   border: "1px solid var(--ft-border2)",
                   color: form.deadline ? "var(--ft-text)" : "var(--ft-dim)",
-                  padding: "5px 8px",
+                  padding: "var(--ft-badge-py) var(--ft-badge-px)",
                   outline: "none",
                 }}
               />
@@ -638,7 +638,7 @@ export function SavingsGoalsWidget() {
                   background: "var(--ft-surface)",
                   border: "1px solid var(--ft-border2)",
                   color: "var(--ft-text)",
-                  padding: "5px 8px",
+                  padding: "var(--ft-badge-py) var(--ft-badge-px)",
                   outline: "none",
                 }}
               />
@@ -647,11 +647,11 @@ export function SavingsGoalsWidget() {
                 disabled={createGoal.isPending}
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: 11,
                   color: "var(--ft-base)",
                   background: "var(--ft-green)",
                   border: "none",
-                  padding: "5px 14px",
+                  padding: "var(--ft-widget-py) var(--ft-widget-px)",
                   cursor: "pointer",
                   opacity: createGoal.isPending ? 0.6 : 1,
                   flexShrink: 0,
@@ -680,7 +680,7 @@ export function SavingsGoalsWidget() {
         {goals.length === 0 && !adding && (
           <div
             style={{
-              padding: "28px 16px",
+              padding: "var(--ft-empty-py) var(--ft-empty-px)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -699,7 +699,7 @@ export function SavingsGoalsWidget() {
             <span
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 11,
                 color: "var(--ft-dim)",
                 textAlign: "center",
                 letterSpacing: "0.04em",

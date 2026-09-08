@@ -102,12 +102,12 @@ function AlertCountChip({ count, level, label }: AlertCountChipProps) {
   return (
     <span style={{
       fontFamily: "var(--font-mono)",
-      fontSize: 8,
-      fontWeight: 700,
+      fontSize: 9,
+      fontWeight: 600,
       color,
       background: `color-mix(in srgb, ${color} 15%, transparent)`,
       border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
-      padding: "1px 5px",
+      padding: "var(--ft-badge-py) var(--ft-badge-px)",
       letterSpacing: "0.06em",
     }}>
       {count} {label}
@@ -132,23 +132,23 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) 
           ? `color-mix(in srgb, ${color} 8%, var(--ft-raised))`
           : `color-mix(in srgb, ${color} 4%, var(--ft-raised))`,
         borderBottom: "1px solid var(--ft-border)",
-        padding: "8px 10px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         fontFamily: "var(--font-mono)",
         transition: "background 0.1s",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 1 }}>
-        <span style={{ fontSize: 12, color, lineHeight: 1 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 1 }}>
+        <span style={{ fontSize: 13, color, lineHeight: 1 }}>
           {LEVEL_ICON[alert.level]}
         </span>
         <span style={{
-          fontSize: 8,
-          fontWeight: 700,
+          fontSize: 9,
+          fontWeight: 600,
           letterSpacing: "0.1em",
           color,
           background: `color-mix(in srgb, ${color} 15%, transparent)`,
           border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
-          padding: "1px 4px",
+          padding: "var(--ft-badge-py) var(--ft-badge-px)",
           lineHeight: "14px",
         }}>
           {LEVEL_LABEL[alert.level].trim()}
@@ -158,7 +158,7 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) 
       <div style={{ minWidth: 0 }}>
         {alert.href ? (
           <DrillTarget href={alert.href} title="Open the rows this alert counted">
-            <div className="ft-drill" style={{ fontSize: 11, fontWeight: 700, marginBottom: 2, lineHeight: 1.3 }}>
+            <div className="ft-drill" style={{ fontSize: 11, fontWeight: 600, marginBottom: 2, lineHeight: 1.3 }}>
               {alert.title}
             </div>
             <div className="pnum" style={{ fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
@@ -167,7 +167,7 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) 
           </DrillTarget>
         ) : (
           <>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ft-text)", marginBottom: 2, lineHeight: 1.3 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2, lineHeight: 1.3 }}>
               {alert.title}
             </div>
             <div className="pnum" style={{ fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", letterSpacing: "0.02em" }}>
@@ -186,7 +186,7 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) 
           color: "var(--ft-dim)",
           cursor: "pointer",
           fontFamily: "var(--font-mono)",
-          fontSize: 14,
+          fontSize: 16,
           padding: "0 2px",
           lineHeight: 1,
           flexShrink: 0,
@@ -378,9 +378,9 @@ export function SmartAlertsWidget() {
             onClick={dismissAll}
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 8,
+              fontSize: 9,
               letterSpacing: "0.06em",
-              padding: "2px 6px",
+              padding: "var(--ft-badge-py) var(--ft-badge-px)",
               background: "transparent",
               color: "var(--ft-dim)",
               border: "1px solid var(--ft-border2)",
@@ -392,7 +392,7 @@ export function SmartAlertsWidget() {
         }
       >
         Smart Alerts
-        <div style={{ display: "flex", gap: 3 }}>
+        <div style={{ display: "flex", gap: 4 }}>
           {critCount > 0 && <AlertCountChip count={critCount} level="critical" label="CRIT" />}
           {warnCount > 0 && <AlertCountChip count={warnCount} level="warn" label="WARN" />}
           {infoCount > 0 && <AlertCountChip count={infoCount} level="info" label="INFO" />}
@@ -410,7 +410,7 @@ export function SmartAlertsWidget() {
           fontFamily: "var(--font-mono)",
           fontSize: 9,
           color: "var(--ft-dim)",
-          padding: "6px 14px",
+          padding: "var(--ft-widget-py) var(--ft-widget-px)",
           background: "var(--ft-raised)",
           letterSpacing: "0.04em",
         }}>

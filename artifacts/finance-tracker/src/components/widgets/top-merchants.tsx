@@ -89,7 +89,7 @@ function MerchantRow({ merchant, rank, isLast, isExpanded: expanded, color, barW
         <Drill
           href={merchantTransactionsHref(merchant.name)}
           title={`${merchant.name} — every transaction, across accounts`}
-          style={{ fontFamily: "var(--font-mono)", fontSize: 10, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          style={{ fontFamily: "var(--font-mono)", fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
         >
           {truncatedName}
         </Drill>
@@ -97,23 +97,23 @@ function MerchantRow({ merchant, rank, isLast, isExpanded: expanded, color, barW
           {pctOfTotal.toFixed(0)}%
         </span>
         {isNew ? (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color: "var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 30%, transparent)", padding: "1px 4px", flexShrink: 0, letterSpacing: "0.04em" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 600, color: "var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 12%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 30%, transparent)", padding: "var(--ft-badge-py) var(--ft-badge-px)", flexShrink: 0, letterSpacing: "0.04em" }}>
             NEW
           </span>
         ) : rankDelta !== null && rankDelta !== 0 ? (
           <span style={{
-            fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700,
+            fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 600,
             color: rankDelta > 0 ? "var(--ft-green)" : "var(--ft-red)",
             background: `color-mix(in srgb, ${rankDelta > 0 ? "var(--ft-green)" : "var(--ft-red)"} 12%, transparent)`,
             border: `1px solid color-mix(in srgb, ${rankDelta > 0 ? "var(--ft-green)" : "var(--ft-red)"} 30%, transparent)`,
-            padding: "1px 4px", flexShrink: 0, letterSpacing: "0.04em",
+            padding: "var(--ft-badge-py) var(--ft-badge-px)", flexShrink: 0, letterSpacing: "0.04em",
           }}>
             {rankDelta > 0 ? `▲${rankDelta}` : `▼${Math.abs(rankDelta)}`}
           </span>
         ) : (
           <span style={{ width: 28, flexShrink: 0 }} />
         )}
-        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color, flexShrink: 0, textAlign: "right", minWidth: 56 }}>
+        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color, flexShrink: 0, textAlign: "right", minWidth: 56 }}>
           {formatBaseMoney(merchant.total)}
         </span>
       </div>
@@ -172,19 +172,19 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
         Top Merchants · This Month
       </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, justifyContent: "space-between" }}>
-        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, justifyContent: "space-between" }}>
+        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1 }}>
           <Drill href={monthTransactionsHref(thisMonth, "expense")} title="This month's spend — every expense it is the sum of">{formatBaseMoney(monthlyTotal)}</Drill>
         </span>
         {prevMonthTotal > 0 && (
           <span style={{
             fontFamily: "var(--font-mono)",
             fontSize: 9,
-            fontWeight: 700,
+            fontWeight: 600,
             color: totalDeltaColor,
             background: `color-mix(in srgb, ${totalDeltaColor} 12%, transparent)`,
             border: `1px solid color-mix(in srgb, ${totalDeltaColor} 30%, transparent)`,
-            padding: "2px 6px",
+            padding: "var(--ft-badge-py) var(--ft-badge-px)",
             letterSpacing: "0.04em",
           }}>
             {totalDelta > 0 ? "▲" : "▼"} {formatBaseMoney(Math.abs(totalDelta))} vs last
@@ -229,7 +229,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
   );
 
   const donutPanel = (
-    <div style={{ padding: "10px 12px" }}>
+    <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
         Share of spend
       </div>
@@ -257,7 +257,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
                   background: "var(--ft-raised)",
                   border: "1px solid var(--ft-border)",
                   color: "var(--ft-text)",
-                  fontSize: 10,
+                  fontSize: 11,
                   fontFamily: "var(--font-mono)",
                 }}
               />
@@ -265,7 +265,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
           </ResponsiveContainer>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }}>
             {donutData.map((entry, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {entry.name}

@@ -109,7 +109,7 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
       style={{
         display: "flex",
         alignItems: "center",
-        padding: "8px 12px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         borderBottom: "1px solid var(--ft-border)",
         gap: 8,
         background: rowBg,
@@ -126,7 +126,7 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
         <div style={{
           fontFamily: "var(--font-mono)",
           fontSize: 11,
-          fontWeight: 700,
+          fontWeight: 600,
           color: "var(--ft-text)",
           letterSpacing: "0.02em",
           overflow: "hidden",
@@ -137,7 +137,7 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
         </div>
         <div style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 8,
+          fontSize: 9,
           color: stale ? "var(--ft-amber)" : "var(--ft-dim)",
           letterSpacing: "0.08em",
           textTransform: "uppercase",
@@ -163,10 +163,10 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
             }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
               {q.low52w != null ? Math.round(q.low52w).toLocaleString() : ""}
             </span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
               {q.high52w != null ? Math.round(q.high52w).toLocaleString() : ""}
             </span>
           </div>
@@ -191,7 +191,7 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
         {chgPct != null ? (
           <div className="pnum" style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 600,
             color: isUp ? "var(--ft-green)" : "var(--ft-red)",
             display: "flex",
@@ -200,7 +200,7 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
             gap: 2,
             marginTop: 1,
           }}>
-            <span style={{ fontSize: 8 }}>{isUp ? "▲" : "▼"}</span>
+            <span style={{ fontSize: 9 }}>{isUp ? "▲" : "▼"}</span>
             {Math.abs(chgPct).toFixed(2)}%
           </div>
         ) : (
@@ -252,10 +252,10 @@ export function MarketSnapshotWidget({ isExpanded }: { isExpanded?: boolean }) {
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       {marketSummary && marketSummary.total > 0 && (
         <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", fontWeight: 700 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", fontWeight: 600 }}>
             ▲{marketSummary.upCount}
           </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", fontWeight: 700 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", fontWeight: 600 }}>
             ▼{marketSummary.downCount}
           </span>
         </div>
@@ -264,9 +264,9 @@ export function MarketSnapshotWidget({ isExpanded }: { isExpanded?: boolean }) {
         onClick={() => setShowSparklines(s => !s)}
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 8,
+          fontSize: 9,
           letterSpacing: "0.06em",
-          padding: "1px 5px",
+          padding: "var(--ft-badge-py) var(--ft-badge-px)",
           background: showSparklines ? "var(--ft-accent)" : "transparent",
           color: showSparklines ? "var(--ft-base)" : "var(--ft-dim)",
           border: `1px solid ${showSparklines ? "var(--ft-accent)" : "var(--ft-border2)"}`,
@@ -284,7 +284,7 @@ export function MarketSnapshotWidget({ isExpanded }: { isExpanded?: boolean }) {
     <WidgetShell title="Market Snapshot" isLoading={isLoading} accent="var(--ft-amber)" headerRight={headerRight}>
       {!isLoading && (
         isError || quotes.length === 0 ? (
-          <div style={{ padding: "24px 12px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
+          <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
             Market data unavailable
           </div>
         ) : (
@@ -293,10 +293,10 @@ export function MarketSnapshotWidget({ isExpanded }: { isExpanded?: boolean }) {
               <div key={group}>
                 {Object.keys(grouped).length > 1 && (
                   <div style={{
-                    padding: "4px 12px",
+                    padding: "var(--ft-widget-py) var(--ft-widget-px)",
                     background: "var(--ft-base)",
                     fontFamily: "var(--font-mono)",
-                    fontSize: 8,
+                    fontSize: 9,
                     letterSpacing: "0.14em",
                     color: "var(--ft-dim)",
                     borderBottom: "1px solid var(--ft-border)",
@@ -311,9 +311,9 @@ export function MarketSnapshotWidget({ isExpanded }: { isExpanded?: boolean }) {
             ))}
 
             <div style={{
-              padding: "5px 12px",
+              padding: "var(--ft-widget-py) var(--ft-widget-px)",
               fontFamily: "var(--font-mono)",
-              fontSize: 8,
+              fontSize: 9,
               color: "var(--ft-dim)",
               display: "flex",
               justifyContent: "space-between",

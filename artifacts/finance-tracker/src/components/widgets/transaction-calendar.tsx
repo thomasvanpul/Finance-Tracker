@@ -156,7 +156,7 @@ function CalendarDayCell({
         {txCount > 1 && inMonth && (
           <span style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 7,
+            fontSize: 9,
             color: "var(--ft-dim)",
             lineHeight: 1,
           }}>
@@ -166,12 +166,12 @@ function CalendarDayCell({
       </div>
 
       {hasActivity && (
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 1, height: 12 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 12 }}>
           {incomeH > 0 && (
-            <div style={{ flex: 1, height: incomeH, background: "var(--ft-green)", opacity: 0.8, borderRadius: 1 }} />
+            <div style={{ flex: 1, height: incomeH, background: "var(--ft-green)", opacity: 0.8, borderRadius: 2 }} />
           )}
           {expenseH > 0 && (
-            <div style={{ flex: 1, height: expenseH, background: "var(--ft-red)", opacity: 0.8, borderRadius: 1 }} />
+            <div style={{ flex: 1, height: expenseH, background: "var(--ft-red)", opacity: 0.8, borderRadius: 2 }} />
           )}
         </div>
       )}
@@ -179,7 +179,7 @@ function CalendarDayCell({
       {hasActivity && netDay !== 0 && (
         <div style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 7,
+          fontSize: 9,
           color: netDay >= 0 ? "var(--ft-green)" : "var(--ft-red)",
           lineHeight: 1,
           textAlign: "right",
@@ -203,7 +203,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "6px 10px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         borderBottom: "1px solid var(--ft-border)",
         display: "flex",
         alignItems: "center",
@@ -224,7 +224,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 11,
           color: "var(--ft-text)",
           flex: 1,
           overflow: "hidden",
@@ -237,7 +237,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 8,
+          fontSize: 9,
           color: "var(--ft-dim)",
           flexShrink: 0,
         }}
@@ -248,7 +248,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
         className="pnum"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 11,
           color: TYPE_COLORS[tx.type] ?? "var(--ft-muted)",
           flexShrink: 0,
           fontWeight: 600,
@@ -324,17 +324,17 @@ export function TransactionCalendarWidget() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px 6px" }}>
               <button
                 onClick={handlePrev}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 13, padding: "2px 6px", lineHeight: 1 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 13, padding: "var(--ft-badge-py) var(--ft-badge-px)", lineHeight: 1 }}
                 aria-label="Previous month"
               >
                 ‹
               </button>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-text)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-text)" }}>
                 {monthLabel}
               </span>
               <button
                 onClick={handleNext}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 13, padding: "2px 6px", lineHeight: 1 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 13, padding: "var(--ft-badge-py) var(--ft-badge-px)", lineHeight: 1 }}
                 aria-label="Next month"
               >
                 ›
@@ -352,11 +352,11 @@ export function TransactionCalendarWidget() {
                   { label: "DAYS",   value: String(activeDays), color: "var(--ft-accent)", href: undefined },
                   { label: "AVG/D",  value: `-${formatBaseMoney(Math.abs(avgDailySpend))}`, color: "var(--ft-amber)", href: undefined },
                 ].map((item, i) => (
-                  <div key={item.label} style={{ padding: "6px 10px", }}>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", color: "var(--ft-dim)", marginBottom: 2 }}>
+                  <div key={item.label} style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", }}>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-dim)", marginBottom: 2 }}>
                       {item.label}
                     </div>
-                    <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: item.color }}>
+                    <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: item.color }}>
                       {item.href ? <Drill href={item.href}>{item.value}</Drill> : item.value}
                     </div>
                   </div>
@@ -432,7 +432,7 @@ export function TransactionCalendarWidget() {
               >
                 <div
                   style={{
-                    padding: "6px 10px",
+                    padding: "var(--ft-widget-py) var(--ft-widget-px)",
                     borderBottom: "1px solid var(--ft-border)",
                     display: "flex",
                     justifyContent: "space-between",
@@ -488,10 +488,10 @@ export function TransactionCalendarWidget() {
               <div
                 style={{
                   marginTop: 10,
-                  padding: "10px 12px",
+                  padding: "var(--ft-widget-py) var(--ft-widget-px)",
                   background: "var(--ft-raised)",
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: 11,
                   color: "var(--ft-dim)",
                   textAlign: "center",
                 }}

@@ -96,25 +96,25 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
       href="/accounts"
       linkLabel="→ Accounts"
     >
-      <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", display: "flex", flexDirection: "column", gap: 12 }}>
 
         {/* Primary metric */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
           <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
               RUNWAY AT CURRENT BURN
             </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: runway != null ? runwayColor(runway) : "var(--ft-dim)", letterSpacing: "-0.02em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
                 {runway != null ? runway.toFixed(1) : "—"}
               </span>
               {runway != null && (
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-muted)", fontWeight: 500 }}>months</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ft-muted)", fontWeight: 500 }}>months</span>
               )}
             </div>
           </div>
           {runway != null && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "3px 8px", border: `1px solid ${runwayColor(runway)}44`, color: runwayColor(runway), letterSpacing: "0.08em", fontWeight: 700, flexShrink: 0 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "var(--ft-badge-py) var(--ft-badge-px)", border: `1px solid ${runwayColor(runway)}44`, color: runwayColor(runway), letterSpacing: "0.08em", fontWeight: 600, flexShrink: 0 }}>
               {runwayLabel(runway)}
             </div>
           )}
@@ -126,7 +126,7 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
             <div style={{ height: 5, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${Math.min(100, (runway / 6) * 100)}%`, background: runwayColor(runway) }} />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: -8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: -8 }}>
               <span>0</span>
               <span>6mo target</span>
             </div>
@@ -146,7 +146,7 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
             ["DAILY", `${formatBaseMoney(dailyBurn)}/d`, "var(--ft-dim)", undefined],
           ] as [string, string, string, string | undefined][]).map(([lbl, val, col, href], i) => (
             <div key={lbl} style={{ background: "var(--ft-surface)", padding: "7px 9px", }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 3 }}>{lbl}</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: col, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{href ? <Drill href={href}>{val}</Drill> : val}</div>
             </div>
           ))}
@@ -154,9 +154,9 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
 
         {/* Burn rate trend */}
         {burnPct != null && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, borderTop: "1px solid var(--ft-border)", paddingTop: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, borderTop: "1px solid var(--ft-border)", paddingTop: 8 }}>
             <div style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", ...(burnPct >= 0 ? { borderBottom: `6px solid var(--ft-red)` } : { borderTop: `6px solid var(--ft-green)` }), flexShrink: 0 }} />
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: burnPct >= 0 ? "var(--ft-red)" : "var(--ft-green)", fontWeight: 700 }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: burnPct >= 0 ? "var(--ft-red)" : "var(--ft-green)", fontWeight: 600 }}>
               {burnPct >= 0 ? "+" : ""}{burnPct}% vs last month
             </span>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>

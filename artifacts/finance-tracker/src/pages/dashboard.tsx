@@ -138,7 +138,7 @@ function SavingsRateKpi() {
   const savingsRate = dashData?.thisMonth?.savingsRate ?? null;
 
   if (savingsRate === null) return (
-    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-green)" }), minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-green)" }), minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
       No data yet
     </div>
   );
@@ -155,7 +155,7 @@ function SavingsRateKpi() {
       : "var(--ft-red)";
 
   return (
-    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${barColor}` }), minHeight: 160, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
+    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${barColor}` }), minHeight: 160, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 16 }}>
       {/* Header */}
       <HStack align="baseline" justify="between" minWidth0>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>SAVINGS RATE</span>
@@ -167,17 +167,17 @@ function SavingsRateKpi() {
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: barColor, letterSpacing: "-0.02em", lineHeight: 1, flexShrink: 0, whiteSpace: "nowrap" }}>
           {rate}%
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: diff >= 0 ? "var(--ft-green)" : barColor, fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: diff >= 0 ? "var(--ft-green)" : barColor, fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}>
           {diff >= 0 ? `+${diff}pp` : `${diff}pp`}
         </span>
       </HStack>
 
       {/* Progress bar */}
-      <VStack gap={6} justify="end" grow>
+      <VStack gap={8} justify="end" grow>
         <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.15s ease" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
           <span>0%</span>
           <span>{target}% goal</span>
           <span>100%</span>
@@ -235,13 +235,13 @@ function EmergencyFundWidget() {
   const barColor = valueColor;
 
   if (accounts === undefined) return (
-    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-amber)" }), minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-amber)" }), minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
       Loading…
     </div>
   );
 
   return (
-    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${valueColor}` }), minHeight: 180, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 14 }}>
+    <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: `2px solid ${valueColor}` }), minHeight: 180, display: "flex", flexDirection: "column", padding: "14px 16px", gap: 16 }}>
       {/* Header */}
       <HStack align="baseline" justify="between" minWidth0>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.12em", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>EMERGENCY FUND</span>
@@ -254,7 +254,7 @@ function EmergencyFundWidget() {
           {monthsCovered > 0 ? `${monthsCovered.toFixed(1)}` : "—"}
         </span>
         {monthsCovered > 0 && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--ft-muted)", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}>months</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, color: "var(--ft-muted)", fontWeight: 600, flexShrink: 0, whiteSpace: "nowrap" }}>months</span>
         )}
       </HStack>
 
@@ -265,11 +265,11 @@ function EmergencyFundWidget() {
       </Text>
 
       {/* Progress bar */}
-      <VStack gap={6} justify="end" grow>
+      <VStack gap={8} justify="end" grow>
         <div style={{ height: 6, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.15s ease" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
           <span>0 mo</span>
           <span>{TARGET_MONTHS} mo goal</span>
         </div>
@@ -336,7 +336,7 @@ export function NetWorthMilestonesWidget() {
       </div>
       {netWorth == null && (
         <VStack padding="14px" grow>
-          <Text as="div" mono size={10} color="var(--ft-dim)">
+          <Text as="div" mono size={11} color="var(--ft-dim)">
             {isLoading ? "Loading net worth…" : "Waiting for net worth data — milestones fill in once accounts are connected or transactions imported."}
           </Text>
         </VStack>
@@ -370,7 +370,7 @@ export function NetWorthMilestonesWidget() {
           </>
         )}
         {!next && (
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-green)", display: "flex", alignItems: "center", gap: 5 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-green)", display: "flex", alignItems: "center", gap: 4 }}>
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2 1h7v5a3.5 3.5 0 01-7 0V1z"/><path d="M2 3H.5a1 1 0 000 2H2M9 3h1.5a1 1 0 010 2H9M5.5 9.5v1M3.5 10.5h4"/></svg>
             All milestones reached!
           </div>
@@ -505,7 +505,7 @@ function CashFlowPreviewPanel() {
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: netColor, lineHeight: 1, whiteSpace: "nowrap" }}>
             <AnimatedNet value={net} />
           </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 3 }}>projected net</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", marginTop: 3 }}>projected net</div>
         </div>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
           from <span className="pnum">{formatBaseMoney(startingBalance)}</span>
@@ -513,14 +513,14 @@ function CashFlowPreviewPanel() {
       </HStack>
 
       <HStack gap={16} minWidth0>
-        <HStack gap={6} align="center" minWidth0>
+        <HStack gap={8} align="center" minWidth0>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>Inflows</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>+{formatBaseMoney(Math.abs(inflows))}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, color: "var(--ft-green)", flexShrink: 0, whiteSpace: "nowrap" }}>+{formatBaseMoney(Math.abs(inflows))}</span>
         </HStack>
         <div style={{ width: 1, background: "var(--ft-border2)", flexShrink: 0 }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-dim)", flex: 1, minWidth: 0, lineHeight: 1.2 }}>Outflows</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>-{formatBaseMoney(Math.abs(outflows))}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>-{formatBaseMoney(Math.abs(outflows))}</span>
         </div>
       </HStack>
     </div>
@@ -584,14 +584,14 @@ function SpendingVelocityPanel() {
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, whiteSpace: "nowrap" }}>
             <AnimatedSpendRate value={avgDailyThis} /><Text as="span" size={11} weight={400} color="var(--ft-dim)">/day</Text>
           </div>
-          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             vs <span className="pnum">{formatBaseMoney(avgDailyPrev)}</span>/day last month
           </div>
         </div>
         <div style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
-          fontWeight: 700,
+          fontSize: 11,
+          fontWeight: 600,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
           color: onTrack ? "var(--ft-green)" : "var(--ft-amber)",
@@ -645,13 +645,13 @@ function InsightRow({ label, text }: { label: string; text: string }) {
         background: hovered ? "var(--ft-raised)" : "var(--ft-surface)",
         padding: "10px 12px",
         fontFamily: "var(--font-sans)",
-        fontSize: 10,
+        fontSize: 11,
         color: "var(--ft-muted)",
         lineHeight: 1.6,
         transition: "background 0.1s",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 4 }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 4 }}>
         {label}
       </div>
       {text}
@@ -882,9 +882,9 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: 6,
+        gap: 8,
       }}>
-        <span className="ft-float-title" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span className="ft-float-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Zap size={11} style={{ color: "var(--ft-accent)" }} />
           AI insights
         </span>
@@ -981,7 +981,7 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                   // than the support belongs to the clause, and the gap is
                   // what says so. No fill and no rule — DESIGN.md § 5, and
                   // the reason the previous grid read as three boxes.
-                  gap: 3,
+                  gap: 4,
                   minWidth: 0,
                 }}
               >
@@ -996,7 +996,7 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                     never split on a guess, never shown as a figure it is
                     not. */}
                 {figure !== null && (
-                  <Text as="div" numeric size={18} weight={700} color="var(--ft-text)"
+                  <Text as="div" numeric size={20} weight={700} color="var(--ft-text)"
                     letterSpacing="-0.01em" lineHeight={1.1}>
                     {figure}
                   </Text>
@@ -1013,7 +1013,7 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
                     --ft-dim: evidence, read second, and absent rather than
                     padded when there is none. */}
                 {support !== null && (
-                  <Text as="div" mono size={10} color="var(--ft-dim)" lineHeight={1.45} mt={2}>
+                  <Text as="div" mono size={11} color="var(--ft-dim)" lineHeight={1.45} mt={2}>
                     {support}
                   </Text>
                 )}
@@ -1119,14 +1119,14 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
           background: "var(--ft-raised)",
           gap: 12,
         }}>
-          <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.08em">⤢</Text>
-          <Text as="span" mono upper size={10} weight={700} color="var(--ft-accent)" letterSpacing="0.12em">
+          <Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.08em">⤢</Text>
+          <Text as="span" mono upper size={11} weight={700} color="var(--ft-accent)" letterSpacing="0.12em">
             {def?.label ?? id}
           </Text>
           {def?.description && (
             <span style={{
               fontFamily: "var(--font-sans)",
-              fontSize: 10,
+              fontSize: 11,
               color: "var(--ft-dim)",
               flex: 1,
               overflow: "hidden",
@@ -1146,7 +1146,7 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
               color: "var(--ft-dim)",
               cursor: "pointer",
               fontFamily: "var(--font-mono)",
-              fontSize: 14,
+              fontSize: 16,
               lineHeight: 1,
               padding: "3px 8px",
               transition: "color 0.1s, border-color 0.1s",
@@ -1178,7 +1178,7 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
                   onClick={onClose}
                   style={{
                     fontFamily: "var(--font-sans)",
-                    fontSize: 10,
+                    fontSize: 11,
                     color: "var(--ft-dim)",
                     padding: "8px 14px",
                     borderRight: "1px solid var(--ft-border)",
@@ -1237,7 +1237,7 @@ function ViewModeWidget({ id, onExpand }: { id: WidgetId; onExpand: () => void }
             color: "var(--ft-dim)",
             cursor: "pointer",
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 11,
             width: 20,
             height: 20,
             display: "flex",
@@ -1315,7 +1315,7 @@ function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId;
             color: "var(--ft-dim)",
             cursor: "pointer",
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 11,
             width: 20,
             height: 20,
             display: "flex",
@@ -1378,7 +1378,7 @@ function SortableCompactTile({ id, onRemove, isFullWidth, activeId }: { id: Widg
         <span style={{
           flex: "0 0 auto",
           fontFamily: "var(--font-mono)",
-          fontSize: 14,
+          fontSize: 16,
           color: "var(--ft-accent)",
           padding: "0 10px",
           display: "flex",
@@ -1390,7 +1390,7 @@ function SortableCompactTile({ id, onRemove, isFullWidth, activeId }: { id: Widg
         <span style={{
           flex: 1,
           fontFamily: "var(--font-mono)",
-          fontSize: 8,
+          fontSize: 9,
           color: "var(--ft-muted)",
           letterSpacing: "0.1em",
           textTransform: "uppercase",
@@ -1414,7 +1414,7 @@ function SortableCompactTile({ id, onRemove, isFullWidth, activeId }: { id: Widg
             color: "var(--ft-red)",
             cursor: "pointer",
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 11,
             padding: "0 12px",
             height: "100%",
             display: "flex",
@@ -1518,7 +1518,7 @@ function SortableWidget({ id, span, index, anyDragging, onToggleSpan, onRemove, 
             alignItems: "center",
             justifyContent: "flex-start",
             paddingTop: 6,
-            gap: 1,
+            gap: 2,
             transition: "width 0.1s ease",
             zIndex: 1,
             cursor: "pointer",
@@ -1596,13 +1596,13 @@ function WidgetPickerRow({ id, onAdd, onHover }: {
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
-        gap: 3,
+        gap: 4,
         transition: "border-color 0.1s, background 0.1s",
         flexShrink: 0,
         width: "100%",
       }}
     >
-      <Text as="div" mono upper size={10} weight={700} color={hovered ? "var(--ft-accent)" : "var(--ft-text)"} letterSpacing="0.06em">
+      <Text as="div" mono upper size={11} weight={700} color={hovered ? "var(--ft-accent)" : "var(--ft-text)"} letterSpacing="0.06em">
         {def?.label ?? id}
       </Text>
       <Text as="div" mono size={9} color="var(--ft-dim)" lineHeight={1.5}>
@@ -1633,24 +1633,24 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
             border: "1px dashed var(--ft-border2)",
             color: open ? "var(--ft-accent)" : "var(--ft-dim)",
             fontFamily: "var(--font-sans)",
-            fontSize: 10,
+            fontSize: 11,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
             padding: "8px 14px",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
-            gap: 6,
+            gap: 8,
             width: "100%",
             justifyContent: "center",
             touchAction: "manipulation",
           }}
         >
-          <Text as="span" size={14} lineHeight={1}>{open ? "−" : "+"}</Text>
+          <Text as="span" size={16} lineHeight={1}>{open ? "−" : "+"}</Text>
           {open ? "Close" : `Add widgets (${disabledIds.length})`}
         </button>
         {open && (
-          <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {disabledIds.map(id => {
               const def = WIDGET_DEF_MAP[id];
               const isFull = COMPACT_WIDGET_FULL_WIDTH.has(id);
@@ -1676,14 +1676,14 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
                   onTouchEnd={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-border)"; }}
                 >
                   <HStack align="center" justify="between">
-                    <Text as="span" mono size={10} weight={700} color="var(--ft-text)" letterSpacing="0.04em">
+                    <Text as="span" mono size={11} weight={700} color="var(--ft-text)" letterSpacing="0.04em">
                       {def?.label ?? id}
                     </Text>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-accent)", letterSpacing: "0.06em", border: "1px solid color-mix(in srgb, var(--ft-accent) 30%, transparent)", padding: "1px 4px" }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.06em", border: "1px solid color-mix(in srgb, var(--ft-accent) 30%, transparent)", padding: "1px 4px" }}>
                       {isFull ? "FULL" : "HALF"}
                     </span>
                   </HStack>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
                     {def?.description ?? ""}
                   </span>
                   <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.04em", marginTop: 2 }}>
@@ -1707,14 +1707,14 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
           border: "1px dashed var(--ft-border2)",
           color: open ? "var(--ft-accent)" : "var(--ft-dim)",
           fontFamily: "var(--font-sans)",
-          fontSize: 10,
+          fontSize: 11,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           padding: "6px 14px",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
           transition: "border-color 0.1s, color 0.1s",
           width: "100%",
           justifyContent: "center",
@@ -1722,7 +1722,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
         onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-accent)"; e.currentTarget.style.color = "var(--ft-accent)"; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ft-border2)"; e.currentTarget.style.color = open ? "var(--ft-accent)" : "var(--ft-dim)"; }}
       >
-        <Text as="span" size={12} lineHeight={1}>{open ? "−" : "+"}</Text>
+        <Text as="span" size={13} lineHeight={1}>{open ? "−" : "+"}</Text>
         {open ? "Hide widget picker" : `Add widget (${disabledIds.length} available)`}
       </button>
 
@@ -1772,7 +1772,7 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
             </div>
             <div style={{ overflow: "auto", maxHeight: 400, padding: 12 }}>
               {PreviewComponent ? <PreviewComponent /> : (
-                <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", padding: "20px 0", textAlign: "center" }}>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", padding: "20px 0", textAlign: "center" }}>
                   Hover a widget to preview it
                 </div>
               )}
@@ -1799,9 +1799,33 @@ const KPI_VALUE_STYLE: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
+/**
+ * The lead cell. Every KPI value used to render at exactly 18px at 1440,
+ * which meant net worth — the number this product exists to state — was
+ * the same size as MoM SPEND. Six figures at one size is not a hierarchy;
+ * it is six figures.
+ *
+ * One promotion, not a ladder: this style applies to a single cell and
+ * the other five hold 18. Tighter tracking because a larger mono figure
+ * needs less of it, and the clamp floor is raised in step so the whole
+ * range stays above the others rather than crossing under them on a
+ * narrow viewport.
+ */
+const KPI_LEAD_VALUE_STYLE: React.CSSProperties = {
+  ...KPI_VALUE_STYLE,
+  fontSize: "clamp(18px, 1.9vw, 25px)",
+  letterSpacing: "-0.02em",
+};
+
 interface KpiCellData {
   label: string;
   value: string;
+  /**
+   * Renders at KPI_LEAD_VALUE_STYLE rather than KPI_VALUE_STYLE. At most
+   * one cell in a set should set it — two lead figures is the flat row
+   * this exists to fix, with an extra step.
+   */
+  lead?: boolean;
   delta?: string;
   deltaColor?: string;
   valueColor?: string;
@@ -1834,7 +1858,7 @@ function DashboardEmptyState() {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 10,
+        gap: 8,
         padding: "18px 20px",
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border)",
@@ -1847,7 +1871,7 @@ function DashboardEmptyState() {
           fontSize: 9,
           letterSpacing: "0.18em",
           color: "var(--ft-accent)",
-          fontWeight: 700,
+          fontWeight: 600,
         }}
       >
         {label}
@@ -1929,8 +1953,8 @@ function DashboardKpiBar({
         }}>
           <span style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 8,
-            fontWeight: 700,
+            fontSize: 9,
+            fontWeight: 600,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: "var(--ft-muted)",
@@ -1949,14 +1973,14 @@ function DashboardKpiBar({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 5,
+              gap: 4,
               background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
               border: "none",
               borderLeft: "1px solid var(--ft-border)",
               color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
               fontFamily: "var(--font-mono)",
-              fontSize: 8,
-              fontWeight: 700,
+              fontSize: 9,
+              fontWeight: 600,
               letterSpacing: "0.10em",
               textTransform: "uppercase",
               padding: "0 14px",
@@ -1975,7 +1999,7 @@ function DashboardKpiBar({
         <HStack align="stretch">
           {/* Hero — cells[0] */}
           <div style={{ flex: 1, padding: "12px 14px", borderRight: "1px solid var(--ft-border)", minHeight: 72, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
               {heroCell?.label ?? "—"}
             </div>
             <div className="pnum" style={{
@@ -1992,10 +2016,10 @@ function DashboardKpiBar({
             </div>
           </div>
           {/* Secondary stats — cells[1..2] */}
-          <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", padding: "10px 12px 10px 14px", gap: 6, minHeight: 72, maxWidth: "48%", overflow: "hidden" }}>
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", padding: "10px 12px 10px 14px", gap: 8, minHeight: 72, maxWidth: "48%", overflow: "hidden" }}>
             {secondary.map((c) => (
               <VStack key={c.label} gap={2} minWidth0>
-                <MonoLabel as="span" size={7} letterSpacing="0.12em">{c.label}</MonoLabel>
+                <MonoLabel as="span" size={9} letterSpacing="0.12em">{c.label}</MonoLabel>
                 <span
                   className="pnum"
                   style={{
@@ -2028,7 +2052,15 @@ function DashboardKpiBar({
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: `auto auto repeat(${cells.length}, 1fr)`,
+      // The lead cell takes a wider track. Not decoration: at 1440 a
+      // six-cell strip gives each 1fr track ~143px of usable width, and
+      // `£229,782.20` at 25px mono measures ~165px. Equal tracks would
+      // push the figure past its column into the strip's hidden
+      // overflow-x, and a net worth that scrolls out of view is the
+      // "shown in full or not at all" rule broken by the fix for it.
+      // Derived from the data rather than hardcoded to index 0, because
+      // the persona compositions below reorder these cells.
+      gridTemplateColumns: `auto auto ${cells.map((c) => (c.lead ? "1.35fr" : "1fr")).join(" ")}`,
       // Structure, not a widget — DESIGN.md § 6. The KPI strip is the page:
       // it cannot be dragged, removed or reordered, so it is not framed and
       // does not paint --ft-surface. One hairline underneath seats it against
@@ -2038,7 +2070,7 @@ function DashboardKpiBar({
       // which is how a terminal has always done it. Ruling every cell is what
       // turned one strip into eight rectangles.
       borderBottom: "1px solid var(--ft-border)",
-      columnGap: 10,
+      columnGap: 8,
       marginBottom: 10,
       overflowX: "auto",
       scrollbarWidth: "none",
@@ -2060,7 +2092,7 @@ function DashboardKpiBar({
         borderTop: "2px solid transparent",
         flexShrink: 0,
         minWidth: 110,
-        gap: 5,
+        gap: 4,
       }}>
         <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.10em" nowrap>
           {dashboardLabel}
@@ -2100,7 +2132,7 @@ function DashboardKpiBar({
           alignSelf: "center",
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
           height: 26,
           background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
           border: `1px solid ${isCustomizing ? "var(--ft-accent)" : "var(--ft-border2)"}`,
@@ -2108,7 +2140,7 @@ function DashboardKpiBar({
           color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
           fontFamily: "var(--font-mono)",
           fontSize: 9,
-          fontWeight: 700,
+          fontWeight: 600,
           letterSpacing: "0.10em",
           textTransform: "uppercase",
           padding: "0 10px",
@@ -2143,7 +2175,15 @@ function DashboardKpiBar({
           style={{
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
+            // flex-start, not center. Centering a column over variable-height
+            // content means a cell that carries a delta is taller, so its
+            // label and value ride UP relative to the cells that don't:
+            // measured labelTop 79.0px on SAVINGS RATE / PORTFOLIO against
+            // 87.5px on the four without a delta, an 8.5px break in a row of
+            // six labels that are meant to read as one line. The delta row
+            // below is reserved whether or not a delta exists, so the six
+            // labels and the six values each share a baseline.
+            justifyContent: "flex-start",
             padding: "var(--ft-metric-py) 14px var(--ft-metric-py) 0",
             flexShrink: 0,
             minWidth: 100, // widened from 90 so a 6-digit figure at 18px
@@ -2184,25 +2224,29 @@ function DashboardKpiBar({
           <span style={{ color: cell.valueColor ?? "var(--ft-text)" }}>
             {cell.href ? (
               <DrillTarget href={cell.href} title={`${cell.label} — open what it is made of`}>
-                <span className="pnum ft-drill" style={KPI_VALUE_STYLE}>{cell.value}</span>
+                <span className="pnum ft-drill" style={cell.lead ? KPI_LEAD_VALUE_STYLE : KPI_VALUE_STYLE}>{cell.value}</span>
               </DrillTarget>
             ) : (
-              <span className="pnum" style={KPI_VALUE_STYLE}>{cell.value}</span>
+              <span className="pnum" style={cell.lead ? KPI_LEAD_VALUE_STYLE : KPI_VALUE_STYLE}>{cell.value}</span>
             )}
           </span>
-          {cell.delta && (
-            <span className="pnum" style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 10,
-              fontWeight: 600,
-              color: cell.deltaColor ?? "var(--ft-dim)",
-              marginTop: 2,
-              fontVariantNumeric: "tabular-nums",
-              whiteSpace: "nowrap",
-            }}>
-              {cell.delta}
-            </span>
-          )}
+          {/* Reserved whether or not this cell has a delta. An absent delta
+              collapsing the cell is what made the labels above disagree by
+              8.5px; holding the row costs 15px of dead space on four cells
+              and buys a straight line across all six. */}
+          <span className="pnum" aria-hidden={cell.delta ? undefined : true} style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            fontWeight: 600,
+            lineHeight: 1.2,
+            minHeight: 13,
+            color: cell.deltaColor ?? "var(--ft-dim)",
+            marginTop: 2,
+            fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
+          }}>
+            {cell.delta ?? ""}
+          </span>
         </div>
       ))}
     </div>
@@ -2217,13 +2261,19 @@ interface TerminalLayoutProps {
 
 function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
   return (
-    // 6, matching the intra-row gap. At 16 the rows read as separate pages.
-    <VStack gap={6}>
+    // 8, matching the intra-row gap, which is the point: the vertical
+    // distance between rows and the horizontal distance inside one are the
+    // same claim ("these are adjacent widgets") and should not be two
+    // numbers. Was 6/6; 6 is not on the spacing scale at index.css:238 and
+    // 8 is its documented "default gap between related things". The
+    // original argument against 16 — that the rows read as separate pages —
+    // still holds and 8 is nowhere near it.
+    <VStack gap={8}>
       {/* AI Insights — only shown if AI available */}
       <AiInsightsPanel {...aiInsightsProps} />
 
       {/* Row 1: Accounts (60%) + Transactions (40%) */}
-      <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }} className="ft-dashboard-two-col">
+      <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }} className="ft-dashboard-two-col">
         {/* Accounts panel — 60%: AccountsSummaryWidget has its own WidgetShell header */}
         <div style={{ flex: "3 1 0", minWidth: 0 }}>
           <AccountsSummaryWidget />
@@ -2246,7 +2296,7 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
 
       {/* Row 2: Cash Flow + Spending Breakdown + Smart Alerts (equal thirds) */}
       {/* CashFlowWidget and SpendingBreakdownWidget use WidgetShell (own headers) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }} className="ft-three-col">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }} className="ft-three-col">
         <div>
           <CashFlowWidget />
         </div>
@@ -2289,7 +2339,7 @@ function RecentTransactionsWidgetInline() {
 
   if (isLoading) {
     return (
-      <VStack gap={6} padding="10px 12px">
+      <VStack gap={8} padding="10px 12px">
         {[80, 60, 90, 70, 50].map(w => (
           <div key={w} style={{ height: 8, background: "var(--ft-border)", width: `${w}%` }} />
         ))}
@@ -2300,7 +2350,7 @@ function RecentTransactionsWidgetInline() {
   if (txs.length === 0) {
     return (
       <div style={{ padding: "16px 12px" }}>
-        <Text as="span" mono size={10} color="var(--ft-dim)">
+        <Text as="span" mono size={11} color="var(--ft-dim)">
           No transactions yet
         </Text>
       </div>
@@ -2348,12 +2398,12 @@ function RecentTransactionsWidgetInline() {
           <Text as="span" mono size={9} color="var(--ft-dim)">
             {tx.date.slice(5).replace("-", "/")}
           </Text>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {tx.description
               ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill>
               : tx.description}
           </span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
             {/* Native amount alone when FX unavailable; the row still
                 shows its type + description on the left. */}
             {tx.baseEquivalent == null
@@ -2369,7 +2419,7 @@ function RecentTransactionsWidgetInline() {
 // ── Dashboard Overview (default view) ────────────────────────────────────────
 
 const OV_MONO: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
-const OV_LABEL: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.13em", textTransform: "uppercase" as const };
+const OV_LABEL: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.13em", textTransform: "uppercase" as const };
 const OV_SURFACE: React.CSSProperties = {};
 const OV_CLIP: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, minWidth: 0 };
 
@@ -2436,7 +2486,7 @@ function DashboardOverview() {
               </div>
             </div>
             {income > 0 && (
-              <HStack gap={14} align="start">
+              <HStack gap={16} align="start">
                 <div>
                   <div style={{ ...OV_LABEL, marginBottom: 3 }}>THIS MONTH</div>
                   {/* Flat, deliberately: this figure sits inside the hero
@@ -2461,8 +2511,8 @@ function DashboardOverview() {
           </div>
           {income > 0 && (
             <div style={{ display: "flex", gap: 16, marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
-              <span className="pnum" style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-green)") }}>▲ {formatBaseMoney(income)} in</span>
-              <span className="pnum" style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-red)") }}>▼ {formatBaseMoney(expenses)} out</span>
+              <span className="pnum" style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-green)") }}>▲ {formatBaseMoney(income)} in</span>
+              <span className="pnum" style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-red)") }}>▼ {formatBaseMoney(expenses)} out</span>
             </div>
           )}
         </div>
@@ -2477,16 +2527,16 @@ function DashboardOverview() {
             <span style={{ ...OV_LABEL }}>ACCOUNTS</span>
             <Link href="/accounts" style={{ textDecoration: "none" }}>
               <span style={{ ...C("var(--ft-cyan)") }}>
-                <span className="ft-drill" style={{ ...OV_MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
+                <span className="ft-drill" style={{ ...OV_MONO, fontSize: 9, fontWeight: 600, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
                   {accounts.length} LINKED →
                 </span>
               </span>
             </Link>
           </div>
           {sortedAccounts.length === 0 ? (
-            <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-muted)"), padding: "12px 14px" }}>No accounts linked</div>
+            <div style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-muted)"), padding: "12px 14px" }}>No accounts linked</div>
           ) : sortedAccounts.map((acc, i) => (
-            <div key={acc.id ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: isMobile ? "10px 12px" : "7px 14px", borderBottom: i < sortedAccounts.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+            <div key={acc.id ?? i} style={{ display: "flex", alignItems: "center", gap: 8, padding: isMobile ? "10px 12px" : "7px 14px", borderBottom: i < sortedAccounts.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: isMobile ? 13 : 11, fontWeight: isMobile ? 500 : 400, ...C("var(--ft-text)") }}><Drill href={entityHref("account", acc.id)} title={`${acc.name} — open the account`}>{acc.name}</Drill></div>
                 <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)"), letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: isMobile ? 2 : 0 }}>{(acc as any).currency ?? ""}</div>
@@ -2499,7 +2549,7 @@ function DashboardOverview() {
             </div>
           ))}
           {accounts.length > 6 && (
-            <div style={{ ...OV_MONO, fontSize: 8, ...C("var(--ft-dim)"), textAlign: "right", padding: "5px 12px", borderTop: "1px solid var(--ft-border)" }}>
+            <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)"), textAlign: "right", padding: "5px 12px", borderTop: "1px solid var(--ft-border)" }}>
               +{accounts.length - 6} more →
             </div>
           )}
@@ -2510,11 +2560,11 @@ function DashboardOverview() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: isMobile ? 12 : 14, paddingRight: 4, height: 34 }}>
             <span style={{ ...OV_LABEL }}>RECENT TRANSACTIONS</span>
             <Link href="/transactions" style={{ textDecoration: "none" }}>
-              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-blue)"), fontWeight: 700, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>VIEW ALL →</span>
+              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-blue)"), fontWeight: 600, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>VIEW ALL →</span>
             </Link>
           </div>
           {txRows.length === 0 ? (
-            <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-muted)"), padding: "12px 14px" }}>No transactions this month</div>
+            <div style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-muted)"), padding: "12px 14px" }}>No transactions this month</div>
           ) : txRows.map((tx, i) => {
             const txTypeColor = tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-amber)";
             const today2 = new Date(); const yesterday2 = new Date(today2); yesterday2.setDate(today2.getDate() - 1);
@@ -2525,15 +2575,15 @@ function DashboardOverview() {
               : txDate2.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
               : tx.date?.slice(5).replace("-", "/") ?? "";
             if (isMobile) return (
-              <div key={tx.id ?? i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: i < txRows.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+              <div key={tx.id ?? i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderBottom: i < txRows.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
                 <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: "50%", background: `color-mix(in srgb, ${txTypeColor} 15%, var(--ft-raised))`, border: `1.5px solid ${txTypeColor}44`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <span style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, color: txTypeColor }}>{(tx.category ?? tx.type ?? "?")[0].toUpperCase()}</span>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 13, fontWeight: 500, ...C("var(--ft-text)"), marginBottom: 2 }}>{tx.description ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill> : tx.description}</div>
-                  <div style={{ ...OV_MONO, fontSize: 10, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? <>{" · "}<Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill></> : null}</div>
+                  <div style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? <>{" · "}<Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill></> : null}</div>
                 </div>
-                <span className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0 }}>
+                <span className="pnum" style={{ ...OV_MONO, fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em", ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0 }}>
                   {tx.baseEquivalent == null
                     ? "—"
                     : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
@@ -2543,10 +2593,10 @@ function DashboardOverview() {
             return (
               <div key={tx.id ?? i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 14px", borderBottom: i < txRows.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
                 <VStack minWidth0>
-                  <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 10, ...C("var(--ft-text)") }}>{tx.description ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill> : tx.description}</span>
+                  <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 11, ...C("var(--ft-text)") }}>{tx.description ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill> : tx.description}</span>
                   <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? <>{" · "}<Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill></> : null}</span>
                 </VStack>
-                <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 700, ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
+                <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 600, ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
                   {tx.baseEquivalent == null
                     ? "—"
                     : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
@@ -2569,17 +2619,17 @@ function DashboardOverview() {
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
               <span style={{ ...OV_LABEL, borderBottom: "1px solid var(--ft-border)", paddingBottom: 2 }}>UPCOMING BILLS</span>
-              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-amber)"), fontWeight: 700 }}>VIEW ALL →</span>
+              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-amber)"), fontWeight: 600 }}>VIEW ALL →</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(upcomingBills.length, isMobile ? 2 : 4)}, 1fr)`, gap: 8 }}>
               {upcomingBills.map((bill, i) => (
                 <div key={bill.id ?? i} style={{ padding: "9px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)" }}>
-                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 8, ...C("var(--ft-dim)"), marginBottom: 4 }}>{bill.description ? <Drill href={recurringSeriesHref(bill.description)} title={`${bill.description} — the series this bill belongs to`}>{bill.description}</Drill> : bill.description}</div>
-                  <div className="pnum" style={{ ...OV_MONO, fontSize: 14, fontWeight: 700, ...C("var(--ft-text)"), marginBottom: 3 }}>
+                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 9, ...C("var(--ft-dim)"), marginBottom: 4 }}>{bill.description ? <Drill href={recurringSeriesHref(bill.description)} title={`${bill.description} — the series this bill belongs to`}>{bill.description}</Drill> : bill.description}</div>
+                  <div className="pnum" style={{ ...OV_MONO, fontSize: 16, fontWeight: 700, ...C("var(--ft-text)"), marginBottom: 3 }}>
                     {formatBaseMoney(bill.baseEquivalent)}
                   </div>
                   {bill.dueDate && (
-                    <div style={{ ...OV_MONO, fontSize: 8, ...C("var(--ft-amber)") }}>
+                    <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-amber)") }}>
                       {bill.dueDate.slice(5).replace("-", "/")}
                     </div>
                   )}
@@ -2682,7 +2732,7 @@ function CustomizeDiscoveryTile({ remaining, onEnter, fullWidth }: {
         display: "flex",
         flexDirection: "column",
         alignItems: "flex-start",
-        gap: 6,
+        gap: 8,
         background: "transparent",
         border: "1px dashed var(--ft-border2)",
         color: "var(--ft-text)",
@@ -2696,7 +2746,7 @@ function CustomizeDiscoveryTile({ remaining, onEnter, fullWidth }: {
       <MonoLabel as="span" size={9} color="var(--ft-accent)" letterSpacing="0.14em">
         + {remaining} MORE {remaining === 1 ? "WIDGET" : "WIDGETS"}
       </MonoLabel>
-      <Text as="span" size={12} color="var(--ft-dim)">
+      <Text as="span" size={13} color="var(--ft-dim)">
         Press EDIT LAYOUT to add them, rearrange this page, or take anything off it.
       </Text>
     </button>
@@ -2951,6 +3001,7 @@ export default function Dashboard() {
 
     const NET_WORTH: KpiCellData = {
       label: "NET WORTH",
+      lead: true,
       href: "/net-worth",
       value: formatBaseMoney(netWorth),
       delta: netWorth > 0 ? undefined : "–",
@@ -3174,8 +3225,8 @@ export default function Dashboard() {
             </span>
             {/* A sentence carrying a figure: the sentence is sans, the
                 figure inside it is mono (§10). */}
-            <Text as="span" size={10} color="var(--ft-dim)">
-              <Text as="span" numeric size={10}>{enabledIds.length}</Text>{" "}
+            <Text as="span" size={11} color="var(--ft-dim)">
+              <Text as="span" numeric size={11}>{enabledIds.length}</Text>{" "}
               widget{enabledIds.length !== 1 ? "s" : ""} active
             </Text>
           </div>
@@ -3198,7 +3249,7 @@ export default function Dashboard() {
                   placeholder="View name…"
                   autoFocus
                   style={{
-                    fontFamily: "var(--font-sans)", fontSize: 10,
+                    fontFamily: "var(--font-sans)", fontSize: 11,
                     background: "var(--ft-raised)", border: "1px solid var(--ft-accent)",
                     color: "var(--ft-text)", padding: "3px 8px", outline: "none", width: 120,
                   }}
@@ -3225,14 +3276,14 @@ export default function Dashboard() {
 
           {enabledIds.length === 0 ? (
             <VStack gap={12} align="center" justify="center" padding="60px 0">
-              <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-muted)" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ft-muted)" }}>
                 No widgets enabled — add one below
               </div>
             </VStack>
           ) : isMobile ? (
             /* Mobile: compact tile DnD — matches view mode exactly, just adds grip + remove strip */
             <DndContext sensors={mobileSensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOverMobile} onDragEnd={handleDragEndMobile} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) setOrder(preDragOrderRef.current); }}>
-              <div className="ft-mobile-widget-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="ft-mobile-widget-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <SortableContext items={enabledIds} strategy={rectSortingStrategy}>
                   {enabledIds.map(id => (
                     <SortableCompactTile key={id} id={id} onRemove={() => toggle(id)} isFullWidth={COMPACT_WIDGET_FULL_WIDTH.has(id)} activeId={activeId} />
@@ -3250,7 +3301,7 @@ export default function Dashboard() {
                       cursor: "grabbing",
                       opacity: 0.92,
                       overflow: "hidden",
-                      borderRadius: 1,
+                      borderRadius: 2,
                     }}>
                       {CompactPreview && <CompactPreview />}
                       <div style={{
@@ -3262,8 +3313,8 @@ export default function Dashboard() {
                         paddingLeft: 10,
                         gap: 8,
                       }}>
-                        <Text as="span" mono size={14} color="var(--ft-accent)">⠿</Text>
-                        <MonoLabel as="span" size={8} color="var(--ft-accent)" letterSpacing="0.1em">
+                        <Text as="span" mono size={16} color="var(--ft-accent)">⠿</Text>
+                        <MonoLabel as="span" size={9} color="var(--ft-accent)" letterSpacing="0.1em">
                           {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
                         </MonoLabel>
                       </div>
@@ -3275,7 +3326,7 @@ export default function Dashboard() {
           ) : (
             /* Desktop: drag-and-drop two-column grid */
             <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
-              <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+              <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 {/* Left column */}
                 <VStack gap={16} grow>
                   <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
@@ -3305,8 +3356,8 @@ export default function Dashboard() {
                     cursor: "grabbing",
                     minHeight: 48,
                   }}>
-                    <Text as="span" mono size={12} color="var(--ft-dim)">⠿</Text>
-                    <MonoLabel as="span" size={10} color="var(--ft-accent)" letterSpacing="0.08em">
+                    <Text as="span" mono size={13} color="var(--ft-dim)">⠿</Text>
+                    <MonoLabel as="span" size={11} color="var(--ft-accent)" letterSpacing="0.08em">
                       {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
                     </MonoLabel>
                   </div>
@@ -3332,7 +3383,7 @@ export default function Dashboard() {
               <AiInsightsPanel {...aiInsightsProps} />
               <div
                 className="ft-mobile-widget-grid"
-                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
               >
                 {enabledIds.map(id => (
                   <div
@@ -3372,7 +3423,7 @@ export default function Dashboard() {
                   }
                 }}
               >
-                <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+                <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <VStack gap={16} grow>
                     <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
                       {leftIds.map(id => (
@@ -3406,8 +3457,8 @@ export default function Dashboard() {
                       cursor: "grabbing",
                       minHeight: 48,
                     }}>
-                      <Text as="span" mono size={12} color="var(--ft-dim)">⠿</Text>
-                      <MonoLabel as="span" size={10} color="var(--ft-accent)" letterSpacing="0.08em">
+                      <Text as="span" mono size={13} color="var(--ft-dim)">⠿</Text>
+                      <MonoLabel as="span" size={11} color="var(--ft-accent)" letterSpacing="0.08em">
                         {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
                       </MonoLabel>
                     </div>

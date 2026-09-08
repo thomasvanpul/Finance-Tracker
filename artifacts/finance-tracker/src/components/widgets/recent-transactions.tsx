@@ -51,21 +51,21 @@ function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        display: "flex", alignItems: "center", padding: "7px 12px",
-        borderBottom: "1px solid var(--ft-border)", gap: 10,
+        display: "flex", alignItems: "center", padding: "var(--ft-widget-py) var(--ft-widget-px)",
+        borderBottom: "1px solid var(--ft-border)", gap: 8,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-raised))" : "transparent",
         transition: "background 0.1s",
         minWidth: 0,
         overflow: "hidden",
       }}
     >
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", width: 14, flexShrink: 0, textAlign: "center" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", width: 14, flexShrink: 0, textAlign: "center" }}>
         {TYPE_PREFIX[tx.type] ?? "·"}
       </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", flexShrink: 0, width: 68 }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", flexShrink: 0, width: 68 }}>
         {formatDate(tx.date)}
       </span>
-      <Drill href={merchantTransactionsHref(tx.description)} style={{ fontFamily: "var(--font-sans)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <Drill href={merchantTransactionsHref(tx.description)} style={{ fontFamily: "var(--font-sans)", fontSize: 13, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {tx.description}
       </Drill>
       {isExpanded && (
@@ -75,7 +75,7 @@ function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
         // rather than pointed at a substring search that would also match a
         // description — a drill that lands on the wrong rows is worse than
         // no drill.
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", flexShrink: 0, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", flexShrink: 0, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {tx.accountName}
         </span>
       )}
@@ -85,7 +85,7 @@ function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
           on the anchor itself would make the inline style beat `:hover` and
           the affordance would half-work here and nowhere else. */}
       <span style={{ color: categoryColor(tx.category), flexShrink: 0, maxWidth: 90, overflow: "hidden" }}>
-        <Drill href={categoryTransactionsHref(tx.category)} style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <Drill href={categoryTransactionsHref(tx.category)} style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {tx.category}
         </Drill>
       </span>
@@ -114,14 +114,14 @@ function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        padding: "8px 10px",
+        gap: 8,
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
         border: "1px solid var(--ft-border)",
         transition: "background 0.1s",
       }}
     >
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color, width: 16, flexShrink: 0, textAlign: "center" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color, width: 16, flexShrink: 0, textAlign: "center" }}>
         {TYPE_PREFIX[type]}
       </span>
       <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
@@ -132,7 +132,7 @@ function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
           <span className="pnum" style={{ fontFamily: "var(--font-mono)" }}>{count}</span> transaction{count !== 1 ? "s" : ""}
         </div>
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color, flexShrink: 0, whiteSpace: "nowrap" }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color, flexShrink: 0, whiteSpace: "nowrap" }}>
         <span className="ft-drill">{TYPE_PREFIX[type]}{formatBaseMoney(Math.abs(total))}</span>
       </div>
     </div>
@@ -171,7 +171,7 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
   }, {});
 
   const filterBar = (
-    <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", gap: 6, alignItems: "center" }}>
+    <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", borderBottom: "1px solid var(--ft-border)", display: "flex", gap: 8, alignItems: "center" }}>
       <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
         <Search size={10} style={{ position: "absolute", left: 6, color: "var(--ft-dim)", pointerEvents: "none" }} />
         <input
@@ -215,7 +215,7 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
                 fontWeight: 600,
                 letterSpacing: "0.05em",
                 textTransform: "uppercase",
-                padding: "2px 5px",
+                padding: "var(--ft-badge-py) var(--ft-badge-px)",
                 background: active ? color : "transparent",
                 color: active ? "var(--ft-base)" : "var(--ft-dim)",
                 border: `1px solid ${active ? color : "var(--ft-border2)"}`,
@@ -233,7 +233,7 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
   const txRows = (
     <div>
       {filtered.length === 0 && !isLoading && (
-        <div style={{ padding: "16px 12px", fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)", textAlign: "center" }}>
+        <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ft-dim)", textAlign: "center" }}>
           {search || typeFilter !== "all" ? "No matching transactions" : "No transactions yet"}
         </div>
       )}
@@ -251,7 +251,7 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
             {filterBar}
             {txRows}
           </div>
-          <div style={{ padding: "14px 12px" }}>
+          <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
             <div style={{
               fontFamily: "var(--font-mono)",
               fontSize: 9,

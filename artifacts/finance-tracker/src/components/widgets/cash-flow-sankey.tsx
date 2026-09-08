@@ -104,10 +104,10 @@ export function CashFlowSankeyWidget() {
       {!isLoading && (
         <>
           {/* Month nav */}
-          <div style={{ padding: "6px 12px", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <button onClick={() => setOffset(o => o - 1)} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "0 4px", lineHeight: 1 }}>‹</button>
+          <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", borderBottom: "1px solid var(--ft-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <button onClick={() => setOffset(o => o - 1)} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 13, padding: "0 4px", lineHeight: 1 }}>‹</button>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)" }}>{monthLabel}</span>
-            <button onClick={() => setOffset(o => Math.min(o + 1, 0))} disabled={offset >= 0} style={{ background: "none", border: "none", color: offset >= 0 ? "var(--ft-border2)" : "var(--ft-dim)", cursor: offset >= 0 ? "default" : "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "0 4px", lineHeight: 1 }}>›</button>
+            <button onClick={() => setOffset(o => Math.min(o + 1, 0))} disabled={offset >= 0} style={{ background: "none", border: "none", color: offset >= 0 ? "var(--ft-border2)" : "var(--ft-dim)", cursor: offset >= 0 ? "default" : "pointer", fontFamily: "var(--font-mono)", fontSize: 13, padding: "0 4px", lineHeight: 1 }}>›</button>
           </div>
 
           {/* Three figures, no rules between them (DESIGN.md § 5) — the
@@ -129,7 +129,7 @@ export function CashFlowSankeyWidget() {
                   <Drill href={item.href}>{formatBaseMoney(item.value)}</Drill>
                 </div>
                 {totalIncome > 0 && item.label !== "Income" && (
-                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>
+                  <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 1 }}>
                     {(item.value / totalIncome * 100).toFixed(0)}% of income
                   </div>
                 )}
@@ -138,7 +138,7 @@ export function CashFlowSankeyWidget() {
           </div>
 
           {rows.length === 0 ? (
-            <div style={{ padding: "32px 12px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+            <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
               No transactions this month
             </div>
           ) : (

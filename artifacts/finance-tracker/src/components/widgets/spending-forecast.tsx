@@ -35,13 +35,13 @@ function StatusChip({ status }: StatusChipProps) {
     <span
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 8,
-        padding: "2px 6px",
+        fontSize: 9,
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         letterSpacing: "0.05em",
         textTransform: "uppercase",
         background: getStatusBg(status),
         color: getStatusColor(status),
-        fontWeight: 700,
+        fontWeight: 600,
         flexShrink: 0,
       }}
     >
@@ -132,8 +132,8 @@ function CategoryForecastRowExpanded({ row, range }: CategoryForecastRowExpanded
       style={{
         display: "grid",
         gridTemplateColumns: "1fr 72px 72px 72px 64px",
-        gap: 6,
-        padding: "5px 4px",
+        gap: 8,
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         borderBottom: "1px solid var(--ft-border)",
         alignItems: "center",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
@@ -143,7 +143,7 @@ function CategoryForecastRowExpanded({ row, range }: CategoryForecastRowExpanded
       <div
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 11,
           color: "var(--ft-text)",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -156,7 +156,7 @@ function CategoryForecastRowExpanded({ row, range }: CategoryForecastRowExpanded
         className="pnum"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 11,
           color: "var(--ft-muted)",
           textAlign: "right",
         }}
@@ -167,7 +167,7 @@ function CategoryForecastRowExpanded({ row, range }: CategoryForecastRowExpanded
         className="pnum"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 11,
           color: "var(--ft-amber)",
           textAlign: "right",
         }}
@@ -178,7 +178,7 @@ function CategoryForecastRowExpanded({ row, range }: CategoryForecastRowExpanded
         className="pnum"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 11,
           color: row.budget ? "var(--ft-muted)" : "var(--ft-dim)",
           textAlign: "right",
         }}
@@ -229,7 +229,7 @@ function CategoryForecastRowCompact({ row, timeElapsed, range }: CategoryForecas
       onMouseLeave={() => setHov(false)}
       style={{
         marginBottom: 9,
-        padding: "3px 4px",
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
         transition: "background 0.1s",
       }}
@@ -246,7 +246,7 @@ function CategoryForecastRowCompact({ row, timeElapsed, range }: CategoryForecas
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: 11,
             color: "var(--ft-text)",
             whiteSpace: "nowrap",
             flex: 1,
@@ -259,7 +259,7 @@ function CategoryForecastRowCompact({ row, timeElapsed, range }: CategoryForecas
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 5,
+            gap: 4,
             flexShrink: 0,
           }}
         >
@@ -267,7 +267,7 @@ function CategoryForecastRowCompact({ row, timeElapsed, range }: CategoryForecas
             className="pnum"
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 11,
               color: "var(--ft-muted)",
             }}
           >
@@ -290,11 +290,11 @@ function CategoryForecastRowCompact({ row, timeElapsed, range }: CategoryForecas
               className="pnum"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 8,
+                fontSize: 9,
                 color: barColor,
                 background: `color-mix(in srgb, ${barColor} 12%, transparent)`,
                 border: `1px solid color-mix(in srgb, ${barColor} 30%, transparent)`,
-                padding: "1px 4px",
+                padding: "var(--ft-badge-py) var(--ft-badge-px)",
               }}
             >
               {budgetPct.toFixed(0)}%
@@ -454,7 +454,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 8,
+                  fontSize: 9,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
                   color: "var(--ft-dim)",
@@ -470,7 +470,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
               className="pnum"
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: 700,
                 color: projectedColor,
                 letterSpacing: "-0.03em",
@@ -587,7 +587,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 9,
-                    fontWeight: 700,
+                    fontWeight: 600,
                     color:
                       budgetVariance > 0
                         ? "var(--ft-red)"
@@ -650,7 +650,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 72px 72px 72px 64px",
-                  gap: 6,
+                  gap: 8,
                   marginBottom: 4,
                 }}
               >
@@ -659,7 +659,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
                     key={h}
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 8,
+                      fontSize: 9,
                       color: "var(--ft-dim)",
                       letterSpacing: "0.06em",
                       textTransform: "uppercase",

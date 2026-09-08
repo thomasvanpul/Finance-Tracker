@@ -45,19 +45,19 @@ function TotalsKpiCell({ label, amount, color, savingsRate, income, badge, incom
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "10px 12px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         borderRight: isLast ? undefined : "1px solid var(--ft-border)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
           {label}
         </span>
         {badge}
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color, letterSpacing: "-0.02em", lineHeight: 1 }}>
         {href ? <span className="ft-drill">{formatBaseMoney(amount)}</span> : formatBaseMoney(amount)}
       </div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
@@ -104,24 +104,24 @@ function CategoryTableRow({ row, bounds }: CategoryTableRowProps) {
           different sets of rows, and one link for both would open the wrong
           one half the time. The delta and the percentage between them are
           differences, not sets, so they stay flat (DESIGN.md §14). */}
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         <Drill href={categoryTransactionsHref(row.category, bounds.this)}>{row.category}</Drill>
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", textAlign: "right" }}>
         <Drill href={categoryTransactionsHref(row.category, bounds.last)}>{formatBaseMoney(row.lastMonth)}</Drill>
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-cyan)", textAlign: "right" }}>
         <Drill href={categoryTransactionsHref(row.category, bounds.this)}>{formatBaseMoney(row.thisMonth)}</Drill>
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, textAlign: "right", color: deltaColor }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, textAlign: "right", color: deltaColor }}>
         {row.delta === 0 ? "—" : `${decreased ? "-" : "+"}${formatBaseMoney(Math.abs(row.delta))}`}
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 3 }}>
-        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: trendBg, color: deltaColor, fontFamily: "var(--font-mono)" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 4 }}>
+        <span style={{ fontSize: 9, padding: "var(--ft-badge-py) var(--ft-badge-px)", borderRadius: 2, background: trendBg, color: deltaColor, fontFamily: "var(--font-mono)" }}>
           {row.delta === 0 ? "—" : decreased ? "▼" : "▲"}
         </span>
         {pctChange !== null && (
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
             {Math.abs(pctChange)}%
           </span>
         )}
@@ -154,22 +154,22 @@ function CategoryBarRow({ row, maxVal, bounds }: CategoryBarRowProps) {
       onMouseLeave={() => setHov(false)}
       style={{
         marginBottom: 9,
-        padding: "3px 4px",
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
         transition: "background 0.1s",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-        <Drill href={categoryTransactionsHref(row.category, bounds.this)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
+        <Drill href={categoryTransactionsHref(row.category, bounds.this)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
           {row.category}
         </Drill>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}><Drill href={categoryTransactionsHref(row.category, bounds.this)}>{formatBaseMoney(row.thisMonth)}</Drill></span>
-          <span className="pnum" style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: chipBg, color: chipColor, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+          <span className="pnum" style={{ fontSize: 9, padding: "var(--ft-badge-py) var(--ft-badge-px)", borderRadius: 2, background: chipBg, color: chipColor, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
             {row.delta === 0 ? "=" : decreased ? `↓${formatBaseMoney(Math.abs(row.delta))}` : `↑${formatBaseMoney(Math.abs(row.delta))}`}
           </span>
           {pctChange !== null && (
-            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
               {Math.abs(pctChange)}%
             </span>
           )}
@@ -298,12 +298,12 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
           lastExpenses > 0 ? (
             <span style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 8,
-              fontWeight: 700,
+              fontSize: 9,
+              fontWeight: 600,
               color: expenseDelta <= 0 ? "var(--ft-green)" : "var(--ft-red)",
               background: `color-mix(in srgb, ${expenseDelta <= 0 ? "var(--ft-green)" : "var(--ft-red)"} 12%, transparent)`,
               border: `1px solid color-mix(in srgb, ${expenseDelta <= 0 ? "var(--ft-green)" : "var(--ft-red)"} 30%, transparent)`,
-              padding: "1px 4px",
+              padding: "var(--ft-badge-py) var(--ft-badge-px)",
               letterSpacing: "0.04em",
             }}>
               {expenseDelta <= 0 ? "▼" : "▲"} <span className="pnum">{formatBaseMoney(Math.abs(expenseDelta))}</span>
@@ -328,14 +328,14 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
       accent="var(--ft-cyan)"
     >
       {!isLoading && !hasData ? (
-        <div style={{ padding: "24px 12px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+        <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
           No transaction data available
         </div>
       ) : !isLoading && isExpanded ? (
         /* Expanded: full comparison table */
         <div>
           {totalsHeader}
-          <div style={{ padding: "12px 14px" }}>
+          <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
           {/* Income comparison header */}
           <div style={{ marginBottom: 14 }}>
             <div style={{
@@ -358,14 +358,14 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
                 background: "color-mix(in srgb, var(--ft-accent) 3%, transparent)",
               }}
             >
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)" }}>Total Income</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", textAlign: "right" }}><Drill href={ledgerHref({ type: "income", from: lastMonthBounds.start, to: lastMonthBounds.end })}>{formatBaseMoney(lastIncome)}</Drill></div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", textAlign: "right" }}><Drill href={ledgerHref({ type: "income", from: thisMonthBounds.start, to: thisMonthBounds.end })}>{formatBaseMoney(thisIncome)}</Drill></div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, textAlign: "right", color: thisIncome >= lastIncome ? "var(--ft-green)" : "var(--ft-red)" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>Total Income</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", textAlign: "right" }}><Drill href={ledgerHref({ type: "income", from: lastMonthBounds.start, to: lastMonthBounds.end })}>{formatBaseMoney(lastIncome)}</Drill></div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-cyan)", textAlign: "right" }}><Drill href={ledgerHref({ type: "income", from: thisMonthBounds.start, to: thisMonthBounds.end })}>{formatBaseMoney(thisIncome)}</Drill></div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, textAlign: "right", color: thisIncome >= lastIncome ? "var(--ft-green)" : "var(--ft-red)" }}>
                 {thisIncome >= lastIncome ? "+" : ""}{formatBaseMoney(thisIncome - lastIncome)}
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 2, background: thisIncome >= lastIncome ? "rgba(63,185,80,0.15)" : "rgba(248,81,73,0.15)", color: thisIncome >= lastIncome ? "var(--ft-green)" : "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
+                <span style={{ fontSize: 9, padding: "var(--ft-badge-py) var(--ft-badge-px)", borderRadius: 2, background: thisIncome >= lastIncome ? "rgba(63,185,80,0.15)" : "rgba(248,81,73,0.15)", color: thisIncome >= lastIncome ? "var(--ft-green)" : "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
                   {thisIncome >= lastIncome ? "▲" : "▼"}
                 </span>
               </div>
@@ -409,11 +409,11 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
           {/* Legend */}
           <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <div style={{ width: 8, height: 3, background: "var(--ft-dim)", borderRadius: 1 }} />
+              <div style={{ width: 8, height: 3, background: "var(--ft-dim)", borderRadius: 2 }} />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>Last month</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <div style={{ width: 8, height: 5, background: "var(--ft-cyan)", borderRadius: 1 }} />
+              <div style={{ width: 8, height: 5, background: "var(--ft-cyan)", borderRadius: 2 }} />
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>This month</span>
             </div>
           </div>

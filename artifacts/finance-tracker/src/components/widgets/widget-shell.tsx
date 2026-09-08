@@ -89,10 +89,10 @@ export function WidgetShell({
 
 function EmptyState({ message, action, accent }: { message?: string; action?: { label: string; href: string }; accent?: string }) {
   return (
-    <div style={{ padding: "24px 14px", display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start" }}>
+    <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
       <div style={{
         fontFamily: "var(--font-sans)",
-        fontSize: 12,
+        fontSize: 13,
         color: "var(--ft-dim)",
       }}>
         {message ?? "No data"}

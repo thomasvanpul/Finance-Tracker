@@ -193,14 +193,14 @@ function ComponentRow({ label, description, pts, maxPts, isWeakest }: ComponentR
           style={{
             display: "flex",
             alignItems: "baseline",
-            gap: 6,
+            gap: 8,
             marginBottom: 3,
           }}
         >
           <span
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 11,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
               color: "var(--ft-muted)",
@@ -246,7 +246,7 @@ function ComponentRow({ label, description, pts, maxPts, isWeakest }: ComponentR
         className="pnum"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 700,
           color: dotColor,
           textAlign: "right",
@@ -297,8 +297,8 @@ function BreakdownItem({ label, impact, message }: BreakdownItemProps) {
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 8,
-          padding: "1px 5px",
+          fontSize: 9,
+          padding: "var(--ft-badge-py) var(--ft-badge-px)",
           border: `1px solid ${impactColor}40`,
           color: impactColor,
           letterSpacing: "0.06em",
@@ -461,7 +461,7 @@ export function FinancialHealthWidget() {
                   className="pnum"
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: 700,
                     color,
                     lineHeight: 1,
@@ -473,7 +473,7 @@ export function FinancialHealthWidget() {
                 <div
                   style={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: 7,
+                    fontSize: 9,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
                     color: "var(--ft-dim)",
@@ -491,8 +491,8 @@ export function FinancialHealthWidget() {
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 5,
-                  padding: "2px 7px",
+                  gap: 4,
+                  padding: "var(--ft-badge-py) var(--ft-badge-px)",
                   border: `1px solid ${color}40`,
                   marginBottom: 8,
                   overflow: "hidden",
@@ -515,7 +515,7 @@ export function FinancialHealthWidget() {
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                     color,
-                    fontWeight: 700,
+                    fontWeight: 600,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -529,7 +529,7 @@ export function FinancialHealthWidget() {
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: 11,
                   color: "var(--ft-muted)",
                   lineHeight: 1.45,
                   letterSpacing: "0.02em",
@@ -571,7 +571,7 @@ export function FinancialHealthWidget() {
                     key={v}
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 8,
+                      fontSize: 9,
                       color: "var(--ft-dim)",
                     }}
                   >
@@ -601,7 +601,7 @@ export function FinancialHealthWidget() {
             <div
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 8,
+                fontSize: 9,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
                 color: "var(--ft-dim)",

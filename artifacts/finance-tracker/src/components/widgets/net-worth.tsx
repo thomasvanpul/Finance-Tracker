@@ -110,7 +110,7 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
               </div>
             )}
             {/* share bar */}
-            <div style={{ marginTop: 4, height: 2, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden" }}>
+            <div style={{ marginTop: 4, height: 2, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
               <div style={{ height: "100%", width: `${g.share ?? 0}%`, background: `hsl(${(groups.indexOf(g) * 47 + 200) % 360}, 60%, 55%)`, opacity: 0.9 }} />
             </div>
           </DrillTarget>
@@ -131,11 +131,11 @@ type TooltipProps = { active?: boolean; payload?: { value: number }[]; label?: s
 function NetWorthTooltip({ active, payload, label }: TooltipProps) {
   if (!active || !payload?.length || !label) return null;
   return (
-    <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "6px 10px", fontFamily: "var(--font-mono)" }}>
+    <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "var(--ft-widget-py) var(--ft-widget-px)", fontFamily: "var(--font-mono)" }}>
       <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 2, textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {new Date(label).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
       </div>
-      <div className="pnum" style={{ fontSize: 12, fontWeight: 700, color: "var(--ft-accent)" }}>
+      <div className="pnum" style={{ fontSize: 13, fontWeight: 700, color: "var(--ft-accent)" }}>
         {formatBaseMoney(payload[0].value)}
       </div>
     </div>
@@ -153,10 +153,10 @@ function TodayBadge({ history }: { history: HistoryEntry[] }) {
     <span style={{
       fontFamily: "var(--font-mono)",
       fontSize: 9,
-      fontWeight: 700,
+      fontWeight: 600,
       color: "var(--ft-base)",
       background: isUp ? "var(--ft-green)" : "var(--ft-red)",
-      padding: "2px 6px",
+      padding: "var(--ft-badge-py) var(--ft-badge-px)",
       borderRadius: 2,
       letterSpacing: "0.04em",
       display: "inline-flex",
@@ -179,7 +179,7 @@ function PeriodSelector({ period, setPeriod }: { period: Period; setPeriod: (p: 
             fontFamily: "var(--font-mono)",
             fontSize: 9,
             letterSpacing: "0.06em",
-            padding: "2px 6px",
+            padding: "var(--ft-badge-py) var(--ft-badge-px)",
             background: period === p.label ? "var(--ft-accent)" : "transparent",
             color: period === p.label ? "var(--ft-base)" : "var(--ft-dim)",
             border: `1px solid ${period === p.label ? "var(--ft-accent)" : "var(--ft-border2)"}`,
@@ -297,7 +297,7 @@ function BreakdownCell({ label, value, color, href, isLast }: BreakdownCellProps
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
         {label}
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color, whiteSpace: "nowrap" }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color, whiteSpace: "nowrap" }}>
         {href ? <span className="ft-drill">{value}</span> : value}
       </div>
     </div>
@@ -326,16 +326,16 @@ function AccountTableRow({ acct, isFirst }: AccountTableRowProps) {
       {/* Same destination as the dashboard ACCOUNTS row and every other
           account name in the product (DESIGN.md §14). The currency code and
           the native balance beside it are not made of rows. */}
-      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", padding: "7px 0 7px 0", paddingRight: 8, maxWidth: 110, whiteSpace: "nowrap" }}>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", padding: "7px 0 7px 0", paddingRight: 8, maxWidth: 110, whiteSpace: "nowrap" }}>
         <Drill href={entityHref("account", acct.id)}>{acct.name}</Drill>
       </td>
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "7px 8px 7px 0" }}>
         {acct.currency}
       </td>
-      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", padding: "7px 8px 7px 0", textAlign: "right" }}>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", padding: "7px 8px 7px 0", textAlign: "right" }}>
         <span className="pnum">{acct.currency !== "GBP" ? acct.balance.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}</span>
       </td>
-      <td style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: acct.baseEquivalent == null ? "var(--ft-dim)" : "var(--ft-accent)", textAlign: "right", padding: "7px 0" }}>
+      <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: acct.baseEquivalent == null ? "var(--ft-dim)" : "var(--ft-accent)", textAlign: "right", padding: "7px 0" }}>
         {acct.baseEquivalent == null ? "—" : <span className="pnum">{formatBaseMoney(acct.baseEquivalent)}</span>}
       </td>
     </tr>
@@ -409,7 +409,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
       </div>
 
       {filteredHistory.length < 2 ? (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "center", padding: "20px 0" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", padding: "20px 0" }}>
           Not enough data for this period
         </div>
       ) : (
@@ -501,7 +501,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   );
 
   const expandedRightColumn = d && (
-    <div style={{ padding: "14px 12px", overflowY: "auto" }}>
+    <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", overflowY: "auto" }}>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 10 }}>
         Account Breakdown
       </div>
@@ -525,7 +525,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
             <td colSpan={3} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", paddingTop: 8 }}>
               Total Cash
             </td>
-            <td style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-accent)", textAlign: "right", paddingTop: 8 }}>
+            <td style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-accent)", textAlign: "right", paddingTop: 8 }}>
               <Drill href="/accounts" title="Total cash — every account it is the sum of"><span className="pnum">{formatBaseMoney(d.totalCash)}</span></Drill>
             </td>
           </tr>

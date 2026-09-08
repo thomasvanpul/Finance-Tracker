@@ -22,8 +22,8 @@ import { formatShortDate, reconciliationPeriodLabel, isUntracked, ZERO_TOLERANCE
 
 const cell: CSSProperties = {
   fontFamily: "var(--font-mono)",
-  fontSize: 10,
-  padding: "5px 10px",
+  fontSize: 11,
+  padding: "var(--ft-widget-py) var(--ft-widget-px)",
   borderBottom: "1px solid var(--ft-border)",
   whiteSpace: "nowrap",
 };
@@ -77,7 +77,7 @@ function Row({ a, baseCurrency }: { a: ReconciliationAccount; baseCurrency: stri
           </span>
         )}
       </td>
-      <td style={{ ...name, color: "var(--ft-dim)", fontSize: 10 }}>
+      <td style={{ ...name, color: "var(--ft-dim)", fontSize: 11 }}>
         {a.transactionsCounted} tx{notes.length > 0 ? ` · ${notes.join(" · ")}` : ""}
       </td>
     </tr>
@@ -106,7 +106,7 @@ export function ReconciliationPanel() {
       </PanelHeader>
 
       {report.status !== "ok" ? (
-        <div style={{ padding: "12px 10px" }}>
+        <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
           <Text as="div" size={11} color="var(--ft-muted)">
             Not enough history yet.
             {report.dataAvailableSince == null
@@ -115,7 +115,7 @@ export function ReconciliationPanel() {
           </Text>
         </div>
       ) : report.gapBase != null && Math.abs(report.gapBase) < ZERO_TOLERANCE && report.unconvertibleAccounts === 0 ? (
-        <div style={{ padding: "12px 10px" }}>
+        <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
           <Text as="div" size={11} color="var(--ft-muted)">
             Balances match the ledger {period}. {report.accounts.length} cash account{report.accounts.length === 1 ? "" : "s"} checked.
           </Text>
@@ -141,7 +141,7 @@ export function ReconciliationPanel() {
                 <td className="pnum" style={{ ...num, borderBottom: "none", fontWeight: 700, color: report.gapBase == null ? "var(--ft-dim)" : gapColour(report.gapBase) }}>
                   {report.gapBase == null ? "—" : formatMoney(report.gapBase, report.baseCurrency)}
                 </td>
-                <td style={{ ...name, borderBottom: "none", color: "var(--ft-dim)", fontSize: 10 }}>
+                <td style={{ ...name, borderBottom: "none", color: "var(--ft-dim)", fontSize: 11 }}>
                   {report.unconvertibleAccounts > 0 ? `${report.unconvertibleAccounts} account${report.unconvertibleAccounts === 1 ? "" : "s"} not in total` : ""}
                 </td>
               </tr>

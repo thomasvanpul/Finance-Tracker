@@ -164,12 +164,12 @@ function PriorityCountChip({ count, color, label }: PriorityCountChipProps) {
   return (
     <span style={{
       fontFamily: "var(--font-mono)",
-      fontSize: 8,
-      fontWeight: 700,
+      fontSize: 9,
+      fontWeight: 600,
       color,
       background: `color-mix(in srgb, ${color} 15%, transparent)`,
       border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
-      padding: "1px 5px",
+      padding: "var(--ft-badge-py) var(--ft-badge-px)",
       letterSpacing: "0.06em",
     }}>
       {count} {label}
@@ -190,13 +190,13 @@ function StatsKpiCell({ label, value, hasBorderRight }: StatsKpiCellProps) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "7px 12px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         borderRight: hasBorderRight ? "1px solid var(--ft-border)" : undefined,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 2 }}>{label}</div>
       <div>{value}</div>
     </div>
   );
@@ -216,7 +216,7 @@ function DecisionRow({ d, rank }: { d: MiniDecision; rank: number }) {
           gridTemplateColumns: "14px 4px auto 1fr auto auto",
           alignItems: "center",
           gap: 8,
-          padding: "7px 12px",
+          padding: "var(--ft-widget-py) var(--ft-widget-px)",
           borderBottom: "1px solid var(--ft-border)",
           background: hov ? `color-mix(in srgb, ${color} 5%, var(--ft-raised))` : "transparent",
           textDecoration: "none",
@@ -224,24 +224,24 @@ function DecisionRow({ d, rank }: { d: MiniDecision; rank: number }) {
           transition: "background 0.1s",
         }}
       >
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-border2)", fontWeight: 700, textAlign: "right" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-border2)", fontWeight: 600, textAlign: "right" }}>
           {rank}
         </span>
-        <div style={{ width: 4, height: 28, background: color, borderRadius: 1 }} />
+        <div style={{ width: 4, height: 28, background: color, borderRadius: 2 }} />
         <span style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 8,
-          fontWeight: 700,
+          fontSize: 9,
+          fontWeight: 600,
           color,
           background: `color-mix(in srgb, ${color} 12%, transparent)`,
           border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
-          padding: "1px 4px",
+          padding: "var(--ft-badge-py) var(--ft-badge-px)",
           letterSpacing: "0.06em",
           whiteSpace: "nowrap",
         }}>
           {PRIORITY_LABEL[d.priority]}
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {d.title}
         </span>
         {d.annualCost && d.annualCost > 0 ? (
@@ -297,7 +297,7 @@ export function DecisionEngineWidget() {
         <Zap size={11} style={{ color: headerAccent, flexShrink: 0 }} />
         Decision Engine
         {decisions.length > 0 && (
-          <div style={{ display: "flex", gap: 3 }}>
+          <div style={{ display: "flex", gap: 4 }}>
             {critCount > 0 && <PriorityCountChip count={critCount} color="var(--ft-red)" label="CRIT" />}
             {highCount > 0 && <PriorityCountChip count={highCount} color="var(--ft-amber)" label="HIGH" />}
           </div>
@@ -310,13 +310,13 @@ export function DecisionEngineWidget() {
           <StatsKpiCell
             label="Actions pending"
             hasBorderRight={totalAnnualCost > 0}
-            value={<div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: headerAccent, lineHeight: 1 }}>{decisions.length}</div>}
+            value={<div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: headerAccent, lineHeight: 1 }}>{decisions.length}</div>}
           />
           {totalAnnualCost > 0 && (
             <StatsKpiCell
               label="Opp. cost / yr"
               hasBorderRight={false}
-              value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>{formatBaseMoney(totalAnnualCost)}</div>}
+              value={<div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1 }}>{formatBaseMoney(totalAnnualCost)}</div>}
             />
           )}
         </div>
@@ -324,9 +324,9 @@ export function DecisionEngineWidget() {
 
       {/* Decisions list */}
       {top.length === 0 ? (
-        <div style={{ padding: "28px 16px", textAlign: "center" }}>
+        <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", textAlign: "center" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--ft-green)", marginBottom: 6 }}>✓</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-green)" }}>ALL CLEAR</div>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-green)" }}>ALL CLEAR</div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>No actions needed right now</div>
         </div>
       ) : (

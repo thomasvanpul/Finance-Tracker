@@ -62,10 +62,10 @@ function DaysBadge({ daysUntil }: DaysBadgeProps) {
     <span
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 8,
-        fontWeight: 700,
+        fontSize: 9,
+        fontWeight: 600,
         letterSpacing: "0.06em",
-        padding: "2px 5px",
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         background: bg,
         color,
         border: daysUntil <= 30 ? `1px solid ${color}40` : "1px solid transparent",
@@ -86,7 +86,7 @@ function EmptySubscriptions() {
   return (
     <div
       style={{
-        padding: "28px 16px",
+        padding: "var(--ft-empty-py) var(--ft-empty-px)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -96,7 +96,7 @@ function EmptySubscriptions() {
       <div
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 24,
+          fontSize: 26,
           color: "var(--ft-border)",
           letterSpacing: "-0.02em",
           fontWeight: 700,
@@ -173,7 +173,7 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
           display: "grid",
           gridTemplateColumns: "auto 1fr auto auto auto",
           alignItems: "center",
-          padding: "8px 12px",
+          padding: "var(--ft-widget-py) var(--ft-widget-px)",
           gap: 8,
         }}
       >
@@ -210,7 +210,7 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 8,
+              fontSize: 9,
               color: "var(--ft-dim)",
               marginTop: 1,
             }}
@@ -223,10 +223,10 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 8,
+            fontSize: 9,
             letterSpacing: "0.07em",
             textTransform: "uppercase",
-            padding: "1px 5px",
+            padding: "var(--ft-badge-py) var(--ft-badge-px)",
             border: "1px solid var(--ft-cyan)40",
             color: "var(--ft-cyan)",
             flexShrink: 0,
@@ -261,21 +261,21 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
             <span
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 8,
+                fontSize: 9,
                 color: "var(--ft-dim)",
               }}
             >
               /mo
             </span>
           </div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
             {monthly == null ? "no FX" : `${sharePct.toFixed(0)}% of total`}
           </div>
         </div>
       </div>
       {/* Mini share bar */}
-      <div style={{ height: 2, background: "var(--ft-border)", marginLeft: 12, marginRight: 12, marginBottom: 2, borderRadius: 1, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${sharePct}%`, background: urgencyColor(daysUntil), opacity: 0.6, borderRadius: 1, transition: "width 0.12s ease" }} />
+      <div style={{ height: 2, background: "var(--ft-border)", marginLeft: 12, marginRight: 12, marginBottom: 2, borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${sharePct}%`, background: urgencyColor(daysUntil), opacity: 0.6, borderRadius: 2, transition: "width 0.12s ease" }} />
       </div>
     </div>
   );
@@ -336,14 +336,14 @@ export function SubscriptionTrackerWidget() {
           >
             <div
               style={{
-                padding: "10px 12px",
+                padding: "var(--ft-widget-py) var(--ft-widget-px)",
                 borderRight: "1px solid var(--ft-border)",
               }}
             >
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 8,
+                  fontSize: 9,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
                   color: "var(--ft-dim)",
@@ -356,7 +356,7 @@ export function SubscriptionTrackerWidget() {
                 className="pnum"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: 700,
                   color: "var(--ft-cyan)",
                   letterSpacing: "-0.02em",
@@ -369,7 +369,7 @@ export function SubscriptionTrackerWidget() {
                 style={{
                   marginTop: 5,
                   fontFamily: "var(--font-mono)",
-                  fontSize: 8,
+                  fontSize: 9,
                   color: "var(--ft-dim)",
                 }}
               >
@@ -380,11 +380,11 @@ export function SubscriptionTrackerWidget() {
               </div>
             </div>
 
-            <div style={{ padding: "10px 12px" }}>
+            <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 8,
+                  fontSize: 9,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
                   color: "var(--ft-dim)",
@@ -397,7 +397,7 @@ export function SubscriptionTrackerWidget() {
                 className="pnum"
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: 700,
                   color: "var(--ft-muted)",
                   letterSpacing: "-0.02em",
@@ -411,7 +411,7 @@ export function SubscriptionTrackerWidget() {
                 style={{
                   marginTop: 5,
                   display: "flex",
-                  gap: 5,
+                  gap: 4,
                   flexWrap: "wrap",
                 }}
               >
@@ -419,10 +419,10 @@ export function SubscriptionTrackerWidget() {
                   <span
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 8,
+                      fontSize: 9,
                       color: "var(--ft-red)",
                       background: "rgba(248,81,73,0.12)",
-                      padding: "1px 5px",
+                      padding: "var(--ft-badge-py) var(--ft-badge-px)",
                       letterSpacing: "0.04em",
                     }}
                   >
@@ -433,10 +433,10 @@ export function SubscriptionTrackerWidget() {
                   <span
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 8,
+                      fontSize: 9,
                       color: "var(--ft-amber)",
                       background: "rgba(240,160,48,0.10)",
-                      padding: "1px 5px",
+                      padding: "var(--ft-badge-py) var(--ft-badge-px)",
                       letterSpacing: "0.04em",
                     }}
                   >
@@ -447,7 +447,7 @@ export function SubscriptionTrackerWidget() {
                   <span
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 8,
+                      fontSize: 9,
                       color: "var(--ft-dim)",
                     }}
                   >

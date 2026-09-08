@@ -64,27 +64,27 @@ function CashFlowTooltip({ active, payload, label, avgIncome, avgExpense }: Cust
   const parts = label.split("-");
   const monthLabel = new Date(parseInt(parts[0] ?? "0"), parseInt(parts[1] ?? "1") - 1).toLocaleString("en-GB", { month: "long", year: "numeric" });
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "8px 10px", fontFamily: "var(--font-mono)", minWidth: 160, boxShadow: "none" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "var(--ft-widget-py) var(--ft-widget-px)", fontFamily: "var(--font-mono)", minWidth: 160, boxShadow: "none" }}>
       <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>
         {monthLabel}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "2px 8px", alignItems: "center" }}>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Income</span>
-        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: income == null ? "var(--ft-dim)" : "var(--ft-green)", textAlign: "right" }}>
+        <span className="pnum" style={{ fontSize: 11, fontWeight: 600, color: income == null ? "var(--ft-dim)" : "var(--ft-green)", textAlign: "right" }}>
           {income == null ? "—" : formatBaseMoney(income)}
         </span>
         <span className="pnum" style={{ fontSize: 9, color: vsIncome != null && vsIncome >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
           {vsIncome == null ? "" : `${vsIncome >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(vsIncome))} avg`}
         </span>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Expenses</span>
-        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: expenses == null ? "var(--ft-dim)" : "var(--ft-red)", textAlign: "right" }}>
+        <span className="pnum" style={{ fontSize: 11, fontWeight: 600, color: expenses == null ? "var(--ft-dim)" : "var(--ft-red)", textAlign: "right" }}>
           {expenses == null ? "—" : formatBaseMoney(expenses)}
         </span>
         <span className="pnum" style={{ fontSize: 9, color: vsExpense != null && vsExpense <= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
           {vsExpense == null ? "" : `${vsExpense >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(vsExpense))} avg`}
         </span>
         <span style={{ fontSize: 9, color: "var(--ft-dim)" }}>Net</span>
-        <span className="pnum" style={{ fontSize: 10, fontWeight: 700, color: net == null ? "var(--ft-dim)" : (net >= 0 ? "var(--ft-green)" : "var(--ft-red)"), textAlign: "right" }}>
+        <span className="pnum" style={{ fontSize: 11, fontWeight: 600, color: net == null ? "var(--ft-dim)" : (net >= 0 ? "var(--ft-green)" : "var(--ft-red)"), textAlign: "right" }}>
           {net == null ? "—" : `${net >= 0 ? "+" : ""}${formatBaseMoney(net)}`}
         </span>
         <span />
@@ -110,7 +110,7 @@ function SummaryItem({ label, value, color, delta, href, isLast }: SummaryItemPr
   const cell = (
     <div
       style={{
-        padding: "10px 12px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         borderRight: isLast ? undefined : "1px solid var(--ft-border)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
@@ -203,7 +203,7 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
                 fontFamily: "var(--font-mono)",
                 fontSize: 9,
                 letterSpacing: "0.06em",
-                padding: "2px 6px",
+                padding: "var(--ft-badge-py) var(--ft-badge-px)",
                 background: period === p ? "var(--ft-green)" : "transparent",
                 color: period === p ? "var(--ft-base)" : "var(--ft-dim)",
                 border: `1px solid ${period === p ? "var(--ft-green)" : "var(--ft-border2)"}`,
@@ -254,7 +254,7 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
               stroke="var(--ft-green)"
               strokeOpacity={0.5}
               strokeDasharray="4 2"
-              label={{ value: "avg income", position: "insideTopRight", fill: "var(--ft-green)", fontSize: 8, fontFamily: "var(--font-mono)", opacity: 0.7 }}
+              label={{ value: "avg income", position: "insideTopRight", fill: "var(--ft-green)", fontSize: 9, fontFamily: "var(--font-mono)", opacity: 0.7 }}
             />
           )}
           {avgExpense > 0 && (
@@ -263,7 +263,7 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
               stroke="var(--ft-red)"
               strokeOpacity={0.5}
               strokeDasharray="4 2"
-              label={{ value: "avg exp", position: "insideBottomRight", fill: "var(--ft-red)", fontSize: 8, fontFamily: "var(--font-mono)", opacity: 0.7 }}
+              label={{ value: "avg exp", position: "insideBottomRight", fill: "var(--ft-red)", fontSize: 9, fontFamily: "var(--font-mono)", opacity: 0.7 }}
             />
           )}
           <Bar dataKey="income" maxBarSize={28} radius={[2, 2, 0, 0]}>
@@ -304,7 +304,7 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
       {!isLoading && (
         <>
           {allHistory.length === 0 ? (
-            <div style={{ padding: "20px 12px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
+            <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
               No history yet — add transactions to see cash flow
             </div>
           ) : (

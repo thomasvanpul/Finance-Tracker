@@ -60,7 +60,7 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
             style={{
               display: "block",
               fontFamily: "var(--font-sans)",
-              fontSize: 12,
+              fontSize: 13,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -80,24 +80,24 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
           }} />
         </div>
       </td>
-      <td style={{ padding: "7px 10px" }}>
+      <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
         <span style={{ color: "var(--ft-dim)" }}>
           <CurrencyMark code={acct.currency} size={10} />
         </span>
       </td>
-      <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
+      <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
         <span className="pnum">
           {acct.currency !== "GBP" ? formatNative(acct.balance, acct.currency) : "—"}
         </span>
       </td>
-      <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: acct.baseEquivalent == null ? "var(--ft-dim)" : isNeg ? "var(--ft-red)" : "var(--ft-green)" }}>
+      <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: acct.baseEquivalent == null ? "var(--ft-dim)" : isNeg ? "var(--ft-red)" : "var(--ft-green)" }}>
         {acct.baseEquivalent == null ? "—" : <span className="pnum">{formatBaseMoney(acct.baseEquivalent)}</span>}
       </td>
       {isExpanded && (
-        <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+        <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
           <span className="pnum">{share == null ? "—" : `${share.toFixed(1)}%`}</span>
           {/* inline share mini-bar */}
-          <div style={{ marginTop: 3, height: 2, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden" }}>
+          <div style={{ marginTop: 3, height: 2, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${Math.min(Math.abs(share ?? 0), 100)}%`, background: "var(--ft-accent)", opacity: 0.6 }} />
           </div>
         </td>
@@ -115,7 +115,7 @@ function OwingCell({ label, value, raw, color, href, isLast }: OwingCellProps) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "8px 10px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
         transition: "background 0.1s",
@@ -123,10 +123,10 @@ function OwingCell({ label, value, raw, color, href, isLast }: OwingCellProps) {
         minWidth: 0,
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
         {label}
       </div>
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: raw === 0 ? "var(--ft-dim)" : color, whiteSpace: "nowrap" }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: raw === 0 ? "var(--ft-dim)" : color, whiteSpace: "nowrap" }}>
         {href && raw !== 0 ? <span className="ft-drill">{value}</span> : (raw === 0 ? "—" : value)}
       </div>
     </div>
@@ -168,7 +168,7 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
       key={label}
       onClick={key ? () => toggleSort(key) : undefined}
       style={{
-        padding: "5px 10px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         textAlign: align,
         fontFamily: "var(--font-mono)",
         fontSize: 9,
@@ -215,7 +215,7 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
         <tbody>
           {sorted.length === 0 ? (
             <tr>
-              <td colSpan={5} style={{ padding: "20px 10px", textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)" }}>
+              <td colSpan={5} style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ft-dim)" }}>
                 No accounts — add via Accounts
               </td>
             </tr>
@@ -243,10 +243,10 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
 
           {sorted.length > 0 && (
             <tr style={{ background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border2)" }}>
-              <td colSpan={3} style={{ padding: "7px 10px", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase", fontWeight: 600 }}>
+              <td colSpan={3} style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase", fontWeight: 600 }}>
                 Total Cash · {sorted.length} account{sorted.length !== 1 ? "s" : ""}
               </td>
-              <td style={{ padding: "7px 10px", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-green)", fontWeight: 700 }}>
+              <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-green)", fontWeight: 600 }}>
                 <Drill href="/accounts" title="Total cash — every account it is the sum of"><span className="pnum">{formatBaseMoney(d!.totalCash)}</span></Drill>
               </td>
               {isExpanded && <td />}

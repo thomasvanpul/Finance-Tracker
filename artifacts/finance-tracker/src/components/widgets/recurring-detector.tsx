@@ -175,13 +175,13 @@ function StatsKpiCell({ label, value, isLast }: StatsKpiCellProps) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "8px 12px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         background: hov ? "color-mix(in srgb, var(--ft-cyan) 4%, var(--ft-raised))" : "var(--ft-raised)",
         transition: "background 0.1s",
         borderRight: isLast ? undefined : "1px solid var(--ft-border)",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3 }}>{label}</div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3 }}>{label}</div>
       <div>{value}</div>
     </div>
   );
@@ -209,21 +209,21 @@ function CandidateRow({
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "8px 12px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         borderBottom: "1px solid var(--ft-border)",
         background: hov ? "color-mix(in srgb, var(--ft-cyan) 4%, var(--ft-raised))" : "transparent",
         transition: "background 0.1s",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-border2)", fontWeight: 700, flexShrink: 0, minWidth: 12, textAlign: "right" }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-border2)", fontWeight: 600, flexShrink: 0, minWidth: 12, textAlign: "right" }}>
           {rank}
         </span>
         <div style={{ width: 5, height: 5, borderRadius: "50%", background: ACCENT, flexShrink: 0 }} />
 
         <span style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 10,
+          fontSize: 11,
           color: "var(--ft-text)",
           flex: 1,
           overflow: "hidden",
@@ -241,7 +241,7 @@ function CandidateRow({
             href={categoryTransactionsHref(candidate.category)}
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 8,
+              fontSize: 9,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
               whiteSpace: "nowrap",
@@ -252,13 +252,13 @@ function CandidateRow({
         </span>
 
         <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-red)", lineHeight: 1 }}>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-red)", lineHeight: 1 }}>
             {/* The average of this merchant's run of charges — the run is the
                 rows. The /yr figure under it is that average times twelve, a
                 projection, and stays flat. */}
             <Drill href={merchantTransactionsHref(candidate.description)}>−{formatBaseMoney(Math.abs(candidate.avgGbpValue))}</Drill>
           </div>
-          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", lineHeight: 1.4 }}>
+          <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.4 }}>
             {formatBaseMoney(annualCost)}/yr
           </div>
         </div>
@@ -271,7 +271,7 @@ function CandidateRow({
             fontFamily: "var(--font-mono)",
             fontSize: 9,
             letterSpacing: "0.06em",
-            padding: "3px 8px",
+            padding: "var(--ft-badge-py) var(--ft-badge-px)",
             border: `1px solid ${isAdding ? "var(--ft-border2)" : "var(--ft-cyan)"}`,
             background: isAdding ? "transparent" : "color-mix(in srgb, var(--ft-cyan) 10%, transparent)",
             color: isAdding ? "var(--ft-dim)" : ACCENT,
@@ -348,9 +348,9 @@ export function RecurringDetectorWidget() {
       {!isLoading && (
         <>
           {candidates.length === 0 ? (
-            <div style={{ padding: "28px 16px", textAlign: "center" }}>
+            <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", textAlign: "center" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--ft-border2)", marginBottom: 8 }}>◎</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 4 }}>No patterns detected yet</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 4 }}>No patterns detected yet</div>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Add more transactions to surface recurring charges</div>
             </div>
           ) : (

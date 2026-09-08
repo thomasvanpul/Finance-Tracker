@@ -76,20 +76,20 @@ function Tile({ label, accent, href, primary, primaryColor, secondary, secondary
             {label}
           </span>
           {(trendSym || badge) && (
-            <span style={{ ...MONO, fontSize: 9, color: trendSym ? trendCol : (badgeColor ?? "var(--ft-dim)"), fontWeight: 700, flexShrink: 0, background: trendSym ? `color-mix(in srgb, ${trendCol} 10%, transparent)` : "transparent", padding: trendSym ? "1px 4px" : undefined }}>
+            <span style={{ ...MONO, fontSize: 9, color: trendSym ? trendCol : (badgeColor ?? "var(--ft-dim)"), fontWeight: 600, flexShrink: 0, background: trendSym ? `color-mix(in srgb, ${trendCol} 10%, transparent)` : "transparent", padding: trendSym ? "1px 4px" : undefined }}>
               {trendSym ?? badge}
             </span>
           )}
         </div>
 
         {/* Primary value — big hero number */}
-        <div style={{ ...MONO, ...CLIP, fontSize: 18, fontWeight: 700, color: primaryColor ?? "var(--ft-text)", lineHeight: 1, letterSpacing: "-0.03em", flex: 1, display: "flex", alignItems: "center" }}>
+        <div style={{ ...MONO, ...CLIP, fontSize: 20, fontWeight: 700, color: primaryColor ?? "var(--ft-text)", lineHeight: 1, letterSpacing: "-0.03em", flex: 1, display: "flex", alignItems: "center" }}>
           <span style={{ ...CLIP }}>{primary}</span>
         </div>
 
         {/* Secondary text */}
         {secondary !== undefined && (
-          <div style={{ ...MONO, ...CLIP, fontSize: 10, color: secondaryColor ?? "var(--ft-dim)", letterSpacing: "0.01em", marginTop: 4, flexShrink: 0 }}>
+          <div style={{ ...MONO, ...CLIP, fontSize: 11, color: secondaryColor ?? "var(--ft-dim)", letterSpacing: "0.01em", marginTop: 4, flexShrink: 0 }}>
             {secondary}
           </div>
         )}
@@ -97,8 +97,8 @@ function Tile({ label, accent, href, primary, primaryColor, secondary, secondary
         {/* Progress bar — full-width at very bottom */}
         {bar !== undefined && (
           <div style={{ flexShrink: 0, marginTop: 7 }}>
-            <div style={{ height: 4, background: "var(--ft-raised)", overflow: "hidden", borderRadius: 1 }}>
-              <div style={{ height: "100%", width: `${Math.min(100, bar)}%`, background: barColor ?? accent, transition: "width 0.12s ease", borderRadius: 1 }} />
+            <div style={{ height: 4, background: "var(--ft-raised)", overflow: "hidden", borderRadius: 2 }}>
+              <div style={{ height: "100%", width: `${Math.min(100, bar)}%`, background: barColor ?? accent, transition: "width 0.12s ease", borderRadius: 2 }} />
             </div>
           </div>
         )}
@@ -109,10 +109,10 @@ function Tile({ label, accent, href, primary, primaryColor, secondary, secondary
 
 function LoadingTile({ label, accent }: { label: string; accent: string }) {
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", height: TILE_H, display: "flex", flexDirection: "column", justifyContent: "center", padding: "10px 12px", boxSizing: "border-box" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", height: TILE_H, display: "flex", flexDirection: "column", justifyContent: "center", padding: "var(--ft-widget-py) var(--ft-widget-px)", boxSizing: "border-box" }}>
       <span style={{ ...LABEL, opacity: 0.5 }}>{label}</span>
-      <div style={{ height: 3, background: "var(--ft-raised)", marginTop: 8, borderRadius: 1 }}>
-        <div style={{ height: "100%", width: "40%", background: `${accent}44`, borderRadius: 1 }} />
+      <div style={{ height: 3, background: "var(--ft-raised)", marginTop: 8, borderRadius: 2 }}>
+        <div style={{ height: "100%", width: "40%", background: `${accent}44`, borderRadius: 2 }} />
       </div>
     </div>
   );
@@ -135,7 +135,7 @@ function SectionCard({ label, accent, href, linkLabel = "VIEW ALL →", children
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34, flexShrink: 0 }}>
         <span style={{ ...LABEL, color: "var(--ft-muted)" }}>{label}</span>
         <Link href={href} style={{ textDecoration: "none" }}>
-          <span style={{ ...MONO, fontSize: 9, color: accent, fontWeight: 700, letterSpacing: "0.05em", padding: "0 10px", height: "100%", display: "flex", alignItems: "center" }}>
+          <span style={{ ...MONO, fontSize: 9, color: accent, fontWeight: 600, letterSpacing: "0.05em", padding: "0 10px", height: "100%", display: "flex", alignItems: "center" }}>
             {linkLabel}
           </span>
         </Link>
@@ -162,7 +162,7 @@ function DataRow({ left, center, right, rightColor, height = 34 }: {
       <div style={{ flex: 1, minWidth: 0 }}>{left}</div>
       {center && <div style={{ flexShrink: 0 }}>{center}</div>}
       {right !== undefined && (
-        <div style={{ ...MONO, fontSize: 11, fontWeight: 700, color: rightColor ?? "var(--ft-text)", flexShrink: 0, letterSpacing: "-0.01em" }}>{right}</div>
+        <div style={{ ...MONO, fontSize: 11, fontWeight: 600, color: rightColor ?? "var(--ft-text)", flexShrink: 0, letterSpacing: "-0.01em" }}>{right}</div>
       )}
     </div>
   );
@@ -214,7 +214,7 @@ function RecentTxRow({ description, date, category, baseEquivalent, type, isLast
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 8,
         minHeight: 52,
         borderBottom: isLast ? "none" : "1px solid var(--ft-border)",
         paddingLeft: 12,
@@ -244,7 +244,7 @@ function RecentTxRow({ description, date, category, baseEquivalent, type, isLast
             ? <Drill href={merchantTransactionsHref(description)} title={`Every ${description} transaction`}>{description}</Drill>
             : "—"}
         </div>
-        <div style={{ ...MONO, fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.03em" }}>
+        <div style={{ ...MONO, fontSize: 11, color: "var(--ft-dim)", letterSpacing: "0.03em" }}>
           {dateStr}
           {category ? (
             <>
@@ -255,7 +255,7 @@ function RecentTxRow({ description, date, category, baseEquivalent, type, isLast
         </div>
       </div>
       <span className="pnum" style={{
-        ...MONO, fontSize: 14, fontWeight: 700, color: baseEquivalent == null ? "var(--ft-dim)" : col, flexShrink: 0, letterSpacing: "-0.02em",
+        ...MONO, fontSize: 16, fontWeight: 700, color: baseEquivalent == null ? "var(--ft-dim)" : col, flexShrink: 0, letterSpacing: "-0.02em",
       }}>
         {baseEquivalent == null ? "—" : `${sign}${formatBaseMoney(Math.abs(baseEquivalent))}`}
       </span>
@@ -283,7 +283,7 @@ function CompactQuoteRow({ sym, name, price, pctStr, col, dir, isUp, isLast }: C
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 6,
+        gap: 8,
         height: 36,
         borderBottom: isLast ? "none" : "1px solid var(--ft-border)",
         paddingLeft: 12,
@@ -294,11 +294,11 @@ function CompactQuoteRow({ sym, name, price, pctStr, col, dir, isUp, isLast }: C
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
-      <span style={{ ...MONO, fontSize: 11, fontWeight: 700, color: "var(--ft-text)", width: 36, flexShrink: 0 }}>{sym}</span>
-      <span style={{ ...MONO, ...CLIP, fontSize: 10, color: "var(--ft-dim)", flex: 1 }}>{name}</span>
-      <span className="pnum" style={{ ...MONO, fontSize: 11, fontWeight: 700, color: "var(--ft-text)", width: 58, textAlign: "right" as const, flexShrink: 0, letterSpacing: "-0.01em" }}>{price}</span>
+      <span style={{ ...MONO, fontSize: 11, fontWeight: 600, color: "var(--ft-text)", width: 36, flexShrink: 0 }}>{sym}</span>
+      <span style={{ ...MONO, ...CLIP, fontSize: 11, color: "var(--ft-dim)", flex: 1 }}>{name}</span>
+      <span className="pnum" style={{ ...MONO, fontSize: 11, fontWeight: 600, color: "var(--ft-text)", width: 58, textAlign: "right" as const, flexShrink: 0, letterSpacing: "-0.01em" }}>{price}</span>
       <span style={{
-        ...MONO, fontSize: 10, fontWeight: 700,
+        ...MONO, fontSize: 11, fontWeight: 600,
         color: col,
         background: isUp === true ? "color-mix(in srgb, var(--ft-green) 13%, transparent)"
           : isUp === false ? "color-mix(in srgb, var(--ft-red) 13%, transparent)"
@@ -306,7 +306,7 @@ function CompactQuoteRow({ sym, name, price, pctStr, col, dir, isUp, isLast }: C
         border: isUp !== null
           ? `1px solid ${isUp ? "color-mix(in srgb, var(--ft-green) 28%, transparent)" : "color-mix(in srgb, var(--ft-red) 28%, transparent)"}`
           : "1px solid transparent",
-        padding: "1px 5px",
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         minWidth: 62,
         textAlign: "right" as const,
         flexShrink: 0,
@@ -377,7 +377,7 @@ export function CompactNetWorth() {
   const monthLabel = now.toLocaleString("en-GB", { month: "long", year: "numeric" });
 
   if (isLoading || nw === null) return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "20px 14px" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "var(--ft-empty-py) var(--ft-empty-px)" }}>
       <span style={{ ...LABEL, opacity: 0.5 }}>NET WORTH</span>
       <div style={{ ...MONO, fontSize: 34, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "-0.04em", lineHeight: 1, marginTop: 8 }}>
         {isLoading ? "…" : "—"}
@@ -409,8 +409,8 @@ export function CompactNetWorth() {
           </div>
           {/* MTD delta pill */}
           {net != null && net !== 0 && (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: `color-mix(in srgb, ${netColor} 12%, transparent)`, border: `1px solid ${netColor}44`, padding: "3px 8px", marginBottom: 10 }}>
-              <span style={{ ...MONO, fontSize: 10, fontWeight: 700, color: netColor, letterSpacing: "-0.01em" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 4, background: `color-mix(in srgb, ${netColor} 12%, transparent)`, border: `1px solid ${netColor}44`, padding: "var(--ft-badge-py) var(--ft-badge-px)", marginBottom: 10 }}>
+              <span style={{ ...MONO, fontSize: 11, fontWeight: 600, color: netColor, letterSpacing: "-0.01em" }}>
                 {sign}{formatBaseMoney(Math.abs(net))} this month
               </span>
             </div>
@@ -426,8 +426,8 @@ export function CompactNetWorth() {
                 { label: "SAVED", value: `${savingsRate.toFixed(0)}%`, color: savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)" },
               ].map((stat, i) => (
                 <div key={stat.label} style={{ flex: 1, textAlign: "center", padding: "0 4px" }}>
-                  <div style={{ ...MONO, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", marginBottom: 3, textTransform: "uppercase" as const }}>{stat.label}</div>
-                  <div className="pnum" style={{ ...MONO, fontSize: 14, fontWeight: 700, color: stat.color, letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>{stat.value}</div>
+                  <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.12em", marginBottom: 3, textTransform: "uppercase" as const }}>{stat.label}</div>
+                  <div className="pnum" style={{ ...MONO, fontSize: 16, fontWeight: 700, color: stat.color, letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>{stat.value}</div>
                 </div>
               ))}
             </div>
@@ -448,7 +448,7 @@ export function CompactAccountsSummary() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34 }}>
         <span style={{ ...MONO, fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.13em", textTransform: "uppercase" as const }}>ACCOUNTS</span>
         <Link href="/accounts" style={{ textDecoration: "none" }}>
-          <span style={{ ...MONO, fontSize: 9, color: "var(--ft-cyan)", fontWeight: 700, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
+          <span style={{ ...MONO, fontSize: 9, color: "var(--ft-cyan)", fontWeight: 600, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
             {accounts.length} LINKED →
           </span>
         </Link>
@@ -457,29 +457,29 @@ export function CompactAccountsSummary() {
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "10px 12px 8px", borderBottom: "1px solid var(--ft-border)" }}>
         <span style={{ color: total !== 0 ? (total >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-muted)" }}>
           <Drill href="/accounts" title="Total cash — every account it is the sum of">
-            <span className="pnum" style={{ ...MONO, fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1 }}>{formatBaseMoney(total)}</span>
+            <span className="pnum" style={{ ...MONO, fontSize: 26, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1 }}>{formatBaseMoney(total)}</span>
           </Drill>
         </span>
-        <span style={{ ...MONO, fontSize: 10, color: "var(--ft-dim)" }}>total cash</span>
+        <span style={{ ...MONO, fontSize: 11, color: "var(--ft-dim)" }}>total cash</span>
       </div>
       {/* Account rows */}
       {sorted.length === 0 ? (
-        <div style={{ ...MONO, fontSize: 10, color: "var(--ft-muted)", padding: "12px" }}>No accounts linked</div>
+        <div style={{ ...MONO, fontSize: 11, color: "var(--ft-muted)", padding: "12px" }}>No accounts linked</div>
       ) : sorted.map((acc, i) => (
         <DrillTarget key={acc.id ?? i} href={entityHref("account", acc.id)} title={`${acc.name} — open the account`}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: i < sorted.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "var(--ft-widget-py) var(--ft-widget-px)", borderBottom: i < sorted.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="ft-drill" style={{ ...MONO, ...CLIP, fontSize: 13, fontWeight: 500 }}>{acc.name}</div>
               <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: 2 }}>{acc.currency}</div>
             </div>
-            <span className="pnum" style={{ ...MONO, fontSize: 15, fontWeight: 700, color: acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)", letterSpacing: "-0.02em", flexShrink: 0 }}>
+            <span className="pnum" style={{ ...MONO, fontSize: 16, fontWeight: 700, color: acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)", letterSpacing: "-0.02em", flexShrink: 0 }}>
               {acc.baseEquivalent == null ? "—" : formatBaseMoney(acc.baseEquivalent)}
             </span>
           </div>
         </DrillTarget>
       ))}
       {accounts.length > 5 && (
-        <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", textAlign: "right", padding: "6px 12px", borderTop: "1px solid var(--ft-border)" }}>
+        <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", textAlign: "right", padding: "var(--ft-widget-py) var(--ft-widget-px)", borderTop: "1px solid var(--ft-border)" }}>
           <Drill href="/accounts" title="The accounts this card did not have room for">+{accounts.length - 5} more →</Drill>
         </div>
       )}
@@ -498,13 +498,13 @@ export function CompactRecentTransactions() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34, flexShrink: 0 }}>
         <span style={{ ...MONO, fontSize: 9, color: "var(--ft-muted)", letterSpacing: "0.13em", textTransform: "uppercase" as const }}>RECENT TRANSACTIONS</span>
         <Link href="/transactions" style={{ textDecoration: "none" }}>
-          <span style={{ ...MONO, fontSize: 9, color: "var(--ft-blue)", fontWeight: 700, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
+          <span style={{ ...MONO, fontSize: 9, color: "var(--ft-blue)", fontWeight: 600, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
             VIEW ALL →
           </span>
         </Link>
       </div>
       {rows.length === 0 ? (
-        <div style={{ ...MONO, fontSize: 10, color: "var(--ft-muted)", padding: "16px 12px" }}>No transactions this month</div>
+        <div style={{ ...MONO, fontSize: 11, color: "var(--ft-muted)", padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>No transactions this month</div>
       ) : (
         rows.map((t, i) => (
           <RecentTxRow
@@ -706,7 +706,7 @@ export function CompactMarketSnapshot() {
   return (
     <SectionCard label="MARKETS" accent="var(--ft-cyan)" href="/portfolio" linkLabel={chip}>
       {rows.length === 0 ? (
-        <div style={{ ...MONO, fontSize: 10, color: "var(--ft-muted)" }}>Loading market data…</div>
+        <div style={{ ...MONO, fontSize: 11, color: "var(--ft-muted)" }}>Loading market data…</div>
       ) : (
         <div style={{ margin: "0 -12px" }}>
           {rows.map((r, i) => (

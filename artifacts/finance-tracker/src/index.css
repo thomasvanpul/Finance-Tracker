@@ -305,6 +305,23 @@
   --ft-float-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
   --ft-metric-py: 10px;
   --ft-row-gap: 8px;
+
+  /* Widget padding. A survey of components/widgets/ found 83 distinct
+     padding literals across 187 sites — "7px 10px", "9px 12px",
+     "12px 14px", "14px 12px", "6px 10px", "8px 12px" — none of which
+     any reader could tell apart and none of which was chosen against
+     the others. Variation nobody picked reads exactly like uniformity
+     nobody picked; it is the same failure by the other road.
+
+     Three tokens, because a widget's padding is doing one of three
+     jobs. A widget opts into the one that matches, and a widget that
+     wants something else now has to mean it. */
+  --ft-widget-py:  8px;  /* content block inside a widget body */
+  --ft-widget-px: 12px;
+  --ft-badge-py:   2px;  /* inline chip / pill / tag around a short label */
+  --ft-badge-px:   6px;
+  --ft-empty-py:  24px;  /* empty state and hero block, which need air */
+  --ft-empty-px:  14px;
 }
 body.density-compact {
   --ft-cell-py: 3px;
@@ -312,6 +329,12 @@ body.density-compact {
   --ft-panel-header-h: 28px;
   --ft-metric-py: 6px;
   --ft-row-gap: 4px;
+  --ft-widget-py: 5px;
+  --ft-widget-px: 10px;
+  --ft-badge-py: 1px;
+  --ft-badge-px: 5px;
+  --ft-empty-py: 16px;
+  --ft-empty-px: 12px;
 }
 body.density-comfortable {
   --ft-cell-py: 12px;
@@ -319,6 +342,12 @@ body.density-comfortable {
   --ft-panel-header-h: 42px;
   --ft-metric-py: 14px;
   --ft-row-gap: 14px;
+  --ft-widget-py: 12px;
+  --ft-widget-px: 16px;
+  --ft-badge-py: 3px;
+  --ft-badge-px: 8px;
+  --ft-empty-py: 32px;
+  --ft-empty-px: 16px;
 }
 
 @layer base {

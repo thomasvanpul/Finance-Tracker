@@ -149,7 +149,7 @@ function BudgetCard({
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        padding: "10px 12px",
+        padding: "var(--ft-widget-py) var(--ft-widget-px)",
         borderBottom: "1px solid var(--ft-border)",
         borderRight: !isLastInRow ? "1px solid var(--ft-border)" : undefined,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
@@ -158,7 +158,7 @@ function BudgetCard({
     >
       {/* row 1: dot + name + status label + delete */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
           <StatusDot color={color} />
           {/* The category and the amount spent are both about the same set
               of rows — this month's expenses in this category — so both open
@@ -177,11 +177,11 @@ function BudgetCard({
             {budget.category}
           </Drill>
         </div>
-        <span style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+        <span style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           <span
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 8,
+              fontSize: 9,
               letterSpacing: "0.06em",
               color: color,
               textTransform: "uppercase",
@@ -193,7 +193,7 @@ function BudgetCard({
             onClick={() => onRemove(budget)}
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 10,
+              fontSize: 11,
               color: "var(--ft-dim)",
               background: "none",
               border: "none",
@@ -207,14 +207,14 @@ function BudgetCard({
       </div>
 
       {/* row 2: mini-bar + pct pill */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
         <MiniBar pct={pct} color={color} />
         <span
           className="pnum"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            fontWeight: 700,
+            fontSize: 11,
+            fontWeight: 600,
             color: color,
             flexShrink: 0,
             minWidth: 32,
@@ -232,7 +232,7 @@ function BudgetCard({
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 11,
-            fontWeight: 700,
+            fontWeight: 600,
             color: over ? "var(--ft-red)" : "var(--ft-text)",
             whiteSpace: "nowrap",
             flex: 1,
@@ -242,7 +242,7 @@ function BudgetCard({
           <Drill href={categoryTransactionsHref(budget.category, { from: monthFrom })}>{formatBaseMoney(s)}</Drill>
         </span>
         <span
-          style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
+          style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
           onClick={() => onEdit(budget.category, budget.monthlyLimit)}
         >
           {editing === budget.category ? (
@@ -256,7 +256,7 @@ function BudgetCard({
               style={{
                 width: 56,
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 11,
                 background: "var(--ft-raised)",
                 border: "1px solid var(--ft-accent)",
                 color: "var(--ft-text)",
@@ -391,7 +391,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
         {/* header bar: month + context + add button */}
         <div
           style={{
-            padding: "8px 12px",
+            padding: "var(--ft-widget-py) var(--ft-widget-px)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -402,7 +402,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
             <span
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 11,
                 color: "var(--ft-dim)",
                 textTransform: "uppercase",
                 letterSpacing: "0.06em",
@@ -430,7 +430,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
               color: "var(--ft-accent)",
               background: "transparent",
               border: "1px solid var(--ft-accent)",
-              padding: "2px 8px",
+              padding: "var(--ft-badge-py) var(--ft-badge-px)",
               cursor: "pointer",
               textTransform: "uppercase",
             }}
@@ -443,7 +443,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
         {budgets.length > 0 && (
           <div
             style={{
-              padding: "10px 12px",
+              padding: "var(--ft-widget-py) var(--ft-widget-px)",
               borderBottom: "1px solid var(--ft-border)",
               background: "var(--ft-raised)",
               display: "flex",
@@ -468,7 +468,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 11,
-                    fontWeight: 700,
+                    fontWeight: 600,
                     color: totalColor,
                     lineHeight: 1,
                   }}
@@ -492,7 +492,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
               >
                 Total Budget Health
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "baseline", marginBottom: 3, minWidth: 0 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "baseline", marginBottom: 3, minWidth: 0 }}>
                 <span
                   className="pnum"
                   style={{
@@ -512,7 +512,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                   <span
                     style={{
                       fontFamily: "var(--font-mono)",
-                      fontSize: 8,
+                      fontSize: 9,
                       letterSpacing: "0.06em",
                       color: "var(--ft-red)",
                       textTransform: "uppercase",
@@ -558,7 +558,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
             style={{
               display: "flex",
               gap: 8,
-              padding: "8px 12px",
+              padding: "var(--ft-widget-py) var(--ft-widget-px)",
               borderBottom: "1px solid var(--ft-border)",
               alignItems: "center",
             }}
@@ -574,7 +574,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                 background: "var(--ft-raised)",
                 border: "1px solid var(--ft-border2)",
                 color: "var(--ft-text)",
-                padding: "4px 8px",
+                padding: "var(--ft-badge-py) var(--ft-badge-px)",
                 outline: "none",
               }}
             />
@@ -590,7 +590,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                 background: "var(--ft-raised)",
                 border: "1px solid var(--ft-border2)",
                 color: "var(--ft-text)",
-                padding: "4px 8px",
+                padding: "var(--ft-badge-py) var(--ft-badge-px)",
                 outline: "none",
               }}
             />
@@ -598,11 +598,11 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
               onClick={addBudget}
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 11,
                 color: "var(--ft-base)",
                 background: "var(--ft-accent)",
                 border: "none",
-                padding: "4px 10px",
+                padding: "var(--ft-widget-py) var(--ft-widget-px)",
                 cursor: "pointer",
               }}
             >
@@ -637,7 +637,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
         {budgets.length === 0 && (
           <div
             style={{
-              padding: "28px 16px",
+              padding: "var(--ft-empty-py) var(--ft-empty-px)",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -653,7 +653,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
             <span
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 11,
                 color: "var(--ft-dim)",
                 textAlign: "center",
                 letterSpacing: "0.04em",

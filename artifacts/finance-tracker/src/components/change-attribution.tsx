@@ -113,7 +113,7 @@ export function ChangeAttributionBand() {
               unreadable, and the cap is what lets the band use its width
               without the sentence paying for it. */}
           <VStack gap={2} minWidth={280} maxWidth={420}>
-            <Text as="div" size={17} weight={600} color="var(--ft-text)"
+            <Text as="div" size={16} weight={600} color="var(--ft-text)"
               lineHeight={1.25} letterSpacing="-0.01em">
               {view.finding.headline}
             </Text>
@@ -136,7 +136,7 @@ export function ChangeAttributionBand() {
                 The window sits with the figure it qualifies rather than in
                 the section header, because a period is a property of a
                 number, not of a heading. */}
-            <HStack align="baseline" gap={10} marginTop={12}>
+            <HStack align="baseline" gap={8} marginTop={12}>
               <DrillTarget href="/net-worth" title="Net worth — everything this is the change in">
                 <span className="ft-drill">
                   <Text as="span" size={20} weight={700} letterSpacing="-0.02em"
@@ -162,7 +162,7 @@ export function ChangeAttributionBand() {
               the claim rather than squeezing a rate quote into 200px. The
               rate lines carry "GBP/MYR 5.4700 → 5.5039", which must not be
               cropped. */}
-          <VStack gap={5} grow minWidth={340} maxWidth={520} marginTop={2}>
+          <VStack gap={4} grow minWidth={340} maxWidth={520} marginTop={2}>
             {view.rows.map((row) => (
               <AttributionLine key={row.kind} row={row} currency={data.baseCurrency} />
             ))}
@@ -181,7 +181,7 @@ export function ChangeAttributionBand() {
 function AttributionLine({ row, currency }: { row: AttributionRow; currency: string }) {
   return (
     <VStack gap={2}>
-      <HStack align="baseline" gap={10} wide>
+      <HStack align="baseline" gap={8} wide>
         {/* The label is the SUBJECT of the row's sentence — "the rate moved",
             "you spent" — and it inherited --ft-dim, which made it the
             quietest thing on a row it governs, quieter than the evidence
@@ -207,7 +207,7 @@ function AttributionLine({ row, currency }: { row: AttributionRow; currency: str
             the surface's own instance of alignment never having been
             chosen. */}
         <HStack grow minWidth0>
-          <Text as="span" mono size={10} color="var(--ft-dim)">
+          <Text as="span" mono size={11} color="var(--ft-dim)">
             {row.detail}
           </Text>
         </HStack>
@@ -235,14 +235,14 @@ function AttributionLine({ row, currency }: { row: AttributionRow; currency: str
  */
 function BreakdownLine({ line, currency }: { line: AttributionBreakdownLine; currency: string }) {
   return (
-    <HStack align="baseline" gap={10} wide padding="0 0 0 14px">
+    <HStack align="baseline" gap={8} wide padding="0 0 0 14px">
       <HStack grow minWidth0>
-        <Drill href={line.drillHref} title={`Open ${line.label}`} style={{ fontSize: 10 }}>
+        <Drill href={line.drillHref} title={`Open ${line.label}`} style={{ fontSize: 11 }}>
           {line.label}
         </Drill>
       </HStack>
       <HStack shrink={false}>
-        <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
+        <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
           {signed(line.amountBase, currency)}
         </Text>
       </HStack>
@@ -265,14 +265,14 @@ export function ChangeAttributionBlock() {
   if (view.status === "insufficient") {
     return (
       <VStack padding="0 18px 18px">
-        <Text as="div" size={12} lineHeight="17px" color="var(--ft-dim)">{view.emptyReason}</Text>
+        <Text as="div" size={13} lineHeight="17px" color="var(--ft-dim)">{view.emptyReason}</Text>
       </VStack>
     );
   }
 
   return (
-    <VStack padding="0 18px 18px" gap={6}>
-      <HStack align="baseline" justify="between" gap={10}>
+    <VStack padding="0 18px 18px" gap={8}>
+      <HStack align="baseline" justify="between" gap={8}>
         <MonoLabel size={11} letterSpacing="0.16em">WHAT CHANGED</MonoLabel>
         <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
           {signed(view.totalBase, data.baseCurrency)} {view.windowLabel}
@@ -287,7 +287,7 @@ export function ChangeAttributionBlock() {
           line. 15px rather than desktop's 17px: the Mobile Amendment's
           body step, and the hero above it already owns the largest type
           on the screen. */}
-      <Text as="div" size={15} weight={600} color="var(--ft-text)" lineHeight="20px" mt={2}>
+      <Text as="div" size={16} weight={600} color="var(--ft-text)" lineHeight="20px" mt={2}>
         {view.finding.headline}
       </Text>
       {view.finding.support != null && (

@@ -75,32 +75,32 @@ function CategoryBarRow({ cat, amount, pct, color, rank, prevHasData, trend, ran
       onMouseLeave={() => setHov(false)}
       style={{
         marginBottom: 10,
-        padding: "4px 6px",
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         borderRadius: 2,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
         transition: "background 0.1s",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-border2)", fontWeight: 700, flexShrink: 0, minWidth: 12, textAlign: "right" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-border2)", fontWeight: 600, flexShrink: 0, minWidth: 12, textAlign: "right" }}>
             {rank}
           </span>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
-          <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {cat}
           </Drill>
         </div>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           {prevHasData && (
             <span style={{
-              fontSize: 8,
-              fontWeight: 700,
+              fontSize: 9,
+              fontWeight: 600,
               color: chipColor,
               background: `color-mix(in srgb, ${chipColor} 12%, transparent)`,
               border: `1px solid color-mix(in srgb, ${chipColor} 35%, transparent)`,
               borderRadius: 2,
-              padding: "1px 4px",
+              padding: "var(--ft-badge-py) var(--ft-badge-px)",
               display: "inline-flex",
               alignItems: "center",
               gap: 2,
@@ -114,7 +114,7 @@ function CategoryBarRow({ cat, amount, pct, color, rank, prevHasData, trend, ran
             </span>
           )}
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>{pct.toFixed(0)}%</span>
-          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color }}>−{formatBaseMoney(Math.abs(amount))}</span>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color }}>−{formatBaseMoney(Math.abs(amount))}</span>
         </span>
       </div>
       <div style={{ height: 5, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
@@ -142,15 +142,15 @@ function DonutLegendItem({ cat, amt, total, color, range }: DonutLegendItemProps
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 5,
-        padding: "1px 2px",
+        gap: 4,
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, transparent)" : "transparent",
         transition: "background 0.1s",
       }}
     >
       <div style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0 }} />
-      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 8, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat}</Drill>
-      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color }}>{total > 0 ? ((amt / total) * 100).toFixed(0) : 0}%</span>
+      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat}</Drill>
+      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color }}>{total > 0 ? ((amt / total) * 100).toFixed(0) : 0}%</span>
     </div>
   );
 }
@@ -180,31 +180,31 @@ function VsLastMonthRow({ cat, amount, prev, color, range }: VsLastMonthRowProps
         alignItems: "center",
         gap: 8,
         marginBottom: 7,
-        padding: "5px 6px",
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         borderBottom: "1px solid var(--ft-border)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "transparent",
         transition: "background 0.1s",
       }}
     >
       <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
-      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 10, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {cat}
       </Drill>
       {pctChange !== null && (
         <span style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 8,
-          fontWeight: 700,
+          fontSize: 9,
+          fontWeight: 600,
           color: deltaColor,
           background: `color-mix(in srgb, ${deltaColor} 12%, transparent)`,
           border: `1px solid color-mix(in srgb, ${deltaColor} 30%, transparent)`,
-          padding: "1px 4px",
+          padding: "var(--ft-badge-py) var(--ft-badge-px)",
           flexShrink: 0,
         }}>
           {delta > 0 ? "▲" : delta < 0 ? "▼" : "→"} {Math.abs(pctChange)}%
         </span>
       )}
-      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: deltaColor, flexShrink: 0, minWidth: 60, textAlign: "right" }}>
+      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: deltaColor, flexShrink: 0, minWidth: 60, textAlign: "right" }}>
         {deltaLabel}
       </span>
     </div>
@@ -271,7 +271,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
         <ChevronLeft size={12} />
       </button>
 
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {label}
       </span>
 
@@ -284,14 +284,14 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
         <ChevronRight size={12} />
       </button>
 
-      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>
+      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-red)", flexShrink: 0, whiteSpace: "nowrap" }}>
         <Drill href={ledgerHref({ type: "expense", from: dateFrom, to: dateTo })} title="Total spent — every expense it is the sum of">−{formatBaseMoney(Math.abs(total))}</Drill>
       </span>
     </div>
   );
 
   const barList = sorted.length === 0 ? (
-    <div style={{ padding: "24px 12px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
+    <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
       No expenses for {label}
     </div>
   ) : (
@@ -348,7 +348,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
             </Pie>
             <Tooltip
               formatter={(value: number) => [formatBaseMoney(value), ""]}
-              contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10 }}
+              contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 11 }}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -369,7 +369,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
   );
 
   const vsLastMonth = (
-    <div style={{ padding: "14px 12px" }}>
+    <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
       <div style={{
         fontFamily: "var(--font-mono)",
         fontSize: 9,

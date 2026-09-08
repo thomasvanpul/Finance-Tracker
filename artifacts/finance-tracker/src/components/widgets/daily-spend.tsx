@@ -46,10 +46,10 @@ function TodayTxRow({ description, category, baseEquivalent }: TodayTxRowProps) 
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 4,
-        padding: "2px 4px",
+        padding: "var(--ft-badge-py) var(--ft-badge-px)",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))" : "transparent",
         transition: "background 0.1s",
-        borderRadius: 1,
+        borderRadius: 2,
       }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -67,7 +67,7 @@ function TodayTxRow({ description, category, baseEquivalent }: TodayTxRowProps) 
               : "Expense"}
         </span>
         {category && description && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
             <Drill href={categoryTransactionsHref(category)}>{category}</Drill>
           </span>
         )}
@@ -152,7 +152,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
   const todayExpenseCount = allExpenses.filter(tx => tx.date === today).length;
 
   const compactView = (
-    <div style={{ padding: "12px 14px" }}>
+    <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
       {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
@@ -161,9 +161,9 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
         {dailyAvg > 0 && (
           <span style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 8,
+            fontSize: 9,
             letterSpacing: "0.06em",
-            padding: "1px 5px",
+            padding: "var(--ft-badge-py) var(--ft-badge-px)",
             background: barOverflow ? "color-mix(in srgb, var(--ft-red) 12%, transparent)" : "color-mix(in srgb, var(--ft-green) 12%, transparent)",
             color: barOverflow ? "var(--ft-red)" : "var(--ft-green)",
             border: `1px solid ${barOverflow ? "color-mix(in srgb, var(--ft-red) 30%, transparent)" : "color-mix(in srgb, var(--ft-green) 30%, transparent)"}`,
@@ -175,19 +175,19 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
 
       {/* Big hero number */}
       {todayTotal === 0 ? (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-green)", marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-green)", marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
           £0.00
           <span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)", marginLeft: 8 }}>clear day</span>
         </div>
       ) : (
-        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: totalColor, marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
+        <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: totalColor, marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
           <Drill href={ledgerHref({ type: "expense", from: today, to: today })} title="Today's spend — every expense it is the sum of">{formatBaseMoney(todayTotal)}</Drill>
         </div>
       )}
 
       {dailyAvg > 0 && (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
               avg <span className="pnum">{formatBaseMoney(dailyAvg)}</span>
             </span>
@@ -203,37 +203,37 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
           {/* Dual progress bar: time elapsed + spend pace */}
           <div style={{ marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                 Day {dayOfMonth}/{daysInMonth}
               </span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
                 {daysRemaining}d left
               </span>
             </div>
             {/* Time bar */}
-            <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden", marginBottom: 3 }}>
-              <div style={{ height: "100%", width: `${monthPacePct}%`, background: "var(--ft-border2)", borderRadius: 1 }} />
+            <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden", marginBottom: 3 }}>
+              <div style={{ height: "100%", width: `${monthPacePct}%`, background: "var(--ft-border2)", borderRadius: 2 }} />
             </div>
             {/* Spend pace bar */}
-            <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 1, overflow: "hidden" }}>
+            <div style={{ height: 3, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
               <div style={{
                 height: "100%",
                 width: `${Math.min(100, spendPacePct)}%`,
                 background: spendPacePct > monthPacePct + 10 ? "var(--ft-red)" : "var(--ft-accent)",
-                borderRadius: 1,
+                borderRadius: 2,
                 transition: "width 0.12s ease",
               }} />
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 14, minWidth: 0 }}>
+          <div style={{ display: "flex", gap: 16, minWidth: 0 }}>
             <div style={{ minWidth: 0, overflow: "hidden" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>MTD SPEND</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", whiteSpace: "nowrap" }}><Drill href={ledgerHref({ type: "expense", from: dateFrom, to: dateTo })}>{formatBaseMoney(thisMonthExpenses)}</Drill></div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>MTD SPEND</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", whiteSpace: "nowrap" }}><Drill href={ledgerHref({ type: "expense", from: dateFrom, to: dateTo })}>{formatBaseMoney(thisMonthExpenses)}</Drill></div>
             </div>
             <div style={{ minWidth: 0, overflow: "hidden" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>PROJECTED</div>
-              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: projectedMonthEnd > runRate * 1.1 ? "var(--ft-red)" : "var(--ft-muted)", whiteSpace: "nowrap" }}>{formatBaseMoney(projectedMonthEnd)}</div>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>PROJECTED</div>
+              <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: projectedMonthEnd > runRate * 1.1 ? "var(--ft-red)" : "var(--ft-muted)", whiteSpace: "nowrap" }}>{formatBaseMoney(projectedMonthEnd)}</div>
             </div>
           </div>
         </>
@@ -257,7 +257,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
             />
           ))}
           {todayExpenseCount > 4 && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
               <Drill href={ledgerHref({ type: "expense", from: today, to: today })}>+{todayExpenseCount - 4} more</Drill>
             </div>
           )}
@@ -275,13 +275,13 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
         <BarChart data={dailyChartData} margin={{ top: 4, right: 4, left: -14, bottom: 0 }} barCategoryGap="20%">
           <XAxis
             dataKey="day"
-            tick={{ fill: "var(--ft-dim)", fontSize: 8, fontFamily: "var(--font-mono)" }}
+            tick={{ fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }}
             axisLine={false}
             tickLine={false}
             interval={4}
           />
           <YAxis
-            tick={{ fill: "var(--ft-dim)", fontSize: 8, fontFamily: "var(--font-mono)" }}
+            tick={{ fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v: number) => v >= 1000 ? `£${(v / 1000).toFixed(0)}k` : `£${v}`}
@@ -294,7 +294,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
               background: "var(--ft-raised)",
               border: "1px solid var(--ft-border)",
               color: "var(--ft-text)",
-              fontSize: 10,
+              fontSize: 11,
               fontFamily: "var(--font-mono)",
             }}
             cursor={{ fill: "rgba(255,255,255,0.03)" }}
@@ -305,7 +305,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
               stroke="var(--ft-dim)"
               strokeDasharray="4 3"
               strokeWidth={1}
-              label={{ value: "avg", position: "insideTopRight", fill: "var(--ft-dim)", fontSize: 8, fontFamily: "var(--font-mono)" }}
+              label={{ value: "avg", position: "insideTopRight", fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }}
             />
           )}
           <Bar dataKey="total" radius={[2, 2, 0, 0]} maxBarSize={20}>
