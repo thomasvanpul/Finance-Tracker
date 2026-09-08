@@ -71,6 +71,25 @@ export function sumConvertible<T>(
   return { total, unconvertible };
 }
 
+// A money figure with the pence dropped, for use INSIDE A SENTENCE.
+//
+// "£27 of £117 was you spending" is a claim about proportion; at two
+// decimal places the reader is asked to parse four numbers to take one
+// point. This is never the right formatter for a figure a reader might
+// reconcile against another — those keep their pence and go through
+// formatMoney — and it is not a truncation: the value is ROUNDED, so it
+// never reads as a smaller number than it is, which is the failure mode
+// CLAUDE.md names first.
+export function formatMoneyWhole(value: number, currency: string): string {
+  const v = Object.is(value, -0) ? 0 : Math.round(value);
+  return new Intl.NumberFormat(getNumberLocale(), {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(v);
+}
+
 export function formatNative(value: number, currency: string): string {
   const v = Object.is(value, -0) ? 0 : value;
   return (

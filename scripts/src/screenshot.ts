@@ -390,6 +390,29 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
       spans: {},
     }));`;
 
+  // SCREENSHOT_PROTO is stamped TWICE: here, before any script runs, and
+  // again after load (below). The pre-load stamp is what the four dashboard
+  // prototypes need — they are React layouts, not a stylesheet, so the
+  // attribute has to be present while the page mounts if their own queries
+  // are to be part of the networkidle the harness waits on. The post-load
+  // stamp stays because the CSS-only "flat" prototype was built against it
+  // and a second write of the same value costs nothing.
+  const protoEnv = process.env.SCREENSHOT_PROTO ?? null;
+  const protoSeed = protoEnv === null ? "" : `
+    document.documentElement.setAttribute("data-proto", ${JSON.stringify(protoEnv)});`;
+
+  // Its own init script, and deliberately not folded into the storage one
+  // below: documentElement can still be null when the first script on a
+  // document runs, and a throw there would silently skip every
+  // localStorage seed that followed it in the same try block.
+  if (protoSeed !== "") {
+    await page.addInitScript(`try {${protoSeed}
+    } catch (e) {
+      document.addEventListener("DOMContentLoaded", function () {${protoSeed}
+      });
+    }`);
+  }
+
   await page.addInitScript(`try {
     window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});${personaSeed}
     window.localStorage.setItem("ft-onboarding-complete", "1");
@@ -424,10 +447,43 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
   // own. It is set from here rather than from app code deliberately — the
   // prototype has no runtime path in the shipped bundle at all, and nothing
   // but this harness can reach it.
-  const proto = process.env.SCREENSHOT_PROTO ?? null;
+  const proto = protoEnv;
   if (proto !== null) {
     await page.evaluate((p: string) => document.documentElement.setAttribute("data-proto", p), proto);
     await page.waitForTimeout(250);
+  }
+
+  // SCREENSHOT_FULL_HEIGHT=1 grows the viewport until the app's own scroll
+  // container has nothing left to scroll, so one PNG holds the whole design.
+  //
+  // fullPage:true does not do this and cannot: the app scrolls inside
+  // <main class="ft-main">, not the document, so Playwright's full-page
+  // capture stops at the first viewport — the note above SCREENSHOT_SCROLL_TO
+  // says so and the workaround there is to take a second picture of a
+  // different part. That is fine for checking one section and useless for
+  // comparing whole layouts, which is what this is for. Growing the viewport
+  // rather than unsetting the container's overflow keeps every layout
+  // decision the page makes intact; only the height it is given changes.
+  const CAPTURE_HEIGHT_CAP = 6000;
+  if (process.env.SCREENSHOT_FULL_HEIGHT === "1") {
+    const overflow = await page.evaluate(() => {
+      const main = document.querySelector("main.ft-main");
+      if (main === null) return null;
+      return Math.ceil(main.scrollHeight - main.clientHeight);
+    });
+    if (overflow === null) {
+      console.log(`[full-height] ${route}: no main.ft-main — captured at the nominal viewport`);
+    } else if (overflow > 0) {
+      const base = VIEWPORTS[viewport];
+      const grown = Math.min(base.height + overflow, CAPTURE_HEIGHT_CAP);
+      await page.setViewportSize({ width: base.width, height: grown });
+      await page.waitForTimeout(500);
+      const left = await page.evaluate(() => {
+        const main = document.querySelector("main.ft-main");
+        return main === null ? 0 : Math.ceil(main.scrollHeight - main.clientHeight);
+      });
+      console.log(`[full-height] ${route} ${theme}: ${base.height} → ${grown}px${left > 0 ? `, ${left}px still below the fold (cap ${CAPTURE_HEIGHT_CAP})` : ""}`);
+    }
   }
 
   const scrollTo = process.env.SCREENSHOT_SCROLL_TO ?? null;

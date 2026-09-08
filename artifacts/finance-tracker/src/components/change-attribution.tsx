@@ -69,27 +69,100 @@ export function ChangeAttributionBand() {
       {/* When there is nothing to attribute this is one rule and a reason,
           not a frame around a single sentence: the reason goes in the
           right slot and there is no body at all. */}
-      <SectionRule right={
+      {/* The window used to be printed here AND is now printed next to the
+          total it qualifies, which is where it belongs — a period is a
+          property of a figure, not of a heading. Printing it in both places
+          would be one fact stated twice, so the header slot now carries
+          only the reason there is nothing to show. */}
+      <SectionRule right={view.status === "insufficient" ? (
         <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em">
-          {view.status === "insufficient" ? view.emptyReason : view.windowLabel}
+          {view.emptyReason}
         </Text>
-      }>
+      ) : undefined}>
         WHAT CHANGED
       </SectionRule>
 
       {view.status === "insufficient" ? null : (
-        <HStack align="stretch" gap={22}>
-          <VStack justify="center" padding="12px 0">
-            <DrillTarget href="/net-worth" title="Net worth — everything this is the change in">
-              <span className="ft-drill">
-                <Text as="div" size={26} weight={600} letterSpacing="-0.02em"
-                  color={amountColour(view.totalBase)} numeric>
-                  {signed(view.totalBase, data.baseCurrency)}
-                </Text>
-              </span>
-            </DrillTarget>
+        /* Three registers, in the order a person reads them, and that order
+           is the design.
+
+           Until 2026-09-08 this was two columns: the total floating left of
+           an indented list, using 700 of its 1180px and leaving the rest
+           blank. It had correct data and no design, and the finding it
+           exists to deliver — that almost none of the change was the user
+           spending — was not stated anywhere on it. A reader had to compare
+           the spend row against the others to reach it, which is the work
+           the screen is supposed to have already done.
+
+           So the finding is now the first thing on the surface, in prose,
+           at a size nothing else in the band competes with. The claim, then
+           the evidence — which is the shape the AI insight card also takes,
+           and the two now agree with each other rather than each inventing
+           a register.
+
+           It is still two columns, and that is deliberate rather than
+           inherited. What was wrong before was not the number of columns;
+           it was that the left one was a bare figure with nothing to say,
+           so the two halves were fragments rather than a claim and its
+           support. Left is now the sentence, its magnitudes, and the total
+           that sentence is about; right is the decomposition that sentence
+           was derived from. Read across, it is an argument. */
+        <HStack align="start" gap={40} wrap justify="between" wide padding="14px 0 4px">
+          {/* THE CLAIM. Capped at 420px because this column is prose and
+              prose has a measure — a 17px sentence run across 1180px is
+              unreadable, and the cap is what lets the band use its width
+              without the sentence paying for it. */}
+          <VStack gap={2} minWidth={280} maxWidth={420}>
+            <Text as="div" size={17} weight={600} color="var(--ft-text)"
+              lineHeight={1.25} letterSpacing="-0.01em">
+              {view.finding.headline}
+            </Text>
+
+            {/* Its evidence, when there is more than one part to weigh.
+                Mono, because every term in it is a magnitude or a named
+                cause. */}
+            {view.finding.support != null && (
+              <Text as="div" mono size={11} color="var(--ft-muted)" mt={1} lineHeight={1.4}>
+                {view.finding.support}
+              </Text>
+            )}
+
+            {/* The total. 20px rather than the 26px it carried as a floated
+                column: it is no longer the first thing read, and at 26px
+                under a 17px sentence it took the sentence's job back. It
+                stays the largest FIGURE here, which is the rank it should
+                have.
+
+                The window sits with the figure it qualifies rather than in
+                the section header, because a period is a property of a
+                number, not of a heading. */}
+            <HStack align="baseline" gap={10} marginTop={12}>
+              <DrillTarget href="/net-worth" title="Net worth — everything this is the change in">
+                <span className="ft-drill">
+                  <Text as="span" size={20} weight={700} letterSpacing="-0.02em"
+                    color={amountColour(view.totalBase)} numeric>
+                    {signed(view.totalBase, data.baseCurrency)}
+                  </Text>
+                </span>
+              </DrillTarget>
+              <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.10em">
+                net {view.windowLabel}
+              </Text>
+            </HStack>
           </VStack>
-          <VStack grow gap={5} padding="10px 0">
+
+          {/* THE WORKINGS. Left to right is a reading order too: the claim,
+              then what it was derived from. This is NOT the arrangement
+              that was rejected — that one put a bare figure to the left of
+              an indented list and stated no finding at all, so the left
+              column was a number with nothing to say and the two halves
+              were not a claim and its evidence, just two fragments.
+
+              `wrap` on the row: under about 700px the workings drop beneath
+              the claim rather than squeezing a rate quote into 200px. The
+              rate lines carry "GBP/MYR 5.4700 → 5.5039", which must not be
+              cropped. */}
+          <VStack gap={5} grow minWidth={340} maxWidth={520} marginTop={2}>
             {view.rows.map((row) => (
               <AttributionLine key={row.kind} row={row} currency={data.baseCurrency} />
             ))}
@@ -108,16 +181,44 @@ export function ChangeAttributionBand() {
 function AttributionLine({ row, currency }: { row: AttributionRow; currency: string }) {
   return (
     <VStack gap={2}>
-      <HStack align="baseline" gap={10}>
-        <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`} style={{ fontSize: 11, minWidth: 138 }}>
-          {row.label}
-        </Drill>
-        <Text as="span" mono size={11} color={amountColour(row.amountBase)} numeric>
-          {signed(row.amountBase, currency)}
-        </Text>
-        <Text as="span" mono size={10} color="var(--ft-dim)">
-          {row.detail}
-        </Text>
+      <HStack align="baseline" gap={10} wide>
+        {/* The label is the SUBJECT of the row's sentence — "the rate moved",
+            "you spent" — and it inherited --ft-dim, which made it the
+            quietest thing on a row it governs, quieter than the evidence
+            beneath it. Colour here is meant to be semantic (DESIGN.md) and
+            dimming the subject encodes nothing except that nobody chose it.
+            --ft-text, one weight up from the detail, and the amount keeps
+            the only semantic colour on the row. */}
+        {/* minWidth lives on the wrapper, not on the Drill. The Drill is an
+            <a>, so it is only a flex item — and only min-width-able — while
+            it is a direct child of the HStack. Wrapping it without moving
+            the width would have quietly dropped the label column's
+            alignment. */}
+        <span style={{ color: "var(--ft-text)", minWidth: 138, flexShrink: 0 }}>
+          <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`} style={{ fontSize: 11, fontWeight: 500 }}>
+            {row.label}
+          </Drill>
+        </span>
+        {/* The evidence grows, which pushes the figure to the column's right
+            edge. Every figure in this block — this row and the account lines
+            under it — then lands on one right margin, so the decomposition
+            reads as a column that visibly sums to the total rather than as
+            four numbers at four arbitrary x positions. That ragged edge was
+            the surface's own instance of alignment never having been
+            chosen. */}
+        <HStack grow minWidth0>
+          <Text as="span" mono size={10} color="var(--ft-dim)">
+            {row.detail}
+          </Text>
+        </HStack>
+        {/* shrink={false}: "in full or not at all". The figure is the one
+            thing on the row that must never give up width, so the evidence
+            beside it wraps or compresses first. */}
+        <HStack shrink={false}>
+          <Text as="span" mono size={11} color={amountColour(row.amountBase)} numeric>
+            {signed(row.amountBase, currency)}
+          </Text>
+        </HStack>
       </HStack>
       {row.breakdown.map((line) => (
         <BreakdownLine key={line.drillHref + line.label} line={line} currency={currency} />
@@ -134,13 +235,17 @@ function AttributionLine({ row, currency }: { row: AttributionRow; currency: str
  */
 function BreakdownLine({ line, currency }: { line: AttributionBreakdownLine; currency: string }) {
   return (
-    <HStack align="baseline" gap={10} padding="0 0 0 14px">
-      <Drill href={line.drillHref} title={`Open ${line.label}`} style={{ fontSize: 10, minWidth: 124 }}>
-        {line.label}
-      </Drill>
-      <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
-        {signed(line.amountBase, currency)}
-      </Text>
+    <HStack align="baseline" gap={10} wide padding="0 0 0 14px">
+      <HStack grow minWidth0>
+        <Drill href={line.drillHref} title={`Open ${line.label}`} style={{ fontSize: 10 }}>
+          {line.label}
+        </Drill>
+      </HStack>
+      <HStack shrink={false}>
+        <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
+          {signed(line.amountBase, currency)}
+        </Text>
+      </HStack>
     </HStack>
   );
 }
@@ -173,6 +278,23 @@ export function ChangeAttributionBlock() {
           {signed(view.totalBase, data.baseCurrency)} {view.windowLabel}
         </Text>
       </HStack>
+
+      {/* The same finding the desktop band leads with, and for the same
+          reason: the rows say what the parts were, and nothing said what
+          the answer was. It sits under the label rather than above it
+          because the phone block is a section inside HOME, not a page —
+          the label is the section's name and the finding is its first
+          line. 15px rather than desktop's 17px: the Mobile Amendment's
+          body step, and the hero above it already owns the largest type
+          on the screen. */}
+      <Text as="div" size={15} weight={600} color="var(--ft-text)" lineHeight="20px" mt={2}>
+        {view.finding.headline}
+      </Text>
+      {view.finding.support != null && (
+        <Text as="div" mono size={11} color="var(--ft-muted)" lineHeight="15px">
+          {view.finding.support}
+        </Text>
+      )}
 
       <VStack>
         {view.rows.map((row) => (

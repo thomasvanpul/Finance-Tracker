@@ -2079,3 +2079,103 @@ strong.pnum {
   padding-left: 0;
   padding-right: 0;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   PROTOTYPE ONLY — the four dashboard designs. NOT SHIPPED.
+
+   Companion to lib/proto-design.ts and components/proto/. The LAYOUT of each
+   design is JSX, because the previous round established that CSS cannot
+   reach it; what is left here is the one thing that genuinely is styling —
+   what the three widgets' own frames and headers do inside each design,
+   since those come from WidgetShell and cannot be passed a prop.
+
+   Same reachability as the "flat" block above: nothing in the app sets
+   data-proto. Delete all five blocks once a direction has been picked.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* Ledger, editorial and bands all take the frames off. The rebinding of
+   --ft-surface to --ft-base inside the panel is not optional and is the
+   trap the previous round documented: the cells inside NET WORTH fill with
+   var(--ft-surface) inline, so removing the frame around them turns each
+   one into a visible tile and the boxed reading returns by a second route. */
+:root[data-proto="ledger"] .ft-panelbox,
+:root[data-proto="editorial"] .ft-panelbox,
+:root[data-proto="bands"] .ft-panelbox {
+  border: none !important;
+  background: transparent !important;
+  overflow: visible !important;
+  --ft-surface: var(--ft-base);
+}
+
+:root[data-proto="ledger"] .ft-panelbox > *,
+:root[data-proto="editorial"] .ft-panelbox > *,
+:root[data-proto="bands"] .ft-panelbox > * {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ── Ledger ─────────────────────────────────────────────────────────────────
+   The header does NOT get louder here. On a ledger the column position and
+   the indent carry the structure, so a widget's title is one more gutter
+   label at the same size and colour as every label above it — which is the
+   claim this design is making and the thing to judge it on. */
+:root[data-proto="ledger"] .ft-panelrule {
+  background: transparent !important;
+  border-bottom: none !important;
+  min-height: 0 !important;
+  padding: 0 0 6px 0 !important;
+}
+:root[data-proto="ledger"] .ft-panel-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--ft-dim);
+}
+
+/* ── Editorial ──────────────────────────────────────────────────────────────
+   The board is reference material below the fold. Its headers are demoted
+   the same way the KPI cells were: still legible, no longer competing. */
+:root[data-proto="editorial"] .ft-panelrule {
+  background: transparent !important;
+  border-bottom: 1px solid var(--ft-border) !important;
+  min-height: 0 !important;
+  padding: 0 0 6px 0 !important;
+}
+:root[data-proto="editorial"] .ft-panel-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--ft-dim);
+}
+
+/* ── Bands ──────────────────────────────────────────────────────────────────
+   The band's own rule already carries the name, so the widget's header is a
+   second title for the same region. It goes entirely — the one place in the
+   four where a header is removed rather than restyled. */
+:root[data-proto="bands"] .ft-panelrule {
+  display: none !important;
+}
+
+/* ── Panelled ───────────────────────────────────────────────────────────────
+   Frames kept. The three tiers differ in scale and in nothing else: no
+   colour, no fill, no border weight (DESIGN.md § 4 and § 5 both refuse
+   those), so this is a real test of whether scale alone can carry a
+   hierarchy across framed regions. */
+:root[data-proto="panelled"] .ft-proto-primary .ft-panelrule {
+  min-height: 46px;
+  padding: 0 18px;
+}
+:root[data-proto="panelled"] .ft-proto-primary .ft-panel-label {
+  font-size: 14px;
+  letter-spacing: 0.09em;
+  color: var(--ft-text);
+}
+:root[data-proto="panelled"] .ft-proto-tertiary .ft-panelrule {
+  min-height: 26px;
+}
+:root[data-proto="panelled"] .ft-proto-tertiary .ft-panel-label {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--ft-dim);
+}

@@ -19,6 +19,7 @@
 
 import type { ChangeAttributionReport, ChangeAttributionPart } from "@workspace/api-client-react";
 import { entityHref, ledgerHref } from "./entity-href";
+import { formatMoneyWhole } from "./utils";
 
 export type AttributionRowKind = ChangeAttributionPart["kind"];
 
@@ -51,6 +52,31 @@ export interface AttributionBreakdownLine {
 }
 
 /**
+ * The one sentence this surface exists to deliver, and its evidence.
+ *
+ * The band has had correct data and no point since it shipped: a figure, a
+ * list of causes, and nowhere the finding — that almost none of the change
+ * is usually the user spending. A reader had to derive that by comparing a
+ * row against the others, which is the work the screen is supposed to do.
+ *
+ * `headline` names the share the user's own spending accounts for, in
+ * words, because that is the question being answered ("was this me?"). It
+ * is a claim about proportion, so it is computed from the GROSS movement —
+ * the sum of the absolute parts — not from the net total. A month of +£500
+ * spend and −£500 FX nets to zero, and describing that as "none of it was
+ * you" because the total is zero would be the worst reading available.
+ *
+ * `support` states the two magnitudes the headline compares, so no reader
+ * has to take the wording on trust, and names what the rest was. It is null
+ * when there is only one part, because "£960 of £960" adds nothing to a
+ * band that already prints one row.
+ */
+export interface AttributionFinding {
+  headline: string;
+  support: string | null;
+}
+
+/**
  * A union rather than a record of nullables, so no caller can reach for a
  * total that was never measured. Coalescing a null total to zero is the exact
  * shape of the fabricated-zero defect the repo locks against; making the type
@@ -69,6 +95,8 @@ export type AttributionView =
       /** "since 1 Sep" — the report's window, not the dashboard's. */
       windowLabel: string;
       rows: AttributionRow[];
+      /** The sentence the band leads with. */
+      finding: AttributionFinding;
       /** Set when the parts do not add up, or when accounts are missing. */
       warning: string | null;
     };
@@ -181,6 +209,80 @@ function rowFor(part: ChangeAttributionPart, from: string | null, to: string, ba
   }
 }
 
+/**
+ * What a part is called when it is the subject of a sentence rather than
+ * the label on a row. The row labels are verb phrases ("the rate moved"),
+ * which do not survive being embedded — "the rest is the rate moved".
+ */
+const KIND_NOUN: Record<AttributionRowKind, string> = {
+  spend: "your own spending",
+  rate: "currency rates",
+  valuation: "revaluations",
+  unexplained: "movement nothing explains",
+};
+
+/**
+ * Rounded to the pound. The headline is a claim about proportion and reads
+ * alongside the exact figures in the rows beneath it; pence in a sentence
+ * are noise, and the rows are where the arithmetic is checkable. Magnitude,
+ * because the sentence supplies its own direction ("was you spending").
+ */
+function roughMoney(value: number, currency: string): string {
+  return formatMoneyWhole(Math.abs(value), currency);
+}
+
+/**
+ * Thresholds. "Almost none" has to mean something a reader would agree
+ * with if they did the division, so it is set at a twentieth rather than
+ * at a tenth — a fifth of a month's movement is not "almost none".
+ */
+const ALMOST_NONE = 0.05;
+const ALMOST_ALL = 0.95;
+
+function findingFor(parts: ChangeAttributionPart[], base: string): AttributionFinding {
+  const gross = parts.reduce((sum, p) => sum + Math.abs(p.amountBase), 0);
+  const spend = parts.find((p) => p.kind === "spend");
+  const you = spend == null ? 0 : Math.abs(spend.amountBase);
+
+  // Everything else, largest first — what the headline is contrasting the
+  // user's spending against.
+  const rest = parts
+    .filter((p) => p.kind !== "spend" && p.amountBase !== 0)
+    .sort((a, b) => Math.abs(b.amountBase) - Math.abs(a.amountBase));
+
+  // Nothing moved at all. Not a share of zero — a share of zero is
+  // undefined, and dividing by it to reach "0% was you" would be a
+  // fabricated proportion.
+  if (gross === 0) {
+    return { headline: "Nothing moved", support: null };
+  }
+
+  const share = you / gross;
+  const restNoun = rest[0] == null ? null : KIND_NOUN[rest[0].kind];
+
+  const headline =
+    share === 0 ? "None of this was you spending"
+    : share < ALMOST_NONE ? "Almost none of this was you spending"
+    : share >= 1 ? "All of this was you spending"
+    : share > ALMOST_ALL ? "Almost all of this was you spending"
+    : `${roughMoney(you, base)} of ${roughMoney(gross, base)} was you spending`;
+
+  // One part: the row beneath already says everything the support could.
+  if (rest.length === 0 || restNoun == null) return { headline, support: null };
+
+  // The magnitudes the headline rests on, then what the remainder is. When
+  // the sentence already prints both figures, printing them again would be
+  // the restatement the AI card was rejected for.
+  const magnitudes = share >= ALMOST_NONE && share <= ALMOST_ALL
+    ? ""
+    : `${roughMoney(you, base)} of ${roughMoney(gross, base)} — `;
+  const tail = rest.length === 1
+    ? `the whole of the rest is ${restNoun}`
+    : `most of the rest is ${restNoun}`;
+
+  return { headline, support: `${magnitudes}${tail}` };
+}
+
 export function attributionView(report: ChangeAttributionReport | undefined): AttributionView | null {
   if (report == null) return null;
 
@@ -212,6 +314,7 @@ export function attributionView(report: ChangeAttributionReport | undefined): At
     totalBase: report.totalDeltaBase,
     windowLabel: `since ${shortDate(report.periodFrom)}`,
     rows,
+    finding: findingFor(report.parts, report.baseCurrency),
     warning,
   };
 }

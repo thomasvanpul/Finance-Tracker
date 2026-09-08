@@ -148,3 +148,68 @@ describe("shortDate", () => {
     expect(shortDate("2026-12-31")).toBe("31 Dec");
   });
 });
+
+// ── The finding ─────────────────────────────────────────────────────────────
+// Added 2026-09-08. The band had correct data and never stated its point.
+// These are about the claim the sentence makes, and about the two ways it
+// could lie: by treating a net of zero as "nothing was you", and by calling
+// a fifth of the movement "almost none".
+
+describe("attributionView — the finding it leads with", () => {
+  it("says none of it was you when there is no spend part at all", () => {
+    const view = ok(attributionView(report({ parts: [RATE] })));
+    expect(view.finding.headline).toBe("None of this was you spending");
+  });
+
+  it("names what the rest was, so the headline is checkable", () => {
+    const view = ok(attributionView(report({ parts: [RATE] })));
+    // One non-spend part: the whole of the rest, not most of it.
+    expect(view.finding.support).toBe("£0 of £90 — the whole of the rest is currency rates");
+  });
+
+  it("says almost none when the user's share is under a twentieth", () => {
+    const tiny = { ...SPEND, amountBase: -2 };
+    const view = ok(attributionView(report({ parts: [tiny, RATE] })));
+    expect(view.finding.headline).toBe("Almost none of this was you spending");
+  });
+
+  it("does not call a fifth of the movement 'almost none'", () => {
+    // £27.04 against £117.04 gross is 23%. A reader doing the division
+    // would not agree with "almost none", so the sentence prints the
+    // magnitudes instead of characterising them.
+    const view = ok(attributionView(report({ parts: [SPEND, RATE] })));
+    expect(view.finding.headline).toBe("£27 of £117 was you spending");
+  });
+
+  it("weighs the GROSS movement, not the net", () => {
+    // +£90 spend against -£90 FX nets to zero. Reading the share off the
+    // net would divide by zero, or call a month that was half the user's
+    // doing "none of this was you" — the worst reading available.
+    const positive = { ...SPEND, amountBase: 90 };
+    const view = ok(attributionView(report({ totalDeltaBase: 0, parts: [positive, RATE] })));
+    expect(view.finding.headline).toBe("£90 of £180 was you spending");
+  });
+
+  it("says all of it when spending is the only part", () => {
+    const view = ok(attributionView(report({ parts: [SPEND] })));
+    expect(view.finding.headline).toBe("All of this was you spending");
+    // Nothing to contrast against — the row beneath already says it all.
+    expect(view.finding.support).toBeNull();
+  });
+
+  it("says most of the rest when more than one thing is left over", () => {
+    const view = ok(attributionView(report({ parts: [RATE, UNEXPLAINED] })));
+    expect(view.finding.support).toBe("£0 of £132 — most of the rest is currency rates");
+  });
+
+  it("does not divide by zero when nothing moved", () => {
+    const view = ok(attributionView(report({ totalDeltaBase: 0, parts: [] })));
+    expect(view.finding).toEqual({ headline: "Nothing moved", support: null });
+  });
+
+  it("names the largest remaining cause, not the first one listed", () => {
+    // UNEXPLAINED (-42.41) is listed first but RATE (-90) is larger.
+    const view = ok(attributionView(report({ parts: [UNEXPLAINED, RATE] })));
+    expect(view.finding.support).toContain("currency rates");
+  });
+});

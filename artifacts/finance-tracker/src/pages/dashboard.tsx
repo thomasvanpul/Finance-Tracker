@@ -53,7 +53,7 @@ import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useLocation } from "wouter";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
-import { Zap, RefreshCw, X } from "lucide-react";
+import { Zap, RefreshCw, X, LayoutGrid } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, memo } from "react";
 import type { ComponentType } from "react";
 import { createPortal } from "react-dom";
@@ -66,6 +66,8 @@ import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboar
 import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, recurringSeriesHref, thisMonthRange } from "@/lib/entity-href";
 import { Drill, DrillTarget } from "@/components/drill";
 import { ChangeAttributionBand } from "@/components/change-attribution";
+import { useProtoDesign } from "@/lib/use-proto-design";
+import { ProtoDashboard } from "@/components/proto";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -804,20 +806,27 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
       setLoading(true); // only show skeleton after confirming AI is reachable
       const result = await oneShotInsight({
         path: "/",
-        // Figure first, then the explanation. The figure-first shape is
-        // DESIGN.md §10 — the number is data and carries the weight, the
-        // rest is language — and the separator is what the renderer splits
-        // on; a line without one still renders, as prose, rather than being
-        // dropped or invented.
+        // Three parts per line, separated by ' — ', because the card is
+        // three-across again and each cell sets the parts differently:
+        // figure (mono, 18px), clause (prose, 12px), support (mono, 10px).
+        // The figure-first shape is DESIGN.md §10 — the number is data and
+        // carries the weight, the rest is language. A line with fewer parts
+        // still renders; nothing is dropped or invented.
         //
-        // Length: this asked for "a clause of at most 8 words" until
-        // 2026-09-07, and the result was three fragments that restated
-        // figures already on the screen above them. Thomas: the summary is
-        // "too short and doesn't explain much". It now asks for the same
-        // thing routes/ai.ts asks of the chat prompt — what moved, why, and
-        // what it means — with the same guard: longer is only allowed to
-        // mean more of the user's own data, never padding.
-        prompt: "You are a personal finance analyst. Given the dashboard snapshot in the portfolio context, write exactly 3 data-specific insights, one per line, no numbering and no extra text. Each line MUST start with the figure it is about — a currency amount, a percentage or a count taken from the context — then ' — ' then two or three sentences explaining it: what moved, why it moved given the other figures in the context, and what it means for them. Name the other figures you are reasoning from. Explain rather than restate: the user can already see the totals on the screen this sits on, so reading one back is not an insight. Never invent a figure that is not in the context, and never state a comparison whose baseline the context does not carry. Example shape: '£412/mo — subscriptions are up 18% on last quarter, and the whole of that rise is three annual renewals that landed in the same month. That is 9% of monthly spend against a 6% budget line, so the overshoot is timing rather than a new habit.'",
+        // This prompt has now been wrong in both directions, and the length
+        // was never the real variable:
+        //   · until 2026-09-07 it asked for "a clause of at most 8 words"
+        //     and got three fragments that restated figures already on the
+        //     screen above them — Thomas: "too short and doesn't explain
+        //     much";
+        //   · until 2026-09-08 it asked for "two or three sentences" and
+        //     got paragraphs.
+        // A word count cannot tell the difference between a caption and a
+        // finding. What separates them is whether the sentence says
+        // something the screen does not already show — so the shape asks
+        // for the JOB of each part (what it means / what it rests on)
+        // rather than for a length, and forbids the restatement directly.
+        prompt: "You are a personal finance analyst. Given the dashboard snapshot in the portfolio context, write exactly 3 data-specific insights, one per line, no numbering and no extra text. Each line has exactly three parts separated by ' — ': (1) the figure it is about — a currency amount, a percentage or a count taken from the context, nothing else, under 20 characters; (2) one sentence saying what that figure MEANS, which must be something the user cannot already read off the screen — a cause, a consequence, or a comparison, not a restatement of the figure in words; (3) one short sentence of support naming the other figures in the context that the second part rests on. Never invent a figure that is not in the context, and never state a comparison whose baseline the context does not carry. Do not use the ' — ' separator anywhere except between the three parts. Example shape: '£412/mo — the rise in subscriptions is timing, not a new habit — three annual renewals landed in the same month, against a 6% budget line.'",
       });
       const lines = result.text
         .split("\n")
@@ -920,66 +929,94 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
           they were drawn. There are now no lines and no fill inside the float
           at all (DESIGN.md § 5).
 
-          They were also three columns, and three columns is what made them
-          three captions: at 1440 each cell was ~300px, so anything the model
-          returned longer than a label wrapped into a paragraph inside a
-          column and looked wrong, and the shape kept pulling the writing back
-          to "£412/mo · subscriptions up". Three explanatory sentences are a
-          list, not a grid. Stacked, this also stops reading as a row of
-          cards — which is the other half of what § 6 asks for. */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "2px 12px 11px" }}>
+          Three across, restored 2026-09-08. It was stacked into a list on
+          2026-09-07 on the reasoning that "three explanatory sentences are a
+          list, not a grid" — which was true of what the prompt was asking
+          for by then, and was the wrong end to fix. Thomas: "I like the old
+          AI insights design." The layout was never the problem. Twice now
+          the writing has been wrong in opposite directions — captions so
+          short they said nothing ("all cash, no investments"), then three
+          paragraphs of prose — and twice the layout was changed instead.
+
+          So the grid comes back and the WRITING is what changes. Each cell
+          is a finding in three parts, and the parts are set as three
+          different things rather than as one run of 12px prose:
+
+            figure   18px mono .pnum --ft-text   — data, carries the weight
+            clause   12px head-face --ft-text    — what it means, the finding
+            support  10px mono --ft-dim          — where it came from
+
+          That is the size and weight variation §1 of the task found missing
+          everywhere else on this page: three steps rather than one, so the
+          eye lands on the figure, reads the clause, and takes the support
+          only if it wants it. A caption cannot survive in this shape — the
+          clause slot visibly wants a sentence — and neither can a
+          paragraph, because the support slot is where the second thought
+          goes.
+
+          260px min per column (.ft-dashboard-insights) is what the class
+          has always carried, so at 1440 this is three across, at ~900 two,
+          and on a phone one. A cell that drops to one column is still the
+          same three parts. */}
+      <div className="ft-dashboard-insights" style={{ padding: "2px 12px 12px" }}>
         {loading && insights === null
           ? [0, 1, 2].map(i => (
               <div
                 key={i}
                 style={{
-                  minHeight: 34,
+                  minHeight: 58,
                 }}
               />
             ))
           : (insights ?? []).map((text, i) => {
-            const { figure, clause } = splitInsight(text);
+            const { figure, clause, support } = splitInsight(text);
             return (
               <div
                 key={i}
                 style={{
                   display: "flex",
-                  gap: 7,
-                  alignItems: "flex-start",
+                  flexDirection: "column",
+                  // 3 between figure and clause, 5 between clause and
+                  // support: the clause belongs to the figure above it more
+                  // than the support belongs to the clause, and the gap is
+                  // what says so. No fill and no rule — DESIGN.md § 5, and
+                  // the reason the previous grid read as three boxes.
+                  gap: 3,
+                  minWidth: 0,
                 }}
               >
-                <Zap size={10} style={{ color: "var(--ft-accent)", flexShrink: 0, marginTop: 3, opacity: 0.8 }} />
-                {/* Figure first, clause second (DESIGN.md §10): the figure is
-                    data, so it is mono and .pnum and carries the weight; the
-                    clause is language, so it is sans and recedes. A line the
-                    model returned without the separator is rendered whole as
-                    prose — never split on a guess, never shown as a figure it
-                    is not.
+                {/* Figure first (DESIGN.md §10): data, so mono and .pnum.
+                    18px is a real step above the clause — at the 12px it
+                    carried while stacked it opened a sentence rather than
+                    heading a cell, which is right for a list and wrong for
+                    a card.
 
-                    .ft-float-body is the message typography § 6 specifies for
-                    an ephemeral surface: the head face at 12px, prose. This
-                    component was rendering 10px --ft-muted instead, which is
-                    the caption size used inside widgets — so the surface said
-                    "float" and the writing in it said "panel". The figure
-                    stays a figure but sits at the prose size: it opens the
-                    sentence rather than heading a cell. */}
-                <span className="ft-float-body" style={{ lineHeight: 1.5 }}>
-                  {figure !== null && (
-                    <>
-                      {/* The separating space lives OUTSIDE the .pnum span.
-                          span.pnum is display:inline-block (index.css:1711),
-                          and a trailing space inside an inline-block collapses
-                          at its edge — the figure and the clause ran together
-                          as "£412/mosubscriptions" on every insight the model
-                          returned in the shape the prompt asks for. */}
-                      <Text as="span" numeric size={12} weight={700} color="var(--ft-text)">
-                        {figure}
-                      </Text>
-                      {" "}
-                    </>
-                  )}
+                    A line the model returned without the separator has no
+                    figure and renders whole as prose in the clause slot —
+                    never split on a guess, never shown as a figure it is
+                    not. */}
+                {figure !== null && (
+                  <Text as="div" numeric size={18} weight={700} color="var(--ft-text)"
+                    letterSpacing="-0.01em" lineHeight={1.1}>
+                    {figure}
+                  </Text>
+                )}
+                {/* The finding. .ft-float-body is the message typography § 6
+                    specifies for an ephemeral surface — the head face at
+                    12px — but at --ft-text rather than the class's --ft-muted:
+                    this is the sentence the card exists to deliver, and it
+                    should not be dimmer than the figure that introduces it. */}
+                <span className="ft-float-body" style={{ color: "var(--ft-text)", lineHeight: 1.4 }}>
                   {clause}
                 </span>
+                {/* The support, when the model sent one. Mono at 10px and
+                    --ft-dim: evidence, read second, and absent rather than
+                    padded when there is none. */}
+                {support !== null && (
+                  <Text as="div" mono size={10} color="var(--ft-dim)" lineHeight={1.45} mt={2}>
+                    {support}
+                  </Text>
+                )}
               </div>
             );
           })
@@ -1900,16 +1937,27 @@ function DashboardKpiBar({
           }}>
             {dashboardLabel}
           </span>
+          {/* Same rename and the same glyph as the desktop control, so the
+              two surfaces name one feature. The phone keeps the full-height
+              divided cell rather than a bordered chip: at 32px the row IS
+              the button's frame, and a border inside a 32px cell would be a
+              box in a box. --ft-muted for the same reason as desktop —
+              --ft-dim made the only control in the row the quietest thing
+              in it. */}
           <button
             onClick={onCustomize}
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
               background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
               border: "none",
               borderLeft: "1px solid var(--ft-border)",
-              color: isCustomizing ? "var(--ft-accent)" : "var(--ft-dim)",
-              fontFamily: "var(--font-sans)",
+              color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
+              fontFamily: "var(--font-mono)",
               fontSize: 8,
-              letterSpacing: "0.08em",
+              fontWeight: 700,
+              letterSpacing: "0.10em",
               textTransform: "uppercase",
               padding: "0 14px",
               height: "100%",
@@ -1917,8 +1965,10 @@ function DashboardKpiBar({
               flexShrink: 0,
               whiteSpace: "nowrap",
             }}
+            title={isCustomizing ? "Finish editing" : "Edit layout — add, remove and rearrange widgets"}
           >
-            {isCustomizing ? "EXIT" : "CUSTOMIZE"}
+            <LayoutGrid size={10} aria-hidden />
+            {isCustomizing ? "Done" : "Edit layout"}
           </button>
         </div>
         {/* Row 2: hero + secondary stats */}
@@ -1993,45 +2043,98 @@ function DashboardKpiBar({
       overflowX: "auto",
       scrollbarWidth: "none",
     }}>
-      {/* Customize button — first cell */}
-      <button
-        onClick={onCustomize}
-        style={{
-          background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 10%, transparent)" : "transparent",
-          border: "none",
-          borderTop: isCustomizing ? "2px solid var(--ft-accent)" : "2px solid transparent",
-          color: isCustomizing ? "var(--ft-accent)" : "var(--ft-dim)",
-          fontFamily: "var(--font-sans)",
-          fontSize: 9,
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          padding: "0 14px 0 0",
-          cursor: "pointer",
-          flexShrink: 0,
-          transition: "color 0.1s, background 0.1s",
-          whiteSpace: "nowrap",
-        }}
-        onMouseEnter={e => { if (!isCustomizing) e.currentTarget.style.color = "var(--ft-accent)"; }}
-        onMouseLeave={e => { if (!isCustomizing) e.currentTarget.style.color = "var(--ft-dim)"; }}
-        title={isCustomizing ? "Exit customize mode" : "Enter customize mode to drag & rearrange widgets"}
-      >
-        {isCustomizing ? "[EXIT CUSTOMIZE]" : "[CUSTOMIZE]"}
-      </button>
+      {/* Page identifier cell — first, so the strip opens by naming itself
+          and the control that follows is read as belonging to it. It used
+          to be second, behind [CUSTOMIZE], which put a control where a
+          reader expects the page's name.
 
-      {/* Page identifier cell */}
+          0.10em, not the 0.12em it carried before: three 9px uppercase
+          labels sat in this 68px strip at 0.08 / 0.10 / 0.12em, which is
+          tracking chosen by whoever typed the line rather than by size.
+          The six KPI cell labels are the majority and they are at 0.10em,
+          so that is what 9px uppercase means here now. */}
       <div style={{
         display: "flex",
         alignItems: "center",
-        padding: "0 14px 0 4px",
+        padding: "0 12px 0 4px",
         borderTop: "2px solid transparent",
         flexShrink: 0,
         minWidth: 110,
         gap: 5,
       }}>
-        <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.12em" nowrap>
+        <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.10em" nowrap>
           {dashboardLabel}
         </Text>
       </div>
+
+      {/* Edit layout — second cell.
+
+          This was `[CUSTOMIZE]`: 9px sans, --ft-dim (#556677, the dimmest
+          token in the palette), no border, no icon, seated in a row of
+          figures. Measured at 1440 it rendered 77x68 and read as a third
+          label next to PORTFOLIO OVERVIEW rather than as something you
+          could press — which is exactly what Thomas said about it, and
+          it is the entry point to the whole widget system.
+
+          Four things changed and each answers one half of "obvious that
+          it is pressable, obvious what it does":
+            · an edge (1px --ft-border2) and a radius, so it is an object
+              rather than a run of text;
+            · --ft-muted rather than --ft-dim, so it is not the quietest
+              thing in the strip;
+            · a LayoutGrid glyph, because the thing it edits is the
+              arrangement of the page — not a settings cog, which would
+              promise preferences;
+            · the word. "Customize" does not say customise what. "Edit
+              layout" says what pressing it gets you, and its counterpart
+              is "Done" rather than "Exit customize", which is what you
+              press when the layout is how you want it.
+
+          Not a --ft-accent fill: the accent is the app's interactive
+          colour and a permanently-accented control in the KPI strip would
+          outrank net worth. It earns the accent on hover and while
+          active, which is when it is actually the subject. */}
+      <button
+        onClick={onCustomize}
+        style={{
+          alignSelf: "center",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          height: 26,
+          background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
+          border: `1px solid ${isCustomizing ? "var(--ft-accent)" : "var(--ft-border2)"}`,
+          borderRadius: 2,
+          color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: "0.10em",
+          textTransform: "uppercase",
+          padding: "0 10px",
+          marginRight: 4,
+          cursor: "pointer",
+          flexShrink: 0,
+          transition: "color 0.1s, background 0.1s, border-color 0.1s",
+          whiteSpace: "nowrap",
+        }}
+        onMouseEnter={e => {
+          if (isCustomizing) return;
+          e.currentTarget.style.color = "var(--ft-accent)";
+          e.currentTarget.style.borderColor = "var(--ft-accent)";
+        }}
+        onMouseLeave={e => {
+          if (isCustomizing) return;
+          e.currentTarget.style.color = "var(--ft-muted)";
+          e.currentTarget.style.borderColor = "var(--ft-border2)";
+        }}
+        title={isCustomizing
+          ? "Finish editing — the layout is saved as you go"
+          : "Edit layout — add, remove, resize and rearrange the widgets on this page"}
+      >
+        <LayoutGrid size={11} aria-hidden />
+        {isCustomizing ? "Done" : "Edit layout"}
+      </button>
 
       {/* KPI cells */}
       {cells.map((cell, i) => (
@@ -2594,7 +2697,7 @@ function CustomizeDiscoveryTile({ remaining, onEnter, fullWidth }: {
         + {remaining} MORE {remaining === 1 ? "WIDGET" : "WIDGETS"}
       </MonoLabel>
       <Text as="span" size={12} color="var(--ft-dim)">
-        Press CUSTOMIZE to add them, rearrange this page, or take anything off it.
+        Press EDIT LAYOUT to add them, rearrange this page, or take anything off it.
       </Text>
     </button>
   );
@@ -2633,6 +2736,10 @@ export default function Dashboard() {
     () => localStorage.getItem(CUSTOMIZE_MODE_KEY) === "1"
   );
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  // PROTOTYPE ONLY. Null in every real session — nothing in the app writes
+  // data-proto; only the screenshot harness does, under SCREENSHOT_PROTO.
+  // See lib/proto-design.ts.
+  const protoDesign = useProtoDesign();
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -2992,6 +3099,14 @@ export default function Dashboard() {
     return { netWorth, income, expenses, savingsRate, topCategories, budgetStatus };
   }, [dashData, monthTxs]);
 
+  // PROTOTYPE ONLY — four alternative organisations of this page, for
+  // comparison. Placed after every hook above has run, so the branch cannot
+  // change the hook order. Desktop only: the four are answers to a
+  // question about a wide dense screen, and the phone has its own.
+  if (protoDesign !== null && !isMobile) {
+    return <ProtoDashboard design={protoDesign} cells={kpiCells} dashboardLabel={dashboardLabel} />;
+  }
+
   return (
     <DashboardCustomizeContext.Provider value={isCustomizing}>
     <div>
@@ -3055,7 +3170,7 @@ export default function Dashboard() {
             justifyContent: "space-between",
           }}>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              <span style={{ color: "var(--ft-accent)" }}>·</span> CUSTOMIZE MODE — drag widgets to rearrange · hover for controls · click [EXIT CUSTOMIZE] when done
+              <span style={{ color: "var(--ft-accent)" }}>·</span> EDITING LAYOUT — drag widgets to rearrange · hover for controls · press DONE when finished
             </span>
             {/* A sentence carrying a figure: the sentence is sans, the
                 figure inside it is mono (§10). */}

@@ -27,7 +27,15 @@ const FRONTEND = "http://localhost:4321";
 const API = "http://localhost:3001";
 
 const BATCHES: Record<string, string[]> = {
+  // The shape the prompt asks for from 2026-09-08: figure, clause, support.
   plain: [
+    "£412/mo — the rise in subscriptions is timing, not a new habit — three annual renewals landed in the same month, against a 6% budget line",
+    "£1,240 — dining out is where the month went, not groceries — it is 34% above your average while groceries held flat at £310",
+    "22% — the savings rate gap is one month, not a trend — £890 of rent and a £412 renewal cluster fell inside the same 30 days",
+  ],
+  // The two-part shape the prompt asked for until 2026-09-08. Still valid,
+  // still renders: the support slot is absent rather than padded.
+  twoPart: [
     "£412/mo — subscriptions, up 18% on last quarter",
     "£1,240 — dining out this month, 34% above your average",
     "22% — savings rate, below your 30% target",
